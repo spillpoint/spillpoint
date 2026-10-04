@@ -1,4 +1,4 @@
-# Edge case 17: derivation
+# Edge case 17a: derivation
 
 A round case. A down round with a pay-to-play: existing Series A holders must buy their share of the new round, or lose their preferred.
 
@@ -52,7 +52,7 @@ Investor X holds 14.34% in all. Series B's original issue price and conversion p
 
 ## What the pay-to-play did
 
-| | No pay-to-play | Priced after the conversion (this case) | Priced before it (R19 toggle) |
+| | No pay-to-play | Priced after the conversion (17a, this case) | Priced before it (17b, the R19 toggle) |
 |---|---:|---:|---:|
 | Price | $1.20 | $1.293103 | $1.20 |
 | Series B to X / Y | 500,000 / 2,000,000 | 464,000 / 1,856,000 | 500,000 / 2,000,000 |
@@ -69,7 +69,7 @@ Investor X holds 14.34% in all. Series B's original issue price and conversion p
 ## Checking this independently
 
 The answer is the post–Series B cap table above. These wrong rules give different numbers, so the case catches them:
-- **Pricing before the conversion:** the third column above.
+- **Pricing before the conversion:** the third column above, which is edge case 17b.
 - **Converting at the Series A conversion ratio (1:1) instead of 1 for 10:** Investor W keeps 800,000 shares (as common), the price is $1.20, and the total is 12,500,000.
 - **Treating Investor W as not subject to pay-to-play:** the "no pay-to-play" column.
 

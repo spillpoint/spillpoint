@@ -39,7 +39,7 @@ Branch `m1b-edge-cases`, PR [spillpoint/spillpoint#2](https://github.com/spillpo
    ```bash
    pnpm install && pnpm test && pnpm test:reference
    ```
-   That is 149 Vitest checks on the case files, 25 reference unit tests, and all 28 cases matching the reference.
+   That is 151 Vitest checks on the case files, 25 reference unit tests, and all 28 cases (27 edge cases plus Millrace) matching the reference.
 2. **Read each case's `DERIVATION.md`.** Each one works the answer out step by step and ends with "Checking this independently": which wrong rules the case catches, and which it can't. These are the numbers worth spot-checking:
 
 **Exit cases** (payouts per holder, plus every breakpoint with its reason):
@@ -68,7 +68,7 @@ Branch `m1b-edge-cases`, PR [spillpoint/spillpoint#2](https://github.com/spillpo
 | 14b pool already at target | No top-up; $2.666667; Investor X 1,875,000 (20%); founders 64%. |
 | 15 SAFE, discount beats cap | The cap price is $2.32 and the discount price $2.00, so the SAFE gets 300,000 shadow shares. Investor X still holds 20%. |
 | 16a / 16b / 16c / 16d down round | Price $1.167019 / $1.094595 / $0.875 / $1.20. Series A's new conversion price is $2.190476 / $1.6875 / $0.875 / $2.204545. Investor X ends at 17.76% / 21.62% / 33.33% / 17.76%, and Investor Y at 20% in all but 16d (19.58%). |
-| 17 pay-to-play | Investor W's 800,000 Series A becomes 80,000 common; $1.293103 a share; Investor Y 16%; founders 51.72%. |
+| 17a / 17b pay-to-play | Investor W's 800,000 Series A becomes 80,000 common in both. 17a, priced after the conversion: $1.293103 a share, Investor Y 16%, founders 51.72%. 17b, priced before it: $1.20, Series B 500,000 to X and 2,000,000 to Y, Investor Y 16.98%, founders 50.93%. |
 
 3. **For the independent re-derivation,** the reviewer needs:
    - `docs/SPEC.md` and `docs/ASSUMPTIONS.md`
@@ -84,24 +84,29 @@ Branch `m1b-edge-cases`, PR [spillpoint/spillpoint#2](https://github.com/spillpo
 - **Rounds:** R10 (now a toggle: whether the anti-dilution shares count in the round's price), R16 (pool already at target), R17–R21 (pay-to-play, with R19's toggle for pricing before or after the conversion).
 - **Case file conventions:** C5–C10.
 
-**Still New, for you to confirm:**
-- **E12:** warrant for preferred. Exercised shares join the series, with its $1.00-a-share preference rather than the strike.
-- **C4:** the `conversion_groups` and warrant fields.
-- **R22:** the smaller pay-to-play choices:
-  - a holder passes if its total investment in the round meets the requirement
-  - only one series per round
-  - the ratio is per preferred share, not per as-converted share
-- **C11:** the `pay_to_play` input and output fields.
+**Confirmed in your answers to this review (M1b review, item 1):**
+- **From M1a:** R1, R2, R12, R14, E4, E5, E10.
+- **From M1b:**
+  - **E12:** warrant for preferred. Exercised shares join the series, with its $1.00-a-share preference rather than the strike.
+  - **C4:** the `conversion_groups` and warrant fields.
+  - **R22:** the smaller pay-to-play choices: a holder passes if its total investment in the round meets the requirement; only one series per round; and the ratio is per preferred share, not per as-converted share.
+  - **C11:** the `pay_to_play` input and output fields.
+
+No assumption is marked New any more.
 
 **Cases still owed, as you asked:**
-- **Before M4:** partial pay-to-play participation (R20), and pay-to-play in a round that triggers anti-dilution (R21).
+- **Before M4:** partial pay-to-play participation (R20), pay-to-play in a round that triggers anti-dilution (R21), and pay-to-play on more than one series in the same round (R22).
 - **Before M5:** SAFE exit cases with a discount, with no cap, and alongside preferred (X9); the same three for notes (X12).
 
 **Not in M1b, as agreed:** the X8 note about a visible dashboard warning on a negative take. It comes with the M3 instructions.
 
-## Open questions
+## Open questions: answered
 
-1. **M1a items still marked New:** R1, R2, R12, R14, E4, E5 and E10. Should I mark them confirmed, or do any need another look?
-2. **Variant 17b?** Pricing a pay-to-play round before the conversion (the R19 toggle) is covered only by a reference unit test. The other two toggles added in M1b each have cases: X10's in 13a–13c and R10's in 16d. Do you want 17b, with the toggle off, for the same coverage? Its numbers are already in 17's derivation: $1.20 a share, and Investor Y at 16.98%.
-3. **The Millrace pro-rata fix.** After this merges, you planned one small separate PR to `cases/millrace`. It covers the pro-rata record and wording under the NVCA base (R6), the reference's pro-rata base, and the $9,999,999.89 cash figure. No share count or payout changes. It needs you to lift the `Edit(cases/millrace/**)` deny rule and add the `unlock-cases` label. Should I start it once you say the rule is lifted?
-4. **Locking.** Once the independent re-derivation agrees, locking `cases/` ends M1, and from then on any change goes through the disagreement process. Is there anything you want added or varied before you lock?
+You had all 26 edge cases re-derived independently, and every payout line, breakpoint and final cap table matched. Your answers:
+
+1. **The still-New items** are confirmed: R1, R2, R12, R14, E4, E5, E10, E12, C4, R22 and C11. R22 now also says pay-to-play on more than one series in the same round needs a case before M4.
+2. **17b is added.** Case 17 is now `edge-17a-pay-to-play-priced-after`, following the variant folder convention (C3); its values are unchanged. `edge-17b-pay-to-play-priced-before` is identical except that `priced_after_conversion` is `false`. It gives $1.20 a share, Series B 500,000 to X and 2,000,000 to Y, X 14.43%, Y 16.98%, and founders 50.93%, which matches your numbers. 17b was added after the independent re-derivation, but its numbers are the ones you gave.
+3. **The Millrace pro-rata fix** will be its own PR after M1b merges. I'll wait for you to say the `Edit(cases/millrace/**)` deny rule is lifted.
+4. **Nothing else** is to be added before the lock.
+
+**A correction.** The first version of this note and the PR description said 27 edge-case folders and 28 cases. There were 26 and 27; your count was right. With 17b they are now 27 and 28.

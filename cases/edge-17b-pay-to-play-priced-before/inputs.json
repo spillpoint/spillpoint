@@ -1,6 +1,6 @@
 {
-  "case": "edge-17-pay-to-play",
-  "description": "Edge case 14a's company with its Series A split between Investor X ($3M) and Investor W ($2M). A $3M down round at $12M pre-money has a pay-to-play: Series A holders must buy their share of the $1M the round offers them. Investor X buys its $600,000; Investor W buys nothing, so its 800,000 Series A converts to 80,000 common (1 for 10) just before the round, which is priced after the conversion.",
+  "case": "edge-17b-pay-to-play-priced-before",
+  "description": "Edge case 17a with one term changed: the Series B is priced on the share count before the pay-to-play conversion (priced_after_conversion false, the R19 toggle). Investor W still buys nothing, so its 800,000 Series A converts to 80,000 common (1 for 10), but only after the round has been priced at $12M \u00f7 the 10,000,000 shares before the conversion.",
   "holders": [
     {
       "id": "founder_a",
@@ -128,7 +128,7 @@
         ],
         "offered_amount": "1000000",
         "conversion_ratio": "0.1",
-        "priced_after_conversion": true
+        "priced_after_conversion": false
       },
       "seniority": [
         [
