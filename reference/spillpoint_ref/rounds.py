@@ -131,6 +131,76 @@ def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, inclu
     return (a + new_shares) / (a + b)
 
 
+def _pay_to_play(ct, ev, invest):
+    """Pay-to-play (SPEC): who in the listed series buys their pro-rata, and who converts.
+
+    A holder's pro-rata (R17) is its share of the series' shares × the amount
+    the round offers to that series' holders (NVCA term sheet: a share of the
+    securities the board sets aside for existing investors). A holder who
+    invests at least that much in the round keeps its preferred. A holder who
+    invests nothing has it converted to common at the input ratio (R18),
+    common shares per preferred share, rounded down (R3). Partial
+    participation is refused (R20). Returns None if the round has no
+    pay-to-play.
+    """
+    terms = ev.get("pay_to_play")
+    if not terms:
+        return None
+    if len(terms["series"]) != 1:
+        raise ValueError(f"round {ev['id']}: pay-to-play on more than one series is not supported by the reference yet")
+    sid = terms["series"][0]
+    if sid not in ct.securities or ct.kind(sid) != "preferred":
+        raise ValueError(f"round {ev['id']}: pay-to-play series {sid} is not an existing preferred series")
+    commons = [c for c in ct.securities if ct.kind(c) == "common"]
+    if len(commons) != 1:
+        raise ValueError(f"round {ev['id']}: pay-to-play needs exactly one common stock class to convert into")
+    offered = parse(terms["offered_amount"])
+    ratio = parse(terms["conversion_ratio"])
+    if ratio <= 0:
+        raise ValueError(f"round {ev['id']}: pay-to-play conversion_ratio must be positive")
+    invested = {}
+    for h, a, _ in invest:
+        invested[h] = invested.get(h, Fraction(0)) + a
+    total = ct.shares_of(sid)
+    rows = []
+    for h, n in ct.holders_of(sid):
+        required = offered * n / total
+        paid = invested.get(h, Fraction(0))
+        if 0 < paid < required:
+            raise ValueError(
+                f"round {ev['id']}: {h} buys only part of its pay-to-play pro-rata; partial participation "
+                "is not supported by the reference yet"
+            )
+        participates = paid >= required
+        rows.append(
+            {
+                "holder": h,
+                "shares": n,
+                "share_of_series_percent": decimal(Fraction(n, total) * 100, 6),
+                "required": exact(required),
+                "invested": exact(paid),
+                "participates": participates,
+                "common_received": None if participates else floor(n * ratio),
+            }
+        )
+    return {
+        "series": sid,
+        "common": commons[0],
+        "offered_amount": exact(offered),
+        "conversion_ratio": exact(ratio),
+        "priced_after_conversion": bool(terms.get("priced_after_conversion", True)),
+        "holders": rows,
+    }
+
+
+def _apply_pay_to_play(ct, p2p):
+    """Convert the non-participants' preferred to common. They lose the preference and every other preferred right."""
+    for r in p2p["holders"]:
+        if not r["participates"]:
+            del ct.positions[(r["holder"], p2p["series"])]
+            ct.issue(r["holder"], p2p["common"], r["common_received"])
+
+
 def ev_priced_round(ct, ev):
     """Priced equity round.
 
@@ -149,6 +219,11 @@ def ev_priced_round(ct, ev):
     Company Capitalization counts all stock, issued options, the pre-existing
     unissued pool, and the converting SAFEs themselves; it excludes the pool
     increase made in this financing and the new money.
+
+    Pay-to-play: holders of the listed series who don't buy their pro-rata
+    have their preferred converted to common. By default this happens just
+    before the round closes, so the round is priced on the cap table after the
+    conversion (R19); the toggle prices it on the count before.
     """
     series = ev["series"]
     pre = parse(ev["pre_money"])
@@ -158,6 +233,10 @@ def ev_priced_round(ct, ev):
     target = parse(ev.get("pool_target_unissued_percent_post", "0")) / 100
     ad_in_post = ev.get("anti_dilution_shares_in_post", True)
     include_pool_in_a = ev.get("anti_dilution_include_unissued_pool_in_a", False)
+
+    p2p = _pay_to_play(ct, ev, invest)
+    if p2p and p2p["priced_after_conversion"]:
+        _apply_pay_to_play(ct, p2p)
 
     o = ct.outstanding_as_converted()
     u0 = ct.unissued_pool
@@ -235,6 +314,10 @@ def ev_priced_round(ct, ev):
     if len(solutions) != 1:
         raise ValueError(f"round {ev['id']}: expected one consistent solution, found {len(solutions)}")
     safe_branch, ad_branch, top_up, x, price = solutions[0]
+    if p2p and any(ad_branch):
+        raise ValueError(
+            f"round {ev['id']}: pay-to-play in a round that triggers anti-dilution is not supported by the reference yet"
+        )
 
     details = {
         "price_per_share": exact(price),
@@ -244,6 +327,8 @@ def ev_priced_round(ct, ev):
         "post_money_fully_diluted_solved_approx": decimal(x, 4),
         "pre_round_fully_diluted": exact(ct.fully_diluted()),
     }
+    if p2p:
+        details["pay_to_play"] = {k: v for k, v in p2p.items() if k != "common"}
 
     # Pro-rata entitlement (NVCA): pre-round fully diluted percentage × round size.
     pre_fd = ct.fully_diluted()
@@ -341,6 +426,9 @@ def ev_priced_round(ct, ev):
     new_pool = floor(target * x) if top_up else u0
     details["pool_top_up"] = new_pool - u0
     ct.unissued_pool = new_pool
+
+    if p2p and not p2p["priced_after_conversion"]:
+        _apply_pay_to_play(ct, p2p)
 
     ct.seniority = [list(t) for t in ev["seniority"]]
     details["post_money_fully_diluted_actual"] = exact(ct.fully_diluted())

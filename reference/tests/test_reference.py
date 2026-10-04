@@ -165,6 +165,54 @@ class Rounds(unittest.TestCase):
         self.assertEqual((ct.positions[("b", "seed")], ct.unissued_pool), (250_000, 100_000))
         self.assertEqual(ct.fully_diluted(), 1_250_000)
 
+    def test_pay_to_play(self):
+        # 450,000 common; preferred p at $2 (no anti-dilution): s1 300,000, s2 100,000.
+        # Round: $200,000 at $800,000 pre ($1M post). Pay-to-play on p, with
+        # $100,000 offered to p's holders: s1 must buy 75% = $75,000, s2 25% = $25,000.
+        # s1 buys $75,000 and keeps p. s2 buys nothing: 100,000 p × 1/2 = 50,000 common.
+        # Priced after the conversion (default): 800,000 shares before the
+        # money, x = 800,000 ÷ 0.8 = 1,000,000, $1.00 a share; s1 gets 75,000, b 125,000.
+        # Priced before it: x = 850,000 ÷ 0.8 = 1,062,500, $16/17 a share;
+        # s1 gets floor(79,687.5) = 79,687, b floor(132,812.5) = 132,812.
+        def run(after=True, s2_amount=None, ad="none"):
+            invest = [{"holder": "s1", "amount": "75000"}, {"holder": "b", "amount": "125000"}]
+            if s2_amount:
+                invest.append({"holder": "s2", "amount": s2_amount})
+            return self.run_events(
+                [
+                    {"id": "f", "type": "issue", "security": COMMON, "issues": [{"holder": "a", "shares": 450_000}]},
+                    # p at $2: $800,000 at $900,000 pre on 450,000 shares, so x = 850,000.
+                    self.round_event(
+                        id="p", series=pref("p", "2", "1", "non_participating") | {"anti_dilution": ad}, pre_money="900000",
+                        investments=[{"holder": "s1", "amount": "600000"}, {"holder": "s2", "amount": "200000"}],
+                        seniority=[["p"]],
+                    ),
+                    self.round_event(
+                        pre_money="800000",
+                        investments=invest,
+                        seniority=[["seed"], ["p"]],
+                        pay_to_play={"series": ["p"], "offered_amount": "100000", "conversion_ratio": "0.5",
+                                     "priced_after_conversion": after},
+                    ),
+                ],
+                holders=("a", "b", "s1", "s2"),
+            )[-1]
+
+        ev, ct, d = run()
+        self.assertEqual(d["price_per_share"], "1")
+        self.assertEqual([(r["holder"], r["required"], r["participates"]) for r in d["pay_to_play"]["holders"]],
+                         [("s1", "75000", True), ("s2", "25000", False)])
+        self.assertEqual((ct.positions[("s2", "common")], ct.positions.get(("s2", "p"))), (50_000, None))
+        self.assertEqual((ct.positions[("s1", "seed")], ct.positions[("b", "seed")], ct.fully_diluted()), (75_000, 125_000, 1_000_000))
+        ev, ct, d = run(after=False)
+        self.assertEqual(F(d["price_per_share"]), F(16, 17))
+        self.assertEqual((ct.positions[("s1", "seed")], ct.positions[("b", "seed")], ct.positions[("s2", "common")]), (79_687, 132_812, 50_000))
+        # Partial participation and pay-to-play with triggered anti-dilution are refused (R20, R21).
+        with self.assertRaisesRegex(ValueError, "partial participation"):
+            run(s2_amount="10000")
+        with self.assertRaisesRegex(ValueError, "triggers anti-dilution"):
+            run(ad="broad_based")
+
     def test_broad_based_weighted_average(self):
         # Textbook: A = 2,000,000 (1M common + 1M Series A as converted), CP1 = $1.00.
         # New issue: 1,000,000 shares for $500,000. B = 500,000, C = 1,000,000.
