@@ -48,10 +48,15 @@ A breakpoint is any exit value where any holder's payoff slope changes. Report e
   - Company Capitalization includes all stock, converting securities, issued and promised options, and the unissued pool. It excludes any pool increase made in the financing, except to the extent promised options exceed the pool that existed before.
   - The SAFE converts into a shadow series that has the new series' rights and preference multiple. Its per-share preference and conversion price are based on the SAFE's own conversion price.
 - **Pre-money SAFEs and convertible notes.** Inputs: principal, simple interest, cap, and discount.
-- **Pro-rata rights.** The investor buys enough of the new round to keep its pre-round fully diluted percentage.
+- **Pro-rata rights.** NVCA definition: the investor may buy a share of the new round equal to its pre-round fully diluted percentage. It is not the amount needed to hold that percentage after the round. When a pool top-up sits in the pre-money, the investor ends below its pre-round percentage.
 - **Anti-dilution.**
   - Broad-based weighted average is the default. Narrow-based weighted average and full ratchet are the alternatives.
-  - Weighted average uses the NVCA formula: CP2 = CP1 × (A + B) ÷ (A + C).
+  - Weighted average uses the NVCA formula: CP2 = CP1 × (A + B) ÷ (A + C), where:
+    - CP1 is the conversion price in effect immediately before the new issue.
+    - A is the number of common shares outstanding immediately before the new issue, as converted. It counts outstanding common, all outstanding options (as if exercised), and all outstanding preferred and other convertible securities (as if converted). It excludes the unissued pool, including any pool increase made in the same financing. Toggle: include the unissued pool in A.
+    - B is the aggregate consideration received for the new issue ÷ CP1.
+    - C is the number of new shares issued, as converted.
+    - Narrow-based A counts only the outstanding preferred, as converted.
   - Anti-dilution changes the conversion ratio, never the preference amount.
 - **Pay-to-play.** Holders who don't take their pro-rata at the round have their preferred converted to common at a ratio given as an input.
 
@@ -67,7 +72,8 @@ A breakpoint is any exit value where any holder's payoff slope changes. Report e
 ## Rounding
 
 - Prices are exact.
-- Share counts round down to whole shares at every issuance and conversion.
+- Share counts round down to whole shares at every issuance and conversion in a financing.
+- At exit, as-converted shares are exact (fractional), with no rounding. This is economically the same as an actual conversion, which rounds down and pays cash in lieu of the fraction. Rounding down without cash in lieu would short the holder by up to one share's value, which at high exits exceeds the $1 tolerance.
 - Payouts stay exact internally and display to the cent.
 - Test tolerances: payouts within $1, shares within 1, breakpoints within $1.
 
