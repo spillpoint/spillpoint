@@ -1,6 +1,6 @@
 # Edge case 6a: two series in one tier, per-series conversion
 
-Edge case 6 isolates how conversion works when two non-participating series in the same tier have **different per-share preferences**. In variant **a**, each series decides on its own whether to convert (the `SPEC.md` default). Variant 6b uses the same inputs, but the two must convert together.
+Edge case 6 isolates how conversion works when two non-participating series in the same tier have **different per-share preferences**. In variant **a**, each series decides on its own whether to convert (the `SPEC.md` default). Variants 6b and 6c use the same inputs, but the two series must convert together by a class vote (more than 50% in 6b, at least 50% in 6c).
 
 | Holder | Security | Shares |
 |---|---|---:|

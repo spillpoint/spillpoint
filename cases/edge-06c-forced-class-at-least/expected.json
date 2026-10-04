@@ -1,5 +1,5 @@
 {
-  "case": "edge-06b-forced-class",
+  "case": "edge-06c-forced-class-at-least",
   "generated_by": "reference/generate.py",
   "exit": {
     "breakpoints": [
@@ -19,15 +19,15 @@
         ]
       },
       {
-        "exit_value": "30000000.00",
-        "exact": "30000000",
+        "exit_value": "10000000.00",
+        "exact": "10000000",
         "payouts_jump": true,
         "reasons": [
           {
             "code": "series_converts",
             "security": "seed_1+seed_2",
             "converts": true,
-            "text": "Seed-1 Preferred and Seed-2 Preferred must convert together, by a vote of more than 50% of their as-converted shares; each holder votes for conversion only if it does strictly better converting. Above this exit value, Investor X and Investor Y (holding 100.00% of the group's shares) do better converting, which carries the vote, so the group converts."
+            "text": "Seed-1 Preferred and Seed-2 Preferred must convert together, by a vote of at least 50% of their as-converted shares; each holder votes for conversion only if it does strictly better converting. Above this exit value, Investor X (holding 50.00% of the group's shares) does better converting, which carries the vote, so the group converts."
           },
           {
             "code": "payouts_jump",
@@ -183,9 +183,9 @@
         ]
       },
       {
-        "exit_value": "12000000.00",
+        "exit_value": "10000000.00",
         "tags": [
-          "listed"
+          "breakpoint"
         ],
         "multiple_equilibria": false,
         "equilibria": [
@@ -193,17 +193,17 @@
             "decisions": {
               "seed_1+seed_2": "keeps_preference"
             },
-            "common_price_per_share": "1.000000",
+            "common_price_per_share": "0.750000",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "6000000.00"
+                "amount": "4500000.00"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "2000000.00"
+                "amount": "1500000.00"
               },
               {
                 "holder": "investor_x",
@@ -217,15 +217,63 @@
               }
             ],
             "holder_totals": {
-              "founder_a": "6000000.00",
-              "founder_b": "2000000.00",
+              "founder_a": "4500000.00",
+              "founder_b": "1500000.00",
               "investor_x": "1000000.00",
               "investor_y": "3000000.00"
             },
             "class_totals": {
-              "common": "8000000.00",
+              "common": "6000000.00",
               "seed_1": "1000000.00",
               "seed_2": "3000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "12000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_1+seed_2": "converts"
+            },
+            "common_price_per_share": "1.200000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "7200000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2400000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed_1",
+                "amount": "1200000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed_2",
+                "amount": "1200000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "7200000.00",
+              "founder_b": "2400000.00",
+              "investor_x": "1200000.00",
+              "investor_y": "1200000.00"
+            },
+            "class_totals": {
+              "common": "9600000.00",
+              "seed_1": "1200000.00",
+              "seed_2": "1200000.00"
             }
           }
         ]
@@ -239,41 +287,41 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_1+seed_2": "keeps_preference"
+              "seed_1+seed_2": "converts"
             },
-            "common_price_per_share": "1.500000",
+            "common_price_per_share": "1.600000",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "9000000.00"
+                "amount": "9600000.00"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "3000000.00"
+                "amount": "3200000.00"
               },
               {
                 "holder": "investor_x",
                 "security": "seed_1",
-                "amount": "1000000.00"
+                "amount": "1600000.00"
               },
               {
                 "holder": "investor_y",
                 "security": "seed_2",
-                "amount": "3000000.00"
+                "amount": "1600000.00"
               }
             ],
             "holder_totals": {
-              "founder_a": "9000000.00",
-              "founder_b": "3000000.00",
-              "investor_x": "1000000.00",
-              "investor_y": "3000000.00"
+              "founder_a": "9600000.00",
+              "founder_b": "3200000.00",
+              "investor_x": "1600000.00",
+              "investor_y": "1600000.00"
             },
             "class_totals": {
-              "common": "12000000.00",
-              "seed_1": "1000000.00",
-              "seed_2": "3000000.00"
+              "common": "12800000.00",
+              "seed_1": "1600000.00",
+              "seed_2": "1600000.00"
             }
           }
         ]
@@ -287,7 +335,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_1+seed_2": "keeps_preference"
+              "seed_1+seed_2": "converts"
             },
             "common_price_per_share": "2.000000",
             "lines": [
@@ -304,24 +352,24 @@
               {
                 "holder": "investor_x",
                 "security": "seed_1",
-                "amount": "1000000.00"
+                "amount": "2000000.00"
               },
               {
                 "holder": "investor_y",
                 "security": "seed_2",
-                "amount": "3000000.00"
+                "amount": "2000000.00"
               }
             ],
             "holder_totals": {
               "founder_a": "12000000.00",
               "founder_b": "4000000.00",
-              "investor_x": "1000000.00",
-              "investor_y": "3000000.00"
+              "investor_x": "2000000.00",
+              "investor_y": "2000000.00"
             },
             "class_totals": {
               "common": "16000000.00",
-              "seed_1": "1000000.00",
-              "seed_2": "3000000.00"
+              "seed_1": "2000000.00",
+              "seed_2": "2000000.00"
             }
           }
         ]
@@ -335,41 +383,41 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_1+seed_2": "keeps_preference"
+              "seed_1+seed_2": "converts"
             },
-            "common_price_per_share": "2.625000",
+            "common_price_per_share": "2.500000",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "15750000.00"
+                "amount": "15000000.00"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "5250000.00"
+                "amount": "5000000.00"
               },
               {
                 "holder": "investor_x",
                 "security": "seed_1",
-                "amount": "1000000.00"
+                "amount": "2500000.00"
               },
               {
                 "holder": "investor_y",
                 "security": "seed_2",
-                "amount": "3000000.00"
+                "amount": "2500000.00"
               }
             ],
             "holder_totals": {
-              "founder_a": "15750000.00",
-              "founder_b": "5250000.00",
-              "investor_x": "1000000.00",
-              "investor_y": "3000000.00"
+              "founder_a": "15000000.00",
+              "founder_b": "5000000.00",
+              "investor_x": "2500000.00",
+              "investor_y": "2500000.00"
             },
             "class_totals": {
-              "common": "21000000.00",
-              "seed_1": "1000000.00",
-              "seed_2": "3000000.00"
+              "common": "20000000.00",
+              "seed_1": "2500000.00",
+              "seed_2": "2500000.00"
             }
           }
         ]
@@ -377,31 +425,30 @@
       {
         "exit_value": "30000000.00",
         "tags": [
-          "listed",
-          "breakpoint"
+          "listed"
         ],
         "multiple_equilibria": false,
         "equilibria": [
           {
             "decisions": {
-              "seed_1+seed_2": "keeps_preference"
+              "seed_1+seed_2": "converts"
             },
-            "common_price_per_share": "3.250000",
+            "common_price_per_share": "3.000000",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "19500000.00"
+                "amount": "18000000.00"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "6500000.00"
+                "amount": "6000000.00"
               },
               {
                 "holder": "investor_x",
                 "security": "seed_1",
-                "amount": "1000000.00"
+                "amount": "3000000.00"
               },
               {
                 "holder": "investor_y",
@@ -410,14 +457,14 @@
               }
             ],
             "holder_totals": {
-              "founder_a": "19500000.00",
-              "founder_b": "6500000.00",
-              "investor_x": "1000000.00",
+              "founder_a": "18000000.00",
+              "founder_b": "6000000.00",
+              "investor_x": "3000000.00",
               "investor_y": "3000000.00"
             },
             "class_totals": {
-              "common": "26000000.00",
-              "seed_1": "1000000.00",
+              "common": "24000000.00",
+              "seed_1": "3000000.00",
               "seed_2": "3000000.00"
             }
           }

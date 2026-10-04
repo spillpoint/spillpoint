@@ -1,6 +1,10 @@
-# Edge case 6b: two series in one tier, forced class conversion (more than 50%)
+# Edge case 6c: two series in one tier, forced class conversion (at least 50%)
 
-This is the same company as edge case 6a. One term changes: Seed-1 and Seed-2 **must convert together**, as when a class vote forces conversion (the `SPEC.md` toggle). In `inputs.json` this is `"conversion_groups": [["seed_1", "seed_2"]]`. A bare list means the default vote: **more than 50%** of the group's as-converted shares.
+This is identical to edge case 6b except for one term: the class vote needs **at least 50%** of the group's as-converted shares, not more than 50%. Each series holds exactly 50%, so **Seed-1 can carry the vote alone**. In `inputs.json`:
+
+```json
+"conversion_groups": [{ "series": ["seed_1", "seed_2"], "vote_threshold_percent": "50", "vote_rule": "at_least" }]
+```
 
 | Holder | Security | Shares |
 |---|---|---:|
@@ -21,6 +25,4 @@ There is no pool and there are no options. The exit range is $0 to $40M.
 - A holder who is indifferent votes to stay.
 - The group converts only if the holders voting yes hold the threshold share of the group's as-converted shares.
 
-Edge case 6c is identical except that the vote needs **at least** 50%.
-
-Payouts are given at $2M, $4M, $8M, $12M, $16M, $20M, $25M, $30M and $40M, the same exit values as 6a and 6c.
+Payouts are given at $2M, $4M, $8M, $12M, $16M, $20M, $25M, $30M and $40M, the same exit values as 6a and 6b.
