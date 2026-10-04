@@ -53,6 +53,33 @@ export function solve(pc: PreparedCapTable, exitValue: Decimal, options: SolveOp
   return new AtExit(pc, exitValue, options).solve();
 }
 
+// ---------- the choice among series that decide for themselves (E15) ----------
+
+/**
+ * Series that each decide for themselves whether to convert, and what each
+ * set of conversions pays them. The engine builds this from the waterfall;
+ * tests build artificial ones to reach E15's rarer paths. Internal: not part
+ * of the package's public API.
+ */
+export interface Choice {
+  players: readonly string[];
+  /** What a player gets when exactly this set of players converts. */
+  value(converted: ReadonlySet<string>, player: string): Decimal;
+  /** Whether two sets pay every holder the same. */
+  samePayouts(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean;
+  /** Conversions plus exercises, for the tie-break (E5). */
+  size(converted: ReadonlySet<string>): number;
+  /** Where the choice is made, for messages: "At $1,000,000.00". */
+  where: string;
+}
+
+export interface Settled {
+  /** One set of conversions per distinct stable answer, simplest first (E5). */
+  sets: Set<string>[];
+  /** False when there were more than MAX_CHECKED players and the two ends disagreed (E15). */
+  complete: boolean;
+}
+
 function key(ids: ReadonlySet<string>): string {
   return [...ids].sort().join("\u0000");
 }
@@ -64,14 +91,96 @@ function toggled(ids: ReadonlySet<string>, id: string): Set<string> {
   return out;
 }
 
+/** E15: solve from both ends; check every combination if they disagree and there are few enough players. Internal. */
+export function settleChoice(choice: Choice, checkEveryCombination = false): Settled {
+  const isStable = (set: ReadonlySet<string>) =>
+    choice.players.every((p) => !moreThan(choice.value(toggled(set, p), p), choice.value(set, p)));
+  const simpler = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+    choice.size(a) - choice.size(b) || key(a).localeCompare(key(b));
+
+  const fromEnd = (everyoneConverts: boolean): Set<string> => {
+    let set = new Set(everyoneConverts ? choice.players : []);
+    const seen = new Set<string>();
+    for (;;) {
+      if (seen.has(key(set))) {
+        throw new NoAnswerError(`${choice.where} solving from "${everyoneConverts ? "everyone" : "nobody"} converts" went round in a circle (E15).`);
+      }
+      seen.add(key(set));
+      let best: string | null = null;
+      let bestGain = ZERO;
+      for (const p of choice.players) {
+        const now = choice.value(set, p);
+        const after = choice.value(toggled(set, p), p);
+        if (moreThan(after, now) && (best === null || after.minus(now).gt(bestGain))) {
+          best = p;
+          bestGain = after.minus(now);
+        }
+      }
+      if (best === null) return set;
+      set = toggled(set, best);
+    }
+  };
+
+  // E5: drop any conversion that changes no payout and keeps the answer stable.
+  const simplest = (set: Set<string>): Set<string> => {
+    let current = set;
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const p of choice.players) {
+        if (!current.has(p)) continue;
+        const candidate = toggled(current, p);
+        if (choice.samePayouts(candidate, current) && isStable(candidate)) {
+          current = candidate;
+          changed = true;
+        }
+      }
+    }
+    return current;
+  };
+
+  const everyCombination = (): Set<string>[] => {
+    const found: Set<string>[] = [];
+    for (let mask = 0; mask < 2 ** choice.players.length; mask++) {
+      const set = new Set(choice.players.filter((_, i) => mask & (1 << i)));
+      if (!isStable(set)) continue;
+      const same = found.findIndex((f) => choice.samePayouts(f, set));
+      if (same < 0) found.push(set);
+      else if (simpler(set, found[same]!) < 0) found[same] = set;
+    }
+    if (found.length === 0) throw new NoAnswerError(`${choice.where} no set of decisions is stable.`);
+    return found.sort(simpler);
+  };
+
+  if (checkEveryCombination) return { sets: everyCombination(), complete: true };
+  const low = fromEnd(false);
+  const high = fromEnd(true);
+  if (choice.samePayouts(low, high)) return { sets: [simplest(low)], complete: true };
+  if (choice.players.length <= MAX_CHECKED) return { sets: everyCombination(), complete: true };
+  return { sets: [simplest(low), simplest(high)].sort(simpler), complete: false };
+}
+
+// ---------- one exit value ----------
+
 function samePayouts(a: Payout, b: Payout): boolean {
   return a.lines.every((line, i) => sameAmount(line.amount, b.lines[i]!.amount));
 }
 
-/** E5: fewer conversions and exercises first; then a fixed order, so the result never depends on search order. */
-function simpler(a: Answer, b: Answer): number {
-  const count = (x: Answer) => x.decisions.converted.size + x.decisions.exercised.size;
-  return count(a) - count(b) || key(a.decisions.converted).localeCompare(key(b.decisions.converted));
+/** What decides the answer at one exit value: the answer, and how far each deciding quantity is from changing it. */
+export interface Snapshot {
+  answer: Answer;
+  /**
+   * Each quantity whose sign decides something: a tier not yet paid in full,
+   * a cap not yet reached, the next option class's net if exercised, a
+   * series' gain from switching, a group voter's preference. The key names
+   * the quantity and the decisions it belongs to, so a change of decisions
+   * changes the keys. Between changes, every one moves in a straight line.
+   */
+  margins: Map<string, Decimal>;
+}
+
+/** The answer at one exit value with its margins, for the breakpoint finder. Internal. */
+export function snapshotAt(pc: PreparedCapTable, exitValue: Decimal): Snapshot {
+  return new AtExit(pc, exitValue, {}).snapshot();
 }
 
 class AtExit {
@@ -99,24 +208,43 @@ class AtExit {
       .map((s) => s.id);
   }
 
+  private get where(): string {
+    return `At $${this.x.toFixed(2)}`;
+  }
+
   solve(): Solution {
     if (!this.group) return { exitValue: this.x, ...this.settleFree(new Set()) };
+    const { converting, staying } = this.groupChoices();
+    return { exitValue: this.x, answers: [this.groupVotes(converting, staying) ? converting : staying], complete: true };
+  }
 
-    // E17: the group decides first, on the two outcomes in which everyone else settles.
-    const members = new Set(this.group.series);
+  /** E17: for each of the group's two choices, everyone else settles. Each must settle one way. */
+  private groupChoices(): { converting: Answer; staying: Answer } {
     const choice = (converts: boolean): Answer => {
-      const { answers, complete } = this.settleFree(converts ? members : new Set());
+      const { answers, complete } = this.settleFree(converts ? new Set(this.group!.series) : new Set());
       if (answers.length !== 1 || !complete) {
         throw new NoAnswerError(
-          `At $${this.x.toFixed(2)} the other series settle ${answers.length} ways when the group ` +
+          `${this.where} the other series settle ${answers.length} ways when the group ` +
             `(${this.group!.series.join(", ")}) ${converts ? "converts" : "stays"}, so its vote has no single comparison (E17).`,
         );
       }
       return answers[0]!;
     };
-    const converting = choice(true);
-    const staying = choice(false);
-    return { exitValue: this.x, answers: [this.groupVotes(converting, staying) ? converting : staying], complete: true };
+    return { converting: choice(true), staying: choice(false) };
+  }
+
+  /** Each voter's preference for converting: its group payout converting minus staying (E11). */
+  private voterMargins(converting: Answer, staying: Answer): Map<string, Decimal> {
+    const members = new Set(this.group!.series);
+    const onGroup = (a: Answer, holder: string) =>
+      a.payout.lines.filter((l) => l.holder === holder && members.has(l.security)).reduce((sum, l) => sum.plus(l.amount), ZERO);
+    const out = new Map<string, Decimal>();
+    for (const p of this.pc.capTable.positions) {
+      if (members.has(p.security) && !p.shares.isZero() && !out.has(p.holder)) {
+        out.set(p.holder, onGroup(converting, p.holder).minus(onGroup(staying, p.holder)));
+      }
+    }
+    return out;
   }
 
   /**
@@ -133,97 +261,32 @@ class AtExit {
       const asConverted = p.shares.times(this.pc.preferred.get(p.security)!.conversionRatio);
       weight.set(p.holder, (weight.get(p.holder) ?? ZERO).plus(asConverted));
     }
-    const onGroupShares = (a: Answer, holder: string) =>
-      a.payout.lines.filter((l) => l.holder === holder && members.has(l.security)).reduce((sum, l) => sum.plus(l.amount), ZERO);
+    const prefers = this.voterMargins(converting, staying);
     let yes = ZERO;
     let all = ZERO;
     for (const [holder, w] of weight) {
       all = all.plus(w);
-      if (moreThan(onGroupShares(converting, holder), onGroupShares(staying, holder))) yes = yes.plus(w);
+      if (moreThan(prefers.get(holder)!, ZERO)) yes = yes.plus(w);
     }
     const share = yes.div(all);
     const atThreshold = share.minus(group.voteThreshold).abs().lt(SHARE_TIE);
     return group.voteRule === "at_least" ? atThreshold || share.gt(group.voteThreshold) : !atThreshold && share.gt(group.voteThreshold);
   }
 
-  /** The series outside the group settle around fixed group conversions (E15). */
+  /** The series outside the group, settling around fixed group conversions (E15). */
   private settleFree(fixed: ReadonlySet<string>): { answers: Answer[]; complete: boolean } {
-    if (this.options.checkEveryCombination) return { answers: this.everyCombination(fixed), complete: true };
-    const low = this.fromEnd(fixed, false);
-    const high = this.fromEnd(fixed, true);
-    if (samePayouts(low.payout, high.payout)) return { answers: [this.simplest(low)], complete: true };
-    if (this.free.length <= MAX_CHECKED) return { answers: this.everyCombination(fixed), complete: true };
-    return { answers: [this.simplest(low), this.simplest(high)].sort(simpler), complete: false };
-  }
-
-  /** From one end, the single switch that gains the most, until no series wants to switch. */
-  private fromEnd(fixed: ReadonlySet<string>, everyoneConverts: boolean): Answer {
-    let converted = new Set([...fixed, ...(everyoneConverts ? this.free : [])]);
-    const seen = new Set<string>();
-    for (;;) {
-      if (seen.has(key(converted))) {
-        throw new NoAnswerError(
-          `At $${this.x.toFixed(2)} solving from "${everyoneConverts ? "everyone" : "nobody"} converts" went round in a circle (E15).`,
-        );
-      }
-      seen.add(key(converted));
-      const current = this.withOptions(converted);
-      let best: string | null = null;
-      let bestGain = ZERO;
-      for (const sid of this.free) {
-        const now = current.payout.bySecurity.get(sid)!;
-        const after = this.withOptions(toggled(converted, sid)).payout.bySecurity.get(sid)!;
-        if (moreThan(after, now) && (best === null || after.minus(now).gt(bestGain))) {
-          best = sid;
-          bestGain = after.minus(now);
-        }
-      }
-      if (best === null) return current;
-      converted = toggled(converted, best);
-    }
-  }
-
-  /** No series outside the group gains by switching, with the options re-settled under each choice (E16). */
-  private isStable(answer: Answer): boolean {
-    return this.free.every(
-      (sid) =>
-        !moreThan(
-          this.withOptions(toggled(answer.decisions.converted, sid)).payout.bySecurity.get(sid)!,
-          answer.payout.bySecurity.get(sid)!,
-        ),
+    const all = (set: ReadonlySet<string>) => this.withOptions(new Set([...fixed, ...set]));
+    const { sets, complete } = settleChoice(
+      {
+        players: this.free,
+        value: (set, p) => all(set).payout.bySecurity.get(p)!,
+        samePayouts: (a, b) => samePayouts(all(a).payout, all(b).payout),
+        size: (set) => all(set).decisions.converted.size + all(set).decisions.exercised.size,
+        where: this.where,
+      },
+      this.options.checkEveryCombination,
     );
-  }
-
-  /** Every combination of the free series' decisions; the distinct stable answers, each in its simplest form (E5, E8). */
-  private everyCombination(fixed: ReadonlySet<string>): Answer[] {
-    const answers: Answer[] = [];
-    for (let mask = 0; mask < 2 ** this.free.length; mask++) {
-      const converted = new Set([...fixed, ...this.free.filter((_, i) => mask & (1 << i))]);
-      const candidate = this.withOptions(converted);
-      if (!this.isStable(candidate)) continue;
-      const same = answers.findIndex((a) => samePayouts(a.payout, candidate.payout));
-      if (same < 0) answers.push(candidate);
-      else if (simpler(candidate, answers[same]!) < 0) answers[same] = candidate;
-    }
-    if (answers.length === 0) throw new NoAnswerError(`At $${this.x.toFixed(2)} no set of decisions is stable.`);
-    return answers.sort(simpler);
-  }
-
-  /** E5: drop any conversion that changes no payout and keeps the answer stable. */
-  private simplest(answer: Answer): Answer {
-    let current = answer;
-    for (let changed = true; changed; ) {
-      changed = false;
-      for (const sid of this.free) {
-        if (!current.decisions.converted.has(sid)) continue;
-        const candidate = this.withOptions(toggled(current.decisions.converted, sid));
-        if (samePayouts(candidate.payout, current.payout) && this.isStable(candidate)) {
-          current = candidate;
-          changed = true;
-        }
-      }
-    }
-    return current;
+    return { answers: sets.map(all), complete };
   }
 
   /**
@@ -249,11 +312,64 @@ class AtExit {
     for (const o of this.optionClasses) {
       const switched = payout(this.pc, this.x, { converted, exercised: toggled(exercised, o.id) });
       if (moreThan(switched.bySecurity.get(o.id)!, result.bySecurity.get(o.id)!)) {
-        throw new NoAnswerError(`At $${this.x.toFixed(2)} option exercise doesn't settle: ${o.id} would gain by switching.`);
+        throw new NoAnswerError(`${this.where} option exercise doesn't settle: ${o.id} would gain by switching.`);
       }
     }
     const answer = { decisions: { converted: new Set(converted), exercised }, payout: result };
     this.settled.set(k, answer);
     return answer;
+  }
+
+  // ---------- margins, for the breakpoint finder ----------
+
+  snapshot(): Snapshot {
+    const margins = new Map<string, Decimal>();
+    if (!this.group) {
+      const { answers, complete } = this.settleFree(new Set());
+      const answer = this.single(answers, complete);
+      this.addSettled(margins, "answer", answer, new Set());
+      return { answer, margins };
+    }
+    const { converting, staying } = this.groupChoices();
+    this.addSettled(margins, "converts", converting, new Set(this.group.series));
+    this.addSettled(margins, "stays", staying, new Set());
+    for (const [holder, m] of this.voterMargins(converting, staying)) margins.set(`vote:${holder}`, m);
+    return { answer: this.groupVotes(converting, staying) ? converting : staying, margins };
+  }
+
+  private single(answers: Answer[], complete: boolean): Answer {
+    if (answers.length !== 1 || !complete) {
+      throw new NoAnswerError(
+        `${this.where} there ${answers.length === 1 ? "may be more than one stable answer" : `are ${answers.length} stable answers`}; ` +
+          "the breakpoint finder needs exactly one (E8).",
+      );
+    }
+    return answers[0]!;
+  }
+
+  /** A settled answer's own margins, and those of each single switch a free series weighs against it. */
+  private addSettled(margins: Map<string, Decimal>, label: string, answer: Answer, fixed: ReadonlySet<string>): void {
+    const tag = (a: Answer) => `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
+    this.addStructure(margins, tag(answer), answer);
+    for (const sid of this.free) {
+      const alternative = this.withOptions(toggled(new Set([...fixed, ...answer.decisions.converted]), sid));
+      this.addStructure(margins, `${tag(answer)}>${tag(alternative)}`, alternative);
+      margins.set(`${tag(answer)}|gain:${sid}`, alternative.payout.bySecurity.get(sid)!.minus(answer.payout.bySecurity.get(sid)!));
+    }
+  }
+
+  /** Tiers not yet paid in full, caps not yet reached, and the next option class's net if it were exercised. */
+  private addStructure(margins: Map<string, Decimal>, tag: string, a: Answer): void {
+    const structural = (prefix: string, p: Payout) => {
+      for (const t of p.tiers) if (!t.full) margins.set(`${prefix}|tier:${t.index}`, t.paid.minus(t.claim));
+      for (const [sid, room] of p.capRoom) margins.set(`${prefix}|cap:${sid}`, room);
+    };
+    structural(tag, a.payout);
+    const next = this.optionClasses.find((o) => !a.decisions.exercised.has(o.id));
+    if (next) {
+      const trial = payout(this.pc, this.x, { converted: a.decisions.converted, exercised: new Set([...a.decisions.exercised, next.id]) });
+      margins.set(`${tag}|option:${next.id}`, trial.bySecurity.get(next.id)!);
+      structural(`${tag}|with:${next.id}`, trial);
+    }
   }
 }

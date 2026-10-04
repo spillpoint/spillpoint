@@ -33,6 +33,8 @@ export interface PayoutLine {
 
 /** One seniority tier's preference claim at this exit value. */
 export interface TierPayment {
+  /** Position in the seniority order, most senior first. */
+  index: number;
   /** The tier's series that still claim their preference (converted series don't). */
   series: string[];
   claim: Decimal;
@@ -57,6 +59,12 @@ export interface Payout {
   tiers: TierPayment[];
   /** Capped participating series held at their cap. */
   atCap: string[];
+  /**
+   * For each capped series sharing the residual but not yet at its cap: how
+   * far it is from the cap (room left minus what it gets from the residual).
+   * It reaches zero where the cap starts to bind; the breakpoint finder uses it.
+   */
+  capRoom: Map<string, Decimal>;
 }
 
 /** The cap table with the quantities every waterfall run needs, worked out once. */
@@ -132,13 +140,13 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   // 2. Preferences, tier by tier, most senior first. Within a tier the series
   // are pari passu: a shortfall is shared in proportion to preference amount.
   const tiers: TierPayment[] = [];
-  for (const tier of capTable.seniority) {
+  for (const [index, tier] of capTable.seniority.entries()) {
     const claimants = tier.filter((sid) => !decisions.converted.has(sid) && pc.preference.get(sid)!.gt(0));
     const claim = claimants.reduce((sum, sid) => sum.plus(pc.preference.get(sid)!), ZERO);
     if (claim.isZero()) continue;
     const paid = remaining.lt(claim) ? remaining : claim;
     for (const sid of claimants) add(sid, paid.times(pc.preference.get(sid)!).div(claim));
-    tiers.push({ series: claimants, claim, paid, full: remaining.gte(claim) });
+    tiers.push({ index, series: claimants, claim, paid, full: remaining.gte(claim) });
     remaining = remaining.minus(paid);
   }
 
@@ -179,6 +187,8 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     sharing.delete(first);
   }
   for (const [id, n] of sharing) add(id, price.times(n));
+  const capRoom = new Map<string, Decimal>();
+  for (const [sid, r] of room) if (sharing.has(sid)) capRoom.set(sid, r.minus(price.times(sharing.get(sid)!)));
 
   // 4. Option payouts net of strike, so the lines add up to the exit value.
   for (const oid of decisions.exercised) add(oid, pc.shares.get(oid)!.times(pc.options.get(oid)!.strike).neg());
@@ -206,5 +216,6 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     classTotals,
     tiers,
     atCap,
+    capRoom,
   };
 }
