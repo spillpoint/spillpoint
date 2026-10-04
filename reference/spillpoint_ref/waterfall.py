@@ -3,7 +3,8 @@
 At each exit value, try every combination of decisions (each convertible
 preferred series, or conversion group, converts or not; each option strike
 class and each warrant exercises or not; each unconverted SAFE takes its
-Cash-Out Amount or its Conversion Amount), run the waterfall for each, and keep
+Cash-Out Amount or its Conversion Amount; each unconverted note takes its
+repayment or converts), run the waterfall for each, and keep
 the combinations that are stable: no single decision-maker would be better
 off flipping its own decision.
 
@@ -14,7 +15,7 @@ the stable decisions directly.
 import itertools
 from fractions import Fraction
 
-from .model import accrued_dividend_per_share, carve_out_pool
+from .model import accrued_dividend_per_share, carve_out_pool, note_interest
 
 CARVE_OUT = "carve_out"  # the security column carve-out payouts are reported under
 
@@ -67,7 +68,23 @@ class Waterfall:
                     f"{f['id']}: an unconverted SAFE alongside preferred stock is not supported by the reference yet"
                 )
         self.safe_ids = [f["id"] for f in self.safes]
-        self.players = self.converters + self.options + self.warrants + self.safe_ids
+        # Unconverted convertible notes at exit, under the same rule.
+        self.notes = list(ct.notes)
+        if len(self.notes) > 1:
+            raise ValueError("more than one unconverted note at exit is not supported by the reference yet")
+        for n in self.notes:
+            if n["valuation_cap"] is None:
+                raise ValueError(f"{n['id']}: an unconverted note without a valuation cap is not supported by the reference yet")
+            if n["discount"]:
+                raise ValueError(f"{n['id']}: an unconverted note with a discount is not supported by the reference yet")
+            if ct.preferred_ids() or self.safes or ct.carve_out:
+                raise ValueError(
+                    f"{n['id']}: an unconverted note alongside preferred stock, a SAFE or a carve-out "
+                    "is not supported by the reference yet"
+                )
+        self.note_ids = [n["id"] for n in self.notes]
+        self.note_interest = {n["id"]: note_interest(n, exit_date) for n in self.notes}
+        self.players = self.converters + self.options + self.warrants + self.safe_ids + self.note_ids
         self.shares = {sid: ct.shares_of(sid) for sid in sec}
         self.ratio = {sid: ct.conversion_ratio(sid) for sid in sec}
         # Cumulative dividends accrued and unpaid at the exit date. They add to
@@ -101,6 +118,9 @@ class Waterfall:
         for f in self.safes:
             self.lines.append((f["holder"], f["id"], 1))
             self.shares[f["id"]] = 1
+        for n in self.notes:
+            self.lines.append((n["holder"], n["id"], 1))
+            self.shares[n["id"]] = 1
         # Voting weight in each group: a holder's as-converted shares of its series.
         self.voters = {}
         for pid, members in self.members.items():
@@ -151,6 +171,37 @@ class Waterfall:
         """Purchase amount ÷ Liquidity Price, exact: at exit, as-converted shares aren't rounded (SPEC)."""
         return f["purchase_amount"] / self.liquidity_price(f)
 
+    def note_repayment(self, n):
+        """Repayment at exit: the repayment multiple × (principal + accrued interest)."""
+        return n["repayment_multiple"] * (n["principal"] + self.note_interest[n["id"]])
+
+    def note_conversion_base(self, n):
+        """The share count a note's pre-money cap divides by, just before the sale.
+
+        The note itself is never counted: the cap is pre-money, so its shares
+        sit on top. Notes have no standard form, so the base is a toggle:
+        - with_pool (default): all issued stock as converted, all issued
+          options and warrants whether or not they are in the money, and the
+          unissued pool (fully diluted, as in R2)
+        - without_pool: the same, without the unissued pool
+        - common_only: issued common stock only
+        """
+        ct = self.ct
+        base = n["conversion_base"]
+        if base == "with_pool":
+            return ct.outstanding_as_converted() + ct.unissued_pool
+        if base == "without_pool":
+            return ct.outstanding_as_converted()
+        return Fraction(sum(ct.shares_of(sid) for sid in ct.securities if ct.kind(sid) == "common"))
+
+    def note_conversion_price(self, n):
+        """Conversion price = valuation cap ÷ conversion base."""
+        return n["valuation_cap"] / self.note_conversion_base(n)
+
+    def note_conversion_shares(self, n):
+        """Principal plus accrued interest converts, at the conversion price. Exact: at exit, as-converted shares aren't rounded (SPEC)."""
+        return (n["principal"] + self.note_interest[n["id"]]) / self.note_conversion_price(n)
+
     def decision_sets(self):
         for bits in itertools.product((False, True), repeat=len(self.players)):
             yield tuple(bits)
@@ -185,7 +236,7 @@ class Waterfall:
         converted = {s: d[p] for p in self.converters for s in self.members[p]}
         total = {sid: ZERO for sid in sec}
         total[CARVE_OUT] = ZERO
-        for fid in self.safe_ids:
+        for fid in self.safe_ids + self.note_ids:
             total[fid] = ZERO
 
         # Warrant for preferred: once exercised, its shares are shares of that
@@ -201,6 +252,18 @@ class Waterfall:
         exercised = [x for x in self.options + self.warrants if d[x]]
         strike_cash = sum((self.shares[x] * sec[x]["strike"] for x in exercised), ZERO)
         remaining = exit_value + strike_cash
+
+        # Unconverted note at exit: the holder takes the greater of repayment
+        # (a multiple of principal plus accrued interest) or conversion at the
+        # cap. Repayment is debt, so it is paid ahead of all equity.
+        note_paid = None
+        for n in self.notes:
+            if not d[n["id"]]:
+                claim = self.note_repayment(n)
+                paid = min(remaining, claim)
+                total[n["id"]] += paid
+                note_paid = remaining >= claim
+                remaining -= paid
 
         # Management carve-out: a percentage of the exit value (before strike
         # cash), paid to listed people before any preference.
@@ -254,6 +317,10 @@ class Waterfall:
         for f in self.safes:
             if d[f["id"]]:
                 part[f["id"]] = self.safe_conversion_shares(f)
+        # A note that converts shares alongside common on its conversion shares.
+        for n in self.notes:
+            if d[n["id"]]:
+                part[n["id"]] = self.note_conversion_shares(n)
         part = {k: v for k, v in part.items() if v > 0}
 
         # Capped participation: preference plus participation stops at the cap.
@@ -291,7 +358,7 @@ class Waterfall:
         for x in exercised:
             total[x] -= self.shares[x] * sec[x]["strike"]
 
-        flags = (tuple(tier_full), tuple(sorted(capped_at)), band, safe_paid)
+        flags = (tuple(tier_full), tuple(sorted(capped_at)), band, safe_paid, note_paid)
         return total, common_price, flags
 
     def player_value(self, total, player):

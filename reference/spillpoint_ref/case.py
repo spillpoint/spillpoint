@@ -86,6 +86,8 @@ def run_exit(ct, spec):
         out["accrued_dividends"] = [_accrued_json(ct, wf, sid, exit_date) for sid in accrued]
     if wf.safes:
         out["unconverted_safes"] = [_safe_json(wf, f) for f in wf.safes]
+    if wf.notes:
+        out["unconverted_notes"] = [_note_json(wf, n, exit_date) for n in wf.notes]
     out.update({"breakpoints": bps, "payouts": payouts})
     if spec.get("payment_schedules"):
         out["payment_schedules"] = [_schedule_json(wf, sched) for sched in spec["payment_schedules"]]
@@ -129,6 +131,31 @@ def _safe_json(wf, f):
     }
 
 
+def _note_json(wf, n, exit_date):
+    """The exit figures for an unconverted convertible note. They don't depend on the exit value."""
+    interest = wf.note_interest[n["id"]]
+    base, price, shares = wf.note_conversion_base(n), wf.note_conversion_price(n), wf.note_conversion_shares(n)
+    return {
+        "note": n["id"],
+        "holder": n["holder"],
+        "issue_date": n["issue_date"].isoformat(),
+        "exit_date": exit_date.isoformat(),
+        "days": (exit_date - n["issue_date"]).days,
+        "interest": exact(interest),
+        "repayment": exact(wf.note_repayment(n)),
+        "conversion_base": n["conversion_base"],
+        "conversion_base_shares": exact(base),
+        "conversion_price": exact(price),
+        "conversion_shares": exact(shares),
+        "approx": {
+            "interest": money(interest),
+            "repayment": money(wf.note_repayment(n)),
+            "conversion_price": decimal(price, 6),
+            "conversion_shares": decimal(shares, 2),
+        },
+    }
+
+
 def run_case(inputs):
     out = {"case": inputs["case"], "generated_by": "reference/generate.py"}
     tables = {}
@@ -155,6 +182,8 @@ def _decisions_json(wf, bits):
             return "converts" if b else "keeps_preference"
         if p in wf.safe_ids:
             return "conversion_amount" if b else "cash_out_amount"
+        if p in wf.note_ids:
+            return "converts" if b else "repayment"
         return "exercised" if b else "not_exercised"
 
     return {p: word(p, b) for p, b in zip(wf.players, bits)}

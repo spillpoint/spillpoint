@@ -183,8 +183,8 @@ def reasons(wf, x, sa, sb, jumps=False):
     ct = wf.ct
     if len(sa) != 1 or len(sb) != 1:
         return [{"code": "equilibrium_set_changes", "text": "The set of stable conversion and exercise decisions changes here."}]
-    (bits_a, (tiers_a, capped_a, band_a, safe_paid_a)), = sa
-    (bits_b, (tiers_b, capped_b, band_b, safe_paid_b)), = sb
+    (bits_a, (tiers_a, capped_a, band_a, safe_paid_a, note_paid_a)), = sa
+    (bits_b, (tiers_b, capped_b, band_b, safe_paid_b, note_paid_b)), = sb
     out = []
     outcome = wf.evaluate(x)[0]
     price = outcome["common_price"]
@@ -310,6 +310,31 @@ def reasons(wf, x, sa, sb, jumps=False):
             else:
                 text = f"{holder}'s SAFE switches back to its Cash-Out Amount: above this exit value it pays more."
             out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})
+
+    for n in wf.notes:
+        nid = n["id"]
+        holder = ct.holders[n["holder"]]
+        repay = wf.note_repayment(n)
+        if note_paid_a is False and note_paid_b is True:
+            text = (
+                f"{holder}'s convertible note is fully repaid: {exact(n['repayment_multiple'])}x its principal plus accrued interest, "
+                f"{usd(repay)}, paid ahead of all equity as debt. Above this exit value, the next dollar goes to common."
+            )
+            out.append({"code": "note_repayment_paid", "security": nid, "text": text})
+        if da[nid] != db[nid]:
+            cp = wf.note_conversion_price(n)
+            shares = wf.note_conversion_shares(n)
+            if db[nid]:
+                text = (
+                    f"{holder}'s convertible note switches from repayment to conversion. Its principal plus interest, "
+                    f"{usd(n['principal'] + wf.note_interest[nid])}, converts at {usd_price(cp, 6)} a share (the "
+                    f"{usd(n['valuation_cap'])} cap ÷ {count(wf.note_conversion_base(n))} shares) into {count(shares)} shares. "
+                    f"Here each is worth {usd_price(price, 6)}, {usd(shares * price)} in all, which equals its {usd(repay)} repayment. "
+                    f"Below this exit value repayment pays more; above it, converting does."
+                )
+            else:
+                text = f"{holder}'s convertible note switches back to repayment: above this exit value it pays more."
+            out.append({"code": "note_switches", "security": nid, "converts": db[nid], "text": text})
 
     for i, tier in enumerate(ct.seniority):
         if tiers_a[i] is False and tiers_b[i] is True:

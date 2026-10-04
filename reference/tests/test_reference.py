@@ -380,6 +380,51 @@ class Exits(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "alongside preferred stock"):
             Waterfall(ct)
 
+    def test_unconverted_note_at_exit(self):
+        # 800,000 common, 100,000 options at $10 (out of the money), a 100,000
+        # unissued pool. A $100k note at 10% simple from 2023-01-01 to a
+        # 2024-01-01 exit: 365 days, so $10k interest. Repayment is
+        # 2 × $110k = $220k, paid ahead of common. Principal plus interest
+        # converts at the $1M pre-money cap ÷ the base, the note not counted:
+        #   with pool:    1,000,000 shares, $1.00,  110,000 shares
+        #   without pool:   900,000 shares, $1.111…, 99,000 shares
+        #   common only:    800,000 shares, $1.25,   88,000 shares
+        # Converting pays more once note shares × E ÷ (800,000 + note shares) > $220k:
+        #   with pool $220k × 910/110 = $1,820,000; without $220k × 899/99 =
+        #   $17,980,000/9; common only $220k × 888/88 = $2,220,000.
+        def ct(base):
+            return CapTable.from_json(
+                {
+                    "holders": [{"id": h, "name": h} for h in ("x", "e", "n")],
+                    "securities": [COMMON, {"id": "o", "name": "o", "kind": "option", "strike": "10"}],
+                    "seniority": [],
+                    "positions": [{"holder": "x", "security": "common", "shares": 800_000},
+                                  {"holder": "e", "security": "o", "shares": 100_000}],
+                    "unissued_pool": 100_000,
+                    "unconverted_notes": [
+                        {"id": "note", "holder": "n", "principal": "100000", "interest_rate": "0.10",
+                         "issue_date": "2023-01-01", "valuation_cap": "1000000", "conversion_base": base,
+                         "discount": "0", "repayment_multiple": "2"}
+                    ],
+                }
+            )
+
+        exit_date = datetime.date(2024, 1, 1)
+        for base, shares, switch in (
+            ("with_pool", 110_000, 1_820_000),
+            ("without_pool", 99_000, F(17_980_000, 9)),
+            ("common_only", 88_000, 2_220_000),
+        ):
+            wf = Waterfall(ct(base), exit_date)
+            (n,) = wf.notes
+            self.assertEqual((wf.note_repayment(n), wf.note_conversion_shares(n)), (220_000, shares))
+            self.assertEqual([t[0] for t in breakpoints.find(wf, 0, 3_000_000, 100_000)], [220_000, switch])
+        wf = Waterfall(ct("with_pool"), exit_date)
+        p = wf.evaluate(F(1_000_000))[0]["lines"]  # repayment
+        self.assertEqual((p[("n", "note")], p[("x", "common")], p[("e", "o")]), (220_000, 780_000, 0))
+        p = wf.evaluate(F(2_730_000))[0]["lines"]  # converted: 110,000 of 910,000 sharing shares
+        self.assertEqual((p[("n", "note")], p[("x", "common")], p[("e", "o")]), (330_000, 2_400_000, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

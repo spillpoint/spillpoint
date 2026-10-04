@@ -21,6 +21,7 @@ class CapTable:
         self.positions = {}  # (holder, security) -> int shares
         self.unissued_pool = 0
         self.safes = []  # unconverted SAFEs
+        self.notes = []  # unconverted convertible notes
         self.seniority = []  # list of tiers, most senior first; each a list of preferred ids
         self.conversion_groups = []  # series that must convert together (SPEC toggle)
         self.carve_out = None  # management carve-out plan, if any
@@ -150,6 +151,7 @@ class CapTable:
                 }
                 for f in self.safes
             ],
+            **({"unconverted_notes": [note_to_json(n) for n in self.notes]} if self.notes else {}),
             **({"carve_out": carve_out_to_json(self.carve_out)} if self.carve_out else {}),
         }
 
@@ -168,6 +170,8 @@ class CapTable:
         ct.unissued_pool = int(parse(data.get("unissued_pool", 0)))
         for f in data.get("unconverted_safes", []):
             ct.safes.append(safe_from_json(f))
+        for n in data.get("unconverted_notes", []):
+            ct.notes.append(note_from_json(n))
         ct.validate()
         return ct
 
@@ -232,6 +236,63 @@ def safe_from_json(f):
         "post_money_cap": None if f.get("post_money_cap") is None else parse(f["post_money_cap"]),
         "discount": parse(f.get("discount", "0")),
     }
+
+
+NOTE_CONVERSION_BASES = ("with_pool", "without_pool", "common_only")
+
+
+def note_from_json(n):
+    """Convertible note terms. Only what the cases use is supported; anything else is refused, never skipped."""
+    if n.get("interest_method", "simple") != "simple":
+        raise ValueError(f"{n['id']}: note interest method {n['interest_method']} is not supported by the reference yet")
+    if n.get("cap_type", "pre_money") != "pre_money":
+        raise ValueError(f"{n['id']}: note cap type {n['cap_type']} is not supported by the reference yet")
+    base = n.get("conversion_base", "with_pool")
+    if base not in NOTE_CONVERSION_BASES:
+        raise ValueError(f"{n['id']}: unknown note conversion_base {base}")
+    return {
+        "id": n["id"],
+        "holder": n["holder"],
+        "principal": parse(n["principal"]),
+        "interest_rate": parse(n["interest_rate"]),
+        "interest_method": "simple",
+        "issue_date": datetime.date.fromisoformat(n["issue_date"]),
+        "valuation_cap": None if n.get("valuation_cap") is None else parse(n["valuation_cap"]),
+        "cap_type": "pre_money",
+        "conversion_base": base,
+        "discount": parse(n.get("discount", "0")),
+        "repayment_multiple": parse(n["repayment_multiple"]),
+    }
+
+
+def note_to_json(n):
+    return {
+        "id": n["id"],
+        "holder": n["holder"],
+        "principal": exact(n["principal"]),
+        "interest_rate": exact(n["interest_rate"]),
+        "interest_method": n["interest_method"],
+        "issue_date": n["issue_date"].isoformat(),
+        "valuation_cap": None if n["valuation_cap"] is None else exact(n["valuation_cap"]),
+        "cap_type": n["cap_type"],
+        "conversion_base": n["conversion_base"],
+        "discount": exact(n["discount"]),
+        "repayment_multiple": exact(n["repayment_multiple"]),
+    }
+
+
+def note_interest(n, exit_date):
+    """Accrued interest on a note at the exit date.
+
+    Simple interest on the principal, Actual/365: the actual number of days
+    from the issue date to the exit date (leap days count), divided by 365.
+    """
+    if exit_date is None:
+        raise ValueError(f"{n['id']} accrues interest, so the exit needs an exit_date")
+    days = (exit_date - n["issue_date"]).days
+    if days < 0:
+        raise ValueError(f"exit date is before {n['id']}'s issue date")
+    return n["principal"] * n["interest_rate"] * Fraction(days, 365)
 
 
 VOTE_RULES = ("more_than", "at_least")
