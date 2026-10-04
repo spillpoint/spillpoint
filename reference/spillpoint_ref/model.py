@@ -23,6 +23,7 @@ class CapTable:
         self.safes = []  # unconverted SAFEs
         self.seniority = []  # list of tiers, most senior first; each a list of preferred ids
         self.conversion_groups = []  # series that must convert together (SPEC toggle)
+        self.carve_out = None  # management carve-out plan, if any
 
     def copy(self):
         return copy.deepcopy(self)
@@ -149,6 +150,7 @@ class CapTable:
                 }
                 for f in self.safes
             ],
+            **({"carve_out": carve_out_to_json(self.carve_out)} if self.carve_out else {}),
         }
 
     @classmethod
@@ -160,6 +162,7 @@ class CapTable:
             ct.add_security(security_from_json(s))
         ct.seniority = [list(t) for t in data.get("seniority", [])]
         ct.conversion_groups = [group_from_json(g) for g in data.get("conversion_groups", [])]
+        ct.carve_out = carve_out_from_json(data.get("carve_out"))
         for p in data["positions"]:
             ct.issue(p["holder"], p["security"], parse(p["shares"]))
         ct.unissued_pool = int(parse(data.get("unissued_pool", 0)))
@@ -183,6 +186,10 @@ class CapTable:
             u = self.securities[sid]["underlying"]
             if u != "common" and (u not in self.securities or self.securities[u]["kind"] != "preferred"):
                 raise ValueError(f"warrant {sid} is for unknown series {u}")
+        if self.carve_out:
+            for a in self.carve_out["allocation"]:
+                if a["holder"] not in self.holders:
+                    raise ValueError(f"carve-out recipient {a['holder']} is not a listed holder")
 
 
 def security_from_json(s):
@@ -303,3 +310,67 @@ def accrued_dividend_per_share(sec, exit_date):
     if days < 0:
         raise ValueError(f"exit date is before {sec['id']}'s dividend accrual start")
     return sec["original_issue_price"] * d["rate"] * Fraction(days, 365)
+
+
+CARVE_OUT_TIMING = ("before_preferences",)
+
+
+def carve_out_from_json(c):
+    """Management carve-out: a percentage of the exit value, paid to listed people.
+
+    Tiers are marginal, like tax brackets: each tier's percentage applies only
+    to the slice of exit value inside it. A flat carve-out is one tier from 0
+    with no upper end. It is paid before all preferences (SPEC default).
+    """
+    if not c:
+        return None
+    timing = c.get("timing", "before_preferences")
+    if timing not in CARVE_OUT_TIMING:
+        raise ValueError(f"carve-out timing '{timing}' is not supported by the reference yet")
+    tiers = []
+    prev_to = Fraction(0)
+    for t in c["tiers"]:
+        lo = parse(t["from"])
+        hi = None if t.get("to") is None else parse(t["to"])
+        if lo != prev_to:
+            raise ValueError("carve-out tiers must start at 0 and be contiguous")
+        if hi is not None and hi <= lo:
+            raise ValueError("each carve-out tier must end above where it starts")
+        tiers.append({"from": lo, "to": hi, "rate": parse(t["percent"]) / 100})
+        prev_to = hi
+        if hi is None:
+            break
+    allocation = [{"holder": a["holder"], "share": parse(a["percent"]) / 100} for a in c["allocation"]]
+    if sum(a["share"] for a in allocation) != 1:
+        raise ValueError("carve-out allocation must add up to 100%")
+    return {"tiers": tiers, "allocation": allocation, "timing": timing}
+
+
+def carve_out_to_json(c):
+    return {
+        "timing": c["timing"],
+        "tiers": [
+            {"from": exact(t["from"]), "to": None if t["to"] is None else exact(t["to"]), "percent": exact(t["rate"] * 100)}
+            for t in c["tiers"]
+        ],
+        "allocation": [{"holder": a["holder"], "percent": exact(a["share"] * 100)} for a in c["allocation"]],
+    }
+
+
+def carve_out_pool(c, exit_value):
+    """Total carve-out at an exit value, and the index of the tier the exit value is in.
+
+    Marginal tiers: each tier contributes its rate × the part of the exit value
+    that falls inside it. Past the last tier's upper end the index is
+    len(tiers): the carve-out has stopped growing.
+    """
+    pool = Fraction(0)
+    for t in c["tiers"]:
+        top = exit_value if t["to"] is None else min(exit_value, t["to"])
+        if top > t["from"]:
+            pool += (top - t["from"]) * t["rate"]
+    band = next(
+        (i for i, t in enumerate(c["tiers"]) if t["to"] is None or exit_value < t["to"]),
+        len(c["tiers"]),
+    )
+    return pool, band

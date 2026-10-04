@@ -297,6 +297,29 @@ class Exits(unittest.TestCase):
         out = wf.evaluate(F(3_000_000))[0]["lines"]
         self.assertEqual(out[("y", "p")], 1_500_000)
 
+    def test_carve_out_tiered(self):
+        # 1M preferred at $1 (1x non-participating), 1M common. Carve-out: 10%
+        # of the first $2M of exit value, nothing above, all to manager m.
+        # Below $2M the waterfall runs on 0.9 × E: the preference is paid at
+        # 0.9E = $1M, E = $1,111,111.11…  The carve-out ends at $2M ($200k).
+        # Above that, the preferred converts when (E − $200k)/2 > $1M, E > $2.2M.
+        ct = CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in ("x", "y", "m")],
+                "securities": [COMMON, pref("p", "1", "1", "non_participating")],
+                "seniority": [["p"]],
+                "positions": [{"holder": "x", "security": "common", "shares": 1_000_000},
+                              {"holder": "y", "security": "p", "shares": 1_000_000}],
+                "carve_out": {
+                    "tiers": [{"from": "0", "to": "2000000", "percent": "10"}],
+                    "allocation": [{"holder": "m", "percent": "100"}],
+                },
+            }
+        )
+        self.assertEqual(bp_values(ct, 5_000_000), [F(10_000_000, 9), 2_000_000, 2_200_000])
+        p = payouts(ct, 3_000_000)  # pool $200k; $2.8M shared 50/50 after conversion
+        self.assertEqual((p[("m", "carve_out")], p[("y", "p")], p[("x", "common")]), (200_000, 1_400_000, 1_400_000))
+
 
 if __name__ == "__main__":
     unittest.main()

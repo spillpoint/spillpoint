@@ -13,7 +13,9 @@ the stable decisions directly.
 import itertools
 from fractions import Fraction
 
-from .model import accrued_dividend_per_share
+from .model import accrued_dividend_per_share, carve_out_pool
+
+CARVE_OUT = "carve_out"  # the security column carve-out payouts are reported under
 
 ZERO = Fraction(0)
 
@@ -73,6 +75,12 @@ class Waterfall:
             if sec[sid]["participation"] == "participating_capped"
         }
         self.lines = [(h, s, n) for (h, s), n in ct.positions.items() if n > 0]
+        # Carve-out recipients get their own holder × carve-out line, split by
+        # their fixed percentage of the pool.
+        if ct.carve_out:
+            for a in ct.carve_out["allocation"]:
+                self.lines.append((a["holder"], CARVE_OUT, a["share"]))
+            self.shares[CARVE_OUT] = sum((a["share"] for a in ct.carve_out["allocation"]), ZERO)
         # Voting weight in each group: a holder's as-converted shares of its series.
         self.voters = {}
         for pid, members in self.members.items():
@@ -136,6 +144,7 @@ class Waterfall:
         d = dict(zip(self.players, bits))
         converted = {s: d[p] for p in self.converters for s in self.members[p]}
         total = {sid: ZERO for sid in sec}
+        total[CARVE_OUT] = ZERO
 
         # Warrant for preferred: once exercised, its shares are shares of that
         # series, with the series' per-share preference, participation, cap,
@@ -150,6 +159,14 @@ class Waterfall:
         exercised = [x for x in self.options + self.warrants if d[x]]
         strike_cash = sum((self.shares[x] * sec[x]["strike"] for x in exercised), ZERO)
         remaining = exit_value + strike_cash
+
+        # Management carve-out: a percentage of the exit value (before strike
+        # cash), paid to listed people before any preference.
+        band = None
+        if ct.carve_out:
+            pool, band = carve_out_pool(ct.carve_out, exit_value)
+            total[CARVE_OUT] = pool
+            remaining -= pool
 
         # Preferences, tier by tier, most senior first. Within a tier, pari
         # passu: a shortfall is shared pro rata by preference amount.
@@ -214,7 +231,7 @@ class Waterfall:
         for x in exercised:
             total[x] -= self.shares[x] * sec[x]["strike"]
 
-        flags = (tuple(tier_full), tuple(sorted(capped_at)))
+        flags = (tuple(tier_full), tuple(sorted(capped_at)), band)
         return total, common_price, flags
 
     def player_value(self, total, player):

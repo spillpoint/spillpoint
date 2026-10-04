@@ -183,8 +183,8 @@ def reasons(wf, x, sa, sb, jumps=False):
     ct = wf.ct
     if len(sa) != 1 or len(sb) != 1:
         return [{"code": "equilibrium_set_changes", "text": "The set of stable conversion and exercise decisions changes here."}]
-    (bits_a, (tiers_a, capped_a)), = sa
-    (bits_b, (tiers_b, capped_b)), = sb
+    (bits_a, (tiers_a, capped_a, band_a)), = sa
+    (bits_b, (tiers_b, capped_b, band_b)), = sb
     out = []
     outcome = wf.evaluate(x)[0]
     price = outcome["common_price"]
@@ -304,6 +304,25 @@ def reasons(wf, x, sa, sb, jumps=False):
                 f"Above this exit value, the next dollar goes to {nxt}."
             )
             out.append({"code": "tier_fully_paid", "tier": i + 1, "securities": list(tier), "text": text})
+
+    if band_a != band_b and ct.carve_out:
+        tiers = ct.carve_out["tiers"]
+        pool = wf.run(x, bits_b)[0]["carve_out"]
+        ended = tiers[band_a]
+        span = f"{usd(ended['from'])} to {usd(ended['to'])}" if ended["to"] is not None else f"above {usd(ended['from'])}"
+        if band_b < len(tiers):
+            nxt = tiers[band_b]
+            more = (
+                f"From here it takes {decimal(nxt['rate'] * 100, 0)}% of each further dollar"
+                + (f", up to {usd(nxt['to'])}." if nxt["to"] is not None else ".")
+            )
+        else:
+            more = f"That was its last tier: the carve-out stays at {usd(pool)} and takes nothing from further dollars."
+        text = (
+            f"The management carve-out's {decimal(ended['rate'] * 100, 0)}% tier (on exit value from {span}) ends here, "
+            f"with the carve-out at {usd(pool)}. {more}"
+        )
+        out.append({"code": "carve_out_tier", "text": text})
 
     for sid in sorted(set(capped_b) - set(capped_a)):
         sec = ct.securities[sid]
