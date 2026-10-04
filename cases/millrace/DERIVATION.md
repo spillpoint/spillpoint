@@ -72,7 +72,7 @@ New money is $12M ÷ $60M = 20% of the post-money, and the unissued pool is topp
 | Harbor Lane, $3,000,000 | 1,445,454 |
 | Pool top-up (unissued becomes floor(15% × 28,909,092.31) = 4,336,363) | 1,552,993 |
 
-Harbor Lane's $3M is its pro-rata. Its pre-round fully diluted share was 25.0000%, and 25% × $12M = $3,000,000.00, so the amount the case gives matches the NVCA definition (R6). Series A is 1.25x participating, capped at a 2.75x total return. That makes its preference 5,781,817 × $2.075472 × 1.25 = **$14,999,996.21** and its cap **$32,999,991.66**.
+Harbor Lane's $3M is a partial take-up of its pro-rata right. Under the NVCA definition (R6), its entitlement is its pre-round fully diluted share × the round size, and the fully diluted base leaves out the unissued pool. Harbor Lane held 5,393,570 of the 18,790,910 shares outstanding before Series A (21,574,280 fully diluted, less the 2,783,370-share unissued pool), or 28.703080%. So it could buy up to 28.703080% × $12M = **$3,444,369.64**, and bought $3,000,000. Counting the unissued pool (R6's toggle) would give 25.000000% and exactly $3,000,000.00. The amount bought is an input, so no share count changes either way. Series A is 1.25x participating, capped at a 2.75x total return. That makes its preference 5,781,817 × $2.075472 × 1.25 = **$14,999,996.21** and its cap **$32,999,991.66**.
 
 ### Grants before Series B
 At $0.42: Dev 250,000, Lena 300,000, other employees 2,250,000. That leaves 1,536,363 unissued.
@@ -86,7 +86,7 @@ New money is $10M ÷ $46M = 21.74% of the post-money, and the pool is topped up 
 - **Series B price:** $46,000,000 ÷ 42,509,469.85 = **$1.082112**. Cobalt gets $10,000,000 ÷ $1.082112 = **9,241,189** shares, rounded down.
 - **CP2 (R8):** NVCA's formula CP2 = CP1 × (A + B) ÷ (A + C) uses:
   - CP1 = $2.075472
-  - B = the consideration actually received (9,241,189 shares × $1.082112 = $9,999,999.90) ÷ CP1 = 4,818,182.00
+  - B = the consideration actually received (9,241,189 shares × $1.082112 = $9,999,999.89) ÷ CP1 = 4,818,182.00
   - C = the 9,241,189 shares issued
 
   CP2 = $2.075472 × (27,372,727 + 4,818,182.00) ÷ (27,372,727 + 9,241,189) = **$1.824752**. It is kept exact, with no rounding (R9).

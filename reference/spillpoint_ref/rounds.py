@@ -330,16 +330,21 @@ def ev_priced_round(ct, ev):
     if p2p:
         details["pay_to_play"] = {k: v for k, v in p2p.items() if k != "common"}
 
-    # Pro-rata entitlement (NVCA): pre-round fully diluted percentage × round size.
-    pre_fd = ct.fully_diluted()
+    # Pro-rata entitlement (NVCA Investors' Rights Agreement, R6): the
+    # investor's pre-round fully diluted percentage × the round size. The
+    # fully diluted base counts outstanding stock, outstanding options and
+    # outstanding preferred, all as converted, and leaves out the unissued
+    # pool. The entitlement is the most the investor may buy; the amount
+    # actually bought is an input.
+    pro_rata_base = ct.outstanding_as_converted()
     for holder, amount, pr in invest:
         if pr:
             held = sum(n * ct.conversion_ratio(s) for (h, s), n in ct.positions.items() if h == holder)
             details.setdefault("pro_rata", []).append(
                 {
                     "holder": holder,
-                    "pre_round_fd_percent": decimal(held / pre_fd * 100, 6),
-                    "entitlement": decimal(held / pre_fd * money_in, 2),
+                    "pre_round_fd_percent": decimal(held / pro_rata_base * 100, 6),
+                    "entitlement": decimal(held / pro_rata_base * money_in, 2),
                     "amount_invested": exact(amount),
                 }
             )
