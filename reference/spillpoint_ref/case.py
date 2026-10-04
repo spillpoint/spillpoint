@@ -84,6 +84,8 @@ def run_exit(ct, spec):
     accrued = [sid for sid in ct.preferred_ids() if ct.securities[sid].get("cumulative_dividend")]
     if accrued:
         out["accrued_dividends"] = [_accrued_json(ct, wf, sid, exit_date) for sid in accrued]
+    if wf.safes:
+        out["unconverted_safes"] = [_safe_json(wf, f) for f in wf.safes]
     out.update({"breakpoints": bps, "payouts": payouts})
     if spec.get("payment_schedules"):
         out["payment_schedules"] = [_schedule_json(wf, sched) for sched in spec["payment_schedules"]]
@@ -102,6 +104,28 @@ def _accrued_json(ct, wf, sid, exit_date):
         "total": exact(wf.dividend[sid]),
         "total_display": money(wf.dividend[sid]),
         "preference_including_dividends": money(wf.pref[sid]),
+    }
+
+
+def _safe_json(wf, f):
+    """The Liquidity Event figures for an unconverted post-money SAFE (YC).
+
+    They are the figures used when the SAFE takes its Conversion Amount; they
+    don't depend on the exit value.
+    """
+    lc, lp, n = wf.liquidity_capitalization(f), wf.liquidity_price(f), wf.safe_conversion_shares(f)
+    return {
+        "safe": f["id"],
+        "holder": f["holder"],
+        "cash_out_amount": exact(f["purchase_amount"]),
+        "liquidity_capitalization": exact(lc),
+        "liquidity_price": exact(lp),
+        "conversion_shares": exact(n),
+        "approx": {
+            "liquidity_capitalization": decimal(lc, 2),
+            "liquidity_price": decimal(lp, 6),
+            "conversion_shares": decimal(n, 2),
+        },
     }
 
 
@@ -126,10 +150,14 @@ def run_case(inputs):
 
 
 def _decisions_json(wf, bits):
-    return {
-        p: (("converts" if b else "keeps_preference") if p in wf.converters else ("exercised" if b else "not_exercised"))
-        for p, b in zip(wf.players, bits)
-    }
+    def word(p, b):
+        if p in wf.converters:
+            return "converts" if b else "keeps_preference"
+        if p in wf.safe_ids:
+            return "conversion_amount" if b else "cash_out_amount"
+        return "exercised" if b else "not_exercised"
+
+    return {p: word(p, b) for p, b in zip(wf.players, bits)}
 
 
 def _schedule_json(wf, sched):

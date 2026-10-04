@@ -2,7 +2,8 @@
 
 At each exit value, try every combination of decisions (each convertible
 preferred series, or conversion group, converts or not; each option strike
-class and each warrant exercises or not), run the waterfall for each, and keep
+class and each warrant exercises or not; each unconverted SAFE takes its
+Cash-Out Amount or its Conversion Amount), run the waterfall for each, and keep
 the combinations that are stable: no single decision-maker would be better
 off flipping its own decision.
 
@@ -51,7 +52,22 @@ class Waterfall:
         self.converters = sorted(self.members, key=lambda p: order[self.members[p][0]])
         self.options = [sid for sid in ct.option_ids() if ct.shares_of(sid) > 0]
         self.warrants = [sid for sid in ct.warrant_ids() if ct.shares_of(sid) > 0]
-        self.players = self.converters + self.options + self.warrants
+        # Unconverted post-money SAFEs at a Liquidity Event. Only what the
+        # cases use is supported; anything else is refused, never skipped.
+        self.safes = list(ct.safes)
+        if len(self.safes) > 1:
+            raise ValueError("more than one unconverted SAFE at exit is not supported by the reference yet")
+        for f in self.safes:
+            if f["post_money_cap"] is None:
+                raise ValueError(f"{f['id']}: an unconverted SAFE without a valuation cap is not supported by the reference yet")
+            if f["discount"]:
+                raise ValueError(f"{f['id']}: an unconverted SAFE with a discount is not supported by the reference yet")
+            if ct.preferred_ids():
+                raise ValueError(
+                    f"{f['id']}: an unconverted SAFE alongside preferred stock is not supported by the reference yet"
+                )
+        self.safe_ids = [f["id"] for f in self.safes]
+        self.players = self.converters + self.options + self.warrants + self.safe_ids
         self.shares = {sid: ct.shares_of(sid) for sid in sec}
         self.ratio = {sid: ct.conversion_ratio(sid) for sid in sec}
         # Cumulative dividends accrued and unpaid at the exit date. They add to
@@ -81,6 +97,10 @@ class Waterfall:
             for a in ct.carve_out["allocation"]:
                 self.lines.append((a["holder"], CARVE_OUT, a["share"]))
             self.shares[CARVE_OUT] = sum((a["share"] for a in ct.carve_out["allocation"]), ZERO)
+        # Each unconverted SAFE is its own holder × security line and its own class.
+        for f in self.safes:
+            self.lines.append((f["holder"], f["id"], 1))
+            self.shares[f["id"]] = 1
         # Voting weight in each group: a holder's as-converted shares of its series.
         self.voters = {}
         for pid, members in self.members.items():
@@ -110,6 +130,26 @@ class Waterfall:
         )
         share = yes / sum(weights.values(), ZERO)
         return share > g["threshold"] if g["rule"] == "more_than" else share >= g["threshold"]
+
+    def liquidity_capitalization(self, f):
+        """Post-money SAFE Liquidity Capitalization when the SAFE takes its Conversion Amount.
+
+        Counted just before the Liquidity Event: all issued stock as converted,
+        all issued options and warrants whether or not they are in the money,
+        and the SAFE's own conversion shares. The unissued pool is left out.
+        (A SAFE taking its Cash-Out Amount is left out too, but then its
+        Liquidity Price is never used.) The SAFE's shares are purchase amount ÷
+        (cap ÷ LC), so LC = everything else ÷ (1 − purchase amount ÷ cap).
+        """
+        return self.ct.outstanding_as_converted() / (1 - f["purchase_amount"] / f["post_money_cap"])
+
+    def liquidity_price(self, f):
+        """Liquidity Price = post-money valuation cap ÷ Liquidity Capitalization."""
+        return f["post_money_cap"] / self.liquidity_capitalization(f)
+
+    def safe_conversion_shares(self, f):
+        """Purchase amount ÷ Liquidity Price, exact: at exit, as-converted shares aren't rounded (SPEC)."""
+        return f["purchase_amount"] / self.liquidity_price(f)
 
     def decision_sets(self):
         for bits in itertools.product((False, True), repeat=len(self.players)):
@@ -145,6 +185,8 @@ class Waterfall:
         converted = {s: d[p] for p in self.converters for s in self.members[p]}
         total = {sid: ZERO for sid in sec}
         total[CARVE_OUT] = ZERO
+        for fid in self.safe_ids:
+            total[fid] = ZERO
 
         # Warrant for preferred: once exercised, its shares are shares of that
         # series, with the series' per-share preference, participation, cap,
@@ -167,6 +209,19 @@ class Waterfall:
             pool, band = carve_out_pool(ct.carve_out, exit_value)
             total[CARVE_OUT] = pool
             remaining -= pool
+
+        # Unconverted post-money SAFE at a Liquidity Event (YC): it gets the
+        # greater of its Cash-Out Amount (the purchase amount, paid ahead of
+        # common) or its Conversion Amount (what its conversion shares earn
+        # alongside common). Here: a SAFE taking cash out is paid before the
+        # residual.
+        safe_paid = None
+        for f in self.safes:
+            if not d[f["id"]]:
+                paid = min(remaining, f["purchase_amount"])
+                total[f["id"]] += paid
+                safe_paid = remaining >= f["purchase_amount"]
+                remaining -= paid
 
         # Preferences, tier by tier, most senior first. Within a tier, pari
         # passu: a shortfall is shared pro rata by preference amount.
@@ -194,6 +249,11 @@ class Waterfall:
                     part[sid] = Fraction(self.shares[sid])
             elif converted.get(sid, False) or s["participation"] != "non_participating":
                 part[sid] = units[sid] * self.ratio[sid]
+        # A SAFE taking its Conversion Amount shares alongside common on its
+        # conversion shares.
+        for f in self.safes:
+            if d[f["id"]]:
+                part[f["id"]] = self.safe_conversion_shares(f)
         part = {k: v for k, v in part.items() if v > 0}
 
         # Capped participation: preference plus participation stops at the cap.
@@ -231,7 +291,7 @@ class Waterfall:
         for x in exercised:
             total[x] -= self.shares[x] * sec[x]["strike"]
 
-        flags = (tuple(tier_full), tuple(sorted(capped_at)), band)
+        flags = (tuple(tier_full), tuple(sorted(capped_at)), band, safe_paid)
         return total, common_price, flags
 
     def player_value(self, total, player):

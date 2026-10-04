@@ -183,8 +183,8 @@ def reasons(wf, x, sa, sb, jumps=False):
     ct = wf.ct
     if len(sa) != 1 or len(sb) != 1:
         return [{"code": "equilibrium_set_changes", "text": "The set of stable conversion and exercise decisions changes here."}]
-    (bits_a, (tiers_a, capped_a, band_a)), = sa
-    (bits_b, (tiers_b, capped_b, band_b)), = sb
+    (bits_a, (tiers_a, capped_a, band_a, safe_paid_a)), = sa
+    (bits_b, (tiers_b, capped_b, band_b, safe_paid_b)), = sb
     out = []
     outcome = wf.evaluate(x)[0]
     price = outcome["common_price"]
@@ -286,6 +286,30 @@ def reasons(wf, x, sa, sb, jumps=False):
                 else:
                     text = f"{vote} Above this exit value the vote no longer carries, so the group stops converting."
             out.append({"code": "series_converts", "security": pid, "converts": db[pid], "text": text})
+
+    for f in wf.safes:
+        fid = f["id"]
+        holder = ct.holders[f["holder"]]
+        if safe_paid_a is False and safe_paid_b is True:
+            text = (
+                f"{holder}'s SAFE has received its full Cash-Out Amount, its {usd(f['purchase_amount'])} purchase amount, "
+                f"which is paid ahead of common. Above this exit value, the next dollar goes to common."
+            )
+            out.append({"code": "safe_cash_out_paid", "security": fid, "text": text})
+        if da[fid] != db[fid]:
+            lp = wf.liquidity_price(f)
+            n = wf.safe_conversion_shares(f)
+            if db[fid]:
+                text = (
+                    f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount. Its "
+                    f"{count(n)} conversion shares ({usd(f['purchase_amount'])} ÷ the Liquidity Price of "
+                    f"{usd_price(lp, 6)}) are worth {usd_price(price, 6)} each here, {usd(n * price)} in all, "
+                    f"which equals its purchase amount. Below this exit value the Cash-Out Amount pays more; "
+                    f"above it, the Conversion Amount does."
+                )
+            else:
+                text = f"{holder}'s SAFE switches back to its Cash-Out Amount: above this exit value it pays more."
+            out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})
 
     for i, tier in enumerate(ct.seniority):
         if tiers_a[i] is False and tiers_b[i] is True:

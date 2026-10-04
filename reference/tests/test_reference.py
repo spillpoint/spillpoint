@@ -333,6 +333,53 @@ class Exits(unittest.TestCase):
         self.assertEqual(closing["holder_totals"], {"x": "0.00", "y": "500000.00"})
         self.assertEqual(earnout["holder_totals"], {"x": "500000.00", "y": "500000.00"})
 
+    def unconverted_safe(self, securities, positions, seniority=()):
+        holders = sorted({p[0] for p in positions} | {"s"})
+        return CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in holders],
+                "securities": securities,
+                "seniority": list(seniority),
+                "positions": [{"holder": h, "security": sec, "shares": n} for h, sec, n in positions],
+                "unissued_pool": 50_000,
+                "unconverted_safes": [
+                    {"id": "safe", "holder": "s", "purchase_amount": "100000", "post_money_cap": "1000000", "discount": "0"}
+                ],
+            }
+        )
+
+    def test_unconverted_safe_at_liquidity_event(self):
+        # 800,000 common, 100,000 options at $10 (out of the money), a 50,000
+        # unissued pool, and a $100k post-money SAFE with a $1M cap.
+        # Liquidity Capitalization counts common, all options, and the SAFE's
+        # own shares, not the pool: LC = 900,000 ÷ (1 − 100k/1M) = 1,000,000.
+        # Liquidity Price = $1M ÷ 1,000,000 = $1, so 100,000 conversion shares.
+        # Cash-out ($100k ahead of common) is fully paid at $100k. Converting
+        # pays more once common is worth more than $1 a share: E ÷ 900,000 > $1,
+        # E > $900k. That is below $1M because the options count in LC but
+        # don't share. Options come in only at (E + $1M) ÷ 1M > $10, E > $9M.
+        ct = self.unconverted_safe(
+            [COMMON, {"id": "o", "name": "o", "kind": "option", "strike": "10"}],
+            [("x", "common", 800_000), ("e", "o", 100_000)],
+        )
+        wf = Waterfall(ct)
+        (f,) = wf.safes
+        self.assertEqual((wf.liquidity_capitalization(f), wf.liquidity_price(f)), (1_000_000, 1))
+        self.assertEqual(bp_values(ct, 5_000_000), [100_000, 900_000])
+        p = payouts(ct, 500_000)  # cash-out
+        self.assertEqual((p[("s", "safe")], p[("x", "common")], p[("e", "o")]), (100_000, 400_000, 0))
+        p = payouts(ct, 1_800_000)  # converted: 100,000 of 900,000 sharing shares
+        self.assertEqual((p[("s", "safe")], p[("x", "common")], p[("e", "o")]), (200_000, 1_600_000, 0))
+
+    def test_unconverted_safe_with_preferred_is_refused(self):
+        ct = self.unconverted_safe(
+            [COMMON, pref("p", "1", "1", "non_participating")],
+            [("x", "common", 800_000), ("y", "p", 100_000)],
+            [["p"]],
+        )
+        with self.assertRaisesRegex(ValueError, "alongside preferred stock"):
+            Waterfall(ct)
+
 
 if __name__ == "__main__":
     unittest.main()
