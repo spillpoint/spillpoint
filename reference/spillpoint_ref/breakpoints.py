@@ -195,8 +195,7 @@ def reasons(wf, x, sa, sb, jumps=False):
     units_b = wf.unit_shares(bits_b)
 
     def pref_b(sid):
-        sec = ct.securities[sid]
-        return units_b[sid] * sec["original_issue_price"] * sec["preference_multiple"]
+        return wf.pref_amount(sid, units_b)
 
     def cap_b(sid):
         sec = ct.securities[sid]
@@ -245,6 +244,11 @@ def reasons(wf, x, sa, sb, jumps=False):
                 if db[pid]:
                     if sec["participation"] == "non_participating":
                         keep = f"its {exact(sec['preference_multiple'])}x preference of {usd(pref_b(pid))}"
+                        if wf.dividend[pid]:
+                            keep = (
+                                f"its {exact(sec['preference_multiple'])}x preference plus accrued dividends, "
+                                f"{usd(pref_b(pid))} (dividends are forfeited on conversion)"
+                            )
                     else:
                         keep = f"its capped payout of {usd(cap_b(pid))} ({exact(sec['cap_multiple'])}x its original issue price)"
                     text = (

@@ -1,5 +1,6 @@
 """Turns a case's inputs.json into its expected.json."""
 
+import datetime
 from fractions import Fraction
 
 from . import breakpoints
@@ -65,7 +66,8 @@ def _payout_entry(wf, x, tags):
 
 
 def run_exit(ct, spec):
-    wf = Waterfall(ct)
+    exit_date = datetime.date.fromisoformat(spec["exit_date"]) if spec.get("exit_date") else None
+    wf = Waterfall(ct, exit_date)
     lo, hi = parse(spec["range"][0]), parse(spec["range"][1])
     listed = [parse(v) for v in spec["exit_values"]]
     found = breakpoints.find(wf, lo, hi, parse(spec.get("grid_step", exact(GRID_STEP))), extra=listed)
@@ -82,7 +84,27 @@ def run_exit(ct, spec):
     for x, *_ in found:
         points.setdefault(x, []).append("breakpoint")
     payouts = [_payout_entry(wf, x, tags) for x, tags in sorted(points.items())]
-    return {"breakpoints": bps, "payouts": payouts}
+    out = {}
+    accrued = [sid for sid in ct.preferred_ids() if ct.securities[sid].get("cumulative_dividend")]
+    if accrued:
+        out["accrued_dividends"] = [_accrued_json(ct, wf, sid, exit_date) for sid in accrued]
+    out.update({"breakpoints": bps, "payouts": payouts})
+    return out
+
+
+def _accrued_json(ct, wf, sid, exit_date):
+    sec = ct.securities[sid]
+    d = sec["cumulative_dividend"]
+    return {
+        "security": sid,
+        "accrual_start": d["accrual_start"].isoformat(),
+        "exit_date": exit_date.isoformat(),
+        "days": (exit_date - d["accrual_start"]).days,
+        "per_share": exact(wf.dividend[sid] / wf.shares[sid]),
+        "total": exact(wf.dividend[sid]),
+        "total_display": money(wf.dividend[sid]),
+        "preference_including_dividends": money(wf.pref[sid]),
+    }
 
 
 def run_case(inputs):

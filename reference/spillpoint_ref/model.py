@@ -5,6 +5,7 @@ engine (M2) and the reference read the same file.
 """
 
 import copy
+import datetime
 from fractions import Fraction
 
 from .num import parse, exact, decimal
@@ -109,6 +110,11 @@ class CapTable:
                         "participation": s["participation"],
                         "cap_multiple": None if s.get("cap_multiple") is None else exact(s["cap_multiple"]),
                         "anti_dilution": s["anti_dilution"],
+                        **(
+                            {"cumulative_dividend": dividend_to_json(s["cumulative_dividend"])}
+                            if s.get("cumulative_dividend")
+                            else {}
+                        ),
                         "approx": {
                             "original_issue_price": decimal(s["original_issue_price"], 10),
                             "conversion_price": decimal(s["conversion_price"], 10),
@@ -192,6 +198,7 @@ def security_from_json(s):
                 "participation": s["participation"],
                 "cap_multiple": None if s.get("cap_multiple") is None else parse(s["cap_multiple"]),
                 "anti_dilution": s.get("anti_dilution", "none"),
+                "cumulative_dividend": dividend_from_json(s.get("cumulative_dividend")),
             }
         )
         if out["participation"] not in PARTICIPATION:
@@ -244,3 +251,55 @@ def group_from_json(g):
 
 def group_to_json(g):
     return {"series": list(g["series"]), "vote_threshold_percent": exact(g["threshold"] * 100), "vote_rule": g["rule"]}
+
+
+DIVIDEND_METHODS = ("simple",)
+ON_CONVERSION = ("forfeited",)
+
+
+def dividend_from_json(d):
+    """Cumulative dividend terms: rate, method, accrual start, and what happens on conversion.
+
+    Only what the cases use is supported. Anything else is refused, never skipped.
+    """
+    if not d:
+        return None
+    method = d.get("method", "simple")
+    on_conv = d.get("on_conversion", "forfeited")
+    if method not in DIVIDEND_METHODS:
+        raise ValueError(f"dividend method {method} is not supported by the reference yet")
+    if on_conv not in ON_CONVERSION:
+        raise ValueError(f"dividends on conversion '{on_conv}' are not supported by the reference yet")
+    return {
+        "rate": parse(d["rate"]),
+        "method": method,
+        "accrual_start": datetime.date.fromisoformat(d["accrual_start"]),
+        "on_conversion": on_conv,
+    }
+
+
+def dividend_to_json(d):
+    return {
+        "rate": exact(d["rate"]),
+        "method": d["method"],
+        "accrual_start": d["accrual_start"].isoformat(),
+        "on_conversion": d["on_conversion"],
+    }
+
+
+def accrued_dividend_per_share(sec, exit_date):
+    """Cumulative dividend accrued and unpaid per share at the exit date.
+
+    Simple interest on the original issue price, Actual/365: the actual number
+    of days from the accrual start to the exit date (leap days count), divided
+    by 365.
+    """
+    d = sec.get("cumulative_dividend")
+    if not d:
+        return Fraction(0)
+    if exit_date is None:
+        raise ValueError(f"{sec['id']} accrues cumulative dividends, so the exit needs an exit_date")
+    days = (exit_date - d["accrual_start"]).days
+    if days < 0:
+        raise ValueError(f"exit date is before {sec['id']}'s dividend accrual start")
+    return sec["original_issue_price"] * d["rate"] * Fraction(days, 365)

@@ -6,6 +6,7 @@ are written out in the comments.
     python3 -m unittest discover reference/tests
 """
 
+import datetime
 import sys
 import unittest
 from fractions import Fraction as F
@@ -277,6 +278,24 @@ class Exits(unittest.TestCase):
         self.assertEqual(p[("l", "w")], F(200_000 * 1_600_000, 2_200_000) - 100_000)
         self.assertEqual(p[("y", "seed")], F(2_000_000 * 1_600_000, 2_200_000))
         self.assertEqual(p[("x", "common")], 0)
+
+    def test_cumulative_dividends(self):
+        # 1M preferred at $1 (1x non-participating), 1M common. 10% simple
+        # cumulative dividend from 2024-01-01 to a 2025-01-01 exit: 366 actual
+        # days (2024 is a leap year), Actual/365, so $0.10 × 366/365 per share.
+        # Preference P = $1,000,000 + $100,000 × 366/365 = $1,100,273.97…
+        # Tier paid at E = P. Converts (forfeiting dividends) when E/2 > P, i.e. E > 2P.
+        sec = pref("p", "1", "1", "non_participating") | {
+            "cumulative_dividend": {"rate": "0.10", "method": "simple", "accrual_start": "2024-01-01"}
+        }
+        ct = table([COMMON, sec], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]])
+        wf = Waterfall(ct, datetime.date(2025, 1, 1))
+        p_amt = F(1_000_000) + F(100_000) * F(366, 365)
+        self.assertEqual(wf.pref["p"], p_amt)
+        self.assertEqual([t[0] for t in breakpoints.find(wf, 0, 5_000_000, 100_000)], [p_amt, 2 * p_amt])
+        # Converted at $3M: each side gets half; the dividends are gone.
+        out = wf.evaluate(F(3_000_000))[0]["lines"]
+        self.assertEqual(out[("y", "p")], 1_500_000)
 
 
 if __name__ == "__main__":

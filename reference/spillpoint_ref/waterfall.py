@@ -13,11 +13,13 @@ the stable decisions directly.
 import itertools
 from fractions import Fraction
 
+from .model import accrued_dividend_per_share
+
 ZERO = Fraction(0)
 
 
 class Waterfall:
-    def __init__(self, ct):
+    def __init__(self, ct, exit_date=None):
         self.ct = ct
         sec = ct.securities
         # Convertible series: non-participating and capped participating.
@@ -50,9 +52,18 @@ class Waterfall:
         self.players = self.converters + self.options + self.warrants
         self.shares = {sid: ct.shares_of(sid) for sid in sec}
         self.ratio = {sid: ct.conversion_ratio(sid) for sid in sec}
-        # Preference amount = shares × original issue price × multiple.
+        # Cumulative dividends accrued and unpaid at the exit date. They add to
+        # the preference at 1x: the preference multiple applies to the
+        # original issue price only (NVCA: "Original Issue Price, plus any
+        # Accruing Dividends accrued but unpaid"). A series that converts
+        # forfeits them.
+        self.dividend = {
+            sid: self.shares[sid] * accrued_dividend_per_share(sec[sid], exit_date) for sid in ct.preferred_ids()
+        }
+        # Preference amount = shares × original issue price × multiple, plus accrued dividends.
         self.pref = {
             sid: self.shares[sid] * sec[sid]["original_issue_price"] * sec[sid]["preference_multiple"]
+            + self.dividend[sid]
             for sid in ct.preferred_ids()
         }
         # Cap on total return for capped participating = shares × OIP × cap multiple.
@@ -96,6 +107,14 @@ class Waterfall:
         for bits in itertools.product((False, True), repeat=len(self.players)):
             yield tuple(bits)
 
+    def pref_amount(self, sid, units):
+        """Preference of a series with `units` shares, including accrued dividends.
+
+        Shares from a warrant exercised at exit carry no accrued dividends.
+        """
+        sec = self.ct.securities[sid]
+        return units[sid] * sec["original_issue_price"] * sec["preference_multiple"] + self.dividend[sid]
+
     def unit_shares(self, bits):
         """Shares of each preferred series, counting exercised warrants for that series."""
         d = dict(zip(self.players, bits))
@@ -124,7 +143,7 @@ class Waterfall:
         # issue price, not the warrant's strike.
         units = self.unit_shares(bits)
         oip = {s: sec[s]["original_issue_price"] for s in units}
-        pref = {s: units[s] * oip[s] * sec[s]["preference_multiple"] for s in units}
+        pref = {s: self.pref_amount(s, units) for s in units}
         cap_total = {s: units[s] * oip[s] * sec[s]["cap_multiple"] for s in self.cap_total}
 
         # Exercised options and warrants pay their strike, which is added to proceeds.
