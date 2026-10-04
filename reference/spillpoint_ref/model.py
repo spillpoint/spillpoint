@@ -12,6 +12,15 @@ from .num import parse, exact, decimal
 
 PARTICIPATION = ("non_participating", "participating", "participating_capped")
 ANTI_DILUTION = ("none", "broad_based", "narrow_based", "full_ratchet")
+# What A counts in the NVCA weighted-average formula, named per method.
+# Broad-based: R7, with the toggle that adds the unissued pool. Narrow-based:
+# R15. Full ratchet and no anti-dilution have no A.
+ANTI_DILUTION_A = {
+    "broad_based": ("outstanding_common_options_preferred", "outstanding_common_options_preferred_and_unissued_pool"),
+    "narrow_based": ("outstanding_preferred",),
+    "full_ratchet": (None,),
+    "none": (None,),
+}
 
 
 class CapTable:
@@ -112,6 +121,7 @@ class CapTable:
                         "participation": s["participation"],
                         "cap_multiple": None if s.get("cap_multiple") is None else exact(s["cap_multiple"]),
                         "anti_dilution": s["anti_dilution"],
+                        **({"anti_dilution_a": s["anti_dilution_a"]} if s.get("anti_dilution_a") else {}),
                         **(
                             {"cumulative_dividend": dividend_to_json(s["cumulative_dividend"])}
                             if s.get("cumulative_dividend")
@@ -209,6 +219,7 @@ def security_from_json(s):
                 "participation": s["participation"],
                 "cap_multiple": None if s.get("cap_multiple") is None else parse(s["cap_multiple"]),
                 "anti_dilution": s.get("anti_dilution", "none"),
+                "anti_dilution_a": s.get("anti_dilution_a"),
                 "cumulative_dividend": dividend_from_json(s.get("cumulative_dividend")),
             }
         )
@@ -218,6 +229,11 @@ def security_from_json(s):
             raise ValueError(f"{s['id']}: cap_multiple goes with participating_capped only")
         if out["anti_dilution"] not in ANTI_DILUTION:
             raise ValueError(f"unknown anti_dilution {out['anti_dilution']}")
+        if "anti_dilution_a" in s and out["anti_dilution_a"] not in ANTI_DILUTION_A[out["anti_dilution"]]:
+            raise ValueError(
+                f"{s['id']}: anti_dilution_a {out['anti_dilution_a']} doesn't fit {out['anti_dilution']} "
+                f"(allowed: {ANTI_DILUTION_A[out['anti_dilution']]})"
+            )
     elif kind == "option":
         out["strike"] = parse(s["strike"])
     elif kind == "warrant":

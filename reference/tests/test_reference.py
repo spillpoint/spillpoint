@@ -181,6 +181,27 @@ class Rounds(unittest.TestCase):
         factor = _anti_dilution_factor(ct, "a", "broad_based", 1_000_000, 500_000, F(1, 2), True)
         self.assertEqual(F(1) / factor, F(6, 7))
 
+    def test_narrow_based_and_full_ratchet(self):
+        # Same issue: 1,000,000 new shares for $500,000 at $0.50, CP1 = $1.00.
+        # Narrow-based A = the 1,000,000 Series A shares only (R15):
+        #   CP2 = 1.00 × (1.0M + 0.5M) / (1.0M + 1.0M) = $0.75.
+        # Full ratchet: CP2 = the new issue price, $0.50.
+        def ct(rule, a_def):
+            return table(
+                [COMMON, pref("a", "1", "1", "non_participating") | {"anti_dilution": rule, "anti_dilution_a": a_def}],
+                [("x", "common", 1_000_000), ("y", "a", 1_000_000)],
+                [["a"]],
+                pool=500_000,
+            )
+
+        factor = _anti_dilution_factor(ct("narrow_based", "outstanding_preferred"), "a", "narrow_based", 1_000_000, 500_000, F(1, 2), False)
+        self.assertEqual(F(1) / factor, F(3, 4))
+        factor = _anti_dilution_factor(ct("full_ratchet", None), "a", "full_ratchet", 1_000_000, 500_000, F(1, 2), False)
+        self.assertEqual(F(1) / factor, F(1, 2))
+        # A definition that doesn't fit the method is refused.
+        with self.assertRaisesRegex(ValueError, "doesn't fit narrow_based"):
+            ct("narrow_based", "outstanding_common_options_preferred")
+
 
 class Exits(unittest.TestCase):
     def test_common_only(self):

@@ -90,6 +90,25 @@ def ev_grant_options(ct, ev):
         ct.issue(g["holder"], sid, n)
 
 
+def _anti_dilution_a(ct, sid, rule, include_pool_in_a):
+    """A in the NVCA weighted-average formula, counted just before the new issue.
+
+    Broad-based (R7): outstanding common, outstanding options as exercised,
+    and outstanding preferred as converted; the unissued pool only under the
+    toggle. Narrow-based (R15): outstanding preferred only, as converted.
+    A series that names its definition (anti_dilution_a) must name the one
+    the round uses.
+    """
+    named = ct.securities[sid].get("anti_dilution_a")
+    if rule == "broad_based":
+        if named is not None and (named == "outstanding_common_options_preferred_and_unissued_pool") != include_pool_in_a:
+            raise ValueError(f"{sid}: anti_dilution_a {named} disagrees with the round's unissued-pool toggle")
+        return ct.outstanding_as_converted() + (ct.unissued_pool if include_pool_in_a else 0)
+    if rule == "narrow_based":
+        return sum(ct.as_converted(s) for s in ct.preferred_ids())
+    return None
+
+
 def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, include_pool_in_a):
     """CP1 ÷ CP2 for one series, as a function of the round's terms.
 
@@ -105,12 +124,9 @@ def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, inclu
     cp1 = ct.securities[sid]["conversion_price"]
     if rule == "full_ratchet":
         return cp1 / price
-    if rule == "broad_based":
-        a = ct.outstanding_as_converted() + (ct.unissued_pool if include_pool_in_a else 0)
-    elif rule == "narrow_based":
-        a = sum(ct.as_converted(s) for s in ct.preferred_ids())
-    else:
+    if rule not in ("broad_based", "narrow_based"):
         raise ValueError(rule)
+    a = _anti_dilution_a(ct, sid, rule, include_pool_in_a)
     b = consideration / cp1
     return (a + new_shares) / (a + b)
 
@@ -255,7 +271,7 @@ def ev_priced_round(ct, ev):
             cp1 = sec["conversion_price"]
             factor = _anti_dilution_factor(ct, sid, sec["anti_dilution"], c_issued, consideration, price, include_pool_in_a)
             cp2 = cp1 / factor
-            a_val = ct.outstanding_as_converted() + (ct.unissued_pool if include_pool_in_a else 0)
+            a_val = _anti_dilution_a(ct, sid, sec["anti_dilution"], include_pool_in_a)
             ad_details.append(
                 {
                     "series": sid,
@@ -263,8 +279,8 @@ def ev_priced_round(ct, ev):
                     "cp1": exact(cp1),
                     "cp2": exact(cp2),
                     "cp2_approx": decimal(cp2, 10),
-                    "A": exact(a_val) if sec["anti_dilution"] == "broad_based" else None,
-                    "B": exact(consideration / cp1),
+                    "A": None if a_val is None else exact(a_val),
+                    "B": None if a_val is None else exact(consideration / cp1),
                     "C": c_issued,
                     "new_conversion_ratio": exact(sec["original_issue_price"] / cp2),
                 }
