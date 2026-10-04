@@ -10,8 +10,8 @@
 
 import type Decimal from "decimal.js";
 
-import { D, ONE, ZERO, parseExact } from "./decimal.js";
-import { InputError, UnsupportedTermError } from "./errors.js";
+import { D, ONE, ZERO, parseExact } from "./decimal.ts";
+import { InputError, UnsupportedTermError } from "./errors.ts";
 import type {
   AntiDilution,
   CapTable,
@@ -22,7 +22,7 @@ import type {
   Position,
   PreferredSeries,
   Security,
-} from "./model.js";
+} from "./model.ts";
 
 type Json = Record<string, unknown>;
 

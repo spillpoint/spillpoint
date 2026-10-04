@@ -9,7 +9,7 @@
 
 import Decimal from "decimal.js";
 
-import { InputError } from "./errors.js";
+import { InputError } from "./errors.ts";
 
 /** The engine's Decimal: 40 significant digits, half-up rounding. */
 export const D = Decimal.clone({ precision: 40, rounding: Decimal.ROUND_HALF_UP, toExpNeg: -60, toExpPos: 60 });

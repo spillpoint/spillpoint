@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, InputError, TIE, moreThan, parseExact, sameAmount, toCents } from "../src/index.js";
+import { D, InputError, TIE, moreThan, parseExact, sameAmount, toCents } from "../src/index.ts";
 
 describe("parseExact (C1)", () => {
   it("reads integers, terminating decimals and fractions", () => {
