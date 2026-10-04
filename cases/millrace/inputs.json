@@ -1,0 +1,140 @@
+{
+  "case": "millrace",
+  "description": "Millrace Robotics (fictional): founding through a down-round Series B, then exits from $0 to $300M. See CASE.md.",
+  "holders": [
+    { "id": "ana", "name": "Ana Ortiz" },
+    { "id": "dev", "name": "Dev Patel" },
+    { "id": "lena", "name": "Lena Fischer" },
+    { "id": "other_employees", "name": "Other employees" },
+    { "id": "priya", "name": "Priya Shah" },
+    { "id": "marcus", "name": "Marcus Lee" },
+    { "id": "harbor_lane", "name": "Harbor Lane Ventures Fund I" },
+    { "id": "ridgeline", "name": "Ridgeline Capital Fund III" },
+    { "id": "cobalt", "name": "Cobalt Family Office LLC" }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2021-02-01",
+      "type": "issue",
+      "security": { "id": "common", "name": "Common Stock", "kind": "common" },
+      "issues": [
+        { "holder": "ana", "shares": 5500000 },
+        { "holder": "dev", "shares": 4500000 }
+      ]
+    },
+    {
+      "id": "early_hire",
+      "date": "2021-06-01",
+      "type": "issue_percent",
+      "security": { "id": "common", "name": "Common Stock", "kind": "common" },
+      "holder": "lena",
+      "percent": "6"
+    },
+    {
+      "id": "pre_seed_safes",
+      "date": "2021-09-15",
+      "type": "safes",
+      "safes": [
+        { "id": "safe_priya", "holder": "priya", "purchase_amount": "300000", "post_money_cap": "5000000", "discount": "0" },
+        { "id": "safe_marcus", "holder": "marcus", "purchase_amount": "150000", "post_money_cap": "5000000", "discount": "0" }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2021-10-01",
+      "type": "create_pool",
+      "percent": "10"
+    },
+    {
+      "id": "grants_at_pool_creation",
+      "date": "2021-10-01",
+      "type": "grant_options",
+      "grants": [
+        { "holder": "lena", "shares": 40000, "strike": "0.05" },
+        { "holder": "other_employees", "shares": 450000, "strike": "0.05" }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1.5",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "7500000",
+      "investments": [{ "holder": "harbor_lane", "amount": "2500000" }],
+      "convert_safes": true,
+      "pool_target_unissued_percent_post": "18",
+      "seniority": [["seed", "seed_shadow"]]
+    },
+    {
+      "id": "grants_seed_to_a",
+      "date": null,
+      "type": "grant_options",
+      "grants": [{ "holder": "other_employees", "shares": 1100000, "strike": "0.11" }]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1.25",
+        "participation": "participating_capped",
+        "cap_multiple": "2.75",
+        "anti_dilution": "broad_based"
+      },
+      "pre_money": "48000000",
+      "investments": [
+        { "holder": "ridgeline", "amount": "9000000" },
+        { "holder": "harbor_lane", "amount": "3000000", "pro_rata": true }
+      ],
+      "pool_target_unissued_percent_post": "15",
+      "seniority": [["series_a"], ["seed", "seed_shadow"]]
+    },
+    {
+      "id": "grants_a_to_b",
+      "date": null,
+      "type": "grant_options",
+      "grants": [
+        { "holder": "dev", "shares": 250000, "strike": "0.42" },
+        { "holder": "lena", "shares": 300000, "strike": "0.42" },
+        { "holder": "other_employees", "shares": 2250000, "strike": "0.42" }
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "2",
+        "participation": "participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "36000000",
+      "investments": [{ "holder": "cobalt", "amount": "10000000" }],
+      "pool_target_unissued_percent_post": "12",
+      "anti_dilution_shares_in_post": true,
+      "anti_dilution_include_unissued_pool_in_a": false,
+      "seniority": [["series_b"], ["series_a"], ["seed", "seed_shadow"]]
+    }
+  ],
+  "exit": {
+    "cap_table_after_event": "series_b",
+    "range": ["0", "300000000"],
+    "exit_values": ["10000000", "25000000", "40000000", "50000000", "75000000", "100000000", "150000000", "225000000", "300000000"]
+  }
+}

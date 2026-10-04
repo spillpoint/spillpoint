@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# spillpoint
+# Real cap tables never go in git.
+local/
+__pycache__/
+*.pyc
