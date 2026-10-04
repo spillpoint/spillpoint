@@ -1,6 +1,6 @@
 {
-  "case": "edge-16a-broad-based",
-  "description": "Edge case 14a's company, then a down round: a $3M Series B at a $12M pre-money valuation, below Series A's $2.50. Series A's anti-dilution is broad-based weighted average, where A counts outstanding common, outstanding options and outstanding preferred as converted, not the unissued pool (ASSUMPTIONS R7). Edge cases 16a, 16b and 16c are identical except for this term. Edge case 16d is 16a with the anti-dilution shares left out of the Series B price.",
+  "case": "edge-16d-broad-based-not-in-price",
+  "description": "Edge case 16a with one term changed: the Series B is priced without counting Series A's anti-dilution shares (anti_dilution_shares_in_post off, the R10 toggle). Series A's anti-dilution is still the broad-based weighted average, where A counts outstanding common, outstanding options and outstanding preferred as converted, not the unissued pool (ASSUMPTIONS R7).",
   "holders": [
     {
       "id": "founder_a",
@@ -111,7 +111,7 @@
         }
       ],
       "pool_target_unissued_percent_post": "0",
-      "anti_dilution_shares_in_post": true,
+      "anti_dilution_shares_in_post": false,
       "anti_dilution_include_unissued_pool_in_a": false,
       "seniority": [
         [

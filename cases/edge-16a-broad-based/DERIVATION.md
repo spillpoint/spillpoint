@@ -70,7 +70,7 @@ Series B's original issue price and conversion price are $1.167019 (552/473). It
 | Founders A + B | 48.00% | 46.68% | 43.78% | 35.00% |
 | Investor Y | 20.00% | 20.00% | 20.00% | 20.00% |
 
-Investor Y holds 20% in every column, because the anti-dilution shares sit in the pre-money. The cost falls on everyone who was there before the round, Series A excepted.
+Investor Y holds 20% in every column, because the anti-dilution shares sit in the pre-money. The cost falls on everyone who was there before the round, Series A excepted. Edge case 16d is 16a with the anti-dilution shares left out of the price (the R10 toggle): there the price is $1.20 and Investor Y ends at 19.58%.
 
 Broad-based is the mildest of the three, because its A is large: the whole company except the pool. The new money is spread over 8,500,000 shares, so the conversion price only falls from $2.50 to $2.19.
 
