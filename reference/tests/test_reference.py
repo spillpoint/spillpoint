@@ -15,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from spillpoint_ref import breakpoints  # noqa: E402
+from spillpoint_ref.case import _schedule_json  # noqa: E402
 from spillpoint_ref.model import CapTable  # noqa: E402
 from spillpoint_ref.num import exact, money  # noqa: E402
 from spillpoint_ref.rounds import build, _anti_dilution_factor  # noqa: E402
@@ -319,6 +320,18 @@ class Exits(unittest.TestCase):
         self.assertEqual(bp_values(ct, 5_000_000), [F(10_000_000, 9), 2_000_000, 2_200_000])
         p = payouts(ct, 3_000_000)  # pool $200k; $2.8M shared 50/50 after conversion
         self.assertEqual((p[("m", "carve_out")], p[("y", "p")], p[("x", "common")]), (200_000, 1_400_000, 1_400_000))
+
+    def test_earnout_runs_on_cumulative_proceeds(self):
+        # 1M preferred at $1 (1x non-participating), 1M common.
+        # $500k at closing: all to preferred. A later $1M takes the cumulative
+        # total to $1.5M: preferred $1M, common $500k. So the later payment's
+        # take is $500k each, not $1M to preferred as a standalone waterfall
+        # on $1M would give.
+        ct = table([COMMON, pref("p", "1", "1", "non_participating")], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]])
+        sched = {"id": "s", "payments": [{"label": "closing", "amount": "500000"}, {"label": "earnout", "amount": "1000000"}]}
+        closing, earnout = _schedule_json(Waterfall(ct), sched)["payments"]
+        self.assertEqual(closing["holder_totals"], {"x": "0.00", "y": "500000.00"})
+        self.assertEqual(earnout["holder_totals"], {"x": "500000.00", "y": "500000.00"})
 
 
 if __name__ == "__main__":

@@ -42,12 +42,8 @@ def _outcome_json(wf, outcome):
         out_lines.append({"holder": h, "security": s, "amount": money(amt)})
         holder_totals[h] = holder_totals.get(h, 0) + amt
         class_totals[s] = class_totals.get(s, 0) + amt
-    decisions = {
-        p: (("converts" if b else "keeps_preference") if p in wf.converters else ("exercised" if b else "not_exercised"))
-        for p, b in zip(wf.players, outcome["decisions"])
-    }
     return {
-        "decisions": decisions,
+        "decisions": _decisions_json(wf, outcome["decisions"]),
         "common_price_per_share": decimal(outcome["common_price"], 6),
         "lines": out_lines,
         "holder_totals": {h: money(v) for h, v in holder_totals.items()},
@@ -89,6 +85,8 @@ def run_exit(ct, spec):
     if accrued:
         out["accrued_dividends"] = [_accrued_json(ct, wf, sid, exit_date) for sid in accrued]
     out.update({"breakpoints": bps, "payouts": payouts})
+    if spec.get("payment_schedules"):
+        out["payment_schedules"] = [_schedule_json(wf, sched) for sched in spec["payment_schedules"]]
     return out
 
 
@@ -125,3 +123,50 @@ def run_case(inputs):
             ct = CapTable.from_json(spec["cap_table"])
         out["exit"] = run_exit(ct, spec)
     return out
+
+
+def _decisions_json(wf, bits):
+    return {
+        p: (("converts" if b else "keeps_preference") if p in wf.converters else ("exercised" if b else "not_exercised"))
+        for p, b in zip(wf.players, bits)
+    }
+
+
+def _schedule_json(wf, sched):
+    """Escrow and earnouts (SPEC): proceeds arrive as a schedule of payments.
+
+    The waterfall runs on cumulative proceeds, so each later payment goes where
+    it would have gone if it had been paid at closing. A payment's take for a
+    holder is that holder's cumulative payout after the payment minus before
+    it. Conversion and exercise decisions are re-made at each cumulative
+    amount; a strike is paid in the payment where the option is first
+    exercised. A negative take (a holder owing money back) is reported as is.
+    """
+    cumulative = Fraction(0)
+    prev = {(h, s): Fraction(0) for h, s, _ in wf.lines}
+    payments = []
+    for pay in sched["payments"]:
+        amount = parse(pay["amount"])
+        cumulative += amount
+        outs = wf.evaluate(cumulative)
+        if len(outs) != 1:
+            raise ValueError(f"schedule {sched['id']}: more than one stable outcome at cumulative {money(cumulative)}")
+        lines = outs[0]["lines"]
+        take = {k: lines[k] - prev[k] for k in prev}
+        holder_totals, class_totals = {}, {}
+        for (h, s), v in take.items():
+            holder_totals[h] = holder_totals.get(h, Fraction(0)) + v
+            class_totals[s] = class_totals.get(s, Fraction(0)) + v
+        payments.append(
+            {
+                "label": pay["label"],
+                "amount": money(amount),
+                "cumulative": money(cumulative),
+                "decisions_at_cumulative": _decisions_json(wf, outs[0]["decisions"]),
+                "lines": [{"holder": h, "security": s, "amount": money(take[(h, s)])} for h, s, _ in wf.lines],
+                "holder_totals": {h: money(v) for h, v in holder_totals.items()},
+                "class_totals": {c: money(v) for c, v in class_totals.items()},
+            }
+        )
+        prev = dict(lines)
+    return {"id": sched["id"], "description": sched.get("description", ""), "payments": payments}
