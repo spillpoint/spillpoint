@@ -145,6 +145,26 @@ class Rounds(unittest.TestCase):
         self.assertEqual(d["safe_conversions"][0]["method"], "discount")
         self.assertEqual(ct.positions[("s", "seed_shadow")], 671_641)
 
+    def test_pool_already_meets_target(self):
+        # 900,000 common and a 100,000-share pool (10% of 1,000,000). Round:
+        # $2M at $8M pre ($10M post), pool target 5% of post-money FD.
+        # Without a top-up: x = 1,000,000 + 0.2x  =>  x = 1,250,000, and the
+        # pool is 8% of that, already above 5%. So no top-up (R16): price
+        # $10M ÷ 1,250,000 = $8.00, the investor gets 250,000 shares, exactly 20%.
+        # (Pricing as if the pool were at 5% would give x = 900,000 ÷ 0.75 =
+        # 1,200,000 and $8.33, leaving the investor below 20% of the real total.)
+        out = self.run_events(
+            [
+                {"id": "f", "type": "issue", "security": COMMON, "issues": [{"holder": "a", "shares": 900_000}]},
+                {"id": "p", "type": "create_pool", "percent": "10"},
+                self.round_event(pre_money="8000000", pool_target_unissued_percent_post="5", seniority=[["seed"]]),
+            ]
+        )
+        ev, ct, d = out[-1]
+        self.assertEqual((d["price_per_share"], d["pool_top_up"]), ("8", 0))
+        self.assertEqual((ct.positions[("b", "seed")], ct.unissued_pool), (250_000, 100_000))
+        self.assertEqual(ct.fully_diluted(), 1_250_000)
+
     def test_broad_based_weighted_average(self):
         # Textbook: A = 2,000,000 (1M common + 1M Series A as converted), CP1 = $1.00.
         # New issue: 1,000,000 shares for $500,000. B = 500,000, C = 1,000,000.

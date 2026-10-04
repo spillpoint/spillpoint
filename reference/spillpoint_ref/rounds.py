@@ -123,6 +123,11 @@ def ev_priced_round(ct, ev):
     pool at its target, converting SAFEs, the new shares, and (by default) the
     anti-dilution adjustment shares the round triggers.
 
+    Pool top-up in the pre-money: the unissued pool is raised to its target
+    share of the post-money FD shares. If the pool before the round already
+    meets or exceeds that target, there is no top-up and the round is priced
+    on the actual pool, so the investors get exactly money ÷ post-money.
+
     Post-money SAFE (YC): conversion price is the lower of the Safe Price
     (Post-Money Valuation Cap ÷ Company Capitalization) and the Discount Price.
     Company Capitalization counts all stock, issued options, the pre-existing
@@ -160,13 +165,13 @@ def ev_priced_round(ct, ev):
     for safe_branch in itertools.product(("cap", "discount"), repeat=len(safes)):
         if any(b == "cap" and f["post_money_cap"] is None for b, f in zip(safe_branch, safes)):
             continue
-        for ad_branch in itertools.product((False, True), repeat=len(ad_series)):
+        for ad_branch, top_up in itertools.product(itertools.product((False, True), repeat=len(ad_series)), (True, False)):
 
             def share_count(x):
                 """Post-money FD shares implied by a guess x for post-money FD shares."""
                 price = post_val / x
                 new = money_in / price
-                total = o + target * x + new
+                total = o + (target * x if top_up else u0) + new
                 for b, f in zip(safe_branch, safes):
                     if b == "cap":
                         total += f["purchase_amount"] / safe_price(f)
@@ -204,12 +209,16 @@ def ev_priced_round(ct, ev):
                 down = price < ct.securities[sid]["conversion_price"]
                 if trig != down:
                     ok = False
+            # A top-up happens only if the pool before the round is below
+            # the target; if it meets or exceeds it, the pool stays as it is.
+            if top_up != (target * x > u0):
+                ok = False
             if ok:
-                solutions.append((safe_branch, ad_branch, x, price))
+                solutions.append((safe_branch, ad_branch, top_up, x, price))
 
     if len(solutions) != 1:
         raise ValueError(f"round {ev['id']}: expected one consistent solution, found {len(solutions)}")
-    safe_branch, ad_branch, x, price = solutions[0]
+    safe_branch, ad_branch, top_up, x, price = solutions[0]
 
     details = {
         "price_per_share": exact(price),
@@ -311,8 +320,9 @@ def ev_priced_round(ct, ev):
         ct.issue(holder, series["id"], n)
     details["new_shares"] = [{"holder": h, "shares": n} for h, n in new_shares.items()]
 
-    # Pool top-up to its target share of the post-money FD, in the pre-money.
-    new_pool = max(u0, floor(target * x))
+    # Pool top-up to its target share of the post-money FD, in the pre-money,
+    # rounded down (R3). No top-up if the pool already meets the target (R16).
+    new_pool = floor(target * x) if top_up else u0
     details["pool_top_up"] = new_pool - u0
     ct.unissued_pool = new_pool
 
