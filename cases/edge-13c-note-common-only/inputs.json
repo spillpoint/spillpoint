@@ -1,0 +1,87 @@
+{
+  "case": "edge-13c-note-common-only",
+  "description": "Edge case 13a with one term changed: the note's cap divides by issued common stock only, leaving out the options and the unissued pool. Everything else is the same: $1M at 6% simple interest, an $8M pre-money cap, no discount, and the greater of 2x principal plus interest or conversion at the cap.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_notes": [
+        {
+          "id": "note_x",
+          "holder": "investor_x",
+          "principal": "1000000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2022-01-01",
+          "valuation_cap": "8000000",
+          "cap_type": "pre_money",
+          "conversion_base": "common_only",
+          "discount": "0",
+          "repayment_multiple": "2"
+        }
+      ]
+    },
+    "exit_date": "2024-01-01",
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "2000000",
+      "5000000",
+      "10000000",
+      "15000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

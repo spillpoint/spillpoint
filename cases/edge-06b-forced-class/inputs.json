@@ -1,0 +1,105 @@
+{
+  "case": "edge-06b-forced-class",
+  "description": "Same as edge-06a, but the two series must convert together, as when a class vote forces conversion.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed_1",
+          "name": "Seed-1 Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "seed_2",
+          "name": "Seed-2 Preferred",
+          "kind": "preferred",
+          "original_issue_price": "3",
+          "conversion_price": "3",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "seed_1",
+          "seed_2"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "seed_1",
+          "shares": 1000000
+        },
+        {
+          "holder": "investor_y",
+          "security": "seed_2",
+          "shares": 1000000
+        }
+      ],
+      "unissued_pool": 0,
+      "conversion_groups": [
+        [
+          "seed_1",
+          "seed_2"
+        ]
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "2000000",
+      "4000000",
+      "8000000",
+      "12000000",
+      "16000000",
+      "20000000",
+      "25000000",
+      "30000000",
+      "40000000"
+    ]
+  }
+}

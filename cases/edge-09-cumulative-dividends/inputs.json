@@ -1,0 +1,94 @@
+{
+  "case": "edge-09-cumulative-dividends",
+  "description": "Same company as edge-02, but Seed Preferred accrues an 8% simple cumulative dividend from 2022-03-31. The exit is on 2026-03-31. Unpaid dividends add to the preference, and are forfeited if the series converts.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.5",
+          "conversion_price": "1.5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none",
+          "cumulative_dividend": {
+            "rate": "0.08",
+            "method": "simple",
+            "accrual_start": "2022-03-31",
+            "on_conversion": "forfeited"
+          }
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "seed",
+          "shares": 1500000
+        },
+        {
+          "holder": "investor_y",
+          "security": "seed",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "exit_date": "2026-03-31",
+    "range": [
+      "0",
+      "60000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "3000000",
+      "4000000",
+      "5000000",
+      "15000000",
+      "19000000",
+      "20000000",
+      "40000000",
+      "60000000"
+    ]
+  }
+}

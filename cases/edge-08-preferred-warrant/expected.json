@@ -1,0 +1,443 @@
+{
+  "case": "edge-08-preferred-warrant",
+  "generated_by": "reference/generate.py",
+  "exit": {
+    "breakpoints": [
+      {
+        "exit_value": "1000000.00",
+        "exact": "1000000",
+        "reasons": [
+          {
+            "code": "warrant_in_the_money",
+            "security": "warrant_seed",
+            "strike": "0.5",
+            "text": "Each Seed Preferred share is now worth $0.50, the strike on the warrant for 200,000 Seed Preferred shares. Above this exit value the warrant is in the money and exercised: its holder pays the strike, which is added to the proceeds, and the new shares join Seed Preferred, with its preference and conversion rights."
+          }
+        ]
+      },
+      {
+        "exit_value": "2100000.00",
+        "exact": "2100000",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 1,
+            "securities": [
+              "seed"
+            ],
+            "text": "The preference tier Seed Preferred is fully paid ($2,200,000.00). Above this exit value, the next dollar goes to the residual, shared as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "10100000.00",
+        "exact": "10100000",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "seed",
+            "converts": true,
+            "text": "Seed Preferred converts to common. At this exit value its as-converted share (2,200,000 common shares at $1.0000 each = $2,200,000.00) equals its 1x preference of $2,200,000.00. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "500000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "warrant_seed": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "500000.00"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "0.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "500000.00",
+              "lender_l": "0.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "500000.00",
+              "warrant_seed": "0.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "1000000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "warrant_seed": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "0.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "1000000.00",
+              "lender_l": "0.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "1000000.00",
+              "warrant_seed": "0.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "1500000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "warrant_seed": "exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "1454545.45"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "45454.55"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "1454545.45",
+              "lender_l": "45454.55"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "1454545.45",
+              "warrant_seed": "45454.55"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "2100000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "warrant_seed": "exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "100000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "2000000.00",
+              "lender_l": "100000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "2000000.00",
+              "warrant_seed": "100000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "5000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "warrant_seed": "exercised"
+            },
+            "common_price_per_share": "0.362500",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "2175000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "725000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "100000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "2175000.00",
+              "founder_b": "725000.00",
+              "investor_x": "2000000.00",
+              "lender_l": "100000.00"
+            },
+            "class_totals": {
+              "common": "2900000.00",
+              "seed": "2000000.00",
+              "warrant_seed": "100000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "10100000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "warrant_seed": "exercised"
+            },
+            "common_price_per_share": "1.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "6000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "100000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "6000000.00",
+              "founder_b": "2000000.00",
+              "investor_x": "2000000.00",
+              "lender_l": "100000.00"
+            },
+            "class_totals": {
+              "common": "8000000.00",
+              "seed": "2000000.00",
+              "warrant_seed": "100000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "15000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "warrant_seed": "exercised"
+            },
+            "common_price_per_share": "1.480392",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "8882352.94"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2960784.31"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2960784.31"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "196078.43"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "8882352.94",
+              "founder_b": "2960784.31",
+              "investor_x": "2960784.31",
+              "lender_l": "196078.43"
+            },
+            "class_totals": {
+              "common": "11843137.25",
+              "seed": "2960784.31",
+              "warrant_seed": "196078.43"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "20000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "warrant_seed": "exercised"
+            },
+            "common_price_per_share": "1.970588",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "11823529.41"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "3941176.47"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "3941176.47"
+              },
+              {
+                "holder": "lender_l",
+                "security": "warrant_seed",
+                "amount": "294117.65"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "11823529.41",
+              "founder_b": "3941176.47",
+              "investor_x": "3941176.47",
+              "lender_l": "294117.65"
+            },
+            "class_totals": {
+              "common": "15764705.88",
+              "seed": "3941176.47",
+              "warrant_seed": "294117.65"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -5,12 +5,22 @@ engine (M2) and the reference read the same file.
 """
 
 import copy
+import datetime
 from fractions import Fraction
 
 from .num import parse, exact, decimal
 
 PARTICIPATION = ("non_participating", "participating", "participating_capped")
 ANTI_DILUTION = ("none", "broad_based", "narrow_based", "full_ratchet")
+# What A counts in the NVCA weighted-average formula, named per method.
+# Broad-based: R7, with the toggle that adds the unissued pool. Narrow-based:
+# R15. Full ratchet and no anti-dilution have no A.
+ANTI_DILUTION_A = {
+    "broad_based": ("outstanding_common_options_preferred", "outstanding_common_options_preferred_and_unissued_pool"),
+    "narrow_based": ("outstanding_preferred",),
+    "full_ratchet": (None,),
+    "none": (None,),
+}
 
 
 class CapTable:
@@ -20,7 +30,10 @@ class CapTable:
         self.positions = {}  # (holder, security) -> int shares
         self.unissued_pool = 0
         self.safes = []  # unconverted SAFEs
+        self.notes = []  # unconverted convertible notes
         self.seniority = []  # list of tiers, most senior first; each a list of preferred ids
+        self.conversion_groups = []  # series that must convert together (SPEC toggle)
+        self.carve_out = None  # management carve-out plan, if any
 
     def copy(self):
         return copy.deepcopy(self)
@@ -60,8 +73,13 @@ class CapTable:
         return [(h, n) for (h, s), n in self.positions.items() if s == sid and n > 0]
 
     def conversion_ratio(self, sid):
-        """Common shares per preferred share: original issue price ÷ conversion price."""
+        """Common shares per preferred share: original issue price ÷ conversion price.
+
+        A warrant for preferred converts like the series it is for.
+        """
         sec = self.securities[sid]
+        if sec["kind"] == "warrant" and sec["underlying"] != "common":
+            return self.conversion_ratio(sec["underlying"])
         if sec["kind"] != "preferred":
             return Fraction(1)
         return sec["original_issue_price"] / sec["conversion_price"]
@@ -84,6 +102,9 @@ class CapTable:
     def option_ids(self):
         return [sid for sid, s in self.securities.items() if s["kind"] == "option"]
 
+    def warrant_ids(self):
+        return [sid for sid, s in self.securities.items() if s["kind"] == "warrant"]
+
     # ---- JSON ----
 
     def to_json(self):
@@ -100,6 +121,12 @@ class CapTable:
                         "participation": s["participation"],
                         "cap_multiple": None if s.get("cap_multiple") is None else exact(s["cap_multiple"]),
                         "anti_dilution": s["anti_dilution"],
+                        **({"anti_dilution_a": s["anti_dilution_a"]} if s.get("anti_dilution_a") else {}),
+                        **(
+                            {"cumulative_dividend": dividend_to_json(s["cumulative_dividend"])}
+                            if s.get("cumulative_dividend")
+                            else {}
+                        ),
                         "approx": {
                             "original_issue_price": decimal(s["original_issue_price"], 10),
                             "conversion_price": decimal(s["conversion_price"], 10),
@@ -109,11 +136,15 @@ class CapTable:
                 )
             elif s["kind"] == "option":
                 out["strike"] = exact(s["strike"])
+            elif s["kind"] == "warrant":
+                out["strike"] = exact(s["strike"])
+                out["underlying"] = s["underlying"]
             secs.append(out)
         return {
             "holders": [{"id": h, "name": n} for h, n in self.holders.items()],
             "securities": secs,
             "seniority": [list(t) for t in self.seniority],
+            **({"conversion_groups": [group_to_json(g) for g in self.conversion_groups]} if self.conversion_groups else {}),
             "positions": [
                 {"holder": h, "security": s, "shares": n}
                 for (h, s), n in self.positions.items()
@@ -130,6 +161,8 @@ class CapTable:
                 }
                 for f in self.safes
             ],
+            **({"unconverted_notes": [note_to_json(n) for n in self.notes]} if self.notes else {}),
+            **({"carve_out": carve_out_to_json(self.carve_out)} if self.carve_out else {}),
         }
 
     @classmethod
@@ -140,11 +173,15 @@ class CapTable:
         for s in data["securities"]:
             ct.add_security(security_from_json(s))
         ct.seniority = [list(t) for t in data.get("seniority", [])]
+        ct.conversion_groups = [group_from_json(g) for g in data.get("conversion_groups", [])]
+        ct.carve_out = carve_out_from_json(data.get("carve_out"))
         for p in data["positions"]:
             ct.issue(p["holder"], p["security"], parse(p["shares"]))
         ct.unissued_pool = int(parse(data.get("unissued_pool", 0)))
         for f in data.get("unconverted_safes", []):
             ct.safes.append(safe_from_json(f))
+        for n in data.get("unconverted_notes", []):
+            ct.notes.append(note_from_json(n))
         ct.validate()
         return ct
 
@@ -152,6 +189,21 @@ class CapTable:
         tiered = [sid for tier in self.seniority for sid in tier]
         if sorted(tiered) != sorted(self.preferred_ids()):
             raise ValueError(f"seniority tiers {tiered} must list every preferred series exactly once: {self.preferred_ids()}")
+        grouped = [sid for g in self.conversion_groups for sid in g["series"]]
+        if len(grouped) != len(set(grouped)):
+            raise ValueError("a series can be in at most one conversion group")
+        for sid in grouped:
+            sec = self.securities.get(sid)
+            if sec is None or sec["kind"] != "preferred" or sec["participation"] == "participating":
+                raise ValueError(f"conversion group member {sid} must be a convertible preferred series")
+        for sid in self.warrant_ids():
+            u = self.securities[sid]["underlying"]
+            if u != "common" and (u not in self.securities or self.securities[u]["kind"] != "preferred"):
+                raise ValueError(f"warrant {sid} is for unknown series {u}")
+        if self.carve_out:
+            for a in self.carve_out["allocation"]:
+                if a["holder"] not in self.holders:
+                    raise ValueError(f"carve-out recipient {a['holder']} is not a listed holder")
 
 
 def security_from_json(s):
@@ -167,6 +219,8 @@ def security_from_json(s):
                 "participation": s["participation"],
                 "cap_multiple": None if s.get("cap_multiple") is None else parse(s["cap_multiple"]),
                 "anti_dilution": s.get("anti_dilution", "none"),
+                "anti_dilution_a": s.get("anti_dilution_a"),
+                "cumulative_dividend": dividend_from_json(s.get("cumulative_dividend")),
             }
         )
         if out["participation"] not in PARTICIPATION:
@@ -175,8 +229,16 @@ def security_from_json(s):
             raise ValueError(f"{s['id']}: cap_multiple goes with participating_capped only")
         if out["anti_dilution"] not in ANTI_DILUTION:
             raise ValueError(f"unknown anti_dilution {out['anti_dilution']}")
+        if "anti_dilution_a" in s and out["anti_dilution_a"] not in ANTI_DILUTION_A[out["anti_dilution"]]:
+            raise ValueError(
+                f"{s['id']}: anti_dilution_a {out['anti_dilution_a']} doesn't fit {out['anti_dilution']} "
+                f"(allowed: {ANTI_DILUTION_A[out['anti_dilution']]})"
+            )
     elif kind == "option":
         out["strike"] = parse(s["strike"])
+    elif kind == "warrant":
+        out["strike"] = parse(s["strike"])
+        out["underlying"] = s["underlying"]
     elif kind != "common":
         raise ValueError(f"unknown security kind {kind}")
     return out
@@ -190,3 +252,202 @@ def safe_from_json(f):
         "post_money_cap": None if f.get("post_money_cap") is None else parse(f["post_money_cap"]),
         "discount": parse(f.get("discount", "0")),
     }
+
+
+NOTE_CONVERSION_BASES = ("with_pool", "without_pool", "common_only")
+
+
+def note_from_json(n):
+    """Convertible note terms. Only what the cases use is supported; anything else is refused, never skipped."""
+    if n.get("interest_method", "simple") != "simple":
+        raise ValueError(f"{n['id']}: note interest method {n['interest_method']} is not supported by the reference yet")
+    if n.get("cap_type", "pre_money") != "pre_money":
+        raise ValueError(f"{n['id']}: note cap type {n['cap_type']} is not supported by the reference yet")
+    base = n.get("conversion_base", "with_pool")
+    if base not in NOTE_CONVERSION_BASES:
+        raise ValueError(f"{n['id']}: unknown note conversion_base {base}")
+    return {
+        "id": n["id"],
+        "holder": n["holder"],
+        "principal": parse(n["principal"]),
+        "interest_rate": parse(n["interest_rate"]),
+        "interest_method": "simple",
+        "issue_date": datetime.date.fromisoformat(n["issue_date"]),
+        "valuation_cap": None if n.get("valuation_cap") is None else parse(n["valuation_cap"]),
+        "cap_type": "pre_money",
+        "conversion_base": base,
+        "discount": parse(n.get("discount", "0")),
+        "repayment_multiple": parse(n["repayment_multiple"]),
+    }
+
+
+def note_to_json(n):
+    return {
+        "id": n["id"],
+        "holder": n["holder"],
+        "principal": exact(n["principal"]),
+        "interest_rate": exact(n["interest_rate"]),
+        "interest_method": n["interest_method"],
+        "issue_date": n["issue_date"].isoformat(),
+        "valuation_cap": None if n["valuation_cap"] is None else exact(n["valuation_cap"]),
+        "cap_type": n["cap_type"],
+        "conversion_base": n["conversion_base"],
+        "discount": exact(n["discount"]),
+        "repayment_multiple": exact(n["repayment_multiple"]),
+    }
+
+
+def note_interest(n, exit_date):
+    """Accrued interest on a note at the exit date.
+
+    Simple interest on the principal, Actual/365: the actual number of days
+    from the issue date to the exit date (leap days count), divided by 365.
+    """
+    if exit_date is None:
+        raise ValueError(f"{n['id']} accrues interest, so the exit needs an exit_date")
+    days = (exit_date - n["issue_date"]).days
+    if days < 0:
+        raise ValueError(f"exit date is before {n['id']}'s issue date")
+    return n["principal"] * n["interest_rate"] * Fraction(days, 365)
+
+
+VOTE_RULES = ("more_than", "at_least")
+
+
+def group_from_json(g):
+    """A group of series that must convert together, decided by a vote.
+
+    The group converts only if holders of more than (or at least) the
+    threshold share of the group's as-converted shares each do strictly better
+    converting. A bare list of series means the default: more than 50%.
+    """
+    if isinstance(g, list):
+        g = {"series": g}
+    rule = g.get("vote_rule", "more_than")
+    if rule not in VOTE_RULES:
+        raise ValueError(f"unknown vote_rule {rule}")
+    return {
+        "series": list(g["series"]),
+        "threshold": parse(g.get("vote_threshold_percent", "50")) / 100,
+        "rule": rule,
+    }
+
+
+def group_to_json(g):
+    return {"series": list(g["series"]), "vote_threshold_percent": exact(g["threshold"] * 100), "vote_rule": g["rule"]}
+
+
+DIVIDEND_METHODS = ("simple",)
+ON_CONVERSION = ("forfeited",)
+
+
+def dividend_from_json(d):
+    """Cumulative dividend terms: rate, method, accrual start, and what happens on conversion.
+
+    Only what the cases use is supported. Anything else is refused, never skipped.
+    """
+    if not d:
+        return None
+    method = d.get("method", "simple")
+    on_conv = d.get("on_conversion", "forfeited")
+    if method not in DIVIDEND_METHODS:
+        raise ValueError(f"dividend method {method} is not supported by the reference yet")
+    if on_conv not in ON_CONVERSION:
+        raise ValueError(f"dividends on conversion '{on_conv}' are not supported by the reference yet")
+    return {
+        "rate": parse(d["rate"]),
+        "method": method,
+        "accrual_start": datetime.date.fromisoformat(d["accrual_start"]),
+        "on_conversion": on_conv,
+    }
+
+
+def dividend_to_json(d):
+    return {
+        "rate": exact(d["rate"]),
+        "method": d["method"],
+        "accrual_start": d["accrual_start"].isoformat(),
+        "on_conversion": d["on_conversion"],
+    }
+
+
+def accrued_dividend_per_share(sec, exit_date):
+    """Cumulative dividend accrued and unpaid per share at the exit date.
+
+    Simple interest on the original issue price, Actual/365: the actual number
+    of days from the accrual start to the exit date (leap days count), divided
+    by 365.
+    """
+    d = sec.get("cumulative_dividend")
+    if not d:
+        return Fraction(0)
+    if exit_date is None:
+        raise ValueError(f"{sec['id']} accrues cumulative dividends, so the exit needs an exit_date")
+    days = (exit_date - d["accrual_start"]).days
+    if days < 0:
+        raise ValueError(f"exit date is before {sec['id']}'s dividend accrual start")
+    return sec["original_issue_price"] * d["rate"] * Fraction(days, 365)
+
+
+CARVE_OUT_TIMING = ("before_preferences",)
+
+
+def carve_out_from_json(c):
+    """Management carve-out: a percentage of the exit value, paid to listed people.
+
+    Tiers are marginal, like tax brackets: each tier's percentage applies only
+    to the slice of exit value inside it. A flat carve-out is one tier from 0
+    with no upper end. It is paid before all preferences (SPEC default).
+    """
+    if not c:
+        return None
+    timing = c.get("timing", "before_preferences")
+    if timing not in CARVE_OUT_TIMING:
+        raise ValueError(f"carve-out timing '{timing}' is not supported by the reference yet")
+    tiers = []
+    prev_to = Fraction(0)
+    for t in c["tiers"]:
+        lo = parse(t["from"])
+        hi = None if t.get("to") is None else parse(t["to"])
+        if lo != prev_to:
+            raise ValueError("carve-out tiers must start at 0 and be contiguous")
+        if hi is not None and hi <= lo:
+            raise ValueError("each carve-out tier must end above where it starts")
+        tiers.append({"from": lo, "to": hi, "rate": parse(t["percent"]) / 100})
+        prev_to = hi
+        if hi is None:
+            break
+    allocation = [{"holder": a["holder"], "share": parse(a["percent"]) / 100} for a in c["allocation"]]
+    if sum(a["share"] for a in allocation) != 1:
+        raise ValueError("carve-out allocation must add up to 100%")
+    return {"tiers": tiers, "allocation": allocation, "timing": timing}
+
+
+def carve_out_to_json(c):
+    return {
+        "timing": c["timing"],
+        "tiers": [
+            {"from": exact(t["from"]), "to": None if t["to"] is None else exact(t["to"]), "percent": exact(t["rate"] * 100)}
+            for t in c["tiers"]
+        ],
+        "allocation": [{"holder": a["holder"], "percent": exact(a["share"] * 100)} for a in c["allocation"]],
+    }
+
+
+def carve_out_pool(c, exit_value):
+    """Total carve-out at an exit value, and the index of the tier the exit value is in.
+
+    Marginal tiers: each tier contributes its rate × the part of the exit value
+    that falls inside it. Past the last tier's upper end the index is
+    len(tiers): the carve-out has stopped growing.
+    """
+    pool = Fraction(0)
+    for t in c["tiers"]:
+        top = exit_value if t["to"] is None else min(exit_value, t["to"])
+        if top > t["from"]:
+            pool += (top - t["from"]) * t["rate"]
+    band = next(
+        (i for i, t in enumerate(c["tiers"]) if t["to"] is None or exit_value < t["to"]),
+        len(c["tiers"]),
+    )
+    return pool, band

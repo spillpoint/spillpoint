@@ -90,6 +90,25 @@ def ev_grant_options(ct, ev):
         ct.issue(g["holder"], sid, n)
 
 
+def _anti_dilution_a(ct, sid, rule, include_pool_in_a):
+    """A in the NVCA weighted-average formula, counted just before the new issue.
+
+    Broad-based (R7): outstanding common, outstanding options as exercised,
+    and outstanding preferred as converted; the unissued pool only under the
+    toggle. Narrow-based (R15): outstanding preferred only, as converted.
+    A series that names its definition (anti_dilution_a) must name the one
+    the round uses.
+    """
+    named = ct.securities[sid].get("anti_dilution_a")
+    if rule == "broad_based":
+        if named is not None and (named == "outstanding_common_options_preferred_and_unissued_pool") != include_pool_in_a:
+            raise ValueError(f"{sid}: anti_dilution_a {named} disagrees with the round's unissued-pool toggle")
+        return ct.outstanding_as_converted() + (ct.unissued_pool if include_pool_in_a else 0)
+    if rule == "narrow_based":
+        return sum(ct.as_converted(s) for s in ct.preferred_ids())
+    return None
+
+
 def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, include_pool_in_a):
     """CP1 ÷ CP2 for one series, as a function of the round's terms.
 
@@ -105,14 +124,81 @@ def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, inclu
     cp1 = ct.securities[sid]["conversion_price"]
     if rule == "full_ratchet":
         return cp1 / price
-    if rule == "broad_based":
-        a = ct.outstanding_as_converted() + (ct.unissued_pool if include_pool_in_a else 0)
-    elif rule == "narrow_based":
-        a = sum(ct.as_converted(s) for s in ct.preferred_ids())
-    else:
+    if rule not in ("broad_based", "narrow_based"):
         raise ValueError(rule)
+    a = _anti_dilution_a(ct, sid, rule, include_pool_in_a)
     b = consideration / cp1
     return (a + new_shares) / (a + b)
+
+
+def _pay_to_play(ct, ev, invest):
+    """Pay-to-play (SPEC): who in the listed series buys their pro-rata, and who converts.
+
+    A holder's pro-rata (R17) is its share of the series' shares × the amount
+    the round offers to that series' holders (NVCA term sheet: a share of the
+    securities the board sets aside for existing investors). A holder who
+    invests at least that much in the round keeps its preferred. A holder who
+    invests nothing has it converted to common at the input ratio (R18),
+    common shares per preferred share, rounded down (R3). Partial
+    participation is refused (R20). Returns None if the round has no
+    pay-to-play.
+    """
+    terms = ev.get("pay_to_play")
+    if not terms:
+        return None
+    if len(terms["series"]) != 1:
+        raise ValueError(f"round {ev['id']}: pay-to-play on more than one series is not supported by the reference yet")
+    sid = terms["series"][0]
+    if sid not in ct.securities or ct.kind(sid) != "preferred":
+        raise ValueError(f"round {ev['id']}: pay-to-play series {sid} is not an existing preferred series")
+    commons = [c for c in ct.securities if ct.kind(c) == "common"]
+    if len(commons) != 1:
+        raise ValueError(f"round {ev['id']}: pay-to-play needs exactly one common stock class to convert into")
+    offered = parse(terms["offered_amount"])
+    ratio = parse(terms["conversion_ratio"])
+    if ratio <= 0:
+        raise ValueError(f"round {ev['id']}: pay-to-play conversion_ratio must be positive")
+    invested = {}
+    for h, a, _ in invest:
+        invested[h] = invested.get(h, Fraction(0)) + a
+    total = ct.shares_of(sid)
+    rows = []
+    for h, n in ct.holders_of(sid):
+        required = offered * n / total
+        paid = invested.get(h, Fraction(0))
+        if 0 < paid < required:
+            raise ValueError(
+                f"round {ev['id']}: {h} buys only part of its pay-to-play pro-rata; partial participation "
+                "is not supported by the reference yet"
+            )
+        participates = paid >= required
+        rows.append(
+            {
+                "holder": h,
+                "shares": n,
+                "share_of_series_percent": decimal(Fraction(n, total) * 100, 6),
+                "required": exact(required),
+                "invested": exact(paid),
+                "participates": participates,
+                "common_received": None if participates else floor(n * ratio),
+            }
+        )
+    return {
+        "series": sid,
+        "common": commons[0],
+        "offered_amount": exact(offered),
+        "conversion_ratio": exact(ratio),
+        "priced_after_conversion": bool(terms.get("priced_after_conversion", True)),
+        "holders": rows,
+    }
+
+
+def _apply_pay_to_play(ct, p2p):
+    """Convert the non-participants' preferred to common. They lose the preference and every other preferred right."""
+    for r in p2p["holders"]:
+        if not r["participates"]:
+            del ct.positions[(r["holder"], p2p["series"])]
+            ct.issue(r["holder"], p2p["common"], r["common_received"])
 
 
 def ev_priced_round(ct, ev):
@@ -123,11 +209,21 @@ def ev_priced_round(ct, ev):
     pool at its target, converting SAFEs, the new shares, and (by default) the
     anti-dilution adjustment shares the round triggers.
 
+    Pool top-up in the pre-money: the unissued pool is raised to its target
+    share of the post-money FD shares. If the pool before the round already
+    meets or exceeds that target, there is no top-up and the round is priced
+    on the actual pool, so the investors get exactly money ÷ post-money.
+
     Post-money SAFE (YC): conversion price is the lower of the Safe Price
     (Post-Money Valuation Cap ÷ Company Capitalization) and the Discount Price.
     Company Capitalization counts all stock, issued options, the pre-existing
     unissued pool, and the converting SAFEs themselves; it excludes the pool
     increase made in this financing and the new money.
+
+    Pay-to-play: holders of the listed series who don't buy their pro-rata
+    have their preferred converted to common. By default this happens just
+    before the round closes, so the round is priced on the cap table after the
+    conversion (R19); the toggle prices it on the count before.
     """
     series = ev["series"]
     pre = parse(ev["pre_money"])
@@ -137,6 +233,10 @@ def ev_priced_round(ct, ev):
     target = parse(ev.get("pool_target_unissued_percent_post", "0")) / 100
     ad_in_post = ev.get("anti_dilution_shares_in_post", True)
     include_pool_in_a = ev.get("anti_dilution_include_unissued_pool_in_a", False)
+
+    p2p = _pay_to_play(ct, ev, invest)
+    if p2p and p2p["priced_after_conversion"]:
+        _apply_pay_to_play(ct, p2p)
 
     o = ct.outstanding_as_converted()
     u0 = ct.unissued_pool
@@ -160,13 +260,13 @@ def ev_priced_round(ct, ev):
     for safe_branch in itertools.product(("cap", "discount"), repeat=len(safes)):
         if any(b == "cap" and f["post_money_cap"] is None for b, f in zip(safe_branch, safes)):
             continue
-        for ad_branch in itertools.product((False, True), repeat=len(ad_series)):
+        for ad_branch, top_up in itertools.product(itertools.product((False, True), repeat=len(ad_series)), (True, False)):
 
             def share_count(x):
                 """Post-money FD shares implied by a guess x for post-money FD shares."""
                 price = post_val / x
                 new = money_in / price
-                total = o + target * x + new
+                total = o + (target * x if top_up else u0) + new
                 for b, f in zip(safe_branch, safes):
                     if b == "cap":
                         total += f["purchase_amount"] / safe_price(f)
@@ -204,12 +304,20 @@ def ev_priced_round(ct, ev):
                 down = price < ct.securities[sid]["conversion_price"]
                 if trig != down:
                     ok = False
+            # A top-up happens only if the pool before the round is below
+            # the target; if it meets or exceeds it, the pool stays as it is.
+            if top_up != (target * x > u0):
+                ok = False
             if ok:
-                solutions.append((safe_branch, ad_branch, x, price))
+                solutions.append((safe_branch, ad_branch, top_up, x, price))
 
     if len(solutions) != 1:
         raise ValueError(f"round {ev['id']}: expected one consistent solution, found {len(solutions)}")
-    safe_branch, ad_branch, x, price = solutions[0]
+    safe_branch, ad_branch, top_up, x, price = solutions[0]
+    if p2p and any(ad_branch):
+        raise ValueError(
+            f"round {ev['id']}: pay-to-play in a round that triggers anti-dilution is not supported by the reference yet"
+        )
 
     details = {
         "price_per_share": exact(price),
@@ -219,6 +327,8 @@ def ev_priced_round(ct, ev):
         "post_money_fully_diluted_solved_approx": decimal(x, 4),
         "pre_round_fully_diluted": exact(ct.fully_diluted()),
     }
+    if p2p:
+        details["pay_to_play"] = {k: v for k, v in p2p.items() if k != "common"}
 
     # Pro-rata entitlement (NVCA): pre-round fully diluted percentage × round size.
     pre_fd = ct.fully_diluted()
@@ -246,7 +356,7 @@ def ev_priced_round(ct, ev):
             cp1 = sec["conversion_price"]
             factor = _anti_dilution_factor(ct, sid, sec["anti_dilution"], c_issued, consideration, price, include_pool_in_a)
             cp2 = cp1 / factor
-            a_val = ct.outstanding_as_converted() + (ct.unissued_pool if include_pool_in_a else 0)
+            a_val = _anti_dilution_a(ct, sid, sec["anti_dilution"], include_pool_in_a)
             ad_details.append(
                 {
                     "series": sid,
@@ -254,8 +364,8 @@ def ev_priced_round(ct, ev):
                     "cp1": exact(cp1),
                     "cp2": exact(cp2),
                     "cp2_approx": decimal(cp2, 10),
-                    "A": exact(a_val) if sec["anti_dilution"] == "broad_based" else None,
-                    "B": exact(consideration / cp1),
+                    "A": None if a_val is None else exact(a_val),
+                    "B": None if a_val is None else exact(consideration / cp1),
                     "C": c_issued,
                     "new_conversion_ratio": exact(sec["original_issue_price"] / cp2),
                 }
@@ -311,10 +421,14 @@ def ev_priced_round(ct, ev):
         ct.issue(holder, series["id"], n)
     details["new_shares"] = [{"holder": h, "shares": n} for h, n in new_shares.items()]
 
-    # Pool top-up to its target share of the post-money FD, in the pre-money.
-    new_pool = max(u0, floor(target * x))
+    # Pool top-up to its target share of the post-money FD, in the pre-money,
+    # rounded down (R3). No top-up if the pool already meets the target (R16).
+    new_pool = floor(target * x) if top_up else u0
     details["pool_top_up"] = new_pool - u0
     ct.unissued_pool = new_pool
+
+    if p2p and not p2p["priced_after_conversion"]:
+        _apply_pay_to_play(ct, p2p)
 
     ct.seniority = [list(t) for t in ev["seniority"]]
     details["post_money_fully_diluted_actual"] = exact(ct.fully_diluted())

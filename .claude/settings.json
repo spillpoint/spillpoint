@@ -7,7 +7,12 @@
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(git push origin main*)",
-      "Bash(git push origin HEAD:main*)"
+      "Bash(git push origin HEAD:main*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh label*)",
+      "Bash(gh pr edit*label*)",
+      "Bash(gh api*labels*)",
+      "Edit(cases/millrace/**)"
     ]
   }
 }

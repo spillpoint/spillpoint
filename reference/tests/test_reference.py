@@ -6,6 +6,7 @@ are written out in the comments.
     python3 -m unittest discover reference/tests
 """
 
+import datetime
 import sys
 import unittest
 from fractions import Fraction as F
@@ -14,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from spillpoint_ref import breakpoints  # noqa: E402
+from spillpoint_ref.case import _schedule_json  # noqa: E402
 from spillpoint_ref.model import CapTable  # noqa: E402
 from spillpoint_ref.num import exact, money  # noqa: E402
 from spillpoint_ref.rounds import build, _anti_dilution_factor  # noqa: E402
@@ -22,13 +24,14 @@ from spillpoint_ref.waterfall import Waterfall  # noqa: E402
 COMMON = {"id": "common", "name": "Common Stock", "kind": "common"}
 
 
-def table(securities, positions, seniority, pool=0):
+def table(securities, positions, seniority, pool=0, groups=()):
     holders = sorted({p[0] for p in positions})
     return CapTable.from_json(
         {
             "holders": [{"id": h, "name": h} for h in holders],
             "securities": securities,
             "seniority": seniority,
+            "conversion_groups": list(groups),
             "positions": [{"holder": h, "security": s, "shares": n} for h, s, n in positions],
             "unissued_pool": pool,
         }
@@ -54,7 +57,7 @@ def payouts(ct, exit_value):
 
 
 def bp_values(ct, hi):
-    return [x for x, _, _ in breakpoints.find(Waterfall(ct), 0, hi, 100_000)]
+    return [t[0] for t in breakpoints.find(Waterfall(ct), 0, hi, 100_000)]
 
 
 class Numbers(unittest.TestCase):
@@ -142,6 +145,74 @@ class Rounds(unittest.TestCase):
         self.assertEqual(d["safe_conversions"][0]["method"], "discount")
         self.assertEqual(ct.positions[("s", "seed_shadow")], 671_641)
 
+    def test_pool_already_meets_target(self):
+        # 900,000 common and a 100,000-share pool (10% of 1,000,000). Round:
+        # $2M at $8M pre ($10M post), pool target 5% of post-money FD.
+        # Without a top-up: x = 1,000,000 + 0.2x  =>  x = 1,250,000, and the
+        # pool is 8% of that, already above 5%. So no top-up (R16): price
+        # $10M ÷ 1,250,000 = $8.00, the investor gets 250,000 shares, exactly 20%.
+        # (Pricing as if the pool were at 5% would give x = 900,000 ÷ 0.75 =
+        # 1,200,000 and $8.33, leaving the investor below 20% of the real total.)
+        out = self.run_events(
+            [
+                {"id": "f", "type": "issue", "security": COMMON, "issues": [{"holder": "a", "shares": 900_000}]},
+                {"id": "p", "type": "create_pool", "percent": "10"},
+                self.round_event(pre_money="8000000", pool_target_unissued_percent_post="5", seniority=[["seed"]]),
+            ]
+        )
+        ev, ct, d = out[-1]
+        self.assertEqual((d["price_per_share"], d["pool_top_up"]), ("8", 0))
+        self.assertEqual((ct.positions[("b", "seed")], ct.unissued_pool), (250_000, 100_000))
+        self.assertEqual(ct.fully_diluted(), 1_250_000)
+
+    def test_pay_to_play(self):
+        # 450,000 common; preferred p at $2 (no anti-dilution): s1 300,000, s2 100,000.
+        # Round: $200,000 at $800,000 pre ($1M post). Pay-to-play on p, with
+        # $100,000 offered to p's holders: s1 must buy 75% = $75,000, s2 25% = $25,000.
+        # s1 buys $75,000 and keeps p. s2 buys nothing: 100,000 p × 1/2 = 50,000 common.
+        # Priced after the conversion (default): 800,000 shares before the
+        # money, x = 800,000 ÷ 0.8 = 1,000,000, $1.00 a share; s1 gets 75,000, b 125,000.
+        # Priced before it: x = 850,000 ÷ 0.8 = 1,062,500, $16/17 a share;
+        # s1 gets floor(79,687.5) = 79,687, b floor(132,812.5) = 132,812.
+        def run(after=True, s2_amount=None, ad="none"):
+            invest = [{"holder": "s1", "amount": "75000"}, {"holder": "b", "amount": "125000"}]
+            if s2_amount:
+                invest.append({"holder": "s2", "amount": s2_amount})
+            return self.run_events(
+                [
+                    {"id": "f", "type": "issue", "security": COMMON, "issues": [{"holder": "a", "shares": 450_000}]},
+                    # p at $2: $800,000 at $900,000 pre on 450,000 shares, so x = 850,000.
+                    self.round_event(
+                        id="p", series=pref("p", "2", "1", "non_participating") | {"anti_dilution": ad}, pre_money="900000",
+                        investments=[{"holder": "s1", "amount": "600000"}, {"holder": "s2", "amount": "200000"}],
+                        seniority=[["p"]],
+                    ),
+                    self.round_event(
+                        pre_money="800000",
+                        investments=invest,
+                        seniority=[["seed"], ["p"]],
+                        pay_to_play={"series": ["p"], "offered_amount": "100000", "conversion_ratio": "0.5",
+                                     "priced_after_conversion": after},
+                    ),
+                ],
+                holders=("a", "b", "s1", "s2"),
+            )[-1]
+
+        ev, ct, d = run()
+        self.assertEqual(d["price_per_share"], "1")
+        self.assertEqual([(r["holder"], r["required"], r["participates"]) for r in d["pay_to_play"]["holders"]],
+                         [("s1", "75000", True), ("s2", "25000", False)])
+        self.assertEqual((ct.positions[("s2", "common")], ct.positions.get(("s2", "p"))), (50_000, None))
+        self.assertEqual((ct.positions[("s1", "seed")], ct.positions[("b", "seed")], ct.fully_diluted()), (75_000, 125_000, 1_000_000))
+        ev, ct, d = run(after=False)
+        self.assertEqual(F(d["price_per_share"]), F(16, 17))
+        self.assertEqual((ct.positions[("s1", "seed")], ct.positions[("b", "seed")], ct.positions[("s2", "common")]), (79_687, 132_812, 50_000))
+        # Partial participation and pay-to-play with triggered anti-dilution are refused (R20, R21).
+        with self.assertRaisesRegex(ValueError, "partial participation"):
+            run(s2_amount="10000")
+        with self.assertRaisesRegex(ValueError, "triggers anti-dilution"):
+            run(ad="broad_based")
+
     def test_broad_based_weighted_average(self):
         # Textbook: A = 2,000,000 (1M common + 1M Series A as converted), CP1 = $1.00.
         # New issue: 1,000,000 shares for $500,000. B = 500,000, C = 1,000,000.
@@ -157,6 +228,27 @@ class Rounds(unittest.TestCase):
         # Toggle: counting the 500,000 unissued pool in A gives (2.5M + 0.5M)/(2.5M + 1M) = 6/7.
         factor = _anti_dilution_factor(ct, "a", "broad_based", 1_000_000, 500_000, F(1, 2), True)
         self.assertEqual(F(1) / factor, F(6, 7))
+
+    def test_narrow_based_and_full_ratchet(self):
+        # Same issue: 1,000,000 new shares for $500,000 at $0.50, CP1 = $1.00.
+        # Narrow-based A = the 1,000,000 Series A shares only (R15):
+        #   CP2 = 1.00 × (1.0M + 0.5M) / (1.0M + 1.0M) = $0.75.
+        # Full ratchet: CP2 = the new issue price, $0.50.
+        def ct(rule, a_def):
+            return table(
+                [COMMON, pref("a", "1", "1", "non_participating") | {"anti_dilution": rule, "anti_dilution_a": a_def}],
+                [("x", "common", 1_000_000), ("y", "a", 1_000_000)],
+                [["a"]],
+                pool=500_000,
+            )
+
+        factor = _anti_dilution_factor(ct("narrow_based", "outstanding_preferred"), "a", "narrow_based", 1_000_000, 500_000, F(1, 2), False)
+        self.assertEqual(F(1) / factor, F(3, 4))
+        factor = _anti_dilution_factor(ct("full_ratchet", None), "a", "full_ratchet", 1_000_000, 500_000, F(1, 2), False)
+        self.assertEqual(F(1) / factor, F(1, 2))
+        # A definition that doesn't fit the method is refused.
+        with self.assertRaisesRegex(ValueError, "doesn't fit narrow_based"):
+            ct("narrow_based", "outstanding_common_options_preferred")
 
 
 class Exits(unittest.TestCase):
@@ -212,6 +304,215 @@ class Exits(unittest.TestCase):
         p = payouts(ct, 2_000_000)
         self.assertEqual(p[("y", "p")], 500_000)
         self.assertEqual(p[("z", "q")], 1_500_000)
+
+    def two_series(self, groups=()):
+        # 8M common; series s1: 1M shares at $1 (1x, $1M); s2: 1M shares at $3 (1x, $3M); one tier.
+        return table(
+            [COMMON, pref("s1", "1", "1", "non_participating"), pref("s2", "3", "1", "non_participating")],
+            [("x", "common", 8_000_000), ("y", "s1", 1_000_000), ("z", "s2", 1_000_000)],
+            [["s1", "s2"]],
+            groups=groups,
+        )
+
+    def test_per_series_conversion(self):
+        # Tier paid at $4M. s1 converts when (E − $3M) / 9M > $1, so above $12M.
+        # s2 converts when E / 10M > $3, so above $30M.
+        self.assertEqual(bp_values(self.two_series(), 40_000_000), [4_000_000, 12_000_000, 30_000_000])
+
+    def test_group_vote_more_than_half(self):
+        # Must convert together; converts only if holders of MORE than 50% of the
+        # group's shares each do strictly better converting. Each series is
+        # exactly 50%, so both must gain. Converting pays each series E/10:
+        # s1 gains above $10M (E/10 > $1M), s2 above $30M (E/10 > $3M).
+        # So the group converts above $30M, and payouts jump there.
+        ct = self.two_series(groups=[["s1", "s2"]])
+        self.assertEqual(bp_values(ct, 40_000_000), [4_000_000, 30_000_000])
+        # At $30M s2 is indifferent and votes to stay: s1 $1M, s2 $3M, common $26M.
+        p = payouts(ct, 30_000_000)
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (1_000_000, 3_000_000, 26_000_000))
+        # Just above, converted: each series E/10, common 80%.
+        p = payouts(ct, 35_000_000)
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (3_500_000, 3_500_000, 28_000_000))
+
+    def test_group_vote_at_least_half(self):
+        # Threshold AT LEAST 50%: s1 alone carries the vote once it gains, above $10M.
+        ct = self.two_series(
+            groups=[{"series": ["s1", "s2"], "vote_threshold_percent": "50", "vote_rule": "at_least"}]
+        )
+        self.assertEqual(bp_values(ct, 40_000_000), [4_000_000, 10_000_000])
+        p = payouts(ct, 10_000_000)  # s1 indifferent, votes to stay
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (1_000_000, 3_000_000, 6_000_000))
+        p = payouts(ct, 12_000_000)  # converted: s2 drops to E/10
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (1_200_000, 1_200_000, 9_600_000))
+
+    def test_warrant_for_preferred(self):
+        # 8M common; seed 2M shares at $1 (1x non-participating, $2M); a warrant
+        # for 200,000 seed at $0.50.
+        # Exercise once each seed share is worth more than $0.50:
+        #   (E + $100k) / 2.2M > $0.50  =>  E > $1M.
+        # Seed tier (now 2.2M shares, $2.2M) is fully paid at E + $100k = $2.2M  =>  E = $2.1M.
+        # Seed converts when (E + $100k) / 10.2M > $1  =>  E > $10.1M.
+        ct = table(
+            [
+                COMMON,
+                pref("seed", "1", "1", "non_participating"),
+                {"id": "w", "name": "w", "kind": "warrant", "strike": "0.5", "underlying": "seed"},
+            ],
+            [("x", "common", 8_000_000), ("y", "seed", 2_000_000), ("l", "w", 200_000)],
+            [["seed"]],
+        )
+        self.assertEqual(bp_values(ct, 20_000_000), [1_000_000, 2_100_000, 10_100_000])
+        # At $1.5M: $1.6M of proceeds over 2.2M seed shares. The warrant gets
+        # 200k/2.2M of it, less the $100k strike.
+        p = payouts(ct, 1_500_000)
+        self.assertEqual(p[("l", "w")], F(200_000 * 1_600_000, 2_200_000) - 100_000)
+        self.assertEqual(p[("y", "seed")], F(2_000_000 * 1_600_000, 2_200_000))
+        self.assertEqual(p[("x", "common")], 0)
+
+    def test_cumulative_dividends(self):
+        # 1M preferred at $1 (1x non-participating), 1M common. 10% simple
+        # cumulative dividend from 2024-01-01 to a 2025-01-01 exit: 366 actual
+        # days (2024 is a leap year), Actual/365, so $0.10 × 366/365 per share.
+        # Preference P = $1,000,000 + $100,000 × 366/365 = $1,100,273.97…
+        # Tier paid at E = P. Converts (forfeiting dividends) when E/2 > P, i.e. E > 2P.
+        sec = pref("p", "1", "1", "non_participating") | {
+            "cumulative_dividend": {"rate": "0.10", "method": "simple", "accrual_start": "2024-01-01"}
+        }
+        ct = table([COMMON, sec], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]])
+        wf = Waterfall(ct, datetime.date(2025, 1, 1))
+        p_amt = F(1_000_000) + F(100_000) * F(366, 365)
+        self.assertEqual(wf.pref["p"], p_amt)
+        self.assertEqual([t[0] for t in breakpoints.find(wf, 0, 5_000_000, 100_000)], [p_amt, 2 * p_amt])
+        # Converted at $3M: each side gets half; the dividends are gone.
+        out = wf.evaluate(F(3_000_000))[0]["lines"]
+        self.assertEqual(out[("y", "p")], 1_500_000)
+
+    def test_carve_out_tiered(self):
+        # 1M preferred at $1 (1x non-participating), 1M common. Carve-out: 10%
+        # of the first $2M of exit value, nothing above, all to manager m.
+        # Below $2M the waterfall runs on 0.9 × E: the preference is paid at
+        # 0.9E = $1M, E = $1,111,111.11…  The carve-out ends at $2M ($200k).
+        # Above that, the preferred converts when (E − $200k)/2 > $1M, E > $2.2M.
+        ct = CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in ("x", "y", "m")],
+                "securities": [COMMON, pref("p", "1", "1", "non_participating")],
+                "seniority": [["p"]],
+                "positions": [{"holder": "x", "security": "common", "shares": 1_000_000},
+                              {"holder": "y", "security": "p", "shares": 1_000_000}],
+                "carve_out": {
+                    "tiers": [{"from": "0", "to": "2000000", "percent": "10"}],
+                    "allocation": [{"holder": "m", "percent": "100"}],
+                },
+            }
+        )
+        self.assertEqual(bp_values(ct, 5_000_000), [F(10_000_000, 9), 2_000_000, 2_200_000])
+        p = payouts(ct, 3_000_000)  # pool $200k; $2.8M shared 50/50 after conversion
+        self.assertEqual((p[("m", "carve_out")], p[("y", "p")], p[("x", "common")]), (200_000, 1_400_000, 1_400_000))
+
+    def test_earnout_runs_on_cumulative_proceeds(self):
+        # 1M preferred at $1 (1x non-participating), 1M common.
+        # $500k at closing: all to preferred. A later $1M takes the cumulative
+        # total to $1.5M: preferred $1M, common $500k. So the later payment's
+        # take is $500k each, not $1M to preferred as a standalone waterfall
+        # on $1M would give.
+        ct = table([COMMON, pref("p", "1", "1", "non_participating")], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]])
+        sched = {"id": "s", "payments": [{"label": "closing", "amount": "500000"}, {"label": "earnout", "amount": "1000000"}]}
+        closing, earnout = _schedule_json(Waterfall(ct), sched)["payments"]
+        self.assertEqual(closing["holder_totals"], {"x": "0.00", "y": "500000.00"})
+        self.assertEqual(earnout["holder_totals"], {"x": "500000.00", "y": "500000.00"})
+
+    def unconverted_safe(self, securities, positions, seniority=()):
+        holders = sorted({p[0] for p in positions} | {"s"})
+        return CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in holders],
+                "securities": securities,
+                "seniority": list(seniority),
+                "positions": [{"holder": h, "security": sec, "shares": n} for h, sec, n in positions],
+                "unissued_pool": 50_000,
+                "unconverted_safes": [
+                    {"id": "safe", "holder": "s", "purchase_amount": "100000", "post_money_cap": "1000000", "discount": "0"}
+                ],
+            }
+        )
+
+    def test_unconverted_safe_at_liquidity_event(self):
+        # 800,000 common, 100,000 options at $10 (out of the money), a 50,000
+        # unissued pool, and a $100k post-money SAFE with a $1M cap.
+        # Liquidity Capitalization counts common, all options, and the SAFE's
+        # own shares, not the pool: LC = 900,000 ÷ (1 − 100k/1M) = 1,000,000.
+        # Liquidity Price = $1M ÷ 1,000,000 = $1, so 100,000 conversion shares.
+        # Cash-out ($100k ahead of common) is fully paid at $100k. Converting
+        # pays more once common is worth more than $1 a share: E ÷ 900,000 > $1,
+        # E > $900k. That is below $1M because the options count in LC but
+        # don't share. Options come in only at (E + $1M) ÷ 1M > $10, E > $9M.
+        ct = self.unconverted_safe(
+            [COMMON, {"id": "o", "name": "o", "kind": "option", "strike": "10"}],
+            [("x", "common", 800_000), ("e", "o", 100_000)],
+        )
+        wf = Waterfall(ct)
+        (f,) = wf.safes
+        self.assertEqual((wf.liquidity_capitalization(f), wf.liquidity_price(f)), (1_000_000, 1))
+        self.assertEqual(bp_values(ct, 5_000_000), [100_000, 900_000])
+        p = payouts(ct, 500_000)  # cash-out
+        self.assertEqual((p[("s", "safe")], p[("x", "common")], p[("e", "o")]), (100_000, 400_000, 0))
+        p = payouts(ct, 1_800_000)  # converted: 100,000 of 900,000 sharing shares
+        self.assertEqual((p[("s", "safe")], p[("x", "common")], p[("e", "o")]), (200_000, 1_600_000, 0))
+
+    def test_unconverted_safe_with_preferred_is_refused(self):
+        ct = self.unconverted_safe(
+            [COMMON, pref("p", "1", "1", "non_participating")],
+            [("x", "common", 800_000), ("y", "p", 100_000)],
+            [["p"]],
+        )
+        with self.assertRaisesRegex(ValueError, "alongside preferred stock"):
+            Waterfall(ct)
+
+    def test_unconverted_note_at_exit(self):
+        # 800,000 common, 100,000 options at $10 (out of the money), a 100,000
+        # unissued pool. A $100k note at 10% simple from 2023-01-01 to a
+        # 2024-01-01 exit: 365 days, so $10k interest. Repayment is
+        # 2 × $110k = $220k, paid ahead of common. Principal plus interest
+        # converts at the $1M pre-money cap ÷ the base, the note not counted:
+        #   with pool:    1,000,000 shares, $1.00,  110,000 shares
+        #   without pool:   900,000 shares, $1.111…, 99,000 shares
+        #   common only:    800,000 shares, $1.25,   88,000 shares
+        # Converting pays more once note shares × E ÷ (800,000 + note shares) > $220k:
+        #   with pool $220k × 910/110 = $1,820,000; without $220k × 899/99 =
+        #   $17,980,000/9; common only $220k × 888/88 = $2,220,000.
+        def ct(base):
+            return CapTable.from_json(
+                {
+                    "holders": [{"id": h, "name": h} for h in ("x", "e", "n")],
+                    "securities": [COMMON, {"id": "o", "name": "o", "kind": "option", "strike": "10"}],
+                    "seniority": [],
+                    "positions": [{"holder": "x", "security": "common", "shares": 800_000},
+                                  {"holder": "e", "security": "o", "shares": 100_000}],
+                    "unissued_pool": 100_000,
+                    "unconverted_notes": [
+                        {"id": "note", "holder": "n", "principal": "100000", "interest_rate": "0.10",
+                         "issue_date": "2023-01-01", "valuation_cap": "1000000", "conversion_base": base,
+                         "discount": "0", "repayment_multiple": "2"}
+                    ],
+                }
+            )
+
+        exit_date = datetime.date(2024, 1, 1)
+        for base, shares, switch in (
+            ("with_pool", 110_000, 1_820_000),
+            ("without_pool", 99_000, F(17_980_000, 9)),
+            ("common_only", 88_000, 2_220_000),
+        ):
+            wf = Waterfall(ct(base), exit_date)
+            (n,) = wf.notes
+            self.assertEqual((wf.note_repayment(n), wf.note_conversion_shares(n)), (220_000, shares))
+            self.assertEqual([t[0] for t in breakpoints.find(wf, 0, 3_000_000, 100_000)], [220_000, switch])
+        wf = Waterfall(ct("with_pool"), exit_date)
+        p = wf.evaluate(F(1_000_000))[0]["lines"]  # repayment
+        self.assertEqual((p[("n", "note")], p[("x", "common")], p[("e", "o")]), (220_000, 780_000, 0))
+        p = wf.evaluate(F(2_730_000))[0]["lines"]  # converted: 110,000 of 910,000 sharing shares
+        self.assertEqual((p[("n", "note")], p[("x", "common")], p[("e", "o")]), (330_000, 2_400_000, 0))
 
 
 if __name__ == "__main__":

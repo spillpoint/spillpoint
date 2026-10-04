@@ -30,9 +30,20 @@ interface Breakpoint {
   exact: string;
   reasons: { code: string; text: string }[];
 }
+interface Payment {
+  label: string;
+  amount: string;
+  cumulative: string;
+  lines: Line[];
+  holder_totals: Record<string, string>;
+}
+interface Schedule {
+  id: string;
+  payments: Payment[];
+}
 interface Expected {
   case: string;
-  exit?: { breakpoints: Breakpoint[]; payouts: PayoutPoint[] };
+  exit?: { breakpoints: Breakpoint[]; payouts: PayoutPoint[]; payment_schedules?: Schedule[] };
 }
 interface Inputs {
   case: string;
@@ -109,6 +120,29 @@ describe.each(caseDirs)("case %s", (dir) => {
       expect(b.reasons.length).toBeGreaterThan(0);
       for (const r of b.reasons) expect(r.text.length).toBeGreaterThan(20);
       prev = x;
+    }
+  });
+
+  it("splits each scheduled payment exactly, and the payments add up to the cumulative payout", () => {
+    for (const sched of exit.payment_schedules ?? []) {
+      const running = new Map<string, Decimal>();
+      for (const pay of sched.payments) {
+        const sum = pay.lines.reduce((s, l) => s.plus(l.amount), new Decimal(0));
+        expect(closeEnough(sum, new Decimal(pay.amount), pay.lines.length), `${sched.id} ${pay.label}`).toBe(true);
+        for (const l of pay.lines) {
+          const k = `${l.holder}|${l.security}`;
+          running.set(k, (running.get(k) ?? new Decimal(0)).plus(l.amount));
+        }
+        // Escrow and earnouts (SPEC): the waterfall runs on cumulative proceeds,
+        // so the payments so far must add up to the payout at the cumulative amount.
+        const point = exit.payouts.find((p) => new Decimal(p.exit_value).eq(pay.cumulative));
+        if (point && point.equilibria.length === 1) {
+          for (const l of point.equilibria[0]!.lines) {
+            const got = running.get(`${l.holder}|${l.security}`) ?? new Decimal(0);
+            expect(closeEnough(got, new Decimal(l.amount), sched.payments.length + 1), `${sched.id} ${l.holder} ${l.security}`).toBe(true);
+          }
+        }
+      }
     }
   });
 

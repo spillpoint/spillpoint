@@ -1,0 +1,565 @@
+{
+  "case": "edge-09-cumulative-dividends",
+  "generated_by": "reference/generate.py",
+  "exit": {
+    "accrued_dividends": [
+      {
+        "security": "seed",
+        "accrual_start": "2022-03-31",
+        "exit_date": "2026-03-31",
+        "days": 1461,
+        "per_share": "4383/9125",
+        "total": "70128000/73",
+        "total_display": "960657.53",
+        "preference_including_dividends": "3960657.53"
+      }
+    ],
+    "breakpoints": [
+      {
+        "exit_value": "3960657.53",
+        "exact": "289128000/73",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 1,
+            "securities": [
+              "seed"
+            ],
+            "text": "The preference tier Seed Preferred is fully paid ($3,960,657.53). Above this exit value, the next dollar goes to the residual, shared as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "19803287.67",
+        "exact": "1445640000/73",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "seed",
+            "converts": true,
+            "text": "Seed Preferred converts to common. At this exit value its as-converted share (2,000,000 common shares at $1.9803 each = $3,960,657.53) equals its 1x preference plus accrued dividends, $3,960,657.53 (dividends are forfeited on conversion). Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "1000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "750000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "250000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "750000.00",
+              "investor_y": "250000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "1000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "3000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2250000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "750000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "2250000.00",
+              "investor_y": "750000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "3000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "3960657.53",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2970493.15"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "990164.38"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "2970493.15",
+              "investor_y": "990164.38"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "seed": "3960657.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "4000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "0.004918",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "29506.85"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "9835.62"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2970493.15"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "990164.38"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "29506.85",
+              "founder_b": "9835.62",
+              "investor_x": "2970493.15",
+              "investor_y": "990164.38"
+            },
+            "class_totals": {
+              "common": "39342.47",
+              "seed": "3960657.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "5000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "0.129918",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "779506.85"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "259835.62"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2970493.15"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "990164.38"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "779506.85",
+              "founder_b": "259835.62",
+              "investor_x": "2970493.15",
+              "investor_y": "990164.38"
+            },
+            "class_totals": {
+              "common": "1039342.47",
+              "seed": "3960657.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "15000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "1.379918",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "8279506.85"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2759835.62"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2970493.15"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "990164.38"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "8279506.85",
+              "founder_b": "2759835.62",
+              "investor_x": "2970493.15",
+              "investor_y": "990164.38"
+            },
+            "class_totals": {
+              "common": "11039342.47",
+              "seed": "3960657.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "19000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "1.879918",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "11279506.85"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "3759835.62"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2970493.15"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "990164.38"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "11279506.85",
+              "founder_b": "3759835.62",
+              "investor_x": "2970493.15",
+              "investor_y": "990164.38"
+            },
+            "class_totals": {
+              "common": "15039342.47",
+              "seed": "3960657.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "19803287.67",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference"
+            },
+            "common_price_per_share": "1.980329",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "11881972.60"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "3960657.53"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "2970493.15"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "990164.38"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "11881972.60",
+              "founder_b": "3960657.53",
+              "investor_x": "2970493.15",
+              "investor_y": "990164.38"
+            },
+            "class_totals": {
+              "common": "15842630.14",
+              "seed": "3960657.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "20000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts"
+            },
+            "common_price_per_share": "2.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "12000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "4000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "1000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "12000000.00",
+              "founder_b": "4000000.00",
+              "investor_x": "3000000.00",
+              "investor_y": "1000000.00"
+            },
+            "class_totals": {
+              "common": "16000000.00",
+              "seed": "4000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts"
+            },
+            "common_price_per_share": "4.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "24000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "8000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "6000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "2000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "24000000.00",
+              "founder_b": "8000000.00",
+              "investor_x": "6000000.00",
+              "investor_y": "2000000.00"
+            },
+            "class_totals": {
+              "common": "32000000.00",
+              "seed": "8000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "60000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts"
+            },
+            "common_price_per_share": "6.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "36000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "12000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "seed",
+                "amount": "9000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "seed",
+                "amount": "3000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "36000000.00",
+              "founder_b": "12000000.00",
+              "investor_x": "9000000.00",
+              "investor_y": "3000000.00"
+            },
+            "class_totals": {
+              "common": "48000000.00",
+              "seed": "12000000.00"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
