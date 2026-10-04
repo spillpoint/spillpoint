@@ -1,5 +1,5 @@
 {
-  "case": "edge-14-pool-top-up",
+  "case": "edge-14b-no-top-up",
   "generated_by": "reference/generate.py",
   "cap_tables": [
     {
@@ -206,20 +206,20 @@
       "after_event": "series_a",
       "date": "2023-06-30",
       "details": {
-        "price_per_share": "2.5",
-        "price_per_share_approx": "2.5000000000",
+        "price_per_share": "8/3",
+        "price_per_share_approx": "2.6666666667",
         "post_money_valuation": "25000000",
-        "post_money_fully_diluted_solved": "10000000",
-        "post_money_fully_diluted_solved_approx": "10000000.0000",
+        "post_money_fully_diluted_solved": "9375000",
+        "post_money_fully_diluted_solved_approx": "9375000.0000",
         "pre_round_fully_diluted": "7500000",
         "new_shares": [
           {
             "holder": "investor_x",
-            "shares": 2000000
+            "shares": 1875000
           }
         ],
-        "pool_top_up": 500000,
-        "post_money_fully_diluted_actual": "10000000"
+        "pool_top_up": 0,
+        "post_money_fully_diluted_actual": "9375000"
       },
       "cap_table": {
         "holders": [
@@ -256,16 +256,16 @@
             "id": "series_a",
             "name": "Series A Preferred",
             "kind": "preferred",
-            "original_issue_price": "2.5",
-            "conversion_price": "2.5",
+            "original_issue_price": "8/3",
+            "conversion_price": "8/3",
             "conversion_ratio": "1",
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
             "anti_dilution": "none",
             "approx": {
-              "original_issue_price": "2.5000000000",
-              "conversion_price": "2.5000000000",
+              "original_issue_price": "2.6666666667",
+              "conversion_price": "2.6666666667",
               "conversion_ratio": "1.0000000000"
             }
           }
@@ -294,30 +294,30 @@
           {
             "holder": "investor_x",
             "security": "series_a",
-            "shares": 2000000
+            "shares": 1875000
           }
         ],
-        "unissued_pool": 1500000,
+        "unissued_pool": 1000000,
         "unconverted_safes": [],
         "totals": {
           "shares_by_security": {
             "common": 6000000,
             "options_0.25": 500000,
-            "series_a": 2000000
+            "series_a": 1875000
           },
           "as_converted_by_security": {
             "common": "6000000",
             "options_0.25": "500000",
-            "series_a": "2000000"
+            "series_a": "1875000"
           },
-          "fully_diluted": "10000000",
+          "fully_diluted": "9375000",
           "fully_diluted_percent_by_holder": {
-            "founder_a": "45.0000",
-            "founder_b": "15.0000",
-            "employee_c": "5.0000",
+            "founder_a": "48.0000",
+            "founder_b": "16.0000",
+            "employee_c": "5.3333",
             "investor_x": "20.0000"
           },
-          "unissued_pool_percent": "15.0000"
+          "unissued_pool_percent": "10.6667"
         }
       }
     }

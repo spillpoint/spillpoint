@@ -1,4 +1,4 @@
-# Edge case 14: derivation
+# Edge case 14a: derivation
 
 A round case. Its expected output is the cap table after each event, and the one that matters is the cap table after the Series A.
 
@@ -54,7 +54,7 @@ Series A Preferred has an original issue price and conversion price of $2.50, a 
 
 ## Compared with no top-up
 
-Without the top-up, the pool would stay at 1,000,000. Then x = 7,500,000 + 0.20x, which gives x = 9,375,000. The price would be $25M ÷ 9,375,000 = $2.666667, which is simply $20M ÷ the 7,500,000 pre-round fully diluted shares.
+Without the top-up, the pool would stay at 1,000,000. That is edge case 14b, where a 10% target is already met. Then x = 7,500,000 + 0.20x, which gives x = 9,375,000. The price would be $25M ÷ 9,375,000 = $2.666667, which is simply $20M ÷ the 7,500,000 pre-round fully diluted shares.
 
 | | With the top-up (this case) | Without it |
 |---|---:|---:|

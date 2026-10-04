@@ -1,0 +1,89 @@
+{
+  "case": "edge-14a-pool-top-up",
+  "description": "A $5M Series A at a $20M pre-money valuation, with the unissued option pool topped up to 15% of the post-money fully diluted shares. The top-up sits in the pre-money, so it lowers the price per share and dilutes only the existing holders; the investor still gets 20%.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 1500000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "20"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 500000,
+          "strike": "0.25"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "5000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "15",
+      "seniority": [
+        [
+          "series_a"
+        ]
+      ]
+    }
+  ]
+}
