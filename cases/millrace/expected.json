@@ -1,0 +1,4031 @@
+{
+  "case": "millrace",
+  "generated_by": "reference/generate.py",
+  "cap_tables": [
+    {
+      "after_event": "founding",
+      "date": "2021-02-01",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          }
+        ],
+        "unissued_pool": 0,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10000000
+          },
+          "as_converted_by_security": {
+            "common": "10000000"
+          },
+          "fully_diluted": "10000000",
+          "fully_diluted_percent_by_holder": {
+            "ana": "55.0000",
+            "dev": "45.0000"
+          },
+          "unissued_pool_percent": "0.0000"
+        }
+      }
+    },
+    {
+      "after_event": "early_hire",
+      "date": "2021-06-01",
+      "details": {
+        "shares_issued": 638297,
+        "basis_shares": "10000000"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          }
+        ],
+        "unissued_pool": 0,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297
+          },
+          "as_converted_by_security": {
+            "common": "10638297"
+          },
+          "fully_diluted": "10638297",
+          "fully_diluted_percent_by_holder": {
+            "ana": "51.7000",
+            "dev": "42.3000",
+            "lena": "6.0000"
+          },
+          "unissued_pool_percent": "0.0000"
+        }
+      }
+    },
+    {
+      "after_event": "pre_seed_safes",
+      "date": "2021-09-15",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          }
+        ],
+        "unissued_pool": 0,
+        "unconverted_safes": [
+          {
+            "id": "safe_priya",
+            "holder": "priya",
+            "purchase_amount": "300000",
+            "post_money_cap": "5000000",
+            "discount": "0"
+          },
+          {
+            "id": "safe_marcus",
+            "holder": "marcus",
+            "purchase_amount": "150000",
+            "post_money_cap": "5000000",
+            "discount": "0"
+          }
+        ],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297
+          },
+          "as_converted_by_security": {
+            "common": "10638297"
+          },
+          "fully_diluted": "10638297",
+          "fully_diluted_percent_by_holder": {
+            "ana": "51.7000",
+            "dev": "42.3000",
+            "lena": "6.0000"
+          },
+          "unissued_pool_percent": "0.0000"
+        }
+      }
+    },
+    {
+      "after_event": "option_pool",
+      "date": "2021-10-01",
+      "details": {
+        "pool_created": 1182033,
+        "basis_shares": "10638297"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          }
+        ],
+        "unissued_pool": 1182033,
+        "unconverted_safes": [
+          {
+            "id": "safe_priya",
+            "holder": "priya",
+            "purchase_amount": "300000",
+            "post_money_cap": "5000000",
+            "discount": "0"
+          },
+          {
+            "id": "safe_marcus",
+            "holder": "marcus",
+            "purchase_amount": "150000",
+            "post_money_cap": "5000000",
+            "discount": "0"
+          }
+        ],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297
+          },
+          "as_converted_by_security": {
+            "common": "10638297"
+          },
+          "fully_diluted": "11820330",
+          "fully_diluted_percent_by_holder": {
+            "ana": "46.5300",
+            "dev": "38.0700",
+            "lena": "5.4000"
+          },
+          "unissued_pool_percent": "10.0000"
+        }
+      }
+    },
+    {
+      "after_event": "grants_at_pool_creation",
+      "date": "2021-10-01",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.05",
+            "name": "Options ($0.05 strike)",
+            "kind": "option",
+            "strike": "0.05"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.05",
+            "shares": 40000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.05",
+            "shares": 450000
+          }
+        ],
+        "unissued_pool": 692033,
+        "unconverted_safes": [
+          {
+            "id": "safe_priya",
+            "holder": "priya",
+            "purchase_amount": "300000",
+            "post_money_cap": "5000000",
+            "discount": "0"
+          },
+          {
+            "id": "safe_marcus",
+            "holder": "marcus",
+            "purchase_amount": "150000",
+            "post_money_cap": "5000000",
+            "discount": "0"
+          }
+        ],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297,
+            "options_0.05": 490000
+          },
+          "as_converted_by_security": {
+            "common": "10638297",
+            "options_0.05": "490000"
+          },
+          "fully_diluted": "11820330",
+          "fully_diluted_percent_by_holder": {
+            "ana": "46.5300",
+            "dev": "38.0700",
+            "lena": "5.7384",
+            "other_employees": "3.8070"
+          },
+          "unissued_pool_percent": "5.8546"
+        }
+      }
+    },
+    {
+      "after_event": "seed",
+      "date": "2022-06-30",
+      "details": {
+        "price_per_share": "518700000/1119057997",
+        "price_per_share_approx": "0.4635148503",
+        "post_money_valuation": "10000000",
+        "post_money_fully_diluted_solved": "111905799700/5187",
+        "post_money_fully_diluted_solved_approx": "21574281.8007",
+        "pre_round_fully_diluted": "11820330",
+        "company_capitalization": "1182033000/91",
+        "company_capitalization_approx": "12989373.6264",
+        "safe_conversions": [
+          {
+            "safe": "safe_priya",
+            "holder": "priya",
+            "method": "cap",
+            "conversion_price": "455000/1182033",
+            "conversion_price_approx": "0.3849300316",
+            "shares": 779362,
+            "series": "seed_shadow"
+          },
+          {
+            "safe": "safe_marcus",
+            "holder": "marcus",
+            "method": "cap",
+            "conversion_price": "455000/1182033",
+            "conversion_price_approx": "0.3849300316",
+            "shares": 389681,
+            "series": "seed_shadow"
+          }
+        ],
+        "new_shares": [
+          {
+            "holder": "harbor_lane",
+            "shares": 5393570
+          }
+        ],
+        "pool_top_up": 3191337,
+        "post_money_fully_diluted_actual": "21574280"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.05",
+            "name": "Options ($0.05 strike)",
+            "kind": "option",
+            "strike": "0.05"
+          },
+          {
+            "id": "seed_shadow",
+            "name": "Seed Preferred (SAFE shadow)",
+            "kind": "preferred",
+            "original_issue_price": "455000/1182033",
+            "conversion_price": "455000/1182033",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.3849300316",
+              "conversion_price": "0.3849300316",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "518700000/1119057997",
+            "conversion_price": "518700000/1119057997",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.4635148503",
+              "conversion_price": "0.4635148503",
+              "conversion_ratio": "1.0000000000"
+            }
+          }
+        ],
+        "seniority": [
+          [
+            "seed",
+            "seed_shadow"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.05",
+            "shares": 40000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.05",
+            "shares": 450000
+          },
+          {
+            "holder": "priya",
+            "security": "seed_shadow",
+            "shares": 779362
+          },
+          {
+            "holder": "marcus",
+            "security": "seed_shadow",
+            "shares": 389681
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "seed",
+            "shares": 5393570
+          }
+        ],
+        "unissued_pool": 3883370,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297,
+            "options_0.05": 490000,
+            "seed_shadow": 1169043,
+            "seed": 5393570
+          },
+          "as_converted_by_security": {
+            "common": "10638297",
+            "options_0.05": "490000",
+            "seed_shadow": "1169043",
+            "seed": "5393570"
+          },
+          "fully_diluted": "21574280",
+          "fully_diluted_percent_by_holder": {
+            "ana": "25.4933",
+            "dev": "20.8582",
+            "lena": "3.1440",
+            "other_employees": "2.0858",
+            "priya": "3.6125",
+            "marcus": "1.8062",
+            "harbor_lane": "25.0000"
+          },
+          "unissued_pool_percent": "18.0000"
+        }
+      }
+    },
+    {
+      "after_event": "grants_seed_to_a",
+      "date": null,
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.05",
+            "name": "Options ($0.05 strike)",
+            "kind": "option",
+            "strike": "0.05"
+          },
+          {
+            "id": "seed_shadow",
+            "name": "Seed Preferred (SAFE shadow)",
+            "kind": "preferred",
+            "original_issue_price": "455000/1182033",
+            "conversion_price": "455000/1182033",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.3849300316",
+              "conversion_price": "0.3849300316",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "518700000/1119057997",
+            "conversion_price": "518700000/1119057997",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.4635148503",
+              "conversion_price": "0.4635148503",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.11",
+            "name": "Options ($0.11 strike)",
+            "kind": "option",
+            "strike": "0.11"
+          }
+        ],
+        "seniority": [
+          [
+            "seed",
+            "seed_shadow"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.05",
+            "shares": 40000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.05",
+            "shares": 450000
+          },
+          {
+            "holder": "priya",
+            "security": "seed_shadow",
+            "shares": 779362
+          },
+          {
+            "holder": "marcus",
+            "security": "seed_shadow",
+            "shares": 389681
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "seed",
+            "shares": 5393570
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.11",
+            "shares": 1100000
+          }
+        ],
+        "unissued_pool": 2783370,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297,
+            "options_0.05": 490000,
+            "seed_shadow": 1169043,
+            "seed": 5393570,
+            "options_0.11": 1100000
+          },
+          "as_converted_by_security": {
+            "common": "10638297",
+            "options_0.05": "490000",
+            "seed_shadow": "1169043",
+            "seed": "5393570",
+            "options_0.11": "1100000"
+          },
+          "fully_diluted": "21574280",
+          "fully_diluted_percent_by_holder": {
+            "ana": "25.4933",
+            "dev": "20.8582",
+            "lena": "3.1440",
+            "other_employees": "7.1845",
+            "priya": "3.6125",
+            "marcus": "1.8062",
+            "harbor_lane": "25.0000"
+          },
+          "unissued_pool_percent": "12.9013"
+        }
+      }
+    },
+    {
+      "after_event": "series_a",
+      "date": "2023-09-30",
+      "details": {
+        "price_per_share": "3900000/1879091",
+        "price_per_share_approx": "2.0754715977",
+        "post_money_valuation": "60000000",
+        "post_money_fully_diluted_solved": "375818200/13",
+        "post_money_fully_diluted_solved_approx": "28909092.3077",
+        "pre_round_fully_diluted": "21574280",
+        "pro_rata": [
+          {
+            "holder": "harbor_lane",
+            "pre_round_fd_percent": "25.000000",
+            "entitlement": "3000000.00",
+            "amount_invested": "3000000"
+          }
+        ],
+        "new_shares": [
+          {
+            "holder": "ridgeline",
+            "shares": 4336363
+          },
+          {
+            "holder": "harbor_lane",
+            "shares": 1445454
+          }
+        ],
+        "pool_top_up": 1552993,
+        "post_money_fully_diluted_actual": "28909090"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.05",
+            "name": "Options ($0.05 strike)",
+            "kind": "option",
+            "strike": "0.05"
+          },
+          {
+            "id": "seed_shadow",
+            "name": "Seed Preferred (SAFE shadow)",
+            "kind": "preferred",
+            "original_issue_price": "455000/1182033",
+            "conversion_price": "455000/1182033",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.3849300316",
+              "conversion_price": "0.3849300316",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "518700000/1119057997",
+            "conversion_price": "518700000/1119057997",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.4635148503",
+              "conversion_price": "0.4635148503",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.11",
+            "name": "Options ($0.11 strike)",
+            "kind": "option",
+            "strike": "0.11"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "3900000/1879091",
+            "conversion_price": "3900000/1879091",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.25",
+            "participation": "participating_capped",
+            "cap_multiple": "2.75",
+            "anti_dilution": "broad_based",
+            "approx": {
+              "original_issue_price": "2.0754715977",
+              "conversion_price": "2.0754715977",
+              "conversion_ratio": "1.0000000000"
+            }
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed",
+            "seed_shadow"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.05",
+            "shares": 40000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.05",
+            "shares": 450000
+          },
+          {
+            "holder": "priya",
+            "security": "seed_shadow",
+            "shares": 779362
+          },
+          {
+            "holder": "marcus",
+            "security": "seed_shadow",
+            "shares": 389681
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "seed",
+            "shares": 5393570
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.11",
+            "shares": 1100000
+          },
+          {
+            "holder": "ridgeline",
+            "security": "series_a",
+            "shares": 4336363
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "series_a",
+            "shares": 1445454
+          }
+        ],
+        "unissued_pool": 4336363,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297,
+            "options_0.05": 490000,
+            "seed_shadow": 1169043,
+            "seed": 5393570,
+            "options_0.11": 1100000,
+            "series_a": 5781817
+          },
+          "as_converted_by_security": {
+            "common": "10638297",
+            "options_0.05": "490000",
+            "seed_shadow": "1169043",
+            "seed": "5393570",
+            "options_0.11": "1100000",
+            "series_a": "5781817"
+          },
+          "fully_diluted": "28909090",
+          "fully_diluted_percent_by_holder": {
+            "ana": "19.0252",
+            "dev": "15.5660",
+            "lena": "2.3463",
+            "other_employees": "5.3616",
+            "priya": "2.6959",
+            "marcus": "1.3480",
+            "harbor_lane": "23.6570",
+            "ridgeline": "15.0000"
+          },
+          "unissued_pool_percent": "15.0000"
+        }
+      }
+    },
+    {
+      "after_event": "grants_a_to_b",
+      "date": null,
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.05",
+            "name": "Options ($0.05 strike)",
+            "kind": "option",
+            "strike": "0.05"
+          },
+          {
+            "id": "seed_shadow",
+            "name": "Seed Preferred (SAFE shadow)",
+            "kind": "preferred",
+            "original_issue_price": "455000/1182033",
+            "conversion_price": "455000/1182033",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.3849300316",
+              "conversion_price": "0.3849300316",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "518700000/1119057997",
+            "conversion_price": "518700000/1119057997",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.4635148503",
+              "conversion_price": "0.4635148503",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.11",
+            "name": "Options ($0.11 strike)",
+            "kind": "option",
+            "strike": "0.11"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "3900000/1879091",
+            "conversion_price": "3900000/1879091",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.25",
+            "participation": "participating_capped",
+            "cap_multiple": "2.75",
+            "anti_dilution": "broad_based",
+            "approx": {
+              "original_issue_price": "2.0754715977",
+              "conversion_price": "2.0754715977",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.42",
+            "name": "Options ($0.42 strike)",
+            "kind": "option",
+            "strike": "0.42"
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed",
+            "seed_shadow"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.05",
+            "shares": 40000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.05",
+            "shares": 450000
+          },
+          {
+            "holder": "priya",
+            "security": "seed_shadow",
+            "shares": 779362
+          },
+          {
+            "holder": "marcus",
+            "security": "seed_shadow",
+            "shares": 389681
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "seed",
+            "shares": 5393570
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.11",
+            "shares": 1100000
+          },
+          {
+            "holder": "ridgeline",
+            "security": "series_a",
+            "shares": 4336363
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "series_a",
+            "shares": 1445454
+          },
+          {
+            "holder": "dev",
+            "security": "options_0.42",
+            "shares": 250000
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.42",
+            "shares": 300000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.42",
+            "shares": 2250000
+          }
+        ],
+        "unissued_pool": 1536363,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297,
+            "options_0.05": 490000,
+            "seed_shadow": 1169043,
+            "seed": 5393570,
+            "options_0.11": 1100000,
+            "series_a": 5781817,
+            "options_0.42": 2800000
+          },
+          "as_converted_by_security": {
+            "common": "10638297",
+            "options_0.05": "490000",
+            "seed_shadow": "1169043",
+            "seed": "5393570",
+            "options_0.11": "1100000",
+            "series_a": "5781817",
+            "options_0.42": "2800000"
+          },
+          "fully_diluted": "28909090",
+          "fully_diluted_percent_by_holder": {
+            "ana": "19.0252",
+            "dev": "16.4308",
+            "lena": "3.3840",
+            "other_employees": "13.1447",
+            "priya": "2.6959",
+            "marcus": "1.3480",
+            "harbor_lane": "23.6570",
+            "ridgeline": "15.0000"
+          },
+          "unissued_pool_percent": "5.3145"
+        }
+      }
+    },
+    {
+      "after_event": "series_b",
+      "date": "2025-03-31",
+      "details": {
+        "price_per_share": "12003689592480000/11092836539841877",
+        "price_per_share_approx": "1.0821118250",
+        "post_money_valuation": "46000000",
+        "post_money_fully_diluted_solved": "6378381010409079275/150046119906",
+        "post_money_fully_diluted_solved_approx": "42509469.8510",
+        "pre_round_fully_diluted": "28909090",
+        "anti_dilution": [
+          {
+            "series": "series_a",
+            "rule": "broad_based",
+            "cp1": "3900000/1879091",
+            "cp2": "348161279317506201440070405000/190799228993502586113800004553",
+            "cp2_approx": "1.8247520242",
+            "A": "27372727",
+            "B": "3474074847553852480580392/721034375089722005",
+            "C": 9241189,
+            "new_conversion_ratio": "26399892042647573954421580/23210751954500413429338027"
+          }
+        ],
+        "new_shares": [
+          {
+            "holder": "cobalt",
+            "shares": 9241189
+          }
+        ],
+        "pool_top_up": 3564773,
+        "post_money_fully_diluted_actual": "986676749118117131451991135038205/23210751954500413429338027"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "ana",
+            "name": "Ana Ortiz"
+          },
+          {
+            "id": "dev",
+            "name": "Dev Patel"
+          },
+          {
+            "id": "lena",
+            "name": "Lena Fischer"
+          },
+          {
+            "id": "other_employees",
+            "name": "Other employees"
+          },
+          {
+            "id": "priya",
+            "name": "Priya Shah"
+          },
+          {
+            "id": "marcus",
+            "name": "Marcus Lee"
+          },
+          {
+            "id": "harbor_lane",
+            "name": "Harbor Lane Ventures Fund I"
+          },
+          {
+            "id": "ridgeline",
+            "name": "Ridgeline Capital Fund III"
+          },
+          {
+            "id": "cobalt",
+            "name": "Cobalt Family Office LLC"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.05",
+            "name": "Options ($0.05 strike)",
+            "kind": "option",
+            "strike": "0.05"
+          },
+          {
+            "id": "seed_shadow",
+            "name": "Seed Preferred (SAFE shadow)",
+            "kind": "preferred",
+            "original_issue_price": "455000/1182033",
+            "conversion_price": "455000/1182033",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.3849300316",
+              "conversion_price": "0.3849300316",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "518700000/1119057997",
+            "conversion_price": "518700000/1119057997",
+            "conversion_ratio": "1",
+            "preference_multiple": "1.5",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.4635148503",
+              "conversion_price": "0.4635148503",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.11",
+            "name": "Options ($0.11 strike)",
+            "kind": "option",
+            "strike": "0.11"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "3900000/1879091",
+            "conversion_price": "348161279317506201440070405000/190799228993502586113800004553",
+            "conversion_ratio": "26399892042647573954421580/23210751954500413429338027",
+            "preference_multiple": "1.25",
+            "participation": "participating_capped",
+            "cap_multiple": "2.75",
+            "anti_dilution": "broad_based",
+            "approx": {
+              "original_issue_price": "2.0754715977",
+              "conversion_price": "1.8247520242",
+              "conversion_ratio": "1.1373992577"
+            }
+          },
+          {
+            "id": "options_0.42",
+            "name": "Options ($0.42 strike)",
+            "kind": "option",
+            "strike": "0.42"
+          },
+          {
+            "id": "series_b",
+            "name": "Series B Preferred",
+            "kind": "preferred",
+            "original_issue_price": "12003689592480000/11092836539841877",
+            "conversion_price": "12003689592480000/11092836539841877",
+            "conversion_ratio": "1",
+            "preference_multiple": "2",
+            "participation": "participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "1.0821118250",
+              "conversion_price": "1.0821118250",
+              "conversion_ratio": "1.0000000000"
+            }
+          }
+        ],
+        "seniority": [
+          [
+            "series_b"
+          ],
+          [
+            "series_a"
+          ],
+          [
+            "seed",
+            "seed_shadow"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "ana",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "dev",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "lena",
+            "security": "common",
+            "shares": 638297
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.05",
+            "shares": 40000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.05",
+            "shares": 450000
+          },
+          {
+            "holder": "priya",
+            "security": "seed_shadow",
+            "shares": 779362
+          },
+          {
+            "holder": "marcus",
+            "security": "seed_shadow",
+            "shares": 389681
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "seed",
+            "shares": 5393570
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.11",
+            "shares": 1100000
+          },
+          {
+            "holder": "ridgeline",
+            "security": "series_a",
+            "shares": 4336363
+          },
+          {
+            "holder": "harbor_lane",
+            "security": "series_a",
+            "shares": 1445454
+          },
+          {
+            "holder": "dev",
+            "security": "options_0.42",
+            "shares": 250000
+          },
+          {
+            "holder": "lena",
+            "security": "options_0.42",
+            "shares": 300000
+          },
+          {
+            "holder": "other_employees",
+            "security": "options_0.42",
+            "shares": 2250000
+          },
+          {
+            "holder": "cobalt",
+            "security": "series_b",
+            "shares": 9241189
+          }
+        ],
+        "unissued_pool": 5101136,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 10638297,
+            "options_0.05": 490000,
+            "seed_shadow": 1169043,
+            "seed": 5393570,
+            "options_0.11": 1100000,
+            "series_a": 5781817,
+            "options_0.42": 2800000,
+            "series_b": 9241189
+          },
+          "as_converted_by_security": {
+            "common": "10638297",
+            "options_0.05": "490000",
+            "seed_shadow": "1169043",
+            "seed": "5393570",
+            "options_0.11": "1100000",
+            "series_a": "152639344610344468098431916410860/23210751954500413429338027",
+            "options_0.42": "2800000",
+            "series_b": "9241189"
+          },
+          "fully_diluted": "986676749118117131451991135038205/23210751954500413429338027",
+          "fully_diluted_percent_by_holder": {
+            "ana": "12.9383",
+            "dev": "11.1740",
+            "lena": "2.3014",
+            "other_employees": "8.9392",
+            "priya": "1.8334",
+            "marcus": "0.9167",
+            "harbor_lane": "16.5554",
+            "ridgeline": "11.6025",
+            "cobalt": "21.7391"
+          },
+          "unissued_pool_percent": "12.0000"
+        }
+      }
+    }
+  ],
+  "exit": {
+    "breakpoints": [
+      {
+        "exit_value": "19999999.79",
+        "exact": "221856728442881317440000/11092836539841877",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 1,
+            "securities": [
+              "series_b"
+            ],
+            "text": "The preference tier Series B Preferred is fully paid ($19,999,999.79). Above this exit value, the next dollar goes to the next tier's preference (Series A Preferred)."
+          }
+        ]
+      },
+      {
+        "exit_value": "34999996.00",
+        "exact": "729555642267322138703378415000/20844449306488012493807",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 2,
+            "securities": [
+              "series_a"
+            ],
+            "text": "The preference tier Series A Preferred is fully paid ($14,999,996.21). Above this exit value, the next dollar goes to the next tier's preference (Seed Preferred and Seed Preferred (SAFE shadow))."
+          }
+        ]
+      },
+      {
+        "exit_value": "39424995.32",
+        "exact": "120781873931540320810130966345869540504457500/3063586259094090337265098282961232123",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 3,
+            "securities": [
+              "seed",
+              "seed_shadow"
+            ],
+            "text": "The preference tier Seed Preferred and Seed Preferred (SAFE shadow) is fully paid ($4,424,999.33). Above this exit value, the next dollar goes to the residual, shared as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "40747781.34",
+        "exact": "3219443300877017948201025144780532793950950366950366931384500814230377/79009045278943074746127255598837617548225744622255462419823690",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.05",
+            "strike": "0.05",
+            "text": "Common reaches $0.05 per share, the strike on the 490,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "42364524.56",
+        "exact": "16735903196471721827469027113851462183749207349270573061352771336614147/395045226394715373730636277994188087741128723111277312099118450",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.11",
+            "strike": "0.11",
+            "text": "Common reaches $0.11 per share, the strike on the 1,100,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "51058697.87",
+        "exact": "373527682613331831172370332087338353592104056830833340388918856783071/7315652340642877291308079222114594217428309687245876149983675",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.42",
+            "strike": "0.42",
+            "text": "Common reaches $0.42 per share, the strike on the 2,800,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "55913661.49",
+        "exact": "11927749533677777254419987966168812051554098604819930333277244685448000/213324422253146301814543590116861567380209510480089748533523963",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "seed_shadow",
+            "converts": true,
+            "text": "Seed Preferred (SAFE shadow) converts to common. At this exit value its as-converted share (1,169,043 common shares at $0.5774 each = $674,999.64) equals its 1.5x preference of $674,999.64. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "59687473.06",
+        "exact": "3590648683411224826707905518063227913265192898386631711568769500/60157492008301601792432639392431392180593240764031051737",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "seed",
+            "converts": true,
+            "text": "Seed Preferred converts to common. At this exit value its as-converted share (5,393,570 common shares at $0.6953 each = $3,749,999.69) equals its 1.5x preference of $3,749,999.69. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "136069894.04",
+        "exact": "25962030871269287901393082904878488000/190799228993502586113800004553",
+        "reasons": [
+          {
+            "code": "cap_reached",
+            "security": "series_a",
+            "text": "Series A Preferred reaches its cap: preference plus participation totals 2.75x its original issue price ($32,999,991.66). Above this exit value its payout stays flat until converting to common pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "206396062.86",
+        "exact": "39380209661124292446285824522291106750/190799228993502586113800004553",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_a",
+            "converts": true,
+            "text": "Series A Preferred converts to common. At this exit value its as-converted share (6,576,234.36 common shares at $5.0181 each = $32,999,991.66) equals its capped payout of $32,999,991.66 (2.75x its original issue price). Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "10000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "0.00"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "10000000.00"
+              }
+            ],
+            "holder_totals": {
+              "ana": "0.00",
+              "dev": "0.00",
+              "lena": "0.00",
+              "other_employees": "0.00",
+              "priya": "0.00",
+              "marcus": "0.00",
+              "harbor_lane": "0.00",
+              "ridgeline": "0.00",
+              "cobalt": "10000000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.05": "0.00",
+              "seed_shadow": "0.00",
+              "seed": "0.00",
+              "options_0.11": "0.00",
+              "series_a": "0.00",
+              "options_0.42": "0.00",
+              "series_b": "10000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "19999999.79",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "0.00"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "19999999.79"
+              }
+            ],
+            "holder_totals": {
+              "ana": "0.00",
+              "dev": "0.00",
+              "lena": "0.00",
+              "other_employees": "0.00",
+              "priya": "0.00",
+              "marcus": "0.00",
+              "harbor_lane": "0.00",
+              "ridgeline": "0.00",
+              "cobalt": "19999999.79"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.05": "0.00",
+              "seed_shadow": "0.00",
+              "seed": "0.00",
+              "options_0.11": "0.00",
+              "series_a": "0.00",
+              "options_0.42": "0.00",
+              "series_b": "19999999.79"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "25000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "3750000.38"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "1249999.84"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "19999999.79"
+              }
+            ],
+            "holder_totals": {
+              "ana": "0.00",
+              "dev": "0.00",
+              "lena": "0.00",
+              "other_employees": "0.00",
+              "priya": "0.00",
+              "marcus": "0.00",
+              "harbor_lane": "1249999.84",
+              "ridgeline": "3750000.38",
+              "cobalt": "19999999.79"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.05": "0.00",
+              "seed_shadow": "0.00",
+              "seed": "0.00",
+              "options_0.11": "0.00",
+              "series_a": "5000000.21",
+              "options_0.42": "0.00",
+              "series_b": "19999999.79"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "34999996.00",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "0.00"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "11249997.80"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "3749998.40"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "19999999.79"
+              }
+            ],
+            "holder_totals": {
+              "ana": "0.00",
+              "dev": "0.00",
+              "lena": "0.00",
+              "other_employees": "0.00",
+              "priya": "0.00",
+              "marcus": "0.00",
+              "harbor_lane": "3749998.40",
+              "ridgeline": "11249997.80",
+              "cobalt": "19999999.79"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.05": "0.00",
+              "seed_shadow": "0.00",
+              "seed": "0.00",
+              "options_0.11": "0.00",
+              "series_a": "14999996.21",
+              "options_0.42": "0.00",
+              "series_b": "19999999.79"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "39424995.32",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "11249997.80"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "3749998.40"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "19999999.79"
+              }
+            ],
+            "holder_totals": {
+              "ana": "0.00",
+              "dev": "0.00",
+              "lena": "0.00",
+              "other_employees": "0.00",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "7499998.09",
+              "ridgeline": "11249997.80",
+              "cobalt": "19999999.79"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.05": "0.00",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "0.00",
+              "series_a": "14999996.21",
+              "options_0.42": "0.00",
+              "series_b": "19999999.79"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.021735",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "119540.34"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "97805.73"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "13873.13"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "11357196.71"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "3785731.36"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "20200853.40"
+              }
+            ],
+            "holder_totals": {
+              "ana": "119540.34",
+              "dev": "97805.73",
+              "lena": "13873.13",
+              "other_employees": "0.00",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "7535731.05",
+              "ridgeline": "11357196.71",
+              "cobalt": "20200853.40"
+            },
+            "class_totals": {
+              "common": "231219.20",
+              "options_0.05": "0.00",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "0.00",
+              "series_a": "15142928.08",
+              "options_0.42": "0.00",
+              "series_b": "20200853.40"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40747781.34",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "not_exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.050000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "275000.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "225000.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "31914.85"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "0.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "11496606.61"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "3832201.32"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "20462059.24"
+              }
+            ],
+            "holder_totals": {
+              "ana": "275000.00",
+              "dev": "225000.00",
+              "lena": "31914.85",
+              "other_employees": "0.00",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "7582201.01",
+              "ridgeline": "11496606.61",
+              "cobalt": "20462059.24"
+            },
+            "class_totals": {
+              "common": "531914.85",
+              "options_0.05": "0.00",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "0.00",
+              "series_a": "15328807.93",
+              "options_0.42": "0.00",
+              "series_b": "20462059.24"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "42364524.56",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "not_exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.110000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "605000.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "495000.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "70212.67"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "2400.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "27000.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "0.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "11792537.17"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "3930844.82"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "21016530.58"
+              }
+            ],
+            "holder_totals": {
+              "ana": "605000.00",
+              "dev": "495000.00",
+              "lena": "72612.67",
+              "other_employees": "27000.00",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "7680844.50",
+              "ridgeline": "11792537.17",
+              "cobalt": "21016530.58"
+            },
+            "class_totals": {
+              "common": "1170212.67",
+              "options_0.05": "29400.00",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "0.00",
+              "series_a": "15723381.99",
+              "options_0.42": "0.00",
+              "series_b": "21016530.58"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "50000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.382251",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "2102380.50"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "1720129.50"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "243989.67"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "13290.04"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "149512.95"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "299476.10"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "13135327.04"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "4378441.34"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "23532453.53"
+              }
+            ],
+            "holder_totals": {
+              "ana": "2102380.50",
+              "dev": "1720129.50",
+              "lena": "257279.71",
+              "other_employees": "448989.05",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "8128441.02",
+              "ridgeline": "13135327.04",
+              "cobalt": "23532453.53"
+            },
+            "class_totals": {
+              "common": "4066499.68",
+              "options_0.05": "162802.99",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "299476.10",
+              "series_a": "17513768.38",
+              "options_0.42": "0.00",
+              "series_b": "23532453.53"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "51058697.87",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "not_exercised"
+            },
+            "common_price_per_share": "0.420000",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "2310000.00"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "1890000.00"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "268084.74"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "14800.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "166500.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "341000.00"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "13321511.75"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "4440502.89"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "0.00"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "23881299.17"
+              }
+            ],
+            "holder_totals": {
+              "ana": "2310000.00",
+              "dev": "1890000.00",
+              "lena": "282884.74",
+              "other_employees": "507500.00",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "8190502.58",
+              "ridgeline": "13321511.75",
+              "cobalt": "23881299.17"
+            },
+            "class_totals": {
+              "common": "4468084.74",
+              "options_0.05": "181300.00",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "341000.00",
+              "series_a": "17762014.64",
+              "options_0.42": "0.00",
+              "series_b": "23881299.17"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "55913661.49",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "keeps_preference",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "0.577395",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "3175672.76"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "2598277.71"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "368549.53"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "21095.80"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "237327.77"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "449999.76"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "224999.88"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "514134.55"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "14097811.83"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "4699269.53"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "39348.76"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "47218.51"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "354138.86"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "25335816.55"
+              }
+            ],
+            "holder_totals": {
+              "ana": "3175672.76",
+              "dev": "2637626.47",
+              "lena": "436863.84",
+              "other_employees": "1105601.18",
+              "priya": "449999.76",
+              "marcus": "224999.88",
+              "harbor_lane": "8449269.21",
+              "ridgeline": "14097811.83",
+              "cobalt": "25335816.55"
+            },
+            "class_totals": {
+              "common": "6142500.00",
+              "options_0.05": "258423.57",
+              "seed_shadow": "674999.64",
+              "seed": "3749999.69",
+              "options_0.11": "514134.55",
+              "series_a": "18797081.36",
+              "options_0.42": "440706.13",
+              "series_b": "25335816.55"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "59687473.06",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "0.695272",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "3823997.52"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "3128725.24"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "443790.21"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "25810.89"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "290372.52"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "541868.79"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "270934.40"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "3749999.69"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "643799.50"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "14679203.08"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "4893066.56"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "68818.07"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "82581.68"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "619362.62"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "26425142.29"
+              }
+            ],
+            "holder_totals": {
+              "ana": "3823997.52",
+              "dev": "3197543.31",
+              "lena": "552182.78",
+              "other_employees": "1553534.65",
+              "priya": "541868.79",
+              "marcus": "270934.40",
+              "harbor_lane": "8643066.25",
+              "ridgeline": "14679203.08",
+              "cobalt": "26425142.29"
+            },
+            "class_totals": {
+              "common": "7396512.96",
+              "options_0.05": "316183.41",
+              "seed_shadow": "812803.19",
+              "seed": "3749999.69",
+              "options_0.11": "643799.50",
+              "series_a": "19572269.64",
+              "options_0.42": "770762.37",
+              "series_b": "26425142.29"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "75000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "1.104607",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "6075338.08"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "4970731.15"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "705067.29"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "42184.28"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "474573.12"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "860888.66"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "430444.33"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "5957774.76"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "1094067.62"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "16698113.62"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "5566036.59"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "171151.73"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "205382.08"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "1540365.58"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "30207881.13"
+              }
+            ],
+            "holder_totals": {
+              "ana": "6075338.08",
+              "dev": "5141882.88",
+              "lena": "952633.64",
+              "other_employees": "3109006.31",
+              "priya": "860888.66",
+              "marcus": "430444.33",
+              "harbor_lane": "11523811.35",
+              "ridgeline": "16698113.62",
+              "cobalt": "30207881.13"
+            },
+            "class_totals": {
+              "common": "11751136.51",
+              "options_0.05": "516757.39",
+              "seed_shadow": "1291332.99",
+              "seed": "5957774.76",
+              "options_0.11": "1094067.62",
+              "series_a": "22264150.21",
+              "options_0.42": "1916899.38",
+              "series_b": "30207881.13"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "100000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "1.772907",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "9750989.67"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "7978082.45"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "1131641.35"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "68916.29"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "775308.25"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "1381736.51"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "690868.26"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "9562299.15"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "1829197.93"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "19994288.31"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "6664761.23"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "338226.80"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "405872.16"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "3044041.23"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "36383770.41"
+              }
+            ],
+            "holder_totals": {
+              "ana": "9750989.67",
+              "dev": "8316309.26",
+              "lena": "1606429.81",
+              "other_employees": "5648547.41",
+              "priya": "1381736.51",
+              "marcus": "690868.26",
+              "harbor_lane": "16227060.38",
+              "ridgeline": "19994288.31",
+              "cobalt": "36383770.41"
+            },
+            "class_totals": {
+              "common": "18860713.47",
+              "options_0.05": "844224.53",
+              "seed_shadow": "2072604.77",
+              "seed": "9562299.15",
+              "options_0.11": "1829197.93",
+              "series_a": "26659049.54",
+              "options_0.42": "3788140.19",
+              "series_b": "36383770.41"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "136069894.04",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "2.737128",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "15054204.20"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "12317076.16"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "1747100.61"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "107485.12"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "1209207.62"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "2133213.58"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "1066606.79"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "14762891.66"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "2889840.84"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "24749995.17"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "8249996.49"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "579282.01"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "695138.41"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "5213538.08"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "45294317.29"
+              }
+            ],
+            "holder_totals": {
+              "ana": "15054204.20",
+              "dev": "12896358.17",
+              "lena": "2549724.15",
+              "other_employees": "9312586.54",
+              "priya": "2133213.58",
+              "marcus": "1066606.79",
+              "harbor_lane": "23012888.15",
+              "ridgeline": "24749995.17",
+              "cobalt": "45294317.29"
+            },
+            "class_totals": {
+              "common": "29118380.98",
+              "options_0.05": "1316692.74",
+              "seed_shadow": "3199820.37",
+              "seed": "14762891.66",
+              "options_0.11": "2889840.84",
+              "series_a": "32999991.66",
+              "options_0.42": "6487958.50",
+              "series_b": "45294317.29"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "150000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "3.188933",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "17539133.39"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "14350200.05"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "2035486.59"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "125557.33"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "1412520.00"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "2485333.47"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "1242666.73"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "17199735.21"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "3386826.68"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "24749995.17"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "8249996.49"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "692233.34"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "830680.00"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "6230100.02"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "49469535.52"
+              }
+            ],
+            "holder_totals": {
+              "ana": "17539133.39",
+              "dev": "15042433.38",
+              "lena": "2991723.92",
+              "other_employees": "11029446.71",
+              "priya": "2485333.47",
+              "marcus": "1242666.73",
+              "harbor_lane": "25449731.70",
+              "ridgeline": "24749995.17",
+              "cobalt": "49469535.52"
+            },
+            "class_totals": {
+              "common": "33924820.02",
+              "options_0.05": "1538077.34",
+              "seed_shadow": "3728000.20",
+              "seed": "17199735.21",
+              "options_0.11": "3386826.68",
+              "series_a": "32999991.66",
+              "options_0.42": "7753013.36",
+              "series_b": "49469535.52"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "206396062.86",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "5.018068",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "27599374.37"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "22581306.30"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "3203017.79"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "198722.72"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "2235630.63"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "3910891.56"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "1955445.78"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "27065301.38"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "5398874.87"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "24749995.17"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "8249996.49"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "1149517.02"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "1379420.42"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "10345653.15"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "66372915.21"
+              }
+            ],
+            "holder_totals": {
+              "ana": "27599374.37",
+              "dev": "23730823.32",
+              "lena": "4781160.94",
+              "other_employees": "17980158.65",
+              "priya": "3910891.56",
+              "marcus": "1955445.78",
+              "harbor_lane": "35315297.87",
+              "ridgeline": "24749995.17",
+              "cobalt": "66372915.21"
+            },
+            "class_totals": {
+              "common": "53383698.46",
+              "options_0.05": "2434353.35",
+              "seed_shadow": "5866337.35",
+              "seed": "27065301.38",
+              "options_0.11": "5398874.87",
+              "series_a": "32999991.66",
+              "options_0.42": "12874590.59",
+              "series_b": "66372915.21"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "225000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "converts",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "5.515389",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "30334638.01"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "24819249.28"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "3520456.08"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "218615.55"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "2459424.93"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "4298484.39"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "2149242.20"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "29747635.19"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "5945927.60"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "27202868.24"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "9067620.65"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "1273847.18"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "1528616.62"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "11464624.64"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "70968749.44"
+              }
+            ],
+            "holder_totals": {
+              "ana": "30334638.01",
+              "dev": "26093096.46",
+              "lena": "5267688.25",
+              "other_employees": "19869977.17",
+              "priya": "4298484.39",
+              "marcus": "2149242.20",
+              "harbor_lane": "38815255.84",
+              "ridgeline": "27202868.24",
+              "cobalt": "70968749.44"
+            },
+            "class_totals": {
+              "common": "58674343.37",
+              "options_0.05": "2678040.48",
+              "seed_shadow": "6447726.59",
+              "seed": "29747635.19",
+              "options_0.11": "5945927.60",
+              "series_a": "36270488.89",
+              "options_0.42": "14267088.44",
+              "series_b": "70968749.44"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "300000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed_shadow": "converts",
+              "seed": "converts",
+              "series_a": "converts",
+              "options_0.05": "exercised",
+              "options_0.11": "exercised",
+              "options_0.42": "exercised"
+            },
+            "common_price_per_share": "7.520290",
+            "lines": [
+              {
+                "holder": "ana",
+                "security": "common",
+                "amount": "41361592.78"
+              },
+              {
+                "holder": "dev",
+                "security": "common",
+                "amount": "33841303.18"
+              },
+              {
+                "holder": "lena",
+                "security": "common",
+                "amount": "4800178.29"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.05",
+                "amount": "298811.58"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.05",
+                "amount": "3361630.32"
+              },
+              {
+                "holder": "priya",
+                "security": "seed_shadow",
+                "amount": "5861027.94"
+              },
+              {
+                "holder": "marcus",
+                "security": "seed_shadow",
+                "amount": "2930513.97"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "seed",
+                "amount": "40561208.36"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.11",
+                "amount": "8151318.56"
+              },
+              {
+                "holder": "ridgeline",
+                "security": "series_a",
+                "amount": "37091392.29"
+              },
+              {
+                "holder": "harbor_lane",
+                "security": "series_a",
+                "amount": "12363794.58"
+              },
+              {
+                "holder": "dev",
+                "security": "options_0.42",
+                "amount": "1775072.40"
+              },
+              {
+                "holder": "lena",
+                "security": "options_0.42",
+                "amount": "2130086.88"
+              },
+              {
+                "holder": "other_employees",
+                "security": "options_0.42",
+                "amount": "15975651.59"
+              },
+              {
+                "holder": "cobalt",
+                "security": "series_b",
+                "amount": "89496417.28"
+              }
+            ],
+            "holder_totals": {
+              "ana": "41361592.78",
+              "dev": "35616375.58",
+              "lena": "7229076.75",
+              "other_employees": "27488600.47",
+              "priya": "5861027.94",
+              "marcus": "2930513.97",
+              "harbor_lane": "52925002.94",
+              "ridgeline": "37091392.29",
+              "cobalt": "89496417.28"
+            },
+            "class_totals": {
+              "common": "80003074.25",
+              "options_0.05": "3660441.90",
+              "seed_shadow": "8791541.91",
+              "seed": "40561208.36",
+              "options_0.11": "8151318.56",
+              "series_a": "49455186.87",
+              "options_0.42": "19880810.87",
+              "series_b": "89496417.28"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
