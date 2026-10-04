@@ -1,5 +1,5 @@
 {
-  "case": "edge-13-convertible-note",
+  "case": "edge-13c-note-common-only",
   "generated_by": "reference/generate.py",
   "exit": {
     "unconverted_notes": [
@@ -11,15 +11,15 @@
         "days": 730,
         "interest": "120000",
         "repayment": "2240000",
-        "conversion_base": "with_pool",
-        "conversion_base_shares": "10500000",
-        "conversion_price": "16/21",
-        "conversion_shares": "1470000",
+        "conversion_base": "common_only",
+        "conversion_base_shares": "9000000",
+        "conversion_price": "8/9",
+        "conversion_shares": "1260000",
         "approx": {
           "interest": "120000.00",
           "repayment": "2240000.00",
-          "conversion_price": "0.761905",
-          "conversion_shares": "1470000.00"
+          "conversion_price": "0.888889",
+          "conversion_shares": "1260000.00"
         }
       }
     ],
@@ -36,14 +36,14 @@
         ]
       },
       {
-        "exit_value": "15954285.71",
-        "exact": "111680000/7",
+        "exit_value": "18240000.00",
+        "exact": "18240000",
         "reasons": [
           {
             "code": "note_switches",
             "security": "note_x",
             "converts": true,
-            "text": "Investor X's convertible note switches from repayment to conversion. Its principal plus interest, $1,120,000.00, converts at $0.761905 a share (the $8,000,000.00 cap \u00f7 10,500,000 shares) into 1,470,000 shares. Here each is worth $1.523810, $2,240,000.00 in all, which equals its $2,240,000.00 repayment. Below this exit value repayment pays more; above it, converting does."
+            "text": "Investor X's convertible note switches from repayment to conversion. Its principal plus interest, $1,120,000.00, converts at $0.888889 a share (the $8,000,000.00 cap \u00f7 9,000,000 shares) into 1,260,000 shares. Here each is worth $1.777778, $2,240,000.00 in all, which equals its $2,240,000.00 repayment. Below this exit value repayment pays more; above it, converting does."
           }
         ]
       }
@@ -344,7 +344,7 @@
         ]
       },
       {
-        "exit_value": "15954285.71",
+        "exit_value": "18240000.00",
         "tags": [
           "breakpoint"
         ],
@@ -355,17 +355,17 @@
               "options_5": "not_exercised",
               "note_x": "repayment"
             },
-            "common_price_per_share": "1.523810",
+            "common_price_per_share": "1.777778",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "9142857.14"
+                "amount": "10666666.67"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "4571428.57"
+                "amount": "5333333.33"
               },
               {
                 "holder": "employee_c",
@@ -379,13 +379,13 @@
               }
             ],
             "holder_totals": {
-              "founder_a": "9142857.14",
-              "founder_b": "4571428.57",
+              "founder_a": "10666666.67",
+              "founder_b": "5333333.33",
               "employee_c": "0.00",
               "investor_x": "2240000.00"
             },
             "class_totals": {
-              "common": "13714285.71",
+              "common": "16000000.00",
               "options_5": "0.00",
               "note_x": "2240000.00"
             }
@@ -404,17 +404,17 @@
               "options_5": "not_exercised",
               "note_x": "converts"
             },
-            "common_price_per_share": "1.910220",
+            "common_price_per_share": "1.949318",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "11461318.05"
+                "amount": "11695906.43"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "5730659.03"
+                "amount": "5847953.22"
               },
               {
                 "holder": "employee_c",
@@ -424,19 +424,19 @@
               {
                 "holder": "investor_x",
                 "security": "note_x",
-                "amount": "2808022.92"
+                "amount": "2456140.35"
               }
             ],
             "holder_totals": {
-              "founder_a": "11461318.05",
-              "founder_b": "5730659.03",
+              "founder_a": "11695906.43",
+              "founder_b": "5847953.22",
               "employee_c": "0.00",
-              "investor_x": "2808022.92"
+              "investor_x": "2456140.35"
             },
             "class_totals": {
-              "common": "17191977.08",
+              "common": "17543859.65",
               "options_5": "0.00",
-              "note_x": "2808022.92"
+              "note_x": "2456140.35"
             }
           }
         ]
@@ -453,17 +453,17 @@
               "options_5": "not_exercised",
               "note_x": "converts"
             },
-            "common_price_per_share": "3.820439",
+            "common_price_per_share": "3.898635",
             "lines": [
               {
                 "holder": "founder_a",
                 "security": "common",
-                "amount": "22922636.10"
+                "amount": "23391812.87"
               },
               {
                 "holder": "founder_b",
                 "security": "common",
-                "amount": "11461318.05"
+                "amount": "11695906.43"
               },
               {
                 "holder": "employee_c",
@@ -473,19 +473,19 @@
               {
                 "holder": "investor_x",
                 "security": "note_x",
-                "amount": "5616045.85"
+                "amount": "4912280.70"
               }
             ],
             "holder_totals": {
-              "founder_a": "22922636.10",
-              "founder_b": "11461318.05",
+              "founder_a": "23391812.87",
+              "founder_b": "11695906.43",
               "employee_c": "0.00",
-              "investor_x": "5616045.85"
+              "investor_x": "4912280.70"
             },
             "class_totals": {
-              "common": "34383954.15",
+              "common": "35087719.30",
               "options_5": "0.00",
-              "note_x": "5616045.85"
+              "note_x": "4912280.70"
             }
           }
         ]

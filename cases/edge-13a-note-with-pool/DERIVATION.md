@@ -1,4 +1,4 @@
-# Edge case 13: derivation
+# Edge case 13a: derivation
 
 This is edge case 12's company (9,000,000 common, 500,000 options at $5.00, a 1,000,000-share unissued pool), with a convertible note in place of the SAFE.
 
@@ -58,13 +58,13 @@ Employee C's options get nothing at every listed exit value.
 
 ## What the toggle changes
 
-What the cap divides by is a toggle (X10), because notes have no standard form. This case uses the default, "with pool". The other settings would give:
+What the cap divides by is a toggle (X10), because notes have no standard form. This case uses the default, "with pool". Cases 13b and 13c are this case with the other two settings:
 
-| Cap divides by | Conversion price | Conversion shares | Switch to conversion | Note at $20M |
-|---|---:|---:|---:|---:|
-| Common + options + pool (this case) | $0.761905 | 1,470,000 | $15,954,285.71 | $2,808,022.92 |
-| Common + options, no pool | $0.842105 | 1,330,000 | $17,397,894.74 | $2,575,024.20 |
-| Common only | $0.888889 | 1,260,000 | $18,240,000.00 | $2,456,140.35 |
+| Case | Cap divides by | Conversion price | Conversion shares | Switch to conversion | Note at $20M |
+|---|---|---:|---:|---:|---:|
+| 13a (this case) | Common + options + pool | $0.761905 | 1,470,000 | $15,954,285.71 | $2,808,022.92 |
+| 13b | Common + options, no pool | $0.842105 | 1,330,000 | $17,397,894.74 | $2,575,024.20 |
+| 13c | Common only | $0.888889 | 1,260,000 | $18,240,000.00 | $2,456,140.35 |
 
 The repayment breakpoint stays at $2,240,000 under every setting.
 

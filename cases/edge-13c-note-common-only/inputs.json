@@ -1,6 +1,6 @@
 {
-  "case": "edge-13-convertible-note",
-  "description": "Edge case 12's company with a convertible note instead of the SAFE: $1M at 6% simple interest, an $8M pre-money cap, no discount, still outstanding at the sale. The holder takes the greater of 2x principal plus interest, paid ahead of all equity as debt, or principal plus interest converted at the cap \u00f7 (common + all issued options + the unissued pool).",
+  "case": "edge-13c-note-common-only",
+  "description": "Edge case 13a with one term changed: the note's cap divides by issued common stock only, leaving out the options and the unissued pool. Everything else is the same: $1M at 6% simple interest, an $8M pre-money cap, no discount, and the greater of 2x principal plus interest or conversion at the cap.",
   "exit": {
     "cap_table": {
       "holders": [
@@ -63,7 +63,7 @@
           "issue_date": "2022-01-01",
           "valuation_cap": "8000000",
           "cap_type": "pre_money",
-          "conversion_base": "with_pool",
+          "conversion_base": "common_only",
           "discount": "0",
           "repayment_multiple": "2"
         }
