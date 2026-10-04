@@ -227,6 +227,14 @@ def security_from_json(s):
             raise ValueError(f"unknown participation {out['participation']}")
         if (out["participation"] == "participating_capped") != (out["cap_multiple"] is not None):
             raise ValueError(f"{s['id']}: cap_multiple goes with participating_capped only")
+        # E7: the cap counts the preference, so a cap below the preference has
+        # no meaning. A cap equal to it leaves no room to participate, which
+        # behaves like non-participating.
+        if out["cap_multiple"] is not None and out["cap_multiple"] < out["preference_multiple"]:
+            raise ValueError(
+                f"{s['id']}: its cap ({out['cap_multiple']}x) is below its preference ({out['preference_multiple']}x); "
+                "a cap counts the preference, so it can't be lower"
+            )
         if out["anti_dilution"] not in ANTI_DILUTION:
             raise ValueError(f"unknown anti_dilution {out['anti_dilution']}")
         if "anti_dilution_a" in s and out["anti_dilution_a"] not in ANTI_DILUTION_A[out["anti_dilution"]]:

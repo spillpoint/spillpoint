@@ -73,12 +73,14 @@ def _indifference(wf, sides, pts, bracket):
         player = wf.players[i]
         flipped = bits_l[:i] + (not u,) + bits_l[i + 1 :]
         if player in wf.vote:
+            # E17: each voter compares the two settled outcomes of the group's choice.
             values = [
-                (lambda bits, e, h=h: wf.holder_group_payout(wf.run(e, bits)[0], player, h))
+                (lambda bits, e, h=h, i=i: wf.holder_group_payout(wf.group_choice_totals(e)[bits[i]], player, h))
                 for h in wf.voters[player]
             ]
         else:
-            values = [lambda bits, e: wf.player_value(wf.run(e, bits)[0], player)]
+            # E16: options re-settle under each choice.
+            values = [lambda bits, e: wf.player_value(wf.run(e, wf.settled(e, bits))[0], player)]
         for value in values:
             m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
             m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)

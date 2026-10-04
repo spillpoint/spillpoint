@@ -8,6 +8,12 @@ repayment or converts), run the waterfall for each, and keep
 the combinations that are stable: no single decision-maker would be better
 off flipping its own decision.
 
+Option exercise is not a free choice: it follows the common price (E16).
+Under each set of the other decisions, the option classes settle on the
+exercise set where no class gains by switching. A conversion group decides
+first (E17): for each of its two choices everyone else settles, and the
+group votes on the two settled outcomes.
+
 This is deliberately a different method from the engine, which solves for
 the stable decisions directly.
 """
@@ -41,6 +47,11 @@ class Waterfall:
         self.members = {}
         self.vote = {}
         grouped = set()
+        if len(ct.conversion_groups) > 1:
+            raise ValueError(
+                "more than one conversion group is not supported yet (E17): the order in which groups decide "
+                "isn't settled until a case needs it"
+            )
         for g in ct.conversion_groups:
             pid = "+".join(g["series"])
             self.members[pid] = list(g["series"])
@@ -367,28 +378,17 @@ class Waterfall:
         return total[player]
 
     def equilibria(self, exit_value):
-        """All stable decision sets at this exit value."""
-        results = {}
-        for bits in self.decision_sets():
-            results[bits] = self.run(exit_value, bits)
-        stable = []
-        for bits, (total, price, flags) in results.items():
-            ok = True
-            for i, player in enumerate(self.players):
-                flipped = bits[:i] + (not bits[i],) + bits[i + 1 :]
-                if player in self.vote:
-                    on, off = (bits, flipped) if bits[i] else (flipped, bits)
-                    if self.vote_converts(player, results[on][0], results[off][0]) != bits[i]:
-                        ok = False
-                        break
-                elif self.player_value(results[flipped][0], player) > self.player_value(total, player):
-                    ok = False
-                    break
-            if ok:
-                stable.append((bits, total, price, flags))
-        if not stable:
-            raise ValueError(f"no stable decision set at exit {exit_value}")
-        return stable
+        """All stable decision sets at this exit value, under E16 and E17."""
+        return _AtExit(self, exit_value).stable()
+
+    def group_choice_totals(self, exit_value):
+        """For the conversion group: the settled outcome if it converts and if it stays (E17)."""
+        at = _AtExit(self, exit_value)
+        return {v: at.res(at.group_choice(v))[0] for v in (False, True)}
+
+    def settled(self, exit_value, bits):
+        """These decisions with option exercise settled for them (E16)."""
+        return _AtExit(self, exit_value).settle(bits)
 
     def split_to_lines(self, total):
         """Per holder × security amounts. A security's total splits pro rata by shares."""
@@ -438,3 +438,96 @@ class Waterfall:
             return None
         lines = outs[0]["lines"]
         return [lines[(h, s)] for h, s, _ in self.lines]
+
+
+def _flip(bits, i):
+    return bits[:i] + (not bits[i],) + bits[i + 1 :]
+
+
+class _AtExit:
+    """Every combination of decisions at one exit value, under E16 and E17.
+
+    Option classes follow the common price: they are settled, not chosen. The
+    free decision-makers (series outside a group, warrants, SAFEs, notes) are
+    stable when none gains by switching, with the options re-settled under
+    each choice. A conversion group decides first: for each of its two
+    choices the free decision-makers settle, and the group votes (E11) on the
+    two settled outcomes.
+    """
+
+    def __init__(self, wf, exit_value):
+        self.wf = wf
+        self.x = Fraction(exit_value)
+        self.results = {}
+        self.settled_cache = {}
+        self.options = [i for i, p in enumerate(wf.players) if p in wf.options]
+        deciders = [i for i in range(len(wf.players)) if i not in self.options]
+        self.group = [i for i in deciders if wf.players[i] in wf.vote]
+        self.free = [i for i in deciders if i not in self.group]
+
+    def res(self, bits):
+        if bits not in self.results:
+            self.results[bits] = self.wf.run(self.x, bits)
+        return self.results[bits]
+
+    def value(self, bits, i):
+        return self.wf.player_value(self.res(bits)[0], self.wf.players[i])
+
+    def outcome(self, bits):
+        return tuple(sorted(self.wf.split_to_lines(self.res(bits)[0]).items()))
+
+    def settle(self, bits):
+        """The option exercise set where no class gains by switching (E5: fewest exercises on a tie)."""
+        key = tuple(v for i, v in enumerate(bits) if i not in self.options)
+        if key not in self.settled_cache:
+            fits = []
+            for obits in itertools.product((False, True), repeat=len(self.options)):
+                b = list(bits)
+                for i, v in zip(self.options, obits):
+                    b[i] = v
+                b = tuple(b)
+                if all(self.value(_flip(b, i), i) <= self.value(b, i) for i in self.options):
+                    fits.append(b)
+            if len({self.outcome(b) for b in fits}) != 1:
+                raise ValueError(f"option exercise settles {len(fits)} ways at exit {self.x}")
+            self.settled_cache[key] = min(fits, key=lambda b: (sum(b), b))
+        return self.settled_cache[key]
+
+    def stable_free(self, bits):
+        return all(self.value(self.settle(_flip(bits, i)), i) <= self.value(bits, i) for i in self.free)
+
+    def settled_sets(self, fixed):
+        out = []
+        for fbits in itertools.product((False, True), repeat=len(self.free)):
+            b = [False] * len(self.wf.players)
+            for i, v in fixed.items():
+                b[i] = v
+            for i, v in zip(self.free, fbits):
+                b[i] = v
+            b = self.settle(tuple(b))
+            if self.stable_free(b):
+                out.append(b)
+        return out
+
+    def group_choice(self, converts):
+        """The settled decisions if the group converts (or stays). The others must settle one way."""
+        (g,) = self.group
+        sets = self.settled_sets({g: converts})
+        if len({self.outcome(b) for b in sets}) != 1:
+            raise ValueError(
+                f"at exit {self.x} the other decisions settle {len(sets)} ways when the group "
+                f"{'converts' if converts else 'stays'}, so its vote has no single comparison (E17)"
+            )
+        return min(sets, key=lambda b: (sum(b), b))
+
+    def stable(self):
+        if not self.group:
+            stable = self.settled_sets({})
+        else:
+            (g,) = self.group
+            on, off = self.group_choice(True), self.group_choice(False)
+            converts = self.wf.vote_converts(self.wf.players[g], self.res(on)[0], self.res(off)[0])
+            stable = self.settled_sets({g: converts})
+        if not stable:
+            raise ValueError(f"no stable decision set at exit {self.x}")
+        return [(bits, *self.res(bits)) for bits in stable]
