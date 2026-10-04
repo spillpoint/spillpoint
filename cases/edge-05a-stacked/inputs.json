@@ -1,0 +1,101 @@
+{
+  "case": "edge-05a-stacked",
+  "description": "Two 1x non-participating series, stacked: Series B ($4M) is paid in full before Series A ($2M) gets anything.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "conversion_price": "2",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_b",
+          "name": "Series B Preferred",
+          "kind": "preferred",
+          "original_issue_price": "4",
+          "conversion_price": "4",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "series_a",
+          "shares": 1000000
+        },
+        {
+          "holder": "investor_y",
+          "security": "series_b",
+          "shares": 1000000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "range": [
+      "0",
+      "50000000"
+    ],
+    "exit_values": [
+      "3000000",
+      "4000000",
+      "5000000",
+      "6000000",
+      "10000000",
+      "22000000",
+      "30000000",
+      "40000000",
+      "50000000"
+    ]
+  }
+}

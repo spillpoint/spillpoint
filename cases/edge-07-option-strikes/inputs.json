@@ -1,0 +1,103 @@
+{
+  "case": "edge-07-option-strikes",
+  "description": "Common plus options at $0.25, $1.00 and $3.00. Each strike class is exercised once common is worth more than its strike, and the strike cash joins the proceeds.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "employee_d",
+          "name": "Employee D"
+        },
+        {
+          "id": "employee_e",
+          "name": "Employee E"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_0.25",
+          "name": "Options ($0.25 strike)",
+          "kind": "option",
+          "strike": "0.25"
+        },
+        {
+          "id": "options_1",
+          "name": "Options ($1 strike)",
+          "kind": "option",
+          "strike": "1"
+        },
+        {
+          "id": "options_3",
+          "name": "Options ($3 strike)",
+          "kind": "option",
+          "strike": "3"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_0.25",
+          "shares": 400000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_3",
+          "shares": 200000
+        },
+        {
+          "holder": "employee_d",
+          "security": "options_1",
+          "shares": 600000
+        },
+        {
+          "holder": "employee_e",
+          "security": "options_3",
+          "shares": 800000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "range": [
+      "0",
+      "50000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "2000000",
+      "5000000",
+      "8300000",
+      "10000000",
+      "26300000",
+      "30000000",
+      "50000000"
+    ]
+  }
+}

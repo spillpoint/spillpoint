@@ -1,0 +1,493 @@
+{
+  "case": "edge-05b-pari-passu",
+  "generated_by": "reference/generate.py",
+  "exit": {
+    "breakpoints": [
+      {
+        "exit_value": "6000000.00",
+        "exact": "6000000",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 1,
+            "securities": [
+              "series_a",
+              "series_b"
+            ],
+            "text": "The preference tier Series A Preferred and Series B Preferred is fully paid ($6,000,000.00). Above this exit value, the next dollar goes to the residual, shared as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "22000000.00",
+        "exact": "22000000",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_a",
+            "converts": true,
+            "text": "Series A Preferred converts to common. At this exit value its as-converted share (1,000,000 common shares at $2.0000 each = $2,000,000.00) equals its 1x preference of $2,000,000.00. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "exact": "40000000",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_b",
+            "converts": true,
+            "text": "Series B Preferred converts to common. At this exit value its as-converted share (1,000,000 common shares at $4.0000 each = $4,000,000.00) equals its 1x preference of $4,000,000.00. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "3000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "keeps_preference",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "2000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "2000000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "series_a": "1000000.00",
+              "series_b": "2000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "4000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "keeps_preference",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "1333333.33"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "2666666.67"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "1333333.33",
+              "investor_y": "2666666.67"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "series_a": "1333333.33",
+              "series_b": "2666666.67"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "5000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "keeps_preference",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "1666666.67"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "3333333.33"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "1666666.67",
+              "investor_y": "3333333.33"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "series_a": "1666666.67",
+              "series_b": "3333333.33"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "6000000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "keeps_preference",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "4000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "investor_x": "2000000.00",
+              "investor_y": "4000000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "series_a": "2000000.00",
+              "series_b": "4000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "10000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "keeps_preference",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "0.500000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "4000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "3000000.00",
+              "founder_b": "1000000.00",
+              "investor_x": "2000000.00",
+              "investor_y": "4000000.00"
+            },
+            "class_totals": {
+              "common": "4000000.00",
+              "series_a": "2000000.00",
+              "series_b": "4000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "22000000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "keeps_preference",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "2.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "12000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "4000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "4000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "12000000.00",
+              "founder_b": "4000000.00",
+              "investor_x": "2000000.00",
+              "investor_y": "4000000.00"
+            },
+            "class_totals": {
+              "common": "16000000.00",
+              "series_a": "2000000.00",
+              "series_b": "4000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "30000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "converts",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "2.888889",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "17333333.33"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "5777777.78"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "2888888.89"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "4000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "17333333.33",
+              "founder_b": "5777777.78",
+              "investor_x": "2888888.89",
+              "investor_y": "4000000.00"
+            },
+            "class_totals": {
+              "common": "23111111.11",
+              "series_a": "2888888.89",
+              "series_b": "4000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "converts",
+              "series_b": "keeps_preference"
+            },
+            "common_price_per_share": "4.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "24000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "8000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "4000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "4000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "24000000.00",
+              "founder_b": "8000000.00",
+              "investor_x": "4000000.00",
+              "investor_y": "4000000.00"
+            },
+            "class_totals": {
+              "common": "32000000.00",
+              "series_a": "4000000.00",
+              "series_b": "4000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "50000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "series_a": "converts",
+              "series_b": "converts"
+            },
+            "common_price_per_share": "5.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "30000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "10000000.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "series_a",
+                "amount": "5000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "series_b",
+                "amount": "5000000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "30000000.00",
+              "founder_b": "10000000.00",
+              "investor_x": "5000000.00",
+              "investor_y": "5000000.00"
+            },
+            "class_totals": {
+              "common": "40000000.00",
+              "series_a": "5000000.00",
+              "series_b": "5000000.00"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
