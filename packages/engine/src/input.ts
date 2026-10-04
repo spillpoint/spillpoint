@@ -132,6 +132,16 @@ function readPreferred(s: Json, id: string, name: string, path: string): Preferr
   if ("anti_dilution_a" in s && !ANTI_DILUTION_A[antiDilution].includes(antiDilutionA)) {
     throw new InputError(`${path}.anti_dilution_a`, `${String(antiDilutionA)} doesn't fit ${antiDilution} (C10)`);
   }
+  const preferenceMultiple = notNegative(s.preference_multiple, `${path}.preference_multiple`);
+  const capMultiple = capped ? positive(s.cap_multiple, `${path}.cap_multiple`) : null;
+  // E7: the cap counts the preference, so it can't sit below it. A cap equal
+  // to the preference leaves no room to participate (like non-participating).
+  if (capMultiple && capMultiple.lt(preferenceMultiple)) {
+    throw new InputError(
+      `${path}.cap_multiple`,
+      `the cap (${capMultiple.toString()}x) is below the preference (${preferenceMultiple.toString()}x); a cap counts the preference, so it can't be lower (E7)`,
+    );
+  }
   return {
     kind: "preferred",
     id,
@@ -139,9 +149,9 @@ function readPreferred(s: Json, id: string, name: string, path: string): Preferr
     originalIssuePrice,
     conversionPrice,
     conversionRatio,
-    preferenceMultiple: notNegative(s.preference_multiple, `${path}.preference_multiple`),
+    preferenceMultiple,
     participation,
-    capMultiple: capped ? positive(s.cap_multiple, `${path}.cap_multiple`) : null,
+    capMultiple,
     antiDilution,
     antiDilutionA,
   };
@@ -250,6 +260,12 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
   const conversionGroups = (ct.conversion_groups == null ? [] : array(ct.conversion_groups, `${path}.conversion_groups`)).map(
     (g, i) => readGroup(g, `${path}.conversion_groups[${i}]`),
   );
+  if (conversionGroups.length > 1) {
+    throw new UnsupportedTermError(
+      "conversion_groups", "later", `${path}.conversion_groups`,
+      "More than one conversion group (E17: the order in which groups decide isn't settled)",
+    );
+  }
   const grouped = new Set<string>();
   conversionGroups.forEach((g, i) => {
     for (const sid of g.series) {

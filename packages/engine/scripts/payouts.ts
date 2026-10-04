@@ -3,14 +3,14 @@
 //
 //   pnpm payouts <case> <exit value> [--convert id,id] [--exercise id,id]
 //
-// With no flags, at an exit value expected.json reports, it uses the
-// decisions recorded there and shows expected.json's amounts alongside.
-// Otherwise it uses the flags: nothing converts or exercises unless named.
-// (M2c makes the engine choose the decisions itself.)
+// With no flags the engine decides who converts and who exercises (M2c). With
+// --convert or --exercise those decisions are forced instead: nothing
+// converts or exercises unless named. At an exit value expected.json reports,
+// expected.json's amounts are shown alongside, with whether its decisions match.
 
 import type Decimal from "decimal.js";
 
-import { parseExact, payout, prepare, readCase, sameAmount, toCents } from "../src/index.ts";
+import { parseExact, payout, prepare, readCase, sameAmount, solve, toCents } from "../src/index.ts";
 import type { Decisions } from "../src/index.ts";
 import { capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "../test/support/cases.ts";
 
@@ -43,21 +43,33 @@ const exitValue = parseExact(exitText, "exit value");
 const convert = flag("--convert");
 const exercise = flag("--exercise");
 
+const pc = prepare(exit.capTable);
+const point = expectedPoints(caseName).find((p) => sameAmount(p.exitValue, exitValue) || p.label === toCents(exitValue));
+// At a breakpoint expected.json reports, use its exact value rather than the cent it displays.
+const at = point ? point.exitValue : exitValue;
+const recordedOutcome = point && point.equilibria.length === 1 ? point.equilibria[0]! : null;
+const recorded = recordedOutcome ? new Map(recordedOutcome.lines.map((l) => [`${l.holder}|${l.security}`, l.amount])) : null;
+
 let decisions: Decisions;
 let source: string;
-let recorded: Map<string, string> | null = null;
-const point = expectedPoints(caseName).find((p) => sameAmount(p.exitValue, exitValue) || p.label === toCents(exitValue));
-if (!convert && !exercise && point && point.equilibria.length === 1) {
-  const outcome = point.equilibria[0]!;
-  decisions = decisionsFrom(outcome.decisions);
-  recorded = new Map(outcome.lines.map((l) => [`${l.holder}|${l.security}`, l.amount]));
-  source = "recorded in expected.json";
-} else {
+if (convert || exercise) {
   decisions = { converted: new Set(convert ?? []), exercised: new Set(exercise ?? []) };
-  source = "from the command line";
+  source = "forced from the command line";
+} else {
+  const solution = solve(pc, at);
+  if (solution.answers.length > 1) console.log(`Note: ${solution.answers.length} stable answers here (E8); showing the first.`);
+  if (!solution.complete) console.log("Note: the list of answers may be incomplete (E15).");
+  decisions = solution.answers[0]!.decisions;
+  source = "solved by the engine";
+  if (recordedOutcome) {
+    const want = decisionsFrom(recordedOutcome.decisions);
+    const same = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((x) => b.has(x));
+    const match = same(want.converted, decisions.converted) && same(want.exercised, decisions.exercised);
+    source += match ? "; they match expected.json" : "; they DIFFER from expected.json";
+  }
 }
 
-const result = payout(prepare(exit.capTable), point && !convert && !exercise ? point.exitValue : exitValue, decisions);
+const result = payout(pc, at, decisions);
 const name = new Map<string, string>([
   ...exit.capTable.holders.map((h) => [h.id, h.name] as [string, string]),
   ...exit.capTable.securities.map((s) => [s.id, s.name] as [string, string]),
