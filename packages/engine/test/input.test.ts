@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from "vitest";
 
-import { InputError, UnsupportedTermError, readCapTable, readCase } from "../src/index.js";
-import type { Milestone, PreferredSeries } from "../src/index.js";
-import { ALL_CASES, M2_CASES, capTablesOf, readCaseFile } from "./support/cases.js";
+import { InputError, UnsupportedTermError, readCapTable, readCase } from "../src/index.ts";
+import type { Milestone, PreferredSeries } from "../src/index.ts";
+import { ALL_CASES, M2_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
   exit?: { cap_table?: { holders: unknown[]; positions: unknown[] }; exit_values: string[] };

@@ -2,7 +2,7 @@
 // reading and checking an input (see input.ts). It mirrors the case-file
 // format (ASSUMPTIONS C1–C4), with every number as a 40-digit Decimal (E14).
 
-import type { D } from "./decimal.js";
+import type { D } from "./decimal.ts";
 
 export interface Holder {
   id: string;

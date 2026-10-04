@@ -3,12 +3,11 @@
 /** The input is malformed: a missing field, an unknown holder, a bad number. */
 export class InputError extends Error {
   override name = "InputError";
+  readonly path: string;
 
-  constructor(
-    readonly path: string,
-    detail: string,
-  ) {
+  constructor(path: string, detail: string) {
     super(`${path}: ${detail}`);
+    this.path = path;
   }
 }
 
@@ -22,16 +21,17 @@ export type Milestone = "M4" | "M5";
  */
 export class UnsupportedTermError extends Error {
   override name = "UnsupportedTermError";
+  readonly term: string;
+  readonly milestone: Milestone;
+  readonly path: string;
 
-  constructor(
-    readonly term: string,
-    readonly milestone: Milestone,
-    readonly path: string,
-    what: string,
-  ) {
+  constructor(term: string, milestone: Milestone, path: string, what: string) {
     super(
       `${path}: ${what}. The engine supports this from ${milestone}; until then it refuses the input ` +
         "rather than ignoring the term.",
     );
+    this.term = term;
+    this.milestone = milestone;
+    this.path = path;
   }
 }

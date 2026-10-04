@@ -18,4 +18,11 @@ It deliberately differs from the engine's.
 - **Exit waterfall** (`waterfall.py`). At each exit value it runs the waterfall for *every* combination of decisions: each convertible series (or group of series that must convert together) converts or not, each option strike and each warrant exercises or not, each unconverted SAFE takes its Cash-Out Amount or its Conversion Amount, and each unconverted note takes its repayment or converts. It keeps the combinations that are stable, where nobody would gain by flipping their own decision.
 - **Breakpoints** (`breakpoints.py`). Between breakpoints every payout is a straight line. The reference scans a $250,000 grid for changes in the stable decisions, the tiers that are filled, and the caps that bind, then bisects each change down to a tenth of a cent. It fits the line on each side and intersects them, which gives the exact breakpoint. If the two lines don't meet, the payouts jump; the jump is placed exactly where the decision-maker whose choice changed is indifferent. Last, it checks that every payout is a straight line between consecutive breakpoints, so nothing was skipped.
 
+## Tools
+
+- `tools/stable_answers.py` searches random cap tables for exit values with more than one stable answer, or none. It was run before M2c (`ASSUMPTIONS.md` E8, E15) and takes about four minutes:
+  ```bash
+  python3 reference/tools/stable_answers.py
+  ```
+
 Modeling choices are in `docs/ASSUMPTIONS.md`.
