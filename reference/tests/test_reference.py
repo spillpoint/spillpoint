@@ -29,7 +29,7 @@ def table(securities, positions, seniority, pool=0, groups=()):
             "holders": [{"id": h, "name": h} for h in holders],
             "securities": securities,
             "seniority": seniority,
-            "conversion_groups": [list(g) for g in groups],
+            "conversion_groups": list(groups),
             "positions": [{"holder": h, "security": s, "shares": n} for h, s, n in positions],
             "unissued_pool": pool,
         }
@@ -228,15 +228,31 @@ class Exits(unittest.TestCase):
         # s2 converts when E / 10M > $3, so above $30M.
         self.assertEqual(bp_values(self.two_series(), 40_000_000), [4_000_000, 12_000_000, 30_000_000])
 
-    def test_forced_group_conversion(self):
-        # Together: convert when 2M/10M × E > $1M + $3M, so above $20M.
+    def test_group_vote_more_than_half(self):
+        # Must convert together; converts only if holders of MORE than 50% of the
+        # group's shares each do strictly better converting. Each series is
+        # exactly 50%, so both must gain. Converting pays each series E/10:
+        # s1 gains above $10M (E/10 > $1M), s2 above $30M (E/10 > $3M).
+        # So the group converts above $30M, and payouts jump there.
         ct = self.two_series(groups=[["s1", "s2"]])
-        self.assertEqual(bp_values(ct, 40_000_000), [4_000_000, 20_000_000])
-        # At $25M both are converted: $2.5M each, though s2 alone would have kept its $3M.
-        p = payouts(ct, 25_000_000)
-        self.assertEqual(p[("y", "s1")], 2_500_000)
-        self.assertEqual(p[("z", "s2")], 2_500_000)
-        self.assertEqual(p[("x", "common")], 20_000_000)
+        self.assertEqual(bp_values(ct, 40_000_000), [4_000_000, 30_000_000])
+        # At $30M s2 is indifferent and votes to stay: s1 $1M, s2 $3M, common $26M.
+        p = payouts(ct, 30_000_000)
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (1_000_000, 3_000_000, 26_000_000))
+        # Just above, converted: each series E/10, common 80%.
+        p = payouts(ct, 35_000_000)
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (3_500_000, 3_500_000, 28_000_000))
+
+    def test_group_vote_at_least_half(self):
+        # Threshold AT LEAST 50%: s1 alone carries the vote once it gains, above $10M.
+        ct = self.two_series(
+            groups=[{"series": ["s1", "s2"], "vote_threshold_percent": "50", "vote_rule": "at_least"}]
+        )
+        self.assertEqual(bp_values(ct, 40_000_000), [4_000_000, 10_000_000])
+        p = payouts(ct, 10_000_000)  # s1 indifferent, votes to stay
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (1_000_000, 3_000_000, 6_000_000))
+        p = payouts(ct, 12_000_000)  # converted: s2 drops to E/10
+        self.assertEqual((p[("y", "s1")], p[("z", "s2")], p[("x", "common")]), (1_200_000, 1_200_000, 9_600_000))
 
     def test_warrant_for_preferred(self):
         # 8M common; seed 2M shares at $1 (1x non-participating, $2M); a warrant

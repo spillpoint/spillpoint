@@ -126,7 +126,7 @@ class CapTable:
             "holders": [{"id": h, "name": n} for h, n in self.holders.items()],
             "securities": secs,
             "seniority": [list(t) for t in self.seniority],
-            **({"conversion_groups": [list(g) for g in self.conversion_groups]} if self.conversion_groups else {}),
+            **({"conversion_groups": [group_to_json(g) for g in self.conversion_groups]} if self.conversion_groups else {}),
             "positions": [
                 {"holder": h, "security": s, "shares": n}
                 for (h, s), n in self.positions.items()
@@ -153,7 +153,7 @@ class CapTable:
         for s in data["securities"]:
             ct.add_security(security_from_json(s))
         ct.seniority = [list(t) for t in data.get("seniority", [])]
-        ct.conversion_groups = [list(g) for g in data.get("conversion_groups", [])]
+        ct.conversion_groups = [group_from_json(g) for g in data.get("conversion_groups", [])]
         for p in data["positions"]:
             ct.issue(p["holder"], p["security"], parse(p["shares"]))
         ct.unissued_pool = int(parse(data.get("unissued_pool", 0)))
@@ -166,7 +166,7 @@ class CapTable:
         tiered = [sid for tier in self.seniority for sid in tier]
         if sorted(tiered) != sorted(self.preferred_ids()):
             raise ValueError(f"seniority tiers {tiered} must list every preferred series exactly once: {self.preferred_ids()}")
-        grouped = [sid for g in self.conversion_groups for sid in g]
+        grouped = [sid for g in self.conversion_groups for sid in g["series"]]
         if len(grouped) != len(set(grouped)):
             raise ValueError("a series can be in at most one conversion group")
         for sid in grouped:
@@ -218,3 +218,29 @@ def safe_from_json(f):
         "post_money_cap": None if f.get("post_money_cap") is None else parse(f["post_money_cap"]),
         "discount": parse(f.get("discount", "0")),
     }
+
+
+VOTE_RULES = ("more_than", "at_least")
+
+
+def group_from_json(g):
+    """A group of series that must convert together, decided by a vote.
+
+    The group converts only if holders of more than (or at least) the
+    threshold share of the group's as-converted shares each do strictly better
+    converting. A bare list of series means the default: more than 50%.
+    """
+    if isinstance(g, list):
+        g = {"series": g}
+    rule = g.get("vote_rule", "more_than")
+    if rule not in VOTE_RULES:
+        raise ValueError(f"unknown vote_rule {rule}")
+    return {
+        "series": list(g["series"]),
+        "threshold": parse(g.get("vote_threshold_percent", "50")) / 100,
+        "rule": rule,
+    }
+
+
+def group_to_json(g):
+    return {"series": list(g["series"]), "vote_threshold_percent": exact(g["threshold"] * 100), "vote_rule": g["rule"]}

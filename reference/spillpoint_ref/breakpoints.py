@@ -9,9 +9,9 @@ Method:
 1. Evaluate the signature on a grid.
 2. Bisect every grid interval whose ends differ, down to a tiny interval.
 3. Fit the affine payout on each side and intersect, which gives the exact
-   breakpoint as a fraction. If the two sides don't meet, the payouts jump:
-   the exact point is then where the decision-maker whose choice changed is
-   indifferent between its two choices.
+   breakpoint as a fraction. If the two sides don't meet there, the payouts
+   jump: the exact point is then where the decision-maker whose choice changed
+   (for a conversion group, the pivotal voting holder) is indifferent.
 4. Check that every payout really is affine between consecutive breakpoints,
    so nothing was missed between grid points.
 """
@@ -55,27 +55,39 @@ def _line(f0, f1, x0, x1):
     return m, f0 - m * x0
 
 
-def _indifference(wf, s_left, pts):
-    """Where the decision-maker whose choice changes is indifferent (used for jumps)."""
-    (bits_l, _), = s_left[0]
-    (bits_r, _), = s_left[1]
+def _indifference(wf, sides, pts, bracket):
+    """Where the choice that changes flips (used for jumps).
+
+    For a single decision-maker, that is where its two choices pay the same.
+    For a conversion group, it is where some voting holder's two outcomes pay
+    the same; the one inside the bracket is the pivotal holder.
+    """
+    (bits_l, _), = sides[0]
+    (bits_r, _), = sides[1]
+    lo, hi = bracket
+    x0, x1 = pts
     xs = set()
     for i, (u, v) in enumerate(zip(bits_l, bits_r)):
         if u == v:
             continue
         player = wf.players[i]
         flipped = bits_l[:i] + (not u,) + bits_l[i + 1 :]
-        x0, x1 = pts
-
-        def value(bits, e):
-            return wf.player_value(wf.run(e, bits)[0], player)
-
-        m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
-        m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
-        if m_keep != m_flip:
-            xs.add((c_flip - c_keep) / (m_keep - m_flip))
+        if player in wf.vote:
+            values = [
+                (lambda bits, e, h=h: wf.holder_group_payout(wf.run(e, bits)[0], player, h))
+                for h in wf.voters[player]
+            ]
+        else:
+            values = [lambda bits, e: wf.player_value(wf.run(e, bits)[0], player)]
+        for value in values:
+            m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
+            m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
+            if m_keep != m_flip:
+                x = (c_flip - c_keep) / (m_keep - m_flip)
+                if lo - 1 <= x <= hi + 1:
+                    xs.add(x)
     if len(xs) != 1:
-        raise ValueError(f"cannot place the jump near {decimal(pts[0], 2)}: {sorted(xs)}")
+        raise ValueError(f"cannot place the jump near {decimal(lo, 2)}: {sorted(xs)}")
     return xs.pop()
 
 
@@ -87,20 +99,18 @@ def _locate(wf, a, b):
         return None
     ml, cl = _affine_fit(wf, l0, l1)
     mr, cr = _affine_fit(wf, r0, r1)
-    xs = {(cr_k - cl_k) / (ml_k - mr_k) for ml_k, cl_k, mr_k, cr_k in zip(ml, cl, mr, cr) if ml_k != mr_k}
-    if not xs and ml == mr and cl == cr:
+    if ml == mr and cl == cr:
         return None  # the signature changed but no payout did
-    jumps = False
-    if len(xs) == 1:
-        x = next(iter(xs))
-        jumps = [m * x + c for m, c in zip(ml, cl)] != [m * x + c for m, c in zip(mr, cr)]
-    else:
-        jumps = True
-    if jumps:
-        x = _indifference(wf, (sl, sr), (l0, l1))
-    if not (a - 1 <= x <= b + 1):
-        raise ValueError(f"breakpoint {x} outside bracket [{a}, {b}]")
-    return x, sl, sr, jumps
+    xs = {(cr_k - cl_k) / (ml_k - mr_k) for ml_k, cl_k, mr_k, cr_k in zip(ml, cl, mr, cr) if ml_k != mr_k}
+    x = next(iter(xs)) if len(xs) == 1 else None
+    bends = (
+        x is not None
+        and a - 1 <= x <= b + 1
+        and [m * x + c for m, c in zip(ml, cl)] == [m * x + c for m, c in zip(mr, cr)]
+    )
+    if bends:
+        return x, sl, sr, False
+    return _indifference(wf, (sl, sr), (l0, l1), (a, b)), sl, sr, True
 
 
 def find(wf, lo, hi, step, extra=()):
@@ -246,19 +256,31 @@ def reasons(wf, x, sa, sb, jumps=False):
                     text = f"{sec['name']} stops converting: staying preferred pays more above this exit value."
             else:
                 names = _join(_name(ct, s) for s in members)
-                keep = sum(
-                    (cap_b(s) if ct.securities[s]["participation"] == "participating_capped" else pref_b(s) for s in members),
-                    Fraction(0),
+                g = wf.vote[pid]
+                rule = "more than" if g["rule"] == "more_than" else "at least"
+                weights = wf.voters[pid]
+                total_w = sum(weights.values(), Fraction(0))
+                stay_bits = bits_a if db[pid] else bits_b
+                conv_bits = bits_b if db[pid] else bits_a
+                e = x + FIT_STEP if db[pid] else x - FIT_STEP
+                t_conv, t_stay = wf.run(e, conv_bits)[0], wf.run(e, stay_bits)[0]
+                yes = [
+                    h for h in weights
+                    if wf.holder_group_payout(t_conv, pid, h) > wf.holder_group_payout(t_stay, pid, h)
+                ]
+                yes_share = sum((weights[h] for h in yes), Fraction(0)) / total_w
+                voters = _join(ct.holders[h] for h in yes) if yes else "no holder"
+                vote = (
+                    f"{names} must convert together, by a vote of {rule} {decimal(g['threshold'] * 100, 0)}% "
+                    f"of their as-converted shares; each holder votes for conversion only if it does strictly better converting."
                 )
                 if db[pid]:
                     text = (
-                        f"{names} must convert together, and now they do. At this exit value their combined "
-                        f"as-converted share ({count(n_conv)} common shares at {usd_price(price)} each = {usd(as_conv)}) "
-                        f"equals their combined preferences of {usd(keep)}. Below it, the group gets more in total by "
-                        f"keeping its preferences; above it, by converting."
+                        f"{vote} Above this exit value, {voters} (holding {decimal(yes_share * 100, 2)}% of the group's shares) "
+                        f"{'does' if len(yes) == 1 else 'do'} better converting, which carries the vote, so the group converts."
                     )
                 else:
-                    text = f"{names} stop converting: together they get more by keeping their preferences above this exit value."
+                    text = f"{vote} Above this exit value the vote no longer carries, so the group stops converting."
             out.append({"code": "series_converts", "security": pid, "converts": db[pid], "text": text})
 
     for i, tier in enumerate(ct.seniority):
@@ -289,12 +311,19 @@ def reasons(wf, x, sa, sb, jumps=False):
         out.append({"code": "cap_reached", "security": sid, "text": text})
 
     if jumps:
+        outs = wf.evaluate(x)
+        if len(outs) > 1:
+            where = "Exactly here both the old and the new outcome are stable, so both are reported."
+        elif outs[0]["decisions"] == bits_a:
+            where = "At exactly this exit value the outcome from below still applies; the jump happens just above it."
+        else:
+            where = "At exactly this exit value the new outcome already applies."
         out.append(
             {
                 "code": "payouts_jump",
                 "text": (
                     "Some payouts jump at this exit value instead of bending, because the decision changes all at once. "
-                    "Exactly here both the old and the new outcome are stable, so both are reported."
+                    + where
                 ),
             }
         )

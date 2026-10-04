@@ -28,13 +28,18 @@ class Waterfall:
             if sec[sid]["participation"] in ("non_participating", "participating_capped")
         ]
         # Conversion groups (SPEC toggle): series that must convert together,
-        # as when a class vote forces conversion, decide as one.
+        # as when a class vote forces conversion. The group converts only if
+        # holders of more than (or at least) the threshold share of its
+        # as-converted shares each do strictly better converting; a holder who
+        # is indifferent votes to stay.
         self.members = {}
+        self.vote = {}
         grouped = set()
         for g in ct.conversion_groups:
-            pid = "+".join(g)
-            self.members[pid] = list(g)
-            grouped.update(g)
+            pid = "+".join(g["series"])
+            self.members[pid] = list(g["series"])
+            self.vote[pid] = g
+            grouped.update(g["series"])
         for sid in convertible:
             if sid not in grouped:
                 self.members[sid] = [sid]
@@ -57,6 +62,35 @@ class Waterfall:
             if sec[sid]["participation"] == "participating_capped"
         }
         self.lines = [(h, s, n) for (h, s), n in ct.positions.items() if n > 0]
+        # Voting weight in each group: a holder's as-converted shares of its series.
+        self.voters = {}
+        for pid, members in self.members.items():
+            if pid in self.vote:
+                weights = {}
+                for h, s, n in self.lines:
+                    if s in members:
+                        weights[h] = weights.get(h, ZERO) + n * self.ratio[s]
+                self.voters[pid] = weights
+
+    def holder_group_payout(self, total, pid, holder):
+        """What one holder receives on its shares of a conversion group's series."""
+        members = self.members[pid]
+        return sum(
+            (total[s] * n / self.shares[s] for h, s, n in self.lines if h == holder and s in members),
+            ZERO,
+        )
+
+    def vote_converts(self, pid, total_convert, total_stay):
+        """Class vote: do holders of enough of the group's shares each do strictly better converting?"""
+        g = self.vote[pid]
+        weights = self.voters[pid]
+        yes = sum(
+            (w for h, w in weights.items()
+             if self.holder_group_payout(total_convert, pid, h) > self.holder_group_payout(total_stay, pid, h)),
+            ZERO,
+        )
+        share = yes / sum(weights.values(), ZERO)
+        return share > g["threshold"] if g["rule"] == "more_than" else share >= g["threshold"]
 
     def decision_sets(self):
         for bits in itertools.product((False, True), repeat=len(self.players)):
@@ -179,7 +213,12 @@ class Waterfall:
             ok = True
             for i, player in enumerate(self.players):
                 flipped = bits[:i] + (not bits[i],) + bits[i + 1 :]
-                if self.player_value(results[flipped][0], player) > self.player_value(total, player):
+                if player in self.vote:
+                    on, off = (bits, flipped) if bits[i] else (flipped, bits)
+                    if self.vote_converts(player, results[on][0], results[off][0]) != bits[i]:
+                        ok = False
+                        break
+                elif self.player_value(results[flipped][0], player) > self.player_value(total, player):
                     ok = False
                     break
             if ok:
