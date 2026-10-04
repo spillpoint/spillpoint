@@ -12,7 +12,7 @@
       "Bash(gh label*)",
       "Bash(gh pr edit*label*)",
       "Bash(gh api*labels*)",
-      "Edit(cases/millrace/**)"
+      "Edit(cases/**)"
     ]
   }
 }

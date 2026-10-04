@@ -73,9 +73,9 @@ A breakpoint is any exit value where any holder's payoff slope changes. Report e
 
 - Prices are exact.
 - Share counts round down to whole shares at every issuance and conversion in a financing.
-- At exit, as-converted shares are exact (fractional), with no rounding. This is economically the same as an actual conversion, which rounds down and pays cash in lieu of the fraction. Rounding down without cash in lieu would short the holder by up to one share's value, which at high exits exceeds the $1 tolerance.
+- At exit, as-converted shares are exact (fractional), with no rounding. This is economically the same as an actual conversion, which rounds down and pays cash in lieu of the fraction. Rounding down without cash in lieu would short the holder by up to one share's value, which exceeds the $0.01 tolerance.
 - Payouts stay exact internally and display to the cent.
-- Test tolerances: payouts within $1, shares within 1, breakpoints within $1.
+- Test tolerances: payouts within $0.01, shares within 1, breakpoints within $0.01.
 
 ## Edge cases (M1)
 
