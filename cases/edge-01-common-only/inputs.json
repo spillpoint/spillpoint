@@ -1,0 +1,58 @@
+{
+  "case": "edge-01-common-only",
+  "description": "Common stock only, plus an unissued pool that never participates. Payouts are pro rata by shares at every exit value; there are no breakpoints.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 5000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "common",
+          "shares": 2000000
+        }
+      ],
+      "unissued_pool": 1000000
+    },
+    "range": [
+      "0",
+      "100000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "10000000",
+      "12345678.91",
+      "100000000"
+    ]
+  }
+}

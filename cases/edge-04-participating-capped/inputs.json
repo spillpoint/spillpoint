@@ -1,0 +1,87 @@
+{
+  "case": "edge-04-participating-capped",
+  "description": "Same company as edge-02, but the Seed Preferred is 1x participating, capped at 3x its original issue price in total. It hits the cap, sits flat, then converts.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.5",
+          "conversion_price": "1.5",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "3",
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "seed",
+          "shares": 1500000
+        },
+        {
+          "holder": "investor_y",
+          "security": "seed",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "range": [
+      "0",
+      "60000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "3000000",
+      "5000000",
+      "15000000",
+      "20000000",
+      "33000000",
+      "40000000",
+      "45000000",
+      "60000000"
+    ]
+  }
+}
