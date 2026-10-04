@@ -1,0 +1,37 @@
+name: cases-locked
+
+# cases/ is the source of truth. Any PR that touches it fails this check
+# unless Jordan has added the unlock-cases label.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  cases-locked:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if cases/ changed without the unlock-cases label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          UNLOCKED: ${{ contains(github.event.pull_request.labels.*.name, 'unlock-cases') }}
+        run: |
+          changed=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | .filename, (.previous_filename // empty)' | grep '^cases/' || true)
+          if [ -z "$changed" ]; then
+            echo "No changes under cases/."
+            exit 0
+          fi
+          echo "This PR changes files under cases/:"
+          echo "$changed"
+          if [ "$UNLOCKED" = "true" ]; then
+            echo "The unlock-cases label is present, so this is allowed."
+            exit 0
+          fi
+          echo "::error::cases/ is locked. Only Jordan can allow this, by adding the unlock-cases label."
+          exit 1
