@@ -70,18 +70,16 @@ def run_exit(ct, spec):
     listed = [parse(v) for v in spec["exit_values"]]
     found = breakpoints.find(wf, lo, hi, parse(spec.get("grid_step", exact(GRID_STEP))), extra=listed)
     bps = []
-    for x, sa, sb in found:
-        bps.append(
-            {
-                "exit_value": money(x),
-                "exact": exact(x),
-                "reasons": breakpoints.reasons(wf, x, sa, sb),
-            }
-        )
+    for x, sa, sb, jumps in found:
+        entry = {"exit_value": money(x), "exact": exact(x)}
+        if jumps:
+            entry["payouts_jump"] = True
+        entry["reasons"] = breakpoints.reasons(wf, x, sa, sb, jumps)
+        bps.append(entry)
     points = {}
     for v in listed:
         points.setdefault(v, []).append("listed")
-    for x, _, _ in found:
+    for x, *_ in found:
         points.setdefault(x, []).append("breakpoint")
     payouts = [_payout_entry(wf, x, tags) for x, tags in sorted(points.items())]
     return {"breakpoints": bps, "payouts": payouts}

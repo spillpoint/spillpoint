@@ -21,6 +21,7 @@ class CapTable:
         self.unissued_pool = 0
         self.safes = []  # unconverted SAFEs
         self.seniority = []  # list of tiers, most senior first; each a list of preferred ids
+        self.conversion_groups = []  # series that must convert together (SPEC toggle)
 
     def copy(self):
         return copy.deepcopy(self)
@@ -60,8 +61,13 @@ class CapTable:
         return [(h, n) for (h, s), n in self.positions.items() if s == sid and n > 0]
 
     def conversion_ratio(self, sid):
-        """Common shares per preferred share: original issue price ÷ conversion price."""
+        """Common shares per preferred share: original issue price ÷ conversion price.
+
+        A warrant for preferred converts like the series it is for.
+        """
         sec = self.securities[sid]
+        if sec["kind"] == "warrant" and sec["underlying"] != "common":
+            return self.conversion_ratio(sec["underlying"])
         if sec["kind"] != "preferred":
             return Fraction(1)
         return sec["original_issue_price"] / sec["conversion_price"]
@@ -83,6 +89,9 @@ class CapTable:
 
     def option_ids(self):
         return [sid for sid, s in self.securities.items() if s["kind"] == "option"]
+
+    def warrant_ids(self):
+        return [sid for sid, s in self.securities.items() if s["kind"] == "warrant"]
 
     # ---- JSON ----
 
@@ -109,11 +118,15 @@ class CapTable:
                 )
             elif s["kind"] == "option":
                 out["strike"] = exact(s["strike"])
+            elif s["kind"] == "warrant":
+                out["strike"] = exact(s["strike"])
+                out["underlying"] = s["underlying"]
             secs.append(out)
         return {
             "holders": [{"id": h, "name": n} for h, n in self.holders.items()],
             "securities": secs,
             "seniority": [list(t) for t in self.seniority],
+            **({"conversion_groups": [list(g) for g in self.conversion_groups]} if self.conversion_groups else {}),
             "positions": [
                 {"holder": h, "security": s, "shares": n}
                 for (h, s), n in self.positions.items()
@@ -140,6 +153,7 @@ class CapTable:
         for s in data["securities"]:
             ct.add_security(security_from_json(s))
         ct.seniority = [list(t) for t in data.get("seniority", [])]
+        ct.conversion_groups = [list(g) for g in data.get("conversion_groups", [])]
         for p in data["positions"]:
             ct.issue(p["holder"], p["security"], parse(p["shares"]))
         ct.unissued_pool = int(parse(data.get("unissued_pool", 0)))
@@ -152,6 +166,17 @@ class CapTable:
         tiered = [sid for tier in self.seniority for sid in tier]
         if sorted(tiered) != sorted(self.preferred_ids()):
             raise ValueError(f"seniority tiers {tiered} must list every preferred series exactly once: {self.preferred_ids()}")
+        grouped = [sid for g in self.conversion_groups for sid in g]
+        if len(grouped) != len(set(grouped)):
+            raise ValueError("a series can be in at most one conversion group")
+        for sid in grouped:
+            sec = self.securities.get(sid)
+            if sec is None or sec["kind"] != "preferred" or sec["participation"] == "participating":
+                raise ValueError(f"conversion group member {sid} must be a convertible preferred series")
+        for sid in self.warrant_ids():
+            u = self.securities[sid]["underlying"]
+            if u != "common" and (u not in self.securities or self.securities[u]["kind"] != "preferred"):
+                raise ValueError(f"warrant {sid} is for unknown series {u}")
 
 
 def security_from_json(s):
@@ -177,6 +202,9 @@ def security_from_json(s):
             raise ValueError(f"unknown anti_dilution {out['anti_dilution']}")
     elif kind == "option":
         out["strike"] = parse(s["strike"])
+    elif kind == "warrant":
+        out["strike"] = parse(s["strike"])
+        out["underlying"] = s["underlying"]
     elif kind != "common":
         raise ValueError(f"unknown security kind {kind}")
     return out

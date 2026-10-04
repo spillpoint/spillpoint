@@ -22,13 +22,14 @@ from spillpoint_ref.waterfall import Waterfall  # noqa: E402
 COMMON = {"id": "common", "name": "Common Stock", "kind": "common"}
 
 
-def table(securities, positions, seniority, pool=0):
+def table(securities, positions, seniority, pool=0, groups=()):
     holders = sorted({p[0] for p in positions})
     return CapTable.from_json(
         {
             "holders": [{"id": h, "name": h} for h in holders],
             "securities": securities,
             "seniority": seniority,
+            "conversion_groups": [list(g) for g in groups],
             "positions": [{"holder": h, "security": s, "shares": n} for h, s, n in positions],
             "unissued_pool": pool,
         }
@@ -54,7 +55,7 @@ def payouts(ct, exit_value):
 
 
 def bp_values(ct, hi):
-    return [x for x, _, _ in breakpoints.find(Waterfall(ct), 0, hi, 100_000)]
+    return [t[0] for t in breakpoints.find(Waterfall(ct), 0, hi, 100_000)]
 
 
 class Numbers(unittest.TestCase):
@@ -212,6 +213,54 @@ class Exits(unittest.TestCase):
         p = payouts(ct, 2_000_000)
         self.assertEqual(p[("y", "p")], 500_000)
         self.assertEqual(p[("z", "q")], 1_500_000)
+
+    def two_series(self, groups=()):
+        # 8M common; series s1: 1M shares at $1 (1x, $1M); s2: 1M shares at $3 (1x, $3M); one tier.
+        return table(
+            [COMMON, pref("s1", "1", "1", "non_participating"), pref("s2", "3", "1", "non_participating")],
+            [("x", "common", 8_000_000), ("y", "s1", 1_000_000), ("z", "s2", 1_000_000)],
+            [["s1", "s2"]],
+            groups=groups,
+        )
+
+    def test_per_series_conversion(self):
+        # Tier paid at $4M. s1 converts when (E − $3M) / 9M > $1, so above $12M.
+        # s2 converts when E / 10M > $3, so above $30M.
+        self.assertEqual(bp_values(self.two_series(), 40_000_000), [4_000_000, 12_000_000, 30_000_000])
+
+    def test_forced_group_conversion(self):
+        # Together: convert when 2M/10M × E > $1M + $3M, so above $20M.
+        ct = self.two_series(groups=[["s1", "s2"]])
+        self.assertEqual(bp_values(ct, 40_000_000), [4_000_000, 20_000_000])
+        # At $25M both are converted: $2.5M each, though s2 alone would have kept its $3M.
+        p = payouts(ct, 25_000_000)
+        self.assertEqual(p[("y", "s1")], 2_500_000)
+        self.assertEqual(p[("z", "s2")], 2_500_000)
+        self.assertEqual(p[("x", "common")], 20_000_000)
+
+    def test_warrant_for_preferred(self):
+        # 8M common; seed 2M shares at $1 (1x non-participating, $2M); a warrant
+        # for 200,000 seed at $0.50.
+        # Exercise once each seed share is worth more than $0.50:
+        #   (E + $100k) / 2.2M > $0.50  =>  E > $1M.
+        # Seed tier (now 2.2M shares, $2.2M) is fully paid at E + $100k = $2.2M  =>  E = $2.1M.
+        # Seed converts when (E + $100k) / 10.2M > $1  =>  E > $10.1M.
+        ct = table(
+            [
+                COMMON,
+                pref("seed", "1", "1", "non_participating"),
+                {"id": "w", "name": "w", "kind": "warrant", "strike": "0.5", "underlying": "seed"},
+            ],
+            [("x", "common", 8_000_000), ("y", "seed", 2_000_000), ("l", "w", 200_000)],
+            [["seed"]],
+        )
+        self.assertEqual(bp_values(ct, 20_000_000), [1_000_000, 2_100_000, 10_100_000])
+        # At $1.5M: $1.6M of proceeds over 2.2M seed shares. The warrant gets
+        # 200k/2.2M of it, less the $100k strike.
+        p = payouts(ct, 1_500_000)
+        self.assertEqual(p[("l", "w")], F(200_000 * 1_600_000, 2_200_000) - 100_000)
+        self.assertEqual(p[("y", "seed")], F(2_000_000 * 1_600_000, 2_200_000))
+        self.assertEqual(p[("x", "common")], 0)
 
 
 if __name__ == "__main__":

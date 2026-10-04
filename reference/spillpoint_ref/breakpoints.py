@@ -1,15 +1,17 @@
 """Breakpoint finder for the reference calculator.
 
-A breakpoint is an exit value where any holder's payoff slope changes. Between
-breakpoints every payout is affine in the exit value, because the slope is
-fixed by three things: the stable decisions, which preference tiers are fully
-paid, and which caps bind. Call that the signature.
+A breakpoint is an exit value where any holder's payoff slope changes, or
+where a payoff jumps. Between breakpoints every payout is affine in the exit
+value, because the slope is fixed by three things: the stable decisions, which
+preference tiers are fully paid, and which caps bind. Call that the signature.
 
 Method:
 1. Evaluate the signature on a grid.
 2. Bisect every grid interval whose ends differ, down to a tiny interval.
 3. Fit the affine payout on each side and intersect, which gives the exact
-   breakpoint as a fraction.
+   breakpoint as a fraction. If the two sides don't meet, the payouts jump:
+   the exact point is then where the decision-maker whose choice changed is
+   indifferent between its two choices.
 4. Check that every payout really is affine between consecutive breakpoints,
    so nothing was missed between grid points.
 """
@@ -36,32 +38,73 @@ def _affine_fit(wf, x0, x1):
     return slopes, intercepts
 
 
-def _locate(wf, a, sa, b, sb):
-    """Exact breakpoint between a (signature sa) and b (signature sb), b − a tiny."""
+def _side(wf, x, direction):
+    """Two points just to one side of x with the same, single-outcome signature."""
     step = FIT_STEP
-    while wf.signature(a - step) != sa:
+    for _ in range(12):
+        p1, p2 = x + direction * step, x + direction * 2 * step
+        s1 = wf.signature(p1)
+        if s1 == wf.signature(p2) and len(s1) == 1:
+            return s1, (min(p1, p2), max(p1, p2))
         step /= 10
-    ml, cl = _affine_fit(wf, a - step, a)
-    step = FIT_STEP
-    while wf.signature(b + step) != sb:
-        step /= 10
-    mr, cr = _affine_fit(wf, b, b + step)
-    xs = {(cr_k - cl_k) / (ml_k - mr_k) for ml_k, cl_k, mr_k, cr_k in zip(ml, cl, mr, cr) if ml_k != mr_k}
-    if not xs:
-        return None  # the signature changed but no slope did
+    raise ValueError(f"no clean region next to {decimal(x, 2)}")
+
+
+def _line(f0, f1, x0, x1):
+    m = (f1 - f0) / (x1 - x0)
+    return m, f0 - m * x0
+
+
+def _indifference(wf, s_left, pts):
+    """Where the decision-maker whose choice changes is indifferent (used for jumps)."""
+    (bits_l, _), = s_left[0]
+    (bits_r, _), = s_left[1]
+    xs = set()
+    for i, (u, v) in enumerate(zip(bits_l, bits_r)):
+        if u == v:
+            continue
+        player = wf.players[i]
+        flipped = bits_l[:i] + (not u,) + bits_l[i + 1 :]
+        x0, x1 = pts
+
+        def value(bits, e):
+            return wf.player_value(wf.run(e, bits)[0], player)
+
+        m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
+        m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
+        if m_keep != m_flip:
+            xs.add((c_flip - c_keep) / (m_keep - m_flip))
     if len(xs) != 1:
-        raise ValueError(f"payouts kink at different points near {decimal(a, 2)}: {sorted(xs)}")
-    x = xs.pop()
+        raise ValueError(f"cannot place the jump near {decimal(pts[0], 2)}: {sorted(xs)}")
+    return xs.pop()
+
+
+def _locate(wf, a, b):
+    """Exact breakpoint between a and b, b − a tiny. Returns (x, left signature, right signature, jumps)."""
+    sl, (l0, l1) = _side(wf, a, -1)
+    sr, (r0, r1) = _side(wf, b, +1)
+    if sl == sr:
+        return None
+    ml, cl = _affine_fit(wf, l0, l1)
+    mr, cr = _affine_fit(wf, r0, r1)
+    xs = {(cr_k - cl_k) / (ml_k - mr_k) for ml_k, cl_k, mr_k, cr_k in zip(ml, cl, mr, cr) if ml_k != mr_k}
+    if not xs and ml == mr and cl == cr:
+        return None  # the signature changed but no payout did
+    jumps = False
+    if len(xs) == 1:
+        x = next(iter(xs))
+        jumps = [m * x + c for m, c in zip(ml, cl)] != [m * x + c for m, c in zip(mr, cr)]
+    else:
+        jumps = True
+    if jumps:
+        x = _indifference(wf, (sl, sr), (l0, l1))
     if not (a - 1 <= x <= b + 1):
-        raise ValueError(f"intersection {x} outside bracket [{a}, {b}]")
-    left = [m * x + c for m, c in zip(ml, cl)]
-    right = [m * x + c for m, c in zip(mr, cr)]
-    if left != right:
-        raise ValueError(f"payout jumps at {decimal(x, 2)}")
-    return x
+        raise ValueError(f"breakpoint {x} outside bracket [{a}, {b}]")
+    return x, sl, sr, jumps
 
 
 def find(wf, lo, hi, step, extra=()):
+    """All breakpoints in (lo, hi): a list of (x, left signature, right signature, jumps)."""
     lo, hi, step = Fraction(lo), Fraction(hi), Fraction(step)
     grid = set()
     k = 0
@@ -71,14 +114,14 @@ def find(wf, lo, hi, step, extra=()):
     grid.add(hi)
     grid.update(Fraction(e) for e in extra if lo <= Fraction(e) <= hi)
     grid = sorted(grid)
-    sig ={x: wf.signature(x) for x in grid}
+    sig = {x: wf.signature(x) for x in grid}
     brackets = []
 
     def refine(a, sa, b, sb):
         if sa == sb:
             return
         if b - a <= BISECT_WIDTH:
-            brackets.append((a, sa, b, sb))
+            brackets.append((a, b))
             return
         m = (a + b) / 2
         sm = wf.signature(m)
@@ -88,24 +131,25 @@ def find(wf, lo, hi, step, extra=()):
     for a, b in zip(grid, grid[1:]):
         refine(a, sig[a], b, sig[b])
 
-    found = []
-    for a, sa, b, sb in brackets:
-        x = _locate(wf, a, sa, b, sb)
-        if x is not None:
-            found.append((x, sa, sb))
-    found.sort(key=lambda t: t[0])
-    _check_affine(wf, lo, hi, [x for x, _, _ in found])
-    return found
+    found = {}
+    for a, b in brackets:
+        hit = _locate(wf, a, b)
+        if hit is not None and hit[0] not in found:
+            found[hit[0]] = hit
+    out = sorted(found.values(), key=lambda t: t[0])
+    _check_affine(wf, lo, hi, [t[0] for t in out])
+    return out
 
 
 def _check_affine(wf, lo, hi, xs):
+    """Between consecutive breakpoints, interior points must lie on one line."""
     pts = [lo] + [x for x in xs if lo < x < hi] + [hi]
     for p, q in zip(pts, pts[1:]):
-        fp, fq = wf.payout_vector(p), wf.payout_vector(q)
-        for t in (Fraction(1, 7), Fraction(1, 2), Fraction(5, 6)):
-            x = p + (q - p) * t
-            fx = wf.payout_vector(x)
-            expect = [a + (b - a) * t for a, b in zip(fp, fq)]
+        ts = (Fraction(1, 7), Fraction(1, 3), Fraction(1, 2), Fraction(2, 3), Fraction(5, 6))
+        vals = [(p + (q - p) * t, wf.payout_vector(p + (q - p) * t)) for t in ts]
+        (x0, f0), (x1, f1) = vals[0], vals[1]
+        for x, fx in vals[2:]:
+            expect = [a + (b - a) * (x - x0) / (x1 - x0) for a, b in zip(f0, f1)]
             if fx != expect:
                 raise MissedBreakpoint(f"payouts are not affine between {decimal(p, 2)} and {decimal(q, 2)}")
 
@@ -124,7 +168,7 @@ def _join(names):
     return ", ".join(names[:-1]) + " and " + names[-1]
 
 
-def reasons(wf, x, sa, sb):
+def reasons(wf, x, sa, sb, jumps=False):
     """Plain-English reasons for one breakpoint, from the signature change."""
     ct = wf.ct
     if len(sa) != 1 or len(sb) != 1:
@@ -136,6 +180,17 @@ def reasons(wf, x, sa, sb):
     price = outcome["common_price"]
     da = dict(zip(wf.players, bits_a))
     db = dict(zip(wf.players, bits_b))
+    converted_b = {s: db[p] for p in wf.converters for s in wf.members[p]}
+    # Series sizes and claims after the change, counting exercised warrants.
+    units_b = wf.unit_shares(bits_b)
+
+    def pref_b(sid):
+        sec = ct.securities[sid]
+        return units_b[sid] * sec["original_issue_price"] * sec["preference_multiple"]
+
+    def cap_b(sid):
+        sec = ct.securities[sid]
+        return units_b[sid] * sec["original_issue_price"] * sec["cap_multiple"]
 
     for sid in wf.options:
         if da[sid] != db[sid]:
@@ -151,37 +206,73 @@ def reasons(wf, x, sa, sb):
                 text = f"Common falls to the {usd_price(strike, 2)} strike; the {n:,} options at that price stop being exercised."
             out.append({"code": "option_in_the_money", "security": sid, "strike": exact(strike), "text": text})
 
-    for sid in wf.converters:
-        if da[sid] != db[sid]:
-            sec = ct.securities[sid]
-            n_conv = wf.shares[sid] * wf.ratio[sid]
-            as_conv = n_conv * price
-            if db[sid]:
-                if sec["participation"] == "non_participating":
-                    keep = f"its {exact(sec['preference_multiple'])}x preference of {usd(wf.pref[sid])}"
-                else:
-                    keep = f"its capped payout of {usd(wf.cap_total[sid])} ({exact(sec['cap_multiple'])}x its original issue price)"
+    for wid in wf.warrants:
+        if da[wid] != db[wid]:
+            sec = ct.securities[wid]
+            strike, n, u = sec["strike"], wf.shares[wid], sec["underlying"]
+            if u == "common":
+                what, joins = "common", "share in the residual as common"
+            else:
+                what = _name(ct, u)
+                joins = f"the new shares join {what}, with its preference and conversion rights"
+            if db[wid]:
                 text = (
-                    f"{sec['name']} converts to common. At this exit value its as-converted share "
-                    f"({count(n_conv)} common shares at {usd_price(price)} each = {usd(as_conv)}) equals {keep}. "
-                    f"Below it, staying preferred pays more; above it, converting pays more."
+                    f"Each {what} share is now worth {usd_price(strike, 2)}, the strike on the warrant for {n:,} {what} shares. "
+                    f"Above this exit value the warrant is in the money and exercised: its holder pays the strike, "
+                    f"which is added to the proceeds, and {joins}."
                 )
             else:
-                text = f"{sec['name']} stops converting: staying preferred pays more above this exit value."
-            out.append({"code": "series_converts", "security": sid, "converts": db[sid], "text": text})
+                text = f"{what} falls to the {usd_price(strike, 2)} strike; the warrant for {n:,} {what} shares stops being exercised."
+            out.append({"code": "warrant_in_the_money", "security": wid, "strike": exact(strike), "text": text})
+
+    for pid in wf.converters:
+        if da[pid] != db[pid]:
+            members = wf.members[pid]
+            n_conv = sum(units_b[s] * wf.ratio[s] for s in members)
+            as_conv = n_conv * price
+            if len(members) == 1:
+                sec = ct.securities[pid]
+                if db[pid]:
+                    if sec["participation"] == "non_participating":
+                        keep = f"its {exact(sec['preference_multiple'])}x preference of {usd(pref_b(pid))}"
+                    else:
+                        keep = f"its capped payout of {usd(cap_b(pid))} ({exact(sec['cap_multiple'])}x its original issue price)"
+                    text = (
+                        f"{sec['name']} converts to common. At this exit value its as-converted share "
+                        f"({count(n_conv)} common shares at {usd_price(price)} each = {usd(as_conv)}) equals {keep}. "
+                        f"Below it, staying preferred pays more; above it, converting pays more."
+                    )
+                else:
+                    text = f"{sec['name']} stops converting: staying preferred pays more above this exit value."
+            else:
+                names = _join(_name(ct, s) for s in members)
+                keep = sum(
+                    (cap_b(s) if ct.securities[s]["participation"] == "participating_capped" else pref_b(s) for s in members),
+                    Fraction(0),
+                )
+                if db[pid]:
+                    text = (
+                        f"{names} must convert together, and now they do. At this exit value their combined "
+                        f"as-converted share ({count(n_conv)} common shares at {usd_price(price)} each = {usd(as_conv)}) "
+                        f"equals their combined preferences of {usd(keep)}. Below it, the group gets more in total by "
+                        f"keeping its preferences; above it, by converting."
+                    )
+                else:
+                    text = f"{names} stop converting: together they get more by keeping their preferences above this exit value."
+            out.append({"code": "series_converts", "security": pid, "converts": db[pid], "text": text})
 
     for i, tier in enumerate(ct.seniority):
         if tiers_a[i] is False and tiers_b[i] is True:
-            claim = sum(wf.pref[s] for s in tier if not db.get(s, False))
+            claim = sum(pref_b(s) for s in tier if not converted_b.get(s, False))
             unpaid_after = [
                 t for j, t in enumerate(ct.seniority) if j > i and tiers_b[j] is not None
             ]
             nxt = (
-                f"the next tier's preference ({_join(_name(ct, s) for s in unpaid_after[0] if not db.get(s, False))})"
+                f"the next tier's preference ({_join(_name(ct, s) for s in unpaid_after[0] if not converted_b.get(s, False))})"
                 if unpaid_after
                 else "the residual, shared as common"
             )
-            names = _join(_name(ct, s) for s in tier if not db.get(s, False))
+            names = _join(_name(ct, s) for s in tier if not converted_b.get(s, False))
             text = (
                 f"The preference tier {names} is fully paid ({usd(claim)}). "
                 f"Above this exit value, the next dollar goes to {nxt}."
@@ -192,11 +283,21 @@ def reasons(wf, x, sa, sb):
         sec = ct.securities[sid]
         text = (
             f"{sec['name']} reaches its cap: preference plus participation totals "
-            f"{exact(sec['cap_multiple'])}x its original issue price ({usd(wf.cap_total[sid])}). "
+            f"{exact(sec['cap_multiple'])}x its original issue price ({usd(cap_b(sid))}). "
             f"Above this exit value its payout stays flat until converting to common pays more."
         )
         out.append({"code": "cap_reached", "security": sid, "text": text})
 
+    if jumps:
+        out.append(
+            {
+                "code": "payouts_jump",
+                "text": (
+                    "Some payouts jump at this exit value instead of bending, because the decision changes all at once. "
+                    "Exactly here both the old and the new outcome are stable, so both are reported."
+                ),
+            }
+        )
     if not out:
         out.append({"code": "other", "text": "Payoff slopes change here."})
     return out
