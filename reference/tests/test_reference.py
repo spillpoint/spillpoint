@@ -422,6 +422,51 @@ class Exits(unittest.TestCase):
         self.assertEqual(closing["holder_totals"], {"x": "0.00", "y": "500000.00"})
         self.assertEqual(earnout["holder_totals"], {"x": "500000.00", "y": "500000.00"})
 
+    def group_with_options(self, groups=None):
+        # 1M common; Series A 2M at $2 (1x, $4M) senior to Series B 3M at $2 (1x, $6M);
+        # A and B must convert together by more than 50%; 500,000 options at $0.50.
+        return CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in "fxye"],
+                "securities": [COMMON, pref("a", "2", "1", "non_participating"), pref("b", "2", "1", "non_participating"),
+                               {"id": "o", "name": "o", "kind": "option", "strike": "0.5"}],
+                "seniority": [["a"], ["b"]],
+                "conversion_groups": groups if groups is not None else [["a", "b"]],
+                "positions": [{"holder": "f", "security": "common", "shares": 1_000_000},
+                              {"holder": "x", "security": "a", "shares": 2_000_000},
+                              {"holder": "y", "security": "b", "shares": 3_000_000},
+                              {"holder": "e", "security": "o", "shares": 500_000}],
+            }
+        )
+
+    def test_options_follow_the_price_and_the_group_decides_first(self):
+        # At $7.2M, holding the options fixed left no stable answer (the vote and the
+        # exercise chased each other). With E16 and E17 the group compares two settled outcomes:
+        #   stays:    A $4M, B $3.2M, common $0, so the options aren't exercised.
+        #   converts: ($7.2M + $250k strike) / 6.5M shares = $1.146154 a share, so they are:
+        #             B gets 3M × that = $3,438,461.54.
+        # B does better converting and holds 60% of the group, so the group converts.
+        wf = Waterfall(self.group_with_options())
+        (out,) = wf.evaluate(F(7_200_000))
+        price = F(7_450_000, 6_500_000)
+        self.assertEqual(out["decisions"], (True, True))
+        self.assertEqual(out["lines"][("y", "b")], 3_000_000 * price)
+        self.assertEqual(out["lines"][("e", "o")], 500_000 * (price - F(1, 2)))
+
+    def test_more_than_one_group_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "more than one conversion group"):
+            Waterfall(self.group_with_options(groups=[["a"], ["b"]]))
+
+    def test_cap_below_preference_is_refused_and_an_equal_cap_is_non_participating(self):
+        with self.assertRaisesRegex(ValueError, "below its preference"):
+            table([COMMON, pref("p", "1", "2", "participating_capped", cap="1.5")], [("x", "common", 1)], [["p"]])
+        # A 1x cap on a 1x preference leaves no room to participate: same payouts as non-participating.
+        rows = [("x", "common", 1_000_000), ("y", "p", 1_000_000)]
+        capped = table([COMMON, pref("p", "1", "1", "participating_capped", cap="1")], rows, [["p"]])
+        plain = table([COMMON, pref("p", "1", "1", "non_participating")], rows, [["p"]])
+        for e in (500_000, 1_500_000, 2_000_000, 3_000_000):
+            self.assertEqual(payouts(capped, e), payouts(plain, e))
+
     def unconverted_safe(self, securities, positions, seniority=()):
         holders = sorted({p[0] for p in positions} | {"s"})
         return CapTable.from_json(

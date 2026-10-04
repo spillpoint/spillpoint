@@ -11,14 +11,24 @@ export class InputError extends Error {
   }
 }
 
-/** The milestones that add the terms the engine refuses for now. */
-export type Milestone = "M4" | "M5";
+/** When a refused term arrives: a milestone, or "later" for a term that waits until a case needs it. */
+export type Milestone = "M4" | "M5" | "later";
 
 /**
  * The input uses a term the engine doesn't model yet. It is refused, never
  * skipped: ignoring a warrant or a dividend would give a wrong answer that
  * looks right.
  */
+/**
+ * The engine couldn't settle on an answer at an exit value: option exercise
+ * didn't settle, solving from one end went round in a circle (E15), or a
+ * conversion group's vote had no single comparison (E17). The engine stops
+ * rather than guessing.
+ */
+export class NoAnswerError extends Error {
+  override name = "NoAnswerError";
+}
+
 export class UnsupportedTermError extends Error {
   override name = "UnsupportedTermError";
   readonly term: string;
@@ -26,10 +36,8 @@ export class UnsupportedTermError extends Error {
   readonly path: string;
 
   constructor(term: string, milestone: Milestone, path: string, what: string) {
-    super(
-      `${path}: ${what}. The engine supports this from ${milestone}; until then it refuses the input ` +
-        "rather than ignoring the term.",
-    );
+    const when = milestone === "later" ? "once a case needs it" : `from ${milestone}`;
+    super(`${path}: ${what}. The engine supports this ${when}; until then it refuses the input rather than ignoring the term.`);
     this.term = term;
     this.milestone = milestone;
     this.path = path;
