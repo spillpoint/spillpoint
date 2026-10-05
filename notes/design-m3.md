@@ -29,6 +29,6 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
 ## What later PRs add in the same style
 
 - **M3b:** curves as their own card, with direct labels, emphasis instead of nine colors, and numbered breakpoints. The breakpoint list as a numbered list of plain sentences, with the same numbers. Each breakpoint that changes your payout says how, in one line: what each extra $1M adds to your payout above it against below it, or how far your payout jumps.
-- **M3c:** the cap table editor as forms in cards, with the engine's own error messages next to the field they name.
+- **M3c:** the cap table editor as forms in cards, with the engine's own error messages next to the field they name. Built as a second tab, "Cap table", beside "Payouts": one card each for holders, classes and their terms, who holds what (a grid of holders by classes), who is paid first, series that convert together, and the range. A line at the top says what the current table pays you, or what to fix. While an edit has a problem, the payouts stay on the last table the engine accepted and say so.
 - **M3d:** "Save" and "Open" as plain buttons in the masthead.
-- **M3e:** the narrow-screen pass. From the M3a review: on a phone, the example picker runs off the right edge and the table's share columns are cut off. Both must fit.
+- **M3e:** the narrow-screen pass. From the M3a review: on a phone, the example picker runs off the right edge and the table's share columns are cut off. Both must fit. Also from M3c: the editor's shares grid scrolls sideways on a phone, with the holder column held in view; check it still reads well with many classes.

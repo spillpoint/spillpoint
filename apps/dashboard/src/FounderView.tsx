@@ -5,9 +5,9 @@
 import type { Answer, PreparedCapTable } from "spillpoint";
 import { D } from "spillpoint";
 
-import { fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
+import { fractionOf, fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
 import type { AnalysisState } from "./analysis.ts";
-import { percent, shortDollars } from "./format.ts";
+import { percent, shortDollars, withoutCodes } from "./format.ts";
 
 type Decimal = D;
 
@@ -23,8 +23,8 @@ interface Props {
 
 export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, breakpoints }: Props) {
   const gets = answer.payout.holderTotals.get(you) ?? new D(0);
-  const ofProceeds = exitValue.isZero() ? new D(0) : gets.div(exitValue);
-  const ofCompany = holderShares(pc, you).div(fullyDiluted(pc));
+  const ofProceeds = fractionOf(gets, exitValue);
+  const ofCompany = fractionOf(holderShares(pc, you), fullyDiluted(pc));
 
   return (
     <section className="founder" aria-labelledby="founder-headline">
@@ -54,7 +54,7 @@ export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, br
 
 function PayoutStartLine({ pc, range, you, breakpoints }: Omit<Props, "answer" | "exitValue" | "onChooseYou">) {
   if (breakpoints.status === "computing") return <span className="muted">Working out where your payout starts…</span>;
-  if (breakpoints.status === "error") return <span className="muted">Couldn't work out where your payout starts: {breakpoints.message}</span>;
+  if (breakpoints.status === "error") return <span className="muted">Couldn't work out where your payout starts: {withoutCodes(breakpoints.message)}</span>;
   const start = payoutStart(
     pc,
     you,

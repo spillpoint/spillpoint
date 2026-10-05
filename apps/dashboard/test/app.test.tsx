@@ -67,7 +67,7 @@ describe("the founder view, on Millrace", () => {
 describe("the simple example", () => {
   it("switches to case 4 and starts over", async () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText(/Example/), { target: { value: "edge-04-participating-capped" } });
+    fireEvent.change(screen.getByLabelText(/Start from/), { target: { value: "edge-04-participating-capped" } });
     // At $40M Seed is held at its $9M cap; common shares $31M, and Founder A has 6 of the 8 million common.
     expect(headline()).toBe("At $40M you get $23.3M");
     expect(screen.getByText(/58\.1% of the proceeds, for 60\.0% of the company \(fully diluted\)\./)).toBeTruthy();

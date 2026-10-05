@@ -40,11 +40,50 @@ const type = (label, value) => [
   `${input(label)}.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))`,
 ];
 const CURVES = "section[aria-labelledby=curves-heading]";
+/** Types into the index-th element matching a selector, as a person would. */
+const fill = (selector, index, value) => `(() => {
+  const input = document.querySelectorAll(${JSON.stringify(selector)})[${index}];
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, ${JSON.stringify(value)});
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+})()`;
+const pick = (selector, index, value) => `(() => {
+  const select = document.querySelectorAll(${JSON.stringify(selector)})[${index}];
+  Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(select, ${JSON.stringify(value)});
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+})()`;
+const clickAll = (selector) => `document.querySelectorAll(${JSON.stringify(selector)}).forEach((e) => e.click())`;
+const HOLDERS = "section[aria-labelledby=edit-holders-heading] input";
+const SERIES = "fieldset.series input";
+/** Case 6b, built from scratch in the editor, click by click. */
+const BUILD_6B = [
+  choose("Start from", "scratch"),
+  click("Cap table"),
+  fill(HOLDERS, 0, "Founder A"),
+  click("Add a holder"),
+  click("Add a holder"),
+  click("Add a holder"),
+  fill(HOLDERS, 1, "Founder B"),
+  fill(HOLDERS, 2, "Investor X"),
+  fill(HOLDERS, 3, "Investor Y"),
+  click("Add a preferred series"),
+  fill(SERIES, 1, "1"),
+  fill(SERIES, 0, "Seed-1 Preferred"),
+  click("Add a preferred series"),
+  fill(SERIES, 5, "3"),
+  fill(SERIES, 4, "Seed-2 Preferred"),
+  fill('[aria-label="Founder A, Common Stock"]', 0, "6,000,000"),
+  fill('[aria-label="Founder B, Common Stock"]', 0, "2,000,000"),
+  fill('[aria-label="Investor X, Seed-1 Preferred"]', 0, "1,000,000"),
+  fill('[aria-label="Investor Y, Seed-2 Preferred"]', 0, "1,000,000"),
+  pick("select[id^=edit-rank-]", 0, "1"),
+  clickAll("#edit-group input[type=checkbox]"),
+  fill("#edit-range-high", 0, "40M"),
+];
 
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
   "m3a-by-class": { width: 1100, height: 900, steps: [click("By class")] },
-  "m3a-simple-example": { width: 1100, height: 900, steps: [choose("Example", "edge-04-participating-capped")] },
+  "m3a-simple-example": { width: 1100, height: 900, steps: [choose("Start from", "edge-04-participating-capped")] },
   "m3a-phone": { width: 390, height: 844, mobile: true, steps: [] },
   // A shot with `clip` keeps just those parts of the page.
   "m3b-curves": { width: 1100, height: 900, steps: [], clip: [CURVES] },
@@ -54,6 +93,43 @@ const SHOTS = {
   // Mostly text, so a lower quality still reads cleanly and keeps the file small.
   "m3b-breakpoints": { width: 1100, height: 900, steps: [], clip: ["section[aria-labelledby=breakpoints-heading]"], quality: 30 },
   "m3b-phone": { width: 390, height: 844, mobile: true, steps: [], clip: [CURVES] },
+  "m3c-editor": { width: 1100, height: 900, steps: [click("Cap table")], clip: [".tabs", ".editor__status", "section[aria-labelledby=edit-holders-heading]"] },
+  "m3c-holdings": {
+    width: 1100,
+    height: 900,
+    steps: [click("Cap table")],
+    clip: ["section[aria-labelledby=edit-shares-heading]", "section[aria-labelledby=edit-seniority-heading]", "section[aria-labelledby=edit-group-heading]"],
+    quality: 40,
+  },
+  "m3c-error": {
+    width: 1100,
+    height: 900,
+    // Series A is the third series; its cap is its fifth box.
+    steps: [click("Cap table"), fill("fieldset.series input", 12, "1")],
+    clip: ["fieldset.series:nth-of-type(3)"],
+  },
+  "m3c-stale": {
+    width: 1100,
+    height: 900,
+    steps: [click("Cap table"), fill("fieldset.series input", 12, "1"), click("Payouts")],
+    clip: [".notice--problem", ".founder"],
+  },
+  // The shares grid scrolled sideways, to show the holder column staying in view.
+  "m3c-phone": {
+    width: 390,
+    height: 844,
+    mobile: true,
+    steps: [click("Cap table"), `document.querySelector("section[aria-labelledby=edit-shares-heading] .table-scroll").scrollLeft = 400`],
+    clip: ["section[aria-labelledby=edit-shares-heading]"],
+  },
+  "m3c-6b-editor": {
+    width: 1100,
+    height: 900,
+    steps: BUILD_6B,
+    clip: ["section[aria-labelledby=edit-shares-heading]", "section[aria-labelledby=edit-seniority-heading]", "section[aria-labelledby=edit-group-heading]"],
+    quality: 40,
+  },
+  "m3c-6b-curves": { width: 1100, height: 900, steps: [...BUILD_6B, click("Payouts")], clip: [CURVES, "section[aria-labelledby=breakpoints-heading]"], quality: 40 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

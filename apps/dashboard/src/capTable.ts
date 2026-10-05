@@ -25,6 +25,11 @@ export function fullyDiluted(pc: PreparedCapTable): Decimal {
     .plus(pc.capTable.unissuedPool);
 }
 
+/** part ÷ whole, or zero when there's nothing to divide (a cap table with no shares yet, being edited). */
+export function fractionOf(part: Decimal, whole: Decimal): Decimal {
+  return whole.isZero() ? ZERO : part.div(whole);
+}
+
 /** One holder's fully diluted shares. */
 export function holderShares(pc: PreparedCapTable, holder: string): Decimal {
   return pc.capTable.positions

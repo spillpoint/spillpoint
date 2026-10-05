@@ -5,7 +5,7 @@
 // (the tests' simulated browser), it runs in place, asynchronously, through
 // the same code.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { D, findBreakpoints, prepare, readExit, solve } from "spillpoint";
 import type { ReasonCode } from "spillpoint";
 
@@ -99,20 +99,32 @@ function compute(exit: unknown): Promise<Analysis> {
   return inWorker(exit);
 }
 
-/** The analysis of an exit input, recomputed whenever it changes. */
+/** How long typing must pause before an edited cap table is analysed again. */
+const SETTLE_MS = 250;
+
+/**
+ * The analysis of an exit input, recomputed whenever it changes. The first
+ * one starts at once; after an edit it waits until typing pauses, so the
+ * background thread isn't restarted on every keystroke.
+ */
 export function useAnalysis(exit: unknown): AnalysisState {
   const [state, setState] = useState<AnalysisState>({ status: "computing" });
+  const first = useRef(true);
   useEffect(() => {
     let current = true;
     setState({ status: "computing" });
-    compute(exit).then(
-      (analysis) => current && setState({ status: "ready", ...analysis }),
-      (e: unknown) => {
-        if (current && !(e instanceof Superseded)) setState({ status: "error", message: (e as Error).message });
-      },
-    );
+    const run = () =>
+      compute(exit).then(
+        (analysis) => current && setState({ status: "ready", ...analysis }),
+        (e: unknown) => {
+          if (current && !(e instanceof Superseded)) setState({ status: "error", message: (e as Error).message });
+        },
+      );
+    const timer = first.current ? (run(), null) : setTimeout(run, SETTLE_MS);
+    first.current = false;
     return () => {
       current = false;
+      if (timer) clearTimeout(timer);
     };
   }, [exit]);
   return state;

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { D } from "spillpoint";
 import type { Answer, PreparedCapTable } from "spillpoint";
 
-import { classShares, fullyDiluted, holderShares } from "./capTable.ts";
+import { classShares, fractionOf, fullyDiluted, holderShares } from "./capTable.ts";
 import { dollars, percent, shortDollars } from "./format.ts";
 
 type Decimal = D;
@@ -50,7 +50,7 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
   if (capTable.unissuedPool.gt(0)) {
     rows.push({ key: "pool", name: "Unissued option pool", amount: zero, shares: capTable.unissuedPool, you: false });
   }
-  const proceeds = (amount: Decimal) => (exitValue.isZero() ? zero : amount.div(exitValue));
+  const proceeds = (amount: Decimal) => fractionOf(amount, exitValue);
 
   return (
     <section className="card" aria-labelledby="who-gets-what">
@@ -90,7 +90,7 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
                 </th>
                 <td className="num">{dollars(r.amount)}</td>
                 <td className="num">{percent(proceeds(r.amount))}</td>
-                <td className="num">{percent(r.shares.div(fd))}</td>
+                <td className="num">{percent(fractionOf(r.shares, fd))}</td>
               </tr>
             ))}
           </tbody>
