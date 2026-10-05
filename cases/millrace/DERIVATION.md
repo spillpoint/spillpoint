@@ -47,11 +47,11 @@ The SAFE price of $0.384930 is lower than the Seed price, so the cap governs the
 | | Shares | How |
 |---|---:|---|
 | Harbor Lane, Seed Preferred | 5,393,570 | $2,500,000 ÷ $0.463515, rounded down |
-| Priya Shah, Seed shadow series | 779,362 | $300,000 ÷ $0.384930, rounded down |
-| Marcus Lee, Seed shadow series | 389,681 | $150,000 ÷ $0.384930, rounded down |
+| Priya Shah, Seed Preferred (from SAFEs) | 779,362 | $300,000 ÷ $0.384930, rounded down |
+| Marcus Lee, Seed Preferred (from SAFEs) | 389,681 | $150,000 ÷ $0.384930, rounded down |
 | Pool top-up | 3,191,337 | unissued pool = floor(18% × 21,574,281.80) = 3,883,370 |
 
-The SAFEs convert into a **shadow series** of Seed Preferred (R5). It has the same rights as Seed: 1.5x, non-participating, pari passu with Seed. Its original issue price is the SAFE price, $0.384930, rather than the Seed price. So its preference is 1,169,043 × $0.384930 × 1.5 = **$674,999.64**, against Seed Preferred's 5,393,570 × $0.463515 × 1.5 = **$3,749,999.69**.
+The SAFEs convert into a series of their own, **Seed Preferred (from SAFEs)** (R5). It has the same rights as Seed: 1.5x, non-participating, pari passu with Seed. Its original issue price is the SAFE price, $0.384930, rather than the Seed price. So its preference is 1,169,043 × $0.384930 × 1.5 = **$674,999.64**, against Seed Preferred's 5,393,570 × $0.463515 × 1.5 = **$3,749,999.69**.
 
 Harbor Lane now holds exactly 25.0000% of the fully diluted company.
 
@@ -108,15 +108,15 @@ Series B is 2x participating, uncapped. Its preference is 9,241,189 × $1.082112
 | Other employees | Options $0.05 | 450,000 | 450,000 |
 | Other employees | Options $0.11 | 1,100,000 | 1,100,000 |
 | Other employees | Options $0.42 | 2,250,000 | 2,250,000 |
-| Priya Shah | Seed shadow | 779,362 | 779,362 |
-| Marcus Lee | Seed shadow | 389,681 | 389,681 |
+| Priya Shah | Seed Preferred (from SAFEs) | 779,362 | 779,362 |
+| Marcus Lee | Seed Preferred (from SAFEs) | 389,681 | 389,681 |
 | Harbor Lane | Seed Preferred | 5,393,570 | 5,393,570 |
 | Harbor Lane | Series A Preferred | 1,445,454 | 1,644,058.31 |
 | Ridgeline | Series A Preferred | 4,336,363 | 4,932,176.06 |
 | Cobalt | Series B Preferred | 9,241,189 | 9,241,189 |
 | Unissued pool | | 5,101,136 | never participates |
 
-Seniority: Series B first, then Series A, then the Seed tier (Seed Preferred and the shadow series, pari passu).
+Seniority: Series B first, then Series A, then the Seed tier (Seed Preferred and Seed Preferred (from SAFEs), pari passu).
 
 ---
 
@@ -146,20 +146,20 @@ The reference tries all 64 combinations of these six decisions at every exit val
 | 4 | $40,747,781.34 | Common reaches $0.05. The 490,000 $0.05 options are exercised. |
 | 5 | $42,364,524.56 | Common reaches $0.11. The 1,100,000 $0.11 options are exercised. |
 | 6 | $51,058,697.87 | Common reaches $0.42. The 2,800,000 $0.42 options are exercised. |
-| 7 | $55,913,661.49 | The Seed shadow series converts. Common reaches $0.577395 = 1.5 × $0.384930, its preference per share. |
+| 7 | $55,913,661.49 | Seed Preferred (from SAFEs) converts. Common reaches $0.577395 = 1.5 × $0.384930, its preference per share. |
 | 8 | $59,687,473.06 | Seed Preferred converts. Common reaches $0.695272 = 1.5 × $0.463515. |
 | 9 | $136,069,894.04 | Series A hits its 2.75x cap ($32,999,991.66) and stops growing. |
 | 10 | $206,396,062.86 | Series A converts. 6,576,234.36 as-converted shares × $5.018068 = $32,999,991.66, equal to its cap. Above this, converting pays more. |
 
 ### Why each one sits where it does
 
-**1–3: the preference stack.** Below $20M, Cobalt (Series B) takes every dollar. At $10M, Cobalt gets all $10M and everyone else gets nothing. From $20M to $35M the dollars go to Series A, split between Ridgeline and Harbor Lane in proportion to their shares. From $35M to $39.42M they go to the Seed tier: Harbor Lane's Seed Preferred and Priya and Marcus's shadow series, in proportion to their preferences (3,749,999.69 : 674,999.64). The total stack is 19,999,999.79 + 14,999,996.21 + 4,424,999.33 = **$39,424,995.32**. Until then common, including Ana, Dev and Lena, gets **nothing**.
+**1–3: the preference stack.** Below $20M, Cobalt (Series B) takes every dollar. At $10M, Cobalt gets all $10M and everyone else gets nothing. From $20M to $35M the dollars go to Series A, split between Ridgeline and Harbor Lane in proportion to their shares. From $35M to $39.42M they go to the Seed tier: Harbor Lane's Seed Preferred and Priya and Marcus's Seed Preferred (from SAFEs), in proportion to their preferences (3,749,999.69 : 674,999.64). The total stack is 19,999,999.79 + 14,999,996.21 + 4,424,999.33 = **$39,424,995.32**. Until then common, including Ana, Dev and Lena, gets **nothing**.
 
-**4–6: options come into the money.** Above $39.42M, the residual is shared per as-converted share. The sharers are common (10,638,297), Series A (6,576,234.36) and Series B (9,241,189). Seed and the shadow series sit out for now because they're better off keeping their preference. That is 26,455,720.36 shares, so each extra dollar of exit raises common by 1 ÷ 26,455,720.36.
+**4–6: options come into the money.** Above $39.42M, the residual is shared per as-converted share. The sharers are common (10,638,297), Series A (6,576,234.36) and Series B (9,241,189). The two Seed series sit out for now because they're better off keeping their preference. That is 26,455,720.36 shares, so each extra dollar of exit raises common by 1 ÷ 26,455,720.36.
 
 When the price per share reaches a strike, that strike class exercises. Its holders pay in the strike, and from then on each extra dollar is shared across more shares. For the $0.05 options: (40,747,781.34 − 39,424,995.32) ÷ 26,455,720.36 = $0.05. Each later strike works the same way, on the larger share count.
 
-**7–8: the Seed tier converts.** A non-participating holder converts once its per-share slice of common beats its per-share preference. The shadow series' preference per share is 1.5 × $0.384930 = **$0.577395**. Seed Preferred's is 1.5 × $0.463515 = **$0.695272**. Because the SAFE converted at a lower price, the shadow series' preference per share is lower, so it converts first, at $55.91M, and Seed follows at $59.69M. Between those two exit values, Priya and Marcus share in the upside while Harbor Lane's Seed still sits on its preference.
+**7–8: the Seed tier converts.** A non-participating holder converts once its per-share slice of common beats its per-share preference. The preference per share of Seed Preferred (from SAFEs) is 1.5 × $0.384930 = **$0.577395**. Seed Preferred's is 1.5 × $0.463515 = **$0.695272**. Because the SAFE converted at a lower price, the series from SAFEs has the lower preference per share, so it converts first, at $55.91M, and Seed follows at $59.69M. Between those two exit values, Priya and Marcus share in the upside while Harbor Lane's Seed still sits on its preference.
 
 **9–10: Series A's cap and the dead zone.** Series A takes its preference and then participates, until preference plus participation reaches 2.75 × its $12M investment, which is $32,999,991.66. That happens at $136.07M. From there, Series A's payout is **flat**: Ridgeline gets $24,749,995.17 at every exit value from $136.07M to $206.40M. Series A converts once its as-converted share of common is worth more than the cap. Anti-dilution gave it 6,576,234.36 as-converted shares, and $32,999,991.66 ÷ 6,576,234.36 = $5.018068 per share, which common reaches at **$206.40M**. Without the Series B anti-dilution adjustment, Series A would have only 5,781,817 as-converted shares. It would then need common to reach $5.7075 per share before converting.
 
@@ -191,5 +191,5 @@ When the price per share reaches a strike, that strike class exercises. Its hold
 
 To re-derive by hand or in a spreadsheet:
 1. Rebuild the cap table above. The share counts must match exactly, within 1 share.
-2. At each exit value, apply the decisions shown in `expected.json` → `decisions`. Run the tiers, then share the residual. Check the payouts within $1.
-3. Check each breakpoint by its condition in the table above, e.g. common price = strike, or a tier's total paid. Each should hold within $1.
+2. At each exit value, apply the decisions shown in `expected.json` → `decisions`. Run the tiers, then share the residual. Check the payouts within $0.01.
+3. Check each breakpoint by its condition in the table above, e.g. common price = strike, or a tier's total paid. Each should hold within $0.01.

@@ -595,7 +595,7 @@
           },
           {
             "id": "seed_shadow",
-            "name": "Seed Preferred (SAFE shadow)",
+            "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
             "conversion_price": "455000/1182033",
@@ -762,7 +762,7 @@
           },
           {
             "id": "seed_shadow",
-            "name": "Seed Preferred (SAFE shadow)",
+            "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
             "conversion_price": "455000/1182033",
@@ -969,7 +969,7 @@
           },
           {
             "id": "seed_shadow",
-            "name": "Seed Preferred (SAFE shadow)",
+            "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
             "conversion_price": "455000/1182033",
@@ -1182,7 +1182,7 @@
           },
           {
             "id": "seed_shadow",
-            "name": "Seed Preferred (SAFE shadow)",
+            "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
             "conversion_price": "455000/1182033",
@@ -1446,7 +1446,7 @@
           },
           {
             "id": "seed_shadow",
-            "name": "Seed Preferred (SAFE shadow)",
+            "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
             "conversion_price": "455000/1182033",
@@ -1680,7 +1680,7 @@
             "securities": [
               "series_a"
             ],
-            "text": "The preference tier Series A Preferred is fully paid ($14,999,996.21). Above this exit value, the next dollar goes to the next tier's preference (Seed Preferred and Seed Preferred (SAFE shadow))."
+            "text": "The preference tier Series A Preferred is fully paid ($14,999,996.21). Above this exit value, the next dollar goes to the next tier's preference (Seed Preferred and Seed Preferred (from SAFEs))."
           }
         ]
       },
@@ -1695,7 +1695,7 @@
               "seed",
               "seed_shadow"
             ],
-            "text": "The preference tier Seed Preferred and Seed Preferred (SAFE shadow) is fully paid ($4,424,999.33). Above this exit value, the next dollar goes to the residual, shared as common."
+            "text": "The preference tier Seed Preferred and Seed Preferred (from SAFEs) is fully paid ($4,424,999.33). Above this exit value, the next dollar goes to the residual, shared as common."
           }
         ]
       },
@@ -1743,7 +1743,7 @@
             "code": "series_converts",
             "security": "seed_shadow",
             "converts": true,
-            "text": "Seed Preferred (SAFE shadow) converts to common. At this exit value its as-converted share (1,169,043 common shares at $0.5774 each = $674,999.64) equals its 1.5x preference of $674,999.64. Below it, staying preferred pays more; above it, converting pays more."
+            "text": "Seed Preferred (from SAFEs) converts to common. At this exit value its as-converted share (1,169,043 common shares at $0.5774 each = $674,999.64) equals its 1.5x preference of $674,999.64. Below it, staying preferred pays more; above it, converting pays more."
           }
         ]
       },

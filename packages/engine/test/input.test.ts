@@ -25,6 +25,7 @@ describe("cases in M2's scope", () => {
       "edge-06a-per-series",
       "edge-06b-forced-class",
       "edge-06c-forced-class-at-least",
+      "edge-06d-voter-indifferent-over-a-range",
       "edge-07-option-strikes",
       "millrace",
     ]);
@@ -67,7 +68,7 @@ describe("cases outside M2's scope are refused, never skipped", () => {
     ["edge-13a-note-with-pool", "unconverted_note", "M5"],
     ["edge-13b-note-without-pool", "unconverted_note", "M5"],
     ["edge-13c-note-common-only", "unconverted_note", "M5"],
-    ...ALL_CASES.filter((n) => /^edge-1[4-7]/.test(n)).map((n): [string, string, Milestone] => [n, "rounds", "M4"]),
+    ...ALL_CASES.filter((n) => /^edge-1[4-8]/.test(n)).map((n): [string, string, Milestone] => [n, "rounds", "M4"]),
   ];
 
   it("covers every case outside the scope", () => {

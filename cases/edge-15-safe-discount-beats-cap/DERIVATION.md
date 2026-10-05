@@ -48,10 +48,10 @@ So x = 6,500,000 + 0.12x + 0.20x + 0.03x, which gives 0.65x = 6,500,000 and x = 
 
 Every count comes out whole, so no rounding is needed (R3).
 
-The SAFE converts into **Series A Preferred (SAFE shadow)**, a shadow series with Series A's rights (R5):
+The SAFE converts into **Series A Preferred (from SAFEs)**, a series of its own with Series A's rights (R5):
 - Its original issue price and conversion price are the SAFE's $2.00, not $2.50.
 - Its preference is 300,000 × $2.00 × 1 = **$600,000**, the amount Investor S paid.
-- It sits in one seniority tier with Series A, pari passu, as Millrace's Seed shadow series does with Seed.
+- It sits in one seniority tier with Series A, pari passu, as Millrace's Seed Preferred (from SAFEs) does with Seed Preferred.
 
 ## Cap table after the Series A
 
@@ -60,7 +60,7 @@ The SAFE converts into **Series A Preferred (SAFE shadow)**, a shadow series wit
 | Founder A | Common | 4,500,000 | 45.00% |
 | Founder B | Common | 1,500,000 | 15.00% |
 | Employee C | Options ($0.25) | 500,000 | 5.00% |
-| Investor S | Series A Preferred (SAFE shadow) | 300,000 | 3.00% |
+| Investor S | Series A Preferred (from SAFEs) | 300,000 | 3.00% |
 | Investor X | Series A Preferred | 2,000,000 | 20.00% |
 | Unissued pool | | 1,200,000 | 12.00% |
 | **Total** | | **10,000,000** | **100.00%** |

@@ -1,5 +1,5 @@
 {
-  "case": "edge-17a-pay-to-play-priced-after",
+  "case": "edge-17c-pay-to-play-partial",
   "generated_by": "reference/generate.py",
   "cap_tables": [
     {
@@ -407,8 +407,8 @@
               "as_converted_shares": "800000",
               "share_percent": "40.000000",
               "required": "400000",
-              "invested": "0",
-              "fraction_bought": "0",
+              "invested": "200000",
+              "fraction_bought": "0.5",
               "participates": false,
               "series": [
                 {
@@ -428,12 +428,16 @@
             "shares": 464000
           },
           {
+            "holder": "investor_w",
+            "shares": 154666
+          },
+          {
             "holder": "investor_y",
-            "shares": 1856000
+            "shares": 1701333
           }
         ],
         "pool_top_up": 0,
-        "post_money_fully_diluted_actual": "11600000"
+        "post_money_fully_diluted_actual": "11599999"
       },
       "cap_table": {
         "holders": [
@@ -549,9 +553,14 @@
             "shares": 464000
           },
           {
+            "holder": "investor_w",
+            "security": "series_b",
+            "shares": 154666
+          },
+          {
             "holder": "investor_y",
             "security": "series_b",
-            "shares": 1856000
+            "shares": 1701333
           }
         ],
         "unissued_pool": 1500000,
@@ -561,22 +570,22 @@
             "common": 6080000,
             "options_0.25": 500000,
             "series_a": 1200000,
-            "series_b": 2320000
+            "series_b": 2319999
           },
           "as_converted_by_security": {
             "common": "6080000",
             "options_0.25": "500000",
             "series_a": "1200000",
-            "series_b": "2320000"
+            "series_b": "2319999"
           },
-          "fully_diluted": "11600000",
+          "fully_diluted": "11599999",
           "fully_diluted_percent_by_holder": {
             "founder_a": "38.7931",
             "founder_b": "12.9310",
             "employee_c": "4.3103",
             "investor_x": "14.3448",
-            "investor_w": "0.6897",
-            "investor_y": "16.0000"
+            "investor_w": "2.0230",
+            "investor_y": "14.6667"
           },
           "unissued_pool_percent": "12.9310"
         }

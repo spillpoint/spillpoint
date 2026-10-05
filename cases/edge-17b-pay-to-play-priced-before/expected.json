@@ -374,28 +374,51 @@
         "post_money_fully_diluted_solved_approx": "12500000.0000",
         "pre_round_fully_diluted": "10000000",
         "pay_to_play": {
-          "series": "series_a",
+          "series": [
+            "series_a"
+          ],
           "offered_amount": "1000000",
-          "conversion_ratio": "0.1",
+          "conversion_ratios": {
+            "series_a": "0.1"
+          },
+          "partial_participation": "convert_all",
           "priced_after_conversion": false,
           "holders": [
             {
               "holder": "investor_x",
-              "shares": 1200000,
-              "share_of_series_percent": "60.000000",
+              "as_converted_shares": "1200000",
+              "share_percent": "60.000000",
               "required": "600000",
               "invested": "600000",
+              "fraction_bought": "1",
               "participates": true,
-              "common_received": null
+              "series": [
+                {
+                  "series": "series_a",
+                  "shares": 1200000,
+                  "kept": 1200000,
+                  "converted": 0,
+                  "common_received": 0
+                }
+              ]
             },
             {
               "holder": "investor_w",
-              "shares": 800000,
-              "share_of_series_percent": "40.000000",
+              "as_converted_shares": "800000",
+              "share_percent": "40.000000",
               "required": "400000",
               "invested": "0",
+              "fraction_bought": "0",
               "participates": false,
-              "common_received": 80000
+              "series": [
+                {
+                  "series": "series_a",
+                  "shares": 800000,
+                  "kept": 0,
+                  "converted": 800000,
+                  "common_received": 80000
+                }
+              ]
             }
           ]
         },

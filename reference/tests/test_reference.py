@@ -174,7 +174,7 @@ class Rounds(unittest.TestCase):
         # money, x = 800,000 ÷ 0.8 = 1,000,000, $1.00 a share; s1 gets 75,000, b 125,000.
         # Priced before it: x = 850,000 ÷ 0.8 = 1,062,500, $16/17 a share;
         # s1 gets floor(79,687.5) = 79,687, b floor(132,812.5) = 132,812.
-        def run(after=True, s2_amount=None, ad="none"):
+        def run(after=True, s2_amount=None, ad="none", partial=None):
             invest = [{"holder": "s1", "amount": "75000"}, {"holder": "b", "amount": "125000"}]
             if s2_amount:
                 invest.append({"holder": "s2", "amount": s2_amount})
@@ -192,7 +192,8 @@ class Rounds(unittest.TestCase):
                         investments=invest,
                         seniority=[["seed"], ["p"]],
                         pay_to_play={"series": ["p"], "offered_amount": "100000", "conversion_ratio": "0.5",
-                                     "priced_after_conversion": after},
+                                     "priced_after_conversion": after}
+                        | ({"partial_participation": partial} if partial else {}),
                     ),
                 ],
                 holders=("a", "b", "s1", "s2"),
@@ -207,11 +208,22 @@ class Rounds(unittest.TestCase):
         ev, ct, d = run(after=False)
         self.assertEqual(F(d["price_per_share"]), F(16, 17))
         self.assertEqual((ct.positions[("s1", "seed")], ct.positions[("b", "seed")], ct.positions[("s2", "common")]), (79_687, 132_812, 50_000))
-        # Partial participation and pay-to-play with triggered anti-dilution are refused (R20, R21).
-        with self.assertRaisesRegex(ValueError, "partial participation"):
-            run(s2_amount="10000")
-        with self.assertRaisesRegex(ValueError, "triggers anti-dilution"):
-            run(ad="broad_based")
+        # Partial participation (R20): s2 buys $10,000 of its $25,000, 40%.
+        # By default all its p converts: 100,000 × 1/2 = 50,000 common.
+        ev, ct, d = run(s2_amount="10000")
+        self.assertEqual((ct.positions[("s2", "common")], ct.positions.get(("s2", "p"))), (50_000, None))
+        self.assertEqual(d["pay_to_play"]["holders"][1]["fraction_bought"], "0.4")
+        # Proportionally, it keeps floor(100,000 × 40%) = 40,000 p, and 60,000 convert to 30,000 common.
+        ev, ct, d = run(s2_amount="10000", partial="convert_proportionally")
+        self.assertEqual((ct.positions[("s2", "common")], ct.positions[("s2", "p")]), (30_000, 40_000))
+        # With anti-dilution (R21): the round is down ($1 against p's $2); s2 converts with no adjustment,
+        # s1's p is adjusted, and A counts the table after the conversion: 450,000 + 300,000 + 50,000.
+        for after in (True, False):
+            ev, ct, d = run(ad="broad_based", after=after)
+            (adj,) = d["anti_dilution"]
+            self.assertEqual((adj["series"], adj["A"]), ("p", "800000"))
+            self.assertEqual(ct.positions[("s2", "common")], 50_000)
+            self.assertLess(F(adj["cp2"]), F(2))
 
     def test_broad_based_weighted_average(self):
         # Textbook: A = 2,000,000 (1M common + 1M Series A as converted), CP1 = $1.00.

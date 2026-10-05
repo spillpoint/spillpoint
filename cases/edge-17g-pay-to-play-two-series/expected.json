@@ -1,5 +1,5 @@
 {
-  "case": "edge-17a-pay-to-play-priced-after",
+  "case": "edge-17g-pay-to-play-two-series",
   "generated_by": "reference/generate.py",
   "cap_tables": [
     {
@@ -17,12 +17,12 @@
             "name": "Founder B"
           },
           {
-            "id": "employee_c",
-            "name": "Employee C"
-          },
-          {
             "id": "investor_x",
             "name": "Investor X"
+          },
+          {
+            "id": "investor_v",
+            "name": "Investor V"
           },
           {
             "id": "investor_w",
@@ -72,182 +72,27 @@
       }
     },
     {
-      "after_event": "option_pool",
-      "date": "2022-03-01",
+      "after_event": "seed",
+      "date": "2022-09-30",
       "details": {
-        "pool_created": 1500000,
-        "basis_shares": "6000000"
-      },
-      "cap_table": {
-        "holders": [
-          {
-            "id": "founder_a",
-            "name": "Founder A"
-          },
-          {
-            "id": "founder_b",
-            "name": "Founder B"
-          },
-          {
-            "id": "employee_c",
-            "name": "Employee C"
-          },
-          {
-            "id": "investor_x",
-            "name": "Investor X"
-          },
-          {
-            "id": "investor_w",
-            "name": "Investor W"
-          },
-          {
-            "id": "investor_y",
-            "name": "Investor Y"
-          }
-        ],
-        "securities": [
-          {
-            "id": "common",
-            "name": "Common Stock",
-            "kind": "common"
-          }
-        ],
-        "seniority": [],
-        "positions": [
-          {
-            "holder": "founder_a",
-            "security": "common",
-            "shares": 4500000
-          },
-          {
-            "holder": "founder_b",
-            "security": "common",
-            "shares": 1500000
-          }
-        ],
-        "unissued_pool": 1500000,
-        "unconverted_safes": [],
-        "totals": {
-          "shares_by_security": {
-            "common": 6000000
-          },
-          "as_converted_by_security": {
-            "common": "6000000"
-          },
-          "fully_diluted": "7500000",
-          "fully_diluted_percent_by_holder": {
-            "founder_a": "60.0000",
-            "founder_b": "20.0000"
-          },
-          "unissued_pool_percent": "20.0000"
-        }
-      }
-    },
-    {
-      "after_event": "grants",
-      "date": "2022-03-01",
-      "details": {},
-      "cap_table": {
-        "holders": [
-          {
-            "id": "founder_a",
-            "name": "Founder A"
-          },
-          {
-            "id": "founder_b",
-            "name": "Founder B"
-          },
-          {
-            "id": "employee_c",
-            "name": "Employee C"
-          },
-          {
-            "id": "investor_x",
-            "name": "Investor X"
-          },
-          {
-            "id": "investor_w",
-            "name": "Investor W"
-          },
-          {
-            "id": "investor_y",
-            "name": "Investor Y"
-          }
-        ],
-        "securities": [
-          {
-            "id": "common",
-            "name": "Common Stock",
-            "kind": "common"
-          },
-          {
-            "id": "options_0.25",
-            "name": "Options ($0.25 strike)",
-            "kind": "option",
-            "strike": "0.25"
-          }
-        ],
-        "seniority": [],
-        "positions": [
-          {
-            "holder": "founder_a",
-            "security": "common",
-            "shares": 4500000
-          },
-          {
-            "holder": "founder_b",
-            "security": "common",
-            "shares": 1500000
-          },
-          {
-            "holder": "employee_c",
-            "security": "options_0.25",
-            "shares": 500000
-          }
-        ],
-        "unissued_pool": 1000000,
-        "unconverted_safes": [],
-        "totals": {
-          "shares_by_security": {
-            "common": 6000000,
-            "options_0.25": 500000
-          },
-          "as_converted_by_security": {
-            "common": "6000000",
-            "options_0.25": "500000"
-          },
-          "fully_diluted": "7500000",
-          "fully_diluted_percent_by_holder": {
-            "founder_a": "60.0000",
-            "founder_b": "20.0000",
-            "employee_c": "6.6667"
-          },
-          "unissued_pool_percent": "13.3333"
-        }
-      }
-    },
-    {
-      "after_event": "series_a",
-      "date": "2023-06-30",
-      "details": {
-        "price_per_share": "2.5",
-        "price_per_share_approx": "2.5000000000",
-        "post_money_valuation": "25000000",
-        "post_money_fully_diluted_solved": "10000000",
-        "post_money_fully_diluted_solved_approx": "10000000.0000",
-        "pre_round_fully_diluted": "7500000",
+        "price_per_share": "1",
+        "price_per_share_approx": "1.0000000000",
+        "post_money_valuation": "7500000",
+        "post_money_fully_diluted_solved": "7500000",
+        "post_money_fully_diluted_solved_approx": "7500000.0000",
+        "pre_round_fully_diluted": "6000000",
         "new_shares": [
           {
             "holder": "investor_x",
-            "shares": 1200000
+            "shares": 1000000
           },
           {
-            "holder": "investor_w",
-            "shares": 800000
+            "holder": "investor_v",
+            "shares": 500000
           }
         ],
-        "pool_top_up": 500000,
-        "post_money_fully_diluted_actual": "10000000"
+        "pool_top_up": 0,
+        "post_money_fully_diluted_actual": "7500000"
       },
       "cap_table": {
         "holders": [
@@ -260,12 +105,12 @@
             "name": "Founder B"
           },
           {
-            "id": "employee_c",
-            "name": "Employee C"
-          },
-          {
             "id": "investor_x",
             "name": "Investor X"
+          },
+          {
+            "id": "investor_v",
+            "name": "Investor V"
           },
           {
             "id": "investor_w",
@@ -283,32 +128,26 @@
             "kind": "common"
           },
           {
-            "id": "options_0.25",
-            "name": "Options ($0.25 strike)",
-            "kind": "option",
-            "strike": "0.25"
-          },
-          {
-            "id": "series_a",
-            "name": "Series A Preferred",
+            "id": "seed",
+            "name": "Seed Preferred",
             "kind": "preferred",
-            "original_issue_price": "2.5",
-            "conversion_price": "2.5",
+            "original_issue_price": "1",
+            "conversion_price": "1",
             "conversion_ratio": "1",
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
             "anti_dilution": "none",
             "approx": {
-              "original_issue_price": "2.5000000000",
-              "conversion_price": "2.5000000000",
+              "original_issue_price": "1.0000000000",
+              "conversion_price": "1.0000000000",
               "conversion_ratio": "1.0000000000"
             }
           }
         ],
         "seniority": [
           [
-            "series_a"
+            "seed"
           ]
         ],
         "positions": [
@@ -323,43 +162,191 @@
             "shares": 1500000
           },
           {
-            "holder": "employee_c",
-            "security": "options_0.25",
+            "holder": "investor_x",
+            "security": "seed",
+            "shares": 1000000
+          },
+          {
+            "holder": "investor_v",
+            "security": "seed",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 0,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 6000000,
+            "seed": 1500000
+          },
+          "as_converted_by_security": {
+            "common": "6000000",
+            "seed": "1500000"
+          },
+          "fully_diluted": "7500000",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "60.0000",
+            "founder_b": "20.0000",
+            "investor_x": "13.3333",
+            "investor_v": "6.6667"
+          },
+          "unissued_pool_percent": "0.0000"
+        }
+      }
+    },
+    {
+      "after_event": "series_a",
+      "date": "2023-09-30",
+      "details": {
+        "price_per_share": "2",
+        "price_per_share_approx": "2.0000000000",
+        "post_money_valuation": "18000000",
+        "post_money_fully_diluted_solved": "9000000",
+        "post_money_fully_diluted_solved_approx": "9000000.0000",
+        "pre_round_fully_diluted": "7500000",
+        "new_shares": [
+          {
+            "holder": "investor_x",
+            "shares": 1000000
+          },
+          {
+            "holder": "investor_w",
+            "shares": 500000
+          }
+        ],
+        "pool_top_up": 0,
+        "post_money_fully_diluted_actual": "9000000"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "investor_x",
+            "name": "Investor X"
+          },
+          {
+            "id": "investor_v",
+            "name": "Investor V"
+          },
+          {
+            "id": "investor_w",
+            "name": "Investor W"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "1",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "1.0000000000",
+              "conversion_price": "1.0000000000",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "2",
+            "conversion_price": "2",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "2.0000000000",
+              "conversion_price": "2.0000000000",
+              "conversion_ratio": "1.0000000000"
+            }
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 4500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 1500000
+          },
+          {
+            "holder": "investor_x",
+            "security": "seed",
+            "shares": 1000000
+          },
+          {
+            "holder": "investor_v",
+            "security": "seed",
             "shares": 500000
           },
           {
             "holder": "investor_x",
             "security": "series_a",
-            "shares": 1200000
+            "shares": 1000000
           },
           {
             "holder": "investor_w",
             "security": "series_a",
-            "shares": 800000
+            "shares": 500000
           }
         ],
-        "unissued_pool": 1500000,
+        "unissued_pool": 0,
         "unconverted_safes": [],
         "totals": {
           "shares_by_security": {
             "common": 6000000,
-            "options_0.25": 500000,
-            "series_a": 2000000
+            "seed": 1500000,
+            "series_a": 1500000
           },
           "as_converted_by_security": {
             "common": "6000000",
-            "options_0.25": "500000",
-            "series_a": "2000000"
+            "seed": "1500000",
+            "series_a": "1500000"
           },
-          "fully_diluted": "10000000",
+          "fully_diluted": "9000000",
           "fully_diluted_percent_by_holder": {
-            "founder_a": "45.0000",
-            "founder_b": "15.0000",
-            "employee_c": "5.0000",
-            "investor_x": "12.0000",
-            "investor_w": "8.0000"
+            "founder_a": "50.0000",
+            "founder_b": "16.6667",
+            "investor_x": "22.2222",
+            "investor_v": "5.5556",
+            "investor_w": "5.5556"
           },
-          "unissued_pool_percent": "15.0000"
+          "unissued_pool_percent": "0.0000"
         }
       }
     },
@@ -367,18 +354,20 @@
       "after_event": "series_b",
       "date": "2025-03-31",
       "details": {
-        "price_per_share": "75/58",
-        "price_per_share_approx": "1.2931034483",
-        "post_money_valuation": "15000000",
-        "post_money_fully_diluted_solved": "11600000",
-        "post_money_fully_diluted_solved_approx": "11600000.0000",
-        "pre_round_fully_diluted": "9280000",
+        "price_per_share": "90/73",
+        "price_per_share_approx": "1.2328767123",
+        "post_money_valuation": "12000000",
+        "post_money_fully_diluted_solved": "29200000/3",
+        "post_money_fully_diluted_solved_approx": "9733333.3333",
+        "pre_round_fully_diluted": "7300000",
         "pay_to_play": {
           "series": [
+            "seed",
             "series_a"
           ],
-          "offered_amount": "1000000",
+          "offered_amount": "1200000",
           "conversion_ratios": {
+            "seed": "0.2",
             "series_a": "0.1"
           },
           "partial_participation": "convert_all",
@@ -386,17 +375,42 @@
           "holders": [
             {
               "holder": "investor_x",
-              "as_converted_shares": "1200000",
-              "share_percent": "60.000000",
-              "required": "600000",
-              "invested": "600000",
+              "as_converted_shares": "2000000",
+              "share_percent": "66.666667",
+              "required": "800000",
+              "invested": "400000",
+              "fraction_bought": "0.5",
+              "participates": false,
+              "series": [
+                {
+                  "series": "seed",
+                  "shares": 1000000,
+                  "kept": 0,
+                  "converted": 1000000,
+                  "common_received": 200000
+                },
+                {
+                  "series": "series_a",
+                  "shares": 1000000,
+                  "kept": 0,
+                  "converted": 1000000,
+                  "common_received": 100000
+                }
+              ]
+            },
+            {
+              "holder": "investor_v",
+              "as_converted_shares": "500000",
+              "share_percent": "16.666667",
+              "required": "200000",
+              "invested": "200000",
               "fraction_bought": "1",
               "participates": true,
               "series": [
                 {
-                  "series": "series_a",
-                  "shares": 1200000,
-                  "kept": 1200000,
+                  "series": "seed",
+                  "shares": 500000,
+                  "kept": 500000,
                   "converted": 0,
                   "common_received": 0
                 }
@@ -404,19 +418,19 @@
             },
             {
               "holder": "investor_w",
-              "as_converted_shares": "800000",
-              "share_percent": "40.000000",
-              "required": "400000",
-              "invested": "0",
-              "fraction_bought": "0",
-              "participates": false,
+              "as_converted_shares": "500000",
+              "share_percent": "16.666667",
+              "required": "200000",
+              "invested": "200000",
+              "fraction_bought": "1",
+              "participates": true,
               "series": [
                 {
                   "series": "series_a",
-                  "shares": 800000,
-                  "kept": 0,
-                  "converted": 800000,
-                  "common_received": 80000
+                  "shares": 500000,
+                  "kept": 500000,
+                  "converted": 0,
+                  "common_received": 0
                 }
               ]
             }
@@ -425,15 +439,23 @@
         "new_shares": [
           {
             "holder": "investor_x",
-            "shares": 464000
+            "shares": 324444
+          },
+          {
+            "holder": "investor_v",
+            "shares": 162222
+          },
+          {
+            "holder": "investor_w",
+            "shares": 162222
           },
           {
             "holder": "investor_y",
-            "shares": 1856000
+            "shares": 1784444
           }
         ],
         "pool_top_up": 0,
-        "post_money_fully_diluted_actual": "11600000"
+        "post_money_fully_diluted_actual": "9733332"
       },
       "cap_table": {
         "holders": [
@@ -446,12 +468,12 @@
             "name": "Founder B"
           },
           {
-            "id": "employee_c",
-            "name": "Employee C"
-          },
-          {
             "id": "investor_x",
             "name": "Investor X"
+          },
+          {
+            "id": "investor_v",
+            "name": "Investor V"
           },
           {
             "id": "investor_w",
@@ -469,25 +491,36 @@
             "kind": "common"
           },
           {
-            "id": "options_0.25",
-            "name": "Options ($0.25 strike)",
-            "kind": "option",
-            "strike": "0.25"
-          },
-          {
-            "id": "series_a",
-            "name": "Series A Preferred",
+            "id": "seed",
+            "name": "Seed Preferred",
             "kind": "preferred",
-            "original_issue_price": "2.5",
-            "conversion_price": "2.5",
+            "original_issue_price": "1",
+            "conversion_price": "1",
             "conversion_ratio": "1",
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
             "anti_dilution": "none",
             "approx": {
-              "original_issue_price": "2.5000000000",
-              "conversion_price": "2.5000000000",
+              "original_issue_price": "1.0000000000",
+              "conversion_price": "1.0000000000",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "2",
+            "conversion_price": "2",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "2.0000000000",
+              "conversion_price": "2.0000000000",
               "conversion_ratio": "1.0000000000"
             }
           },
@@ -495,16 +528,16 @@
             "id": "series_b",
             "name": "Series B Preferred",
             "kind": "preferred",
-            "original_issue_price": "75/58",
-            "conversion_price": "75/58",
+            "original_issue_price": "90/73",
+            "conversion_price": "90/73",
             "conversion_ratio": "1",
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
             "anti_dilution": "none",
             "approx": {
-              "original_issue_price": "1.2931034483",
-              "conversion_price": "1.2931034483",
+              "original_issue_price": "1.2328767123",
+              "conversion_price": "1.2328767123",
               "conversion_ratio": "1.0000000000"
             }
           }
@@ -515,6 +548,9 @@
           ],
           [
             "series_a"
+          ],
+          [
+            "seed"
           ]
         ],
         "positions": [
@@ -529,56 +565,66 @@
             "shares": 1500000
           },
           {
-            "holder": "employee_c",
-            "security": "options_0.25",
+            "holder": "investor_v",
+            "security": "seed",
+            "shares": 500000
+          },
+          {
+            "holder": "investor_w",
+            "security": "series_a",
             "shares": 500000
           },
           {
             "holder": "investor_x",
-            "security": "series_a",
-            "shares": 1200000
-          },
-          {
-            "holder": "investor_w",
             "security": "common",
-            "shares": 80000
+            "shares": 300000
           },
           {
             "holder": "investor_x",
             "security": "series_b",
-            "shares": 464000
+            "shares": 324444
+          },
+          {
+            "holder": "investor_v",
+            "security": "series_b",
+            "shares": 162222
+          },
+          {
+            "holder": "investor_w",
+            "security": "series_b",
+            "shares": 162222
           },
           {
             "holder": "investor_y",
             "security": "series_b",
-            "shares": 1856000
+            "shares": 1784444
           }
         ],
-        "unissued_pool": 1500000,
+        "unissued_pool": 0,
         "unconverted_safes": [],
         "totals": {
           "shares_by_security": {
-            "common": 6080000,
-            "options_0.25": 500000,
-            "series_a": 1200000,
-            "series_b": 2320000
+            "common": 6300000,
+            "seed": 500000,
+            "series_a": 500000,
+            "series_b": 2433332
           },
           "as_converted_by_security": {
-            "common": "6080000",
-            "options_0.25": "500000",
-            "series_a": "1200000",
-            "series_b": "2320000"
+            "common": "6300000",
+            "seed": "500000",
+            "series_a": "500000",
+            "series_b": "2433332"
           },
-          "fully_diluted": "11600000",
+          "fully_diluted": "9733332",
           "fully_diluted_percent_by_holder": {
-            "founder_a": "38.7931",
-            "founder_b": "12.9310",
-            "employee_c": "4.3103",
-            "investor_x": "14.3448",
-            "investor_w": "0.6897",
-            "investor_y": "16.0000"
+            "founder_a": "46.2329",
+            "founder_b": "15.4110",
+            "investor_v": "6.8037",
+            "investor_w": "6.8037",
+            "investor_x": "6.4155",
+            "investor_y": "18.3333"
           },
-          "unissued_pool_percent": "12.9310"
+          "unissued_pool_percent": "0.0000"
         }
       }
     }
