@@ -1,0 +1,125 @@
+{
+  "case": "edge-18b-pro-rata-pool-in-base",
+  "description": "Edge case 18 with a 5% option pool created before the Series A, and the unissued pool counted in the pro-rata base (R6's toggle). Investor X's share falls to 17.272729%, an entitlement of $1,036,363.76; leaving the pool out would give $1,085,714.34.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    },
+    {
+      "id": "investor_z",
+      "name": "Investor Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 8000000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "8000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "2000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2023-05-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_z",
+          "holder": "investor_z",
+          "purchase_amount": "1000000",
+          "post_money_cap": "11000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2023-06-01",
+      "type": "create_pool",
+      "percent": "5"
+    },
+    {
+      "id": "series_a",
+      "date": "2024-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "33000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "5000000"
+        },
+        {
+          "holder": "investor_x",
+          "amount": "1000000",
+          "pro_rata": true
+        }
+      ],
+      "convert_safes": true,
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "pro_rata_base_includes_unissued_pool": true
+    }
+  ]
+}

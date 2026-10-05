@@ -1,0 +1,122 @@
+{
+  "case": "edge-18c-pro-rata-and-more",
+  "description": "Edge case 18 with Investor X investing $2,100,000 in all: its pro-rata entitlement, $1,290,909.09 rounded down to the cent, marked pro-rata, and the other $809,090.91 as an ordinary investment. A holder's lines in a round are added up and issued once: 700,000 Series A, where rounding each line separately would give 699,999.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    },
+    {
+      "id": "investor_z",
+      "name": "Investor Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 8000000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "8000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "2000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2023-05-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_z",
+          "holder": "investor_z",
+          "purchase_amount": "1000000",
+          "post_money_cap": "11000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "33000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "5000000"
+        },
+        {
+          "holder": "investor_x",
+          "amount": "1290909.09",
+          "pro_rata": true
+        },
+        {
+          "holder": "investor_x",
+          "amount": "809090.91"
+        }
+      ],
+      "convert_safes": true,
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    }
+  ]
+}

@@ -48,6 +48,9 @@ A breakpoint is any exit value where any holder's payoff slope changes. Report e
   - Company Capitalization includes all stock, converting securities, issued and promised options, and the unissued pool. It excludes any pool increase made in the financing, except to the extent promised options exceed the pool that existed before.
   - The SAFE converts into a series of its own, named for the new series "(from SAFEs)", with the new series' rights and preference multiple. Its per-share preference and conversion price are based on the SAFE's own conversion price.
 - **Pre-money SAFEs and convertible notes.** Inputs: principal, simple interest, cap, and discount.
+  - A note converts principal plus simple interest, at the lower of its cap price and its discount price. Its pre-money cap divides by the share count just before the round, with the pool as it stood then; what that count includes is a toggle.
+  - A pre-money SAFE follows the YC text: its Company Capitalization counts the pool including the increase made in the financing, and no SAFE or note.
+  - Each converts into a series of its own, with the new series' rights, priced at its conversion price.
 - **Pro-rata rights.** NVCA definition: the investor may buy a share of the new round equal to its pre-round fully diluted percentage. It is not the amount needed to hold that percentage after the round. When a pool top-up sits in the pre-money, the investor ends below its pre-round percentage.
 - **Anti-dilution.**
   - Broad-based weighted average is the default. Narrow-based weighted average and full ratchet are the alternatives.
@@ -99,8 +102,11 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 13. A convertible note at exit, before conversion.
 14. An option pool top-up in the pre-money.
 15. A post-money SAFE converting in a round that tops up the pool, with a discount that beats the cap.
-16. One down round under three anti-dilution methods: broad-based, narrow-based, and full ratchet.
+16. One down round under three anti-dilution methods: broad-based, narrow-based, and full ratchet. 16e counts the unissued pool in A; 16f rounds the adjusted conversion price to $0.0001.
 17. Pay-to-play: a holder that doesn't pay (17a, 17b), one that pays part of its pro-rata (17c, 17d), in a round that triggers anti-dilution (17e, 17f), and on two series (17g, 17h).
-18. Pro-rata rights in a round that converts a SAFE.
+18. Pro-rata rights in a round that converts a SAFE. 18b counts the unissued pool in the pro-rata base; 18c invests beyond the entitlement as an ordinary investment.
+19. A convertible note converting in a priced round, with its cap's base counted with the pool (19a), without it (19b), and as common only (19c).
+20. A pre-money SAFE converting in a priced round.
+21. A note and a pre-money SAFE converting in the same round.
 
-Cases 14–18 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
+Cases 14–21 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
