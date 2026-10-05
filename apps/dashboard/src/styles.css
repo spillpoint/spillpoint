@@ -45,6 +45,8 @@ select { max-width: 100%; }
 .table-scroll { overflow-x: auto; }
 select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+.page-footer { margin-top: 32px; color: var(--muted); font-size: 0.75rem; text-align: center; }
+
 /* The governance note: always visible, plain, not alarming. */
 .notice {
   background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);

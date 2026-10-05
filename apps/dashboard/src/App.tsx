@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { D, parseExact, solve } from "spillpoint";
 import type { CapTable } from "spillpoint";
+import build from "virtual:build";
 import examples from "virtual:examples";
 
 import { BreakpointList } from "./BreakpointList.tsx";
@@ -248,6 +249,10 @@ export function App() {
         chosenExitValue={session.exitValue}
         onExitValue={(exitValue) => setSession((s) => ({ ...s, exitValue }))}
       />
+      {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
+      <footer className="page-footer">
+        spillpoint {build.engineVersion} ({build.commit})
+      </footer>
     </div>
   );
 }

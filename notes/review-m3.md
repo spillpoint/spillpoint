@@ -2,6 +2,20 @@
 
 Branch `m3e-deploy`, the last of M3's five PRs. With it, the dashboard goes live at **https://spillpoint.github.io/spillpoint/** once you've set one thing in GitHub's settings (below). This note covers what M3e changes, then M3 as a whole. M3a–M3d each have their own note (`notes/review-m3a.md` … `review-m3d.md`).
 
+## Added after your review: the version in the footer
+
+At the foot of every page, small: **"spillpoint 0.0.1 (abc1234)"**. That's the engine's version, from `packages/engine/package.json`, and the short commit the page was built from.
+
+- **Why the commit:** the page runs the engine's sources from `main`, which can be ahead of the published 0.0.1. The commit says exactly which rules made the numbers.
+- **Where they come from:** both are read when the page is built and written into it as plain text, so the page fetches nothing to show them.
+- **"modified":** a build from uncommitted changes adds it, as in "(abc1234, modified)", so a local experiment can't pass for a commit. Pages builds from a clean checkout, so the live page shows just the commit.
+- **Outside a git checkout,** the footer says "unknown commit" after the version.
+- **A test** checks the footer reads "spillpoint", the engine's version, then a 7-character commit.
+
+**To check:**
+- **Locally:** run `pnpm dev` and scroll to the foot of the page. It shows this branch's latest commit, with ", modified" if you have local changes.
+- **After the deploy:** the live page shows the commit of the merge.
+
 ## GitHub settings: what to set, and when
 
 1. **Now, before you merge this PR:** go to the repository's **Settings → Pages**. Under "Build and deployment", set **Source** to **GitHub Actions**. Nothing else on that page needs changing; leave "Custom domain" empty. This also creates the `github-pages` environment the deploy uses.
@@ -74,9 +88,10 @@ Three changes:
 - **The root README** now links the page. It says only what the page does today, and what it doesn't do yet: rounds, dividends, warrants, carve-outs, earnouts, and SAFEs or notes at a sale.
 - **`docs/ASSUMPTIONS.md`, C13,** now records the save format as built (M3d).
 - **`notes/design-m3.md`** describes the narrow-screen and keyboard pass as built.
-- **Tests:** 2 new, 101 for the dashboard in all.
+- **Tests:** 3 new, 102 for the dashboard in all.
   - **Escape** closes a mark's box.
   - **The tab keys** work as described.
+  - **The footer** names the engine version and the commit.
   - **The payouts table's phone line** is checked inside an existing test.
 - **`pnpm screenshots`** takes five new shots (150 KB): four phone shots, and an overview of the finished page for this note. `OUT=…` writes shots elsewhere.
 - **Dashboard tests may now take up to 20 seconds each,** up from 5. Three of them do real work: Millrace's breakpoints twice, or case 6b built click by click. Each takes about a second alone, but they timed out once while this machine was heavily loaded. They would on a slow CI runner too.
@@ -140,7 +155,7 @@ Every item on CLAUDE.md's M3 list, plus what you asked for along the way:
 ### Tests
 
 - **Engine:** 457, unchanged through M3.
-- **Dashboard:** 101, all new in M3, run in a simulated browser. One builds the page, for the privacy test.
+- **Dashboard:** 102, all new in M3, run in a simulated browser. One builds the page, for the privacy test.
 
 The reference check passes.
 
@@ -177,6 +192,6 @@ There are no other modeling choices. The dashboard's choices were about presenta
 
 ## Open questions
 
-1. **Should the page show which engine version made its numbers,** such as "spillpoint 0.0.1" at the foot of the page? A founder sharing a screenshot would then know which rules produced it. It's not built; say if you want it in M4.
+None. Your review answered the last one: the footer shows the engine version and the commit.
 
 M3 is complete when this merges and the page is live. I'm stopping here; M4 (rounds) waits for you.
