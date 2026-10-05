@@ -55,17 +55,20 @@ def _line(f0, f1, x0, x1):
     return m, f0 - m * x0
 
 
-def _indifference(wf, sides, pts, bracket):
+def _indifference(wf, sides, pts_left, pts_right, bracket):
     """Where the choice that changes flips (used for jumps).
 
     For a single decision-maker, that is where its two choices pay the same.
-    For a conversion group, it is where some voting holder's two outcomes pay
-    the same; the one inside the bracket is the pivotal holder.
+    For a conversion group, it is where the pivotal voting holder stops being
+    indifferent (E13): either where its two outcomes cross, or where they
+    separate after being equal over a range. Both are where the difference
+    between its two outcomes reaches zero, measured on the side where the
+    difference isn't zero; so each side's line is tried, and the point inside
+    the bracket is the answer.
     """
     (bits_l, _), = sides[0]
     (bits_r, _), = sides[1]
     lo, hi = bracket
-    x0, x1 = pts
     xs = set()
     for i, (u, v) in enumerate(zip(bits_l, bits_r)):
         if u == v:
@@ -82,12 +85,13 @@ def _indifference(wf, sides, pts, bracket):
             # E16: options re-settle under each choice.
             values = [lambda bits, e: wf.player_value(wf.run(e, wf.settled(e, bits))[0], player)]
         for value in values:
-            m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
-            m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
-            if m_keep != m_flip:
-                x = (c_flip - c_keep) / (m_keep - m_flip)
-                if lo - 1 <= x <= hi + 1:
-                    xs.add(x)
+            for x0, x1 in (pts_left, pts_right):
+                m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
+                m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
+                if m_keep != m_flip:
+                    x = (c_flip - c_keep) / (m_keep - m_flip)
+                    if lo - 1 <= x <= hi + 1:
+                        xs.add(x)
     if len(xs) != 1:
         raise ValueError(f"cannot place the jump near {decimal(lo, 2)}: {sorted(xs)}")
     return xs.pop()
@@ -112,7 +116,7 @@ def _locate(wf, a, b):
     )
     if bends:
         return x, sl, sr, False
-    return _indifference(wf, (sl, sr), (l0, l1), (a, b)), sl, sr, True
+    return _indifference(wf, (sl, sr), (l0, l1), (r0, r1), (a, b)), sl, sr, True
 
 
 def find(wf, lo, hi, step, extra=()):
@@ -148,7 +152,9 @@ def find(wf, lo, hi, step, extra=()):
         hit = _locate(wf, a, b)
         if hit is not None and hit[0] not in found:
             found[hit[0]] = hit
-    out = sorted(found.values(), key=lambda t: t[0])
+    # SPEC: breakpoints are reported strictly inside the range. A change at the
+    # range's own ends (a group deciding just above $0, say) isn't one.
+    out = sorted((t for t in found.values() if lo < t[0] < hi), key=lambda t: t[0])
     _check_affine(wf, lo, hi, [t[0] for t in out])
     return out
 

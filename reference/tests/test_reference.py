@@ -267,6 +267,15 @@ class Exits(unittest.TestCase):
         self.assertEqual(payouts(ct, 3_000_000), {("x", "common"): 1_500_000, ("y", "p"): 1_500_000})
         self.assertEqual(bp_values(ct, 5_000_000), [1_000_000, 2_000_000])
 
+    def test_breakpoints_strictly_inside_the_range(self):
+        # Edge case 2's shape: the preference is paid at $3M and the series converts at $15M.
+        # A breakpoint at either end of the range isn't inside it, so it isn't reported (SPEC).
+        ct = table([COMMON, pref("p", "1.5", "1", "non_participating")],
+                   [("x", "common", 8_000_000), ("y", "p", 2_000_000)], [["p"]])
+        self.assertEqual(bp_values(ct, 20_000_000), [3_000_000, 15_000_000])
+        found = [t[0] for t in breakpoints.find(Waterfall(ct), 3_000_000, 15_000_000, 1_000_000)]
+        self.assertEqual(found, [])
+
     def test_participating(self):
         # 1x participating, uncapped: at $3M, preferred takes $1M then half of $2M.
         ct = table([COMMON, pref("p", "1", "1", "participating")], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]])
@@ -452,6 +461,36 @@ class Exits(unittest.TestCase):
         self.assertEqual(out["decisions"], (True, True))
         self.assertEqual(out["lines"][("y", "b")], 3_000_000 * price)
         self.assertEqual(out["lines"][("e", "o")], 500_000 * (price - F(1, 2)))
+
+    def test_jump_where_the_pivotal_voter_stops_being_indifferent(self):
+        # E13: s1 ($7.5M, 1x) and s0 ($15M, 3x, capped at 4x) share the senior tier;
+        # s2 ($9M, 3x) is junior; s0 and s2 convert together by at least 50%, half each.
+        # Below $7.5M, s2's holder gets nothing whether the group converts or stays: if it
+        # converts, s1's $7.5M preference takes everything; if it stays, the senior tier
+        # absorbs it all. Just above $7.5M, converting pays s2 a share of the excess, so it
+        # votes yes and its 50% carries the vote. Its two outcomes don't cross; they
+        # separate after being equal. The jump sits exactly at $7.5M.
+        ct = CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in ("f", "h0", "h1", "h2")],
+                "securities": [
+                    COMMON,
+                    pref("s0", "5", "3", "participating_capped", cap="4"),
+                    pref("s1", "3", "1", "non_participating"),
+                    pref("s2", "3", "3", "non_participating"),
+                ],
+                "seniority": [["s1", "s0"], ["s2"]],
+                "conversion_groups": [{"series": ["s0", "s2"], "vote_threshold_percent": "50", "vote_rule": "at_least"}],
+                "positions": [{"holder": "f", "security": "common", "shares": 4_000_000},
+                              {"holder": "h0", "security": "s0", "shares": 1_000_000},
+                              {"holder": "h1", "security": "s1", "shares": 2_500_000},
+                              {"holder": "h2", "security": "s2", "shares": 1_000_000}],
+            }
+        )
+        found = {x: jumps for x, _, _, jumps in breakpoints.find(Waterfall(ct), 0, 10_000_000, 1_000_000)}
+        self.assertIs(found.get(F(7_500_000)), True)
+        # At exactly $7.5M the outcome from below holds: the group stays, and s0 takes 2/3 of the tier.
+        self.assertEqual(payouts(ct, 7_500_000)[("h0", "s0")], 5_000_000)
 
     def test_more_than_one_group_is_refused(self):
         with self.assertRaisesRegex(ValueError, "more than one conversion group"):
