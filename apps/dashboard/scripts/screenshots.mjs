@@ -129,6 +129,8 @@ const SHOTS = {
     clip: ["section[aria-labelledby=edit-shares-heading]", "section[aria-labelledby=edit-seniority-heading]", "section[aria-labelledby=edit-group-heading]"],
     quality: 40,
   },
+  "m3d-unsaved": { width: 1100, height: 900, steps: [click("Cap table"), fill("#edit-name", 0, "Millrace Robotics, my copy")], clip: [".masthead", ".example-label"] },
+  "m3d-saved": { width: 1100, height: 900, steps: [click("Cap table"), fill("#edit-name", 0, "Millrace Robotics, my copy"), click("Save")], clip: [".masthead", ".example-label"] },
   "m3c-6b-curves": { width: 1100, height: 900, steps: [...BUILD_6B, click("Payouts")], clip: [CURVES, "section[aria-labelledby=breakpoints-heading]"], quality: 40 },
 };
 
@@ -209,6 +211,8 @@ try {
   await send("Runtime.enable");
   // So focusing a mark or a legend row shows what it would for a keyboard user.
   await send("Emulation.setFocusEmulationEnabled", { enabled: true });
+  // A shot that clicks Save shouldn't leave a file behind.
+  await send("Browser.setDownloadBehavior", { behavior: "deny" });
   for (const name of wanted) {
     if (!SHOTS[name]) throw new Error(`no shot called ${name}; try ${Object.keys(SHOTS).join(", ")}`);
     await shoot(send, name, SHOTS[name]);

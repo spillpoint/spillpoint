@@ -223,7 +223,7 @@ describe("not losing edits by accident", () => {
     openTab("Cap table");
     type(within(card("Holders")).getAllByRole("textbox", { name: "Holder name" })[0]!, "Ana O.");
     startFrom("edge-04-participating-capped");
-    expect(confirm).toHaveBeenCalledWith("Start over? Your changes to this cap table will be lost.");
+    expect(confirm).toHaveBeenCalledWith("Start over? Your unsaved changes to this cap table will be lost.");
     expect((screen.getByLabelText(/Start from/) as HTMLSelectElement).value).toBe("millrace");
     expect(screen.getByText(/Millrace Robotics, with your changes/)).toBeTruthy();
     startFrom("edge-04-participating-capped");

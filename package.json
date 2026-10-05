@@ -4,6 +4,7 @@
   "packageManager": "pnpm@12.9.1",
   "scripts": {
     "dev": "pnpm --filter @spillpoint/dashboard dev",
+    "preview": "pnpm --filter @spillpoint/dashboard build && pnpm --filter @spillpoint/dashboard preview",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
