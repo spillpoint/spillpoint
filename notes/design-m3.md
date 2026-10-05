@@ -17,7 +17,7 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
 5. **Never color alone.**
    - **Your row** is marked "(you)" in words, with a bar, as well as a tint.
    - **The toggle's** selected state is announced to screen readers.
-   - **The curves (M3b)** will be labelled directly and use different line styles, not only different colors.
+   - **The curves (M3b)** are told apart by emphasis, not by nine colors: your curve is blue, thicker and labelled at its end; the one you point at is lifted in orange and labelled too; the rest are thin grey context. The legend under the chart names every curve with its value, and the hover readout lists them all. (Built this way in M3b in place of nine line styles; see `review-m3b.md`, decision 1.)
 
 ## The look
 
@@ -28,6 +28,7 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
 
 ## What later PRs add in the same style
 
-- **M3b:** curves as their own card, with direct labels, varied line styles, and breakpoints marked. The breakpoint list as a numbered list of plain sentences.
+- **M3b:** curves as their own card, with direct labels, emphasis instead of nine colors, and numbered breakpoints. The breakpoint list as a numbered list of plain sentences, with the same numbers.
 - **M3c:** the cap table editor as forms in cards, with the engine's own error messages next to the field they name.
 - **M3d:** "Save" and "Open" as plain buttons in the masthead.
+- **M3e:** the narrow-screen pass. From the M3a review: on a phone, the example picker runs off the right edge and the table's share columns are cut off. Both must fit.

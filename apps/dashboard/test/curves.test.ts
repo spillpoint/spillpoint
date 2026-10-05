@@ -1,0 +1,94 @@
+// The payoff curves as nodes: exact values between breakpoints, jumps kept
+// apart from bends, and the rows the chart draws.
+
+import { D } from "spillpoint";
+import { describe, expect, it } from "vitest";
+
+import type { CurvePoint } from "../src/analysis.ts";
+import { changesAt, chartRows, niceScale, seriesNodes, valueAt } from "../src/curves.ts";
+
+// Two holders over exit values $0 to $30. "a" gets nothing until $10, then
+// half of each dollar; at $20 its payout jumps from $5 to $8, then it gets
+// every dollar. "b" gets every dollar throughout, a straight line.
+const at = (exitValue: string, a: string, b: string): CurvePoint => ({ exitValue, side: "at", holders: { a, b }, classes: {} });
+const curve: CurvePoint[] = [at("0", "0", "0"), at("10", "0", "10"), at("20", "5", "20"), { ...at("20", "8", "20"), side: "above" }, at("30", "18", "30")];
+const a = seriesNodes(curve, "holder", "a");
+const b = seriesNodes(curve, "holder", "b");
+
+describe("a curve's nodes", () => {
+  it("has one node per exit value, with the value just above a jump kept on the same node", () => {
+    expect(a.map((n) => [n.x.toString(), n.left.toString(), n.right.toString()])).toEqual([
+      ["0", "0", "0"],
+      ["10", "0", "0"],
+      ["20", "5", "8"],
+      ["30", "18", "18"],
+    ]);
+  });
+
+  it("is a straight line between nodes, and takes the value from below at a jump", () => {
+    expect(valueAt(a, new D(15)).toString()).toBe("2.5");
+    expect(valueAt(a, new D(20)).toString()).toBe("5");
+    expect(valueAt(a, new D(25)).toString()).toBe("13");
+    expect(valueAt(b, new D("12.34")).toString()).toBe("12.34");
+  });
+
+  it("holds its end values outside the range", () => {
+    expect(valueAt(a, new D(-1)).toString()).toBe("0");
+    expect(valueAt(a, new D(40)).toString()).toBe("18");
+  });
+});
+
+describe("which breakpoints change a payout", () => {
+  it("counts a bend and a jump, but not a straight line through", () => {
+    expect([1, 2].map((i) => changesAt(a, i))).toEqual([true, true]);
+    expect([1, 2].map((i) => changesAt(b, i))).toEqual([false, false]);
+  });
+
+  it("never counts the ends of the range", () => {
+    expect(changesAt(a, 0)).toBe(false);
+    expect(changesAt(a, 3)).toBe(false);
+  });
+
+  it("ignores a jump of less than half a cent", () => {
+    const tiny = seriesNodes([at("0", "0", "0"), at("10", "10", "0"), { ...at("10", "10.004", "0"), side: "above" }, at("20", "20.004", "0")], "holder", "a");
+    expect(changesAt(tiny, 1)).toBe(false);
+  });
+});
+
+describe("the rows the chart draws", () => {
+  const series = new Map([
+    ["s0", a],
+    ["s1", b],
+  ]);
+
+  it("draws a jump as three rows: below, a break in the jumping line only, and above", () => {
+    const rows = chartRows(series, 0, 30, 3);
+    expect(rows.map((r) => r.x)).toEqual([0, 10, 20, 20, 20, 30]);
+    expect(rows.slice(2, 5)).toEqual([
+      { x: 20, s0: 5, s1: 20 },
+      { x: 20, s0: null, s1: 20 },
+      { x: 20, s0: 8, s1: 20 },
+    ]);
+  });
+
+  it("samples evenly between the ends of a zoomed range, with values from the straight lines", () => {
+    const rows = chartRows(series, 12, 18, 2);
+    expect(rows).toEqual([
+      { x: 12, s0: 1, s1: 12 },
+      { x: 15, s0: 2.5, s1: 15 },
+      { x: 18, s0: 4, s1: 18 },
+    ]);
+  });
+});
+
+describe("tidy axes", () => {
+  it("steps by 1, 2, 2.5 or 5 times a power of ten, in about five steps", () => {
+    expect(niceScale(9_750_990)).toEqual({ top: 10_000_000, step: 2_000_000 });
+    expect(niceScale(300_000_000)).toEqual({ top: 300_000_000, step: 100_000_000 });
+    expect(niceScale(36_383_770)).toEqual({ top: 40_000_000, step: 10_000_000 });
+  });
+
+  it("still draws an axis when every value is zero", () => {
+    expect(niceScale(0)).toEqual({ top: 1, step: 0.25 });
+  });
+});
