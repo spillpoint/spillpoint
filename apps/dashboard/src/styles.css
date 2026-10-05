@@ -68,8 +68,20 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .field-error { color: var(--error); font-size: 0.875rem; }
 .exit-value__slider { position: relative; margin-top: 16px; }
 .exit-value__slider input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
-.exit-value__ticks { position: relative; height: 10px; margin: 2px 8px 0; }
-.exit-value__tick { position: absolute; top: 0; width: 2px; height: 10px; background: var(--muted); transform: translateX(-1px); }
+.exit-value__ticks { position: relative; height: 14px; margin: 2px 8px 0; }
+/* Each mark is a button: a 2px mark with a 14px target, so it's easy to hover and to tab to. */
+.exit-value__tick {
+  position: absolute; top: 0; width: 14px; height: 14px; margin: 0; padding: 0; border: 0; background: transparent;
+  transform: translateX(-7px); cursor: pointer;
+}
+.exit-value__tick::after { content: ""; position: absolute; left: 6px; top: 0; width: 2px; height: 12px; background: var(--muted); }
+.exit-value__tick:hover::after, .exit-value__tick:focus-visible::after { background: var(--accent); width: 3px; left: 5.5px; }
+.tick-tip {
+  position: absolute; top: 20px; transform: translateX(-50%); z-index: 2; width: max-content; max-width: min(360px, 80vw);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(27, 31, 36, 0.12); font-size: 0.875rem; display: grid; gap: 4px;
+}
+.exit-value__caption { color: var(--muted); font-size: 0.875rem; margin: 8px 0 0; }
 .exit-value__ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8125rem; margin-top: 2px; }
 
 /* Cards and the payouts table */
@@ -93,6 +105,58 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .you-tag { font-weight: 600; color: var(--accent); }
 
 .footnote, .decisions { color: var(--muted); font-size: 0.875rem; margin: 12px 0 0; }
+
+.card__intro { color: var(--muted); margin: 8px 0 0; }
+.card--quiet { color: var(--muted); }
+
+/* Payoff curves */
+.zoom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 16px; }
+.zoom input { width: 10rem; font-variant-numeric: tabular-nums; }
+.zoom button, .legend button, .breakpoints__head {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+}
+.zoom button { padding: 6px 12px; }
+.zoom button:disabled { color: var(--muted); cursor: default; }
+.chart { position: relative; margin-top: 12px; user-select: none; }
+.chart :focus:not(:focus-visible) { outline: none; }
+.chart__leaders { position: absolute; left: 0; top: 0; pointer-events: none; }
+.chart__end-label {
+  position: absolute; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8125rem; font-weight: 600; line-height: 16px; color: var(--text); pointer-events: none;
+}
+.chart__end-label svg { flex: none; }
+/* On a narrow screen: inside the plot, above the curve's right end, on a pale backing so grey lines don't cross the text. */
+.chart__end-label--inside { transform: translateY(-100%); background: rgba(255, 255, 255, 0.9); padding: 0 4px; border-radius: 3px; text-align: right; }
+.chart__hint { color: var(--muted); font-size: 0.8125rem; margin: 6px 0 0; }
+.readout {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(27, 31, 36, 0.12); font-size: 0.8125rem; font-variant-numeric: tabular-nums;
+}
+.readout__title { color: var(--muted); margin-bottom: 4px; }
+.readout__row { display: grid; grid-template-columns: 14px 8rem 1fr; align-items: center; gap: 8px; }
+.readout__row strong { text-align: right; font-weight: 600; }
+.legend { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 12px; }
+.legend button { width: 100%; display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 8px; padding: 6px 10px; text-align: left; }
+.legend button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.legend__value { font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* Breakpoints */
+.breakpoints { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 12px; }
+.breakpoints li { border-top: 1px solid var(--line); padding-top: 12px; }
+.breakpoints li:first-child { border-top: 0; padding-top: 0; }
+.breakpoints__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; width: 100%; padding: 6px 8px; border-color: transparent; text-align: left; }
+.breakpoints__head:hover { border-color: var(--line); }
+.breakpoints li.is-here .breakpoints__head { border-color: var(--accent); }
+.breakpoints__n {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--muted); color: var(--muted); font-size: 0.75rem; font-weight: 600;
+}
+.breakpoints__n.is-yours { background: var(--accent); border-color: var(--accent); color: #fff; }
+.breakpoints__value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.breakpoints__reason { margin: 6px 0 0 40px; }
+.breakpoints__yours { margin: 6px 0 0 40px; font-weight: 600; color: var(--accent); }
+.tag { font-size: 0.75rem; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--accent-soft); color: var(--accent); }
+.tag--quiet { background: transparent; border: 1px solid var(--line); color: var(--muted); }
 
 @media (max-width: 640px) {
   .page { padding: 16px 12px 48px; }

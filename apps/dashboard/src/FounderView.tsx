@@ -6,7 +6,7 @@ import type { Answer, PreparedCapTable } from "spillpoint";
 import { D } from "spillpoint";
 
 import { fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
-import type { BreakpointsState } from "./breakpoints.ts";
+import type { AnalysisState } from "./analysis.ts";
 import { percent, shortDollars } from "./format.ts";
 
 type Decimal = D;
@@ -18,7 +18,7 @@ interface Props {
   exitValue: Decimal;
   you: string;
   onChooseYou: (holder: string) => void;
-  breakpoints: BreakpointsState;
+  breakpoints: AnalysisState;
 }
 
 export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, breakpoints }: Props) {

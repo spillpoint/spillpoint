@@ -27,12 +27,33 @@ const choose = (label, value) => `(() => {
   select.dispatchEvent(new Event("change", { bubbles: true }));
 })()`;
 const click = (text) => `[...document.querySelectorAll("button")].find((b) => b.textContent.trim() === ${JSON.stringify(text)}).click()`;
+const focus = (selector, index = 0) => `document.querySelectorAll(${JSON.stringify(selector)})[${index}].focus()`;
+const focusButton = (text) => `[...document.querySelectorAll("button")].find((b) => b.textContent.includes(${JSON.stringify(text)})).focus()`;
+/** Types into the text box inside a label, then presses Enter once the page has caught up. */
+const input = (label) => `[...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith(${JSON.stringify(label)})).querySelector("input")`;
+const type = (label, value) => [
+  `(() => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    setter.call(${input(label)}, ${JSON.stringify(value)});
+    ${input(label)}.dispatchEvent(new Event("input", { bubbles: true }));
+  })()`,
+  `${input(label)}.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))`,
+];
+const CURVES = "section[aria-labelledby=curves-heading]";
 
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
   "m3a-by-class": { width: 1100, height: 900, steps: [click("By class")] },
   "m3a-simple-example": { width: 1100, height: 900, steps: [choose("Example", "edge-04-participating-capped")] },
   "m3a-phone": { width: 390, height: 844, mobile: true, steps: [] },
+  // A shot with `clip` keeps just those parts of the page.
+  "m3b-curves": { width: 1100, height: 900, steps: [], clip: [CURVES] },
+  "m3b-zoomed": { width: 1100, height: 900, steps: [type("Show from", "30M"), type("to", "70M"), focusButton("Cobalt")], clip: [CURVES] },
+  "m3b-by-class": { width: 1100, height: 900, steps: [click("By class")], clip: [CURVES] },
+  "m3b-tick": { width: 1100, height: 900, steps: [focus(".exit-value__tick", 2)], clip: [".exit-value", ".tick-tip"] },
+  // Mostly text, so a lower quality still reads cleanly and keeps the file small.
+  "m3b-breakpoints": { width: 1100, height: 900, steps: [], clip: ["section[aria-labelledby=breakpoints-heading]"], quality: 30 },
+  "m3b-phone": { width: 390, height: 844, mobile: true, steps: [], clip: [CURVES] },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -79,21 +100,25 @@ async function shoot(send, name, shot) {
     throw new Error(`${name}: the page didn't finish computing`);
   };
   await settled();
-  for (const step of shot.steps) {
+  for (const step of shot.steps.flat()) {
     await evaluate(step);
     await sleep(100);
     await settled();
   }
   const height = await evaluate("Math.ceil(document.documentElement.scrollHeight)");
-  const { data } = await send("Page.captureScreenshot", {
-    format: "webp",
-    quality: 75,
-    captureBeyondViewport: true,
-    clip: { x: 0, y: 0, width: shot.width, height, scale: 1 },
-  });
+  // The page's own coordinates of everything the shot keeps, with a little room around it.
+  const clip = shot.clip
+    ? await evaluate(`(() => {
+        const rects = ${JSON.stringify(shot.clip)}.flatMap((s) => [...document.querySelectorAll(s)]).map((e) => e.getBoundingClientRect());
+        const top = Math.min(...rects.map((r) => r.top)) + scrollY - 8, bottom = Math.max(...rects.map((r) => r.bottom)) + scrollY + 8;
+        const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - 8), right = Math.min(innerWidth, Math.max(...rects.map((r) => r.right)) + 8);
+        return { x: left, y: top, width: right - left, height: bottom - top, scale: 1 };
+      })()`)
+    : { x: 0, y: 0, width: shot.width, height, scale: 1 };
+  const { data } = await send("Page.captureScreenshot", { format: "webp", quality: shot.quality ?? 75, captureBeyondViewport: true, clip });
   const file = join(OUT, `${name}.webp`);
   writeFileSync(file, Buffer.from(data, "base64"));
-  console.log(`${file} (${shot.width}×${height}, ${Math.round(Buffer.from(data, "base64").length / 1024)} KB)`);
+  console.log(`${file} (${Math.round(clip.width)}×${Math.round(clip.height)}, ${Math.round(Buffer.from(data, "base64").length / 1024)} KB)`);
 }
 
 const names = process.argv.slice(2);
@@ -106,6 +131,8 @@ try {
   const send = session(ws);
   await send("Page.enable");
   await send("Runtime.enable");
+  // So focusing a mark or a legend row shows what it would for a keyboard user.
+  await send("Emulation.setFocusEmulationEnabled", { enabled: true });
   for (const name of wanted) {
     if (!SHOTS[name]) throw new Error(`no shot called ${name}; try ${Object.keys(SHOTS).join(", ")}`);
     await shoot(send, name, SHOTS[name]);

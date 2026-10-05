@@ -1,15 +1,19 @@
-// The dashboard. M3a: the founder view, the exit value, and who gets what.
+// The dashboard: the founder view, the exit value, the payoff curves, who
+// gets what, and the breakpoints.
 
 import { useMemo, useState } from "react";
 import { D, prepare, readExit, solve } from "spillpoint";
 import examples from "virtual:examples";
 import type { Example } from "virtual:examples";
 
+import { BreakpointList } from "./BreakpointList.tsx";
 import { ExitSlider } from "./ExitSlider.tsx";
 import { FounderView } from "./FounderView.tsx";
+import { PayoffChart } from "./PayoffChart.tsx";
 import { PayoutTable } from "./PayoutTable.tsx";
-import { useBreakpoints } from "./breakpoints.ts";
+import { useAnalysis } from "./analysis.ts";
 import { defaultHolder } from "./capTable.ts";
+import { changeAt, seriesNodes } from "./curves.ts";
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
@@ -56,7 +60,17 @@ function Workspace({ example }: { example: Example }) {
   const [you, setYou] = useState(() => defaultHolder(exit.capTable));
   const [exitValue, setExitValue] = useState(() => new D(example.defaultExitValue));
   const answer = useMemo(() => solve(pc, exitValue).answers[0]!, [pc, exitValue]);
-  const breakpoints = useBreakpoints(example.exit);
+  const analysis = useAnalysis(example.exit);
+  const ready = analysis.status === "ready" ? analysis : null;
+  // How your payout bends or jumps at each breakpoint, if it does: the curves mark those breakpoints,
+  // and the list says how.
+  const changes = useMemo(() => {
+    if (!ready) return [];
+    const nodes = seriesNodes(ready.curve, "holder", you);
+    return ready.breakpoints.map((_, i) => changeAt(nodes, i + 1));
+  }, [ready, you]);
+  const yours = useMemo(() => changes.map((c) => c !== null), [changes]);
+  const yourName = exit.capTable.holders.find((h) => h.id === you)?.name ?? "";
 
   return (
     <main>
@@ -65,14 +79,24 @@ function Workspace({ example }: { example: Example }) {
           <span className="badge">Fictional example</span> {example.label}
         </p>
       )}
-      <FounderView pc={pc} range={exit.range} answer={answer} exitValue={exitValue} you={you} onChooseYou={setYou} breakpoints={breakpoints} />
-      <ExitSlider
-        range={exit.range}
-        value={exitValue}
-        onChange={setExitValue}
-        breakpoints={breakpoints.status === "ready" ? breakpoints.breakpoints.map((b) => new D(b.exitValue)) : []}
-      />
+      <FounderView pc={pc} range={exit.range} answer={answer} exitValue={exitValue} you={you} onChooseYou={setYou} breakpoints={analysis} />
+      <ExitSlider range={exit.range} value={exitValue} onChange={setExitValue} breakpoints={ready ? ready.breakpoints : []} />
+      {analysis.status === "computing" && <p className="card card--quiet">Working out the curves and breakpoints…</p>}
+      {analysis.status === "error" && <p className="card card--quiet">Couldn't work out the curves and breakpoints: {analysis.message}</p>}
+      {ready && (
+        <PayoffChart
+          pc={pc}
+          curve={ready.curve}
+          breakpoints={ready.breakpoints.map((b) => new D(b.exitValue))}
+          yours={yours}
+          range={exit.range}
+          exitValue={exitValue}
+          onExitValue={setExitValue}
+          you={you}
+        />
+      )}
       <PayoutTable pc={pc} answer={answer} exitValue={exitValue} you={you} />
+      {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
     </main>
   );
 }

@@ -1,9 +1,12 @@
 // The exit value: a log-scale slider with tick marks at the breakpoints, and
-// a box to type an exact amount (M3 plan, answer 3).
+// a box to type an exact amount (M3 plan, answer 3). Each mark is a button:
+// hovering or focusing it shows its exit value and reasons (M3a review), and
+// choosing it moves the exit value there.
 
 import { useEffect, useState } from "react";
 import { D } from "spillpoint";
 
+import type { BreakpointView } from "./analysis.ts";
 import { dollars, parseDollars, shortDollars } from "./format.ts";
 import { STEPS, logScale, positionOf, valueAt } from "./scale.ts";
 
@@ -14,7 +17,7 @@ interface Props {
   value: Decimal;
   onChange: (value: Decimal) => void;
   /** Where the payout curves bend or jump; marked under the slider. Empty while they compute. */
-  breakpoints: readonly Decimal[];
+  breakpoints: readonly BreakpointView[];
 }
 
 export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
@@ -39,7 +42,11 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
     onChange(parsed);
   };
 
-  const ticks = breakpoints.filter((b) => b.gte(scale.min) && b.lte(scale.max));
+  const [shown, setShown] = useState<number | null>(null);
+  // Numbered as on the chart and in the list, so a mark's number means the same everywhere.
+  const ticks = breakpoints
+    .map((b, i) => ({ b, n: i + 1, x: new D(b.exitValue) }))
+    .filter(({ x }) => x.gte(scale.min) && x.lte(scale.max));
 
   return (
     <div className="exit-value">
@@ -73,20 +80,51 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
           aria-label="Exit value"
           aria-valuetext={shortDollars(value)}
         />
-        <div className="exit-value__ticks" aria-hidden="true">
-          {ticks.map((b) => (
-            <span
-              key={b.toString()}
+        <div className="exit-value__ticks">
+          {ticks.map(({ b, n, x }) => (
+            <button
+              key={b.exitValue}
+              type="button"
               className="exit-value__tick"
-              style={{ left: `${(positionOf(scale, b) / STEPS) * 100}%` }}
-              title={`Breakpoint at ${dollars(b)}`}
+              style={{ left: `${(positionOf(scale, x) / STEPS) * 100}%` }}
+              aria-label={`Breakpoint ${n}, at ${dollars(x)}`}
+              aria-describedby={shown === n ? "tick-tip" : undefined}
+              onMouseEnter={() => setShown(n)}
+              onMouseLeave={() => setShown(null)}
+              onFocus={() => setShown(n)}
+              onBlur={() => setShown(null)}
+              onClick={() => onChange(x)}
             />
           ))}
+          {ticks
+            .filter(({ n }) => n === shown)
+            .map(({ b, n, x }) => (
+              <div
+                key="tip"
+                id="tick-tip"
+                role="tooltip"
+                className="tick-tip"
+                style={{ left: `${(positionOf(scale, x) / STEPS) * 100}%` }}
+              >
+                <strong>
+                  Breakpoint {n}: {dollars(x)}
+                </strong>
+                {b.reasons.map((r) => (
+                  <span key={r.code + r.subject.join("+")}>{r.text}</span>
+                ))}
+              </div>
+            ))}
         </div>
         <div className="exit-value__ends" aria-hidden="true">
           <span>{shortDollars(scale.min)}</span>
           <span>{shortDollars(scale.max)}</span>
         </div>
+        {ticks.length > 0 && (
+          <p className="exit-value__caption">
+            Each mark is a breakpoint: an exit value where someone's payout bends or jumps. Hover over or tab to a mark to see why; choose it to move
+            the exit value there.
+          </p>
+        )}
       </div>
     </div>
   );
