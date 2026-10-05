@@ -21,17 +21,23 @@ export interface DraftError {
 interface Props {
   draft: Draft;
   onDraft: (next: Draft) => void;
+  /** What the cap table is called; a saved file is named after it. */
+  name: string;
+  onName: (name: string) => void;
   error: DraftError | null;
   /** One line on what the current cap table pays, shown while it's valid. */
   summary: string;
 }
 
-export function CapTableEditor({ draft, onDraft, error, summary }: Props) {
+export function CapTableEditor({ draft, onDraft, name, onName, error, summary }: Props) {
   const errorFor = (field: string) => (error && error.field === field ? error.message : null);
   const preferred = draft.securities.filter((s): s is DraftPreferred => s.kind === "preferred");
   return (
     <div className="editor">
       <EditorStatus error={error} summary={summary} />
+      <section className="card" aria-label="Name">
+        <Field id="edit-name" label="Name of this cap table" value={name} onChange={onName} error={null} hint="A saved file is named after it." />
+      </section>
       <HoldersCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
       <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
       <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />

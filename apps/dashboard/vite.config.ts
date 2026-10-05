@@ -1,11 +1,14 @@
 /// <reference types="vitest/config" />
-// The dashboard's build. Three things matter here:
+// The dashboard's build. Four things matter here:
 // - "spillpoint" resolves to the engine's sources, not its built dist/, so the
 //   dashboard always runs the current engine with no build step (M3 plan).
 // - The examples are read from the locked cases at build time and reduced to
 //   the exit input each needs, so they can't drift from the tests and the
 //   page doesn't ship whole expected.json files.
 // - No network: the built page loads nothing from anywhere else.
+// - A Content-Security-Policy on the built page, so the browser itself refuses
+//   any request the page might try to make: cap table data never leaves the
+//   computer (CLAUDE.md, rule 5).
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -52,9 +55,41 @@ function examples(): Plugin {
   };
 }
 
+/**
+ * Everything the built page may load: its own scripts, worker and styles,
+ * and nothing else. connect-src 'none' blocks fetch, XMLHttpRequest,
+ * WebSocket, EventSource and beacons; form-action 'none' blocks form posts.
+ * The page saves by downloading a file it makes itself, which needs none of
+ * these.
+ */
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "worker-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'none'",
+  "font-src 'none'",
+  "media-src 'none'",
+  "object-src 'none'",
+  "frame-src 'none'",
+  "manifest-src 'none'",
+  "form-action 'none'",
+  "base-uri 'none'",
+].join("; ");
+
+/** Adds the policy to the built page. The dev server is left without it: its live reload needs a connection. */
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: "spillpoint-csp",
+    apply: "build",
+    transformIndexHtml: () => [{ tag: "meta", attrs: { "http-equiv": "Content-Security-Policy", content: CONTENT_SECURITY_POLICY }, injectTo: "head-prepend" }],
+  };
+}
+
 export default defineConfig({
   base: "./",
-  plugins: [react(), examples()],
+  plugins: [react(), examples(), contentSecurityPolicy()],
   resolve: {
     alias: { spillpoint: resolve(repo, "packages/engine/src/index.ts") },
   },
