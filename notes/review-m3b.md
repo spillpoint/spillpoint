@@ -10,6 +10,41 @@ pnpm install && pnpm dev
 
 Then open the address it prints (usually http://localhost:5173/). Everything below is on Millrace, which the page opens on, with Ana Ortiz as "you".
 
+## Added after your review: "For you" on each breakpoint
+
+Every breakpoint that changes the selected holder's payout now says how, in one line, in bold under its exit value:
+
+- **A bend** compares what each extra $1M of exit value adds to your payout just above the breakpoint against just below it. For Ana on Millrace:
+  - **Breakpoint 4:** "For you: each extra $1M now adds $204,114, down from $207,895."
+  - **Breakpoint 8:** "For you: each extra $1M now adds $147,026, down from $171,796."
+
+  These are your two numbers, to the dollar, and a test checks both.
+- **A jump** says how much your payout jumps instead: "For you: your payout jumps $2,500,001 here, from $1,000,000 to $3,500,001." A jump down says "drops".
+
+**What to click:** scroll to the breakpoint list. Ana's lines run from breakpoint 3, "now adds $207,895, up from $0", to breakpoint 10. Two to check by sense:
+- **At 9 her rate goes up,** because Series A stops sharing at its cap.
+- **At 10 it goes back down,** because Series A converts and shares again.
+
+Switch "You are" to Cobalt and the lines follow, starting at breakpoint 1.
+
+![The breakpoint list, with the "For you" lines](screenshots/m3b-breakpoints.webp)
+
+**Choices I made, for you to check:**
+1. **Wording:** "up from" or "down from", and "$0" where nothing reaches you on one side. I kept "$0" rather than "nothing" so every line reads the same way.
+2. **Whole dollars,** as in the tables. If two rates would round to the same dollar, the line shows cents instead, so it never reads "now adds $204,114, up from $204,114".
+3. **A jump's size** is the difference of the two amounts as shown, so the line adds up as written.
+4. **What counts as a change.** A bend now has to change your rate by at least half a cent per extra $1M, the same half cent a jump needs. That way, every breakpoint marked "Changes your payout" has a visible difference in its line. Before, the threshold was far smaller, a thousandth of a cent per $1M. No marks moved: for all nine Millrace holders and all four in case 4, the marked breakpoints are the same as before.
+5. **Where it shows:** the breakpoint list only. The slider's marks and the chart's numbers stay as they were, explaining the breakpoint for everyone. Say if you'd like the line in the slider marks' boxes as well.
+
+**Tests:** 7 more, 45 for the dashboard in all.
+- **Your two Millrace numbers,** checked to the exact text, plus "up from $0" at breakpoint 3.
+- **No line** where a breakpoint doesn't change your payout.
+- **A jump up and a jump down.**
+- **The cents fallback.**
+- **The rate calculation** on a small made-up curve.
+
+**`notes/design-m3.md`** now records the emphasis design as approved, and the "For you" line.
+
 ## What to click
 
 1. **The slider's marks.** Under the slider:
@@ -72,7 +107,7 @@ Then open the address it prints (usually http://localhost:5173/). Everything bel
     - choosing a breakpoint
     - the slider's caption, its marks' names and boxes on focus and hover, and choosing a mark
 - **Still no network calls or browser storage.** The built page contains no `fetch`, XMLHttpRequest, beacon, WebSocket, localStorage, sessionStorage or IndexedDB.
-- **`pnpm screenshots`** takes the six new shots, cropped to the part of the page each one shows (245 KB in all).
+- **`pnpm screenshots`** takes the six new shots, cropped to the part of the page each one shows (261 KB in all).
 - **`notes/design-m3.md`:** principle 5 and the M3b line now describe the curves as built (decision 1 below), and M3e's two phone fixes from your M3a review are recorded.
 - **`notes/next-unlock.md`:** renaming "Seed Preferred (SAFE shadow)" to "(from SAFEs)", as you asked. Until that unlock, the dashboard shows the case's current name; you'll see it in the list and the by-class view.
 
@@ -87,16 +122,16 @@ No changes to `.github/workflows/` or `.claude/`.
    - **The one you point at** is lifted in orange and labelled.
    - **The rest are grey,** for context.
 
-   Color is never the only cue. The two colored lines are labelled in words, and the legend and hover box name every holder with its value. If you'd rather have dash patterns on the grey lines too, it's a small change.
-2. **"Changes your payout"** means your payout jumps by more than half a cent there, or its slope changes. It's worked out from the curve, so it follows whichever holder you choose. A breakpoint that changes only other holders' payouts gets a hollow number and no tag.
+   Color is never the only cue. The two colored lines are labelled in words, and the legend and hover box name every holder with its value. **Approved in your review.**
+2. **"Changes your payout"** means your payout jumps by more than half a cent there, or what each extra $1M adds to it changes by more than half a cent (see choice 4 above). It's worked out from the curve, so it follows whichever holder you choose. A breakpoint that changes only other holders' payouts gets a hollow number and no tag.
 3. **Just above a jump,** the chart uses the payout one millionth of a dollar above the breakpoint. That's for drawing only; the tables and headline always solve at the exact exit value.
 4. **Clicking the chart** rounds the exit value to three significant figures ($62.4M, not $62,413,977.12), as the slider does. To land exactly on a breakpoint, choose its mark or its entry in the list.
 5. **Crowded breakpoint numbers** step up into as many as four rows. Beyond that, a number is left off, with its line still drawn, and the chart says how many and to zoom in. At the full range on a laptop all ten show; on a phone three are left off.
-6. **The page's script is bigger:** 659 KB (202 KB compressed), up from 292 KB (94 KB) in M3a. Nearly all of it is Recharts. It loads once and everything after runs locally, so I've left it as one file. Vite prints a size warning during the build, which CI ignores. If you'd like, M3e can load the chart separately so the founder view appears a moment sooner.
+6. **The page's script is bigger:** 659 KB (202 KB compressed), up from 292 KB (94 KB) in M3a. Nearly all of it is Recharts. It loads once and everything after runs locally, so I've left it as one file. Vite prints a size warning during the build, which CI ignores. If you'd like, M3e can load the chart separately so the founder view appears a moment sooner. **Approved in your review as is.**
 
 ## Open questions
 
-1. **Decision 1:** emphasis as built, or dash patterns on the grey lines as well?
+1. **The "For you" line:** is the wording right, and should it also appear in the slider marks' boxes (choice 5 above)?
 2. **Anything in the breakpoint reasons you'd word differently** now that you see them on the page? They're the engine's wording from M2e, unchanged.
 
 Next is M3c, the cap table editor. I'm stopping here.

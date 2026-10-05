@@ -5,7 +5,7 @@ import { D } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import type { CurvePoint } from "../src/analysis.ts";
-import { changesAt, chartRows, niceScale, seriesNodes, valueAt } from "../src/curves.ts";
+import { changeAt, changesAt, chartRows, niceScale, seriesNodes, valueAt } from "../src/curves.ts";
 
 // Two holders over exit values $0 to $30. "a" gets nothing until $10, then
 // half of each dollar; at $20 its payout jumps from $5 to $8, then it gets
@@ -47,6 +47,23 @@ describe("which breakpoints change a payout", () => {
   it("never counts the ends of the range", () => {
     expect(changesAt(a, 0)).toBe(false);
     expect(changesAt(a, 3)).toBe(false);
+  });
+
+  it("gives a bend as what each extra $1M adds on either side, and a jump as from and to", () => {
+    const bend = changeAt(a, 1);
+    expect(bend?.kind).toBe("bend");
+    // "a" gets nothing below $10, then half of each dollar: $500,000 of each extra $1M.
+    if (bend?.kind === "bend") expect([bend.before.toString(), bend.after.toString()]).toEqual(["0", "500000"]);
+    const jump = changeAt(a, 2);
+    expect(jump?.kind).toBe("jump");
+    if (jump?.kind === "jump") expect([jump.from.toString(), jump.to.toString()]).toEqual(["5", "8"]);
+    expect(changeAt(b, 1)).toBeNull();
+  });
+
+  it("ignores a bend of less than half a cent per extra $1M", () => {
+    // From $10 the rate rises by 0.4 billionths of a dollar per dollar: $0.0004 per $1M.
+    const slight = seriesNodes([at("0", "0", "0"), at("10", "10", "0"), at("20", "20.000000004", "0")], "holder", "a");
+    expect(changeAt(slight, 1)).toBeNull();
   });
 
   it("ignores a jump of less than half a cent", () => {

@@ -45,23 +45,36 @@ export function valueAt(nodes: readonly Node[], x: Decimal): Decimal {
   return nodes[nodes.length - 1]!.left;
 }
 
-/** Slopes closer than this are the same; values closer than half a cent don't jump. */
-const SLOPE_TIE = new D("1e-9");
+/** Values closer than half a cent don't jump; rates closer than half a cent per extra $1M don't bend. */
 const VALUE_TIE = new D("0.005");
+const MILLION = new D("1e6");
+
+/**
+ * How a curve changes at node i, if it does: a jump from one payout to
+ * another, or a bend, given as what each extra $1M of exit value adds to the
+ * payout just below the breakpoint and just above it. Between breakpoints a
+ * payout is a straight line, so that rate holds across each whole segment.
+ */
+export type Change = { kind: "jump"; from: Decimal; to: Decimal } | { kind: "bend"; before: Decimal; after: Decimal };
+
+export function changeAt(nodes: readonly Node[], i: number): Change | null {
+  const n = nodes[i];
+  const before = nodes[i - 1];
+  const after = nodes[i + 1];
+  if (!n || !before || !after) return null;
+  if (n.right.minus(n.left).abs().gt(VALUE_TIE)) return { kind: "jump", from: n.left, to: n.right };
+  const perMillionBefore = n.left.minus(before.right).div(n.x.minus(before.x)).times(MILLION);
+  const perMillionAfter = after.left.minus(n.right).div(after.x.minus(n.x)).times(MILLION);
+  if (perMillionBefore.minus(perMillionAfter).abs().gt(VALUE_TIE)) return { kind: "bend", before: perMillionBefore, after: perMillionAfter };
+  return null;
+}
 
 /**
  * Whether this curve bends or jumps at node i: the breakpoints that change
  * the selected holder's payout, which the founder view points out.
  */
 export function changesAt(nodes: readonly Node[], i: number): boolean {
-  const n = nodes[i];
-  const before = nodes[i - 1];
-  const after = nodes[i + 1];
-  if (!n || !before || !after) return false;
-  if (n.right.minus(n.left).abs().gt(VALUE_TIE)) return true;
-  const slopeBefore = n.left.minus(before.right).div(n.x.minus(before.x));
-  const slopeAfter = after.left.minus(n.right).div(after.x.minus(n.x));
-  return slopeBefore.minus(slopeAfter).abs().gt(SLOPE_TIE);
+  return changeAt(nodes, i) !== null;
 }
 
 /** A tidy axis top and step: 1, 2, 2.5 or 5 times a power of ten, in four to six steps. */

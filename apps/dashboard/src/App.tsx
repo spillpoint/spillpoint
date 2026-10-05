@@ -13,7 +13,7 @@ import { PayoffChart } from "./PayoffChart.tsx";
 import { PayoutTable } from "./PayoutTable.tsx";
 import { useAnalysis } from "./analysis.ts";
 import { defaultHolder } from "./capTable.ts";
-import { changesAt, seriesNodes } from "./curves.ts";
+import { changeAt, seriesNodes } from "./curves.ts";
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
@@ -62,12 +62,14 @@ function Workspace({ example }: { example: Example }) {
   const answer = useMemo(() => solve(pc, exitValue).answers[0]!, [pc, exitValue]);
   const analysis = useAnalysis(example.exit);
   const ready = analysis.status === "ready" ? analysis : null;
-  // The breakpoints where your payout bends or jumps, which the curves and the list point out.
-  const yours = useMemo(() => {
+  // How your payout bends or jumps at each breakpoint, if it does: the curves mark those breakpoints,
+  // and the list says how.
+  const changes = useMemo(() => {
     if (!ready) return [];
     const nodes = seriesNodes(ready.curve, "holder", you);
-    return ready.breakpoints.map((_, i) => changesAt(nodes, i + 1));
+    return ready.breakpoints.map((_, i) => changeAt(nodes, i + 1));
   }, [ready, you]);
+  const yours = useMemo(() => changes.map((c) => c !== null), [changes]);
   const yourName = exit.capTable.holders.find((h) => h.id === you)?.name ?? "";
 
   return (
@@ -94,7 +96,7 @@ function Workspace({ example }: { example: Example }) {
         />
       )}
       <PayoutTable pc={pc} answer={answer} exitValue={exitValue} you={you} />
-      {ready && <BreakpointList breakpoints={ready.breakpoints} yours={yours} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
+      {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
     </main>
   );
 }

@@ -97,6 +97,20 @@ describe("the breakpoint list", () => {
     expect(yours).toEqual([false, false, true, true, true, true, true, true, true, true]);
   });
 
+  it("says how each one changes Ana's payout: what each extra $1M adds on either side", async () => {
+    render(<App />);
+    const items = within(await breakpointList()).getAllByRole("listitem");
+    const forYou = (n: number) => items[n - 1]!.querySelector(".breakpoints__yours")?.textContent ?? null;
+    // Breakpoint 4: the $0.05 options come into the money, so common's share of each dollar drops.
+    expect(forYou(4)).toBe("For you: each extra $1M now adds $204,114, down from $207,895.");
+    // Breakpoint 8: Seed Preferred converts and joins common.
+    expect(forYou(8)).toBe("For you: each extra $1M now adds $147,026, down from $171,796.");
+    // Breakpoint 3: nothing reaches common below it.
+    expect(forYou(3)).toMatch(/^For you: each extra \$1M now adds \$[\d,]+, up from \$0\.$/);
+    // Breakpoints 1 and 2 don't change Ana's payout, so they say nothing about it.
+    expect([forYou(1), forYou(2)]).toEqual([null, null]);
+  });
+
   it("follows the holder you choose", async () => {
     render(<App />);
     const list = await breakpointList();

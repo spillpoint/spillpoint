@@ -18,6 +18,14 @@ export function dollars(amount: Decimal): string {
   return `${sign}$${grouped(rounded.abs().toFixed(0))}`;
 }
 
+/** "$204,114.37": to the cent, where whole dollars would hide a difference. */
+export function dollarsAndCents(amount: Decimal): string {
+  const rounded = amount.toDecimalPlaces(2, D.ROUND_HALF_UP);
+  const sign = rounded.isNegative() ? "-" : "";
+  const [whole, cents] = rounded.abs().toFixed(2).split(".");
+  return `${sign}$${grouped(whole!)}.${cents}`;
+}
+
 /** "$9.75M", "$39.4M", "$100M", "$450K", "$812": three significant digits, for headlines. */
 export function shortDollars(amount: Decimal): string {
   const a = amount.abs();
