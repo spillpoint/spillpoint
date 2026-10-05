@@ -23,8 +23,28 @@ jobs:
           python-version: "3.12"
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - name: Build the npm package
+        run: pnpm build
       - run: pnpm test
       - name: Reference calculator unit tests
         run: python3 -m unittest discover reference/tests -v
       - name: Expected values match the reference calculator
         run: python3 reference/generate.py --check
+
+  # The package claims Node 22 and later (engines ">=22"), so the oldest
+  # supported Node runs the build and the tests too. A separate job keeps the
+  # "test" check's name, which branch protection requires.
+  test-node-22:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - name: Build the npm package
+        run: pnpm build
+      - run: pnpm test

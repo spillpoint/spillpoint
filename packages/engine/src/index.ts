@@ -1,17 +1,30 @@
-// spillpoint: the exit waterfall engine. It reads and checks an exit input
-// (M2a), pays out an exit value for given decisions (M2b), solves who converts
-// and who exercises (M2c), and finds every breakpoint with a plain-English
-// reason (M2d).
+// spillpoint: who gets what at every exit value, with every breakpoint
+// explained in plain English.
+//
+//   const exit = readExit(json);                         // check the input
+//   const table = prepare(exit.capTable);
+//   const { answers } = solve(table, new D("20000000"));  // who converts, who gets what
+//   const breakpoints = findBreakpoints(table, exit.range);
+//
+// Everything runs locally: no I/O, no network. Modeling choices are listed in
+// docs/ASSUMPTIONS.md; the charter and the signed documents govern, not this.
 
-export { D, ONE, TIE, ZERO, moreThan, parseExact, sameAmount, toCents } from "./decimal.ts";
+// Numbers: 40-digit decimals (ASSUMPTIONS E14).
+export { D, parseExact, toCents } from "./decimal.ts";
+
+// What the engine refuses, and why.
 export { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
 export type { Milestone } from "./errors.ts";
-export { readCapTable, readCase, readExit } from "./input.ts";
+
+// Reading an exit input in the case-file format (ASSUMPTIONS C1–C4, C12).
+export { readCapTable, readExit } from "./input.ts";
 export type { CapTableResolver } from "./input.ts";
 export type * from "./model.ts";
+
+// The waterfall for given decisions, the decisions themselves, and the breakpoints.
 export { payout, prepare } from "./waterfall.ts";
 export type { Decisions, Payout, PayoutLine, PreparedCapTable, TierPayment } from "./waterfall.ts";
-export { MAX_CHECKED, solve } from "./decisions.ts";
+export { solve } from "./decisions.ts";
 export type { Answer, Solution, SolveOptions } from "./decisions.ts";
 export { findBreakpoints } from "./breakpoints.ts";
 export type { Breakpoint } from "./breakpoints.ts";

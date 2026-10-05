@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { InputError, UnsupportedTermError, readCapTable, readCase } from "../src/index.ts";
+import { InputError, UnsupportedTermError, readCapTable } from "../src/index.ts";
+import { readCase } from "../src/input.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
 import { ALL_CASES, M2_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 

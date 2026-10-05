@@ -7,7 +7,7 @@
 // 40 digits, which agrees with the exact fraction to far less than a cent.
 // No JavaScript float ever carries a money or share amount.
 
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 
 import { InputError } from "./errors.ts";
 

@@ -8,7 +8,7 @@
 // - InputError for anything malformed. Unknown fields are errors too, so a
 //   misspelt term can't be silently ignored.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO, parseExact } from "./decimal.ts";
 import { InputError, UnsupportedTermError } from "./errors.ts";

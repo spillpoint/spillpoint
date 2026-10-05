@@ -6,9 +6,10 @@
 //
 // With no range it uses the case's own.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
-import { findBreakpoints, parseExact, prepare, readCase } from "../src/index.ts";
+import { findBreakpoints, parseExact, prepare } from "../src/index.ts";
+import { readCase } from "../src/input.ts";
 import { money } from "../src/reasons.ts";
 import { capTablesOf, readCaseFile } from "../test/support/cases.ts";
 

@@ -4,7 +4,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 import { parseExact } from "../../src/index.ts";
 import type { CapTableResolver, Decisions } from "../../src/index.ts";

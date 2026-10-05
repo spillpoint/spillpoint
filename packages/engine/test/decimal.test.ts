@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, InputError, TIE, moreThan, parseExact, sameAmount, toCents } from "../src/index.ts";
+import { D, InputError, parseExact, toCents } from "../src/index.ts";
+import { TIE, moreThan, sameAmount } from "../src/decimal.ts";
 
 describe("parseExact (C1)", () => {
   it("reads integers, terminating decimals and fractions", () => {

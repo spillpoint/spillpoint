@@ -4,7 +4,7 @@
 
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
 const CASES = resolve(import.meta.dirname, "../../../cases");
