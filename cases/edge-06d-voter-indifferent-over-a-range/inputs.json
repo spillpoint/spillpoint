@@ -1,0 +1,124 @@
+{
+  "case": "edge-06d-voter-indifferent-over-a-range",
+  "description": "A conversion group whose pivotal voter is indifferent over a range (E13). Series A and the junior Seed must convert together, by at least 50% of their as-converted shares, and each has half. Series B, outside the group, ranks with Series A. Below $7.5M Investor R (Seed) gets nothing whether the group converts or not; above it, converting pays R, so R carries the vote and the group converts. The payouts jump at $7.5M, where R stops being indifferent.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "investor_p",
+          "name": "Investor P"
+        },
+        {
+          "id": "investor_q",
+          "name": "Investor Q"
+        },
+        {
+          "id": "investor_r",
+          "name": "Investor R"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "series_b",
+          "name": "Series B Preferred",
+          "kind": "preferred",
+          "original_issue_price": "7.5",
+          "conversion_price": "7.5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "5",
+          "conversion_price": "5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "0.5",
+          "conversion_price": "0.5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_b",
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 4000000
+        },
+        {
+          "holder": "investor_p",
+          "security": "series_b",
+          "shares": 1000000
+        },
+        {
+          "holder": "investor_q",
+          "security": "series_a",
+          "shares": 1000000
+        },
+        {
+          "holder": "investor_r",
+          "security": "seed",
+          "shares": 1000000
+        }
+      ],
+      "unissued_pool": 0,
+      "conversion_groups": [
+        {
+          "series": [
+            "series_a",
+            "seed"
+          ],
+          "vote_threshold_percent": "50",
+          "vote_rule": "at_least"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "2000000",
+      "5000000",
+      "7500000",
+      "10000000",
+      "12500000",
+      "13000000",
+      "15000000",
+      "20000000",
+      "30000000",
+      "40000000"
+    ]
+  }
+}

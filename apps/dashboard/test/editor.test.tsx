@@ -122,7 +122,7 @@ describe("editing an example", () => {
     openTab("Cap table");
     expect(
       within(card("Who is paid first")).getByText(
-        "Paid first: Series B Preferred. Then: Series A Preferred. Then, side by side: Seed Preferred and Seed Preferred (SAFE shadow).",
+        "Paid first: Series B Preferred. Then: Series A Preferred. Then, side by side: Seed Preferred and Seed Preferred (from SAFEs).",
       ),
     ).toBeTruthy();
     const seriesB = within(card("Series that convert together")).getByRole("checkbox", { name: /Series B Preferred/ }) as HTMLInputElement;

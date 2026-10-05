@@ -40,7 +40,7 @@ Harbor Lane Ventures Fund I invests $2,500,000 at a $7,500,000 pre-money valuati
 - The pre-money includes the SAFEs, which convert in this round.
 - The unissued pool is topped up to 18% of post-money fully diluted shares, with the top-up in the pre-money.
 - Seed Preferred: 1.5x non-participating, plus pro-rata rights.
-- The SAFE holders receive a shadow series of Seed Preferred, per `docs/SPEC.md`.
+- The SAFE holders receive a series of their own, Seed Preferred (from SAFEs), with Seed Preferred's rights, per `docs/SPEC.md`.
 
 ## Grants between Seed and Series A
 
@@ -79,7 +79,7 @@ Cobalt Family Office LLC invests $10,000,000 at a $36,000,000 pre-money valuatio
 
 ## Seniority
 
-Series B is paid first, then Series A, then the Seed tier. Within the Seed tier, Seed Preferred and the SAFE shadow series are pari passu.
+Series B is paid first, then Series A, then the Seed tier. Within the Seed tier, Seed Preferred and Seed Preferred (from SAFEs) are pari passu.
 
 ## Expected outputs (M1 produces these)
 

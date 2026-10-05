@@ -1,5 +1,5 @@
 {
-  "case": "edge-17a-pay-to-play-priced-after",
+  "case": "edge-17e-pay-to-play-anti-dilution",
   "generated_by": "reference/generate.py",
   "cap_tables": [
     {
@@ -298,7 +298,7 @@
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
-            "anti_dilution": "none",
+            "anti_dilution": "broad_based",
             "approx": {
               "original_issue_price": "2.5000000000",
               "conversion_price": "2.5000000000",
@@ -367,11 +367,11 @@
       "after_event": "series_b",
       "date": "2025-03-31",
       "details": {
-        "price_per_share": "75/58",
-        "price_per_share_approx": "1.2931034483",
+        "price_per_share": "2325/1828",
+        "price_per_share_approx": "1.2718818381",
         "post_money_valuation": "15000000",
-        "post_money_fully_diluted_solved": "11600000",
-        "post_money_fully_diluted_solved_approx": "11600000.0000",
+        "post_money_fully_diluted_solved": "365600000/31",
+        "post_money_fully_diluted_solved_approx": "11793548.3871",
         "pre_round_fully_diluted": "9280000",
         "pay_to_play": {
           "series": [
@@ -422,18 +422,31 @@
             }
           ]
         },
+        "anti_dilution": [
+          {
+            "series": "series_a",
+            "rule": "broad_based",
+            "cp1": "2.5",
+            "cp2": "10259649025/4633389556",
+            "cp2_approx": "2.2142858702",
+            "A": "7780000",
+            "B": "548399610/457",
+            "C": 2358708,
+            "new_conversion_ratio": "2316694778/2051929805"
+          }
+        ],
         "new_shares": [
           {
             "holder": "investor_x",
-            "shares": 464000
+            "shares": 471741
           },
           {
             "holder": "investor_y",
-            "shares": 1856000
+            "shares": 1886967
           }
         ],
         "pool_top_up": 0,
-        "post_money_fully_diluted_actual": "11600000"
+        "post_money_fully_diluted_actual": "4839905960898388/410385961"
       },
       "cap_table": {
         "holders": [
@@ -479,32 +492,32 @@
             "name": "Series A Preferred",
             "kind": "preferred",
             "original_issue_price": "2.5",
-            "conversion_price": "2.5",
-            "conversion_ratio": "1",
+            "conversion_price": "10259649025/4633389556",
+            "conversion_ratio": "2316694778/2051929805",
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
-            "anti_dilution": "none",
+            "anti_dilution": "broad_based",
             "approx": {
               "original_issue_price": "2.5000000000",
-              "conversion_price": "2.5000000000",
-              "conversion_ratio": "1.0000000000"
+              "conversion_price": "2.2142858702",
+              "conversion_ratio": "1.1290321786"
             }
           },
           {
             "id": "series_b",
             "name": "Series B Preferred",
             "kind": "preferred",
-            "original_issue_price": "75/58",
-            "conversion_price": "75/58",
+            "original_issue_price": "2325/1828",
+            "conversion_price": "2325/1828",
             "conversion_ratio": "1",
             "preference_multiple": "1",
             "participation": "non_participating",
             "cap_multiple": null,
             "anti_dilution": "none",
             "approx": {
-              "original_issue_price": "1.2931034483",
-              "conversion_price": "1.2931034483",
+              "original_issue_price": "1.2718818381",
+              "conversion_price": "1.2718818381",
               "conversion_ratio": "1.0000000000"
             }
           }
@@ -546,12 +559,12 @@
           {
             "holder": "investor_x",
             "security": "series_b",
-            "shares": 464000
+            "shares": 471741
           },
           {
             "holder": "investor_y",
             "security": "series_b",
-            "shares": 1856000
+            "shares": 1886967
           }
         ],
         "unissued_pool": 1500000,
@@ -561,24 +574,24 @@
             "common": 6080000,
             "options_0.25": 500000,
             "series_a": 1200000,
-            "series_b": 2320000
+            "series_b": 2358708
           },
           "as_converted_by_security": {
             "common": "6080000",
             "options_0.25": "500000",
-            "series_a": "1200000",
-            "series_b": "2320000"
+            "series_a": "556006746720000/410385961",
+            "series_b": "2358708"
           },
-          "fully_diluted": "11600000",
+          "fully_diluted": "4839905960898388/410385961",
           "fully_diluted_percent_by_holder": {
-            "founder_a": "38.7931",
-            "founder_b": "12.9310",
-            "employee_c": "4.3103",
-            "investor_x": "14.3448",
-            "investor_w": "0.6897",
+            "founder_a": "38.1565",
+            "founder_b": "12.7188",
+            "employee_c": "4.2396",
+            "investor_x": "15.4880",
+            "investor_w": "0.6783",
             "investor_y": "16.0000"
           },
-          "unissued_pool_percent": "12.9310"
+          "unissued_pool_percent": "12.7188"
         }
       }
     }

@@ -370,7 +370,7 @@
           },
           {
             "id": "series_a_shadow",
-            "name": "Series A Preferred (SAFE shadow)",
+            "name": "Series A Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "2",
             "conversion_price": "2",

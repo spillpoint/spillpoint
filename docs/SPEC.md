@@ -46,7 +46,7 @@ A breakpoint is any exit value where any holder's payoff slope changes. Report e
 - **Post-money SAFE (YC).**
   - It converts at the lower of the cap price and the discount price. Cap price = post-money valuation cap ÷ Company Capitalization.
   - Company Capitalization includes all stock, converting securities, issued and promised options, and the unissued pool. It excludes any pool increase made in the financing, except to the extent promised options exceed the pool that existed before.
-  - The SAFE converts into a shadow series that has the new series' rights and preference multiple. Its per-share preference and conversion price are based on the SAFE's own conversion price.
+  - The SAFE converts into a series of its own, named for the new series "(from SAFEs)", with the new series' rights and preference multiple. Its per-share preference and conversion price are based on the SAFE's own conversion price.
 - **Pre-money SAFEs and convertible notes.** Inputs: principal, simple interest, cap, and discount.
 - **Pro-rata rights.** NVCA definition: the investor may buy a share of the new round equal to its pre-round fully diluted percentage. It is not the amount needed to hold that percentage after the round. When a pool top-up sits in the pre-money, the investor ends below its pre-round percentage.
 - **Anti-dilution.**
@@ -58,7 +58,10 @@ A breakpoint is any exit value where any holder's payoff slope changes. Report e
     - C is the number of new shares issued, as converted.
     - Narrow-based A counts only the outstanding preferred, as converted.
   - Anti-dilution changes the conversion ratio, never the preference amount.
-- **Pay-to-play.** Holders who don't take their pro-rata at the round have their preferred converted to common at a ratio given as an input.
+- **Pay-to-play.** Holders who don't take their pro-rata at the round have their preferred converted to common at a ratio given as an input, one per series.
+  - A holder's pro-rata is its share, as converted, of the listed series' shares × the amount the round offers them. A holder in several listed series has one total requirement.
+  - A holder that buys only part of its pro-rata converts all its preferred of the listed series, or, under a toggle, the fraction it didn't buy.
+  - The conversion comes before anti-dilution: holders who convert get no adjustment, and A counts the cap table after the conversion.
 
 ## Exit terms (M5)
 
@@ -86,7 +89,7 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 3. One series, 1x participating, uncapped.
 4. One series, participating and capped: the cap is hit, then the series converts.
 5. Two series, stacked vs. pari passu.
-6. Two non-participating series in one tier with different per-share preferences: per-series conversion vs. forced class conversion.
+6. Two non-participating series in one tier with different per-share preferences: per-series conversion vs. forced class conversion. 6d: a conversion group whose pivotal voter is indifferent over a range, then prefers converting (E13).
 7. Options at several strikes: in-the-money thresholds and strike cash.
 8. A warrant for preferred.
 9. Cumulative dividends: they accrue, then are forfeited on conversion.
@@ -97,6 +100,7 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 14. An option pool top-up in the pre-money.
 15. A post-money SAFE converting in a round that tops up the pool, with a discount that beats the cap.
 16. One down round under three anti-dilution methods: broad-based, narrow-based, and full ratchet.
-17. Pay-to-play.
+17. Pay-to-play: a holder that doesn't pay (17a, 17b), one that pays part of its pro-rata (17c, 17d), in a round that triggers anti-dilution (17e, 17f), and on two series (17g, 17h).
+18. Pro-rata rights in a round that converts a SAFE.
 
-Cases 14–17 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
+Cases 14–18 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.

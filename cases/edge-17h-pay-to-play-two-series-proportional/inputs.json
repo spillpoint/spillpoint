@@ -1,0 +1,175 @@
+{
+  "case": "edge-17h-pay-to-play-two-series-proportional",
+  "description": "Edge case 17g under the proportional reading (R20, R22): Investor X bought half its pro-rata, so it keeps half of each series, 500,000 Seed and 500,000 Series A, and the other halves convert: 100,000 common from Seed and 50,000 from Series A.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_v",
+      "name": "Investor V"
+    },
+    {
+      "id": "investor_w",
+      "name": "Investor W"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 1500000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "6000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "1000000"
+        },
+        {
+          "holder": "investor_v",
+          "amount": "500000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "15000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "2000000"
+        },
+        {
+          "holder": "investor_w",
+          "amount": "1000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "9000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "400000"
+        },
+        {
+          "holder": "investor_v",
+          "amount": "200000"
+        },
+        {
+          "holder": "investor_w",
+          "amount": "200000"
+        },
+        {
+          "holder": "investor_y",
+          "amount": "2200000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "pay_to_play": {
+        "series": [
+          "seed",
+          "series_a"
+        ],
+        "offered_amount": "1200000",
+        "conversion_ratio": {
+          "seed": "0.2",
+          "series_a": "0.1"
+        },
+        "priced_after_conversion": true,
+        "partial_participation": "convert_proportionally"
+      },
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    }
+  ]
+}

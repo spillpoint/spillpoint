@@ -1,0 +1,174 @@
+{
+  "case": "edge-17g-pay-to-play-two-series",
+  "description": "Pay-to-play on two series in one round (R22). Investor X holds Seed and Series A; Investor V holds Seed; Investor W holds Series A. The Series B offers $1,200,000 to all of them, split by their combined as-converted shares: X must buy $800,000, V and W $200,000 each. X buys $400,000, so by default (R20) all of its Seed converts at 1 common for 5 and all of its Series A at 1 for 10. Edge case 17h is the same with the proportional reading.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_v",
+      "name": "Investor V"
+    },
+    {
+      "id": "investor_w",
+      "name": "Investor W"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 1500000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "6000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "1000000"
+        },
+        {
+          "holder": "investor_v",
+          "amount": "500000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-09-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "15000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "2000000"
+        },
+        {
+          "holder": "investor_w",
+          "amount": "1000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "seniority": [
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "9000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "400000"
+        },
+        {
+          "holder": "investor_v",
+          "amount": "200000"
+        },
+        {
+          "holder": "investor_w",
+          "amount": "200000"
+        },
+        {
+          "holder": "investor_y",
+          "amount": "2200000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "pay_to_play": {
+        "series": [
+          "seed",
+          "series_a"
+        ],
+        "offered_amount": "1200000",
+        "conversion_ratio": {
+          "seed": "0.2",
+          "series_a": "0.1"
+        },
+        "priced_after_conversion": true
+      },
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    }
+  ]
+}
