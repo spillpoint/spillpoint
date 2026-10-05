@@ -1,0 +1,78 @@
+// The dashboard. M3a: the founder view, the exit value, and who gets what.
+
+import { useMemo, useState } from "react";
+import { D, prepare, readExit, solve } from "spillpoint";
+import examples from "virtual:examples";
+import type { Example } from "virtual:examples";
+
+import { ExitSlider } from "./ExitSlider.tsx";
+import { FounderView } from "./FounderView.tsx";
+import { PayoutTable } from "./PayoutTable.tsx";
+import { useBreakpoints } from "./breakpoints.ts";
+import { defaultHolder } from "./capTable.ts";
+
+export function App() {
+  const [exampleId, setExampleId] = useState(examples[0]!.id);
+  const example = examples.find((e) => e.id === exampleId)!;
+  return (
+    <div className="page">
+      <header className="masthead">
+        <div className="masthead__title">
+          <span className="wordmark">spillpoint</span>
+          <span className="masthead__tagline">Who gets what when the company is sold</span>
+        </div>
+        <label className="masthead__example">
+          Example{" "}
+          <select value={exampleId} onChange={(e) => setExampleId(e.target.value)}>
+            {examples.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.label}
+                {e.fictional ? " (fictional)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
+      <GovernanceNote />
+      {/* A new example starts fresh: its own holder, exit value and breakpoints. */}
+      <Workspace key={example.id} example={example} />
+    </div>
+  );
+}
+
+function GovernanceNote() {
+  return (
+    <aside className="notice" aria-label="Before you rely on this">
+      <strong>The charter and the signed documents govern, not this tool.</strong> spillpoint models common terms with
+      documented defaults; where your documents differ, they win. Everything runs on this computer: nothing you enter is sent
+      anywhere.
+    </aside>
+  );
+}
+
+function Workspace({ example }: { example: Example }) {
+  const exit = useMemo(() => readExit(example.exit), [example]);
+  const pc = useMemo(() => prepare(exit.capTable), [exit]);
+  const [you, setYou] = useState(() => defaultHolder(exit.capTable));
+  const [exitValue, setExitValue] = useState(() => new D(example.defaultExitValue));
+  const answer = useMemo(() => solve(pc, exitValue).answers[0]!, [pc, exitValue]);
+  const breakpoints = useBreakpoints(example.exit);
+
+  return (
+    <main>
+      {example.fictional && (
+        <p className="example-label">
+          <span className="badge">Fictional example</span> {example.label}
+        </p>
+      )}
+      <FounderView pc={pc} range={exit.range} answer={answer} exitValue={exitValue} you={you} onChooseYou={setYou} breakpoints={breakpoints} />
+      <ExitSlider
+        range={exit.range}
+        value={exitValue}
+        onChange={setExitValue}
+        breakpoints={breakpoints.status === "ready" ? breakpoints.breakpoints.map((b) => new D(b.exitValue)) : []}
+      />
+      <PayoutTable pc={pc} answer={answer} exitValue={exitValue} you={you} />
+    </main>
+  );
+}

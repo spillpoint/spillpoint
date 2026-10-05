@@ -1,0 +1,102 @@
+/* spillpoint's look: plain, serious, readable (notes/design-m3.md).
+   System fonts only, so the page fetches nothing. One accent colour; nothing
+   relies on colour alone. */
+
+:root {
+  --text: #1b1f24;
+  --muted: #5b6370;
+  --line: #d8dce2;
+  --surface: #ffffff;
+  --page: #f6f7f9;
+  --accent: #1d3557;
+  --accent-soft: #e9eef5;
+  --warn: #8a5a00;
+  --error: #a4262c;
+  --radius: 6px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--page);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+.page { max-width: 1040px; margin: 0 auto; padding: 24px 24px 64px; }
+
+/* Masthead */
+.masthead { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.wordmark { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+.masthead__tagline { color: var(--muted); margin-left: 12px; }
+.masthead__example { color: var(--muted); }
+
+select, input[type="text"] {
+  font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 10px;
+}
+select { max-width: 100%; }
+.table-scroll { overflow-x: auto; }
+select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The governance note: always visible, plain, not alarming. */
+.notice {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  border-radius: var(--radius); padding: 12px 16px; margin-bottom: 24px; color: var(--text);
+}
+
+.example-label { color: var(--muted); margin: 0 0 8px; }
+.badge {
+  display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px;
+  font-size: 0.8125rem; color: var(--muted); background: var(--surface); margin-right: 6px;
+}
+
+/* Founder view */
+.founder { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.founder__you { color: var(--muted); }
+.founder__you select { font-weight: 600; color: var(--text); margin-left: 4px; }
+.founder__headline { font-size: 2.25rem; line-height: 1.2; margin: 16px 0 8px; font-weight: 650; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.founder__compare { font-size: 1.125rem; margin: 0 0 4px; }
+.founder__start { font-size: 1.125rem; margin: 0; }
+.muted { color: var(--muted); }
+
+/* Exit value */
+.exit-value { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin-top: 16px; }
+.exit-value__typed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.exit-value__typed label { font-weight: 600; }
+.exit-value__typed input { width: 14rem; font-variant-numeric: tabular-nums; }
+.field-error { color: var(--error); font-size: 0.875rem; }
+.exit-value__slider { position: relative; margin-top: 16px; }
+.exit-value__slider input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
+.exit-value__ticks { position: relative; height: 10px; margin: 2px 8px 0; }
+.exit-value__tick { position: absolute; top: 0; width: 2px; height: 10px; background: var(--muted); transform: translateX(-1px); }
+.exit-value__ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8125rem; margin-top: 2px; }
+
+/* Cards and the payouts table */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin-top: 16px; }
+.card__header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.card h2 { font-size: 1.25rem; margin: 0; }
+
+.toggle { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.toggle button { font: inherit; border: 0; background: var(--surface); color: var(--text); padding: 6px 14px; cursor: pointer; }
+.toggle button + button { border-left: 1px solid var(--line); }
+.toggle button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+.payouts { width: 100%; border-collapse: collapse; margin-top: 16px; font-variant-numeric: tabular-nums; }
+.payouts th, .payouts td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
+.payouts thead th { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
+.payouts tbody th { font-weight: 500; }
+.payouts .num { text-align: right; white-space: nowrap; }
+.payouts tfoot th, .payouts tfoot td { font-weight: 600; border-bottom: 0; }
+.payouts tr.is-you th, .payouts tr.is-you td { background: var(--accent-soft); font-weight: 650; }
+.payouts tr.is-you th { box-shadow: inset 4px 0 0 var(--accent); }
+.you-tag { font-weight: 600; color: var(--accent); }
+
+.footnote, .decisions { color: var(--muted); font-size: 0.875rem; margin: 12px 0 0; }
+
+@media (max-width: 640px) {
+  .page { padding: 16px 12px 48px; }
+  .founder__headline { font-size: 1.75rem; }
+  .masthead__tagline { display: block; margin: 2px 0 0; }
+  .payouts th, .payouts td { padding: 6px 4px; }
+}
