@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { D, parseExact, solve } from "spillpoint";
+import type { CapTable } from "spillpoint";
 import examples from "virtual:examples";
 
 import { BreakpointList } from "./BreakpointList.tsx";
@@ -35,6 +36,8 @@ interface Start {
   /** What it's called, and so what its file is called when saved. */
   name: string;
   defaultExitValue: string;
+  /** The holder it opens on, by id; otherwise the largest common holder. */
+  you?: string;
 }
 
 function startFrom(id: string): Start {
@@ -52,21 +55,44 @@ function startFrom(id: string): Start {
   };
 }
 
-/** A file doesn't keep an exit value, so an opened one starts halfway up its range. */
+/** A file without a saved view starts halfway up its range. */
 function middleOf(range: [string, string]): string {
   const [lo, hi] = range.map((v, i) => parseExact(v, `range[${i}]`));
   return lo!.plus(hi!).div(2).toSignificantDigits(3, D.ROUND_HALF_UP).toFixed();
 }
 
-/** The cap table being worked on, from where it started. A new one remounts the workspace. */
+/**
+ * The cap table being worked on, from where it started, and where you're
+ * looking at it: the holder you are and the exit value, which a save keeps.
+ * A new one remounts the workspace.
+ */
 interface Session {
   start: Start;
   n: number;
   draft: Draft;
   name: string;
+  /** The holder you are, by editor key; null for the largest common holder. */
+  youKey: string | null;
+  /** The exit value as chosen; it's kept inside the range when shown. */
+  exitValue: D;
 }
 
-const newSession = (start: Start, n: number): Session => ({ start, n, draft: start.draft, name: start.name });
+function newSession(start: Start, n: number): Session {
+  // You start as the holder a saved view names, or else whoever holds the most common stock; edits don't move you.
+  const built = buildExit(start.draft);
+  const checked = checkBuilt(built);
+  const you = start.you ?? (checked.ok ? defaultHolder(checked.exit.capTable) : undefined);
+  const youKey = [...built.holderIds].find(([, id]) => id === you)?.[0] ?? null;
+  return { start, n, draft: start.draft, name: start.name, youKey, exitValue: new D(start.defaultExitValue) };
+}
+
+/** The holder you are, by id in this cap table: the one chosen, or else whoever holds the most common stock. */
+function youIn(built: Built, capTable: CapTable, youKey: string | null): string {
+  return (youKey !== null ? built.holderIds.get(youKey) : undefined) ?? defaultHolder(capTable);
+}
+
+/** The exit value, kept inside the range even when an edit narrows it. */
+const insideRange = (x: D, [lo, hi]: readonly [D, D]) => D.min(hi, D.max(lo, x));
 
 type FileStatus = { kind: "done" | "problem"; text: string } | null;
 
@@ -129,7 +155,9 @@ export function App() {
       return;
     }
     const name = fileName(session.name);
-    download(name, fileText(session.name, session.draft));
+    // The view goes in too, so the file reopens where you were.
+    const view = { exitValue: insideRange(session.exitValue, checked.exit.range).toString(), you: youIn(built, checked.exit.capTable, session.youKey) };
+    download(name, fileText(session.name, session.draft, view));
     setUnsaved(false);
     setFileStatus({ kind: "done", text: `Saved as ${name}, in your downloads.` });
   };
@@ -143,7 +171,15 @@ export function App() {
       setFileStatus({ kind: "problem", text: `Couldn't open ${file.name}. ${result.message}` });
       return;
     }
-    const start = { id: FILE, label: `${result.name}, opened from ${file.name}`, fictional: false, draft: result.draft, name: result.name, defaultExitValue: middleOf(result.draft.range) };
+    const start = {
+      id: FILE,
+      label: `${result.name}, opened from ${file.name}`,
+      fictional: false,
+      draft: result.draft,
+      name: result.name,
+      defaultExitValue: result.view?.exitValue ?? middleOf(result.draft.range),
+      ...(result.view ? { you: result.view.you } : {}),
+    };
     begin(start, { kind: "done", text: `Opened ${file.name}.` });
   };
 
@@ -207,6 +243,10 @@ export function App() {
         unsaved={unsaved}
         onDraft={(draft) => change({ draft })}
         onName={(name) => change({ name })}
+        youKey={session.youKey}
+        onYouKey={(youKey) => setSession((s) => ({ ...s, youKey }))}
+        chosenExitValue={session.exitValue}
+        onExitValue={(exitValue) => setSession((s) => ({ ...s, exitValue }))}
       />
     </div>
   );
@@ -240,9 +280,15 @@ interface WorkspaceProps {
   unsaved: boolean;
   onDraft: (draft: Draft) => void;
   onName: (name: string) => void;
+  /** Where you're looking. Changing it isn't an unsaved change to the cap table, though a save keeps it. */
+  youKey: string | null;
+  onYouKey: (key: string) => void;
+  chosenExitValue: D;
+  onExitValue: (x: D) => void;
 }
 
-function Workspace({ start, draft, name, built, checked, edited, unsaved, onDraft, onName }: WorkspaceProps) {
+function Workspace(props: WorkspaceProps) {
+  const { start, draft, name, built, checked, edited, unsaved, onDraft, onName, youKey, onYouKey, chosenExitValue, onExitValue: setExitValue } = props;
   const lastGood = useRef<Good | null>(null);
   if (checked.ok && lastGood.current?.built !== built) lastGood.current = { built, checked };
   const good = lastGood.current!;
@@ -250,14 +296,11 @@ function Workspace({ start, draft, name, built, checked, edited, unsaved, onDraf
 
   const { exit, pc } = good.checked;
   const keyOf = (id: string) => [...good.built.holderIds].find(([, v]) => v === id)?.[0] ?? "";
-  const [youKey, setYouKey] = useState(() => keyOf(defaultHolder(exit.capTable)));
-  const you = good.built.holderIds.get(youKey) ?? defaultHolder(exit.capTable);
+  const you = youIn(good.built, exit.capTable, youKey);
   const yourName = exit.capTable.holders.find((h) => h.id === you)?.name ?? "";
 
-  // The exit value stays inside the range, even when an edit narrows it.
-  const [chosenExitValue, setExitValue] = useState(() => new D(start.defaultExitValue));
   const [lo, hi] = exit.range;
-  const exitValue = useMemo(() => D.min(hi, D.max(lo, chosenExitValue)), [lo, hi, chosenExitValue]);
+  const exitValue = useMemo(() => insideRange(chosenExitValue, [lo, hi]), [lo, hi, chosenExitValue]);
   const solved = useMemo(() => {
     try {
       return { ok: true as const, answer: solve(pc, exitValue).answers[0]! };
@@ -314,7 +357,7 @@ function Workspace({ start, draft, name, built, checked, edited, unsaved, onDraf
           </div>
         )}
         {solved.ok ? (
-          <FounderView pc={pc} range={exit.range} answer={solved.answer} exitValue={exitValue} you={you} onChooseYou={(id) => setYouKey(keyOf(id))} breakpoints={analysis} />
+          <FounderView pc={pc} range={exit.range} answer={solved.answer} exitValue={exitValue} you={you} onChooseYou={(id) => onYouKey(keyOf(id))} breakpoints={analysis} />
         ) : (
           <p className="card card--quiet">
             The engine couldn't settle on an answer at {shortDollars(exitValue)}: {solved.message}

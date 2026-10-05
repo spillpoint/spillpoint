@@ -52,11 +52,7 @@ describe("saving Millrace and opening it again", () => {
     await openFile("millrace-robotics-fictional.json", first);
     expect(await screen.findByText("Opened millrace-robotics-fictional.json.")).toBeTruthy();
     expect(screen.getByText(/Millrace Robotics \(fictional\), opened from millrace-robotics-fictional\.json/)).toBeTruthy();
-    // A file keeps no exit value, so an opened one starts halfway up its range.
-    expect(headline()).toMatch(/^At \$150M you get /);
-    const box = screen.getByRole("textbox", { name: "Exit value" });
-    type(box, "100M");
-    fireEvent.keyDown(box, { key: "Enter" });
+    // The file kept the view: Ana at $100M.
     expect(headline()).toBe("At $100M you get $9.75M");
 
     // The table as opened, saved again: the same file, and the same payouts as the example.
@@ -87,6 +83,51 @@ describe("saving Millrace and opening it again", () => {
     type(screen.getByLabelText("Name of this cap table"), "Founders' table, v2");
     click("Save");
     expect(downloads[0]!.name).toBe("founders-table-v2.json");
+  });
+});
+
+describe("the view: where you were looking", () => {
+  it("reopens to the same exit value and holder", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/You are/), { target: { value: "cobalt" } });
+    const box = screen.getByRole("textbox", { name: "Exit value" });
+    type(box, "62.4M");
+    fireEvent.keyDown(box, { key: "Enter" });
+    const before = headline();
+    expect(before).toMatch(/^At \$62\.4M you get /);
+    click("Save");
+    const file = await saved(0);
+    expect(JSON.parse(file).view).toEqual({ exit_value: "62400000", you: "cobalt" });
+
+    // Move on: someone else, somewhere else. Then open the file.
+    fireEvent.change(screen.getByLabelText(/You are/), { target: { value: "ana" } });
+    type(box, "20M");
+    fireEvent.keyDown(box, { key: "Enter" });
+    await openFile("millrace.json", file);
+    expect(await screen.findByText("Opened millrace.json.")).toBeTruthy();
+    expect((screen.getByLabelText(/You are/) as HTMLSelectElement).value).toBe("cobalt");
+    expect(headline()).toBe(before);
+  });
+
+  it("is optional: a file without one opens halfway up its range, on the largest common holder", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/You are/), { target: { value: "cobalt" } });
+    click("Save");
+    const { view: _view, ...withoutView } = JSON.parse(await saved(0));
+    await openFile("no-view.json", JSON.stringify(withoutView));
+    expect(await screen.findByText("Opened no-view.json.")).toBeTruthy();
+    expect((screen.getByLabelText(/You are/) as HTMLSelectElement).value).toBe("ana");
+    expect(headline()).toMatch(/^At \$150M you get /);
+  });
+
+  it("isn't an unsaved change: moving the exit value or choosing who you are doesn't ask before leaving", () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/You are/), { target: { value: "cobalt" } });
+    const box = screen.getByRole("textbox", { name: "Exit value" });
+    type(box, "62.4M");
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(screen.queryByText("Not saved")).toBeNull();
+    expect(leavingAsks()).toBe(false);
   });
 });
 

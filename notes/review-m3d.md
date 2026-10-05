@@ -16,6 +16,38 @@ pnpm preview
 
 That builds the page and serves it at http://localhost:4173/.
 
+## Added after your review: the view
+
+A save now keeps where you were looking: the exit value and the "You are" holder. They go in an optional `view` section of version 1. There are no saved files yet, so nothing needs migrating.
+
+```json
+"view": { "exit_value": "62400000", "you": "cobalt" }
+```
+
+- **Opening a file with a view** returns you to it: the same holder, at the same exact exit value.
+- **A file without a view** opens as it did before: halfway up its range, on the largest common holder.
+- **A view that doesn't fit its cap table is refused** with a plain reason, like the rest of the file:
+  - an exit value outside the range
+  - a holder who isn't in the table
+  - a missing or unknown field
+- **Moving the exit value or changing who you are doesn't count as an unsaved change.** It doesn't mark "Not saved" or ask before you leave, so the slider never nags. A save still records the view as it is at that moment. If you'd rather a view change count as unsaved, it's a small change.
+
+**To check:**
+1. On Millrace, choose Cobalt Family Office LLC, type 62.4M as the exit value, and Save.
+2. Choose Ana and move the slider.
+3. Open the file: you're Cobalt at $62.4M again, with the same headline as before you saved.
+
+**Tests:** 5 more, 99 for the dashboard in all.
+- **3 that click through:**
+  - a saved view reopens to the same exit value and holder
+  - a file without a view opens halfway up on the largest common holder
+  - changing the view isn't an unsaved change
+- **2 for the file format:**
+  - the view is written and read back exactly
+  - a view that doesn't fit is refused, in five ways
+
+**The page also now holds the holder and exit value alongside the cap table,** so a save can reach them. As before, "you" is fixed when a table starts, so editing shares never quietly changes who you are.
+
 ## What to click
 
 1. **Save.** The masthead now has "Save" and "Open" beside "Start from". On Millrace, click Save.
@@ -31,7 +63,7 @@ That builds the page and serves it at http://localhost:4173/.
 
 3. **Open.** Click Open and choose the file you saved.
    - **The line under the masthead** says "Opened millrace-robotics-fictional.json." The line above the tabs reads "Millrace Robotics (fictional), opened from millrace-robotics-fictional.json".
-   - **The exit value starts at $150M,** halfway up the range, because a file keeps no exit value (question 1). Type 100M and Ana gets $9.75M, as before.
+   - **You're back where you saved:** Ana at $100M, getting $9.75M.
 
 4. **Unsaved changes are never lost without asking.** Change anything, then try to reload or close the tab: the browser asks first. After a save it doesn't. "Start from" and "Open" ask too, but only when there are unsaved changes.
 
@@ -48,7 +80,7 @@ That builds the page and serves it at http://localhost:4173/.
    - **Then type `fetch("/")`.** The browser refuses it: "Refused to connect because it violates the document's Content Security Policy." It would refuse the same for any address.
 
 **Your test:** in [`test/save-open.test.tsx`](../apps/dashboard/test/save-open.test.tsx), "saving Millrace and opening it again gives identical payouts to the cent at every breakpoint":
-1. It clicks Save, opens the downloaded file with Open, and checks the headline at $100M.
+1. It clicks Save, opens the downloaded file with Open, and checks the headline: back at $100M.
 2. It saves again. The second file is byte for byte the first.
 3. The engine then finds the same ten breakpoints, and the same payout to the cent for every holder and every class at each.
 
@@ -99,7 +131,7 @@ That builds the page and serves it at http://localhost:4173/.
 ## Decisions I made, for you to check
 
 1. **Only a table the engine accepts is saved,** so a saved file always opens and is always valid engine input. A table with a problem says so instead of saving.
-2. **The file keeps no exit value,** as agreed. An opened file starts halfway up its range: $150M for Millrace. See question 1.
+2. **The file keeps the view** (see the first section). A file without one starts halfway up its range: $150M for Millrace.
 3. **How saving and opening work:**
    - **Saving** hands the file to the browser's downloads, named after the cap table: lowercase, with hyphens.
    - **Opening** uses the browser's file picker.
@@ -118,6 +150,6 @@ That builds the page and serves it at http://localhost:4173/.
 
 ## Open questions
 
-1. **Keep the exit value in the file?** It would be one more field in version 1, `"exit_value"`, so an opened file returns to where you were. Today it isn't kept, as agreed.
+None. Your review answered the last one: the view is kept.
 
 Next is M3e: the GitHub Pages deploy, the narrow-screen pass, and the review of M3 as a whole. I'm stopping here.

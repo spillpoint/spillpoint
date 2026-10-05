@@ -38,10 +38,21 @@ describe("saving and opening again", () => {
     });
   });
 
-  it("writes the agreed format: version 1, a name, the cap table and the range", () => {
+  it("writes the agreed format: version 1, a name, the cap table, the range, and the view if there is one", () => {
     const file = JSON.parse(fileText("  Millrace Robotics (fictional) ", draftFromExit(millrace.exit)));
     expect(Object.keys(file)).toEqual(["format", "version", "name", "cap_table", "range"]);
     expect(file).toMatchObject({ format: "spillpoint", version: 1, name: "Millrace Robotics (fictional)", range: ["0", "300000000"] });
+    const viewed = JSON.parse(fileText("Millrace", draftFromExit(millrace.exit), { exitValue: "39424995.32", you: "cobalt" }));
+    expect(Object.keys(viewed)).toEqual(["format", "version", "name", "cap_table", "range", "view"]);
+    expect(viewed.view).toEqual({ exit_value: "39424995.32", you: "cobalt" });
+  });
+
+  it("reads the view back exactly, and opens a file without one with none", () => {
+    const view = { exitValue: "39424995.32", you: "cobalt" };
+    const opened = readFile(fileText("Millrace", draftFromExit(millrace.exit), view));
+    expect(opened.ok && opened.view).toEqual(view);
+    const plain = readFile(fileText("Millrace", draftFromExit(millrace.exit)));
+    expect(plain.ok && plain.view).toBeNull();
   });
 
   it("names the file after the cap table", () => {
@@ -69,6 +80,15 @@ describe("a file that can't be opened", () => {
     );
     const { version: _version, ...unversioned } = good();
     expect(refusal(unversioned)).toBe("Its version number is missing or unreadable, so it's not clear how to read it.");
+  });
+
+  it("has a view that doesn't fit its cap table", () => {
+    const view = (v: unknown) => refusal({ ...good(), view: v });
+    expect(view({ exit_value: "400000000", you: "ana" })).toBe("Its view's exit value, $400M, is outside its range, $0 to $300M.");
+    expect(view({ exit_value: "100000000", you: "zoe" })).toBe("Its view says you are zoe, who isn't in its cap table.");
+    expect(view({ exit_value: "100000000" })).toBe("Its view needs both an exit value and the holder you are.");
+    expect(view({ exit_value: "about $100M", you: "ana" })).toBe('Its view\'s exit value, "about $100M", isn\'t an exact number.');
+    expect(view({ exit_value: "100000000", you: "ana", tab: "editor" })).toBe("Its view has a field spillpoint doesn't read: tab.");
   });
 
   it("has a field spillpoint doesn't read", () => {
