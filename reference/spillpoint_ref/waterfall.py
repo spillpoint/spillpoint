@@ -70,6 +70,8 @@ class Waterfall:
         if len(self.safes) > 1:
             raise ValueError("more than one unconverted SAFE at exit is not supported by the reference yet")
         for f in self.safes:
+            if f.get("pre_money_cap") is not None:
+                raise ValueError(f"{f['id']}: an unconverted pre-money SAFE at exit is not supported by the reference yet")
             if f["post_money_cap"] is None:
                 raise ValueError(f"{f['id']}: an unconverted SAFE without a valuation cap is not supported by the reference yet")
             if f["discount"]:

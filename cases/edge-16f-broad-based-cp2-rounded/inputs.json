@@ -1,0 +1,127 @@
+{
+  "case": "edge-16f-broad-based-cp2-rounded",
+  "description": "Edge case 16a with the adjusted conversion price rounded to the nearest $0.0001, half up (R9's toggle, as the NVCA model charter computes it). The round's price and shares are 16a's; only the final conversion price, $2.1904762 \u2192 $2.1905, and the ratio change.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 1500000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "20"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 500000,
+          "strike": "0.25"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based",
+        "anti_dilution_a": "outstanding_common_options_preferred"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "5000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "15",
+      "seniority": [
+        [
+          "series_a"
+        ]
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "12000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "3000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "anti_dilution_shares_in_post": true,
+      "anti_dilution_include_unissued_pool_in_a": false,
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ]
+      ],
+      "anti_dilution_cp2_rounding": "0.0001"
+    }
+  ]
+}

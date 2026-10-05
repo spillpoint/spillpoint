@@ -156,7 +156,11 @@ class CapTable:
                     "id": f["id"],
                     "holder": f["holder"],
                     "purchase_amount": exact(f["purchase_amount"]),
-                    "post_money_cap": None if f["post_money_cap"] is None else exact(f["post_money_cap"]),
+                    **(
+                        {"pre_money_cap": exact(f["pre_money_cap"])}
+                        if f["pre_money_cap"] is not None
+                        else {"post_money_cap": None if f["post_money_cap"] is None else exact(f["post_money_cap"])}
+                    ),
                     "discount": exact(f["discount"]),
                 }
                 for f in self.safes
@@ -253,11 +257,15 @@ def security_from_json(s):
 
 
 def safe_from_json(f):
+    """A SAFE: post-money (YC, R4) or pre-money (YC pre-money SAFE), never both."""
+    if f.get("post_money_cap") is not None and f.get("pre_money_cap") is not None:
+        raise ValueError(f"{f['id']}: a SAFE has a post-money cap or a pre-money cap, not both")
     return {
         "id": f["id"],
         "holder": f["holder"],
         "purchase_amount": parse(f["purchase_amount"]),
         "post_money_cap": None if f.get("post_money_cap") is None else parse(f["post_money_cap"]),
+        "pre_money_cap": None if f.get("pre_money_cap") is None else parse(f["pre_money_cap"]),
         "discount": parse(f.get("discount", "0")),
     }
 

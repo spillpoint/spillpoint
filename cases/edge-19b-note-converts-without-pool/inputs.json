@@ -1,0 +1,115 @@
+{
+  "case": "edge-19b-note-converts-without-pool",
+  "description": "A convertible note converting in a priced round. Investor N's $1,000,000 note (6% simple interest, a pre-money valuation cap of $8,000,000, a 20% discount) converts in the Series A a year after it was issued, so $1,060,000 converts. Its cap divides by the share count just before the round, counted without the unissued pool (X10's conversion_base, `without_pool`), not counting this round's pool top-up. The cap beats the discount, and the note converts into a series of its own, Series A Preferred (from notes).",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "investor_n",
+      "name": "Investor N"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 2000000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "20"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 500000,
+          "strike": "0.25"
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "date": "2023-01-01",
+      "type": "notes",
+      "notes": [
+        {
+          "id": "note_n",
+          "holder": "investor_n",
+          "principal": "1000000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2023-01-01",
+          "valuation_cap": "8000000",
+          "cap_type": "pre_money",
+          "conversion_base": "without_pool",
+          "discount": "0.2",
+          "repayment_multiple": "2"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-01-01",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "5000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "15",
+      "convert_notes": true,
+      "seniority": [
+        [
+          "series_a",
+          "series_a_notes"
+        ]
+      ]
+    }
+  ]
+}

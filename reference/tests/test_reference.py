@@ -7,6 +7,7 @@ are written out in the comments.
 """
 
 import datetime
+import json
 import sys
 import unittest
 from fractions import Fraction as F
@@ -14,9 +15,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+CASES = Path(__file__).resolve().parent.parent.parent / "cases"
+
 from spillpoint_ref import breakpoints  # noqa: E402
-from spillpoint_ref.case import _schedule_json  # noqa: E402
-from spillpoint_ref.model import CapTable  # noqa: E402
+from spillpoint_ref.case import _schedule_json, run_case  # noqa: E402
+from spillpoint_ref.model import CapTable, safe_from_json  # noqa: E402
 from spillpoint_ref.num import exact, money  # noqa: E402
 from spillpoint_ref.rounds import build, _anti_dilution_factor  # noqa: E402
 from spillpoint_ref.waterfall import Waterfall  # noqa: E402
@@ -224,6 +227,39 @@ class Rounds(unittest.TestCase):
             self.assertEqual((adj["series"], adj["A"]), ("p", "800000"))
             self.assertEqual(ct.positions[("s2", "common")], 50_000)
             self.assertLess(F(adj["cp2"]), F(2))
+
+    def test_pro_rata_above_entitlement_is_refused(self):
+        # Edge case 18 with Investor X marking $1,200,000 as pro-rata. The round is then $6,200,000 and X's
+        # entitlement 2,000,000 ÷ 11,000,000 of it, $1,127,272.72 to the cent, rounded down (M4d, R6).
+        inputs = json.loads((CASES / "edge-18-pro-rata-with-safe" / "inputs.json").read_text())
+        inputs["events"][-1]["investments"] = [
+            {"holder": "investor_y", "amount": "5000000"},
+            {"holder": "investor_x", "amount": "1200000", "pro_rata": True},
+        ]
+        with self.assertRaises(ValueError) as caught:
+            run_case(inputs)
+        self.assertIn(
+            "Investor X's pro-rata investment of $1,200,000.00 is more than its pro-rata entitlement of $1,127,272.72 "
+            "(18.181818% of the $6,200,000.00 round). Mark $1,127,272.72 as pro-rata and enter the other $72,727.28 "
+            "as an ordinary investment in the same round.",
+            str(caught.exception),
+        )
+
+    def test_post_money_safe_with_a_note_is_refused(self):
+        # A post-money SAFE's Company Capitalization counts every other converting security: owed before release.
+        inputs = json.loads((CASES / "edge-18-pro-rata-with-safe" / "inputs.json").read_text())
+        inputs["holders"].append({"id": "investor_n", "name": "Investor N"})
+        inputs["events"].insert(3, {"id": "note", "date": "2023-05-01", "type": "notes", "notes": [{
+            "id": "note_n", "holder": "investor_n", "principal": "500000", "interest_rate": "0", "interest_method": "simple",
+            "issue_date": "2023-05-01", "valuation_cap": "9000000", "cap_type": "pre_money", "conversion_base": "with_pool",
+            "discount": "0", "repayment_multiple": "1"}]})
+        inputs["events"][-1]["convert_notes"] = True
+        with self.assertRaisesRegex(ValueError, "post-money SAFE converting alongside notes or pre-money SAFEs"):
+            run_case(inputs)
+
+    def test_a_safe_has_one_kind_of_cap(self):
+        with self.assertRaisesRegex(ValueError, "not both"):
+            safe_from_json({"id": "s", "holder": "h", "purchase_amount": "1", "post_money_cap": "10", "pre_money_cap": "8"})
 
     def test_broad_based_weighted_average(self):
         # Textbook: A = 2,000,000 (1M common + 1M Series A as converted), CP1 = $1.00.
