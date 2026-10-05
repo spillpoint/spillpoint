@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "pnpm@12.9.1",
   "scripts": {
+    "dev": "pnpm --filter @spillpoint/dashboard dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
