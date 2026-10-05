@@ -138,13 +138,30 @@ describe("editing an example", () => {
   });
 });
 
+describe("prices", () => {
+  it("show as decimals, with no fractions on screen until you type one", () => {
+    render(<App />);
+    openTab("Cap table");
+    const seriesA = series("Series A Preferred");
+    const issue = within(seriesA).getByLabelText("Original issue price ($ a share)") as HTMLInputElement;
+    expect(issue.value).toBe("2.075472");
+    expect((within(seriesA).getByLabelText("Conversion price ($ a share)") as HTMLInputElement).value).toBe("1.824752");
+    expect(within(seriesA).queryByText(/About \$/)).toBeNull();
+    // The exact prices are still the ones used: the answer hasn't moved.
+    expect(status()).toBe("At $100M, Ana Ortiz gets $9.75M. Every change updates the payouts.");
+    type(issue, "39/19");
+    expect(within(seriesA).getByText("About $2.05263 a share")).toBeTruthy();
+  });
+});
+
 describe("when the engine says no", () => {
   it("puts its message next to the field, and keeps the payouts from before the change", () => {
     render(<App />);
     openTab("Cap table");
     const cap = within(series("Series A Preferred")).getByLabelText("Cap (× the issue price, preference included)");
     type(cap, "1");
-    const message = "The cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower (E7)";
+    // The engine's words, without the assumption code (E7) it gives developers.
+    const message = "The cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower";
     expect(cap.getAttribute("aria-invalid")).toBe("true");
     expect(document.getElementById(cap.getAttribute("aria-describedby")!)!.textContent).toBe(message);
     expect(status()).toBe(`The payouts can't update until this is fixed: ${message} Go to the field`);
@@ -213,10 +230,11 @@ describe("not losing edits by accident", () => {
     expect(screen.getByText("Simple example: one series, capped participation")).toBeTruthy();
   });
 
-  it("starts from scratch: one founder with all the common stock", () => {
+  it("starts from a blank cap table: one founder with all the common stock", () => {
     render(<App />);
     startFrom("scratch");
-    expect(screen.getByText("Your own cap table, started from scratch")).toBeTruthy();
+    expect(within(screen.getByLabelText(/Start from/)).getByRole("option", { selected: true }).textContent).toBe("A blank cap table");
+    expect(screen.getByText("Your own cap table, started blank")).toBeTruthy();
     expect(headline()).toBe("At $50M you get $50M");
   });
 });

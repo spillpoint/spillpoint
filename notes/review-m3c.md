@@ -10,6 +10,28 @@ pnpm install && pnpm dev
 
 Then open the address it prints (usually http://localhost:5173/).
 
+## Added after your review
+
+1. **Prices show as decimals.**
+   - **A loaded price too long to read** shows rounded to six decimal places. Series A's issue price shows as 2.075472, not 3900000/1879091, and its conversion price as 1.824752.
+   - **A price of six places or fewer** shows as written: 1.5, 0.05.
+   - **Until you type in a field,** its exact value is kept underneath and used, so nothing changes. Ana still gets $9.75M at $100M.
+   - **Once you type,** what you typed is used, even if it's the same 2.075472 you were shown.
+   - **A typed fraction is still accepted.** It's the one time the "About $X a share" line appears, since the field itself isn't readable then. Otherwise that line is gone.
+
+   **To check:** on Millrace, open "Cap table" and look at Series A. Then type 39/19 as its issue price: "About $2.05263 a share" appears under it.
+2. **No assumption codes on the page.** Error messages read "…so it can't be lower" without "(E7)". The same goes for every engine message the page shows: the editor's errors, the payouts banner, and the rarer "couldn't settle on an answer" and "couldn't work out the curves" lines. The engine's errors are unchanged and keep their codes, and the editor keeps the error as thrown, path and code included, alongside the message it shows.
+3. **"Scratch" is now "A blank cap table".** The line above the tabs reads "Your own cap table, started blank". It still starts with one founder holding 10,000,000 common shares, as before.
+
+**Tests:** 5 more, 72 for the dashboard in all.
+- **2 for the decimal display,** including Millrace's two Series A prices.
+- **2 for removing codes,** covering every pattern the engine uses: "(E7)", "(X3, X10–X12)", "(E17: …)" and "(…; E12)". They also check that brackets without a code stay, such as "($0.05 strike)".
+- **1 that clicks through:** the prices show as decimals, the answer hasn't moved, and a typed fraction gets its hint.
+
+**Updated tests:**
+- **The model test** now checks that the exact prices reach the engine until you type, and what you typed after.
+- **The error tests** expect messages without the code, and check that the code is still in the error kept for developers.
+
 ## What to click
 
 1. **The "Cap table" tab,** next to "Payouts" under the example's name. At the top, a line says what the current table pays you: "At $100M, Ana Ortiz gets $9.75M. Every change updates the payouts." Below it are six cards:
@@ -28,7 +50,7 @@ Then open the address it prints (usually http://localhost:5173/).
    - **Back on "Payouts":** the headline says the same, and the example's name gains ", with your changes".
 
 3. **When the engine says no.** On Millrace, set Series A's cap to 1.
-   - **Under the field,** in the engine's words: "The cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower (E7)".
+   - **Under the field,** in the engine's words: "The cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower".
    - **The line at the top** says the payouts can't update until it's fixed, with a "Go to the field" link.
    - **On "Payouts":** a banner says your last change has a problem, so these payouts are from before it. The headline stays at $9.75M. "Fix it" takes you back to the field.
    - **Put 2.75 back,** and everything updates again.
@@ -42,7 +64,7 @@ Then open the address it prints (usually http://localhost:5173/).
    - **Type "about a dollar" as a price.** The engine replies that it "is not an exact number".
 
 4. **Case 6b, built from scratch,** as you planned:
-   1. Set "Start from" to "Scratch". Open "Cap table".
+   1. Set "Start from" to "A blank cap table". Open "Cap table".
    2. **Holders:** rename "Founder" to Founder A, and add Founder B, Investor X and Investor Y.
    3. **Classes of stock:** add two preferred series, Seed-1 Preferred at an issue price of 1 and Seed-2 Preferred at 3. The other terms keep their defaults (1×, non-participating).
    4. **Who holds what:**
@@ -88,7 +110,7 @@ Then open the address it prints (usually http://localhost:5173/).
   - **`draft.ts`:** the editor's model. It turns an example into editable text, builds the engine's input back, and maps each engine error path to the field it names.
 - **`App.tsx`:**
   - the two tabs
-  - "Start from", with Scratch
+  - "Start from", with "A blank cap table"
   - the payouts held at the last accepted table, with the banner
   - a plain message instead of a crash if the engine can't settle on an answer at some exit value
 - **The curves and breakpoints** wait for a quarter-second pause in typing before recomputing, so the background thread isn't restarted on every keystroke. The headline and the table still update with every change.
@@ -107,10 +129,10 @@ Then open the address it prints (usually http://localhost:5173/).
     - the payment-order sentence and the disabled checkbox
     - the narrower range
     - both confirmations
-    - scratch
+    - starting from a blank cap table
     - the tabs' arrow keys
 - **Still no network calls or browser storage** in the built page. The script is 684 KB (208 KB compressed), about 7 KB compressed more than M3b.
-- **`pnpm screenshots`** takes the seven new shots (229 KB in all). It now builds case 6b click by click for two of them.
+- **`pnpm screenshots`** takes the seven new shots (228 KB in all). It now builds case 6b click by click for two of them.
 - **`notes/design-m3.md`:** the editor as built. M3e's list also gains the phone shares grid.
 
 ## CI and permissions
@@ -125,7 +147,7 @@ No changes to `.github/workflows/` or `.claude/`. No changes to `cases/`: the 6b
    - a holding for an unknown holder
    - a series in two tiers
    - the same holding listed twice
-4. **The engine's own words,** with the path dropped because the field's place already says it, and the first letter capitalized. Some include an assumption code, such as "(E7)". Your M2d rule against codes was for breakpoint reasons; see question 1.
+4. **The engine's own words,** with the path dropped because the field's place already says it, and the first letter capitalized. Assumption codes are dropped too, as you asked.
 5. **What you can type:**
    - "1,000,000"
    - "$1.50"
@@ -138,7 +160,7 @@ No changes to `.github/workflows/` or `.claude/`. No changes to `cases/`: the 6b
    - an empty share cell is no holding
    - an empty pool is none
    - an empty conversion price is the issue price
-6. **Millrace's prices stay exact.** They're fractions from its rounds, such as Series A's 3900000/1879091, shown as they are with "About $2.07547 a share" beneath. Typing over one replaces it.
+6. **Millrace's prices stay exact.** They're fractions from its rounds, such as Series A's 3900000/1879091. As you asked, they show to six decimal places, with the exact value used until you type in the field.
 7. **Ids:**
    - **Loaded holders and classes keep their ids.**
    - **New ones get an id from their name:** Founder B becomes founder_b, with _2 added for a duplicate. That keeps readable the few engine messages that name an id. Saved files (M3d) will carry them.
@@ -147,7 +169,7 @@ No changes to `.github/workflows/` or `.claude/`. No changes to `cases/`: the 6b
 9. **Defaults for new rows:**
    - **A new preferred series:** $1 issue price, 1×, non-participating, in its own tier, paid first.
    - **A new option class:** a $0 strike.
-   - **Scratch:** one holder, Founder, with 10,000,000 common shares, $0 to $100M, at $50M.
+   - **A blank cap table:** one holder, Founder, with 10,000,000 common shares, $0 to $100M, at $50M.
 10. **Not in the editor:**
     - **Anti-dilution:** at exit it matters only through the conversion price, which you can edit. The method is kept as loaded, for the record.
     - **Arriving later:** warrants, dividends, carve-outs, earnouts, and SAFEs and notes at exit come in M5; rounds in M4.
@@ -155,7 +177,6 @@ No changes to `.github/workflows/` or `.claude/`. No changes to `cases/`: the 6b
 
 ## Open questions
 
-1. **Assumption codes in error messages**, such as "(E7)": keep them, or strip them as for breakpoint reasons? Founders won't know them; for you they point straight to the rule.
-2. **"Start from"** is the picker's new label, since it now offers Scratch as well as the examples. OK, or would you name it differently?
+None. Your review answered both: the codes are gone from the page, and "Start from" stays, with "A blank cap table".
 
 Next is M3d: save and load, the unsaved-changes warning, and the privacy hardening. I'm stopping here.

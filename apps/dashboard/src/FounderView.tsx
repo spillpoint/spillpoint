@@ -7,7 +7,7 @@ import { D } from "spillpoint";
 
 import { fractionOf, fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
 import type { AnalysisState } from "./analysis.ts";
-import { percent, shortDollars } from "./format.ts";
+import { percent, shortDollars, withoutCodes } from "./format.ts";
 
 type Decimal = D;
 
@@ -54,7 +54,7 @@ export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, br
 
 function PayoutStartLine({ pc, range, you, breakpoints }: Omit<Props, "answer" | "exitValue" | "onChooseYou">) {
   if (breakpoints.status === "computing") return <span className="muted">Working out where your payout starts…</span>;
-  if (breakpoints.status === "error") return <span className="muted">Couldn't work out where your payout starts: {breakpoints.message}</span>;
+  if (breakpoints.status === "error") return <span className="muted">Couldn't work out where your payout starts: {withoutCodes(breakpoints.message)}</span>;
   const start = payoutStart(
     pc,
     you,

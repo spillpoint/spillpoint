@@ -8,7 +8,7 @@
 import type React from "react";
 import type { Participation } from "spillpoint";
 
-import { addHolder, addSecurity, fieldId, removeRow, sharesHeldBy, sharesKey, tiers } from "./draft.ts";
+import { addHolder, addSecurity, fieldId, removeRow, setPrice, sharesHeldBy, sharesKey, tiers } from "./draft.ts";
 import type { Draft, DraftPreferred, DraftSecurity } from "./draft.ts";
 import { amountHint, fractionValue } from "./format.ts";
 
@@ -115,7 +115,7 @@ function Field({ id, label, value, onChange, error, hint, hiddenLabel, numeric }
   );
 }
 
-/** For a price typed as a fraction ("455000/1182033", as rounds produce), its value to six digits. */
+/** Prices show as decimals; for one typed as a fraction ("455000/1182033"), what it comes to. */
 function priceHint(text: string) {
   const v = fractionValue(text);
   return v ? `About $${v} a share` : undefined;
@@ -198,7 +198,8 @@ function ClassesCard({ draft, onDraft, errorFor }: CardProps) {
                 label="Strike price ($ a share)"
                 numeric
                 value={s.strike}
-                onChange={(v) => update(s.key, { strike: v })}
+                onChange={(v) => onDraft(setPrice(draft, s.key, "strike", v))}
+                hint={priceHint(s.strike)}
                 error={errorFor(fieldId.strike(s.key))}
               />
               <RemoveButton draft={draft} onDraft={onDraft} rowKey={s.key} name={s.name} />
@@ -246,7 +247,7 @@ function PreferredFields({
           label="Original issue price ($ a share)"
           numeric
           value={s.originalIssuePrice}
-          onChange={(v) => update(s.key, { originalIssuePrice: v })}
+          onChange={(v) => onDraft(setPrice(draft, s.key, "originalIssuePrice", v))}
           error={errorFor(fieldId.originalIssuePrice(s.key))}
           hint={priceHint(s.originalIssuePrice)}
         />
@@ -255,7 +256,7 @@ function PreferredFields({
           label="Conversion price ($ a share)"
           numeric
           value={s.conversionPrice}
-          onChange={(v) => update(s.key, { conversionPrice: v })}
+          onChange={(v) => onDraft(setPrice(draft, s.key, "conversionPrice", v))}
           error={errorFor(fieldId.conversionPrice(s.key))}
           hint={priceHint(s.conversionPrice) ?? "Blank means the issue price. Lower only after an anti-dilution adjustment."}
         />

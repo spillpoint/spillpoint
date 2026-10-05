@@ -61,6 +61,21 @@ export function parseDollars(text: string): Decimal | null {
   return number.times(scale);
 }
 
+/**
+ * A price as the editor shows it: as written when it has six decimal places
+ * or fewer ("1.5", "0.05"), otherwise rounded to six ("3900000/1879091" →
+ * "2.075472"). Text that isn't a price is left as it is.
+ */
+export function priceText(text: string): string {
+  const fraction = /^(\d+)\/(\d+)$/.exec(text);
+  if (fraction && !/^0+$/.test(fraction[2]!)) {
+    const value = new D(fraction[1]!).div(fraction[2]!);
+    return value.decimalPlaces() <= 6 ? value.toFixed() : value.toFixed(6, D.ROUND_HALF_UP);
+  }
+  if (/^\d+\.\d{7,}$/.test(text)) return new D(text).toFixed(6, D.ROUND_HALF_UP);
+  return text;
+}
+
 /** A price typed as a fraction ("455000/1182033", as rounds produce) to six significant digits: "0.384930". Null otherwise. */
 export function fractionValue(text: string): string | null {
   const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text);
@@ -77,4 +92,20 @@ export function amountHint(text: string): string | null {
   if (!parsed) return null;
   if (/[kmb]\s*$/i.test(text)) return dollars(parsed);
   return parsed.gte("1000000") ? shortDollars(parsed) : null;
+}
+
+// An assumption code, or a range of them: "E7", "X10–X12".
+const CODE = String.raw`[RECX]\d+(?:[–-][RECX]?\d+)?`;
+const CODES = String.raw`${CODE}(?:,\s*${CODE})*`;
+
+/**
+ * An engine message as the page shows it: without the assumption codes
+ * ("(E7)", "(E17: …)", "(…; E12)") that point developers to docs/ASSUMPTIONS.md,
+ * as with the breakpoint reasons. The engine's errors keep them.
+ */
+export function withoutCodes(message: string): string {
+  return message
+    .replace(new RegExp(String.raw`\s*\(${CODES}\)`, "g"), "")
+    .replace(new RegExp(String.raw`\(${CODES}:\s*`, "g"), "(")
+    .replace(new RegExp(String.raw`[;,]\s*${CODES}\)`, "g"), ")");
 }

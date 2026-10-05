@@ -12,7 +12,7 @@
 import { D, InputError, UnsupportedTermError, prepare, readExit } from "spillpoint";
 import type { ExitInput, Participation, PreparedCapTable } from "spillpoint";
 
-import { parseDollars } from "./format.ts";
+import { parseDollars, priceText, withoutCodes } from "./format.ts";
 
 export interface DraftHolder {
   /** The editor's own handle, stable while names change. */
@@ -28,11 +28,21 @@ interface DraftClassBase {
   name: string;
 }
 
+export type PriceField = "strike" | "originalIssuePrice" | "conversionPrice";
+
+/**
+ * A loaded price too long to read ("3900000/1879091", as rounds produce) is
+ * shown to six decimal places, and its exact value is kept here and used
+ * until someone edits the field; from then on, what they typed is used.
+ */
+type ExactPrices = Partial<Record<PriceField, string>>;
+
 export type DraftSecurity =
   | (DraftClassBase & { kind: "common" })
-  | (DraftClassBase & { kind: "option"; strike: string })
+  | (DraftClassBase & { kind: "option"; strike: string; exact: ExactPrices })
   | (DraftClassBase & {
       kind: "preferred";
+      exact: ExactPrices;
       originalIssuePrice: string;
       /** Blank means the original issue price: no anti-dilution adjustment. */
       conversionPrice: string;
@@ -100,15 +110,23 @@ export function draftFromExit(exit: unknown): Draft {
     const id = str(s.id);
     securityKeys.set(id, k);
     const base = { key: k, fileId: id, name: str(s.name) };
-    if (s.kind === "option") return { ...base, kind: "option", strike: str(s.strike) };
+    const exact: ExactPrices = {};
+    const shown = (field: PriceField, price: string) => {
+      const text = priceText(price);
+      if (text !== price) exact[field] = price;
+      return text;
+    };
+    if (s.kind === "option") return { ...base, kind: "option", strike: shown("strike", str(s.strike)), exact };
     if (s.kind === "preferred") {
       const oip = str(s.original_issue_price);
       const cp = str(s.conversion_price);
       return {
         ...base,
         kind: "preferred",
-        originalIssuePrice: oip,
-        conversionPrice: cp === oip ? "" : cp,
+        exact,
+        originalIssuePrice: shown("originalIssuePrice", oip),
+        // Blank: the same as the issue price, exactly.
+        conversionPrice: cp === oip || cp === "" ? "" : shown("conversionPrice", cp),
         preferenceMultiple: str(s.preference_multiple),
         participation: s.participation as Participation,
         capMultiple: str(s.cap_multiple),
@@ -167,6 +185,18 @@ export function scratchDraft(): Draft {
 
 // ---------- edits ----------
 
+/** Typing in a price field: from now on the typed price is used, not the exact one it was loaded with. */
+export function setPrice(d: Draft, key: string, field: PriceField, text: string): Draft {
+  return {
+    ...d,
+    securities: d.securities.map((s) => {
+      if (s.key !== key || s.kind === "common") return s;
+      const { [field]: _dropped, ...exact } = s.exact;
+      return { ...s, [field]: text, exact } as DraftSecurity;
+    }),
+  };
+}
+
 export function addHolder(d: Draft): Draft {
   const key = `k${d.nextKey}`;
   return { ...d, holders: [...d.holders, { key, fileId: null, name: "New holder" }], nextKey: d.nextKey + 1 };
@@ -178,7 +208,7 @@ export function addSecurity(d: Draft, kind: DraftSecurity["kind"]): Draft {
   let added: DraftSecurity;
   let securities = d.securities;
   if (kind === "common") added = { ...base, kind, name: "Common Stock" };
-  else if (kind === "option") added = { ...base, kind, name: "New option class", strike: "0" };
+  else if (kind === "option") added = { ...base, kind, name: "New option class", strike: "0", exact: {} };
   else {
     // A new series gets a tier of its own, paid first, as later rounds usually are; change it under "Who is paid first".
     securities = securities.map((s) => (s.kind === "preferred" ? { ...s, rank: s.rank + 1 } : s));
@@ -186,6 +216,7 @@ export function addSecurity(d: Draft, kind: DraftSecurity["kind"]): Draft {
       ...base,
       kind,
       name: "New preferred series",
+      exact: {},
       originalIssuePrice: "1",
       conversionPrice: "",
       preferenceMultiple: "1",
@@ -327,7 +358,7 @@ export function buildExit(d: Draft): Built {
     if (s.kind === "common") return { ...base, kind: "common" };
     if (s.kind === "option") {
       at(`${p}.strike`, fieldId.strike(s.key));
-      return { ...base, kind: "option", strike: moneyText(s.strike) };
+      return { ...base, kind: "option", strike: s.exact.strike ?? moneyText(s.strike) };
     }
     at(`${p}.original_issue_price`, fieldId.originalIssuePrice(s.key));
     at(`${p}.conversion_price`, fieldId.conversionPrice(s.key));
@@ -338,8 +369,12 @@ export function buildExit(d: Draft): Built {
     return {
       ...base,
       kind: "preferred",
-      original_issue_price: moneyText(s.originalIssuePrice),
-      ...(s.conversionPrice.trim() ? { conversion_price: moneyText(s.conversionPrice) } : {}),
+      original_issue_price: s.exact.originalIssuePrice ?? moneyText(s.originalIssuePrice),
+      ...(s.exact.conversionPrice
+        ? { conversion_price: s.exact.conversionPrice }
+        : s.conversionPrice.trim()
+          ? { conversion_price: moneyText(s.conversionPrice) }
+          : {}),
       preference_multiple: multipleText(s.preferenceMultiple),
       participation: s.participation,
       cap_multiple: capped ? multipleText(s.capMultiple) : null,
@@ -409,24 +444,35 @@ export function fieldForPath(fields: ReadonlyMap<string, string>, path: string):
 
 // ---------- asking the engine ----------
 
-export type Checked = { ok: true; exit: ExitInput; pc: PreparedCapTable } | { ok: false; field: string | null; message: string };
+export type Checked =
+  | { ok: true; exit: ExitInput; pc: PreparedCapTable }
+  | {
+      ok: false;
+      field: string | null;
+      /** What the page shows. */
+      message: string;
+      /** The engine's error as thrown, path and assumption codes included, for developers. */
+      error: Error;
+    };
 
 /**
  * Reads the built input as the engine would (C12). When it says no, the
  * message goes next to the field it names, without the path, which the
- * field's place already says. A message naming no field keeps its path.
+ * field's place already says, and without assumption codes. A message
+ * naming no field keeps its path.
  */
 export function checkBuilt(b: Built): Checked {
   try {
     const exit = readExit(b.json);
     return { ok: true, exit, pc: prepare(exit.capTable) };
   } catch (e) {
+    const error = e as Error;
     if (e instanceof InputError || e instanceof UnsupportedTermError) {
       const field = fieldForPath(b.fields, e.path);
-      if (!field) return { ok: false, field: null, message: e.message };
-      const detail = e.message.startsWith(`${e.path}: `) ? e.message.slice(e.path.length + 2) : e.message;
-      return { ok: false, field, message: detail.charAt(0).toUpperCase() + detail.slice(1) };
+      if (!field) return { ok: false, field: null, message: withoutCodes(e.message), error };
+      const detail = withoutCodes(e.message.startsWith(`${e.path}: `) ? e.message.slice(e.path.length + 2) : e.message);
+      return { ok: false, field, message: detail.charAt(0).toUpperCase() + detail.slice(1), error };
     }
-    return { ok: false, field: null, message: (e as Error).message };
+    return { ok: false, field: null, message: withoutCodes(error.message), error };
   }
 }

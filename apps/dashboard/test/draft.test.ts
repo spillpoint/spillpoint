@@ -7,7 +7,7 @@ import type { CapTable } from "spillpoint";
 import examples from "virtual:examples";
 import { describe, expect, it } from "vitest";
 
-import { addHolder, addSecurity, buildExit, checkBuilt, draftFromExit, fieldForPath, fieldId, removeRow, scratchDraft, sharesKey } from "../src/draft.ts";
+import { addHolder, addSecurity, buildExit, checkBuilt, draftFromExit, fieldForPath, fieldId, removeRow, scratchDraft, setPrice, sharesKey } from "../src/draft.ts";
 
 /** A cap table as plain strings, so two can be compared exactly. */
 const plain = (ct: CapTable) => JSON.parse(JSON.stringify(ct, (_, v) => (v && typeof v === "object" && "d" in v && "e" in v ? v.toString() : v)));
@@ -22,10 +22,20 @@ describe("loading an example into the editor and building it back", () => {
     });
   }
 
-  it("keeps Millrace's exact prices, shown as typed", () => {
+  it("shows Millrace's prices to six places, and keeps the exact ones underneath until edited", () => {
     const draft = draftFromExit(examples[0]!.exit);
     const seriesA = draft.securities.find((s) => s.name === "Series A Preferred");
-    expect(seriesA?.kind === "preferred" && seriesA.originalIssuePrice).toBe("3900000/1879091");
+    expect(seriesA?.kind === "preferred" && [seriesA.originalIssuePrice, seriesA.conversionPrice]).toEqual(["2.075472", "1.824752"]);
+    const built = (d: typeof draft) => (buildExit(d).json.cap_table.securities as Record<string, unknown>[]).find((s) => s.name === "Series A Preferred")!;
+    expect(built(draft)).toMatchObject({
+      original_issue_price: "3900000/1879091",
+      conversion_price: "348161279317506201440070405000/190799228993502586113800004553",
+    });
+    // Once you type in a field, what you typed is used, even if it's the same as what was shown.
+    const typed = setPrice(draft, seriesA!.key, "originalIssuePrice", "2.075472");
+    expect(built(typed)).toMatchObject({ original_issue_price: "2.075472", conversion_price: "348161279317506201440070405000/190799228993502586113800004553" });
+    // A typed fraction is still read exactly.
+    expect(built(setPrice(draft, seriesA!.key, "originalIssuePrice", "39/19"))).toMatchObject({ original_issue_price: "39/19" });
     // A conversion price equal to the issue price shows as blank: no anti-dilution adjustment.
     const seriesB = draft.securities.find((s) => s.name === "Series B Preferred");
     expect(seriesB?.kind === "preferred" && seriesB.conversionPrice).toBe("");
@@ -94,15 +104,19 @@ describe("where an engine error lands", () => {
     expect(fieldForPath(fields, "exit.exit_values[0]")).toBeNull();
   });
 
-  it("gives the engine's message without its path, next to the field", () => {
+  it("gives the engine's message without its path or assumption code, and keeps both in the error for developers", () => {
     const capped = {
       ...draft,
       securities: draft.securities.map((s) => (s.key === seriesA.key && s.kind === "preferred" ? { ...s, capMultiple: "1" } : s)),
     };
-    expect(checkBuilt(buildExit(capped))).toEqual({
+    const checked = checkBuilt(buildExit(capped));
+    expect(checked).toMatchObject({
       ok: false,
       field: fieldId.capMultiple(seriesA.key),
-      message: "The cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower (E7)",
+      message: "The cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower",
     });
+    expect(!checked.ok && checked.error.message).toBe(
+      `exit.cap_table.securities[${index}].cap_multiple: the cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower (E7)`,
+    );
   });
 });

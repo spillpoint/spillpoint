@@ -19,7 +19,7 @@ import { defaultHolder } from "./capTable.ts";
 import { changeAt, seriesNodes } from "./curves.ts";
 import { buildExit, checkBuilt, draftFromExit, scratchDraft } from "./draft.ts";
 import type { Built, Checked, Draft } from "./draft.ts";
-import { shortDollars } from "./format.ts";
+import { shortDollars, withoutCodes } from "./format.ts";
 
 const SCRATCH = "scratch";
 
@@ -34,7 +34,7 @@ interface Start {
 
 function startFrom(id: string): Start {
   const example = examples.find((e) => e.id === id);
-  if (!example) return { id: SCRATCH, label: "Your own cap table, started from scratch", fictional: false, draft: scratchDraft(), defaultExitValue: "50000000" };
+  if (!example) return { id: SCRATCH, label: "Your own cap table, started blank", fictional: false, draft: scratchDraft(), defaultExitValue: "50000000" };
   return { id, label: example.label, fictional: example.fictional, draft: draftFromExit(example.exit), defaultExitValue: example.defaultExitValue };
 }
 
@@ -63,7 +63,7 @@ export function App() {
                 {e.fictional ? " (fictional)" : ""}
               </option>
             ))}
-            <option value={SCRATCH}>Scratch: one founder and common stock</option>
+            <option value={SCRATCH}>A blank cap table</option>
           </select>
         </label>
       </header>
@@ -119,7 +119,7 @@ function Workspace({ start, edited, onEdited }: { start: Start; edited: boolean;
     try {
       return { ok: true as const, answer: solve(pc, exitValue).answers[0]! };
     } catch (e) {
-      return { ok: false as const, message: (e as Error).message };
+      return { ok: false as const, message: withoutCodes((e as Error).message) };
     }
   }, [pc, exitValue]);
 
@@ -178,7 +178,7 @@ function Workspace({ start, edited, onEdited }: { start: Start; edited: boolean;
         )}
         <ExitSlider range={exit.range} value={exitValue} onChange={setExitValue} breakpoints={ready ? ready.breakpoints : []} />
         {analysis.status === "computing" && <p className="card card--quiet">Working out the curves and breakpoints…</p>}
-        {analysis.status === "error" && <p className="card card--quiet">Couldn't work out the curves and breakpoints: {analysis.message}</p>}
+        {analysis.status === "error" && <p className="card card--quiet">Couldn't work out the curves and breakpoints: {withoutCodes(analysis.message)}</p>}
         {ready && (
           <PayoffChart
             // A new range starts the chart over at the whole range.
