@@ -1,0 +1,56 @@
+name: Pages
+
+# Publishes the dashboard at https://spillpoint.github.io/spillpoint/ each
+# time main changes. It checks first, as CI does: typecheck, build and the
+# tests, which include the privacy test of the built page. Pull requests
+# don't deploy; CI checks them. Needs Settings → Pages → Source set to
+# "GitHub Actions" (notes/review-m3.md).
+
+on:
+  push:
+    branches: [main]
+  # To publish again by hand, from the Actions tab.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time. A newer push waits rather than cancelling one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - name: Build the npm package and the dashboard
+        run: pnpm build
+      - run: pnpm test
+      - name: Hand the built page to Pages
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/dashboard/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only this job can publish: pages to write the site, id-token so Pages can
+    # check the deploy comes from this workflow.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

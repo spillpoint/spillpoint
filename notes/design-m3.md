@@ -23,7 +23,7 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
 
 - **Type:** the operating system's own font: San Francisco, Segoe UI or Roboto. That's familiar, legible, and needs no download, so the page fetches nothing. One weight for text, semibold for headings, and a large semibold headline.
 - **Color:** near-black text on white cards over a light grey page. **One accent, a dark blue (#1d3557),** used for the selected state, your row's bar and the slider. Error text is a muted red, used only for errors. Nothing decorative.
-- **Layout:** one column, at most 1,040 pixels wide, in cards with thin borders and generous padding. On a phone the cards stack, and wide tables scroll sideways inside their card. M3e does a fuller narrow-screen pass.
+- **Layout:** one column, at most 1,040 pixels wide, in cards with thin borders and generous padding. On a phone the cards stack and nothing runs off the screen, down to 320 pixels wide. The editor's shares grid is the one thing that scrolls sideways, inside its card, with the holder column held in view.
 - **Controls:** standard browser controls (selects, a range slider, a text box), lightly styled, so they behave the way people expect and work with the keyboard and screen readers.
 
 ## What later PRs add in the same style
@@ -31,4 +31,9 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
 - **M3b:** curves as their own card, with direct labels, emphasis instead of nine colors, and numbered breakpoints. The breakpoint list as a numbered list of plain sentences, with the same numbers. Each breakpoint that changes your payout says how, in one line: what each extra $1M adds to your payout above it against below it, or how far your payout jumps.
 - **M3c:** the cap table editor as forms in cards, with the engine's own error messages next to the field they name. Built as a second tab, "Cap table", beside "Payouts": one card each for holders, classes and their terms, who holds what (a grid of holders by classes), who is paid first, series that convert together, and the range. A line at the top says what the current table pays you, or what to fix. While an edit has a problem, the payouts stay on the last table the engine accepted and say so.
 - **M3d:** "Save" and "Open" as plain buttons in the masthead, beside "Start from". A cap table has a name, set at the top of the editor, and a saved file is named after it. Changes not yet saved are marked "Not saved" beside the name of what you're working on. Save and Open report in one line under the masthead: what was saved, or why a file couldn't be opened. A save also keeps where you were looking, the exit value and who you are, so a file reopens there.
-- **M3e:** the narrow-screen pass. From the M3a review: on a phone, the example picker runs off the right edge and the table's share columns are cut off. Both must fit. Also from M3c: the editor's shares grid scrolls sideways on a phone, with the holder column held in view; check it still reads well with many classes.
+- **M3e:** the narrow-screen and keyboard pass, as built:
+  - **The example picker** takes the full width on a phone.
+  - **The payouts table** shows its two shares as a line under each name ("9.8% of the proceeds, 12.9% of the company") instead of two columns, so it fits without scrolling.
+  - **The chart** fits down to 320 pixels.
+  - **A breakpoint mark's box** stays on screen near either end.
+  - **The keyboard:** Escape closes a mark's box; the tabs take the arrow keys, Home and End; and the chart's drawing is no longer a focus stop, since its values are in the legend.

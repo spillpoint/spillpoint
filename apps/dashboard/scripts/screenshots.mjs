@@ -16,7 +16,8 @@ import { join, resolve } from "node:path";
 
 const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const URL_ = process.env.URL ?? "http://localhost:4173/";
-const OUT = resolve(import.meta.dirname, "../../../notes/screenshots");
+// OUT=/some/dir writes shots elsewhere, for a look that isn't for a review note.
+const OUT = process.env.OUT ?? resolve(import.meta.dirname, "../../../notes/screenshots");
 const PORT = 9333;
 
 /** Clicks and choices a shot needs, run in the page. */
@@ -131,6 +132,12 @@ const SHOTS = {
   },
   "m3d-unsaved": { width: 1100, height: 900, steps: [click("Cap table"), fill("#edit-name", 0, "Millrace Robotics, my copy")], clip: [".masthead", ".example-label"] },
   "m3d-saved": { width: 1100, height: 900, steps: [click("Cap table"), fill("#edit-name", 0, "Millrace Robotics, my copy"), click("Save")], clip: [".masthead", ".example-label"] },
+  // M3 as a whole, and M3e's narrow-screen pass at a common phone width (375) and the narrowest (320).
+  "m3-overview": { width: 1100, height: 900, steps: [], clip: [".masthead", ".exit-value"] },
+  "m3e-phone-top": { width: 375, height: 812, mobile: true, steps: [], clip: [".masthead", ".founder"] },
+  "m3e-phone-table": { width: 375, height: 812, mobile: true, steps: [], clip: ["section[aria-labelledby=who-gets-what]"] },
+  "m3e-phone-tick": { width: 375, height: 812, mobile: true, steps: [focus(".exit-value__tick", 9)], clip: [".exit-value", ".tick-tip"] },
+  "m3e-small-chart": { width: 320, height: 640, mobile: true, steps: [], clip: [CURVES] },
   "m3c-6b-curves": { width: 1100, height: 900, steps: [...BUILD_6B, click("Payouts")], clip: [CURVES, "section[aria-labelledby=breakpoints-heading]"], quality: 40 },
 };
 

@@ -68,7 +68,8 @@ function useWidth(fallback: number) {
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(320, Math.floor(entry!.contentRect.width))));
+    // Never wider than its card, down to the narrowest phones.
+    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(240, Math.floor(entry!.contentRect.width))));
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -112,7 +113,8 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
 
   // Plot geometry, for the direct labels and breakpoint numbers drawn over the chart.
   const narrow = width < NARROW;
-  const marginRight = narrow ? 16 : MARGIN_RIGHT;
+  // Room for half the last axis label ("$300M"), which centres on the plot's right edge.
+  const marginRight = narrow ? 26 : MARGIN_RIGHT;
   const plotLeft = MARGIN_LEFT + Y_AXIS_WIDTH;
   const plotRight = width - marginRight;
   const xPx = (x: number) => plotLeft + ((x - from) / (to - from)) * (plotRight - plotLeft);
@@ -226,7 +228,9 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
         onPointerUp={onPointerUp}
         onPointerCancel={() => ((dragRef.current = null), setDrag(null))}
       >
-        <LineChart width={width} height={HEIGHT} data={rows} margin={MARGIN}>
+        {/* The chart is one image to assistive technology; its values are in the legend below, and the slider moves the
+            exit value, so the library's own keyboard layer is off rather than a focus stop inside an image. */}
+        <LineChart width={width} height={HEIGHT} data={rows} margin={MARGIN} accessibilityLayer={false}>
           <CartesianGrid stroke={LINE_HAIR} vertical={false} />
           <XAxis
             dataKey="x"

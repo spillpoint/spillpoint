@@ -109,6 +109,8 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .payouts tr.is-you th, .payouts tr.is-you td { background: var(--accent-soft); font-weight: 650; }
 .payouts tr.is-you th { box-shadow: inset 4px 0 0 var(--accent); }
 .you-tag { font-weight: 600; color: var(--accent); }
+/* The shares as one line under the name: shown instead of their columns on a phone. */
+.payouts__shares { display: none; }
 
 .footnote, .decisions { color: var(--muted); font-size: 0.875rem; margin: 12px 0 0; }
 
@@ -185,7 +187,7 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .edit-rows { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
 .edit-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
 .edit-row__name { font-weight: 500; }
-.edit-rows--ranks { grid-template-columns: max-content max-content; align-items: center; gap: 8px 16px; }
+.edit-rows--ranks { grid-template-columns: minmax(0, max-content) max-content; align-items: center; gap: 8px 16px; }
 .edit-rows--ranks li { display: contents; }
 .edit-row--top { align-items: flex-start; margin-top: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -218,6 +220,18 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 
 @media (max-width: 640px) {
   .page { padding: 16px 12px 48px; }
+  .card, .founder, .exit-value { padding: 16px 14px; }
+  /* The example picker takes the full width rather than running off the screen. */
+  .masthead__controls { width: 100%; }
+  .masthead__example { display: flex; flex-direction: column; gap: 2px; flex: 1 1 100%; min-width: 0; }
+  .masthead__example select { width: 100%; }
+  .payouts .share { display: none; }
+  .payouts__shares { display: block; color: var(--muted); font-size: 0.8125rem; font-weight: 400; margin-top: 2px; }
+  .payouts__shares > span { white-space: nowrap; }
+}
+@media (max-width: 360px) {
+  .payouts__shares > span { white-space: normal; }
+  .payouts tr.is-you .payouts__shares { color: var(--text); }
   .founder__headline { font-size: 1.75rem; }
   .masthead__tagline { display: block; margin: 2px 0 0; }
   .payouts th, .payouts td { padding: 6px 4px; }

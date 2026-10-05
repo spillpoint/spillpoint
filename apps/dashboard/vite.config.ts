@@ -100,6 +100,9 @@ export default defineConfig({
   build: { modulePreload: { polyfill: false } },
   test: {
     environment: "jsdom",
+    // Some tests do real work: Millrace's breakpoints twice, or a case built click by click. They take about a
+    // second alone, but a busy machine or CI runner can stretch that past the 5-second default.
+    testTimeout: 20_000,
     include: ["test/**/*.test.{ts,tsx}"],
     setupFiles: ["test/setup.ts"],
   },

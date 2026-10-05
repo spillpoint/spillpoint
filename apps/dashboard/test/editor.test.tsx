@@ -248,4 +248,19 @@ describe("the tabs", () => {
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Cap table" }));
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
   });
+
+  it("go back with the left arrow, and to the first and last with Home and End", () => {
+    render(<App />);
+    const tab = (name: string) => screen.getByRole("tab", { name });
+    const selected = () => screen.getAllByRole("tab").find((t) => t.getAttribute("aria-selected") === "true")!.textContent;
+    fireEvent.keyDown(tab("Payouts"), { key: "End" });
+    expect(selected()).toBe("Cap table");
+    fireEvent.keyDown(tab("Cap table"), { key: "ArrowLeft" });
+    expect(selected()).toBe("Payouts");
+    fireEvent.keyDown(tab("Payouts"), { key: "ArrowLeft" });
+    expect(selected()).toBe("Cap table");
+    fireEvent.keyDown(tab("Cap table"), { key: "Home" });
+    expect(selected()).toBe("Payouts");
+    expect(document.activeElement).toBe(tab("Payouts"));
+  });
 });

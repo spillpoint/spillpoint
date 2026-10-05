@@ -396,11 +396,14 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "editor", label: "Cap table" },
 ];
 
-/** Two tabs, with the arrow keys moving between them as screen-reader users expect. */
+/** Two tabs, with the keys screen-reader users expect: arrows to move between them, Home and End for the first and last. */
 function Tabs({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-    const next = TABS[(TABS.findIndex((t) => t.id === tab) + 1) % TABS.length]!.id;
+    const at = TABS.findIndex((t) => t.id === tab);
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: TABS.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    const next = TABS[(to + TABS.length) % TABS.length]!.id;
     onTab(next);
     document.getElementById(`tab-${next}`)?.focus();
   };
