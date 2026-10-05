@@ -4,6 +4,7 @@
 // choosing it moves the exit value there.
 
 import { useEffect, useState } from "react";
+import type React from "react";
 import { D } from "spillpoint";
 
 import type { BreakpointView } from "./analysis.ts";
@@ -43,6 +44,13 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
   };
 
   const [shown, setShown] = useState<number | null>(null);
+  // Escape closes a mark's box, however it opened, without moving the pointer or focus (WCAG 1.4.13).
+  useEffect(() => {
+    if (shown === null) return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setShown(null);
+    document.addEventListener("keydown", close);
+    return () => document.removeEventListener("keydown", close);
+  }, [shown]);
   // Numbered as on the chart and in the list, so a mark's number means the same everywhere.
   const ticks = breakpoints
     .map((b, i) => ({ b, n: i + 1, x: new D(b.exitValue) }))
@@ -99,13 +107,7 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
           {ticks
             .filter(({ n }) => n === shown)
             .map(({ b, n, x }) => (
-              <div
-                key="tip"
-                id="tick-tip"
-                role="tooltip"
-                className="tick-tip"
-                style={{ left: `${(positionOf(scale, x) / STEPS) * 100}%` }}
-              >
+              <div key="tip" id="tick-tip" role="tooltip" className="tick-tip" style={tipPlace((positionOf(scale, x) / STEPS) * 100)}>
                 <strong>
                   Breakpoint {n}: {dollars(x)}
                 </strong>
@@ -128,4 +130,11 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
       </div>
     </div>
   );
+}
+
+/** Where a mark's box goes: centred on its mark, or held to one side near an end so it stays on a narrow screen. */
+function tipPlace(percent: number): React.CSSProperties {
+  if (percent < 30) return { left: `${percent}%`, transform: "translateX(-12px)" };
+  if (percent > 70) return { right: `${100 - percent}%`, transform: "translateX(12px)" };
+  return { left: `${percent}%` };
 }

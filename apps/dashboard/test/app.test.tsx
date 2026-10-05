@@ -1,5 +1,8 @@
 // The dashboard as you'd click through it, in a simulated browser.
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -56,11 +59,23 @@ describe("the founder view, on Millrace", () => {
     const ana = within(table).getByText("Ana Ortiz").closest("tr")!;
     expect(ana.textContent).toContain("(you)");
     expect(ana.textContent).toContain("$9,750,990");
+    // On a phone the two shares show as a line under the name instead of their columns.
+    expect(ana.querySelector(".payouts__shares")!.textContent).toBe("9.8% of the proceeds, 12.9% of the company");
     expect(within(table).getByText("Unissued option pool")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "By class" }));
     const seriesB = within(screen.getByRole("table")).getByText("Series B Preferred").closest("tr")!;
     expect(seriesB.textContent).toContain("$36,383,770");
     expect(screen.getByText(/Converting to common here: .*Seed Preferred/)).toBeTruthy();
+  });
+});
+
+describe("the footer", () => {
+  it("names the engine version and the commit the page was built from", () => {
+    render(<App />);
+    const engine = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../packages/engine/package.json"), "utf8"));
+    const footer = screen.getByRole("contentinfo").textContent!;
+    // e.g. "spillpoint 0.0.1 (abc1234)"; a build from uncommitted changes adds ", modified".
+    expect(footer).toMatch(new RegExp(`^spillpoint ${engine.version.replaceAll(".", "\\.")} \\([0-9a-f]{7}(, modified)?\\)$`));
   });
 });
 

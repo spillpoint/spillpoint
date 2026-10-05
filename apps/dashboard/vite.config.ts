@@ -1,15 +1,18 @@
 /// <reference types="vitest/config" />
-// The dashboard's build. Four things matter here:
+// The dashboard's build. Five things matter here:
 // - "spillpoint" resolves to the engine's sources, not its built dist/, so the
 //   dashboard always runs the current engine with no build step (M3 plan).
 // - The examples are read from the locked cases at build time and reduced to
 //   the exit input each needs, so they can't drift from the tests and the
 //   page doesn't ship whole expected.json files.
 // - No network: the built page loads nothing from anywhere else.
+// - The page's footer names the engine version and the commit it was built
+//   from (M3e review).
 // - A Content-Security-Policy on the built page, so the browser itself refuses
 //   any request the page might try to make: cap table data never leaves the
 //   computer (CLAUDE.md, rule 5).
 
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -56,6 +59,30 @@ function examples(): Plugin {
 }
 
 /**
+ * What the page was built from, for its footer: the engine's version, and
+ * the commit, since the page runs the engine's sources from main, which can
+ * be ahead of the published version. A build with uncommitted changes says
+ * so. Read once, at build time; the page fetches nothing to show it.
+ */
+function buildInfo(): Plugin {
+  const id = "virtual:build";
+  const engineVersion: string = JSON.parse(readFileSync(resolve(repo, "packages/engine/package.json"), "utf8")).version;
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  let commit = "unknown commit";
+  try {
+    commit = git("rev-parse", "--short=7", "HEAD");
+    if (git("status", "--porcelain")) commit += ", modified";
+  } catch {
+    // Not a git checkout (a source archive, say): the version still shows.
+  }
+  return {
+    name: "spillpoint-build-info",
+    resolveId: (source) => (source === id ? `\0${id}` : null),
+    load: (loadId) => (loadId === `\0${id}` ? `export default ${JSON.stringify({ engineVersion, commit })};` : null),
+  };
+}
+
+/**
  * Everything the built page may load: its own scripts, worker and styles,
  * and nothing else. connect-src 'none' blocks fetch, XMLHttpRequest,
  * WebSocket, EventSource and beacons; form-action 'none' blocks form posts.
@@ -89,7 +116,7 @@ function contentSecurityPolicy(): Plugin {
 
 export default defineConfig({
   base: "./",
-  plugins: [react(), examples(), contentSecurityPolicy()],
+  plugins: [react(), examples(), buildInfo(), contentSecurityPolicy()],
   resolve: {
     alias: { spillpoint: resolve(repo, "packages/engine/src/index.ts") },
   },
@@ -100,6 +127,9 @@ export default defineConfig({
   build: { modulePreload: { polyfill: false } },
   test: {
     environment: "jsdom",
+    // Some tests do real work: Millrace's breakpoints twice, or a case built click by click. They take about a
+    // second alone, but a busy machine or CI runner can stretch that past the 5-second default.
+    testTimeout: 20_000,
     include: ["test/**/*.test.{ts,tsx}"],
     setupFiles: ["test/setup.ts"],
   },

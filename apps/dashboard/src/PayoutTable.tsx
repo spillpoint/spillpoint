@@ -1,7 +1,9 @@
 // Who gets what at the current exit value, by holder or by class. Each row
 // shows the payout, its share of the proceeds, and the share of the company
 // it comes from (fully diluted, including the pool), so the two can be
-// compared.
+// compared. On a phone the two shares move under the name as one line, so
+// the table fits without scrolling sideways (M3a review); the stylesheet
+// shows one form or the other, never both.
 
 import { useState } from "react";
 import { D } from "spillpoint";
@@ -73,10 +75,10 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
               <th scope="col" className="num">
                 Gets
               </th>
-              <th scope="col" className="num">
+              <th scope="col" className="num share">
                 Share of the proceeds
               </th>
-              <th scope="col" className="num">
+              <th scope="col" className="num share">
                 Share of the company
               </th>
             </tr>
@@ -87,10 +89,13 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
                 <th scope="row">
                   {r.name}
                   {r.you && <span className="you-tag"> (you)</span>}
+                  <span className="payouts__shares">
+                    <span>{percent(proceeds(r.amount))} of the proceeds,</span> <span>{percent(fractionOf(r.shares, fd))} of the company</span>
+                  </span>
                 </th>
                 <td className="num">{dollars(r.amount)}</td>
-                <td className="num">{percent(proceeds(r.amount))}</td>
-                <td className="num">{percent(fractionOf(r.shares, fd))}</td>
+                <td className="num share">{percent(proceeds(r.amount))}</td>
+                <td className="num share">{percent(fractionOf(r.shares, fd))}</td>
               </tr>
             ))}
           </tbody>
@@ -98,8 +103,8 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
             <tr>
               <th scope="row">Total</th>
               <td className="num">{dollars(exitValue)}</td>
-              <td className="num">{percent(new D(1))}</td>
-              <td className="num">{percent(new D(1))}</td>
+              <td className="num share">{percent(new D(1))}</td>
+              <td className="num share">{percent(new D(1))}</td>
             </tr>
           </tfoot>
         </table>

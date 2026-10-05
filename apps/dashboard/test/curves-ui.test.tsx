@@ -1,7 +1,7 @@
 // The payoff curves, the breakpoint list and the slider's marks, as you'd
 // click through them on Millrace, in a simulated browser.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { App } from "../src/App.tsx";
@@ -158,6 +158,17 @@ describe("the slider's marks", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.mouseEnter(screen.getByRole("button", { name: /^Breakpoint 10, at / }));
     expect(screen.getByRole("tooltip").textContent).toContain("Series A Preferred converts to common here");
+  });
+
+  it("closes a mark's box with Escape, without moving focus", async () => {
+    render(<App />);
+    await breakpointList();
+    const mark = screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995" });
+    act(() => mark.focus());
+    expect(screen.getByRole("tooltip")).toBeTruthy();
+    fireEvent.keyDown(mark, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.activeElement).toBe(mark);
   });
 
   it("moves the exit value to a mark you choose", async () => {

@@ -13,3 +13,14 @@ declare module "virtual:examples" {
   const examples: Example[];
   export default examples;
 }
+
+/** What the page was built from, read by vite.config.ts at build time. */
+declare module "virtual:build" {
+  const build: {
+    /** The engine's version in packages/engine/package.json, e.g. "0.0.1". */
+    engineVersion: string;
+    /** The short commit, e.g. "abc1234"; with ", modified" when built from uncommitted changes. */
+    commit: string;
+  };
+  export default build;
+}
