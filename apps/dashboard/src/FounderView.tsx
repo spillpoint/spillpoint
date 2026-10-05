@@ -5,7 +5,7 @@
 import type { Answer, PreparedCapTable } from "spillpoint";
 import { D } from "spillpoint";
 
-import { fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
+import { fractionOf, fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
 import type { AnalysisState } from "./analysis.ts";
 import { percent, shortDollars } from "./format.ts";
 
@@ -23,8 +23,8 @@ interface Props {
 
 export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, breakpoints }: Props) {
   const gets = answer.payout.holderTotals.get(you) ?? new D(0);
-  const ofProceeds = exitValue.isZero() ? new D(0) : gets.div(exitValue);
-  const ofCompany = holderShares(pc, you).div(fullyDiluted(pc));
+  const ofProceeds = fractionOf(gets, exitValue);
+  const ofCompany = fractionOf(holderShares(pc, you), fullyDiluted(pc));
 
   return (
     <section className="founder" aria-labelledby="founder-headline">

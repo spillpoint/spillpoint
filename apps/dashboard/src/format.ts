@@ -60,3 +60,21 @@ export function parseDollars(text: string): Decimal | null {
   const scale = { "": "1", k: "1e3", m: "1e6", b: "1e9" }[m[2]!.toLowerCase() as "" | "k" | "m" | "b"];
   return number.times(scale);
 }
+
+/** A price typed as a fraction ("455000/1182033", as rounds produce) to six significant digits: "0.384930". Null otherwise. */
+export function fractionValue(text: string): string | null {
+  const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text);
+  if (!m || /^0+$/.test(m[2]!)) return null;
+  return new D(m[1]!).div(m[2]!).toSignificantDigits(6, D.ROUND_HALF_UP).toFixed();
+}
+
+/**
+ * What a typed amount comes to, where that helps: "300M" → "$300,000,000",
+ * and a long run of digits like "300000000" → "$300M". Null otherwise.
+ */
+export function amountHint(text: string): string | null {
+  const parsed = parseDollars(text);
+  if (!parsed) return null;
+  if (/[kmb]\s*$/i.test(text)) return dollars(parsed);
+  return parsed.gte("1000000") ? shortDollars(parsed) : null;
+}
