@@ -138,6 +138,12 @@ describe("reason wording for founders (M2d review)", () => {
     );
   });
 
+  it("names the one class that takes the residual", () => {
+    expect(reasonsFor("edge-02-non-participating")[0]!.reasons[0]!.text).toBe(
+      "Seed Preferred's preference is paid in full here: $3,000,000. Above this exit value, the next dollar goes to Common Stock.",
+    );
+  });
+
   it("names who shares the residual", () => {
     expect(reasonsFor("millrace")[2]!.reasons[0]!.text).toMatch(
       /the next dollar is shared as common by Common Stock, Series A Preferred and Series B Preferred\.$/,

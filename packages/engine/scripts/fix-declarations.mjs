@@ -2,6 +2,7 @@
 // JavaScript it emits but not in the .d.ts declarations. Older TypeScript
 // versions in a user's project may not resolve a ".ts" path from a
 // declaration file, so the declarations get the same ".js" paths.
+// Plain JavaScript, so the build runs on every supported Node (22 and later).
 
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

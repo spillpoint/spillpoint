@@ -35,10 +35,10 @@
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/fix-declarations.ts",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/fix-declarations.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm build && pnpm test"

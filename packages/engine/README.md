@@ -12,6 +12,8 @@ It runs entirely on your machine. There is no network access and no I/O; your ca
 npm install spillpoint
 ```
 
+It needs Node 22 or later.
+
 ## A worked example
 
 A founder holds 8,000,000 common. A seed fund holds 2,000,000 Seed Preferred bought at $1.50, which carries a $3,000,000, 1x non-participating preference.
@@ -75,7 +77,7 @@ At $20000000.00 (converts: seed):
   ana on common: $16000000.00
   fund on seed: $4000000.00
 Breakpoint at $3000000.00:
-  Seed Preferred's preference is paid in full here: $3,000,000. Above this exit value, the next dollar is shared as common by Common Stock.
+  Seed Preferred's preference is paid in full here: $3,000,000. Above this exit value, the next dollar goes to Common Stock.
 Breakpoint at $15000000.00:
   Seed Preferred converts to common here. Its 2,000,000 as-converted shares are worth $3,000,000 at $1.50 each, the same as its 1x preference of $3,000,000. Below this exit value keeping its preference pays more; above it, converting does.
 ```

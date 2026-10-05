@@ -5,7 +5,10 @@ Branch `m2e-release`, the last of M2's five PRs. With it, the `spillpoint` packa
 ## CI and permissions changes across M2
 
 - **M2a:** `.claude/settings.json`, your change: `Edit(cases/**)` replaced the Millrace-only deny rule.
-- **M2e:** `.github/workflows/ci.yml` gains a step, **"Build the npm package"** (`pnpm build`), after the typecheck. Every PR now proves the package builds. No permissions change.
+- **M2e:** `.github/workflows/ci.yml`:
+  - **A new step, "Build the npm package"** (`pnpm build`), after the typecheck. Every PR now proves the package builds.
+  - **A new job, `test-node-22`,** which installs, typechecks, builds and tests on Node 22, the oldest version the package claims (`engines: >=22`). It's a separate job rather than a matrix, so the existing `test` job keeps its name. Branch protection requires that name, and a matrix would have renamed it to "test (22)" and "test (24)". If you want Node 22 required too, add `test-node-22` to the required checks.
+  - No permissions change.
 - Nothing else in `.github/workflows/` or `.claude/` changed in M2.
 
 ## What M2 delivers
@@ -38,6 +41,7 @@ The exit waterfall on an existing cap table, as the npm package `spillpoint`:
    - **A jump says what each class gains or loses.**
    - **The group vote is two sentences:** "Seed-1 Preferred and Seed-2 Preferred convert together if holders of more than half their shares vote for it. Above $30,000,000 Investor X and Investor Y both do better converting, so the vote passes."
    - **Options lead with the event:** "Options at a $0.05 strike (490,000) come into the money here. Above this, exercising pays, and the strike money joins the proceeds."
+   - **When only one class takes the residual,** the reason says so: "the next dollar goes to Common Stock". With more than one, it's "is shared as common by ...".
    - **Whole-dollar amounts drop the cents** ("$26,000,000"); others keep them ("$19,999,999.79").
 2. **E18 is confirmed, with your condition tested.** Two option strikes whose changes are $0.00005 apart come out as one breakpoint at $1,000,000 that keeps both reasons.
 3. **The public API** is 12 exports, pinned by a test so it changes only on purpose:
@@ -49,6 +53,7 @@ The exit waterfall on an existing cap table, as the npm package `spillpoint`:
    It also exports the types. Helpers like `sameAmount`, and the case-file reader `readCase`, stay internal.
 4. **The npm package** (`packages/engine/package.json`):
    - version **0.0.1**, with `"private": true` removed
+   - `engines` requires Node 22 or later, which CI now tests alongside 24
    - `exports` and `types` point at the built `dist/`
    - it ships `dist`, the README and the license
    - `prepublishOnly` builds and tests before any publish
@@ -56,8 +61,10 @@ The exit waterfall on an existing cap table, as the npm package `spillpoint`:
    - **Two fixes from checking the build with a throwaway project that installs it:**
      - The engine now imports decimal.js's `Decimal` by name, so projects using Node's own module resolution typecheck as well as bundler-style ones.
      - The worked example in the README is that project's real output.
+   - **The build's declaration fix-up is plain JavaScript** (`scripts/fix-declarations.mjs`), so the build runs on every Node 22 release, not only those that run TypeScript directly.
 5. **`packages/engine/README.md`:** what it does, a worked example with its real output, what 0.0.1 covers and refuses, the input format, the numbers, the API, and the note that **the charter and the signed documents govern, not this tool**.
 6. **`packages/engine/LICENSE`:** a copy of the root Apache-2.0 license, so it ships with the package.
+7. **The root `README.md`** now says only what exists today. The engine is on npm. The dashboard and Open Cap Format import are listed as coming, not claimed.
 
 ## How to check it by behavior
 
@@ -65,7 +72,7 @@ The exit waterfall on an existing cap table, as the npm package `spillpoint`:
    ```bash
    pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm test:reference
    ```
-   That is 456 Vitest tests and 30 reference unit tests, and all 28 cases match the reference.
+   That is 457 Vitest tests and 30 reference unit tests, and all 28 cases match the reference.
 2. **Read the reasons:**
    ```bash
    pnpm breakpoints millrace
@@ -106,10 +113,10 @@ The exit waterfall on an existing cap table, as the npm package `spillpoint`:
 - **Before M5:** SAFE and note exit cases with a discount, with no cap, and alongside preferred (X9, X12).
 - **The next `cases/` unlock:** `notes/next-unlock.md` lists Millrace's "within $1" wording and the range-indifferent voter case.
 
-## Open questions
+## Open questions: answered
 
-1. **How the dashboard should use the engine (M3).** The package's `exports` point at the built `dist/`, which is right for npm. Inside this repo, the dashboard would then need `pnpm build` before it runs, unless it imports the engine's sources directly through Vite. I'd decide that at the start of M3, unless you have a preference now.
-2. **The root `README.md`** says spillpoint "reads Open Cap Format". That arrives in M6. Should I reword it now, or leave your text until then?
-3. **Anything else before you publish 0.0.1?**
+1. **How the dashboard uses the engine (M3).** Vite will import the engine's sources directly, so the dashboard always runs the current engine with no build step. npm users keep getting `dist/`.
+2. **The root `README.md`** is reworded (item 7 above).
+3. **Before publishing:** you asked for `engines` `>=22` with Node 22 in CI, the root README reworded, and "goes to Common Stock" when one class takes the residual. All three are done in this PR.
 
 M2 is complete. I'm stopping here and won't start M3.

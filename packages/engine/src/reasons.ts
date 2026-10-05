@@ -157,7 +157,8 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       const nextNames = next.series.map((sid) => name.get(sid)!);
       nextText = `goes to ${nextNames.length === 1 ? `${nextNames[0]}'s preference` : `the preferences of ${list(nextNames)}`}`;
     } else {
-      nextText = `is shared as common by ${list(sharers(pc, after).map((id) => name.get(id)!))}`;
+      const sharing = sharers(pc, after).map((id) => name.get(id)!);
+      nextText = sharing.length === 1 ? `goes to ${sharing[0]}` : `is shared as common by ${list(sharing)}`;
     }
     const whose = names.length === 1 ? `${names[0]}'s preference is` : `The preferences of ${list(names)} are`;
     reasons.push({
