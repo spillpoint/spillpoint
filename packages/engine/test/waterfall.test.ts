@@ -5,10 +5,12 @@
 // checked for conservation (E14): the lines, net of strike, add up to the
 // exit value, and holder and class totals equal the sums of their lines.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
-import { D, InputError, payout, prepare, readCase, sameAmount } from "../src/index.ts";
+import { D, InputError, payout, prepare } from "../src/index.ts";
+import { sameAmount } from "../src/decimal.ts";
+import { readCase } from "../src/input.ts";
 import { M2_CASES, capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 
 const CENT = new D("0.01");

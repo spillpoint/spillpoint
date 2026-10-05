@@ -16,7 +16,7 @@
 // - Where several decision sets pay everyone the same, the reported one has
 //   the fewest conversions and exercises (E5).
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 import { D, ZERO, moreThan, sameAmount } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";

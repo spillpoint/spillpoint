@@ -8,9 +8,11 @@
 // converts or exercises unless named. At an exit value expected.json reports,
 // expected.json's amounts are shown alongside, with whether its decisions match.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
-import { parseExact, payout, prepare, readCase, sameAmount, solve, toCents } from "../src/index.ts";
+import { parseExact, payout, prepare, solve, toCents } from "../src/index.ts";
+import { sameAmount } from "../src/decimal.ts";
+import { readCase } from "../src/input.ts";
 import type { Decisions } from "../src/index.ts";
 import { capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "../test/support/cases.ts";
 

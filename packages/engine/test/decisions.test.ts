@@ -5,10 +5,12 @@
 // Checking every combination (E15's fallback) must give the same answers as
 // solving from both ends.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
-import { D, UnsupportedTermError, prepare, readCapTable, readCase, sameAmount, solve } from "../src/index.ts";
+import { D, UnsupportedTermError, prepare, readCapTable, solve } from "../src/index.ts";
+import { sameAmount } from "../src/decimal.ts";
+import { readCase } from "../src/input.ts";
 import type { Answer, Decisions } from "../src/index.ts";
 import { M2_CASES, capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 

@@ -12,7 +12,7 @@
 //      exit value.
 // Choosing the decisions themselves is M2c; this file takes them as given.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 import { ZERO, moreThan } from "./decimal.ts";
 import { InputError } from "./errors.ts";

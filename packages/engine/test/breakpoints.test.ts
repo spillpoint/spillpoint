@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, findBreakpoints, prepare, readCapTable, readCase } from "../src/index.ts";
+import { D, findBreakpoints, prepare, readCapTable } from "../src/index.ts";
+import { readCase } from "../src/input.ts";
 import type { Breakpoint } from "../src/index.ts";
 import { M2_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
@@ -102,5 +103,77 @@ describe("the range", () => {
     expect(at(0, 20000000)).toEqual(["3000000.00", "15000000.00"]);
     expect(at(3000000, 15000000)).toEqual([]);
     expect(at(3000000, 15000001)).toEqual(["15000000.00"]);
+  });
+});
+
+describe("reason wording for founders (M2d review)", () => {
+  const reasonsFor = (name: string) => {
+    const exit = readCase(readCaseFile(name, "inputs.json"), capTablesOf(name));
+    return findBreakpoints(prepare(exit.capTable), exit.range);
+  };
+
+  it.each(M2_CASES)("%s: no assumption codes or jargon in the text", (name) => {
+    for (const b of reasonsFor(name)) {
+      for (const r of b.reasons) {
+        expect(r.text).not.toMatch(/\b[CERX]\d{1,2}\b/);
+        expect(r.text).not.toMatch(/original issue price|sharing what's left/);
+      }
+    }
+  });
+
+  it("6b: the vote in two sentences, then what each class gains or loses", () => {
+    const jump = reasonsFor("edge-06b-forced-class")[1]!;
+    expect(jump.reasons.map((r) => r.text)).toEqual([
+      "Seed-1 Preferred and Seed-2 Preferred convert together if holders of more than half their shares vote for it. " +
+        "Above $30,000,000 Investor X and Investor Y both do better converting, so the vote passes.",
+      "Payouts jump here instead of bending: Common Stock drops from $26,000,000 to $24,000,000 and " +
+        "Seed-1 Preferred rises from $1,000,000 to $3,000,000. At exactly $30,000,000 the outcome from below " +
+        "still holds; the new one applies just above it.",
+    ]);
+  });
+
+  it("options lead with the event", () => {
+    expect(reasonsFor("millrace")[3]!.reasons[0]!.text).toBe(
+      "Options at a $0.05 strike (490,000) come into the money here. Above this, exercising pays, and the strike money joins the proceeds.",
+    );
+  });
+
+  it("names who shares the residual", () => {
+    expect(reasonsFor("millrace")[2]!.reasons[0]!.text).toMatch(
+      /the next dollar is shared as common by Common Stock, Series A Preferred and Series B Preferred\.$/,
+    );
+  });
+});
+
+describe("two changes closer than $0.0001 (E18)", () => {
+  it("are one breakpoint that keeps both reasons", () => {
+    // 1M common; 1M options at $1.00 and 1,000 at $1.000000000025. The first class comes
+    // into the money at $1,000,000; with it exercised, a share is worth (E + $1M) ÷ 2M,
+    // which reaches the second strike at $1,000,000.00005. The finder reads each stretch
+    // $0.0001 above its start, so both changes land in one breakpoint, with both reasons.
+    const pc = prepare(
+      readCapTable({
+        holders: ["f", "a", "b"].map((id) => ({ id, name: id })),
+        securities: [
+          { id: "common", name: "Common Stock", kind: "common" },
+          { id: "oa", name: "Options A", kind: "option", strike: "1" },
+          { id: "ob", name: "Options B", kind: "option", strike: "1.000000000025" },
+        ],
+        seniority: [],
+        positions: [
+          { holder: "f", security: "common", shares: 1000000 },
+          { holder: "a", security: "oa", shares: 1000000 },
+          { holder: "b", security: "ob", shares: 1000 },
+        ],
+        unissued_pool: 0,
+      }),
+    );
+    const found = findBreakpoints(pc, [new D(0), new D(3000000)]);
+    expect(found).toHaveLength(1);
+    expect(found[0]!.exitValue.toFixed(2)).toBe("1000000.00");
+    expect(found[0]!.reasons.map((r) => `${r.code}: ${r.subject.join("+")}`).sort()).toEqual([
+      "option_in_the_money: oa",
+      "option_in_the_money: ob",
+    ]);
   });
 });

@@ -3,7 +3,7 @@
 // and explains one change: a tier paid in full, a cap reached, options coming
 // into the money, a series or a group converting, or payouts jumping.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 import { ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
@@ -33,9 +33,10 @@ function grouped(whole: string): string {
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+/** Dollars for founders: $26,000,000 for a whole amount, $19,999,999.79 otherwise. */
 export function money(amount: Decimal): string {
   const [whole, cents] = amount.toDecimalPlaces(2, 4).toFixed(2).split(".") as [string, string];
-  return `$${grouped(whole)}.${cents}`;
+  return cents === "00" ? `$${grouped(whole)}` : `$${grouped(whole)}.${cents}`;
 }
 
 /** A price per share: up to six places, at least two. */
@@ -61,7 +62,15 @@ function list(names: string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
+/** "half", or "60%": a vote threshold in words. */
+function share(fraction: Decimal): string {
+  return fraction.eq("0.5") ? "half" : `${fraction.times(100).toString()}%`;
+}
+
 // ---------- reasons ----------
+
+// The wording is for founders: no assumption codes in the text (they stay in
+// the structured fields and in the code comments), and money in plain dollars.
 
 export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot, above: Snapshot, jumps: boolean): Reason[] {
   const { capTable } = pc;
@@ -71,52 +80,48 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   ]);
   const before = below.answer.decisions;
   const after = above.answer.decisions;
-  // Both answers paid out at the breakpoint itself, for the numbers in the text.
+  // Both answers paid out at the breakpoint itself: the outcome from below, and the limit of the outcome from above.
   const atBefore = payout(pc, x, before);
   const atAfter = payout(pc, x, after);
   const reasons: Reason[] = [];
 
-  // Options coming into (or out of) the money.
+  // Options coming into (or falling out of) the money.
   for (const o of pc.options.values()) {
     const was = before.exercised.has(o.id);
     const is = after.exercised.has(o.id);
     if (was === is) continue;
-    const n = shares(pc.shares.get(o.id)!);
+    const which = `Options at a ${perShare(o.strike)} strike (${shares(pc.shares.get(o.id)!)})`;
     reasons.push({
       code: "option_in_the_money",
       subject: [o.id],
       starts: is,
       text: is
-        ? `A common share is worth ${perShare(o.strike)} here, the strike on the ${n} ${name.get(o.id)}. Above this exit value they're worth ` +
-          "exercising: their holders pay the strike, which joins the proceeds, and share in what's left as common."
-        : `A common share falls back to ${perShare(o.strike)}, the strike on the ${n} ${name.get(o.id)}; above this exit value they're no longer worth exercising.`,
+        ? `${which} come into the money here. Above this, exercising pays, and the strike money joins the proceeds.`
+        : `${which} fall out of the money here. Above this, exercising no longer pays.`,
     });
   }
 
-  // A conversion group converting or staying (E11, E17).
+  // A conversion group converting or staying. E11: each holder votes for
+  // conversion only if it does strictly better converting; E17: the group
+  // decides first, on the two settled outcomes.
   const group = capTable.conversionGroups[0];
   const members = new Set(group?.series ?? []);
   if (group && group.series.some((sid) => before.converted.has(sid) !== after.converted.has(sid))) {
     const converts = after.converted.has(group.series[0]!);
-    const names = list(group.series.map((sid) => name.get(sid)!));
-    const rule = `${group.voteRule === "at_least" ? "at least" : "more than"} ${group.voteThreshold.times(100).toString()}%`;
-    let text = `${names} must convert together, by a vote of ${rule} of their as-converted shares, and each holder votes for conversion only if it does strictly better converting (E11). `;
+    const rule =
+      `${list(group.series.map((sid) => name.get(sid)!))} convert together if holders of ` +
+      `${group.voteRule === "at_least" ? "at least" : "more than"} ${share(group.voteThreshold)} their shares vote for it.`;
+    let happens: string;
     if (converts) {
-      const weight = new Map<string, Decimal>();
-      for (const p of capTable.positions) {
-        if (!members.has(p.security)) continue;
-        weight.set(p.holder, (weight.get(p.holder) ?? ZERO).plus(p.shares.times(pc.preferred.get(p.security)!.conversionRatio)));
-      }
-      const total = [...weight.values()].reduce((s, w) => s.plus(w), ZERO);
-      const yes = [...weight.keys()].filter((h) => moreThan(above.margins.get(`vote:${h}`) ?? ZERO, ZERO));
-      const share = yes.reduce((s, h) => s.plus(weight.get(h)!), ZERO).div(total).times(100);
-      text +=
-        `Just above this exit value, ${list(yes.map((h) => name.get(h)!))} ${yes.length === 1 ? "does" : "do"} better converting, ` +
-        `holding ${share.toDecimalPlaces(2, 4).toString()}% of the group's shares. That carries the vote, so the group converts.`;
+      const voters = new Set<string>();
+      for (const p of capTable.positions) if (members.has(p.security) && !p.shares.isZero()) voters.add(p.holder);
+      const yes = [...voters].filter((h) => moreThan(above.margins.get(`vote:${h}`) ?? ZERO, ZERO)).map((h) => name.get(h)!);
+      const who = yes.length === 2 ? `${list(yes)} both do` : `${list(yes)} ${yes.length === 1 ? "does" : "do"}`;
+      happens = `Above ${money(x)} ${who} better converting, so the vote passes.`;
     } else {
-      text += "Just above this exit value the vote no longer carries, so the group stays preferred.";
+      happens = `Above ${money(x)} the vote no longer passes, so they stay preferred.`;
     }
-    reasons.push({ code: "series_converts", subject: [...group.series], starts: converts, text });
+    reasons.push({ code: "series_converts", subject: [...group.series], starts: converts, text: `${rule} ${happens}` });
   }
 
   // A series deciding for itself.
@@ -125,13 +130,12 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     const converts = after.converted.has(s.id);
     let text: string;
     if (converts) {
-      const asConverted = pc.asConverted.get(s.id)!;
       const keep =
         s.participation === "participating_capped"
-          ? `its capped total of ${money(pc.capTotal.get(s.id)!)} (${multiple(s.capMultiple!)} its original issue price)`
+          ? `its capped total of ${money(pc.capTotal.get(s.id)!)} (${multiple(s.capMultiple!)} its investment)`
           : `its ${multiple(s.preferenceMultiple)} preference of ${money(pc.preference.get(s.id)!)}`;
       text =
-        `${s.name} converts to common here. Its ${shares(asConverted)} as-converted shares are worth ` +
+        `${s.name} converts to common here. Its ${shares(pc.asConverted.get(s.id)!)} as-converted shares are worth ` +
         `${money(atAfter.bySecurity.get(s.id)!)} at ${perShare(atAfter.commonPrice)} each, the same as ${keep}. ` +
         "Below this exit value keeping its preference pays more; above it, converting does.";
     } else {
@@ -141,28 +145,26 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   }
 
   // Preference tiers paid in full.
-  const fullBefore = new Map(atBefore.tiers.map((t) => [t.index, t]));
-  const fullAfter = new Map(atAfter.tiers.map((t) => [t.index, t]));
   for (const [index, tier] of capTable.seniority.entries()) {
     const b = below.answer.payout.tiers.find((t) => t.index === index);
     const a = above.answer.payout.tiers.find((t) => t.index === index);
     if (!(b && !b.full && a && a.full)) continue;
-    const claimants = (fullAfter.get(index) ?? fullBefore.get(index))!.series;
-    const claim = (fullAfter.get(index) ?? fullBefore.get(index))!.claim;
-    const names = claimants.map((sid) => name.get(sid)!);
+    const paid = atAfter.tiers.find((t) => t.index === index) ?? atBefore.tiers.find((t) => t.index === index)!;
+    const names = paid.series.map((sid) => name.get(sid)!);
     const next = above.answer.payout.tiers.find((t) => t.index > index && !t.full);
-    const nextNames = next ? next.series.map((sid) => name.get(sid)!) : [];
-    const nextText = !next
-      ? "the shareholders sharing what's left as common"
-      : nextNames.length === 1
-        ? `${nextNames[0]}'s preference`
-        : `the preferences of ${list(nextNames)}`;
+    let nextText: string;
+    if (next) {
+      const nextNames = next.series.map((sid) => name.get(sid)!);
+      nextText = `goes to ${nextNames.length === 1 ? `${nextNames[0]}'s preference` : `the preferences of ${list(nextNames)}`}`;
+    } else {
+      nextText = `is shared as common by ${list(sharers(pc, after).map((id) => name.get(id)!))}`;
+    }
     const whose = names.length === 1 ? `${names[0]}'s preference is` : `The preferences of ${list(names)} are`;
     reasons.push({
       code: "tier_fully_paid",
       subject: [...tier],
       starts: true,
-      text: `${whose} paid in full here: ${money(claim)}. Above this exit value, the next dollar goes to ${nextText}.`,
+      text: `${whose} paid in full here: ${money(paid.claim)}. Above this exit value, the next dollar ${nextText}.`,
     });
   }
 
@@ -176,22 +178,41 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       starts: true,
       text:
         `${s.name} reaches its cap here: its preference and its share as common together come to ` +
-        `${multiple(s.capMultiple!)} its original issue price, ${money(pc.capTotal.get(sid)!)}. ` +
+        `${multiple(s.capMultiple!)} its investment, ${money(pc.capTotal.get(sid)!)}. ` +
         "Above this exit value its payout stays flat until converting pays more.",
     });
   }
 
+  // E13: payouts that jump. Say what each class gets either side.
   if (jumps) {
+    const moves: string[] = [];
+    for (const [sid, was] of atBefore.classTotals) {
+      const is = atAfter.classTotals.get(sid)!;
+      if (was.minus(is).abs().lt("0.005")) continue;
+      moves.push(`${name.get(sid)} ${is.gt(was) ? "rises" : "drops"} from ${money(was)} to ${money(is)}`);
+    }
     reasons.push({
       code: "payouts_jump",
       subject: [],
       starts: true,
       text:
-        "Some payouts jump here instead of bending, because the group's decision changes all at once. " +
-        "At exactly this exit value the outcome from below still holds; the new one applies just above it (E13).",
+        `Payouts jump here instead of bending: ${list(moves)}. ` +
+        `At exactly ${money(x)} the outcome from below still holds; the new one applies just above it.`,
     });
   }
 
   if (reasons.length === 0) reasons.push({ code: "other", subject: [], starts: true, text: "Payout slopes change here." });
   return reasons;
+}
+
+/** Who shares the residual, by class: common, exercised options, and participating or converted preferred (SPEC). */
+function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
+  return pc.capTable.securities
+    .filter((s) => {
+      if (pc.shares.get(s.id)!.isZero()) return false;
+      if (s.kind === "common") return true;
+      if (s.kind === "option") return d.exercised.has(s.id);
+      return d.converted.has(s.id) || s.participation !== "non_participating";
+    })
+    .map((s) => s.id);
 }

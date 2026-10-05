@@ -12,7 +12,7 @@
 // breakpoint. Each stretch is checked at its midpoint, so a change the
 // margins failed to predict stops the finder instead of going unnoticed.
 
-import type Decimal from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
