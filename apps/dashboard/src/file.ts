@@ -138,7 +138,13 @@ function openRounds(file: Record<string, unknown>): Contents {
   const rounds: Rounds = { holders: holders as Rounds["holders"], events: events as Rounds["events"], after };
   const built = fromRounds(rounds, file.range);
   if (!built.ok) return { message: `Its rounds can't be built. ${built.message}` };
-  return { read: readExit(buildExit(built.draft).json), draft: built.draft, rounds };
+  try {
+    return { read: readExit(buildExit(built.draft).json, undefined, "file"), draft: built.draft, rounds };
+  } catch (e) {
+    // The rounds are fine; what's left is the range.
+    if (e instanceof InputError) return { message: `Its range can't be used. ${withoutCodes(e.message)}` };
+    throw e;
+  }
 }
 
 /** The saved view, checked against the cap table it was saved with; or why it can't be used. */

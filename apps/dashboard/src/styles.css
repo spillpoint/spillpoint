@@ -37,7 +37,7 @@ body { margin: 0; }
 .file-status--done { border-left: 4px solid var(--accent); }
 .example-label__unsaved { margin-left: 8px; }
 
-select, input[type="text"] {
+select, input[type="text"], input[type="date"] {
   font: inherit; color: var(--text); background: var(--surface);
   border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 10px;
 }
@@ -194,6 +194,7 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .edit-row--top { align-items: flex-start; margin-top: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .field input { width: 16rem; max-width: 100%; }
+.field input[type="checkbox"], .series__grid .field input[type="checkbox"] { width: auto; }
 .field__label { font-size: 0.875rem; font-weight: 600; }
 .field__hint { color: var(--muted); font-size: 0.8125rem; max-width: 20rem; }
 .field--wide { grid-column: 1 / -1; }
@@ -203,6 +204,7 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .add, .remove { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; }
 .add { margin-top: 12px; }
 .remove { color: var(--muted); }
+.add:disabled, .remove:disabled { opacity: 0.5; cursor: not-allowed; }
 .series { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px 16px; margin: 12px 0 0; }
 .series legend { font-weight: 600; padding: 0 6px; }
 .series__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 16px; margin-bottom: 12px; }
@@ -229,7 +231,15 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 
 /* The Rounds tab: each event, what it did, and the cap table after it. */
 .rounds__list { list-style: none; margin: 0; padding: 0; }
-.rounds__heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.rounds__heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.rounds__edit { margin-left: auto; align-self: center; }
+.rounds__problem { margin: 8px 0 0; padding: 8px 12px; border-left: 4px solid var(--error); background: var(--page); }
+/* An event's form: set apart from what the event did, which follows it. */
+.event-form { margin-top: 12px; padding: 12px 0 4px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.event-form h4 { margin: 16px 0 8px; font-size: 0.9375rem; }
+.event-form > .field, .event-form .field--wide { margin-top: 8px; }
+.event-form__more { margin-top: 12px; }
+.event-form__more summary { cursor: pointer; color: var(--accent); font-weight: 500; margin-bottom: 4px; }
 .rounds__heading h3 { margin: 0; font-size: 1.0625rem; }
 .rounds__number { color: var(--muted); font-weight: 400; margin-right: 2px; }
 .rounds__date { color: var(--muted); font-size: 0.875rem; white-space: nowrap; }

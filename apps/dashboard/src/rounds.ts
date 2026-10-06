@@ -37,7 +37,8 @@ export type FromRounds =
 export function fromRounds(rounds: Rounds, range: unknown): FromRounds {
   const company = { holders: rounds.holders, events: rounds.events };
   try {
-    readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range, exit_values: [] } });
+    // The rounds are checked on their own: the range belongs to the cap table, whose editor checks it next to its field.
+    readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [] } });
     const tables = buildCapTables(company);
     const after = tables.find((t) => t.event === rounds.after)!;
     const r = range as unknown[];
