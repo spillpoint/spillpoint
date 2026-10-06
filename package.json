@@ -10,6 +10,7 @@
     "typecheck": "pnpm -r typecheck",
     "test:reference": "python3 -m unittest discover reference/tests && python3 reference/generate.py --check",
     "payouts": "node packages/engine/scripts/payouts.ts",
-    "breakpoints": "node packages/engine/scripts/breakpoints.ts"
+    "breakpoints": "node packages/engine/scripts/breakpoints.ts",
+    "rounds": "node packages/engine/scripts/rounds.ts"
   }
 }

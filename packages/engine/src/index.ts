@@ -27,5 +27,9 @@ export type { Decisions, Payout, PayoutLine, PreparedCapTable, TierPayment } fro
 export { solve } from "./decisions.ts";
 export type { Answer, Solution, SolveOptions } from "./decisions.ts";
 export { findBreakpoints } from "./breakpoints.ts";
+
+// Building cap tables from a company's rounds (M4).
+export { buildCapTables } from "./rounds.ts";
+export type { CapTableAfterEvent, EventDetails, Note, RoundDetails, Safe } from "./rounds.ts";
 export type { Breakpoint } from "./breakpoints.ts";
 export type { Reason, ReasonCode } from "./reasons.ts";
