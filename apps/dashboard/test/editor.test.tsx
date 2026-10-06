@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
 import { dollars } from "../src/format.ts";
+import { analysed } from "./analysis.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
 const type = (el: HTMLElement, value: string) => fireEvent.change(el, { target: { value } });
@@ -93,7 +94,7 @@ describe("building case 6b from scratch", () => {
   it("finds the case's breakpoints, with the jump at $30M where the group converts", async () => {
     build();
     openTab("Payouts");
-    const list = (await screen.findByRole("heading", { name: "Breakpoints" }, { timeout: 3000 })).closest("section")!;
+    const list = await analysed();
     const items = within(list).getAllByRole("listitem");
     expect(items.map((i) => i.querySelector(".breakpoints__value")!.textContent!.split(" ")[0])).toEqual(
       expected.breakpoints.map((b: { exact: string }) => dollars(new D(b.exact))),
