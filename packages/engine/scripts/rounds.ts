@@ -5,10 +5,10 @@
 //   pnpm rounds <case>
 //
 // Each event shows what it worked out (a round's price, new shares, pool
-// top-up, SAFE conversions, pro-rata and anti-dilution) and the cap table
-// after it, fully diluted, with whether it matches the case's expected.json.
-// An event the engine doesn't build yet stops the list with the engine's own
-// refusal.
+// top-up, SAFE conversions, pro-rata, pay-to-play and anti-dilution) and the
+// cap table after it, fully diluted, with whether it matches the case's
+// expected.json. An event the engine doesn't build yet stops the list with
+// the engine's own refusal.
 
 import type { Decimal } from "decimal.js";
 
@@ -75,6 +75,21 @@ function show(t: CapTableAfterEvent): void {
     for (const c of d.safeConversions) {
       const cc = c.companyCapitalization ? ` (Company Capitalization ${grouped(c.companyCapitalization)})` : "";
       console.log(`SAFE ${c.safe}: converts at its ${c.method}, $${c.conversionPrice.toFixed(6)}${cc}, into ${grouped(c.shares)} ${c.series}`);
+    }
+    if (d.payToPlay) {
+      const pp = d.payToPlay;
+      const ratios = pp.conversionRatios.map((r) => `${r.series} ${r.ratio.toString()} common per share`).join(", ");
+      console.log(
+        `Pay-to-play on ${pp.series.join(" and ")}: $${grouped(pp.offeredAmount)} offered; converts at ${ratios}; ` +
+          `${pp.partialParticipation === "convert_all" ? "a partial buyer converts everything" : "a partial buyer converts the fraction it didn't buy"}; ` +
+          `priced ${pp.pricedAfterConversion ? "after" : "before"} the conversion`,
+      );
+      for (const h of pp.holders) {
+        const outcome = h.series
+          .map((b) => (b.converted.isZero() ? `keeps ${grouped(b.kept)} ${b.series}` : `keeps ${grouped(b.kept)} ${b.series}, converts ${grouped(b.converted)} into ${grouped(b.commonReceived)} common`))
+          .join("; ");
+        console.log(`  ${h.holder}: ${h.share.times(100).toFixed(6)}%, must buy $${grouped(h.required)}, invests $${grouped(h.invested)}: ${outcome}`);
+      }
     }
     const rules = { broad_based: "broad-based", narrow_based: "narrow-based", full_ratchet: "full ratchet" };
     for (const a of d.antiDilution) {
