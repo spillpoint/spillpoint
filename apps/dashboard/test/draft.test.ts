@@ -2,12 +2,18 @@
 // number the engine reads; typed amounts become exact numbers; and every
 // engine error path finds the field it names.
 
-import { readExit } from "spillpoint";
+import { D, readExit, readInputs } from "spillpoint";
 import type { CapTable } from "spillpoint";
 import examples from "virtual:examples";
 import { describe, expect, it } from "vitest";
 
-import { addHolder, addSecurity, buildExit, checkBuilt, draftFromExit, fieldForPath, fieldId, removeRow, scratchDraft, setPrice, sharesKey } from "../src/draft.ts";
+import { addHolder, addSecurity, buildExit, checkBuilt, fieldForPath, fieldId, removeRow, scratchDraft, setPrice, sharesKey } from "../src/draft.ts";
+import { exampleContents } from "../src/rounds.ts";
+
+/** Millrace's draft, built from its rounds as the page builds it. */
+const millraceDraft = () => exampleContents(examples[0]!).draft;
+/** Within one part in 10^30 of the case's exact fraction (E14). */
+const closeTo = (text: unknown, numerator: string, denominator: string) => new D(String(text)).minus(new D(numerator).div(denominator)).abs().lte("1e-30");
 
 /** A cap table as plain strings, so two can be compared exactly. */
 const plain = (ct: CapTable) => JSON.parse(JSON.stringify(ct, (_, v) => (v && typeof v === "object" && "d" in v && "e" in v ? v.toString() : v)));
@@ -15,25 +21,26 @@ const plain = (ct: CapTable) => JSON.parse(JSON.stringify(ct, (_, v) => (v && ty
 describe("loading an example into the editor and building it back", () => {
   for (const example of examples) {
     it(`gives the engine exactly the same cap table and range: ${example.label}`, () => {
-      const before = readExit(example.exit);
-      const after = readExit(buildExit(draftFromExit(example.exit)).json);
+      // Millrace's cap table is the one the engine builds from its events (M4i).
+      const before = example.company ? readInputs({ ...example.company, exit: example.exit }) : readExit(example.exit);
+      const after = readExit(buildExit(exampleContents(example).draft).json);
       expect(plain(after.capTable)).toEqual(plain(before.capTable));
       expect(after.range.map(String)).toEqual(before.range.map(String));
     });
   }
 
   it("shows Millrace's prices to six places, and keeps the exact ones underneath until edited", () => {
-    const draft = draftFromExit(examples[0]!.exit);
+    const draft = millraceDraft();
     const seriesA = draft.securities.find((s) => s.name === "Series A Preferred");
     expect(seriesA?.kind === "preferred" && [seriesA.originalIssuePrice, seriesA.conversionPrice]).toEqual(["2.075472", "1.824752"]);
     const built = (d: typeof draft) => (buildExit(d).json.cap_table.securities as Record<string, unknown>[]).find((s) => s.name === "Series A Preferred")!;
-    expect(built(draft)).toMatchObject({
-      original_issue_price: "3900000/1879091",
-      conversion_price: "348161279317506201440070405000/190799228993502586113800004553",
-    });
+    // Underneath are the engine's 40-digit prices, built from the rounds: the locked case's fractions, to within one part in 10^30.
+    const exact = built(draft);
+    expect(closeTo(exact.original_issue_price, "3900000", "1879091")).toBe(true);
+    expect(closeTo(exact.conversion_price, "348161279317506201440070405000", "190799228993502586113800004553")).toBe(true);
     // Once you type in a field, what you typed is used, even if it's the same as what was shown.
     const typed = setPrice(draft, seriesA!.key, "originalIssuePrice", "2.075472");
-    expect(built(typed)).toMatchObject({ original_issue_price: "2.075472", conversion_price: "348161279317506201440070405000/190799228993502586113800004553" });
+    expect(built(typed)).toMatchObject({ original_issue_price: "2.075472", conversion_price: exact.conversion_price });
     // A typed fraction is still read exactly.
     expect(built(setPrice(draft, seriesA!.key, "originalIssuePrice", "39/19"))).toMatchObject({ original_issue_price: "39/19" });
     // A conversion price equal to the issue price shows as blank: no anti-dilution adjustment.
@@ -91,7 +98,7 @@ describe("what founders type", () => {
 });
 
 describe("where an engine error lands", () => {
-  const draft = draftFromExit(examples[0]!.exit);
+  const draft = millraceDraft();
   const { fields } = buildExit(draft);
   const seriesA = draft.securities.find((s) => s.name === "Series A Preferred")!;
   const index = draft.securities.indexOf(seriesA);

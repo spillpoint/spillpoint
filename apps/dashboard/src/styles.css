@@ -220,6 +220,28 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .group-vote__threshold { width: 5rem; }
 .edit-summary { margin: 12px 0 0; }
 
+/* A cap table built from rounds (M4i): read-only in the editor, its fields still readable. */
+.editor__built { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 16px 0 0; }
+.editor__built p { margin: 0; flex: 1 1 24rem; }
+.editor__table { border: 0; padding: 0; margin: 0; min-width: 0; }
+.editor__table:disabled input, .editor__table:disabled select { color: var(--text); background: var(--page); opacity: 1; -webkit-text-fill-color: var(--text); }
+.editor__table:disabled button { display: none; }
+
+/* The Rounds tab: each event, what it did, and the cap table after it. */
+.rounds__list { list-style: none; margin: 0; padding: 0; }
+.rounds__heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.rounds__heading h3 { margin: 0; font-size: 1.0625rem; }
+.rounds__number { color: var(--muted); font-weight: 400; margin-right: 2px; }
+.rounds__date { color: var(--muted); font-size: 0.875rem; white-space: nowrap; }
+.rounds__used { display: inline-block; margin: 8px 0 0; }
+.rounds__lines { margin: 8px 0 0; padding-left: 1.25rem; }
+.rounds__lines li + li { margin-top: 4px; }
+.rounds__table { margin-top: 12px; }
+.rounds__table summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+.rounds__table .payouts { margin-top: 8px; }
+.rounds__outstanding { margin: 8px 0 0; color: var(--muted); }
+.rounds__class-under { display: none; }
+
 @media (max-width: 640px) {
   .page { padding: 16px 12px 48px; }
   .card, .founder, .exit-value { padding: 16px 14px; }
@@ -230,6 +252,8 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
   .payouts .share { display: none; }
   .payouts__shares { display: block; color: var(--muted); font-size: 0.8125rem; font-weight: 400; margin-top: 2px; }
   .payouts__shares > span { white-space: nowrap; }
+  .rounds__class { display: none; }
+  .rounds__class-under { display: block; color: var(--muted); font-size: 0.8125rem; font-weight: 400; margin-top: 2px; }
 }
 @media (max-width: 360px) {
   .payouts__shares > span { white-space: normal; }

@@ -4,6 +4,11 @@
 // read by the engine straight away; when it says no, its own message appears
 // next to the field it names, and the payouts stay on the last cap table it
 // accepted.
+//
+// A cap table built from rounds (M4i) is shown read-only: the rounds build it,
+// so an edit here would contradict them. Its name and range stay editable.
+// "Edit the cap table directly" drops the rounds and keeps the table, after
+// asking (M4 plan, answer 9).
 
 import type React from "react";
 import type { Participation } from "spillpoint";
@@ -27,22 +32,39 @@ interface Props {
   error: DraftError | null;
   /** One line on what the current cap table pays, shown while it's valid. */
   summary: string;
+  /** Set when the cap table is built from rounds: how many events build it, and how to drop them. */
+  rounds: { events: number; onEditDirectly: () => void } | null;
 }
 
-export function CapTableEditor({ draft, onDraft, name, onName, error, summary }: Props) {
+export function CapTableEditor({ draft, onDraft, name, onName, error, summary, rounds }: Props) {
   const errorFor = (field: string) => (error && error.field === field ? error.message : null);
   const preferred = draft.securities.filter((s): s is DraftPreferred => s.kind === "preferred");
   return (
     <div className="editor">
       <EditorStatus error={error} summary={summary} />
+      {rounds && (
+        <div className="notice editor__built" role="note">
+          <p>
+            <strong>This cap table is built from the {rounds.events} events on the Rounds tab, so it can't be edited here.</strong> You can still
+            rename it and change the range of exit values.
+          </p>
+          <button type="button" className="file-button" onClick={rounds.onEditDirectly}>
+            Edit the cap table directly
+          </button>
+        </div>
+      )}
       <section className="card" aria-label="Name">
         <Field id="edit-name" label="Name of this cap table" value={name} onChange={onName} error={null} hint="A saved file is named after it." />
       </section>
-      <HoldersCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
-      <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
-      <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />
-      {preferred.length > 0 && <SeniorityCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
-      {preferred.length > 0 && <GroupCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
+      {/* A disabled fieldset turns every field and button in it off, for the keyboard and screen readers too. */}
+      <fieldset className="editor__table" disabled={rounds !== null}>
+        <legend className="visually-hidden">{rounds ? "The cap table, built from the rounds" : "The cap table"}</legend>
+        <HoldersCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
+        <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
+        <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />
+        {preferred.length > 0 && <SeniorityCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
+        {preferred.length > 0 && <GroupCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
+      </fieldset>
       <RangeCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
     </div>
   );
