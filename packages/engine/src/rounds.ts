@@ -4,10 +4,11 @@
 // same model an exit runs on.
 //
 // A priced round works out its price, new shares and pool top-up (M4c), the
-// SAFEs it converts and its pro-rata entitlements (M4d), and the anti-dilution
-// adjustment it triggers (M4e). Converting notes and pay-to-play come in later
-// M4 PRs. Until then a round that needs one is refused, never skipped: a round
-// priced without them would look right and be wrong.
+// SAFEs it converts and its pro-rata entitlements (M4d), the anti-dilution
+// adjustment it triggers (M4e), and who converts under pay-to-play (M4f).
+// Converting notes comes in a later M4 PR. Until then a round that needs it
+// is refused, never skipped: a round priced without it would look right and
+// be wrong.
 //
 // The reference calculator solves a round by trying every branch (topped up
 // or not, cap or discount, anti-dilution triggered or not) and keeping the one
@@ -91,6 +92,46 @@ export interface AntiDilutionAdjustment {
   newConversionRatio: Decimal;
 }
 
+/** One holder's outcome in one series named by a pay-to-play (R18, R20). */
+export interface PayToPlaySeries {
+  series: string;
+  shares: Decimal;
+  /** What it keeps as preferred. */
+  kept: Decimal;
+  converted: Decimal;
+  /** Common shares for what converted, at the series' ratio, rounded down (R3). */
+  commonReceived: Decimal;
+}
+
+/** One holder of the series a pay-to-play names (R17, R20, R22). */
+export interface PayToPlayHolder {
+  holder: string;
+  /** Its shares of the named series, as converted and combined. */
+  asConvertedShares: Decimal;
+  /** Its share of all the named series' shares, as a fraction. */
+  share: Decimal;
+  /** Its pro-rata of the amount offered: what it must buy to keep its preferred. */
+  required: Decimal;
+  /** Everything it invests in the round. */
+  invested: Decimal;
+  /** invested ÷ required, at most 1. */
+  fractionBought: Decimal;
+  participates: boolean;
+  series: PayToPlaySeries[];
+}
+
+/** A round's pay-to-play (C11): its terms, and who keeps and who converts. */
+export interface PayToPlay {
+  series: string[];
+  offeredAmount: Decimal;
+  /** Common shares per preferred share, for each named series. */
+  conversionRatios: { series: string; ratio: Decimal }[];
+  partialParticipation: "convert_all" | "convert_proportionally";
+  /** R19: whether the round is priced on the cap table after the conversion. */
+  pricedAfterConversion: boolean;
+  holders: PayToPlayHolder[];
+}
+
 /** What a priced round worked out. */
 export interface RoundDetails {
   /** Exact in arithmetic; held to 40 significant digits (E14). */
@@ -105,6 +146,8 @@ export interface RoundDetails {
   proRata: ProRata[];
   /** Each series the round adjusts, in the order the cap table lists them. */
   antiDilution: AntiDilutionAdjustment[];
+  /** The round's pay-to-play, if it has one. */
+  payToPlay: PayToPlay | null;
   /** Each investor's new shares, one issuance per holder (R3). */
   newShares: { holder: string; shares: Decimal }[];
   poolTopUp: Decimal;
@@ -159,6 +202,18 @@ class Company {
 
   security(id: string): Security | undefined {
     return this.securities.find((s) => s.id === id);
+  }
+
+  /** A copy to try something on: its positions are its own; its securities are the same objects. */
+  clone(): Company {
+    const copy = new Company(this.holders);
+    copy.securities.push(...this.securities);
+    copy.positions.push(...this.positions.map((p) => ({ ...p })));
+    copy.seniority = this.seniority.map((t) => [...t]);
+    copy.unissuedPool = this.unissuedPool;
+    copy.safes = [...this.safes];
+    copy.notes = [...this.notes];
+    return copy;
   }
 
   issue(holder: string, security: string, shares: Decimal, path: string): void {
@@ -382,6 +437,106 @@ function usd(amount: Decimal): string {
   return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${cents}`;
 }
 
+const PAY_TO_PLAY_FIELDS = ["series", "offered_amount", "conversion_ratio", "priced_after_conversion", "partial_participation"] as const;
+
+/**
+ * Pay-to-play (SPEC, Pay-to-play): the round offers one amount to the
+ * holders of the series it names. A holder's pro-rata is its share of those
+ * series' shares, as converted and combined, × that amount: one total
+ * requirement per holder (R17, R22), not R6's share of the whole company. A
+ * holder whose total investment in the round is at least that keeps its
+ * preferred. One that invests less converts all its preferred of the named
+ * series to common, or under the toggle only the fraction it didn't buy,
+ * keeping floor(shares × fraction bought) of each series (R20). Each series
+ * converts at its own ratio, common shares per preferred share, rounded down
+ * (R18, R22), into the company's one common class.
+ */
+function planPayToPlay(company: Company, value: unknown, investments: { holder: string; amount: Decimal }[], path: string): PayToPlay {
+  const terms = object(value, path);
+  onlyKnownFields(terms, PAY_TO_PLAY_FIELDS, path);
+  const listed = array(terms.series, `${path}.series`).map((v, i) => text(v, `${path}.series[${i}]`));
+  if (listed.length === 0) throw new InputError(`${path}.series`, "name at least one series");
+  listed.forEach((id, i) => {
+    if (company.security(id)?.kind !== "preferred") throw new InputError(`${path}.series[${i}]`, `${id} is not an existing preferred series`);
+    if (listed.indexOf(id) !== i) throw new InputError(`${path}.series[${i}]`, `${id} is listed twice`);
+  });
+
+  // One ratio for one series, or one per series (R22).
+  const given = terms.conversion_ratio;
+  let conversionRatios: PayToPlay["conversionRatios"];
+  if (given != null && typeof given === "object" && !Array.isArray(given)) {
+    const byId = given as Json;
+    if (Object.keys(byId).length !== listed.length || !listed.every((id) => id in byId)) {
+      throw new InputError(`${path}.conversion_ratio`, "give a ratio for each series the pay-to-play names, and only for those");
+    }
+    conversionRatios = listed.map((id) => ({ series: id, ratio: positive(byId[id], `${path}.conversion_ratio.${id}`) }));
+  } else {
+    if (listed.length !== 1) throw new InputError(`${path}.conversion_ratio`, "a pay-to-play on several series needs a ratio for each series (R22)");
+    conversionRatios = [{ series: listed[0]!, ratio: positive(given, `${path}.conversion_ratio`) }];
+  }
+  const partial = terms.partial_participation ?? "convert_all";
+  if (partial !== "convert_all" && partial !== "convert_proportionally") {
+    throw new InputError(`${path}.partial_participation`, "must be convert_all or convert_proportionally");
+  }
+  if (company.securities.filter((s) => s.kind === "common").length !== 1) {
+    throw new InputError(path, "pay-to-play converts preferred into the company's common stock, so it needs exactly one common class");
+  }
+  const offered = positive(terms.offered_amount, `${path}.offered_amount`);
+
+  const invested = new Map<string, Decimal>();
+  for (const inv of investments) invested.set(inv.holder, (invested.get(inv.holder) ?? ZERO).plus(inv.amount));
+  // The holders in the order they first appear in the named series.
+  const holderIds: string[] = [];
+  for (const id of listed) {
+    for (const p of company.positions) {
+      if (p.security === id && !p.shares.isZero() && !holderIds.includes(p.holder)) holderIds.push(p.holder);
+    }
+  }
+  const held = (holder: string, id: string) => company.positions.find((p) => p.holder === holder && p.security === id)?.shares ?? ZERO;
+  const asConverted = new Map(holderIds.map((h) => [h, listed.reduce((sum, id) => sum.plus(held(h, id).times((company.security(id) as PreferredSeries).conversionRatio)), ZERO)]));
+  const total = [...asConverted.values()].reduce((sum, n) => sum.plus(n), ZERO);
+
+  const holders = holderIds.map((holder): PayToPlayHolder => {
+    const share = asConverted.get(holder)!.div(total);
+    const required = offered.times(share);
+    const paid = invested.get(holder) ?? ZERO;
+    // R22: it takes its pro-rata if it invests at least the requirement; equal in exact arithmetic counts (E14).
+    const participates = paid.gte(required) || nearlyEqual(paid, required);
+    const fractionBought = participates ? ONE : paid.div(required);
+    const series = conversionRatios
+      .filter(({ series: id }) => !held(holder, id).isZero())
+      .map(({ series: id, ratio }): PayToPlaySeries => {
+        const shares = held(holder, id);
+        const kept = participates ? shares : partial === "convert_proportionally" ? roundDownShares(shares.times(fractionBought)) : ZERO;
+        const converted = shares.minus(kept);
+        return { series: id, shares, kept, converted, commonReceived: roundDownShares(converted.times(ratio)) };
+      });
+    return { holder, asConvertedShares: asConverted.get(holder)!, share, required, invested: paid, fractionBought, participates, series };
+  });
+  return {
+    series: listed,
+    offeredAmount: offered,
+    conversionRatios,
+    partialParticipation: partial,
+    pricedAfterConversion: bool(terms.priced_after_conversion, true, `${path}.priced_after_conversion`),
+    holders,
+  };
+}
+
+/** R18: what each holder didn't keep becomes common, losing the preference and every other preferred right. */
+function applyPayToPlay(company: Company, payToPlay: PayToPlay, path: string): void {
+  const common = company.securities.find((s) => s.kind === "common")!;
+  for (const h of payToPlay.holders) {
+    for (const b of h.series) {
+      if (b.converted.isZero()) continue;
+      const at = company.positions.findIndex((p) => p.holder === h.holder && p.security === b.series);
+      if (b.kept.isZero()) company.positions.splice(at, 1);
+      else company.positions[at] = { ...company.positions[at]!, shares: b.kept };
+      company.issue(h.holder, common.id, b.commonReceived, path);
+    }
+  }
+}
+
 /**
  * A priced round (SPEC, Rounds). Price = post-money valuation ÷ post-money
  * fully diluted shares, which count the stock and options outstanding, the
@@ -418,6 +573,12 @@ function usd(amount: Decimal): string {
  * (judged without a top-up), until nothing changes. For fixed choices the
  * share count is a straight line in the post-money count x, so each solve is
  * one division.
+ *
+ * Under pay-to-play, who converts is settled first, from what each holder
+ * invests. The conversion takes effect just before closing, so the round is
+ * priced on the cap table after it, unless the round says before (R19).
+ * Either way anti-dilution sees the table after it: holders who convert get
+ * no adjustment, and A counts what remains (R21).
  */
 function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetails {
   const investments = array(ev.investments, `${path}.investments`).map((v, i) => {
@@ -427,8 +588,6 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     return { holder: text(inv.holder, `${at}.holder`), amount: positive(inv.amount, `${at}.amount`), proRata: bool(inv.pro_rata, false, `${at}.pro_rata`) };
   });
 
-  // Terms later M4 PRs build: refused until then.
-  if (ev.pay_to_play != null) throw new UnsupportedTermError("pay_to_play", "M4", `${path}.pay_to_play`, "Pay-to-play (R17–R22)");
   const convertSafes = bool(ev.convert_safes, true, `${path}.convert_safes`);
   const convertNotes = bool(ev.convert_notes, false, `${path}.convert_notes`);
   const safes = convertSafes ? company.safes : [];
@@ -442,6 +601,22 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     );
   }
   if (notes.length > 0) throw new UnsupportedTermError("note_conversion", "M4", `${path}.convert_notes`, "Converting notes in a round (R23)");
+
+  // Pay-to-play (R17–R22). No case settles whether a SAFE's Company
+  // Capitalization or R6's pro-rata base counts the table before or after the
+  // conversion, or whether a holder that converts keeps its pro-rata right.
+  const payToPlay = ev.pay_to_play == null ? null : planPayToPlay(company, ev.pay_to_play, investments, `${path}.pay_to_play`);
+  if (payToPlay && (safes.length > 0 || notes.length > 0)) {
+    throw new UnsupportedTermError("pay_to_play_with_conversions", "later", `${path}.pay_to_play`, "A pay-to-play round that also converts SAFEs or notes (R17–R22)");
+  }
+  const proRataLine = investments.findIndex((inv) => inv.proRata);
+  if (payToPlay && proRataLine >= 0) {
+    throw new UnsupportedTermError("pay_to_play_with_pro_rata", "later", `${path}.investments[${proRataLine}].pro_rata`, "A pro-rata investment (R6) in a pay-to-play round");
+  }
+  // R19 and R21: the table after the conversion, for anti-dilution, and for the price unless the round says before.
+  const afterConversion = payToPlay ? company.clone() : company;
+  if (payToPlay) applyPayToPlay(afterConversion, payToPlay, `${path}.pay_to_play`);
+  if (payToPlay?.pricedAfterConversion) applyPayToPlay(company, payToPlay, `${path}.pay_to_play`);
   const adjustmentInPost = bool(ev.anti_dilution_shares_in_post, true, `${path}.anti_dilution_shares_in_post`);
   const poolInA = bool(ev.anti_dilution_include_unissued_pool_in_a, false, `${path}.anti_dilution_include_unissued_pool_in_a`);
   const poolInProRataBase = bool(ev.pro_rata_base_includes_unissued_pool, false, `${path}.pro_rata_base_includes_unissued_pool`);
@@ -474,21 +649,23 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   const capPrice = (f: Safe, pool: Decimal): Decimal | null =>
     f.postMoneyCap ? f.postMoneyCap.div(companyCap!) : f.preMoneyCap ? f.preMoneyCap.div(outstanding.plus(pool)) : null;
 
-  // The series with anti-dilution, as they stand before the round. A counts
-  // the shares outstanding immediately before the new issue, so every
-  // series' A comes from this table, before any adjustment.
-  const preferredAsConverted = company.securities.filter((s) => s.kind === "preferred").reduce((sum, s) => sum.plus(company.asConverted(s)), ZERO);
-  const protectedSeries = company.securities
+  // The series with anti-dilution, as they stand before the round (after any
+  // pay-to-play conversion, R21). A counts the shares outstanding immediately
+  // before the new issue, so every series' A comes from this table, before
+  // any adjustment.
+  const preferredAsConverted = afterConversion.securities.filter((s) => s.kind === "preferred").reduce((sum, s) => sum.plus(afterConversion.asConverted(s)), ZERO);
+  const outstandingForA = afterConversion.outstandingAsConverted();
+  const protectedSeries = afterConversion.securities
     .filter((s): s is PreferredSeries => s.kind === "preferred" && s.antiDilution !== "none")
     .map((s) => ({
       series: s,
       rule: s.antiDilution as AntiDilutionAdjustment["rule"],
       cp1: s.conversionPrice,
       /** The series' shares as converted before the round: the shares an adjustment scales. */
-      asConverted: company.asConverted(s),
+      asConverted: afterConversion.asConverted(s),
       // R7: broad-based A is the stock and options outstanding as converted, and the unissued pool, as it stood before the round, only under the toggle.
       // R15: narrow-based A is the preferred only. A full ratchet has no A.
-      a: s.antiDilution === "broad_based" ? outstanding.plus(poolInA ? pool0 : ZERO) : s.antiDilution === "narrow_based" ? preferredAsConverted : null,
+      a: s.antiDilution === "broad_based" ? outstandingForA.plus(poolInA ? pool0 : ZERO) : s.antiDilution === "narrow_based" ? preferredAsConverted : null,
     }));
   // R10: a weighted average's B and C in the price come from the new shares as fractions, money ÷ price, and the money.
   const extraShares = protectedSeries.map(({ rule, cp1, asConverted, a }) => {
@@ -688,6 +865,8 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   newShares.forEach((n, i) => company.issue(n.holder, seriesId, n.shares, `${path}.investments[${i}].holder`));
   const newPool = topUp ? roundDownShares(poolAfter) : pool0;
   company.unissuedPool = newPool;
+  // R19's toggle: priced before the conversion, which still happens at closing.
+  if (payToPlay && !payToPlay.pricedAfterConversion) applyPayToPlay(company, payToPlay, `${path}.pay_to_play`);
   company.seniority = readSeniority(company, ev.seniority, `${path}.seniority`);
 
   return {
@@ -700,6 +879,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     safeConversions,
     proRata,
     antiDilution,
+    payToPlay,
     newShares,
     poolTopUp: newPool.minus(pool0),
     postMoneyFullyDilutedActual: company.outstandingAsConverted().plus(company.unissuedPool),

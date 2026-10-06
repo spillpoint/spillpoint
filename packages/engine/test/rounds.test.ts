@@ -1,4 +1,4 @@
-// Building cap tables from rounds (M4c–M4e), checked against every locked
+// Building cap tables from rounds (M4c–M4f), checked against every locked
 // round case: each cap table the engine builds, field by field, up to the
 // first event a later M4 PR builds, which must be refused naming its term.
 
@@ -43,14 +43,14 @@ const STOPS: Record<string, [event: string, term: string] | null> = {
   "edge-16d-broad-based-not-in-price": null,
   "edge-16e-broad-based-pool-in-a": null,
   "edge-16f-broad-based-cp2-rounded": null,
-  "edge-17a-pay-to-play-priced-after": ["series_b", "pay_to_play"],
-  "edge-17b-pay-to-play-priced-before": ["series_b", "pay_to_play"],
-  "edge-17c-pay-to-play-partial": ["series_b", "pay_to_play"],
-  "edge-17d-pay-to-play-partial-proportional": ["series_b", "pay_to_play"],
-  "edge-17e-pay-to-play-anti-dilution": ["series_b", "pay_to_play"],
-  "edge-17f-pay-to-play-anti-dilution-priced-before": ["series_b", "pay_to_play"],
-  "edge-17g-pay-to-play-two-series": ["series_b", "pay_to_play"],
-  "edge-17h-pay-to-play-two-series-proportional": ["series_b", "pay_to_play"],
+  "edge-17a-pay-to-play-priced-after": null,
+  "edge-17b-pay-to-play-priced-before": null,
+  "edge-17c-pay-to-play-partial": null,
+  "edge-17d-pay-to-play-partial-proportional": null,
+  "edge-17e-pay-to-play-anti-dilution": null,
+  "edge-17f-pay-to-play-anti-dilution-priced-before": null,
+  "edge-17g-pay-to-play-two-series": null,
+  "edge-17h-pay-to-play-two-series-proportional": null,
   "edge-18-pro-rata-with-safe": null,
   "edge-18b-pro-rata-pool-in-base": null,
   "edge-18c-pro-rata-and-more": null,
@@ -173,6 +173,28 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
       else expect(x.b, `${what} B`).toBeNull();
       expectClose(x.newConversionRatio, e.new_conversion_ratio, `${what} new conversion ratio`);
     });
+    const p2p = ed.pay_to_play as Record<string, unknown> | undefined;
+    if (p2p == null) expect(d.payToPlay, `${at} pay-to-play`).toBeNull();
+    else {
+      const pp = d.payToPlay!;
+      expect([pp.series, pp.partialParticipation, pp.pricedAfterConversion]).toEqual([p2p.series, p2p.partial_participation, p2p.priced_after_conversion]);
+      expectSameNumber(pp.offeredAmount, p2p.offered_amount, `${at} pay-to-play offered`);
+      const ratios = p2p.conversion_ratios as Record<string, string>;
+      expect(pp.conversionRatios.map((r) => r.series)).toEqual(Object.keys(ratios));
+      pp.conversionRatios.forEach((r) => expectSameNumber(r.ratio, ratios[r.series], `${at} ${r.series} pay-to-play ratio`));
+      const rows = p2p.holders as Record<string, unknown>[];
+      expect(pp.holders.map((h) => [h.holder, h.share.times(100).toFixed(6), h.participates])).toEqual(rows.map((h) => [h.holder, h.share_percent, h.participates]));
+      pp.holders.forEach((h, i) => {
+        const e = rows[i]!;
+        expectClose(h.asConvertedShares, e.as_converted_shares, `${at} ${h.holder} as converted`);
+        expectClose(h.required, e.required, `${at} ${h.holder} required`);
+        expectSameNumber(h.invested, e.invested, `${at} ${h.holder} invested`);
+        expectClose(h.fractionBought, e.fraction_bought, `${at} ${h.holder} fraction bought`);
+        expect(h.series.map((b) => [b.series, b.shares.toNumber(), b.kept.toNumber(), b.converted.toNumber(), b.commonReceived.toNumber()])).toEqual(
+          (e.series as Record<string, unknown>[]).map((b) => [b.series, b.shares, b.kept, b.converted, b.common_received]),
+        );
+      });
+    }
   } else {
     expect(ed).toEqual({});
   }
@@ -266,6 +288,27 @@ describe("the round cases built in full", () => {
     if (series.kind !== "priced_round") throw new Error("a priced round");
     expect(series.antiDilution.map((a) => [a.series, a.rule, a.cp2.toFixed(10)])).toEqual([["series_a", rule, cp2]]);
     expect(series.newShares.map((n) => [n.holder, n.shares.toNumber()])).toEqual([["investor_y", shares]]);
+  });
+
+  it.each([
+    // [case, price, priced after the conversion, what each converting holder keeps and gets, A if Series A is adjusted]
+    ["edge-17a-pay-to-play-priced-after", "1.2931034483", true, [["investor_w", "series_a", 0, 80_000]], null],
+    ["edge-17b-pay-to-play-priced-before", "1.2000000000", false, [["investor_w", "series_a", 0, 80_000]], null],
+    ["edge-17c-pay-to-play-partial", "1.2931034483", true, [["investor_w", "series_a", 0, 80_000]], null],
+    ["edge-17d-pay-to-play-partial-proportional", "1.2448132780", true, [["investor_w", "series_a", 400_000, 40_000]], null],
+    ["edge-17e-pay-to-play-anti-dilution", "1.2718818381", true, [["investor_w", "series_a", 0, 80_000]], 7_780_000],
+    ["edge-17f-pay-to-play-anti-dilution-priced-before", "1.1788139430", false, [["investor_w", "series_a", 0, 80_000]], 7_780_000],
+    ["edge-17g-pay-to-play-two-series", "1.2328767123", true, [["investor_x", "seed", 0, 200_000], ["investor_x", "series_a", 0, 100_000]], null],
+    ["edge-17h-pay-to-play-two-series-proportional", "1.1042944785", true, [["investor_x", "seed", 500_000, 100_000], ["investor_x", "series_a", 500_000, 50_000]], null],
+  ] as const)("%s prices the round at $%s (after the conversion: %s)", (name, price, after, converting, a) => {
+    const series = buildCapTables(readCaseFile(name, "inputs.json")).at(-1)!.details;
+    if (series.kind !== "priced_round") throw new Error("a priced round");
+    expect(series.price.toFixed(10)).toBe(price);
+    expect(series.payToPlay!.pricedAfterConversion).toBe(after);
+    const outcomes = series.payToPlay!.holders.flatMap((h) => h.series.filter((b) => !b.converted.isZero()).map((b) => [h.holder, b.series, b.kept.toNumber(), b.commonReceived.toNumber()]));
+    expect(outcomes).toEqual(converting);
+    // R21: the holders who convert get no adjustment, and A counts the table after the conversion.
+    expect(series.antiDilution.map((x) => x.a!.toNumber())).toEqual(a === null ? [] : [a]);
   });
 
   it("18 counts the SAFE's 1,000,000 shares in Investor X's pro-rata base: $1,090,909.09, not $1,200,000 (R6)", () => {
@@ -408,6 +451,66 @@ describe("anti-dilution beyond the cases (M4e)", () => {
     expect(roundHalfUp(new D("2.19045").minus("1e-35"), step).toString()).toBe("2.1905");
     expect(roundHalfUp(new D("2.190449"), step).toString()).toBe("2.1904");
     expect(roundHalfUp(new D("2.1904762066"), new D("0.01")).toString()).toBe("2.19");
+  });
+});
+
+describe("pay-to-play beyond the cases (M4f)", () => {
+  const pref = (id: string, name: string) => ({ id, name, kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" });
+  // 6,000,000 common; P, Q and R each buy 1,000,000 Series A at $1.00; a Series B offers them $1,000,000 under pay-to-play.
+  const company = (seriesB: Record<string, unknown>) => ({
+    holders: [{ id: "a", name: "Founder A" }, { id: "p", name: "Investor P" }, { id: "q", name: "Investor Q" }, { id: "r", name: "Investor R" }, { id: "y", name: "Investor Y" }],
+    events: [
+      { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "a", shares: 6000000 }] },
+      { id: "series_a", date: null, type: "priced_round", series: pref("series_a", "Series A Preferred"), pre_money: "6000000", investments: [{ holder: "p", amount: "1000000" }, { holder: "q", amount: "1000000" }, { holder: "r", amount: "1000000" }], seniority: [["series_a"]] },
+      {
+        id: "series_b", date: null, type: "priced_round", series: pref("series_b", "Series B Preferred"), pre_money: "9000000", seniority: [["series_b"], ["series_a"]],
+        investments: [{ holder: "p", amount: "1000000/3" }, { holder: "q", amount: "333333.33" }, { holder: "y", amount: "2000000" }],
+        pay_to_play: { series: ["series_a"], offered_amount: "1000000", conversion_ratio: "0.1" },
+        ...seriesB,
+      },
+    ],
+  });
+  const refusal = (inputs: unknown) => {
+    try {
+      buildCapTables(inputs);
+    } catch (e) {
+      return e;
+    }
+    return null;
+  };
+
+  it("keeps the preferred of a holder that buys exactly its pro-rata, and converts all of one a cent short (R20, R22)", () => {
+    const series = buildCapTables(company({})).at(-1)!.details;
+    if (series.kind !== "priced_round") throw new Error("a priced round");
+    // Each must buy a third of $1,000,000. P buys exactly that; Q buys $333,333.33; R buys nothing.
+    expect(series.payToPlay!.holders.map((h) => [h.holder, h.participates, h.series[0]!.kept.toNumber(), h.series[0]!.commonReceived.toNumber()])).toEqual([
+      ["p", true, 1_000_000, 0],
+      ["q", false, 0, 100_000],
+      ["r", false, 0, 100_000],
+    ]);
+  });
+
+  it("refuses a pay-to-play round that also converts a SAFE, until a case settles it", () => {
+    const inputs = company({});
+    inputs.events.splice(2, 0, { id: "safe", date: null, type: "safes", safes: [{ id: "safe_s", holder: "y", purchase_amount: "100000", post_money_cap: "20000000" }] } as never);
+    expect(refusal(inputs)).toMatchObject({ term: "pay_to_play_with_conversions", milestone: "later" });
+  });
+
+  it("refuses a pro-rata investment in a pay-to-play round, until a case settles it", () => {
+    const inputs = company({ investments: [{ holder: "p", amount: "400000", pro_rata: true }, { holder: "y", amount: "2000000" }] });
+    expect(refusal(inputs)).toMatchObject({ term: "pay_to_play_with_pro_rata", milestone: "later", path: "inputs.events[2].investments[0].pro_rata" });
+  });
+
+  it.each([
+    ["a series that doesn't exist", { series: ["series_c"], offered_amount: "1000000", conversion_ratio: "0.1" }, "inputs.events[2].pay_to_play.series[0]: series_c is not an existing preferred series"],
+    ["a series named twice", { series: ["series_a", "series_a"], offered_amount: "1000000", conversion_ratio: "0.1" }, "inputs.events[2].pay_to_play.series[1]: series_a is listed twice"],
+    ["a ratio for a series it doesn't name", { series: ["series_a"], offered_amount: "1000000", conversion_ratio: { series_a: "0.1", seed: "0.2" } }, "inputs.events[2].pay_to_play.conversion_ratio: give a ratio for each series the pay-to-play names, and only for those"],
+    ["an unknown partial-participation rule", { series: ["series_a"], offered_amount: "1000000", conversion_ratio: "0.1", partial_participation: "convert_some" }, "inputs.events[2].pay_to_play.partial_participation: must be convert_all or convert_proportionally"],
+    ["an unknown field", { series: ["series_a"], offered_amount: "1000000", conversion_ratio: "0.1", ratio: "0.1" }, "inputs.events[2].pay_to_play.ratio: unknown field"],
+  ])("refuses %s", (_, payToPlay, message) => {
+    const error = refusal(company({ pay_to_play: payToPlay }));
+    expect(error).toBeInstanceOf(InputError);
+    expect((error as Error).message).toContain(message);
   });
 });
 
