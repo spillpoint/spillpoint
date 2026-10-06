@@ -9,7 +9,7 @@
 import type { Decimal } from "decimal.js";
 
 import { findBreakpoints, parseExact, prepare } from "../src/index.ts";
-import { readCase } from "../src/case.ts";
+import { readInputs } from "../src/case.ts";
 import { money } from "../src/reasons.ts";
 import { readCaseFile } from "../test/support/cases.ts";
 
@@ -19,7 +19,7 @@ if (!caseName) {
   process.exit(2);
 }
 
-const exit = readCase(readCaseFile(caseName, "inputs.json"));
+const exit = readInputs(readCaseFile(caseName, "inputs.json"));
 const range: [Decimal, Decimal] =
   lowText && highText ? [parseExact(lowText, "low"), parseExact(highText, "high")] : exit.range;
 const found = findBreakpoints(prepare(exit.capTable), range);

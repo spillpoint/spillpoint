@@ -2,6 +2,7 @@
 // explained in plain English.
 //
 //   const exit = readExit(json);                         // check the input
+//   // or readInputs({ holders, events, exit }) to build the cap table from rounds
 //   const table = prepare(exit.capTable);
 //   const { answers } = solve(table, new D("20000000"));  // who converts, who gets what
 //   const breakpoints = findBreakpoints(table, exit.range);
@@ -18,6 +19,8 @@ export type { Milestone } from "./errors.ts";
 
 // Reading an exit input in the case-file format (ASSUMPTIONS C1–C4, C12).
 export { readCapTable, readExit } from "./input.ts";
+// Reading a whole input: holders, events and an exit on the cap table after one of them (C2).
+export { readInputs } from "./case.ts";
 export type { CapTableResolver } from "./input.ts";
 export type * from "./model.ts";
 

@@ -17,7 +17,7 @@ import type { Decimal } from "decimal.js";
 
 import { parseExact, payout, prepare, solve, toCents } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
-import { readCase } from "../src/case.ts";
+import { readInputs } from "../src/case.ts";
 import type { Decisions } from "../src/index.ts";
 import { decisionsFrom, expectedPoints, readCaseFile } from "../test/support/cases.ts";
 
@@ -47,7 +47,7 @@ if (!caseName || (!exitText && !all)) {
 }
 
 const inputs = readCaseFile(caseName, "inputs.json") as { events?: unknown[]; exit?: { cap_table_after_event?: string } };
-const exit = readCase(inputs);
+const exit = readInputs(inputs);
 const tableSource = inputs.events
   ? `the cap table after ${inputs.exit?.cap_table_after_event}, built from the case's ${inputs.events.length} events`
   : "the cap table in inputs.json";
