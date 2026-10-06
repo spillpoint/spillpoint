@@ -7,9 +7,9 @@
 import { describe, expect, it } from "vitest";
 
 import { D, findBreakpoints, prepare, readCapTable } from "../src/index.ts";
-import { readCase } from "../src/input.ts";
+import { readCase } from "../src/case.ts";
 import type { Breakpoint } from "../src/index.ts";
-import { M2_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
+import { M2_CASES, readCaseFile } from "./support/cases.ts";
 
 interface ExpectedBreakpoint {
   exit_value: string;
@@ -32,7 +32,7 @@ function expectedReasons(b: ExpectedBreakpoint): string[] {
 }
 
 describe.each(M2_CASES)("%s", (name) => {
-  const exit = readCase(readCaseFile(name, "inputs.json"), capTablesOf(name));
+  const exit = readCase(readCaseFile(name, "inputs.json"));
   const expected = (readCaseFile(name, "expected.json") as { exit: { breakpoints: ExpectedBreakpoint[] } }).exit.breakpoints;
   const found = findBreakpoints(prepare(exit.capTable), exit.range);
 
@@ -108,7 +108,7 @@ describe("the range", () => {
 
 describe("reason wording for founders (M2d review)", () => {
   const reasonsFor = (name: string) => {
-    const exit = readCase(readCaseFile(name, "inputs.json"), capTablesOf(name));
+    const exit = readCase(readCaseFile(name, "inputs.json"));
     return findBreakpoints(prepare(exit.capTable), exit.range);
   };
 

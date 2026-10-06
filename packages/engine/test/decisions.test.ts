@@ -10,9 +10,9 @@ import { describe, expect, it } from "vitest";
 
 import { D, UnsupportedTermError, prepare, readCapTable, solve } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
-import { readCase } from "../src/input.ts";
+import { readCase } from "../src/case.ts";
 import type { Answer, Decisions } from "../src/index.ts";
-import { M2_CASES, capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
+import { M2_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 
 const CENT = new D("0.01");
 const sorted = (ids: ReadonlySet<string>) => [...ids].sort();
@@ -23,7 +23,7 @@ function sum(values: Decimal[]): Decimal {
 }
 
 describe.each(M2_CASES)("%s", (name) => {
-  const pc = prepare(readCase(readCaseFile(name, "inputs.json"), capTablesOf(name)).capTable);
+  const pc = prepare(readCase(readCaseFile(name, "inputs.json")).capTable);
 
   it.each(expectedPoints(name).map((p) => [p.label, p] as const))("solves $%s: the recorded decisions and payouts", (_, point) => {
     const solution = solve(pc, point.exitValue);
