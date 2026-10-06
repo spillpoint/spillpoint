@@ -228,3 +228,116 @@ it("builds the same cap tables from what the editor saves as from the case", asy
   const file = await savedFile();
   expect(buildCapTables({ holders: file.holders, events: file.events })).toEqual(buildCapTables(examples[0]!.company!));
 });
+
+describe("adding, moving and removing events (M4k)", () => {
+  const addEvent = (label: string) => {
+    const select = within(panel()).getByLabelText("Type of event");
+    fireEvent.change(select, { target: { value: within(select).getByRole("option", { name: label }).getAttribute("value") } });
+    click("Add it at the end");
+  };
+  /** What Ana gets at $100M with Millrace's events changed and the payouts on the cap table after `after`, by the engine alone. */
+  function anaAfter(change: (events: Record<string, unknown>[]) => Record<string, unknown>[], after: string): string {
+    const inputs = structuredClone({ holders: examples[0]!.company!.holders, events: examples[0]!.company!.events }) as { holders: unknown[]; events: Record<string, unknown>[] };
+    const exit = { ...(examples[0]!.exit as object), cap_table_after_event: after };
+    const pc = prepare(readInputs({ holders: inputs.holders, events: change(inputs.events), exit }).capTable);
+    return `At $100M you get ${shortDollars(solve(pc, new D("100000000")).answers[0]!.payout.holderTotals.get("ana")!)}`;
+  }
+  const titles = () => within(panel()).getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+
+  it("starts a blank company with one event, which can't be removed", () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/Start from/), { target: { value: "scratch-rounds" } });
+    expect(screen.getByText(/^Your own company, built from its 1 event$/)).toBeTruthy();
+    expect(headline()).toBe("At $50M you get $50M");
+    openTab("Rounds");
+    expect(titles()).toEqual(["1. Common Stock issued"]);
+    edit("Common Stock issued");
+    expect(screen.getByRole("button", { name: "Remove Common Stock issued" }).matches(":disabled")).toBe(true);
+  });
+
+  it("adds each type at the end, open at its first field, and names what's blank plainly", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/Start from/), { target: { value: "scratch-rounds" } });
+    openTab("Rounds");
+    addEvent("An option pool");
+    const pool = card(/Option pool created/);
+    await vi.waitFor(() => expect(document.activeElement).toBe(within(pool).getByLabelText("Date")));
+    expect(within(pool).getByRole("alert").textContent).toBe("This event has a problem, so the payouts can't update: Fill this in: it can't be blank.");
+    expect(within(pool).getByText("Not built yet: the engine builds it once the problem above is fixed.")).toBeTruthy();
+    type(within(pool).getByLabelText("Percent of the fully diluted shares after it"), "10");
+    expect(within(pool).queryByRole("alert")).toBeNull();
+    for (const label of ["Shares issued", "Shares issued for a percentage of the company", "Options granted", "SAFEs", "Convertible notes", "A priced round"]) addEvent(label);
+    expect(titles()).toEqual([
+      "1. Common Stock issued",
+      "2. Option pool created",
+      "3. Common Stock issued",
+      "4. Common Stock issued",
+      "5. Options granted",
+      "6. A SAFE",
+      "7. A convertible note",
+      "8. Series A Preferred, a priced round",
+    ]);
+  });
+
+  it("moves an event, and the payouts follow: Series A's grants after the Series B", async () => {
+    render(<App />);
+    openTab("Rounds");
+    const grants = within(panel()).getAllByRole("button", { name: "Edit Options granted" })[2]!;
+    fireEvent.click(grants);
+    click("Move Options granted later");
+    expect(titles().slice(8)).toEqual(["9. Series B Preferred, a priced round", "10. Options granted"]);
+    // Now last, it can't move later: the keyboard is left on "Move earlier".
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Move Options granted earlier" })));
+    // The payouts followed the last event, now the grants.
+    const after = within(panel()).getByLabelText("The payouts use the cap table after") as HTMLSelectElement;
+    expect(within(after).getByRole("option", { selected: true }).textContent).toBe("10. Options granted (the last event)");
+    openTab("Payouts");
+    expect(headline()).toBe(anaAfter((events) => [...events.slice(0, 8), events[9]!, events[8]!], "grants_a_to_b"));
+    expect(headline()).not.toBe("At $100M you get $9.75M");
+  });
+
+  it("catches a move the rounds can't take: the Seed's grants before the Seed are more than the pool", () => {
+    render(<App />);
+    openTab("Rounds");
+    fireEvent.click(within(panel()).getAllByRole("button", { name: "Edit Options granted" })[1]!);
+    click("Move Options granted earlier");
+    expect(within(card(/6\. Options granted/)).getByRole("alert").textContent).toBe(
+      "This event has a problem, so the payouts can't update: A grant of 1,100,000 options is more than the 692,033 left in the unissued pool",
+    );
+    openTab("Payouts");
+    expect(headline()).toBe("At $100M you get $9.75M");
+  });
+
+  it("removes an event after asking: Lena's 6%", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    render(<App />);
+    openTab("Rounds");
+    fireEvent.click(within(panel()).getAllByRole("button", { name: "Edit Common Stock issued" })[1]!);
+    const remove = within(card(/2\. Common Stock issued/)).getByRole("button", { name: "Remove Common Stock issued" });
+    fireEvent.click(remove);
+    expect(confirm).toHaveBeenCalledWith("Remove event 2, Common Stock issued? What it did goes, and the events after it are built again without it.");
+    expect(titles()).toHaveLength(10);
+    fireEvent.click(remove);
+    expect(titles()).toHaveLength(9);
+    await vi.waitFor(() => expect(document.activeElement).toBe(within(panel()).getByLabelText("Type of event")));
+    openTab("Payouts");
+    expect(headline()).toBe(anaAfter((events) => events.filter((e) => e.id !== "early_hire"), "series_b"));
+  });
+
+  it("uses an earlier event's cap table when chosen, and keeps it when events are added", () => {
+    render(<App />);
+    openTab("Rounds");
+    const after = within(panel()).getByLabelText("The payouts use the cap table after") as HTMLSelectElement;
+    fireEvent.change(after, { target: { value: "series_a" } });
+    expect(within(card(/Series A Preferred/)).getByText("The payouts use the cap table after this event.")).toBeTruthy();
+    openTab("Payouts");
+    const atSeriesA = anaAfter((events) => events, "series_a");
+    expect(headline()).toBe(atSeriesA);
+    openTab("Rounds");
+    addEvent("An option pool");
+    type(within(card(/11\. Option pool created/)).getByLabelText("Percent of the fully diluted shares after it"), "5");
+    expect(after.value).toBe("series_a");
+    openTab("Payouts");
+    expect(headline()).toBe(atSeriesA);
+  });
+});

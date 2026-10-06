@@ -157,6 +157,15 @@ const SHOTS = {
   "m4j-series-b": { width: 1100, height: 900, steps: [click("Rounds"), editRound(9)], clip: [ROUND(10)], quality: 50 },
   "m4j-holders": { width: 1100, height: 900, steps: [click("Rounds")], clip: ["section[aria-labelledby=rounds-holders-heading]"], quality: 50 },
   "m4j-phone": { width: 375, height: 812, mobile: true, steps: [click("Rounds"), editRound(5)], clip: [ROUND(6)], quality: 50 },
+  // M4k: adding events, and which one the payouts use.
+  "m4k-add": {
+    width: 1100,
+    height: 900,
+    steps: [choose("Start from", "scratch-rounds"), click("Rounds"), pick("#rounds-add-type", 0, "priced_round"), click("Add it at the end")],
+    clip: [ROUND(2), ".rounds__add"],
+    quality: 50,
+  },
+  "m4k-after": { width: 1100, height: 900, steps: [click("Rounds")], clip: ["section[aria-labelledby=rounds-heading]"] },
   "m4j-error": {
     width: 1100,
     height: 900,

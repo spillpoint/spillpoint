@@ -443,7 +443,7 @@ function grantOptionsEvent(company: Company, ev: Json, path: string): EventDetai
     const id = `options_${strike.toString()}`;
     ensureSecurity(company, { id, name: `Options ($${strike.toString()} strike)`, kind: "option", strike: strike.toString() }, at);
     if (shares.gt(company.unissuedPool)) {
-      throw new InputError(`${at}.shares`, `a grant of ${shares.toString()} options is more than the ${company.unissuedPool.toString()} left in the unissued pool`);
+      throw new InputError(`${at}.shares`, `a grant of ${count(shares)} options is more than the ${count(company.unissuedPool)} left in the unissued pool`);
     }
     company.unissuedPool = company.unissuedPool.minus(shares);
     company.issue(text(g.holder, `${at}.holder`), id, shares, `${at}.holder`);
@@ -466,6 +466,11 @@ export function roundHalfUp(price: Decimal, step: Decimal): Decimal {
   const steps = price.div(step);
   const half = steps.floor().plus("0.5");
   return (nearlyEqual(steps, half) ? half : steps).toDecimalPlaces(0, D.ROUND_HALF_UP).times(step);
+}
+
+/** "1,100,000": a share count, for messages. */
+function count(shares: Decimal): string {
+  return shares.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /** "$1,234,567.89", for messages. */
