@@ -27,7 +27,7 @@ The page doesn't yet build a cap table from its rounds, such as priced rounds an
 
 ## The engine
 
-The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it.
+The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Its README lists what it still refuses.
 
 Coming next:
 - **Open Cap Format import,** so you can load a cap table exported from your cap table software.

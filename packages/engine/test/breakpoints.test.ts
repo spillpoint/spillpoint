@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 
 import { D, findBreakpoints, prepare, readCapTable } from "../src/index.ts";
-import { readCase } from "../src/case.ts";
+import { readInputs } from "../src/case.ts";
 import type { Breakpoint } from "../src/index.ts";
 import { M2_CASES, readCaseFile } from "./support/cases.ts";
 
@@ -32,7 +32,7 @@ function expectedReasons(b: ExpectedBreakpoint): string[] {
 }
 
 describe.each(M2_CASES)("%s", (name) => {
-  const exit = readCase(readCaseFile(name, "inputs.json"));
+  const exit = readInputs(readCaseFile(name, "inputs.json"));
   const expected = (readCaseFile(name, "expected.json") as { exit: { breakpoints: ExpectedBreakpoint[] } }).exit.breakpoints;
   const found = findBreakpoints(prepare(exit.capTable), exit.range);
 
@@ -97,7 +97,7 @@ describe("a pivotal voter indifferent over a range (E13, sharpened in the M2c re
 describe("the range", () => {
   it("reports only breakpoints strictly inside it (SPEC)", () => {
     // Edge case 2: the preference is paid at $3M and Seed converts at $15M.
-    const exit = readCase(readCaseFile("edge-02-non-participating", "inputs.json"));
+    const exit = readInputs(readCaseFile("edge-02-non-participating", "inputs.json"));
     const pc = prepare(exit.capTable);
     const at = (lo: number, hi: number) => findBreakpoints(pc, [new D(lo), new D(hi)]).map((b) => b.exitValue.toFixed(2));
     expect(at(0, 20000000)).toEqual(["3000000.00", "15000000.00"]);
@@ -108,7 +108,7 @@ describe("the range", () => {
 
 describe("reason wording for founders (M2d review)", () => {
   const reasonsFor = (name: string) => {
-    const exit = readCase(readCaseFile(name, "inputs.json"));
+    const exit = readInputs(readCaseFile(name, "inputs.json"));
     return findBreakpoints(prepare(exit.capTable), exit.range);
   };
 

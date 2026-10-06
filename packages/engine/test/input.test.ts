@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, readCapTable, readExit } from "../src/index.ts";
-import { readCase } from "../src/case.ts";
+import { readInputs } from "../src/case.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
 import { ALL_CASES, M2_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
@@ -33,7 +33,7 @@ describe("cases in M2's scope", () => {
 
   it.each(M2_CASES)("%s reads cleanly", (name) => {
     const inputs = readCaseFile(name, "inputs.json") as CaseExit;
-    const exit = readCase(inputs);
+    const exit = readInputs(inputs);
     expect(exit.exitValues.map((v) => v.toString())).toEqual(inputs.exit?.exit_values);
     if (inputs.exit?.cap_table) {
       expect(exit.capTable.holders).toHaveLength(inputs.exit.cap_table.holders.length);
@@ -42,7 +42,7 @@ describe("cases in M2's scope", () => {
   });
 
   it("runs Millrace's exit on the post–Series B cap table it builds from the rounds (C2, M4e)", () => {
-    const exit = readCase(readCaseFile("millrace", "inputs.json"));
+    const exit = readInputs(readCaseFile("millrace", "inputs.json"));
     const seriesA = exit.capTable.securities.find((s) => s.id === "series_a") as PreferredSeries;
     // Series A's conversion price fell from $2.075472 to $1.824752 in the down round.
     expect(seriesA.conversionRatio.toFixed(10)).toBe("1.1373992577");
@@ -53,7 +53,7 @@ describe("cases in M2's scope", () => {
   it("reads the same exit on the cap table expected.json records, given it by event (C2)", () => {
     const inputs = readCaseFile("millrace", "inputs.json") as { exit: unknown };
     const recorded = readExit(inputs.exit, capTablesOf("millrace"));
-    const built = readCase(inputs);
+    const built = readInputs(inputs);
     expect(recorded.capTable.positions).toEqual(built.capTable.positions);
     expect(recorded.capTable.unissuedPool).toEqual(built.capTable.unissuedPool);
     // The recorded prices are exact fractions read to 40 digits; the built ones are computed to 40 digits.
@@ -65,19 +65,19 @@ describe("cases in M2's scope", () => {
   it("refuses an exit after an event the case doesn't have", () => {
     const inputs = readCaseFile("millrace", "inputs.json") as { exit: { cap_table_after_event: string } };
     inputs.exit.cap_table_after_event = "series_c";
-    expect(() => readCase(inputs)).toThrow("exit.cap_table_after_event: no event series_c in inputs.events");
+    expect(() => readInputs(inputs)).toThrow("exit.cap_table_after_event: no event series_c in inputs.events");
   });
 
   it("refuses an exit after an event that leaves SAFEs outstanding until M5 (X1)", () => {
     const inputs = readCaseFile("millrace", "inputs.json") as { exit: { cap_table_after_event: string } };
     inputs.exit.cap_table_after_event = "option_pool";
-    expect(() => readCase(inputs)).toThrow(UnsupportedTermError);
-    expect(() => readCase(inputs)).toThrow(/SAFEs still outstanding at exit \(X1\): safe_priya, safe_marcus/);
+    expect(() => readInputs(inputs)).toThrow(UnsupportedTermError);
+    expect(() => readInputs(inputs)).toThrow(/SAFEs still outstanding at exit \(X1\): safe_priya, safe_marcus/);
   });
 
   it("reads both forms of a conversion group (C4, E11)", () => {
-    const [b] = readCase(readCaseFile("edge-06b-forced-class", "inputs.json")).capTable.conversionGroups;
-    const [c] = readCase(readCaseFile("edge-06c-forced-class-at-least", "inputs.json")).capTable.conversionGroups;
+    const [b] = readInputs(readCaseFile("edge-06b-forced-class", "inputs.json")).capTable.conversionGroups;
+    const [c] = readInputs(readCaseFile("edge-06c-forced-class-at-least", "inputs.json")).capTable.conversionGroups;
     expect([b?.voteThreshold.toString(), b?.voteRule]).toEqual(["0.5", "more_than"]);
     expect([c?.voteThreshold.toString(), c?.voteRule]).toEqual(["0.5", "at_least"]);
   });
@@ -101,13 +101,13 @@ describe("cases outside M2's scope are refused, never skipped", () => {
   });
 
   it.each(roundCases)("%s has no exit: buildCapTables builds its cap tables", (name) => {
-    expect(() => readCase(readCaseFile(name, "inputs.json"))).toThrow("inputs: a round case with no exit to run; buildCapTables builds its cap tables");
+    expect(() => readInputs(readCaseFile(name, "inputs.json"))).toThrow("inputs: a round case with no exit to run; buildCapTables builds its cap tables");
   });
 
   it.each(refused)("%s is refused for %s (%s)", (name, term, milestone) => {
     let error: unknown;
     try {
-      readCase(readCaseFile(name, "inputs.json"));
+      readInputs(readCaseFile(name, "inputs.json"));
     } catch (e) {
       error = e;
     }

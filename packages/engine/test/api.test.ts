@@ -17,6 +17,7 @@ it("exports exactly the public API", () => {
     "prepare",
     "readCapTable",
     "readExit",
+    "readInputs",
     "solve",
     "toCents",
   ]);
