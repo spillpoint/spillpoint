@@ -74,14 +74,24 @@ describe("opening an event", () => {
 });
 
 describe("a change to the rounds", () => {
-  it("goes straight to the payouts: the Seed at a $10M pre-money valuation", () => {
+  it("that a later round can't take is caught there: a $10M Seed leaves Harbor Lane's $3M above its Series A pro-rata", () => {
     render(<App />);
     openTab("Rounds");
     edit("Seed Preferred, a priced round");
     type(within(card(/Seed Preferred/)).getByLabelText("Pre-money valuation ($)"), "10M");
-    expect(lines(/Seed Preferred/)[0]).toMatch(/^\$2,500,000 at a \$10,000,000 pre-money valuation, \$12,500,000 post-money: \$0\.\d{6} a share\.$/);
+    expect(within(card(/Series A Preferred/)).getByRole("alert").textContent).toMatch(
+      /^This event has a problem, so the payouts can't update: Harbor Lane Ventures Fund I's pro-rata investment of \$3,000,000\.00 is more than its pro-rata entitlement of \$[\d,]+\.\d\d/,
+    );
+  });
+
+  it("goes straight to the payouts: the Seed at a $7M pre-money valuation", () => {
+    render(<App />);
+    openTab("Rounds");
+    edit("Seed Preferred, a priced round");
+    type(within(card(/Seed Preferred/)).getByLabelText("Pre-money valuation ($)"), "7M");
+    expect(lines(/Seed Preferred/)[0]).toMatch(/^\$2,500,000 at a \$7,000,000 pre-money valuation, \$9,500,000 post-money: \$0\.\d{6} a share\.$/);
     openTab("Payouts");
-    expect(headline()).toBe(anaAt100M((events) => (events[5]!.pre_money = "10000000")));
+    expect(headline()).toBe(anaAt100M((events) => (events[5]!.pre_money = "7000000")));
     expect(headline()).not.toBe("At $100M you get $9.75M");
     expect(screen.getByText("Not saved")).toBeTruthy();
   });
@@ -155,7 +165,8 @@ describe("holders", () => {
     type(names.at(-1)!, "Bea Novak");
     expect((holders().getByRole("button", { name: "Remove Bea Novak" }) as HTMLButtonElement).disabled).toBe(false);
     expect((holders().getByRole("button", { name: "Remove Ana Ortiz" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(holders().getByText("Named in an event, so it can't be removed until it's taken out of it.")).toBeTruthy();
+    const why = holders().getByRole("button", { name: "Remove Ana Ortiz" }).getAttribute("aria-describedby")!;
+    expect(document.getElementById(why)!.textContent).toBe("Named in an event, so it can't be removed until it's taken out of it.");
 
     edit("Series B Preferred, a priced round");
     click("Add an investor");
@@ -195,8 +206,9 @@ describe("pay-to-play", () => {
     edit("Series B Preferred, a priced round");
     const seriesB = card(/Series B Preferred/);
     fireEvent.click(within(seriesB).getByLabelText(/Holders of earlier series must buy their share of an amount/));
-    fireEvent.click(within(seriesB).getByRole("checkbox", { name: "Seed Preferred" }));
-    fireEvent.click(within(seriesB).getByRole("checkbox", { name: "Series A Preferred" }));
+    // The most senior earlier series is named to start with.
+    expect((within(seriesB).getByRole("checkbox", { name: "Series A Preferred" }) as HTMLInputElement).checked).toBe(true);
+    expect((within(seriesB).getByRole("checkbox", { name: "Seed Preferred" }) as HTMLInputElement).checked).toBe(false);
     type(within(seriesB).getByLabelText("Amount offered to them ($)"), "1M");
     type(within(seriesB).getByLabelText("Common for each Series A Preferred share, if it doesn't buy"), "0.1");
     const said = lines(/Series B Preferred/);

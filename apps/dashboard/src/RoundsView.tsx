@@ -32,7 +32,7 @@ interface Props {
   tables: CapTableAfterEvent[] | null;
   /** Which events are open for editing, by key. */
   editing: ReadonlySet<string>;
-  onEditing: (open: ReadonlySet<string>) => void;
+  onEditing: (update: (open: ReadonlySet<string>) => ReadonlySet<string>) => void;
 }
 
 const count = (n: D) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -47,7 +47,8 @@ export function RoundsView({ events, after, you, rounds, onRounds, problem, tabl
     );
   }
   const last = events.findIndex((e) => e.id === after);
-  const toggle = (key: string) => onEditing(editing.has(key) ? new Set([...editing].filter((k) => k !== key)) : new Set([...editing, key]));
+  // From the latest state, so quick clicks on several events each open their own.
+  const toggle = (key: string) => onEditing((open) => (open.has(key) ? new Set([...open].filter((k) => k !== key)) : new Set([...open, key])));
   return (
     <div className="rounds">
       <section className="card" aria-labelledby="rounds-heading">
@@ -78,9 +79,15 @@ export function RoundsView({ events, after, you, rounds, onRounds, problem, tabl
                   <span className="rounds__number">{i + 1}.</span> {e.title}
                 </h3>
                 <span className="rounds__date">{e.date ?? "No date"}</span>
-                <button type="button" className="file-button rounds__edit" aria-expanded={open} aria-controls={formId} onClick={() => toggle(event.key)}>
+                <button
+                  type="button"
+                  className="file-button rounds__edit"
+                  aria-label={`${open ? "Done" : "Edit"} ${e.title}`}
+                  aria-expanded={open}
+                  aria-controls={formId}
+                  onClick={() => toggle(event.key)}
+                >
                   {open ? "Done" : "Edit"}
-                  <span className="visually-hidden"> {e.title}</span>
                 </button>
               </div>
               {problem?.event === event.key && (

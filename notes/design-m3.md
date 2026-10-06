@@ -43,3 +43,9 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
   - **The Cap table tab is read-only** while the rounds build the table: a note at the top says why, beside "Edit the cap table directly". The fields keep their values and stay readable, on the page's grey; the add and remove buttons are hidden. The name and the range stay editable.
   - **"Edit the cap table directly"** asks first, and says what goes: the events and what each worked out. The table stays as it is.
   - **The label above the tabs** says "built from its 10 events".
+- **M4j:** editing the rounds, on the Rounds tab.
+  - **Each card has "Edit"** beside its date; it opens the event's fields in the card, above what the event did, and becomes "Done". Several can be open at once.
+  - **The fields** are the cap table editor's: labels above, hints under, the engine's message under the field it names, in the error red. Lines within an event (investors, grants, SAFEs, notes) are each a bordered group, named "Investor 1: Harbor Lane Ventures Fund I", with "Remove", and "Add an investor" under them. Less common terms sit under "More terms".
+  - **A problem** also shows at the top of its event, and on the Payouts tab as "Your last change to the rounds has a problem", with "Fix it", which opens the event at the field.
+  - **"For you"** follows the holder chosen on the Payouts tab: "For you: 46.5% → 25.5% fully diluted." in the accent blue, as in the breakpoint list.
+  - **Holders** are a card below the events. One still named in an event has its Remove button off, with a line saying why.
