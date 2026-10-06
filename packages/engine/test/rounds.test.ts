@@ -163,7 +163,7 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is listed here, with where it stops in M4c", () => {
+  it("is listed here, with where the engine stops", () => {
     expect(Object.keys(STOPS).sort()).toEqual(ROUND_CASES);
   });
 

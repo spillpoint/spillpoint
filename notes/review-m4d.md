@@ -90,7 +90,7 @@ When a SAFE's cap price exactly equals its discount price, the cap applies, as i
   - the refused mix of post-money and pre-money SAFEs
   - the tie going to the cap
 
-**599 engine tests in all.**
+**599 engine tests in all,** one more than M4c: the six new tests, less the five "refuses …" tests for 15, 18, 18b, 18c and 20, which now build in full.
 
 ## What changed
 
@@ -112,7 +112,7 @@ When a SAFE's cap price exactly equals its discount price, the cap applies, as i
 
 ## Decisions I made, for you to check
 
-1. **The pro-rata refusal compares exactly.** An amount equal to the entitlement in exact arithmetic is allowed, even when 40 digits leave the two a hair apart (E14's tie). The message shows the entitlement **rounded down** to the cent, as the reference does.
+1. **The pro-rata refusal allows an amount equal to the entitlement.** An amount above it by no more than one part in 10³⁰ counts as equal, so 40-digit arithmetic can't refuse an amount that is exactly the entitlement (E14's tie). The message shows the entitlement **rounded down** to the cent, as the reference does.
 2. **The mix of post-money and pre-money instruments** is refused with milestone "later", not "M4". It's on the "Owed before release" list rather than in an M4 PR.
 3. **When several later terms meet in one round,** the error names the first in this order:
    1. pay-to-play
