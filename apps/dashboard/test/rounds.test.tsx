@@ -57,7 +57,7 @@ describe("the Rounds tab", () => {
       "10. Series B Preferred, a priced round",
     ]);
     expect([...roundsPanel().querySelectorAll(".rounds__date")].map((d) => d.textContent)).toEqual([
-      "1 Feb 2021", "1 Jun 2021", "15 Sep 2021", "1 Oct 2021", "1 Oct 2021", "30 Jun 2022", "No date", "30 Sep 2023", "No date", "31 Mar 2025",
+      "Feb 1, 2021", "Jun 1, 2021", "Sep 15, 2021", "Oct 1, 2021", "Oct 1, 2021", "Jun 30, 2022", "No date", "Sep 30, 2023", "No date", "Mar 31, 2025",
     ]);
     expect(within(roundsPanel()).getByText(/The payouts use the cap table after the 10th event: Series B Preferred, a priced round\./)).toBeTruthy();
     expect(within(event(/Series B Preferred/)).getByText("The payouts use the cap table after this event.")).toBeTruthy();
@@ -70,7 +70,7 @@ describe("the Rounds tab", () => {
     expect(lines(event(/Seed Preferred/))).toEqual([
       "$2,500,000 at a $7,500,000 pre-money valuation, $10,000,000 post-money: $0.463515 a share.",
       "Harbor Lane Ventures Fund I invests $2,500,000 for 5,393,570 shares of Seed Preferred.",
-      "The pool is topped up by 3,191,337 shares, to 18% of the company after the round. The top-up comes before the new money, so it dilutes only the holders before the round.",
+      "The pool is topped up by 3,191,337 shares, to 18% of the company after the round. The top-up comes before the new money, so it dilutes only the holders before the round. Investors call this the option pool shuffle.",
       "Priya Shah's SAFE converts at its cap price, $0.384930 a share, into 779,362 shares of Seed Preferred (from SAFEs).",
       "Marcus Lee's SAFE converts at its cap price, $0.384930 a share, into 389,681 shares of Seed Preferred (from SAFEs).",
     ]);
@@ -80,6 +80,31 @@ describe("the Rounds tab", () => {
     expect(lines(event(/Series B Preferred/))).toContain(
       "Series A Preferred's anti-dilution (broad-based weighted average) lowers its conversion price from $2.075472 to $1.824752, so each share converts into 1.137399 common. Its preference doesn't change.",
     );
+  });
+
+  it("says what each event that changes your stake did to it: Ana's fully diluted share, before and after", () => {
+    render(<App />);
+    openTab("Rounds");
+    const yours = () => [...roundsPanel().querySelectorAll(".rounds__event")].map((card) => card.querySelector(".rounds__yours")?.textContent ?? null);
+    // Grants come out of the pool, and SAFEs aren't shares until they convert, so those events don't change it.
+    expect(yours()).toEqual([
+      "For you: 0.0% → 55.0% fully diluted.",
+      "For you: 55.0% → 51.7% fully diluted.",
+      null,
+      "For you: 51.7% → 46.5% fully diluted.",
+      null,
+      "For you: 46.5% → 25.5% fully diluted.",
+      null,
+      // 5,500,000 of the 28,909,090 fully diluted shares after the Series A.
+      "For you: 25.5% → 19.0% fully diluted.",
+      null,
+      "For you: 19.0% → 12.9% fully diluted.",
+    ]);
+    // It follows the holder you choose on the Payouts tab.
+    openTab("Payouts");
+    fireEvent.change(screen.getByLabelText(/You are/), { target: { value: "cobalt" } });
+    openTab("Rounds");
+    expect(yours().filter((line) => line !== null)).toEqual(["For you: 0.0% → 21.7% fully diluted."]);
   });
 
   it("shows the cap table after an event, with the pool and the SAFEs still waiting to convert", () => {

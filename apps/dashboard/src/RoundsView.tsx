@@ -4,7 +4,9 @@
 // comes in M4j; until then they're shown as loaded. On a phone each row's
 // class moves under the holder's name, as the payouts table's shares do, so
 // the table fits without scrolling sideways; the stylesheet shows one form or
-// the other, never both.
+// the other, never both. Each event that changes your fully diluted share
+// says so, before and after (M4i review): founders open this tab to see what
+// each round cost them.
 
 import { D } from "spillpoint";
 
@@ -16,11 +18,13 @@ interface Props {
   events: EventView[] | null;
   /** The event whose cap table the payouts use. */
   after: string | null;
+  /** The holder you are, by id. */
+  you: string;
 }
 
 const count = (n: D) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-export function RoundsView({ events, after }: Props) {
+export function RoundsView({ events, after, you }: Props) {
   if (!events) {
     return (
       <section className="card" aria-labelledby="rounds-heading">
@@ -49,6 +53,7 @@ export function RoundsView({ events, after }: Props) {
               <span className="rounds__date">{e.date ?? "No date"}</span>
             </div>
             {e.id === after && <p className="tag rounds__used">The payouts use the cap table after this event.</p>}
+            {forYou(events[i - 1]?.stakes.get(you) ?? ZERO, e.stakes.get(you) ?? ZERO)}
             <ul className="rounds__lines">
               {e.lines.map((line, j) => (
                 <li key={j}>{line}</li>
@@ -111,6 +116,21 @@ export function RoundsView({ events, after }: Props) {
       </ol>
     </div>
   );
+}
+
+const ZERO = new D(0);
+
+/**
+ * "For you: 46.5% → 25.5% fully diluted.", when an event changes your share.
+ * Shown to one decimal place, or more when one place would show the same
+ * figure twice.
+ */
+function forYou(before: D, after: D) {
+  if (before.eq(after)) return null;
+  let places = 1;
+  const shown = (x: D) => `${x.times(100).toDecimalPlaces(places, D.ROUND_HALF_UP).toFixed(places)}%`;
+  while (places < 4 && shown(before) === shown(after)) places++;
+  return <p className="rounds__yours">For you: {shown(before)} → {shown(after)} fully diluted.</p>;
 }
 
 /** 1 → "1st", 10 → "10th": which event, counting from the first. */

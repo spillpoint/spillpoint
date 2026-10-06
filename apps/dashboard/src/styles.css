@@ -234,6 +234,7 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .rounds__number { color: var(--muted); font-weight: 400; margin-right: 2px; }
 .rounds__date { color: var(--muted); font-size: 0.875rem; white-space: nowrap; }
 .rounds__used { display: inline-block; margin: 8px 0 0; }
+.rounds__yours { margin: 8px 0 0; font-weight: 600; color: var(--accent); }
 .rounds__lines { margin: 8px 0 0; padding-left: 1.25rem; }
 .rounds__lines li + li { margin-top: 4px; }
 .rounds__table { margin-top: 12px; }

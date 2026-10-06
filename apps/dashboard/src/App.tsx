@@ -436,7 +436,7 @@ function Workspace(props: WorkspaceProps) {
       </div>
 
       <div role="tabpanel" id="panel-rounds" aria-labelledby="tab-rounds" hidden={tab !== "rounds"}>
-        <RoundsView events={events} after={rounds?.after ?? null} />
+        <RoundsView events={events} after={rounds?.after ?? null} you={you} />
       </div>
     </main>
   );
