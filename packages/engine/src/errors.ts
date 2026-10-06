@@ -12,7 +12,7 @@ export class InputError extends Error {
 }
 
 /** When a refused term arrives: a milestone, or "later" for a term that waits until a case needs it. */
-export type Milestone = "M4" | "M5" | "later";
+export type Milestone = "M5" | "later";
 
 /**
  * The input uses a term the engine doesn't model yet. It is refused, never

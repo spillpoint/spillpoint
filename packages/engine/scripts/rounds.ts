@@ -5,10 +5,10 @@
 //   pnpm rounds <case>
 //
 // Each event shows what it worked out (a round's price, new shares, pool
-// top-up, SAFE conversions, pro-rata, pay-to-play and anti-dilution) and the
-// cap table after it, fully diluted, with whether it matches the case's
-// expected.json. An event the engine doesn't build yet stops the list with
-// the engine's own refusal.
+// top-up, SAFE and note conversions, pro-rata, pay-to-play and
+// anti-dilution) and the cap table after it, fully diluted, with whether it
+// matches the case's expected.json. An event the engine refuses stops the
+// list with the engine's own message.
 
 import type { Decimal } from "decimal.js";
 
@@ -99,6 +99,12 @@ function show(t: CapTableAfterEvent): void {
         a.a && a.b
           ? `  A ${grouped(a.a)}, B ${a.b.toFixed(4).replace(/\B(?=(\d{3})+(?!\d)\.)/g, ",")} ($${grouped(a.b.times(a.cp1))} paid ÷ CP1), C ${grouped(a.c)} new shares`
           : `  CP2 is the round's price; C ${grouped(a.c)} new shares`,
+      );
+    }
+    for (const c of d.noteConversions) {
+      console.log(
+        `Note ${c.note}: $${grouped(c.principal)} + $${grouped(c.interest)} interest converts at its ${c.method}, $${c.conversionPrice.toFixed(6)} ` +
+          `(${c.conversionBase.replace("_", " ")} base ${grouped(c.baseShares)}), into ${grouped(c.shares)} ${c.series}`,
       );
     }
     for (const p of d.proRata) {

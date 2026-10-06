@@ -31,7 +31,8 @@ export { findBreakpoints } from "./breakpoints.ts";
 // Building cap tables from a company's rounds (M4).
 export { buildCapTables } from "./rounds.ts";
 export type {
-  AntiDilutionAdjustment, CapTableAfterEvent, EventDetails, Note, PayToPlay, PayToPlayHolder, PayToPlaySeries, ProRata, RoundDetails, Safe, SafeConversion,
+  AntiDilutionAdjustment, CapTableAfterEvent, EventDetails, Note, NoteConversion, PayToPlay, PayToPlayHolder, PayToPlaySeries, ProRata, RoundDetails, Safe,
+  SafeConversion,
 } from "./rounds.ts";
 export type { Breakpoint } from "./breakpoints.ts";
 export type { Reason, ReasonCode } from "./reasons.ts";
