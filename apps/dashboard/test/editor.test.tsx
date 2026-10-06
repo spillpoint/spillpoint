@@ -19,6 +19,9 @@ const card = (heading: string) => screen.getByRole("heading", { name: heading })
 const status = () => document.querySelector(".editor__status")!.textContent;
 const series = (name: string) => screen.getByRole("group", { name });
 const startFrom = (value: string) => fireEvent.change(screen.getByLabelText(/Start from/), { target: { value } });
+/** Millrace's cap table is built from its rounds, so editing it means dropping them first; the page asks, and the test says yes. */
+const editDirectly = () => fireEvent.click(screen.getByRole("button", { name: "Edit the cap table directly" }));
+const yesToEditDirectly = () => vi.spyOn(window, "confirm").mockReturnValueOnce(true);
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -140,8 +143,10 @@ describe("editing an example", () => {
 
 describe("prices", () => {
   it("show as decimals, with no fractions on screen until you type one", () => {
+    yesToEditDirectly();
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     const seriesA = series("Series A Preferred");
     const issue = within(seriesA).getByLabelText("Original issue price ($ a share)") as HTMLInputElement;
     expect(issue.value).toBe("2.075472");
@@ -156,8 +161,10 @@ describe("prices", () => {
 
 describe("when the engine says no", () => {
   it("puts its message next to the field, and keeps the payouts from before the change", () => {
+    yesToEditDirectly();
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     const cap = within(series("Series A Preferred")).getByLabelText("Cap (× the issue price, preference included)");
     type(cap, "1");
     // The engine's words, without the assumption code (E7) it gives developers.
@@ -178,8 +185,10 @@ describe("when the engine says no", () => {
   });
 
   it("names the cell when a share count is wrong", () => {
+    yesToEditDirectly();
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     const cell = screen.getByRole("textbox", { name: "Ana Ortiz, Common Stock" });
     type(cell, "5,500,000.5");
     expect(cell.getAttribute("aria-invalid")).toBe("true");
@@ -187,8 +196,10 @@ describe("when the engine says no", () => {
   });
 
   it("refuses a price that isn't a number, in the engine's words", () => {
+    yesToEditDirectly();
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     const price = within(series("Seed Preferred")).getByLabelText("Original issue price ($ a share)");
     type(price, "about a dollar");
     expect(document.getElementById(price.getAttribute("aria-describedby")!.split(" ").at(-1)!)!.textContent).toBe(
@@ -199,9 +210,10 @@ describe("when the engine says no", () => {
 
 describe("not losing edits by accident", () => {
   it("asks before removing a holder with shares, and removes the shares with them", () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(true).mockReturnValueOnce(false).mockReturnValueOnce(true);
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     const remove = within(card("Holders")).getByRole("button", { name: "Remove Ana Ortiz" });
     fireEvent.click(remove);
     expect(confirm).toHaveBeenLastCalledWith("Remove Ana Ortiz? Its 5,500,000 shares go too.");
@@ -215,12 +227,13 @@ describe("not losing edits by accident", () => {
   });
 
   it("asks before starting over when there are changes, and not when there aren't", () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(true).mockReturnValueOnce(false).mockReturnValueOnce(true);
     render(<App />);
     startFrom("edge-04-participating-capped");
     expect(confirm).not.toHaveBeenCalled();
     startFrom("millrace");
     openTab("Cap table");
+    editDirectly();
     type(within(card("Holders")).getAllByRole("textbox", { name: "Holder name" })[0]!, "Ana O.");
     startFrom("edge-04-participating-capped");
     expect(confirm).toHaveBeenCalledWith("Start over? Your unsaved changes to this cap table will be lost.");
@@ -254,12 +267,14 @@ describe("the tabs", () => {
     const tab = (name: string) => screen.getByRole("tab", { name });
     const selected = () => screen.getAllByRole("tab").find((t) => t.getAttribute("aria-selected") === "true")!.textContent;
     fireEvent.keyDown(tab("Payouts"), { key: "End" });
+    expect(selected()).toBe("Rounds");
+    fireEvent.keyDown(tab("Rounds"), { key: "ArrowLeft" });
     expect(selected()).toBe("Cap table");
     fireEvent.keyDown(tab("Cap table"), { key: "ArrowLeft" });
     expect(selected()).toBe("Payouts");
     fireEvent.keyDown(tab("Payouts"), { key: "ArrowLeft" });
-    expect(selected()).toBe("Cap table");
-    fireEvent.keyDown(tab("Cap table"), { key: "Home" });
+    expect(selected()).toBe("Rounds");
+    fireEvent.keyDown(tab("Rounds"), { key: "Home" });
     expect(selected()).toBe("Payouts");
     expect(document.activeElement).toBe(tab("Payouts"));
   });

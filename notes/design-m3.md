@@ -37,3 +37,9 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
   - **The chart** fits down to 320 pixels.
   - **A breakpoint mark's box** stays on screen near either end.
   - **The keyboard:** Escape closes a mark's box; the tabs take the arrow keys, Home and End; and the chart's drawing is no longer a focus stop, since its values are in the legend.
+- **M4i:** a cap table built from the company's rounds, as Millrace now is.
+  - **A third tab, "Rounds",** lists the events in order as numbered cards: a title ("Seed Preferred, a priced round"), the date, and what the event did in plain sentences. The card the payouts use is marked with a tag.
+  - **The cap table after each event** sits behind "The cap table after it", a standard disclosure, in the payouts table's style, with a total and the fully diluted footnote. On a phone the class moves under the holder's name, as the payouts table's shares do, so it fits without scrolling sideways.
+  - **The Cap table tab is read-only** while the rounds build the table: a note at the top says why, beside "Edit the cap table directly". The fields keep their values and stay readable, on the page's grey; the add and remove buttons are hidden. The name and the range stay editable.
+  - **"Edit the cap table directly"** asks first, and says what goes: the events and what each worked out. The table stays as it is.
+  - **The label above the tabs** says "built from its 10 events".

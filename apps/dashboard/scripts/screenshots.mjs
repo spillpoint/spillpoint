@@ -81,6 +81,12 @@ const BUILD_6B = [
   fill("#edit-range-high", 0, "40M"),
 ];
 
+/** Millrace's cap table is built from its rounds (M4i): editing it means dropping them, which asks first. */
+const EDIT_DIRECTLY = ["window.confirm = () => true", click("Edit the cap table directly")];
+/** Opens the cap table after the index-th event on the Rounds tab. */
+const openRound = (index) => `document.querySelectorAll(".rounds__table")[${index}].open = true`;
+const ROUND = (n) => `.rounds__event:nth-child(${n})`;
+
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
   "m3a-by-class": { width: 1100, height: 900, steps: [click("By class")] },
@@ -106,13 +112,13 @@ const SHOTS = {
     width: 1100,
     height: 900,
     // Series A is the third series; its cap is its fifth box.
-    steps: [click("Cap table"), fill("fieldset.series input", 12, "1")],
+    steps: [click("Cap table"), ...EDIT_DIRECTLY, fill("fieldset.series input", 12, "1")],
     clip: ["fieldset.series:nth-of-type(3)"],
   },
   "m3c-stale": {
     width: 1100,
     height: 900,
-    steps: [click("Cap table"), fill("fieldset.series input", 12, "1"), click("Payouts")],
+    steps: [click("Cap table"), ...EDIT_DIRECTLY, fill("fieldset.series input", 12, "1"), click("Payouts")],
     clip: [".notice--problem", ".founder"],
   },
   // The shares grid scrolled sideways, to show the holder column staying in view.
@@ -139,6 +145,11 @@ const SHOTS = {
   "m3e-phone-tick": { width: 375, height: 812, mobile: true, steps: [focus(".exit-value__tick", 9)], clip: [".exit-value", ".tick-tip"] },
   "m3e-small-chart": { width: 320, height: 640, mobile: true, steps: [], clip: [CURVES] },
   "m3c-6b-curves": { width: 1100, height: 900, steps: [...BUILD_6B, click("Payouts")], clip: [CURVES, "section[aria-labelledby=breakpoints-heading]"], quality: 40 },
+  // M4i: Millrace built from its rounds.
+  "m4i-rounds": { width: 1100, height: 900, steps: [click("Rounds")], clip: [".example-label", ".tabs", "section[aria-labelledby=rounds-heading]", ROUND(1), ROUND(2), ROUND(3), ROUND(4)], quality: 50 },
+  "m4i-seed": { width: 1100, height: 900, steps: [click("Rounds"), openRound(5)], clip: [ROUND(6)] },
+  "m4i-locked": { width: 1100, height: 900, steps: [click("Cap table")], clip: [".editor__built", "section[aria-labelledby=edit-holders-heading]"], quality: 50 },
+  "m4i-phone": { width: 375, height: 812, mobile: true, steps: [click("Rounds"), openRound(9)], clip: [ROUND(10)] },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -3,8 +3,9 @@
 // - "spillpoint" resolves to the engine's sources, not its built dist/, so the
 //   dashboard always runs the current engine with no build step (M3 plan).
 // - The examples are read from the locked cases at build time and reduced to
-//   the exit input each needs, so they can't drift from the tests and the
-//   page doesn't ship whole expected.json files.
+//   the input each needs, so they can't drift from the tests. Millrace comes
+//   with its holders and events, and the page builds its cap table from them
+//   with the engine (M4i); no expected.json is read or shipped.
 // - No network: the built page loads nothing from anywhere else.
 // - The page's footer names the engine version and the commit it was built
 //   from (M3e review).
@@ -38,20 +39,11 @@ function examples(): Plugin {
       if (loadId !== `\0${id}`) return null;
       const out = EXAMPLES.map((e) => {
         const inputsPath = resolve(casesDir, e.id, "inputs.json");
-        const expectedPath = resolve(casesDir, e.id, "expected.json");
         this.addWatchFile(inputsPath);
-        this.addWatchFile(expectedPath);
         const inputs = JSON.parse(readFileSync(inputsPath, "utf8"));
-        const exit = { ...inputs.exit };
-        // C2: Millrace's exit runs on the post-Series B cap table recorded in expected.json.
-        if (exit.cap_table_after_event) {
-          const expected = JSON.parse(readFileSync(expectedPath, "utf8"));
-          const after = expected.cap_tables.find((t: { after_event: string }) => t.after_event === exit.cap_table_after_event);
-          const { totals: _totals, ...capTable } = after.cap_table;
-          exit.cap_table = capTable;
-          delete exit.cap_table_after_event;
-        }
-        return { id: e.id, label: e.label, fictional: true, defaultExitValue: e.defaultExitValue, exit };
+        // C2: Millrace's exit runs on the cap table after its Series B, which the page builds from its events.
+        const company = inputs.events ? { company: { holders: inputs.holders, events: inputs.events } } : {};
+        return { id: e.id, label: e.label, fictional: true, defaultExitValue: e.defaultExitValue, exit: inputs.exit, ...company };
       });
       return `export default ${JSON.stringify(out)};`;
     },

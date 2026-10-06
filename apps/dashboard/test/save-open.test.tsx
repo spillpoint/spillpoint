@@ -2,17 +2,23 @@
 // downloads, opening it again, and never losing unsaved changes by accident.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import examples from "virtual:examples";
+import { D } from "spillpoint";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
-import { exitOf, payoutsAtBreakpoints } from "./payouts.ts";
+import { exitOf, lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
 const type = (el: HTMLElement, value: string) => fireEvent.change(el, { target: { value } });
 const openTab = (name: "Payouts" | "Cap table") => fireEvent.click(screen.getByRole("tab", { name }));
 const series = (name: string) => screen.getByRole("group", { name });
 const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+/** Millrace is built from its rounds; editing its cap table means dropping them, which asks first. */
+const editDirectly = () => {
+  vi.spyOn(window, "confirm").mockReturnValueOnce(true);
+  click("Edit the cap table directly");
+};
+const closeTo = (text: unknown, numerator: string, denominator: string) => new D(String(text)).minus(new D(numerator).div(denominator)).abs().lte("1e-30");
 
 /** What each Save downloads: the browser's download is replaced by a list of files. */
 let downloads: { name: string; blob: Blob }[];
@@ -59,22 +65,26 @@ describe("saving Millrace and opening it again", () => {
     click("Save");
     const second = await saved(1);
     expect(second).toBe(first);
-    expect(payoutsAtBreakpoints(exitOf(second))).toEqual(payoutsAtBreakpoints(examples[0]!.exit));
+    // The file keeps the rounds, and they build what Millrace's locked cap table pays.
+    expect(JSON.parse(first)).toMatchObject({ version: 2, cap_table_after_event: "series_b" });
+    expect(payoutsAtBreakpoints(exitOf(second))).toEqual(payoutsAtBreakpoints(lockedMillraceExit()));
   });
 
   it("keeps the exact prices of fields nobody edited, not the six places on screen", async () => {
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     expect((within(series("Series A Preferred")).getByLabelText("Original issue price ($ a share)") as HTMLInputElement).value).toBe("2.075472");
     click("Save");
-    const seriesA = exitOf(await saved(0)).cap_table.securities.find((s: { id: string }) => s.id === "series_a");
-    expect(seriesA.original_issue_price).toBe("3900000/1879091");
+    const seriesA = JSON.parse(await saved(0)).cap_table.securities.find((s: { id: string }) => s.id === "series_a");
+    // The engine's 40-digit price, built from the rounds: the locked case's fraction to within one part in 10^30.
+    expect(closeTo(seriesA.original_issue_price, "3900000", "1879091")).toBe(true);
     // Typing in the field, even back to the same digits, saves what was typed: delete the last digit, then put it back.
     const issue = within(series("Series A Preferred")).getByLabelText("Original issue price ($ a share)");
     type(issue, "2.07547");
     type(issue, "2.075472");
     click("Save");
-    expect(exitOf(await saved(1)).cap_table.securities.find((s: { id: string }) => s.id === "series_a").original_issue_price).toBe("2.075472");
+    expect(JSON.parse(await saved(1)).cap_table.securities.find((s: { id: string }) => s.id === "series_a").original_issue_price).toBe("2.075472");
   });
 
   it("names the file after the cap table", () => {
@@ -135,6 +145,7 @@ describe("what isn't saved, and what can't be opened", () => {
   it("won't save a cap table with a problem, and says why", () => {
     render(<App />);
     openTab("Cap table");
+    editDirectly();
     type(within(series("Series A Preferred")).getByLabelText("Cap (× the issue price, preference included)"), "1");
     click("Save");
     expect(downloads).toEqual([]);
