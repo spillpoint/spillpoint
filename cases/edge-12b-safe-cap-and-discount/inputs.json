@@ -1,0 +1,80 @@
+{
+  "case": "edge-12b-safe-cap-and-discount",
+  "description": "Edge case 12's company and SAFE, with a 20% discount as well as the $10M post-money cap. At a sale only the cap counts: the discount applies only in a financing (ASSUMPTIONS X9), so every payout and breakpoint is case 12's.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0.2"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "500000",
+      "1000000",
+      "5000000",
+      "9000000",
+      "10000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

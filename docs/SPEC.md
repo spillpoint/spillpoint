@@ -98,8 +98,8 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 9. Cumulative dividends: they accrue, then are forfeited on conversion.
 10. A management carve-out.
 11. An earnout: a closing payment plus one later payment.
-12. An unconverted post-money SAFE at exit.
-13. A convertible note at exit, before conversion.
+12. An unconverted post-money SAFE at exit. 12b adds a discount to the cap; 12c has a discount and no cap; 12d sits alongside two tiers of preferred.
+13. A convertible note at exit, before conversion, with its cap's base counted with the pool (13a), without it (13b), and as common only (13c). 13d adds a discount to the cap; 13e has a discount and no cap; 13f sits alongside preferred.
 14. An option pool top-up in the pre-money.
 15. A post-money SAFE converting in a round that tops up the pool, with a discount that beats the cap.
 16. One down round under three anti-dilution methods: broad-based, narrow-based, and full ratchet. 16e counts the unissued pool in A; 16f rounds the adjusted conversion price to $0.0001.

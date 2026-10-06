@@ -85,7 +85,8 @@ def run_exit(ct, spec):
     if accrued:
         out["accrued_dividends"] = [_accrued_json(ct, wf, sid, exit_date) for sid in accrued]
     if wf.safes:
-        out["unconverted_safes"] = [_safe_json(wf, f) for f in wf.safes]
+        top = wf.evaluate(hi)[0]["decisions"]
+        out["unconverted_safes"] = [_safe_json(wf, f, top) for f in wf.safes]
     if wf.notes:
         out["unconverted_notes"] = [_note_json(wf, n, exit_date) for n in wf.notes]
     out.update({"breakpoints": bps, "payouts": payouts})
@@ -109,31 +110,67 @@ def _accrued_json(ct, wf, sid, exit_date):
     }
 
 
-def _safe_json(wf, f):
-    """The Liquidity Event figures for an unconverted post-money SAFE (YC).
+def _safe_json(wf, f, top):
+    """The Liquidity Event figures for an unconverted post-money SAFE (YC, X1, X9).
 
-    They are the figures used when the SAFE takes its Conversion Amount; they
-    don't depend on the exit value.
+    With a cap, they are the figures used when the SAFE takes its Conversion
+    Amount. Alongside preferred, its Liquidity Capitalization depends on which
+    series convert, so it is given for the decisions at the top of the range,
+    and the preferred it counts are listed; its Cash-Out Amount ranks with the
+    most junior preferred tier. With no cap, converting is worth the purchase
+    amount ÷ (1 − discount) wherever it is possible.
     """
-    lc, lp, n = wf.liquidity_capitalization(f), wf.liquidity_price(f), wf.safe_conversion_shares(f)
-    return {
-        "safe": f["id"],
-        "holder": f["holder"],
-        "cash_out_amount": exact(f["purchase_amount"]),
-        "liquidity_capitalization": exact(lc),
-        "liquidity_price": exact(lp),
-        "conversion_shares": exact(n),
-        "approx": {
-            "liquidity_capitalization": decimal(lc, 2),
-            "liquidity_price": decimal(lp, 6),
-            "conversion_shares": decimal(n, 2),
-        },
-    }
+    ct = wf.ct
+    out = {"safe": f["id"], "holder": f["holder"], "cash_out_amount": exact(f["purchase_amount"])}
+    if ct.seniority:
+        out["cash_out_ranks_with"] = list(ct.seniority[-1])
+    if wf.priced(f):
+        worth = wf.priced_conversion_worth(f)
+        out.update({"discount": exact(f["discount"]), "conversion_amount": exact(worth), "approx": {"conversion_amount": money(worth)}})
+        return out
+    d = dict(zip(wf.players, top))
+    converted = {s: d[p] for p in wf.converters for s in wf.members[p]}
+    lc, lp, n = wf.liquidity_capitalization(f, converted), wf.liquidity_price(f, converted), wf.safe_conversion_shares(f, converted)
+    if ct.preferred_ids():
+        out["liquidity_capitalization_counts_preferred"] = [s for s in ct.preferred_ids() if not wf.keeps_preference_in_lieu(s, converted)]
+    out.update(
+        {
+            "liquidity_capitalization": exact(lc),
+            "liquidity_price": exact(lp),
+            "conversion_shares": exact(n),
+            "approx": {
+                "liquidity_capitalization": decimal(lc, 2),
+                "liquidity_price": decimal(lp, 6),
+                "conversion_shares": decimal(n, 2),
+            },
+        }
+    )
+    return out
 
 
 def _note_json(wf, n, exit_date):
     """The exit figures for an unconverted convertible note. They don't depend on the exit value."""
     interest = wf.note_interest[n["id"]]
+    head = {
+        "note": n["id"],
+        "holder": n["holder"],
+        "issue_date": n["issue_date"].isoformat(),
+        "exit_date": exit_date.isoformat(),
+        "days": (exit_date - n["issue_date"]).days,
+        "interest": exact(interest),
+        "repayment": exact(wf.note_repayment(n)),
+    }
+    if wf.priced(n):
+        # X12: no cap, so it converts at the common price less its discount, worth (principal + interest) ÷ (1 − discount).
+        if not wf.note_can_convert(n):
+            return {**head, "converts": False, "approx": {"interest": money(interest), "repayment": money(wf.note_repayment(n))}}
+        worth = wf.priced_conversion_worth(n)
+        return {
+            **head,
+            "discount": exact(n["discount"]),
+            "conversion_amount": exact(worth),
+            "approx": {"interest": money(interest), "repayment": money(wf.note_repayment(n)), "conversion_amount": money(worth)},
+        }
     base, price, shares = wf.note_conversion_base(n), wf.note_conversion_price(n), wf.note_conversion_shares(n)
     return {
         "note": n["id"],

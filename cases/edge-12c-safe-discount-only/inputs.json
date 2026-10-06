@@ -1,0 +1,79 @@
+{
+  "case": "edge-12c-safe-discount-only",
+  "description": "Edge case 12's company, with a $1M SAFE that has no valuation cap and a 20% discount. At a sale it takes the greater of its purchase amount or its Conversion Amount, converting at the sale's common price per share less the discount, solved as a fixed point. That is worth $1,250,000 wherever it is possible; below $1,250,000 no such price exists, so it takes its Cash-Out Amount, and its payout jumps at $1,250,000 (ASSUMPTIONS X9).",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "1000000",
+          "post_money_cap": null,
+          "discount": "0.2"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "500000",
+      "1000000",
+      "1200000",
+      "2000000",
+      "10000000",
+      "40000000"
+    ]
+  }
+}
