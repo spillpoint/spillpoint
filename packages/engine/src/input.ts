@@ -30,25 +30,27 @@ type Json = Record<string, unknown>;
 export type CapTableResolver = (eventId: string) => unknown;
 
 // ---------- small readers ----------
+// Exported for rounds.ts, which reads round events the same strict way; the
+// public API (index.ts) doesn't include them.
 
-function object(value: unknown, path: string): Json {
+export function object(value: unknown, path: string): Json {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new InputError(path, "expected an object");
   }
   return value as Json;
 }
 
-function array(value: unknown, path: string): unknown[] {
+export function array(value: unknown, path: string): unknown[] {
   if (!Array.isArray(value)) throw new InputError(path, "expected a list");
   return value;
 }
 
-function text(value: unknown, path: string): string {
+export function text(value: unknown, path: string): string {
   if (typeof value !== "string" || value === "") throw new InputError(path, "expected a non-empty string");
   return value;
 }
 
-function onlyKnownFields(o: Json, allowed: readonly string[], path: string): void {
+export function onlyKnownFields(o: Json, allowed: readonly string[], path: string): void {
   for (const key of Object.keys(o)) {
     if (!allowed.includes(key)) {
       throw new InputError(`${path}.${key}`, `unknown field; the engine reads only ${allowed.join(", ")}`);
@@ -56,19 +58,19 @@ function onlyKnownFields(o: Json, allowed: readonly string[], path: string): voi
   }
 }
 
-function wholeShares(value: unknown, path: string): Decimal {
+export function wholeShares(value: unknown, path: string): Decimal {
   const n = parseExact(value, path);
   if (!n.isInteger() || n.isNegative()) throw new InputError(path, "share counts must be whole and not negative");
   return n;
 }
 
-function positive(value: unknown, path: string): Decimal {
+export function positive(value: unknown, path: string): Decimal {
   const n = parseExact(value, path);
   if (!n.isPositive() || n.isZero()) throw new InputError(path, "must be more than zero");
   return n;
 }
 
-function notNegative(value: unknown, path: string): Decimal {
+export function notNegative(value: unknown, path: string): Decimal {
   const n = parseExact(value, path);
   if (n.isNegative()) throw new InputError(path, "must not be negative");
   return n;
@@ -157,7 +159,7 @@ function readPreferred(s: Json, id: string, name: string, path: string): Preferr
   };
 }
 
-function readSecurity(value: unknown, path: string): Security {
+export function readSecurity(value: unknown, path: string): Security {
   const s = object(value, path);
   const id = text(s.id, `${path}.id`);
   const name = text(s.name, `${path}.name`);

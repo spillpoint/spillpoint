@@ -10,6 +10,7 @@ it("exports exactly the public API", () => {
     "InputError",
     "NoAnswerError",
     "UnsupportedTermError",
+    "buildCapTables",
     "findBreakpoints",
     "parseExact",
     "payout",
