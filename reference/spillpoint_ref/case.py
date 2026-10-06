@@ -111,28 +111,36 @@ def _accrued_json(ct, wf, sid, exit_date):
 
 
 def _safe_json(wf, f, top):
-    """The Liquidity Event figures for an unconverted post-money SAFE (YC, X1, X9).
+    """The Liquidity Event figures for an unconverted SAFE (YC, X1, X9, X13, X14).
 
     With a cap, they are the figures used when the SAFE takes its Conversion
-    Amount. Alongside preferred, its Liquidity Capitalization depends on which
-    series convert, so it is given for the decisions at the top of the range,
-    and the preferred it counts are listed; its Cash-Out Amount ranks with the
-    most junior preferred tier. With no cap, converting is worth the purchase
-    amount ÷ (1 − discount) wherever it is possible.
+    Amount. A post-money SAFE's Liquidity Capitalization depends on which
+    series convert and which other SAFEs take their Conversion Amount, so it
+    is given for the decisions at the top of the range, with this SAFE
+    converting, and the preferred it counts are listed. A pre-money SAFE's
+    doesn't depend on either. Alongside preferred, the Cash-Out Amount ranks
+    with the most junior preferred tier, or the one it names. With no cap,
+    converting is worth the purchase amount ÷ (1 − discount) wherever it is
+    possible.
     """
     ct = wf.ct
     out = {"safe": f["id"], "holder": f["holder"], "cash_out_amount": exact(f["purchase_amount"])}
     if ct.seniority:
-        out["cash_out_ranks_with"] = list(ct.seniority[-1])
+        out["cash_out_ranks_with"] = list(ct.seniority[wf.safe_tier(f)])
     if wf.priced(f):
         worth = wf.priced_conversion_worth(f)
         out.update({"discount": exact(f["discount"]), "conversion_amount": exact(worth), "approx": {"conversion_amount": money(worth)}})
         return out
     d = dict(zip(wf.players, top))
     converted = {s: d[p] for p in wf.converters for s in wf.members[p]}
-    lc, lp, n = wf.liquidity_capitalization(f, converted), wf.liquidity_price(f, converted), wf.safe_conversion_shares(f, converted)
+    together = wf.safes_converting(f, d)
+    lc = wf.liquidity_capitalization(f, converted, together)
+    lp = wf.liquidity_price(f, converted, together)
+    n = wf.safe_conversion_shares(f, converted, together)
     if ct.preferred_ids():
         out["liquidity_capitalization_counts_preferred"] = [s for s in ct.preferred_ids() if not wf.keeps_preference_in_lieu(s, converted)]
+    if len(wf.safes) > 1:
+        out["liquidity_capitalization_counts_safes"] = [g["id"] for g in together]
     out.update(
         {
             "liquidity_capitalization": exact(lc),

@@ -305,14 +305,27 @@ def reasons(wf, x, sa, sb, jumps=False):
                     text = f"{vote} Above this exit value the vote no longer carries, so the group stops converting."
             out.append({"code": "series_converts", "security": pid, "converts": db[pid], "text": text})
 
-    # A SAFE taking its Cash-Out Amount ranks in the most junior tier (X9).
+    # A SAFE taking its Cash-Out Amount ranks in the most junior tier, or the one it names (X9).
     safes_in_tier = [f for f in wf.safes if not db[f["id"]]] if ct.seniority else []
+
+    def tier_safes(i):
+        return [f for f in safes_in_tier if wf.safe_tier(f) == i]
 
     def tier_names(i, tier):
         names = [_name(ct, s) for s in tier if not converted_b.get(s, False)]
-        if i == len(ct.seniority) - 1:
-            names += [f"{ct.holders[f['holder']]}'s SAFE (its Cash-Out Amount)" for f in safes_in_tier]
+        names += [f"{ct.holders[f['holder']]}'s SAFE (its Cash-Out Amount)" for f in tier_safes(i)]
         return names
+
+    # SAFEs taking cash out with no preferred share a shortfall pro rata (X13).
+    cash_b = [f for f in wf.safes if not db[f["id"]]]
+    if safe_paid_a is False and safe_paid_b is True and len(cash_b) > 1:
+        each = _join(f"{ct.holders[f['holder']]}'s SAFE ({usd(f['purchase_amount'])})" for f in cash_b)
+        need = sum((f["purchase_amount"] for f in cash_b), Fraction(0))
+        text = (
+            f"The Cash-Out Amounts of {each} are paid in full, {usd(need)} in all, ahead of common. Until here they "
+            f"shared every dollar pro rata by purchase amount. Above this exit value, the next dollar goes to common."
+        )
+        out.append({"code": "safe_cash_out_paid", "securities": [f["id"] for f in cash_b], "text": text})
 
     for f in wf.safes:
         fid = f["id"]
@@ -332,35 +345,63 @@ def reasons(wf, x, sa, sb, jumps=False):
                 text = f"{holder}'s SAFE can no longer convert above this exit value, so it takes its Cash-Out Amount."
             out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})
             continue
-        if safe_paid_a is False and safe_paid_b is True:
+        if safe_paid_a is False and safe_paid_b is True and len(cash_b) == 1:
             text = (
                 f"{holder}'s SAFE has received its full Cash-Out Amount, its {usd(f['purchase_amount'])} purchase amount, "
                 f"which is paid ahead of common. Above this exit value, the next dollar goes to common."
             )
             out.append({"code": "safe_cash_out_paid", "security": fid, "text": text})
         if da[fid] != db[fid]:
-            lp = wf.liquidity_price(f, converted_b)
-            n = wf.safe_conversion_shares(f, converted_b)
+            together = wf.safes_converting(f, db)
+            lp = wf.liquidity_price(f, converted_b, together)
+            n = wf.safe_conversion_shares(f, converted_b, together)
+            # Its shares are valued at the common price once it converts, which differs from below at a jump.
+            price_b = wf.run(x, wf.settled(x, bits_b))[1]
             if db[fid]:
                 text = (
                     f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount. Its "
                     f"{count(n)} conversion shares ({usd(f['purchase_amount'])} ÷ the Liquidity Price of "
-                    f"{usd_price(lp, 6)}) are worth {usd_price(price, 6)} each here, {usd(n * price)} in all, "
+                    f"{usd_price(lp, 6)}) are worth {usd_price(price_b, 6)} each here, {usd(n * price_b)} in all, "
                     f"which equals its purchase amount. Below this exit value the Cash-Out Amount pays more; "
                     f"above it, the Conversion Amount does."
                 )
+                others = [g for g in together if g is not f and f.get("pre_money_cap") is None]
+                if others and jumps:
+                    # X13: one Liquidity Capitalization for every converting SAFE.
+                    names = _join(f"{ct.holders[g['holder']]}'s SAFE" for g in others)
+                    text += (
+                        f" Converting adds its shares to the Liquidity Capitalization, which {names} also "
+                        f"{'converts' if len(others) == 1 else 'convert'} on, so {'its' if len(others) == 1 else 'their'} conversion shares grow with it: "
+                        f"just above this exit value {'its payout jumps' if len(others) == 1 else 'their payouts jump'} up "
+                        f"and common's jumps down."
+                    )
             else:
                 text = f"{holder}'s SAFE switches back to its Cash-Out Amount: above this exit value it pays more."
             out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})
+
+    # Debt comes first (X12): once repaid, the next dollar goes to the most senior preference tier still owed, or else to common.
+    owed = [j for j in range(len(ct.seniority)) if tiers_b[j] is not None]
+    after_debt = f"the preference tier {_join(tier_names(owed[0], ct.seniority[owed[0]]))}" if owed else "common"
+    repaid_b = [n for n in wf.notes if not db.get(n["id"], False)]
+    if note_paid_a is False and note_paid_b is True and len(repaid_b) > 1:
+        # Notes rank equally with each other (X15).
+        each = _join(
+            f"{ct.holders[n['holder']]}'s note ({usd(wf.note_repayment(n))}, {exact(n['repayment_multiple'])}x its principal plus accrued interest)"
+            for n in repaid_b
+        )
+        need = sum((wf.note_repayment(n) for n in repaid_b), Fraction(0))
+        text = (
+            f"The convertible notes are fully repaid: {each}, {usd(need)} in all, paid ahead of all equity as debt. "
+            f"Until here they shared every dollar pro rata by repayment. Above this exit value, the next dollar goes to {after_debt}."
+        )
+        out.append({"code": "note_repayment_paid", "securities": [n["id"] for n in repaid_b], "text": text})
 
     for n in wf.notes:
         nid = n["id"]
         holder = ct.holders[n["holder"]]
         repay = wf.note_repayment(n)
-        if note_paid_a is False and note_paid_b is True:
-            # Debt comes first (X12): the next dollar goes to the most senior preference tier still owed, or else to common.
-            owed = [j for j in range(len(ct.seniority)) if tiers_b[j] is not None]
-            nxt = f"the preference tier {_join(tier_names(owed[0], ct.seniority[owed[0]]))}" if owed else "common"
+        if note_paid_a is False and note_paid_b is True and len(repaid_b) == 1:
+            nxt = after_debt
             text = (
                 f"{holder}'s convertible note is fully repaid: {exact(n['repayment_multiple'])}x its principal plus accrued interest, "
                 f"{usd(repay)}, paid ahead of all equity as debt. Above this exit value, the next dollar goes to {nxt}."
@@ -398,8 +439,7 @@ def reasons(wf, x, sa, sb, jumps=False):
     for i, tier in enumerate(ct.seniority):
         if tiers_a[i] is False and tiers_b[i] is True:
             claim = sum(pref_b(s) for s in tier if not converted_b.get(s, False))
-            if i == len(ct.seniority) - 1:
-                claim += sum((f["purchase_amount"] for f in safes_in_tier), Fraction(0))
+            claim += sum((f["purchase_amount"] for f in tier_safes(i)), Fraction(0))
             unpaid_after = [j for j in range(i + 1, len(ct.seniority)) if tiers_b[j] is not None]
             nxt = (
                 f"the next tier's preference ({_join(tier_names(unpaid_after[0], ct.seniority[unpaid_after[0]]))})"
@@ -411,7 +451,7 @@ def reasons(wf, x, sa, sb, jumps=False):
                 f"The preference tier {names} is fully paid ({usd(claim)}). "
                 f"Above this exit value, the next dollar goes to {nxt}."
             )
-            ids = list(tier) + ([f["id"] for f in safes_in_tier] if i == len(ct.seniority) - 1 else [])
+            ids = list(tier) + [f["id"] for f in tier_safes(i)]
             out.append({"code": "tier_fully_paid", "tier": i + 1, "securities": ids, "text": text})
 
     if band_a != band_b and ct.carve_out:

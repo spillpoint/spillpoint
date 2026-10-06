@@ -1,0 +1,103 @@
+{
+  "case": "edge-13g-two-notes",
+  "description": "Edge case 13a's company and note, with a second note: Investor Y's $500,000 at 8%, issued 2023-01-01, with a $5,000,000 pre-money cap on the with_pool base, repaid at 2x. Repayments rank equally, sharing a shortfall pro rata by repayment; neither note counts the other in its base (ASSUMPTIONS X15).",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_notes": [
+        {
+          "id": "note_x",
+          "holder": "investor_x",
+          "principal": "1000000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2022-01-01",
+          "valuation_cap": "8000000",
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0",
+          "repayment_multiple": "2"
+        },
+        {
+          "id": "note_y",
+          "holder": "investor_y",
+          "principal": "500000",
+          "interest_rate": "0.08",
+          "interest_method": "simple",
+          "issue_date": "2023-01-01",
+          "valuation_cap": "5000000",
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0",
+          "repayment_multiple": "2"
+        }
+      ]
+    },
+    "exit_date": "2024-01-01",
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "5000000",
+      "10000000",
+      "15000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

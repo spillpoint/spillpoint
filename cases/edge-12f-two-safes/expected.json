@@ -1,0 +1,660 @@
+{
+  "case": "edge-12f-two-safes",
+  "generated_by": "reference/generate.py",
+  "exit": {
+    "unconverted_safes": [
+      {
+        "safe": "safe_x",
+        "holder": "investor_x",
+        "cash_out_amount": "1000000",
+        "liquidity_capitalization_counts_safes": [
+          "safe_x",
+          "safe_y"
+        ],
+        "liquidity_capitalization": "380000000/31",
+        "liquidity_price": "31/38",
+        "conversion_shares": "38000000/31",
+        "approx": {
+          "liquidity_capitalization": "12258064.52",
+          "liquidity_price": "0.815789",
+          "conversion_shares": "1225806.45"
+        }
+      },
+      {
+        "safe": "safe_y",
+        "holder": "investor_y",
+        "cash_out_amount": "500000",
+        "liquidity_capitalization_counts_safes": [
+          "safe_x",
+          "safe_y"
+        ],
+        "liquidity_capitalization": "380000000/31",
+        "liquidity_price": "31/95",
+        "conversion_shares": "47500000/31",
+        "approx": {
+          "liquidity_capitalization": "12258064.52",
+          "liquidity_price": "0.326316",
+          "conversion_shares": "1532258.06"
+        }
+      }
+    ],
+    "breakpoints": [
+      {
+        "exit_value": "1500000.00",
+        "exact": "1500000",
+        "reasons": [
+          {
+            "code": "safe_cash_out_paid",
+            "securities": [
+              "safe_x",
+              "safe_y"
+            ],
+            "text": "The Cash-Out Amounts of Investor X's SAFE ($1,000,000.00) and Investor Y's SAFE ($500,000.00) are paid in full, $1,500,000.00 in all, ahead of common. Until here they shared every dollar pro rata by purchase amount. Above this exit value, the next dollar goes to common."
+          }
+        ]
+      },
+      {
+        "exit_value": "4815789.47",
+        "exact": "91500000/19",
+        "reasons": [
+          {
+            "code": "safe_switches",
+            "security": "safe_y",
+            "conversion_amount": true,
+            "text": "Investor Y's SAFE switches from its Cash-Out Amount to its Conversion Amount. Its 1,357,142.86 conversion shares ($500,000.00 \u00f7 the Liquidity Price of $0.368421) are worth $0.368421 each here, $500,000.00 in all, which equals its purchase amount. Below this exit value the Cash-Out Amount pays more; above it, the Conversion Amount does."
+          }
+        ]
+      },
+      {
+        "exit_value": "9592105.26",
+        "exact": "182250000/19",
+        "payouts_jump": true,
+        "reasons": [
+          {
+            "code": "safe_switches",
+            "security": "safe_x",
+            "conversion_amount": true,
+            "text": "Investor X's SAFE switches from its Cash-Out Amount to its Conversion Amount. Its 1,225,806.45 conversion shares ($1,000,000.00 \u00f7 the Liquidity Price of $0.815789) are worth $0.815789 each here, $1,000,000.00 in all, which equals its purchase amount. Below this exit value the Cash-Out Amount pays more; above it, the Conversion Amount does. Converting adds its shares to the Liquidity Capitalization, which Investor Y's SAFE also converts on, so its conversion shares grow with it: just above this exit value its payout jumps up and common's jumps down."
+          },
+          {
+            "code": "payouts_jump",
+            "text": "Some payouts jump at this exit value instead of bending, because the decision changes all at once. At exactly this exit value the outcome from below still applies; the jump happens just above it."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "1000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "cash_out_amount"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "666666.67"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "333333.33"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "employee_c": "0.00",
+              "investor_x": "666666.67",
+              "investor_y": "333333.33"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_5": "0.00",
+              "safe_x": "666666.67",
+              "safe_y": "333333.33"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "1500000.00",
+        "tags": [
+          "listed",
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "cash_out_amount"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "500000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "employee_c": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "500000.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_5": "0.00",
+              "safe_x": "1000000.00",
+              "safe_y": "500000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "3000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "cash_out_amount"
+            },
+            "common_price_per_share": "0.166667",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "500000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "500000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "1000000.00",
+              "founder_b": "500000.00",
+              "employee_c": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "500000.00"
+            },
+            "class_totals": {
+              "common": "1500000.00",
+              "options_5": "0.00",
+              "safe_x": "1000000.00",
+              "safe_y": "500000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "4815789.47",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "cash_out_amount"
+            },
+            "common_price_per_share": "0.368421",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "2210526.32"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "1105263.16"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "500000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "2210526.32",
+              "founder_b": "1105263.16",
+              "employee_c": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "500000.00"
+            },
+            "class_totals": {
+              "common": "3315789.47",
+              "options_5": "0.00",
+              "safe_x": "1000000.00",
+              "safe_y": "500000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "6000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "conversion_amount"
+            },
+            "common_price_per_share": "0.482759",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "2896551.72"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "1448275.86"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "655172.41"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "2896551.72",
+              "founder_b": "1448275.86",
+              "employee_c": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "655172.41"
+            },
+            "class_totals": {
+              "common": "4344827.59",
+              "options_5": "0.00",
+              "safe_x": "1000000.00",
+              "safe_y": "655172.41"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "9000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "conversion_amount"
+            },
+            "common_price_per_share": "0.772414",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "4634482.76"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2317241.38"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "1048275.86"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "4634482.76",
+              "founder_b": "2317241.38",
+              "employee_c": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "1048275.86"
+            },
+            "class_totals": {
+              "common": "6951724.14",
+              "options_5": "0.00",
+              "safe_x": "1000000.00",
+              "safe_y": "1048275.86"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "9592105.26",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "cash_out_amount",
+              "safe_y": "conversion_amount"
+            },
+            "common_price_per_share": "0.829583",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "4977495.46"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2488747.73"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "1125862.07"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "4977495.46",
+              "founder_b": "2488747.73",
+              "employee_c": "0.00",
+              "investor_x": "1000000.00",
+              "investor_y": "1125862.07"
+            },
+            "class_totals": {
+              "common": "7466243.19",
+              "options_5": "0.00",
+              "safe_x": "1000000.00",
+              "safe_y": "1125862.07"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "10000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "conversion_amount",
+              "safe_y": "conversion_amount"
+            },
+            "common_price_per_share": "0.850480",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "5102880.66"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2551440.33"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "1042524.01"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "1303155.01"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "5102880.66",
+              "founder_b": "2551440.33",
+              "employee_c": "0.00",
+              "investor_x": "1042524.01",
+              "investor_y": "1303155.01"
+            },
+            "class_totals": {
+              "common": "7654320.99",
+              "options_5": "0.00",
+              "safe_x": "1042524.01",
+              "safe_y": "1303155.01"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "20000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "conversion_amount",
+              "safe_y": "conversion_amount"
+            },
+            "common_price_per_share": "1.700960",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "10205761.32"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "5102880.66"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "2085048.01"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "2606310.01"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "10205761.32",
+              "founder_b": "5102880.66",
+              "employee_c": "0.00",
+              "investor_x": "2085048.01",
+              "investor_y": "2606310.01"
+            },
+            "class_totals": {
+              "common": "15308641.98",
+              "options_5": "0.00",
+              "safe_x": "2085048.01",
+              "safe_y": "2606310.01"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "options_5": "not_exercised",
+              "safe_x": "conversion_amount",
+              "safe_y": "conversion_amount"
+            },
+            "common_price_per_share": "3.401920",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "20411522.63"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "10205761.32"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_5",
+                "amount": "0.00"
+              },
+              {
+                "holder": "investor_x",
+                "security": "safe_x",
+                "amount": "4170096.02"
+              },
+              {
+                "holder": "investor_y",
+                "security": "safe_y",
+                "amount": "5212620.03"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "20411522.63",
+              "founder_b": "10205761.32",
+              "employee_c": "0.00",
+              "investor_x": "4170096.02",
+              "investor_y": "5212620.03"
+            },
+            "class_totals": {
+              "common": "30617283.95",
+              "options_5": "0.00",
+              "safe_x": "4170096.02",
+              "safe_y": "5212620.03"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
