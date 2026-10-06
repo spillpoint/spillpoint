@@ -132,7 +132,8 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
     if (row < MAX_BADGE_ROWS) lastInRow[row] = px;
   });
   const hiddenNumbers = breakpoints.filter((b, i) => inView(b) && badgeRow[i] === null).length;
-  const rowsUsed = Math.max(1, ...badgeRow.map((r) => (r == null ? 1 : r + 1)));
+  // badgeRow has gaps for breakpoints out of view: count only those in it (spreading a gap gives undefined, and NaN).
+  const rowsUsed = Math.max(1, ...badgeRow.filter((r) => r !== undefined).map((r) => (r === null ? 1 : r + 1)));
   const MARGIN = { top: 8 + rowsUsed * BADGE_ROW, right: marginRight, bottom: MARGIN_BOTTOM, left: MARGIN_LEFT };
   const plotTop = MARGIN.top;
   const plotBottom = HEIGHT - MARGIN.bottom - X_AXIS_HEIGHT;

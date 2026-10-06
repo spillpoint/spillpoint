@@ -9,6 +9,7 @@ import examples from "virtual:examples";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
+import { ANALYSIS_TIMEOUT } from "./analysis.ts";
 import { shortDollars } from "../src/format.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
@@ -116,7 +117,7 @@ describe("a change to the rounds", () => {
 
     click("Fix it");
     expect(screen.getByRole("tab", { name: "Rounds" }).getAttribute("aria-selected")).toBe("true");
-    await vi.waitFor(() => expect(document.activeElement).toBe(amount));
+    await vi.waitFor(() => expect(document.activeElement).toBe(amount), { timeout: ANALYSIS_TIMEOUT });
     type(amount, "2.5M");
     expect(within(card(/Seed Preferred/)).queryByRole("alert")).toBeNull();
     openTab("Payouts");
@@ -261,7 +262,7 @@ describe("adding, moving and removing events (M4k)", () => {
     openTab("Rounds");
     addEvent("An option pool");
     const pool = card(/Option pool created/);
-    await vi.waitFor(() => expect(document.activeElement).toBe(within(pool).getByLabelText("Date")));
+    await vi.waitFor(() => expect(document.activeElement).toBe(within(pool).getByLabelText("Date")), { timeout: ANALYSIS_TIMEOUT });
     expect(within(pool).getByRole("alert").textContent).toBe("This event has a problem, so the payouts can't update: Fill this in: it can't be blank.");
     expect(within(pool).getByText("Not built yet: the engine builds it once the problem above is fixed.")).toBeTruthy();
     type(within(pool).getByLabelText("Percent of the fully diluted shares after it"), "10");
@@ -287,7 +288,7 @@ describe("adding, moving and removing events (M4k)", () => {
     click("Move Options granted later");
     expect(titles().slice(8)).toEqual(["9. Series B Preferred, a priced round", "10. Options granted"]);
     // Now last, it can't move later: the keyboard is left on "Move earlier".
-    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Move Options granted earlier" })));
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Move Options granted earlier" })), { timeout: ANALYSIS_TIMEOUT });
     // The payouts followed the last event, now the grants.
     const after = within(panel()).getByLabelText("The payouts use the cap table after") as HTMLSelectElement;
     expect(within(after).getByRole("option", { selected: true }).textContent).toBe("10. Options granted (the last event)");
@@ -319,7 +320,7 @@ describe("adding, moving and removing events (M4k)", () => {
     expect(titles()).toHaveLength(10);
     fireEvent.click(remove);
     expect(titles()).toHaveLength(9);
-    await vi.waitFor(() => expect(document.activeElement).toBe(within(panel()).getByLabelText("Type of event")));
+    await vi.waitFor(() => expect(document.activeElement).toBe(within(panel()).getByLabelText("Type of event")), { timeout: ANALYSIS_TIMEOUT });
     openTab("Payouts");
     expect(headline()).toBe(anaAfter((events) => events.filter((e) => e.id !== "early_hire"), "series_b"));
   });

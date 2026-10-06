@@ -2,14 +2,20 @@
 // click through them on Millrace, in a simulated browser.
 
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
+import { analysed } from "./analysis.ts";
+
+afterEach(() => vi.restoreAllMocks());
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
 const exitBox = () => screen.getByRole("textbox", { name: "Exit value" }) as HTMLInputElement;
-const curves = async () => (await screen.findByRole("heading", { name: "Payoff curves" })).closest("section")!;
-const breakpointList = async () => (await screen.findByRole("heading", { name: "Breakpoints" })).closest("section")!;
+const curves = async () => {
+  await analysed();
+  return screen.getByRole("heading", { name: "Payoff curves" }).closest("section")!;
+};
+const breakpointList = analysed;
 
 describe("the payoff curves", () => {
   it("draws every holder, with your curve labelled at its end and every value listed", async () => {
@@ -57,6 +63,8 @@ describe("the payoff curves", () => {
   });
 
   it("zooms to a typed range, and back to the whole range", async () => {
+    const errors = vi.spyOn(console, "error");
+    const nanWarnings = () => errors.mock.calls.map((c) => c.join(" ")).filter((m) => m.includes("NaN"));
     render(<App />);
     const card = await curves();
     const from = within(card).getByRole("textbox", { name: /Show from/ });
@@ -69,6 +77,8 @@ describe("the payoff curves", () => {
     // Breakpoints 2 to 8 lie between $30M and $70M; the exit value, $100M, is off to the right.
     const numbers = [...card.querySelectorAll(".recharts-reference-line text")].map((t) => t.textContent);
     expect(numbers).toEqual(["2", "3", "4", "5", "6", "7", "8"]);
+    // With breakpoint 1 out of view, every position the chart works out is still a number: React says so when one is NaN.
+    expect(nanWarnings()).toEqual([]);
     fireEvent.click(within(card).getByRole("button", { name: "Show the whole range" }));
     expect(within(card).getByRole("img", { name: "Payoff curves by holder, showing the whole range." })).toBeTruthy();
   });
