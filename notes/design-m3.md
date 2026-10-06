@@ -49,3 +49,8 @@ The direction for the dashboard's look, set in M3a for you to approve before M3b
   - **A problem** also shows at the top of its event, and on the Payouts tab as "Your last change to the rounds has a problem", with "Fix it", which opens the event at the field.
   - **"For you"** follows the holder chosen on the Payouts tab: "For you: 46.5% → 25.5% fully diluted." in the accent blue, as in the breakpoint list.
   - **Holders** are a card below the events. One still named in an event has its Remove button off, with a line saying why.
+- **M4k:** building a company's history.
+  - **"Add an event"** is a card after the events: a type and "Add it at the end". The new event opens at its Date, with its fields blank and the engine naming the first one to fill in ("Fill this in: it can't be blank."). It says "Not built yet" until it builds.
+  - **An open event** ends with "Move earlier", "Move later" and "Remove this event", which asks first. The last event left can't be removed.
+  - **"The payouts use the cap table after"** is a choice at the top of the tab: the last event, unless you pick an earlier one.
+  - **Start from** offers "A blank company, built from its rounds": one founder with all the common stock, as one event.

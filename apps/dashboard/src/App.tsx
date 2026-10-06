@@ -29,10 +29,11 @@ import { fileName, fileText, readFile } from "./file.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
-import { buildRounds, draftFromRounds, locate } from "./roundsDraft.ts";
+import { blankRounds, buildRounds, draftFromRounds, locate } from "./roundsDraft.ts";
 import type { RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 const SCRATCH = "scratch";
+const SCRATCH_ROUNDS = "scratch-rounds";
 const FILE = "file";
 
 /** Where a cap table starts: an example from cases/, a blank table, or a file. */
@@ -52,6 +53,13 @@ interface Start {
 
 function startFrom(id: string): Start {
   const example = examples.find((e) => e.id === id);
+  if (id === SCRATCH_ROUNDS) {
+    // One founder with all the common stock, as one event to build on (M4k).
+    const rounds = blankRounds();
+    const built = fromRounds(rounds, ["0", "100000000"]);
+    if (!built.ok) throw built.error;
+    return { id, label: "Your own company", fictional: false, draft: built.draft, name: "My company", defaultExitValue: "50000000", rounds };
+  }
   if (!example) {
     return { id: SCRATCH, label: "Your own cap table, started blank", fictional: false, draft: scratchDraft(), name: "My cap table", defaultExitValue: "50000000", rounds: null };
   }
@@ -263,6 +271,7 @@ export function App() {
                 </option>
               ))}
               <option value={SCRATCH}>A blank cap table</option>
+              <option value={SCRATCH_ROUNDS}>A blank company, built from its rounds</option>
               {session.start.id === FILE && <option value={FILE}>{session.start.name} (from a file)</option>}
             </select>
           </label>
@@ -312,7 +321,6 @@ export function App() {
         rounds={rounds}
         onRounds={changeRounds}
         roundsProblem={session.roundsProblem}
-        after={good?.after ?? null}
         tables={tables}
         events={events}
         onEditDirectly={editDirectly}
@@ -362,7 +370,6 @@ interface WorkspaceProps {
   rounds: RoundsDraft | null;
   onRounds: (next: RoundsDraft) => void;
   roundsProblem: RoundsProblem | null;
-  after: string | null;
   tables: ReturnType<typeof buildCapTables> | null;
   events: ReturnType<typeof eventViews> | null;
   onEditDirectly: () => void;
@@ -370,7 +377,7 @@ interface WorkspaceProps {
 
 function Workspace(props: WorkspaceProps) {
   const { start, draft, name, built, checked, edited, unsaved, onDraft, onName, youKey, onYouKey, chosenExitValue, onExitValue: setExitValue } = props;
-  const { rounds, onRounds, roundsProblem, after, tables, events, onEditDirectly } = props;
+  const { rounds, onRounds, roundsProblem, tables, events, onEditDirectly } = props;
   const lastGood = useRef<Good | null>(null);
   if (checked.ok && lastGood.current?.built !== built) lastGood.current = { built, checked };
   const good = lastGood.current!;
@@ -436,8 +443,8 @@ function Workspace(props: WorkspaceProps) {
     <main>
       <p className="example-label">
         {start.fictional && <span className="badge">Fictional example</span>} {start.label}
-        {rounds ? `, built from its ${rounds.events.length} events` : ""}
-        {edited && start.id !== SCRATCH ? ", with your changes" : ""}
+        {rounds ? `, built from its ${rounds.events.length === 1 ? "1 event" : `${rounds.events.length} events`}` : ""}
+        {edited && start.id !== SCRATCH && start.id !== SCRATCH_ROUNDS ? ", with your changes" : ""}
         {unsaved && <span className="tag tag--quiet example-label__unsaved">Not saved</span>}
       </p>
       <Tabs tab={tab} onTab={setTab} />
@@ -502,7 +509,6 @@ function Workspace(props: WorkspaceProps) {
       <div role="tabpanel" id="panel-rounds" aria-labelledby="tab-rounds" hidden={tab !== "rounds"}>
         <RoundsView
           events={events}
-          after={after}
           you={you}
           rounds={rounds}
           onRounds={onRounds}

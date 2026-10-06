@@ -59,7 +59,9 @@ describe("the Rounds tab", () => {
     expect([...roundsPanel().querySelectorAll(".rounds__date")].map((d) => d.textContent)).toEqual([
       "Feb 1, 2021", "Jun 1, 2021", "Sep 15, 2021", "Oct 1, 2021", "Oct 1, 2021", "Jun 30, 2022", "No date", "Sep 30, 2023", "No date", "Mar 31, 2025",
     ]);
-    expect(within(roundsPanel()).getByText(/The payouts use the cap table after the 10th event: Series B Preferred, a priced round\./)).toBeTruthy();
+    const after = within(roundsPanel()).getByLabelText("The payouts use the cap table after") as HTMLSelectElement;
+    expect(after.value).toBe("series_b");
+    expect(within(after).getByRole("option", { selected: true }).textContent).toBe("10. Series B Preferred, a priced round (the last event)");
     expect(within(event(/Series B Preferred/)).getByText("The payouts use the cap table after this event.")).toBeTruthy();
     expect(roundsPanel().querySelectorAll(".rounds__used")).toHaveLength(1);
   });

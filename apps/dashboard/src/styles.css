@@ -239,6 +239,12 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .event-form h4 { margin: 16px 0 8px; font-size: 0.9375rem; }
 .event-form > .field, .event-form .field--wide { margin-top: 8px; }
 .event-form__more { margin-top: 12px; }
+.event-form__actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.event-form__actions .add { margin-top: 0; }
+.rounds__unbuilt { margin: 8px 0 0; color: var(--muted); }
+.rounds__add-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.rounds__add-row .add { margin-top: 0; }
+#rounds-after { max-width: 100%; }
 .event-form__more summary { cursor: pointer; color: var(--accent); font-weight: 500; margin-bottom: 4px; }
 .rounds__heading h3 { margin: 0; font-size: 1.0625rem; }
 .rounds__number { color: var(--muted); font-weight: 400; margin-right: 2px; }
