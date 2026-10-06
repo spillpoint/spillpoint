@@ -10,8 +10,8 @@ import { describe, expect, it } from "vitest";
 
 import { D, InputError, payout, prepare } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
-import { readCase } from "../src/input.ts";
-import { M2_CASES, capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
+import { readCase } from "../src/case.ts";
+import { M2_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 
 const CENT = new D("0.01");
 
@@ -26,7 +26,7 @@ function sum(values: Iterable<Decimal>): Decimal {
 }
 
 describe.each(M2_CASES)("%s", (name) => {
-  const pc = prepare(readCase(readCaseFile(name, "inputs.json"), capTablesOf(name)).capTable);
+  const pc = prepare(readCase(readCaseFile(name, "inputs.json")).capTable);
   const points = expectedPoints(name);
 
   it.each(points.map((p) => [p.label, p] as const))("pays out $%s to the cent, with the recorded decisions", (_, point) => {
@@ -62,7 +62,7 @@ describe.each(M2_CASES)("%s", (name) => {
 });
 
 describe("decisions the waterfall refuses", () => {
-  const pc = (name: string) => prepare(readCase(readCaseFile(name, "inputs.json"), capTablesOf(name)).capTable);
+  const pc = (name: string) => prepare(readCase(readCaseFile(name, "inputs.json")).capTable);
   const none = new Set<string>();
 
   it("a series that doesn't exist", () => {

@@ -3,8 +3,8 @@
 //
 // Two kinds of "no":
 // - UnsupportedTermError for terms the engine doesn't model yet (warrants,
-//   dividends, carve-outs, earnouts, SAFEs and notes at exit, and rounds).
-//   These are checked first and refused, never skipped.
+//   dividends, carve-outs, earnouts, and SAFEs and notes at exit). These are
+//   checked first and refused, never skipped.
 // - InputError for anything malformed. Unknown fields are errors too, so a
 //   misspelt term can't be silently ignored.
 
@@ -26,7 +26,7 @@ import type {
 
 type Json = Record<string, unknown>;
 
-/** Supplies the cap table a case names by event (C2: Millrace's exit runs on the post–Series B table in expected.json). */
+/** Supplies the cap table an exit names by event (C2), in the case-file format: for instance the one a case's expected.json records. */
 export type CapTableResolver = (eventId: string) => unknown;
 
 // ---------- small readers ----------
@@ -316,24 +316,30 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
 const EXIT_FIELDS = ["cap_table", "cap_table_after_event", "range", "exit_values", "exit_date", "payment_schedules"] as const;
 
 export function readExit(value: unknown, resolveCapTable?: CapTableResolver, path = "exit"): ExitInput {
+  return readExitOn(
+    value,
+    (eventId, at) => {
+      // C2: the cap table comes from a round case's expected output.
+      const table = resolveCapTable?.(eventId);
+      if (table == null) throw new InputError(at, `this exit runs on the cap table after event ${eventId}; supply it`);
+      return readCapTable(table, `cap_tables[after_event=${eventId}].cap_table`);
+    },
+    path,
+  );
+}
+
+/** An exit whose cap table, when it names one by event (C2), comes from `tableAfter`. */
+export function readExitOn(value: unknown, tableAfter: (eventId: string, path: string) => CapTable, path: string): ExitInput {
   const exit = object(value, path);
   if (exit.payment_schedules != null) {
     throw new UnsupportedTermError("payment_schedules", "M5", `${path}.payment_schedules`, "Escrow and earnout payment schedules (X8)");
   }
   onlyKnownFields(exit, EXIT_FIELDS, path);
 
-  let capTable: CapTable;
-  if (exit.cap_table_after_event != null) {
-    // C2: the cap table comes from a round case's expected output.
-    const eventId = text(exit.cap_table_after_event, `${path}.cap_table_after_event`);
-    const table = resolveCapTable?.(eventId);
-    if (table == null) {
-      throw new InputError(`${path}.cap_table_after_event`, `this exit runs on the cap table after event ${eventId}; supply it`);
-    }
-    capTable = readCapTable(table, `cap_tables[after_event=${eventId}].cap_table`);
-  } else {
-    capTable = readCapTable(exit.cap_table, `${path}.cap_table`);
-  }
+  const capTable =
+    exit.cap_table_after_event != null
+      ? tableAfter(text(exit.cap_table_after_event, `${path}.cap_table_after_event`), `${path}.cap_table_after_event`)
+      : readCapTable(exit.cap_table, `${path}.cap_table`);
 
   const range = array(exit.range, `${path}.range`);
   if (range.length !== 2) throw new InputError(`${path}.range`, "expected [low, high]");
@@ -348,19 +354,4 @@ export function readExit(value: unknown, resolveCapTable?: CapTableResolver, pat
   });
 
   return { capTable, range: [lo, hi], exitValues };
-}
-
-/**
- * Reads a whole case's inputs.json. A round case (events and no exit) is
- * refused: building cap tables from rounds arrives in M4.
- */
-export function readCase(value: unknown, resolveCapTable?: CapTableResolver): ExitInput {
-  const inputs = object(value, "inputs");
-  if (inputs.exit == null) {
-    if (inputs.events != null) {
-      throw new UnsupportedTermError("rounds", "M4", "inputs.events", "Building a cap table from rounds");
-    }
-    throw new InputError("inputs", "no exit to run");
-  }
-  return readExit(inputs.exit, resolveCapTable, "exit");
 }

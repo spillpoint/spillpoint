@@ -2,19 +2,24 @@
 // the engine by hand; it reads case files, so it isn't part of the package.
 //
 //   pnpm payouts <case> <exit value> [--convert id,id] [--exercise id,id]
+//   pnpm payouts <case> --all
 //
 // With no flags the engine decides who converts and who exercises (M2c). With
 // --convert or --exercise those decisions are forced instead: nothing
 // converts or exercises unless named. At an exit value expected.json reports,
 // expected.json's amounts are shown alongside, with whether its decisions match.
+// With --all it checks every exit value expected.json reports, one line each.
+//
+// A case built from its rounds runs on the cap table the engine builds from
+// its events (M4e), never on the one expected.json records.
 
 import type { Decimal } from "decimal.js";
 
 import { parseExact, payout, prepare, solve, toCents } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
-import { readCase } from "../src/input.ts";
+import { readCase } from "../src/case.ts";
 import type { Decisions } from "../src/index.ts";
-import { capTablesOf, decisionsFrom, expectedPoints, readCaseFile } from "../test/support/cases.ts";
+import { decisionsFrom, expectedPoints, readCaseFile } from "../test/support/cases.ts";
 
 function dollars(amount: Decimal | string): string {
   const cents = typeof amount === "string" ? amount : toCents(amount);
@@ -34,14 +39,54 @@ const flag = (name: string) => {
   const i = args.indexOf(name);
   return i < 0 ? null : (args[i + 1] ?? "").split(",").filter(Boolean);
 };
-const [caseName, exitText] = args.filter((a, i) => !a.startsWith("--") && !args[i - 1]?.startsWith("--"));
-if (!caseName || !exitText) {
-  console.error("usage: pnpm payouts <case> <exit value> [--convert id,id] [--exercise id,id]");
+const all = args.includes("--all");
+const [caseName, exitText] = args.filter((a, i) => !a.startsWith("--") && (a === args[0] || !["--convert", "--exercise"].includes(args[i - 1]!)));
+if (!caseName || (!exitText && !all)) {
+  console.error("usage: pnpm payouts <case> <exit value> [--convert id,id] [--exercise id,id]\n       pnpm payouts <case> --all");
   process.exit(2);
 }
 
-const exit = readCase(readCaseFile(caseName, "inputs.json"), capTablesOf(caseName));
-const exitValue = parseExact(exitText, "exit value");
+const inputs = readCaseFile(caseName, "inputs.json") as { events?: unknown[]; exit?: { cap_table_after_event?: string } };
+const exit = readCase(inputs);
+const tableSource = inputs.events
+  ? `the cap table after ${inputs.exit?.cap_table_after_event}, built from the case's ${inputs.events.length} events`
+  : "the cap table in inputs.json";
+
+if (all) {
+  // Every exit value expected.json reports: the engine's own decisions, and every line within a cent.
+  const pc = prepare(exit.capTable);
+  const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((x) => b.has(x));
+  const points = expectedPoints(caseName);
+  console.log(`${caseName} runs on ${tableSource}.\n`);
+  let matching = 0;
+  for (const point of points) {
+    const solution = solve(pc, point.exitValue);
+    const same =
+      solution.complete &&
+      solution.answers.length === point.equilibria.length &&
+      solution.answers.every((answer, i) => {
+        const recorded = point.equilibria[i]!;
+        const want = decisionsFrom(recorded.decisions);
+        return (
+          sameSet(want.converted, answer.decisions.converted) &&
+          sameSet(want.exercised, answer.decisions.exercised) &&
+          answer.payout.lines.length === recorded.lines.length &&
+          answer.payout.lines.every((l, j) => {
+            const e = recorded.lines[j]!;
+            return l.holder === e.holder && l.security === e.security && l.amount.minus(e.amount).abs().lte("0.01");
+          })
+        );
+      });
+    if (same) matching++;
+    const lines = point.equilibria.reduce((n, o) => n + o.lines.length, 0);
+    const tag = point.tags.includes("breakpoint") ? "  (breakpoint)" : "";
+    console.log(`${`$${dollars(point.label)}`.padStart(15)}${tag.padEnd(16)}${same ? `matches: same decisions, all ${lines} lines within a cent` : "DIFFERS from expected.json"}`);
+  }
+  console.log(`\n${matching} of ${points.length} exit values match expected.json.`);
+  process.exit(matching === points.length ? 0 : 1);
+}
+
+const exitValue = parseExact(exitText!, "exit value");
 const convert = flag("--convert");
 const exercise = flag("--exercise");
 
@@ -79,7 +124,7 @@ const name = new Map<string, string>([
 
 const converted = [...decisions.converted].map((id) => name.get(id)).join(", ") || "none";
 const exercised = [...decisions.exercised].map((id) => name.get(id)).join(", ") || "none";
-console.log(`${caseName} at $${dollars(exitValue)}`);
+console.log(`${caseName} at $${dollars(exitValue)}, on ${tableSource}`);
 console.log(`Converts: ${converted}. Exercised: ${exercised}. (Decisions ${source}.)\n`);
 
 const header = ["Holder", "Security", "Payout", ...(recorded ? ["expected.json"] : [])];
