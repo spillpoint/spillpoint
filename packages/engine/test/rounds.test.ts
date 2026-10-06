@@ -1,6 +1,5 @@
-// Building cap tables from rounds (M4c–M4f), checked against every locked
-// round case: each cap table the engine builds, field by field, up to the
-// first event a later M4 PR builds, which must be refused naming its term.
+// Building cap tables from rounds (M4c–M4g), checked against every locked
+// round case: each cap table the engine builds, field by field.
 
 import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
@@ -32,35 +31,8 @@ interface ExpectedTable {
 
 const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
-/** Where each round case stops now: the event, and the term a later M4 PR builds. Null: built in full. */
-const STOPS: Record<string, [event: string, term: string] | null> = {
-  "edge-14a-pool-top-up": null,
-  "edge-14b-no-top-up": null,
-  "edge-15-safe-discount-beats-cap": null,
-  "edge-16a-broad-based": null,
-  "edge-16b-narrow-based": null,
-  "edge-16c-full-ratchet": null,
-  "edge-16d-broad-based-not-in-price": null,
-  "edge-16e-broad-based-pool-in-a": null,
-  "edge-16f-broad-based-cp2-rounded": null,
-  "edge-17a-pay-to-play-priced-after": null,
-  "edge-17b-pay-to-play-priced-before": null,
-  "edge-17c-pay-to-play-partial": null,
-  "edge-17d-pay-to-play-partial-proportional": null,
-  "edge-17e-pay-to-play-anti-dilution": null,
-  "edge-17f-pay-to-play-anti-dilution-priced-before": null,
-  "edge-17g-pay-to-play-two-series": null,
-  "edge-17h-pay-to-play-two-series-proportional": null,
-  "edge-18-pro-rata-with-safe": null,
-  "edge-18b-pro-rata-pool-in-base": null,
-  "edge-18c-pro-rata-and-more": null,
-  "edge-19a-note-converts-with-pool": ["series_a", "note_conversion"],
-  "edge-19b-note-converts-without-pool": ["series_a", "note_conversion"],
-  "edge-19c-note-converts-common-only": ["series_a", "note_conversion"],
-  "edge-20-pre-money-safe-converts": null,
-  "edge-21-note-and-pre-money-safe": ["series_a", "note_conversion"],
-  millrace: null,
-};
+/** The 26 locked round cases, every one built in full since M4g. */
+const EXPECTED_ROUND_CASES = 26;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {
@@ -153,6 +125,19 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
       if (conversions[i]!.company_capitalization != null) expectClose(c.companyCapitalization!, conversions[i]!.company_capitalization, `${at} ${c.safe} Company Capitalization`);
       else expect(c.companyCapitalization).toBeNull();
     });
+    const noteConversions = (ed.note_conversions ?? []) as Record<string, unknown>[];
+    expect(d.noteConversions.map((c) => [c.note, c.holder, c.conversionBase, c.method, c.shares.toNumber(), c.series])).toEqual(
+      noteConversions.map((c) => [c.note, c.holder, c.conversion_base, c.method, c.shares, c.series]),
+    );
+    d.noteConversions.forEach((c, i) => {
+      const e = noteConversions[i]!;
+      const what = `${at} ${c.note}`;
+      expectSameNumber(c.principal, e.principal, `${what} principal`);
+      expectClose(c.interest, e.interest, `${what} interest`);
+      expectClose(c.amountConverting, e.amount_converting, `${what} amount converting`);
+      expectClose(c.baseShares, e.base_shares, `${what} base shares`);
+      expectClose(c.conversionPrice, e.conversion_price, `${what} conversion price`);
+    });
     const proRata = (ed.pro_rata ?? []) as Record<string, string>[];
     expect(d.proRata.map((p) => [p.holder, p.preRoundShare.times(100).toFixed(6), p.entitlement.toFixed(2)])).toEqual(
       proRata.map((p) => [p.holder, p.pre_round_fd_percent, p.entitlement]),
@@ -201,35 +186,19 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is listed here, with where the engine stops", () => {
-    expect(Object.keys(STOPS).sort()).toEqual(ROUND_CASES);
+  it("is found: 26 cases with events", () => {
+    expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
   });
 
   describe.each(ROUND_CASES)("%s", (name) => {
     const inputs = readCaseFile(name, "inputs.json") as Inputs;
     const expected = (readCaseFile(name, "expected.json") as { cap_tables: ExpectedTable[] }).cap_tables;
-    const stop = STOPS[name] ?? null;
-    const builtCount = stop ? inputs.events.findIndex((e) => e.id === stop[0]) : inputs.events.length;
 
-    it(`builds every cap table${stop ? ` before ${stop[0]}` : ""}, field by field`, () => {
-      const built = buildCapTables({ ...inputs, events: inputs.events.slice(0, builtCount) });
-      expect(built).toHaveLength(builtCount);
+    it("builds every cap table, field by field", () => {
+      const built = buildCapTables(inputs);
+      expect(built).toHaveLength(expected.length);
       built.forEach((t, i) => expectSameTable(t, expected[i]!));
     });
-
-    if (stop) {
-      it(`refuses ${stop[0]}, naming ${stop[1]}, rather than skipping it`, () => {
-        let error: unknown;
-        try {
-          buildCapTables(inputs);
-        } catch (e) {
-          error = e;
-        }
-        expect(error).toBeInstanceOf(UnsupportedTermError);
-        expect(error).toMatchObject({ term: stop[1], milestone: "M4" });
-        expect((error as Error).message).toMatch(/supports this from M4; until then it refuses the input rather than ignoring the term/);
-      });
-    }
   });
 });
 
@@ -309,6 +278,31 @@ describe("the round cases built in full", () => {
     expect(outcomes).toEqual(converting);
     // R21: the holders who convert get no adjustment, and A counts the table after the conversion.
     expect(series.antiDilution.map((x) => x.a!.toNumber())).toEqual(a === null ? [] : [a]);
+  });
+
+  it.each([
+    // [case, base, base shares, conversion price, shares]: $1,060,000 converts, a year of 6% on $1,000,000, at its $8,000,000 cap.
+    ["edge-19a-note-converts-with-pool", "with_pool", 10_000_000, "0.8000000000", 1_325_000],
+    ["edge-19b-note-converts-without-pool", "without_pool", 8_500_000, "0.9411764706", 1_126_250],
+    ["edge-19c-note-converts-common-only", "common_only", 8_000_000, "1.0000000000", 1_060_000],
+  ] as const)("%s divides the note's cap by its %s base of %i shares: $%s, %i shares (R23)", (name, base, baseShares, price, shares) => {
+    const series = buildCapTables(readCaseFile(name, "inputs.json")).at(-1)!.details;
+    if (series.kind !== "priced_round") throw new Error("a priced round");
+    expect(series.noteConversions.map((c) => [c.conversionBase, c.baseShares.toNumber(), c.interest.toString(), c.method, c.conversionPrice.toFixed(10), c.shares.toNumber(), c.series])).toEqual([
+      [base, baseShares, "60000", "cap", price, shares, "series_a_notes"],
+    ]);
+  });
+
+  it("21 converts a note and a pre-money SAFE in one round, neither counting the other (R23, R24)", () => {
+    const built = buildCapTables(readCaseFile("edge-21-note-and-pre-money-safe", "inputs.json")).at(-1)!;
+    const series = built.details;
+    if (series.kind !== "priced_round") throw new Error("a priced round");
+    expect(series.safeConversions.map((c) => [c.method, c.shares.toNumber(), c.series])).toEqual([["cap", 1_102_165, "series_a_shadow"]]);
+    expect(series.noteConversions.map((c) => [c.baseShares.toNumber(), c.method, c.shares.toNumber(), c.series])).toEqual([[10_000_000, "cap", 1_325_000, "series_a_notes"]]);
+    expect(built.capTable.securities.map((s) => s.name)).toEqual([
+      "Common Stock", "Options ($0.25 strike)", "Series A Preferred (from SAFEs)", "Series A Preferred (from notes)", "Series A Preferred",
+    ]);
+    expect(built.unconvertedNotes).toEqual([]);
   });
 
   it("18 counts the SAFE's 1,000,000 shares in Investor X's pro-rata base: $1,090,909.09, not $1,200,000 (R6)", () => {
@@ -496,9 +490,14 @@ describe("pay-to-play beyond the cases (M4f)", () => {
     expect(refusal(inputs)).toMatchObject({ term: "pay_to_play_with_conversions", milestone: "later" });
   });
 
-  it("refuses a pro-rata investment in a pay-to-play round, until a case settles it", () => {
+  it("refuses a pro-rata investment in a pay-to-play round: the requirement takes its place (R6, R17)", () => {
     const inputs = company({ investments: [{ holder: "p", amount: "400000", pro_rata: true }, { holder: "y", amount: "2000000" }] });
-    expect(refusal(inputs)).toMatchObject({ term: "pay_to_play_with_pro_rata", milestone: "later", path: "inputs.events[2].investments[0].pro_rata" });
+    const error = refusal(inputs);
+    expect(error).toBeInstanceOf(InputError);
+    expect((error as Error).message).toBe(
+      "inputs.events[2].investments[0].pro_rata: Investor P's $400,000.00 is marked pro-rata, but in a pay-to-play round the pay-to-play " +
+        "requirement takes the place of pro-rata. Enter it as an ordinary investment in the same round.",
+    );
   });
 
   it.each([
@@ -511,6 +510,92 @@ describe("pay-to-play beyond the cases (M4f)", () => {
     const error = refusal(company({ pay_to_play: payToPlay }));
     expect(error).toBeInstanceOf(InputError);
     expect((error as Error).message).toContain(message);
+  });
+});
+
+describe("notes beyond the cases (M4g)", () => {
+  type Case = { holders: { id: string; name: string }[]; events: Record<string, unknown>[] };
+  const case19a = () => readCaseFile("edge-19a-note-converts-with-pool", "inputs.json") as Case;
+  const refusal = (inputs: unknown) => {
+    try {
+      buildCapTables(inputs);
+    } catch (e) {
+      return e;
+    }
+    return null;
+  };
+
+  it("converts two notes at two prices into two series, with a leap day's interest, as the reference calculator does", () => {
+    // 19a's company, with the note issued on 2023-06-01 and the round on 2024-06-01: 366 days. A second note, $500,000
+    // at 8% capped at $30,000,000, converts at its 20% discount instead. The expected values come from the reference calculator.
+    const inputs = case19a();
+    inputs.holders.push({ id: "investor_m", name: "Investor M" });
+    const notes = inputs.events[3]!;
+    notes.date = "2023-06-01";
+    (notes.notes as Record<string, unknown>[])[0]!.issue_date = "2023-06-01";
+    (notes.notes as Record<string, unknown>[]).push({
+      id: "note_m", holder: "investor_m", principal: "500000", interest_rate: "0.08", interest_method: "simple", issue_date: "2023-06-01",
+      valuation_cap: "30000000", cap_type: "pre_money", conversion_base: "with_pool", discount: "0.2", repayment_multiple: "2",
+    });
+    inputs.events[4]!.date = "2024-06-01";
+    inputs.events[4]!.seniority = [["series_a", "series_a_notes", "series_a_notes_2"]];
+    const built = buildCapTables(inputs).at(-1)!;
+    const series = built.details;
+    if (series.kind !== "priced_round") throw new Error("a priced round");
+    expectClose(series.price, "227393/143448", "price");
+    expect(series.noteConversions.map((c) => [c.note, c.method, c.shares.toNumber(), c.series])).toEqual([
+      ["note_n", "cap", 1_325_205, "series_a_notes"],
+      ["note_m", "discount", 425_901, "series_a_notes_2"],
+    ]);
+    // 366 days ÷ 365 of a year's interest (Actual/365).
+    expectClose(series.noteConversions[0]!.interest, "4392000/73", "note_n interest");
+    expectClose(series.noteConversions[1]!.interest, "2928000/73", "note_m interest");
+    expectClose(series.noteConversions[1]!.conversionPrice, "227393/179310", "note_m discount price");
+    expect(series.newShares.map((n) => n.shares.toNumber())).toEqual([3_154_186]);
+    expect(series.poolTopUp.toNumber()).toBe(865_640);
+    expect(built.capTable.securities.map((s) => s.name)).toContain("Series A Preferred (from notes) 2");
+  });
+
+  it("counts a converting note at its whole shares in a pro-rata base (R6), as the reference calculator does", () => {
+    const inputs = case19a();
+    inputs.events[4]!.investments = [{ holder: "investor_y", amount: "4000000" }, { holder: "founder_a", amount: "500000", pro_rata: true }];
+    const series = buildCapTables(inputs).at(-1)!.details;
+    if (series.kind !== "priced_round") throw new Error("a priced round");
+    // Founder A's 6,000,000 of 8,500,000 outstanding plus the note's 1,325,000.
+    expect(series.proRata.map((p) => [p.holder, p.preRoundShare.times(100).toFixed(6), p.entitlement.toFixed(2)])).toEqual([["founder_a", "61.068702", "2748091.60"]]);
+  });
+
+  it("refuses a round that converts notes without a date, or dated before a note was issued (R23)", () => {
+    const undated = case19a();
+    delete undated.events[4]!.date;
+    expect(refusal(undated)).toMatchObject({ message: "inputs.events[4].date: a round that converts notes needs a date, for their interest (R23)" });
+    const early = case19a();
+    early.events[4]!.date = "2022-12-31";
+    expect(refusal(early)).toMatchObject({ message: "inputs.events[4].date: the round is dated before note_n was issued" });
+  });
+
+  it("refuses a date that doesn't exist", () => {
+    const inputs = case19a();
+    inputs.events[4]!.date = "2024-02-30";
+    expect(refusal(inputs)).toMatchObject({ message: "inputs.events[4].date: expected a date as YYYY-MM-DD" });
+  });
+
+  it("refuses a note converting in a down round or a pay-to-play round, until a case settles each (owed before release)", () => {
+    const down = readCaseFile("edge-16a-broad-based", "inputs.json") as Case;
+    down.holders.push({ id: "investor_n", name: "Investor N" });
+    down.events.splice(4, 0, {
+      id: "note", date: "2024-06-01", type: "notes",
+      notes: [{ id: "note_n", holder: "investor_n", principal: "500000", interest_rate: "0.06", issue_date: "2024-06-01", valuation_cap: "20000000", conversion_base: "with_pool", discount: "0.2", repayment_multiple: "2" }],
+    });
+    down.events.at(-1)!.convert_notes = true;
+    down.events.at(-1)!.seniority = [["series_b", "series_b_notes"], ["series_a"]];
+    expect(refusal(down)).toMatchObject({ term: "anti_dilution_with_conversions", milestone: "later" });
+
+    const payToPlay = readCaseFile("edge-17a-pay-to-play-priced-after", "inputs.json") as Case;
+    payToPlay.holders.push({ id: "investor_n", name: "Investor N" });
+    payToPlay.events.splice(4, 0, down.events[4]!);
+    payToPlay.events.at(-1)!.convert_notes = true;
+    expect(refusal(payToPlay)).toMatchObject({ term: "pay_to_play_with_conversions", milestone: "later" });
   });
 });
 
