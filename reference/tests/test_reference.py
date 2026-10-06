@@ -592,14 +592,100 @@ class Exits(unittest.TestCase):
         p = payouts(ct, 1_800_000)  # converted: 100,000 of 900,000 sharing shares
         self.assertEqual((p[("s", "safe")], p[("x", "common")], p[("e", "o")]), (200_000, 1_600_000, 0))
 
-    def test_unconverted_safe_with_preferred_is_refused(self):
+    def test_unconverted_safe_with_a_cap_ignores_its_discount(self):
+        # X9: at a sale a capped SAFE converts at its cap; a discount applies only in a financing.
+        securities = [COMMON, {"id": "o", "name": "o", "kind": "option", "strike": "10"}]
+        positions = [("x", "common", 800_000), ("e", "o", 100_000)]
+        plain = self.unconverted_safe(securities, positions)
+        discounted = self.unconverted_safe(securities, positions)
+        discounted.safes[0]["discount"] = F(1, 5)
+        for e in (50_000, 500_000, 1_800_000):
+            self.assertEqual(payouts(discounted, e), payouts(plain, e))
+        self.assertEqual(bp_values(discounted, 5_000_000), [100_000, 900_000])
+
+    def test_unconverted_safe_with_no_cap_jumps_where_it_can_first_convert(self):
+        # 800,000 common and a $100k SAFE with no cap and a 20% discount. Converting at the common
+        # price less 20% is worth exactly $100k / 0.8 = $125k wherever 0.8 x the exit value exceeds
+        # $100k. Below $125k no such price exists, so it takes its $100k Cash-Out Amount (X9,
+        # the literal reading); above, $125k. Its payout jumps at $125k, by $25k.
+        ct = self.unconverted_safe([COMMON], [("x", "common", 800_000)])
+        ct.safes[0]["post_money_cap"] = None
+        ct.safes[0]["discount"] = F(1, 5)
+        self.assertEqual(bp_values(ct, 1_000_000), [100_000, 125_000])
+        found = breakpoints.find(Waterfall(ct), 0, 1_000_000, 100_000)
+        self.assertEqual([t[3] for t in found], [False, True])
+        self.assertEqual(payouts(ct, 120_000)[("s", "safe")], 100_000)
+        self.assertEqual(payouts(ct, 125_000)[("s", "safe")], 100_000)  # the outcome from below holds at the jump
+        self.assertEqual(payouts(ct, 500_000)[("s", "safe")], 125_000)
+        # An MFN SAFE, with no discount either: converting is worth exactly its purchase amount, a tie, so the Cash-Out Amount (E5).
+        ct.safes[0]["discount"] = F(0)
+        self.assertEqual(Waterfall(ct).evaluate(F(500_000))[0]["decisions"], (False,))
+
+    def test_unconverted_safe_alongside_preferred(self):
+        # 800,000 common; p, 100,000 shares at $1 (non-participating, its own tier); a $100k SAFE
+        # capped at $1M. Its Cash-Out Amount ranks with p's tier, pro rata: at $150k each gets 1/2.
+        # Its Liquidity Capitalization leaves p out while p keeps its preference:
+        # 800,000 / 0.9 = 888,888.89, a Liquidity Price of $1.125; counting p it would be 1,000,000 and $1.
         ct = self.unconverted_safe(
             [COMMON, pref("p", "1", "1", "non_participating")],
             [("x", "common", 800_000), ("y", "p", 100_000)],
             [["p"]],
         )
-        with self.assertRaisesRegex(ValueError, "alongside preferred stock"):
-            Waterfall(ct)
+        wf = Waterfall(ct)
+        (f,) = wf.safes
+        self.assertEqual(wf.liquidity_capitalization(f, {"p": False}), F(8_000_000, 9))
+        self.assertEqual(wf.liquidity_capitalization(f, {"p": True}), 1_000_000)
+        p = payouts(ct, 150_000)
+        self.assertEqual((p[("s", "safe")], p[("y", "p")], p[("x", "common")]), (75_000, 75_000, 0))
+        # Participating preferred takes its preference and an as-converted share, so it counts.
+        part = self.unconverted_safe(
+            [COMMON, pref("p", "1", "1", "participating")],
+            [("x", "common", 800_000), ("y", "p", 100_000)],
+            [["p"]],
+        )
+        self.assertEqual(Waterfall(part).liquidity_capitalization(part.safes[0], {}), 1_000_000)
+
+    def note_table(self, cap, discount, multiple="1", preferred=False):
+        securities = [COMMON] + ([pref("p", "1", "1", "non_participating")] if preferred else [])
+        positions = [{"holder": "x", "security": "common", "shares": 800_000}]
+        if preferred:
+            positions.append({"holder": "y", "security": "p", "shares": 100_000})
+        return CapTable.from_json(
+            {
+                "holders": [{"id": h, "name": h} for h in ("x", "y", "n")],
+                "securities": securities,
+                "seniority": [["p"]] if preferred else [],
+                "positions": positions,
+                "unconverted_notes": [
+                    {"id": "note", "holder": "n", "principal": "100000", "interest_rate": "0", "issue_date": "2023-01-01",
+                     "valuation_cap": cap, "conversion_base": "with_pool", "discount": discount, "repayment_multiple": multiple}
+                ],
+            }
+        )
+
+    def test_unconverted_note_with_no_cap(self):
+        # A $100k note at 0% with no cap and a 20% discount, repaid at 1x: converting is worth
+        # exactly $125k wherever there is room, so it is repaid $100k below $125k and takes $125k
+        # above, a jump (X12, the literal reading). With neither a cap nor a discount it is only repaid.
+        exit_date = datetime.date(2024, 1, 1)
+        wf = Waterfall(self.note_table(None, "0.2"), exit_date)
+        self.assertEqual([wf.evaluate(F(e))[0]["lines"][("n", "note")] for e in (120_000, 500_000)], [100_000, 125_000])
+        found = breakpoints.find(wf, 0, 1_000_000, 100_000)
+        self.assertEqual([(t[0], t[3]) for t in found], [(100_000, False), (125_000, True)])
+        repay_only = Waterfall(self.note_table(None, "0"), exit_date)
+        self.assertEqual(repay_only.note_ids, [])
+        self.assertEqual(repay_only.evaluate(F(10_000_000))[0]["lines"][("n", "note")], 100_000)
+
+    def test_unconverted_note_with_a_cap_ignores_its_discount_and_counts_preferred_in_its_base(self):
+        # X12: a capped note converts at its cap price at a sale. Its with_pool base counts preferred
+        # as converted: 800,000 + 100,000 = 900,000, so a $900k cap is $1 a share and 100,000 shares.
+        exit_date = datetime.date(2024, 1, 1)
+        wf = Waterfall(self.note_table("900000", "0.2", preferred=True), exit_date)
+        (n,) = wf.notes
+        self.assertEqual((wf.note_conversion_base(n), wf.note_conversion_price(n), wf.note_conversion_shares(n)), (900_000, 1, 100_000))
+        # Repayment is debt, ahead of p's preference: at $150k the note gets $100k and p $50k.
+        lines = wf.evaluate(F(150_000))[0]["lines"]
+        self.assertEqual((lines[("n", "note")], lines[("y", "p")]), (100_000, 50_000))
 
     def test_unconverted_note_at_exit(self):
         # 800,000 common, 100,000 options at $10 (out of the money), a 100,000

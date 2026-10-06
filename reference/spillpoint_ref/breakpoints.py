@@ -64,7 +64,9 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
     separate after being equal over a range. Both are where the difference
     between its two outcomes reaches zero, measured on the side where the
     difference isn't zero; so each side's line is tried, and the point inside
-    the bracket is the answer.
+    the bracket is the answer. A SAFE or note with no cap jumps instead where
+    converting first becomes possible (X9, X12): where its room to convert,
+    measured on the side where it converts, reaches zero.
     """
     (bits_l, _), = sides[0]
     (bits_r, _), = sides[1]
@@ -75,6 +77,14 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
             continue
         player = wf.players[i]
         flipped = bits_l[:i] + (not u,) + bits_l[i + 1 :]
+        instrument = next((y for y in wf.safes + wf.notes if y["id"] == player), None)
+        if instrument is not None and wf.priced(instrument):
+            conv_bits, (x0, x1) = (bits_r, pts_right) if v else (bits_l, pts_left)
+            room = [wf.run(e, wf.settled(e, conv_bits), room_of=player) for e in (x0, x1)]
+            m, c = _line(room[0], room[1], x0, x1)
+            if m != 0 and lo - 1 <= -c / m <= hi + 1:
+                xs.add(-c / m)
+            continue
         if player in wf.vote:
             # E17: each voter compares the two settled outcomes of the group's choice.
             values = [
@@ -295,9 +305,33 @@ def reasons(wf, x, sa, sb, jumps=False):
                     text = f"{vote} Above this exit value the vote no longer carries, so the group stops converting."
             out.append({"code": "series_converts", "security": pid, "converts": db[pid], "text": text})
 
+    # A SAFE taking its Cash-Out Amount ranks in the most junior tier (X9).
+    safes_in_tier = [f for f in wf.safes if not db[f["id"]]] if ct.seniority else []
+
+    def tier_names(i, tier):
+        names = [_name(ct, s) for s in tier if not converted_b.get(s, False)]
+        if i == len(ct.seniority) - 1:
+            names += [f"{ct.holders[f['holder']]}'s SAFE (its Cash-Out Amount)" for f in safes_in_tier]
+        return names
+
     for f in wf.safes:
         fid = f["id"]
         holder = ct.holders[f["holder"]]
+        if da[fid] != db[fid] and wf.priced(f):
+            worth = wf.priced_conversion_worth(f)
+            if db[fid]:
+                text = (
+                    f"{holder}'s SAFE has no valuation cap, so it converts at the common price per share less its "
+                    f"{decimal(f['discount'] * 100, 0)}% discount. That is worth exactly {usd(worth)} "
+                    f"({usd(f['purchase_amount'])} ÷ {decimal(1 - f['discount'], 2)}) wherever there is room for it, and this is the "
+                    f"first exit value where there is: what is left for common and the SAFE reaches {usd(worth)}. Below it no such "
+                    f"price exists, so the SAFE takes its Cash-Out Amount, {usd(f['purchase_amount'])}; above it the SAFE converts, "
+                    f"and its payout jumps to {usd(worth)}."
+                )
+            else:
+                text = f"{holder}'s SAFE can no longer convert above this exit value, so it takes its Cash-Out Amount."
+            out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})
+            continue
         if safe_paid_a is False and safe_paid_b is True:
             text = (
                 f"{holder}'s SAFE has received its full Cash-Out Amount, its {usd(f['purchase_amount'])} purchase amount, "
@@ -305,8 +339,8 @@ def reasons(wf, x, sa, sb, jumps=False):
             )
             out.append({"code": "safe_cash_out_paid", "security": fid, "text": text})
         if da[fid] != db[fid]:
-            lp = wf.liquidity_price(f)
-            n = wf.safe_conversion_shares(f)
+            lp = wf.liquidity_price(f, converted_b)
+            n = wf.safe_conversion_shares(f, converted_b)
             if db[fid]:
                 text = (
                     f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount. Its "
@@ -324,12 +358,29 @@ def reasons(wf, x, sa, sb, jumps=False):
         holder = ct.holders[n["holder"]]
         repay = wf.note_repayment(n)
         if note_paid_a is False and note_paid_b is True:
+            # Debt comes first (X12): the next dollar goes to the most senior preference tier still owed, or else to common.
+            owed = [j for j in range(len(ct.seniority)) if tiers_b[j] is not None]
+            nxt = f"the preference tier {_join(tier_names(owed[0], ct.seniority[owed[0]]))}" if owed else "common"
             text = (
                 f"{holder}'s convertible note is fully repaid: {exact(n['repayment_multiple'])}x its principal plus accrued interest, "
-                f"{usd(repay)}, paid ahead of all equity as debt. Above this exit value, the next dollar goes to common."
+                f"{usd(repay)}, paid ahead of all equity as debt. Above this exit value, the next dollar goes to {nxt}."
             )
             out.append({"code": "note_repayment_paid", "security": nid, "text": text})
-        if da[nid] != db[nid]:
+        if da[nid] != db[nid] and wf.priced(n):
+            worth = wf.priced_conversion_worth(n)
+            amount = n["principal"] + wf.note_interest[nid]
+            if db[nid]:
+                text = (
+                    f"{holder}'s convertible note has no valuation cap, so it converts at the common price per share less its "
+                    f"{decimal(n['discount'] * 100, 0)}% discount. Its principal plus interest, {usd(amount)}, is then worth exactly "
+                    f"{usd(worth)} ({usd(amount)} ÷ {decimal(1 - n['discount'], 2)}) wherever there is room for it, and this is the "
+                    f"first exit value where there is: what is left for common and the note reaches {usd(worth)}. Below it no such "
+                    f"price exists, so the note is repaid, {usd(repay)}; above it the note converts, and its payout jumps to {usd(worth)}."
+                )
+            else:
+                text = f"{holder}'s convertible note can no longer convert above this exit value, so it is repaid."
+            out.append({"code": "note_switches", "security": nid, "converts": db[nid], "text": text})
+        elif da[nid] != db[nid]:
             cp = wf.note_conversion_price(n)
             shares = wf.note_conversion_shares(n)
             if db[nid]:
@@ -347,20 +398,21 @@ def reasons(wf, x, sa, sb, jumps=False):
     for i, tier in enumerate(ct.seniority):
         if tiers_a[i] is False and tiers_b[i] is True:
             claim = sum(pref_b(s) for s in tier if not converted_b.get(s, False))
-            unpaid_after = [
-                t for j, t in enumerate(ct.seniority) if j > i and tiers_b[j] is not None
-            ]
+            if i == len(ct.seniority) - 1:
+                claim += sum((f["purchase_amount"] for f in safes_in_tier), Fraction(0))
+            unpaid_after = [j for j in range(i + 1, len(ct.seniority)) if tiers_b[j] is not None]
             nxt = (
-                f"the next tier's preference ({_join(_name(ct, s) for s in unpaid_after[0] if not converted_b.get(s, False))})"
+                f"the next tier's preference ({_join(tier_names(unpaid_after[0], ct.seniority[unpaid_after[0]]))})"
                 if unpaid_after
                 else "the residual, shared as common"
             )
-            names = _join(_name(ct, s) for s in tier if not converted_b.get(s, False))
+            names = _join(tier_names(i, tier))
             text = (
                 f"The preference tier {names} is fully paid ({usd(claim)}). "
                 f"Above this exit value, the next dollar goes to {nxt}."
             )
-            out.append({"code": "tier_fully_paid", "tier": i + 1, "securities": list(tier), "text": text})
+            ids = list(tier) + ([f["id"] for f in safes_in_tier] if i == len(ct.seniority) - 1 else [])
+            out.append({"code": "tier_fully_paid", "tier": i + 1, "securities": ids, "text": text})
 
     if band_a != band_b and ct.carve_out:
         tiers = ct.carve_out["tiers"]
