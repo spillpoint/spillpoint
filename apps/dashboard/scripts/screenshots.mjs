@@ -86,6 +86,8 @@ const EDIT_DIRECTLY = ["window.confirm = () => true", click("Edit the cap table 
 /** Opens the cap table after the index-th event on the Rounds tab. */
 const openRound = (index) => `document.querySelectorAll(".rounds__table")[${index}].open = true`;
 const ROUND = (n) => `.rounds__event:nth-child(${n})`;
+/** Opens the index-th event's form on the Rounds tab. */
+const editRound = (index) => `document.querySelectorAll(".rounds__edit")[${index}].click()`;
 
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
@@ -150,6 +152,17 @@ const SHOTS = {
   "m4i-seed": { width: 1100, height: 900, steps: [click("Rounds"), openRound(5)], clip: [ROUND(6)] },
   "m4i-locked": { width: 1100, height: 900, steps: [click("Cap table")], clip: [".editor__built", "section[aria-labelledby=edit-holders-heading]"], quality: 50 },
   "m4i-phone": { width: 375, height: 812, mobile: true, steps: [click("Rounds"), openRound(9)], clip: [ROUND(10)] },
+  // M4j: editing the rounds.
+  "m4j-seed": { width: 1100, height: 900, steps: [click("Rounds"), editRound(5)], clip: [ROUND(6)], quality: 50 },
+  "m4j-series-b": { width: 1100, height: 900, steps: [click("Rounds"), editRound(9)], clip: [ROUND(10)], quality: 50 },
+  "m4j-holders": { width: 1100, height: 900, steps: [click("Rounds")], clip: ["section[aria-labelledby=rounds-holders-heading]"], quality: 50 },
+  "m4j-phone": { width: 375, height: 812, mobile: true, steps: [click("Rounds"), editRound(5)], clip: [ROUND(6)], quality: 50 },
+  "m4j-error": {
+    width: 1100,
+    height: 900,
+    steps: [click("Rounds"), editRound(5), fill("[id$='-investments-0-amount']", 0, "a lot")],
+    clip: [`${ROUND(6)} .rounds__heading`, `${ROUND(6)} .rounds__problem`, `${ROUND(6)} fieldset.series`],
+  },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

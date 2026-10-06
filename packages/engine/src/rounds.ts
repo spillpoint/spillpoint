@@ -369,9 +369,18 @@ function readNote(value: unknown, path: string): Note {
   };
 }
 
-/** SPEC, Tiers: every preferred series in exactly one tier, and nothing else in any. */
-function readSeniority(company: Company, value: unknown, path: string): string[][] {
+/**
+ * SPEC, Tiers: every preferred series in exactly one tier, and nothing else in
+ * any. R28: a round's seniority may leave out the series its SAFEs and notes
+ * convert into, which then rank alongside the round's new series. Which of
+ * those exist depends on the round's own numbers (two SAFEs at two prices make
+ * two series), so an input written before the round is built can't always
+ * name them. Seniority that lists them works as before.
+ */
+function readSeniority(company: Company, value: unknown, path: string, round?: { series: string; conversions: string[] }): string[][] {
   const tiers = array(value, path).map((tier, i) => array(tier, `${path}[${i}]`).map((v, j) => text(v, `${path}[${i}][${j}]`)));
+  const withNew = round ? tiers.find((tier) => tier.includes(round.series)) : undefined;
+  if (round && withNew) withNew.push(...round.conversions.filter((id) => !tiers.flat().includes(id)));
   const listed = tiers.flat();
   for (const id of listed) {
     if (company.security(id)?.kind !== "preferred") throw new InputError(path, `${id} is not a preferred series`);
@@ -978,7 +987,10 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   company.unissuedPool = newPool;
   // R19's toggle: priced before the conversion, which still happens at closing.
   if (payToPlay && !payToPlay.pricedAfterConversion) applyPayToPlay(company, payToPlay, `${path}.pay_to_play`);
-  company.seniority = readSeniority(company, ev.seniority, `${path}.seniority`);
+  company.seniority = readSeniority(company, ev.seniority, `${path}.seniority`, {
+    series: seriesId,
+    conversions: [...safeSeries, ...noteSeries].map((x) => x.id),
+  });
 
   return {
     kind: "priced_round",

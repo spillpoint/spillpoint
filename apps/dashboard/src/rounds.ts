@@ -37,7 +37,8 @@ export type FromRounds =
 export function fromRounds(rounds: Rounds, range: unknown): FromRounds {
   const company = { holders: rounds.holders, events: rounds.events };
   try {
-    readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range, exit_values: [] } });
+    // The rounds are checked on their own: the range belongs to the cap table, whose editor checks it next to its field.
+    readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [] } });
     const tables = buildCapTables(company);
     const after = tables.find((t) => t.event === rounds.after)!;
     const r = range as unknown[];
@@ -105,13 +106,15 @@ export interface TableRow {
 
 export interface EventView {
   id: string;
-  /** "30 Jun 2022", or null when the event has no date. */
+  /** "Jun 30, 2022", or null when the event has no date. */
   date: string | null;
   title: string;
   /** What it did, in plain sentences. */
   lines: string[];
   rows: TableRow[];
   pool: { shares: Decimal; fullyDiluted: Decimal };
+  /** Each holder's fully diluted share after it, by holder id: what the "For you" line compares. */
+  stakes: Map<string, Decimal>;
   /** SAFEs and notes still waiting to convert after it. */
   outstanding: string[];
 }
@@ -119,10 +122,10 @@ export interface EventView {
 const ZERO = new D(0);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** "2022-06-30" → "30 Jun 2022". */
+/** "2022-06-30" → "Jun 30, 2022", as US founders write dates (M4i review). */
 export function dateText(date: string | null): string | null {
   const m = date ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(date) : null;
-  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : date;
+  return m ? `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}` : date;
 }
 
 const count = (n: Decimal) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -149,6 +152,8 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
     const total = ct.positions.reduce((sum, p) => sum.plus(asConverted(p.security, p.shares)), ct.unissuedPool);
     const share = (n: Decimal) => (total.isZero() ? ZERO : n.div(total));
     const { title, lines } = describe(ev, t, holder, security);
+    const stakes = new Map<string, Decimal>();
+    for (const p of ct.positions) stakes.set(p.holder, (stakes.get(p.holder) ?? ZERO).plus(share(asConverted(p.security, p.shares))));
     return {
       id: t.event,
       date: dateText(t.date),
@@ -156,6 +161,7 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
       lines,
       rows: ct.positions.map((p) => ({ holder: holder(p.holder), security: security(p.security), shares: p.shares, fullyDiluted: share(asConverted(p.security, p.shares)) })),
       pool: { shares: ct.unissuedPool, fullyDiluted: share(ct.unissuedPool) },
+      stakes,
       outstanding: [
         ...t.unconvertedSafes.map((f) => `${holder(f.holder)}'s SAFE, ${dollars(f.purchaseAmount)}`),
         ...t.unconvertedNotes.map((n) => `${holder(n.holder)}'s convertible note, ${dollars(n.principal)} plus interest`),
@@ -228,7 +234,7 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): st
   ];
   const target = ev.pool_target_unissued_percent_post == null ? ZERO : new D(String(ev.pool_target_unissued_percent_post)).div(100);
   if (d.poolTopUp.gt(0)) {
-    lines.push(`The pool is topped up by ${count(d.poolTopUp)} shares, to ${pct(target)} of the company after the round. The top-up comes before the new money, so it dilutes only the holders before the round.`);
+    lines.push(`The pool is topped up by ${count(d.poolTopUp)} shares, to ${pct(target)} of the company after the round. The top-up comes before the new money, so it dilutes only the holders before the round. Investors call this the option pool shuffle.`);
   }
   else if (target.gt(0)) lines.push(`The pool already meets its ${pct(target)} target, so it isn't topped up.`);
 

@@ -15,6 +15,7 @@ import type { Participation } from "spillpoint";
 
 import { addHolder, addSecurity, fieldId, removeRow, setPrice, sharesHeldBy, sharesKey, tiers } from "./draft.ts";
 import type { Draft, DraftPreferred, DraftSecurity } from "./draft.ts";
+import { Field } from "./fields.tsx";
 import { amountHint, fractionValue } from "./format.ts";
 
 /** The engine's objection to the draft, and the field it names (null: none the editor shows). */
@@ -91,53 +92,6 @@ function EditorStatus({ error, summary }: { error: DraftError | null; summary: s
             Go to the field
           </button>
         </>
-      )}
-    </div>
-  );
-}
-
-// ---------- fields ----------
-
-interface FieldProps {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  error: string | null;
-  hint?: React.ReactNode;
-  /** Visually hidden label, for fields in a table whose column says what they are. */
-  hiddenLabel?: boolean;
-  numeric?: boolean;
-}
-
-function Field({ id, label, value, onChange, error, hint, hiddenLabel, numeric }: FieldProps) {
-  const described = [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(" ") || undefined;
-  return (
-    <div className="field">
-      <label htmlFor={id} className={hiddenLabel ? "visually-hidden" : "field__label"}>
-        {label}
-      </label>
-      <input
-        id={id}
-        type="text"
-        className={numeric ? "num" : undefined}
-        inputMode={numeric ? "decimal" : undefined}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={described}
-        spellCheck={false}
-        autoComplete="off"
-      />
-      {hint && (
-        <span id={`${id}-hint`} className="field__hint">
-          {hint}
-        </span>
-      )}
-      {error && (
-        <span id={`${id}-error`} className="field-error">
-          {error}
-        </span>
       )}
     </div>
   );

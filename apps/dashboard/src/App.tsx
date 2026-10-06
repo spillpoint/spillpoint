@@ -27,8 +27,10 @@ import { buildExit, checkBuilt, scratchDraft } from "./draft.ts";
 import type { Built, Checked, Draft } from "./draft.ts";
 import { fileName, fileText, readFile } from "./file.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
-import { eventViews, exampleContents } from "./rounds.ts";
+import { eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
+import { buildRounds, draftFromRounds, locate } from "./roundsDraft.ts";
+import type { RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 const SCRATCH = "scratch";
 const FILE = "file";
@@ -83,8 +85,12 @@ interface Session {
   youKey: string | null;
   /** The exit value as chosen; it's kept inside the range when shown. */
   exitValue: D;
-  /** The rounds that build the cap table, until someone edits the table directly. */
-  rounds: Rounds | null;
+  /** The rounds that build the cap table, as typed (M4j), until someone edits the table directly. */
+  rounds: RoundsDraft | null;
+  /** The last rounds the engine built: what the Rounds tab shows and a save keeps. */
+  roundsGood: Rounds | null;
+  /** The engine's objection to the rounds as typed, if it has one. */
+  roundsProblem: RoundsProblem | null;
 }
 
 function newSession(start: Start, n: number): Session {
@@ -93,7 +99,8 @@ function newSession(start: Start, n: number): Session {
   const checked = checkBuilt(built);
   const you = start.you ?? (checked.ok ? defaultHolder(checked.exit.capTable) : undefined);
   const youKey = [...built.holderIds].find(([, id]) => id === you)?.[0] ?? null;
-  return { start, n, draft: start.draft, name: start.name, youKey, exitValue: new D(start.defaultExitValue), rounds: start.rounds };
+  const rounds = start.rounds ? draftFromRounds(start.rounds) : null;
+  return { start, n, draft: start.draft, name: start.name, youKey, exitValue: new D(start.defaultExitValue), rounds, roundsGood: start.rounds, roundsProblem: null };
 }
 
 /** The holder you are, by id in this cap table: the one chosen, or else whoever holds the most common stock. */
@@ -141,11 +148,34 @@ export function App() {
   const built = useMemo(() => buildExit(session.draft), [session.draft]);
   const checked = useMemo(() => checkBuilt(built), [built]);
 
-  const change = (patch: Partial<Pick<Session, "draft" | "name" | "rounds">>) => {
-    setSession((s) => ({ ...s, ...patch }));
+  const edit = () => {
     setEdited(true);
     setUnsaved(true);
     setFileStatus(null);
+  };
+  const change = (patch: Partial<Pick<Session, "draft" | "name" | "rounds" | "roundsGood">>) => {
+    setSession((s) => ({ ...s, ...patch }));
+    edit();
+  };
+  /**
+   * An edit to the rounds: the engine builds them again. If it accepts them,
+   * the cap table they build replaces the old one, and you stay the same
+   * holder; if not, its message is kept to show, and the payouts stay on the
+   * last rounds it accepted.
+   */
+  const changeRounds = (next: RoundsDraft) => {
+    setSession((s) => {
+      const built = buildRounds(next);
+      const result = fromRounds(built, s.draft.range);
+      if (!result.ok) {
+        const path = (result.error as { path?: string }).path ?? "";
+        return { ...s, rounds: next, roundsProblem: locate(next, path, result.message) };
+      }
+      const id = s.youKey !== null ? buildExit(s.draft).holderIds.get(s.youKey) : undefined;
+      const youKey = id ? ([...buildExit(result.draft).holderIds].find(([, v]) => v === id)?.[0] ?? null) : s.youKey;
+      return { ...s, rounds: next, roundsGood: built, roundsProblem: null, draft: result.draft, youKey };
+    });
+    edit();
   };
   const begin = (start: Start, status: FileStatus) => {
     setSession((s) => newSession(start, s.n + 1));
@@ -155,9 +185,11 @@ export function App() {
   };
   const okToLose = (what: string) => !unsaved || window.confirm(`${what}? Your unsaved changes to this cap table will be lost.`);
 
-  // The cap table after each event, for the Rounds tab. The rounds change only when a session starts or they're dropped.
+  // The cap table after each event, for the Rounds tab, from the last rounds the engine built.
   const rounds = session.rounds;
-  const events = useMemo(() => (rounds ? eventViews(rounds, buildCapTables({ holders: rounds.holders, events: rounds.events })) : null), [rounds]);
+  const good = session.roundsGood;
+  const tables = useMemo(() => (good ? buildCapTables({ holders: good.holders, events: good.events }) : null), [good]);
+  const events = useMemo(() => (good && tables ? eventViews(good, tables) : null), [good, tables]);
   /** Asks first, and says what goes (M4 plan, answer 9): the rounds go, the cap table they built stays. */
   const editDirectly = () => {
     if (!rounds) return;
@@ -167,7 +199,7 @@ export function App() {
         `The cap table itself stays exactly as it is now, and you can edit it. A save will keep the cap table, not the rounds. ` +
         `To get the rounds back, ${back}.`,
     );
-    if (yes) change({ rounds: null });
+    if (yes) change({ rounds: null, roundsGood: null });
   };
 
   const choose = (id: string) => {
@@ -179,10 +211,14 @@ export function App() {
       setFileStatus({ kind: "problem", text: `Not saved: the cap table has a problem to fix first. ${checked.message}` });
       return;
     }
+    if (session.roundsProblem) {
+      setFileStatus({ kind: "problem", text: `Not saved: the rounds have a problem to fix first. ${session.roundsProblem.message}` });
+      return;
+    }
     const name = fileName(session.name);
     // The view goes in too, so the file reopens where you were.
     const view = { exitValue: insideRange(session.exitValue, checked.exit.range).toString(), you: youIn(built, checked.exit.capTable, session.youKey) };
-    download(name, fileText(session.name, session.draft, view, session.rounds));
+    download(name, fileText(session.name, session.draft, view, session.roundsGood));
     setUnsaved(false);
     setFileStatus({ kind: "done", text: `Saved as ${name}, in your downloads.` });
   };
@@ -274,6 +310,10 @@ export function App() {
         chosenExitValue={session.exitValue}
         onExitValue={(exitValue) => setSession((s) => ({ ...s, exitValue }))}
         rounds={rounds}
+        onRounds={changeRounds}
+        roundsProblem={session.roundsProblem}
+        after={good?.after ?? null}
+        tables={tables}
         events={events}
         onEditDirectly={editDirectly}
       />
@@ -318,15 +358,19 @@ interface WorkspaceProps {
   onYouKey: (key: string) => void;
   chosenExitValue: D;
   onExitValue: (x: D) => void;
-  /** The rounds that build the cap table, and what each event did; null when it was entered directly. */
-  rounds: Rounds | null;
+  /** The rounds that build the cap table, as typed, and what each event did as last built; null when it was entered directly. */
+  rounds: RoundsDraft | null;
+  onRounds: (next: RoundsDraft) => void;
+  roundsProblem: RoundsProblem | null;
+  after: string | null;
+  tables: ReturnType<typeof buildCapTables> | null;
   events: ReturnType<typeof eventViews> | null;
   onEditDirectly: () => void;
 }
 
 function Workspace(props: WorkspaceProps) {
   const { start, draft, name, built, checked, edited, unsaved, onDraft, onName, youKey, onYouKey, chosenExitValue, onExitValue: setExitValue } = props;
-  const { rounds, events, onEditDirectly } = props;
+  const { rounds, onRounds, roundsProblem, after, tables, events, onEditDirectly } = props;
   const lastGood = useRef<Good | null>(null);
   if (checked.ok && lastGood.current?.built !== built) lastGood.current = { built, checked };
   const good = lastGood.current!;
@@ -371,6 +415,18 @@ function Workspace(props: WorkspaceProps) {
     focusAfterSwitch.current = draftError?.field ?? null;
     setTab("editor");
   };
+  // Which events are open for editing on the Rounds tab, by key.
+  const [editing, setEditing] = useState<ReadonlySet<string>>(new Set());
+  const fixRounds = () => {
+    if (!roundsProblem) return;
+    if (roundsProblem.event) setEditing((open) => new Set([...open, roundsProblem.event!]));
+    setTab("rounds");
+    // The field once the event's form has rendered: the one the engine named, or the nearest one above it.
+    setTimeout(() => {
+      const field = roundsProblem.fields.map((f) => document.getElementById(f)).find((el) => el);
+      (field ?? document.getElementById(`round-problem-${roundsProblem.event ?? "rounds"}`))?.focus();
+    }, 0);
+  };
 
   const summary = solved.ok
     ? `At ${shortDollars(exitValue)}, ${yourName} gets ${shortDollars(solved.answer.payout.holderTotals.get(you) ?? new D(0))}.`
@@ -387,6 +443,14 @@ function Workspace(props: WorkspaceProps) {
       <Tabs tab={tab} onTab={setTab} />
 
       <div role="tabpanel" id="panel-payouts" aria-labelledby="tab-payouts" hidden={tab !== "payouts"}>
+        {roundsProblem && (
+          <div className="notice notice--problem" role="status">
+            <strong>Your last change to the rounds has a problem, so these payouts are from before it.</strong> {roundsProblem.message}{" "}
+            <button type="button" className="link-button" onClick={fixRounds}>
+              Fix it
+            </button>
+          </div>
+        )}
         {draftError && (
           <div className="notice notice--problem" role="status">
             <strong>Your last change to the cap table has a problem, so these payouts are from before it.</strong> {draftError.message}{" "}
@@ -436,7 +500,17 @@ function Workspace(props: WorkspaceProps) {
       </div>
 
       <div role="tabpanel" id="panel-rounds" aria-labelledby="tab-rounds" hidden={tab !== "rounds"}>
-        <RoundsView events={events} after={rounds?.after ?? null} />
+        <RoundsView
+          events={events}
+          after={after}
+          you={you}
+          rounds={rounds}
+          onRounds={onRounds}
+          problem={roundsProblem}
+          tables={tables}
+          editing={editing}
+          onEditing={setEditing}
+        />
       </div>
     </main>
   );

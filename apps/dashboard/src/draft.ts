@@ -303,7 +303,7 @@ function slug(name: string, fallback: string): string {
 }
 
 /** Ids for every row: loaded ids as they were, new ones from the name, each unique. */
-function assignIds<T extends { key: string; fileId: string | null; name: string }>(rows: readonly T[], fallback: string): Map<string, string> {
+export function assignIds<T extends { key: string; fileId: string | null; name: string }>(rows: readonly T[], fallback: string): Map<string, string> {
   const taken = new Set(rows.flatMap((r) => (r.fileId ? [r.fileId] : [])));
   const ids = new Map<string, string>();
   for (const r of rows) {
@@ -322,10 +322,10 @@ function assignIds<T extends { key: string; fileId: string | null; name: string 
 
 // What founders type, made into the engine's exact-number strings (C1). Anything
 // that still isn't a number goes through as typed, so the engine's message names it.
-const shareText = (t: string) => t.replace(/[,\s]/g, "");
-const moneyText = (t: string) => parseDollars(t)?.toString() ?? t.trim();
-const multipleText = (t: string) => t.trim().replace(/\s*[x×]$/i, "");
-const percentText = (t: string) => t.trim().replace(/\s*%$/, "");
+export const shareText = (t: string) => t.replace(/[,\s]/g, "");
+export const moneyText = (t: string) => parseDollars(t)?.toString() ?? t.trim();
+export const multipleText = (t: string) => t.trim().replace(/\s*[x×]$/i, "");
+export const percentText = (t: string) => t.trim().replace(/\s*%$/, "");
 
 /** The seniority tiers, most senior first (SPEC, Tiers): series with the same rank share a tier, in the loaded file's order. */
 export function tiers(d: Draft): DraftPreferred[][] {

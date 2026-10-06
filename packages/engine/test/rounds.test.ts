@@ -599,6 +599,40 @@ describe("notes beyond the cases (M4g)", () => {
   });
 });
 
+describe("a round's seniority without its series from SAFEs and notes (R28)", () => {
+  type Case = { holders: unknown[]; events: Record<string, unknown>[] };
+  const tables = (inputs: Case) => buildCapTables(inputs).map((t) => t.capTable);
+
+  it("ranks them alongside the round's new series: Millrace's Seed, and 21's Series A, build the same cap tables", () => {
+    const millrace = readCaseFile("millrace", "inputs.json") as Case;
+    const seed = millrace.events.find((e) => e.id === "seed")!;
+    const written = tables(millrace);
+    seed.seniority = [["seed"]];
+    expect(tables(millrace)).toEqual(written);
+    expect(buildCapTables(millrace)[5]!.capTable.seniority).toEqual([["seed", "seed_shadow"]]);
+
+    const case21 = readCaseFile("edge-21-note-and-pre-money-safe", "inputs.json") as Case;
+    const full = tables(case21);
+    case21.events.at(-1)!.seniority = [["series_a"]];
+    expect(tables(case21)).toEqual(full);
+    expect(buildCapTables(case21).at(-1)!.capTable.seniority).toEqual([["series_a", "series_a_shadow", "series_a_notes"]]);
+  });
+
+  it("keeps a series from SAFEs where the seniority puts it", () => {
+    const millrace = readCaseFile("millrace", "inputs.json") as Case;
+    millrace.events.find((e) => e.id === "seed")!.seniority = [["seed"], ["seed_shadow"]];
+    expect(buildCapTables(millrace)[5]!.capTable.seniority).toEqual([["seed"], ["seed_shadow"]]);
+  });
+
+  it("still needs the round's new series, and every earlier series", () => {
+    const millrace = readCaseFile("millrace", "inputs.json") as Case;
+    millrace.events.find((e) => e.id === "series_a")!.seniority = [["series_a"], ["seed"]];
+    expect(() => buildCapTables(millrace)).toThrow("inputs.events[7].seniority: seed_shadow must appear in exactly one tier (it appears 0 times)");
+    millrace.events.find((e) => e.id === "series_a")!.seniority = [["seed", "seed_shadow"]];
+    expect(() => buildCapTables(millrace)).toThrow("inputs.events[7].seniority: series_a must appear in exactly one tier (it appears 0 times)");
+  });
+});
+
 describe("share counts at 40 digits (E19)", () => {
   it("count a hair under a whole number as that number", () => {
     expect(roundDownShares(new D("463999.9999999999999999999999999999999")).toString()).toBe("464000");
