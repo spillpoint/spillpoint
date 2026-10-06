@@ -70,6 +70,14 @@ function show(t: CapTableAfterEvent): void {
     console.log(`Price: $${d.price.toFixed(10)}   post-money valuation $${grouped(d.postMoneyValuation)}`);
     console.log(`Post-money fully diluted: ${grouped(d.postMoneyFullyDilutedSolved)} solved, ${grouped(d.postMoneyFullyDilutedActual)} as issued`);
     console.log(`New shares: ${d.newShares.map((n) => `${n.holder} ${grouped(n.shares)}`).join(", ")}   pool top-up ${grouped(d.poolTopUp)}`);
+    if (d.companyCapitalization) console.log(`Post-money SAFEs' Company Capitalization: ${grouped(d.companyCapitalization)}`);
+    for (const c of d.safeConversions) {
+      const cc = c.companyCapitalization ? ` (Company Capitalization ${grouped(c.companyCapitalization)})` : "";
+      console.log(`SAFE ${c.safe}: converts at its ${c.method}, $${c.conversionPrice.toFixed(6)}${cc}, into ${grouped(c.shares)} ${c.series}`);
+    }
+    for (const p of d.proRata) {
+      console.log(`Pro-rata, ${p.holder}: ${p.preRoundShare.times(100).toFixed(6)}% of the base, entitlement $${grouped(p.entitlement)}, marked pro-rata $${grouped(p.amountInvested)}`);
+    }
   }
   const ct = t.capTable;
   const name = (id: string) => ct.holders.find((h) => h.id === id)?.name ?? id;
