@@ -238,6 +238,7 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
 **Building a cap table from a company's events,** each event giving the cap table after it:
 - **Shares issued,** including a percentage of the company after the issue.
 - **The option pool:** created at a percentage of fully diluted shares. Grants come out of it, one option class per strike.
+- **Cumulative dividends on a priced round's series** *(0.2.0)*: they accrue from the round's date. The series its SAFEs and notes convert into carry the same terms, on their own issue price.
 - **Warrants issued** *(0.2.0)*: counted like options everywhere a count includes issued options. That covers a round's price and pool top-up, a SAFE's Company Capitalization, a note's base, the pro-rata base and broad-based anti-dilution. They aren't drawn from the pool, and issuing them never triggers anti-dilution.
 - **Priced rounds:**
   - **The price** is solved exactly, with the pool topped up to its target in the pre-money. Only the shares actually issued are rounded down.
@@ -274,7 +275,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
-- Cumulative dividends on a series issued in a company's rounds.
+- Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
 **Not modeled yet** (milestone `"M5"`):
 - management carve-outs
@@ -311,7 +312,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 | `issue_warrants` *(0.2.0)* | `warrants`: `holder`, `shares`, `strike` and `underlying`, `"common"` or a preferred series already issued |
 | `safes` | `safes`: `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, and `discount` |
 | `notes` | `notes`: `id`, `holder`, `principal`, `interest_rate`, `issue_date`, `valuation_cap`, `conversion_base`, `discount` and `repayment_multiple` |
-| `priced_round` | `series`, `pre_money`, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles |
+| `priced_round` | `series` (which may have a `cumulative_dividend` with no `accrual_start`, *0.2.0*), `pre_money`, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles |
 
 `readInputs` takes `holders`, `events` and an `exit` with `cap_table_after_event` naming the event whose cap table the exit runs on. The project's [`cases`](https://github.com/spillpoint/spillpoint/tree/main/cases) folder has a worked input for each term, with its expected results.
 

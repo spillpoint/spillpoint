@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 9 and Millrace", () => {
+  it("are edge cases 1 through 9, 23 and Millrace", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -31,6 +31,7 @@ describe("the exit cases the engine runs", () => {
       "edge-09-cumulative-dividends",
       "edge-09b-compounding-dividends",
       "edge-09c-dividends-paid-on-conversion",
+      "edge-23-dividends-from-a-round",
       "millrace",
     ]);
   });
@@ -107,8 +108,6 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     ["edge-13e-note-discount-only", "unconverted_note", "M5"],
     ["edge-13f-note-alongside-preferred", "unconverted_note", "M5"],
     ["edge-13g-two-notes", "unconverted_note", "M5"],
-    // R30: dividends on a round's series; the engine builds them in the PR after case 23.
-    ["edge-23-dividends-from-a-round", "cumulative_dividend_in_rounds", "later"],
   ];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 

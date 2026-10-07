@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { anniversary, compoundingPeriods } from "../src/dates.ts";
 import { D, InputError, UnsupportedTermError, buildCapTables, payout, prepare, readCapTable, readExit } from "../src/index.ts";
+import type { CapTable, PreferredSeries } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import { readCaseFile } from "./support/cases.ts";
 
@@ -82,6 +83,28 @@ describe("what accrues", () => {
   });
 });
 
+describe("a series built by 0.1.0 code", () => {
+  it("has no dividends when it has no cumulativeDividend field: the field is optional", () => {
+    // Built by hand, as 0.1.0 code does, without the field 0.2.0 adds.
+    const capTable: CapTable = {
+      holders: [{ id: "x", name: "X" }, { id: "y", name: "Y" }],
+      securities: [
+        { kind: "common", id: "common", name: "Common Stock" },
+        {
+          kind: "preferred", id: "p", name: "Preferred", originalIssuePrice: new D(1), conversionPrice: new D(1), conversionRatio: new D(1),
+          preferenceMultiple: new D(1), participation: "non_participating", capMultiple: null, antiDilution: "none", antiDilutionA: null,
+        },
+      ],
+      seniority: [["p"]],
+      conversionGroups: [],
+      positions: [{ holder: "x", security: "common", shares: new D(1000000) }, { holder: "y", security: "p", shares: new D(1000000) }],
+      unissuedPool: new D(0),
+    };
+    const pc = prepare(capTable);
+    expect([pc.preference.get("p")!.toString(), pc.dividends.get("p")!.toString()]).toEqual(["1000000", "0"]);
+  });
+});
+
 describe("dividends paid on conversion (X5)", () => {
   it("leave a converted series a claim for them in its tier", () => {
     // 365 days at 10%: $100,000. Converted at $3M: $100,000 in the tier, then half of $2.9M.
@@ -91,7 +114,7 @@ describe("dividends paid on conversion (X5)", () => {
   });
 });
 
-describe("refusals", () => {
+describe("refusals, and what a round now takes", () => {
   it("needs an exit date on or after every accrual start", () => {
     expect(() => exitOn({}, null)).toThrow("exit.exit_date: Preferred accrues cumulative dividends, so the exit needs an exit_date");
     expect(() => exitOn({}, "2024-02-28")).toThrow("exit.exit_date: 2024-02-28 is before Preferred's dividends start to accrue, 2024-02-29");
@@ -115,7 +138,7 @@ describe("refusals", () => {
     expect(() => exitOn({ on_conversion: "kept" }, "2025-01-01")).toThrow("cumulative_dividend.on_conversion: must be forfeited or paid");
   });
 
-  it("refuses dividends on a series issued in a company's rounds", () => {
+  it("takes dividends on a priced round's series from the round's date (R30)", () => {
     const company = {
       holders: [{ id: "a", name: "A" }, { id: "b", name: "B" }],
       events: [
@@ -125,12 +148,12 @@ describe("refusals", () => {
           pool_target_unissued_percent_post: "0", seniority: [["seed"]],
           series: {
             id: "seed", name: "Seed Preferred", kind: "preferred", preference_multiple: "1", participation: "non_participating",
-            cap_multiple: null, anti_dilution: "none", cumulative_dividend: { rate: "0.08", accrual_start: "2024-01-01" },
+            cap_multiple: null, anti_dilution: "none", cumulative_dividend: { rate: "0.08" },
           },
         },
       ],
     };
-    expect(() => buildCapTables(company)).toThrow(UnsupportedTermError);
-    expect(() => buildCapTables(company)).toThrow(/inputs\.events\[1\]\.series\.cumulative_dividend: Cumulative dividends on a series issued in a company's rounds/);
+    const seed = buildCapTables(company).at(-1)!.capTable.securities.find((s) => s.id === "seed") as PreferredSeries;
+    expect(seed.cumulativeDividend).toMatchObject({ accrualStart: "2024-01-01", method: "simple", onConversion: "forfeited" });
   });
 });
