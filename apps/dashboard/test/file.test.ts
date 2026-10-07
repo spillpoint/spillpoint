@@ -132,10 +132,18 @@ describe("a file that can't be opened", () => {
 
   it("uses a term the engine doesn't model yet, and says when it will", () => {
     const file = good();
-    file.cap_table.unconverted_safes = [{ id: "safe_z", holder: "ana", purchase_amount: "100000", post_money_cap: "10000000", discount: "0" }];
+    file.cap_table.unconverted_notes = [
+      { id: "note_z", holder: "ana", principal: "100000", interest_rate: "0.06", issue_date: "2023-01-01", valuation_cap: "8000000", conversion_base: "with_pool", discount: "0", repayment_multiple: "2" },
+    ];
     expect(refusal(file)).toBe(
-      "Its cap table can't be used. file.cap_table.unconverted_safes: SAFEs still outstanding at exit. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
+      "Its cap table can't be used. file.cap_table.unconverted_notes: Convertible notes still outstanding at exit. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
     );
+  });
+
+  it("has a SAFE still outstanding, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
+    const file = good();
+    file.cap_table.unconverted_safes = [{ id: "safe_z", holder: "ana", purchase_amount: "100000", post_money_cap: "10000000", discount: "0" }];
+    expect(refusal(file)).toBe("It has SAFEs still outstanding, which this page doesn't show yet. It won't open a cap table it can't show in full.");
   });
 
   it("has a management carve-out, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
@@ -192,10 +200,10 @@ describe("a file that can't be opened", () => {
     expect(refusal(noAfter)).toBe("Its rounds need the holders, the events, and the event whose cap table the payouts use.");
   });
 
-  it("has rounds the engine can't build, or an exit on a cap table with SAFEs still outstanding, in the engine's words", () => {
+  it("has rounds the engine can't build, in the engine's words, or an exit on a cap table with SAFEs still outstanding, which the page doesn't show yet", () => {
     expect(refusal({ ...withRounds(), cap_table_after_event: "series_c" })).toBe("Its rounds can't be built. exit.cap_table_after_event: no event series_c in inputs.events");
     expect(refusal({ ...withRounds(), cap_table_after_event: "option_pool" })).toBe(
-      "Its rounds can't be built. exit.cap_table_after_event: SAFEs still outstanding at exit: safe_priya, safe_marcus. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
+      "It has SAFEs still outstanding, which this page doesn't show yet. It won't open a cap table it can't show in full.",
     );
     const file = withRounds();
     file.events[5].investments[0].amount = "a lot";

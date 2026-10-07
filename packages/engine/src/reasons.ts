@@ -1,12 +1,13 @@
 // Plain-English reasons for a breakpoint (SPEC, Breakpoints). Each reason
 // compares the answer just below the breakpoint with the answer just above,
 // and explains one change: a tier paid in full, a cap reached, options or a
-// warrant coming into the money, a series or a group converting, a
-// carve-out's tier ending, payouts jumping, or payouts curving.
+// warrant coming into the money, a series or a group converting, a SAFE's
+// Cash-Out Amount paid in full or the SAFE switching to its Conversion
+// Amount, a carve-out's tier ending, payouts jumping, or payouts curving.
 
 import type { Decimal } from "decimal.js";
 
-import { ZERO, moreThan } from "./decimal.ts";
+import { D, ONE, ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
 import { CARVE_OUT, carveOutAt, payout } from "./waterfall.ts";
 import type { PreparedCapTable } from "./waterfall.ts";
@@ -17,6 +18,8 @@ export type ReasonCode =
   | "option_in_the_money"
   | "warrant_in_the_money"
   | "series_converts"
+  | "safe_cash_out_paid"
+  | "safe_switches"
   | "carve_out_tier"
   | "payouts_jump"
   | "payouts_curve"
@@ -78,6 +81,9 @@ function share(fraction: Decimal): string {
 
 // ---------- reasons ----------
 
+/** How far above a jump its new outcome is read, when it can't be read at the jump itself: far below a cent at any slope. */
+const JUST_ABOVE = new D("1e-12");
+
 // The wording is for founders: no assumption codes in the text (they stay in
 // the structured fields and in the code comments), and money in plain dollars.
 
@@ -88,6 +94,8 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     ...capTable.securities.map((s) => [s.id, s.name] as [string, string]),
     [CARVE_OUT, "the management carve-out"],
   ]);
+  const holderName = new Map(capTable.holders.map((h) => [h.id, h.name]));
+  for (const f of pc.safes.values()) name.set(f.id, `${holderName.get(f.holder)}'s SAFE`);
   const before = below.answer.decisions;
   const after = above.answer.decisions;
   // Both answers paid out at the breakpoint itself: the outcome from below, and the limit of the outcome from above.
@@ -193,9 +201,10 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     const a = above.answer.payout.tiers.find((t) => t.index === index);
     if (!(b && !b.full && a && a.full)) continue;
     const paid = atAfter.tiers.find((t) => t.index === index) ?? atBefore.tiers.find((t) => t.index === index)!;
-    // X7: a carve-out sharing the tier is named apart: it has a claim, not a preference.
+    // X7, X9: a carve-out or a SAFE sharing the tier is named apart: it has a claim, not a preference.
     const carveShares = paid.series.includes(CARVE_OUT);
-    const names = paid.series.filter((sid) => sid !== CARVE_OUT).map((sid) => name.get(sid)!);
+    const safesInTier = paid.series.filter((sid) => pc.safes.has(sid));
+    const names = paid.series.filter((sid) => sid !== CARVE_OUT && !pc.safes.has(sid)).map((sid) => name.get(sid)!);
     const next = above.answer.payout.tiers.find((t) => t.index > index && !t.full);
     let nextText: string;
     if (next) {
@@ -209,15 +218,69 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     // A carve-out in the tier (X7) isn't a series, and has no dividends.
     const withDividends = paid.series.some((sid) => atAfter.series.get(sid)?.dividends.isZero() === false);
     const what = withDividends ? "preference, with accrued dividends," : "preference";
-    let whose = names.length === 1 ? `${names[0]}'s ${what} is` : `The ${withDividends ? "preferences, with accrued dividends," : "preferences"} of ${list(names)} are`;
-    if (carveShares) whose = `${whose.replace(/ (is|are)$/, "")} and the management carve-out's claim are`;
+    let whose =
+      names.length === 0 ? "" : names.length === 1 ? `${names[0]}'s ${what} is` : `The ${withDividends ? "preferences, with accrued dividends," : "preferences"} of ${list(names)} are`;
+    const others = [...(carveShares ? ["the management carve-out's claim"] : []), ...safesInTier.map((id) => `${name.get(id)!}'s Cash-Out Amount`)];
+    if (others.length > 0) {
+      const all = [...(whose ? [whose.replace(/ (is|are)$/, "")] : []), ...others];
+      whose = `${all.length === 1 ? all[0]! : list(all)} ${all.length === 1 ? "is" : "are"}`;
+      whose = whose.charAt(0).toUpperCase() + whose.slice(1);
+    }
     reasons.push({
       code: "tier_fully_paid",
       // A carve-out alongside the preferences shares the most senior tier (X7).
-      subject: [...tier, ...(paid.series.includes(CARVE_OUT) ? [CARVE_OUT] : [])],
+      subject: [...tier, ...(paid.series.includes(CARVE_OUT) ? [CARVE_OUT] : []), ...safesInTier],
       starts: true,
       text: `${whose} paid in full here: ${money(paid.claim)}. Above this exit value, the next dollar ${nextText}.`,
     });
+  }
+
+  // A SAFE's Cash-Out Amount paid in full, with no preferred: the SAFEs taking it share one claim, pro rata (X13).
+  const cashBelow = below.answer.payout.safeCash;
+  const cashAbove = above.answer.payout.safeCash;
+  if (cashBelow && !cashBelow.full && cashAbove?.full) {
+    const ids = cashAbove.safes;
+    const next = sharers(pc, after).map((id) => name.get(id)!);
+    const nextText = next.length === 1 ? `goes to ${next[0]}` : `is shared as common by ${list(next)}`;
+    const text =
+      ids.length === 1
+        ? `${name.get(ids[0]!)} gets its full Cash-Out Amount here, its ${money(pc.safes.get(ids[0]!)!.purchaseAmount)} purchase amount, which is paid ahead of common. Above this exit value, the next dollar ${nextText}.`
+        : `The Cash-Out Amounts of ${list(ids.map((id) => `${name.get(id)} (${money(pc.safes.get(id)!.purchaseAmount)})`))} are paid in full here, ` +
+          `${money(cashAbove.claim)} in all. Until here they shared every dollar pro rata by purchase amount. Above this exit value, the next dollar ${nextText}.`;
+    reasons.push({ code: "safe_cash_out_paid", subject: ids, starts: true, text });
+  }
+
+  // A SAFE switching between its Cash-Out Amount and its Conversion Amount (X1, X9, X13, X14).
+  for (const f of pc.safes.values()) {
+    const converts = after.converted.has(f.id);
+    if (before.converted.has(f.id) === converts) continue;
+    const who = name.get(f.id)!;
+    let text: string;
+    if (!converts) {
+      text = `${who} switches back to its Cash-Out Amount here: above this exit value it pays more.`;
+    } else if (!f.postMoneyCap && !f.preMoneyCap) {
+      const worth = f.purchaseAmount.div(ONE.minus(f.discount));
+      const priced = f.discount.isZero() ? "the sale's common price" : `the sale's common price less its ${pct(f.discount)} discount`;
+      text =
+        `${who} has no valuation cap, so it converts at ${priced}. That is worth exactly ${money(worth)} wherever it is possible, ` +
+        `which is where what is left for common and the SAFE is more than that, and this is the first exit value where it is. ` +
+        `Below it the SAFE takes its ${money(f.purchaseAmount)} Cash-Out Amount; above it, ${money(worth)}.`;
+    } else {
+      const here = atAfter.safes.get(f.id)!;
+      text =
+        `${who} switches from its Cash-Out Amount to its Conversion Amount here. Its ${shares(here.shares!)} conversion shares ` +
+        `(${money(f.purchaseAmount)} ÷ the Liquidity Price of ${perShare(here.liquidityPrice!)}) are worth ${perShare(atAfter.commonPrice)} each, ` +
+        `${money(here.shares!.times(atAfter.commonPrice))} in all, the same as its purchase amount. Below this exit value the Cash-Out Amount pays more; above it, the Conversion Amount does.`;
+      // X13: one Liquidity Capitalization for every converting SAFE, so converting enlarges the count the others' shares are a fixed share of.
+      const others = [...pc.safes.values()].filter((g) => g.id !== f.id && g.postMoneyCap && after.converted.has(g.id) && f.postMoneyCap);
+      if (others.length > 0 && jumps) {
+        const names = list(others.map((g) => name.get(g.id)!));
+        text +=
+          ` Converting adds its shares to the Liquidity Capitalization, and ${names} ${others.length === 1 ? "keeps its" : "keep their"} fixed share of that larger count, ` +
+          `so ${others.length === 1 ? "its payout jumps" : "their payouts jump"} up just above this exit value, and common's down.`;
+      }
+    }
+    reasons.push({ code: "safe_switches", subject: [f.id], starts: converts, text });
   }
 
   // Caps reached.
@@ -259,9 +322,12 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
 
   // E13: payouts that jump. Say what each class gets either side.
   if (jumps) {
+    // The new outcome's limit, just above x: at x itself it may not exist yet, as for a SAFE with no cap,
+    // which can convert only above the point where it first can (X9).
+    const justAbove = payout(pc, x.plus(JUST_ABOVE), after);
     const moves: string[] = [];
     for (const [sid, was] of atBefore.classTotals) {
-      const is = atAfter.classTotals.get(sid)!;
+      const is = justAbove.classTotals.get(sid)!;
       if (was.minus(is).abs().lt("0.005")) continue;
       moves.push(`${name.get(sid)} ${is.gt(was) ? "rises" : "drops"} from ${money(was)} to ${money(is)}`);
     }
@@ -294,8 +360,9 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   return reasons;
 }
 
-/** Who shares the residual, by class: common, exercised options and warrants for common, and participating or converted preferred (SPEC). */
+/** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs taking their Conversion Amount. */
 function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
+  const safes = [...pc.safes.keys()].filter((id) => d.converted.has(id));
   return pc.capTable.securities
     .filter((s) => {
       if (pc.shares.get(s.id)!.isZero()) return false;
@@ -305,5 +372,6 @@ function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exer
       if (s.kind === "warrant") return s.underlying === "common" && d.exercised.has(s.id);
       return d.converted.has(s.id) || s.participation !== "non_participating";
     })
-    .map((s) => s.id);
+    .map((s) => s.id)
+    .concat(safes);
 }

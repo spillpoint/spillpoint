@@ -7,6 +7,9 @@
 //      become shares of that series (E12). A management carve-out, a
 //      percentage of the exit value, is paid before the preferences, or
 //      alongside them in the most senior tier (X6, X7).
+//      A SAFE still outstanding takes its Cash-Out Amount ahead of common, or
+//      with preferred in its tier, unless it takes its Conversion Amount and
+//      shares as common (X1, X9, X13, X14).
 //   2. Preference tiers are paid top-down; a tier that can't be paid in full
 //      is split pro rata by preference amount (pari passu). A preference
 //      includes accrued cumulative dividends (X4); a series that converts
@@ -21,13 +24,29 @@
 
 import type { Decimal } from "decimal.js";
 
-import { ZERO, moreThan } from "./decimal.ts";
+import { ONE, ZERO, moreThan } from "./decimal.ts";
 import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
-import type { CapTable, CarveOut, OptionClass, PreferredSeries, WarrantClass } from "./model.ts";
+import type { CapTable, CarveOut, OptionClass, PreferredSeries, Safe, WarrantClass } from "./model.ts";
 
 /** The security payouts to a carve-out's recipients are reported under (C6). */
 export const CARVE_OUT = "carve_out";
+
+/** A SAFE still outstanding, at one exit value (X1, X9). */
+export interface SafeHere {
+  /** It takes its Conversion Amount. */
+  converts: boolean;
+  /** With a cap and converting: its Liquidity Capitalization, Liquidity Price and conversion shares, exact (E2). */
+  liquidityCapitalization: Decimal | null;
+  liquidityPrice: Decimal | null;
+  shares: Decimal | null;
+  /**
+   * With no cap and set to convert: (1 − discount) × what is left for it and
+   * common, less its purchase amount. Converting is possible only while it is
+   * above zero (X9, reading (a)), so the breakpoint finder follows it.
+   */
+  room: Decimal | null;
+}
 
 /** The carve-out at one exit value. */
 export interface CarveOutHere {
@@ -52,7 +71,11 @@ export function carveOutAt(c: CarveOut, exitValue: Decimal): { claim: Decimal; b
   return { claim, band: band < 0 ? c.tiers.length : band };
 }
 
-/** Which preferred series convert to common, and which option classes (one per strike, E4) and warrants are exercised. */
+/**
+ * Which preferred series convert to common, which SAFEs take their Conversion
+ * Amount rather than their Cash-Out Amount, and which option classes (one per
+ * strike, E4) and warrants are exercised.
+ */
 export interface Decisions {
   converted: ReadonlySet<string>;
   exercised: ReadonlySet<string>;
@@ -105,6 +128,10 @@ export interface Payout {
   series: Map<string, SeriesHere>;
   /** The carve-out here, if the cap table has one. */
   carveOut: CarveOutHere | null;
+  /** Each SAFE still outstanding. */
+  safes: Map<string, SafeHere>;
+  /** With no preferred, the SAFEs taking their Cash-Out Amount share one claim ahead of common, pro rata (X13). */
+  safeCash: { claim: Decimal; paid: Decimal; full: boolean; safes: string[] } | null;
   /**
    * Payouts curve here (X17): a carve-out paid alongside the preferences
    * shares a tier that isn't paid in full, and its claim grows with the exit
@@ -134,6 +161,10 @@ export interface PreparedCapTable {
   preferred: Map<string, PreferredSeries>;
   options: Map<string, OptionClass>;
   warrants: Map<string, WarrantClass>;
+  /** SAFEs still outstanding at the sale (C8). */
+  safes: Map<string, Safe>;
+  /** All issued stock as converted, options and warrants included, without the unissued pool: what a SAFE's Liquidity Capitalization starts from (X1, X14). */
+  outstanding: Decimal;
   commonIds: string[];
   /** Preference amount = shares × original issue price × multiple, plus accrued dividends (SPEC, Preference amount; X4). */
   preference: Map<string, Decimal>;
@@ -173,14 +204,61 @@ export function prepare(capTable: CapTable, exitDate: string | null = null): Pre
     if (s.capMultiple) capTotal.set(s.id, n.times(s.originalIssuePrice).times(s.capMultiple));
     asConverted.set(s.id, n.times(s.conversionRatio));
   }
-  return { capTable, shares, preferred, options, warrants, commonIds, preference, dividends, exitDate, capTotal, asConverted };
+  const safes = new Map((capTable.unconvertedSafes ?? []).map((f) => [f.id, f]));
+  // Warrants count as converted, as options do (R29): a warrant for a series at the series' ratio.
+  const outstanding = capTable.securities.reduce((sum, s) => {
+    const n = shares.get(s.id)!;
+    if (s.kind === "preferred") return sum.plus(n.times(s.conversionRatio));
+    if (s.kind === "warrant" && s.underlying !== "common") return sum.plus(n.times(preferred.get(s.underlying)!.conversionRatio));
+    return sum.plus(n);
+  }, ZERO);
+  return { capTable, shares, preferred, options, warrants, safes, outstanding, commonIds, preference, dividends, exitDate, capTotal, asConverted };
+}
+
+/**
+ * A SAFE's Liquidity Capitalization when it takes its Conversion Amount.
+ *
+ * Post-money SAFE (YC, X1, X13): counted just before the Liquidity Event, all
+ * issued stock as converted, all issued options and warrants whether or not
+ * they are in the money, and every SAFE taking its Conversion Amount, this one
+ * included: one count for the company. It leaves out the unissued pool and
+ * anything taking a cash-out or a liquidation preference "in lieu of"
+ * converting: a SAFE taking its Cash-Out Amount, or a non-participating
+ * series that keeps its preference. Each converting SAFE's shares are its
+ * purchase amount ÷ (its cap ÷ LC), so LC = everything else ÷ (1 − Σ purchase
+ * amount ÷ cap).
+ *
+ * Pre-money SAFE (YC, X14): "shares of Capital Stock (on an as-converted
+ * basis) outstanding, assuming exercise or conversion of all outstanding
+ * vested and unvested options, warrants and other convertible securities",
+ * leaving out the unissued pool, this SAFE, other SAFEs and notes. Its shares
+ * sit on top.
+ */
+export function liquidityCapitalization(pc: PreparedCapTable, f: Safe, converted: ReadonlySet<string>): Decimal {
+  if (f.preMoneyCap) return pc.outstanding;
+  let others = pc.outstanding;
+  for (const [sid, s] of pc.preferred) {
+    if (s.participation === "non_participating" && !converted.has(sid)) others = others.minus(pc.asConverted.get(sid)!);
+  }
+  let own = ZERO;
+  for (const g of pc.safes.values()) {
+    if (g.postMoneyCap && (g.id === f.id || converted.has(g.id))) own = own.plus(g.purchaseAmount.div(g.postMoneyCap));
+  }
+  return others.div(ONE.minus(own));
+}
+
+/** The tier a SAFE's Cash-Out Amount ranks in: the series it names, or the most junior (X9). */
+function safeTier(capTable: CapTable, f: Safe): number {
+  if (f.cashOutRanksWith == null) return capTable.seniority.length - 1;
+  return capTable.seniority.findIndex((tier) => tier.includes(f.cashOutRanksWith!));
 }
 
 /** Decisions must name real convertible series, option classes and warrants, and a conversion group converts as one (E11). */
 function checkDecisions(pc: PreparedCapTable, d: Decisions): void {
   for (const sid of d.converted) {
+    if (pc.safes.has(sid)) continue;
     const s = pc.preferred.get(sid);
-    if (!s) throw new InputError(`decisions.converted`, `${sid} is not a preferred series`);
+    if (!s) throw new InputError(`decisions.converted`, `${sid} is not a preferred series or a SAFE`);
     if (s.participation === "participating") {
       throw new InputError(`decisions.converted`, `${sid} is uncapped participating preferred, which never converts`);
     }
@@ -200,6 +278,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   checkDecisions(pc, decisions);
   const { capTable } = pc;
   const total = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
+  for (const id of pc.safes.keys()) total.set(id, ZERO);
   const add = (id: string, amount: Decimal) => total.set(id, total.get(id)!.plus(amount));
 
   // 1. Exercised options and warrants pay their strike, which is added to the proceeds.
@@ -218,6 +297,19 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   if (carve && !carveInTier) {
     carvePaid = remaining.lt(carve.claim) ? remaining : carve.claim;
     remaining = remaining.minus(carvePaid);
+  }
+
+  // SAFEs taking their Cash-Out Amount (YC): paid ahead of common. With no
+  // preferred they share one claim, "with equal priority and pro rata" by
+  // purchase amount (X13); with preferred, each ranks in a tier (X9), below.
+  const cashSafes = [...pc.safes.values()].filter((f) => !decisions.converted.has(f.id));
+  let safeCash: Payout["safeCash"] = null;
+  if (cashSafes.length > 0 && capTable.seniority.length === 0) {
+    const claim = cashSafes.reduce((sum, f) => sum.plus(f.purchaseAmount), ZERO);
+    const paid = remaining.lt(claim) ? remaining : claim;
+    for (const f of cashSafes) add(f.id, paid.times(f.purchaseAmount).div(claim));
+    safeCash = { claim, paid, full: remaining.gte(claim), safes: cashSafes.map((f) => f.id) };
+    remaining = remaining.minus(paid);
   }
 
   // E12: an exercised warrant for a series adds its shares to the series. They
@@ -248,6 +340,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     // A converted series claims only dividends paid on conversion (X5), where they ranked.
     const claims = new Map(tier.filter((sid) => series.get(sid)!.claim.gt(0)).map((sid) => [sid, series.get(sid)!.claim]));
     if (index === 0 && carveInTier && carve!.claim.gt(0)) claims.set(CARVE_OUT, carve!.claim);
+    for (const f of cashSafes) if (safeTier(capTable, f) === index) claims.set(f.id, f.purchaseAmount);
     const claim = [...claims.values()].reduce((sum, c) => sum.plus(c), ZERO);
     if (claim.isZero()) continue;
     const paid = remaining.lt(claim) ? remaining : claim;
@@ -272,6 +365,41 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     if (decisions.converted.has(sid) || s.participation !== "non_participating") sharing.set(sid, series.get(sid)!.asConverted);
   }
   for (const [id, n] of sharing) if (n.isZero()) sharing.delete(id);
+
+  // A SAFE taking its Conversion Amount shares as common. With a cap, on
+  // purchase amount ÷ Liquidity Price shares, where the Liquidity Price is its
+  // cap ÷ the Liquidity Capitalization (X1, X13, X14).
+  const safes = new Map<string, SafeHere>();
+  for (const f of cashSafes) safes.set(f.id, { converts: false, liquidityCapitalization: null, liquidityPrice: null, shares: null, room: null });
+  const convertingSafes = [...pc.safes.values()].filter((f) => decisions.converted.has(f.id));
+  for (const f of convertingSafes) {
+    const cap = f.postMoneyCap ?? f.preMoneyCap;
+    if (!cap) continue;
+    const lc = liquidityCapitalization(pc, f, decisions.converted);
+    const lp = cap.div(lc);
+    const n = f.purchaseAmount.div(lp);
+    sharing.set(f.id, n);
+    safes.set(f.id, { converts: true, liquidityCapitalization: lc, liquidityPrice: lp, shares: n, room: null });
+  }
+  // With no cap it converts at the sale's common price less its discount, a
+  // price it helps set: s = amount × others ÷ ((1 − d) × what is left − amount),
+  // worth exactly amount ÷ (1 − d). Where (1 − d) × what is left is no more
+  // than the amount, no such price exists, and the greater-of has only its
+  // Cash-Out Amount to take (X9, reading (a)): it is paid as if it took that,
+  // a tie, which X16 settles as the Cash-Out Amount. One SAFE at most (X13).
+  const uncapped = convertingSafes.find((f) => !f.postMoneyCap && !f.preMoneyCap);
+  if (uncapped) {
+    const others = [...sharing.values()].reduce((sum, n) => sum.plus(n), ZERO);
+    const room = ONE.minus(uncapped.discount).times(remaining).minus(uncapped.purchaseAmount);
+    if (!room.gt(0) || others.isZero()) {
+      const asCash = payout(pc, exitValue, { converted: new Set([...decisions.converted].filter((id) => id !== uncapped.id)), exercised: decisions.exercised });
+      asCash.safes.set(uncapped.id, { ...asCash.safes.get(uncapped.id)!, room });
+      return { ...asCash, decisions };
+    }
+    const n = uncapped.purchaseAmount.times(others).div(room);
+    sharing.set(uncapped.id, n);
+    safes.set(uncapped.id, { converts: true, liquidityCapitalization: null, liquidityPrice: null, shares: n, room });
+  }
 
   // Capped participation: preference plus participation stops at the cap
   // (E7). Whichever series would pass its cap first is held there, and the
@@ -329,6 +457,8 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     total.set(CARVE_OUT, carvePaid);
     for (const a of capTable.carveOut!.allocation) addLine(a.holder, CARVE_OUT, carvePaid.times(a.share));
   }
+  // C8: each SAFE is its own holder × security line.
+  for (const f of pc.safes.values()) addLine(f.holder, f.id, total.get(f.id)!);
   const firstTier = tiers.find((t) => t.index === 0);
   const curved =
     carveInTier && firstTier !== undefined && !firstTier.full && firstTier.series.includes(CARVE_OUT) && carve!.band < capTable.carveOut!.tiers.length && capTable.carveOut!.tiers[carve!.band]!.rate.gt(0);
@@ -341,6 +471,8 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     bySecurity: total,
     series,
     carveOut: carve ? { claim: carve.claim, paid: carvePaid, band: carve.band } : null,
+    safes,
+    safeCash,
     curved,
     lines,
     holderTotals,

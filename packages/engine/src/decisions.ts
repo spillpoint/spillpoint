@@ -8,6 +8,10 @@
 //   means no).
 // - Each warrant decides for itself (E4), alongside the series: it is one of
 //   the free decision-makers below, and "switching" means exercising or not.
+//   So does each SAFE still outstanding: "switching" means taking its
+//   Conversion Amount or its Cash-Out Amount. It takes the Conversion Amount
+//   only when that strictly pays more (X16), so where it is indifferent but
+//   its choice changes what others get, the outcome from below holds (E13).
 // - A conversion group decides first (E17). For each of its two choices the
 //   other series settle; the group then votes (E11) on the two outcomes.
 // - The series outside a group, and the warrants, are solved from both ends:
@@ -72,6 +76,8 @@ export interface Choice {
   samePayouts(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean;
   /** Conversions plus exercises, for the tie-break (E5). */
   size(converted: ReadonlySet<string>): number;
+  /** Players that switch on only when that strictly pays more, even when switching would change what others get (X16). */
+  strict?(player: string): boolean;
   /** Where the choice is made, for messages: "At $1,000,000.00". */
   where: string;
 }
@@ -96,8 +102,11 @@ function toggled(ids: ReadonlySet<string>, id: string): Set<string> {
 
 /** E15: solve from both ends; check every combination if they disagree and there are few enough players. Internal. */
 export function settleChoice(choice: Choice, checkEveryCombination = false): Settled {
+  // X16: a strict player that is switched on must do strictly better than switching off.
+  const wantsOff = (set: ReadonlySet<string>, p: string) =>
+    choice.strict?.(p) === true && set.has(p) && !moreThan(choice.value(set, p), choice.value(toggled(set, p), p));
   const isStable = (set: ReadonlySet<string>) =>
-    choice.players.every((p) => !moreThan(choice.value(toggled(set, p), p), choice.value(set, p)));
+    choice.players.every((p) => !moreThan(choice.value(toggled(set, p), p), choice.value(set, p)) && !wantsOff(set, p));
   const simpler = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
     choice.size(a) - choice.size(b) || key(a).localeCompare(key(b));
 
@@ -114,7 +123,8 @@ export function settleChoice(choice: Choice, checkEveryCombination = false): Set
       for (const p of choice.players) {
         const now = choice.value(set, p);
         const after = choice.value(toggled(set, p), p);
-        if (moreThan(after, now) && (best === null || after.minus(now).gt(bestGain))) {
+        // A strict player switches off on a tie too (X16); a real gain still goes first.
+        if ((moreThan(after, now) || wantsOff(set, p)) && (best === null || after.minus(now).gt(bestGain))) {
           best = p;
           bestGain = after.minus(now);
         }
@@ -194,7 +204,7 @@ class AtExit {
   /** Option classes in the order they come into the money: lowest strike first. */
   private readonly optionClasses: OptionClass[];
   private readonly group: ConversionGroup | null;
-  /** Convertible series outside a group, and warrants: each decides for itself (E4, E15). */
+  /** Convertible series outside a group, warrants and SAFEs: each decides for itself (E4, E15). */
   private readonly free: string[];
   private readonly warrants: Set<string>;
 
@@ -211,7 +221,7 @@ class AtExit {
     this.free = [...pc.preferred.values()]
       .filter((s) => s.participation !== "participating" && !grouped.has(s.id) && pc.shares.get(s.id)!.gt(0))
       .map((s) => s.id)
-      .concat([...this.warrants]);
+      .concat([...this.warrants], [...pc.safes.keys()]);
   }
 
   private get where(): string {
@@ -293,6 +303,7 @@ class AtExit {
         value: (set, p) => all(set).payout.bySecurity.get(p)!,
         samePayouts: (a, b) => samePayouts(all(a).payout, all(b).payout),
         size: (set) => all(set).decisions.converted.size + all(set).decisions.exercised.size,
+        strict: (p) => this.pc.safes.has(p),
         where: this.where,
       },
       this.options.checkEveryCombination,
@@ -383,6 +394,9 @@ class AtExit {
       for (const [sid, room] of p.capRoom) margins.set(`${prefix}|cap:${sid}`, room);
       const edge = p.carveOut && edges ? edges[p.carveOut.band]?.to : null;
       if (edge) margins.set(`${prefix}|carve:${p.carveOut!.band}`, p.exitValue.minus(edge));
+      // SAFEs: the shared Cash-Out claim not yet paid in full (X13), and a SAFE with no cap's room to convert (X9).
+      if (p.safeCash && !p.safeCash.full) margins.set(`${prefix}|safecash`, p.safeCash.paid.minus(p.safeCash.claim));
+      for (const [id, f] of p.safes) if (f.room) margins.set(`${prefix}|room:${id}`, f.room);
     };
     structural(tag, a.payout);
     const next = this.optionClasses.find((o) => !a.decisions.exercised.has(o.id));

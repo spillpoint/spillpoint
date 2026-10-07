@@ -19,21 +19,12 @@ import type { Decimal } from "decimal.js";
 import { D, ONE, ZERO } from "./decimal.ts";
 import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
-import { array, notNegative, object, onlyKnownFields, positive, readSecurity, text, wholeShares } from "./input.ts";
-import type { CapTable, Holder, Position, PreferredSeries, Security } from "./model.ts";
+import { array, notNegative, object, onlyKnownFields, positive, readSafe, readSecurity, text, wholeShares } from "./input.ts";
+import type { CapTable, Holder, Position, PreferredSeries, Safe, Security } from "./model.ts";
 
 type Json = Record<string, unknown>;
 
 /** A SAFE, outstanding until a round converts it: post-money (R4) or pre-money (R24), never both. */
-export interface Safe {
-  id: string;
-  holder: string;
-  purchaseAmount: Decimal;
-  postMoneyCap: Decimal | null;
-  preMoneyCap: Decimal | null;
-  discount: Decimal;
-}
-
 /** A convertible note, outstanding until a round converts it (R23) or the company is sold (C9, C14). */
 export interface Note {
   id: string;
@@ -272,6 +263,8 @@ class Company {
       conversionGroups: [],
       positions: this.positions.filter((p) => !p.shares.isZero()).map((p) => ({ ...p })),
       unissuedPool: this.unissuedPool,
+      // SAFEs not yet converted, which an exit on this table pays (C2, C8). Left out when there are none.
+      ...(this.safes.length > 0 ? { unconvertedSafes: this.safes.map((f) => ({ ...f })) } : {}),
     };
   }
 }
@@ -353,17 +346,6 @@ function ensureSecurity(company: Company, value: unknown, path: string): Securit
   }
   company.securities.push(s);
   return s;
-}
-
-function readSafe(value: unknown, path: string): Safe {
-  const f = object(value, path);
-  onlyKnownFields(f, ["id", "holder", "purchase_amount", "post_money_cap", "pre_money_cap", "discount"], path);
-  const postMoneyCap = f.post_money_cap == null ? null : positive(f.post_money_cap, `${path}.post_money_cap`);
-  const preMoneyCap = f.pre_money_cap == null ? null : positive(f.pre_money_cap, `${path}.pre_money_cap`);
-  if (postMoneyCap && preMoneyCap) throw new InputError(path, "a SAFE has a post-money cap or a pre-money cap, not both (R24)");
-  const discount = f.discount == null ? ZERO : notNegative(f.discount, `${path}.discount`);
-  if (discount.gte(1)) throw new InputError(`${path}.discount`, "must be below 1");
-  return { id: text(f.id, `${path}.id`), holder: text(f.holder, `${path}.holder`), purchaseAmount: positive(f.purchase_amount, `${path}.purchase_amount`), postMoneyCap, preMoneyCap, discount };
 }
 
 const NOTE_FIELDS = [

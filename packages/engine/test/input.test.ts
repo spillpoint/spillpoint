@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 10, 23 and Millrace", () => {
+  it("are edge cases 1 through 10, 12 to 12h, 23 and Millrace", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -33,6 +33,14 @@ describe("the exit cases the engine runs", () => {
       "edge-09c-dividends-paid-on-conversion",
       "edge-10-carve-out",
       "edge-10b-carve-out-alongside-preferences",
+      "edge-12-unconverted-safe",
+      "edge-12b-safe-cap-and-discount",
+      "edge-12c-safe-discount-only",
+      "edge-12d-safe-alongside-preferred",
+      "edge-12e-safe-ranks-with-series-a",
+      "edge-12f-two-safes",
+      "edge-12g-pre-money-safe-at-a-sale",
+      "edge-12h-mfn-safe",
       "edge-23-dividends-from-a-round",
       "millrace",
     ]);
@@ -75,11 +83,10 @@ describe("the exit cases the engine runs", () => {
     expect(() => readInputs(inputs)).toThrow("exit.cap_table_after_event: no event series_c in inputs.events");
   });
 
-  it("refuses an exit after an event that leaves SAFEs outstanding until M5 (X1)", () => {
+  it("reads an exit after an event that leaves SAFEs outstanding, with the SAFEs on its cap table (C2, C8; M5g)", () => {
     const inputs = readCaseFile("millrace", "inputs.json") as { exit: { cap_table_after_event: string } };
     inputs.exit.cap_table_after_event = "option_pool";
-    expect(() => readInputs(inputs)).toThrow(UnsupportedTermError);
-    expect(() => readInputs(inputs)).toThrow(/SAFEs still outstanding at exit \(X1\): safe_priya, safe_marcus/);
+    expect(readInputs(inputs).capTable.unconvertedSafes!.map((f) => f.id)).toEqual(["safe_priya", "safe_marcus"]);
   });
 
   it("reads both forms of a conversion group (C4, E11)", () => {
@@ -93,14 +100,6 @@ describe("the exit cases the engine runs", () => {
 describe("cases outside the engine's scope are refused, never skipped", () => {
   const refused: [string, string, Milestone][] = [
     ["edge-11-earnout", "payment_schedules", "M5"],
-    ["edge-12-unconverted-safe", "unconverted_safe", "M5"],
-    ["edge-12b-safe-cap-and-discount", "unconverted_safe", "M5"],
-    ["edge-12c-safe-discount-only", "unconverted_safe", "M5"],
-    ["edge-12d-safe-alongside-preferred", "unconverted_safe", "M5"],
-    ["edge-12e-safe-ranks-with-series-a", "unconverted_safe", "M5"],
-    ["edge-12f-two-safes", "unconverted_safe", "M5"],
-    ["edge-12g-pre-money-safe-at-a-sale", "unconverted_safe", "M5"],
-    ["edge-12h-mfn-safe", "unconverted_safe", "M5"],
     ["edge-13a-note-with-pool", "unconverted_note", "M5"],
     ["edge-13b-note-without-pool", "unconverted_note", "M5"],
     ["edge-13c-note-common-only", "unconverted_note", "M5"],
