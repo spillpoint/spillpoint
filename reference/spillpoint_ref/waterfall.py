@@ -64,27 +64,33 @@ class Waterfall:
         self.converters = sorted(self.members, key=lambda p: order[self.members[p][0]])
         self.options = [sid for sid in ct.option_ids() if ct.shares_of(sid) > 0]
         self.warrants = [sid for sid in ct.warrant_ids() if ct.shares_of(sid) > 0]
-        # Unconverted post-money SAFEs at a Liquidity Event (X1, X9). A SAFE
+        # Unconverted SAFEs at a Liquidity Event (X1, X9, X13, X14). A SAFE
         # with a cap converts at its cap at a sale; its discount, if it has
         # one, applies only in a financing. One with no cap converts at the
         # sale's common price per share less its discount (an MFN SAFE, with
         # neither, at the common price itself). Alongside preferred, its
-        # Cash-Out Amount ranks with the most junior preferred tier. Only what
-        # the cases use is supported; anything else is refused, never skipped.
+        # Cash-Out Amount ranks with the most junior preferred tier, or with
+        # the series it names. Only what the cases use is supported; anything
+        # else is refused, never skipped.
         self.safes = list(ct.safes)
-        if len(self.safes) > 1:
-            raise ValueError("more than one unconverted SAFE at exit is not supported by the reference yet")
+        if len(self.safes) > 1 and any(self.priced(f) or f.get("pre_money_cap") is not None for f in self.safes):
+            raise ValueError(
+                "more than one unconverted SAFE at exit is supported only when each has a post-money cap"
+            )
         for f in self.safes:
-            if f.get("pre_money_cap") is not None:
-                raise ValueError(f"{f['id']}: an unconverted pre-money SAFE at exit is not supported by the reference yet")
+            if f.get("pre_money_cap") is not None and ct.preferred_ids():
+                raise ValueError(f"{f['id']}: an unconverted pre-money SAFE alongside preferred stock is not supported by the reference yet")
+            ranks_with = f.get("cash_out_ranks_with")
+            if ranks_with is not None and not any(ranks_with in tier for tier in ct.seniority):
+                raise ValueError(f"{f['id']}: cash_out_ranks_with names {ranks_with}, which is not a preferred series in the seniority tiers")
         self.safe_ids = [f["id"] for f in self.safes]
-        # Unconverted convertible notes at exit (X3, X10-X12). Repayment is debt,
-        # ahead of all equity. A note with a cap converts at its cap price; one
-        # with no cap at the sale's common price per share less its discount;
-        # one with neither is repaid and never converts.
+        # Unconverted convertible notes at exit (X3, X10-X12, X15). Repayment is
+        # debt, ahead of all equity. A note with a cap converts at its cap
+        # price; one with no cap at the sale's common price per share less its
+        # discount; one with neither is repaid and never converts.
         self.notes = list(ct.notes)
-        if len(self.notes) > 1:
-            raise ValueError("more than one unconverted note at exit is not supported by the reference yet")
+        if len(self.notes) > 1 and any(self.priced(n) for n in self.notes):
+            raise ValueError("more than one unconverted note at exit is supported only when each has a valuation cap")
         for n in self.notes:
             if self.safes or ct.carve_out:
                 raise ValueError(
@@ -168,7 +174,20 @@ class Waterfall:
     @staticmethod
     def priced(x):
         """A SAFE or note with no cap: it converts at the sale's common price per share less its discount."""
-        return x.get("post_money_cap", x.get("valuation_cap")) is None
+        if "purchase_amount" in x:
+            return x.get("post_money_cap") is None and x.get("pre_money_cap") is None
+        return x["valuation_cap"] is None
+
+    def safe_tier(self, f):
+        """The seniority tier a SAFE's Cash-Out Amount ranks in (X9).
+
+        The YC text puts it "on par with" preferred. With several tiers it ranks
+        with the most junior, unless the SAFE names a series to rank with.
+        """
+        ranks_with = f.get("cash_out_ranks_with")
+        if ranks_with is None:
+            return len(self.ct.seniority) - 1
+        return next(i for i, tier in enumerate(self.ct.seniority) if ranks_with in tier)
 
     def note_can_convert(self, n):
         """A note with neither a cap nor a discount is only ever repaid (X12)."""
@@ -182,32 +201,51 @@ class Waterfall:
         """
         return self.ct.securities[sid]["participation"] == "non_participating" and not converted.get(sid, False)
 
-    def liquidity_capitalization(self, f, converted=None):
-        """Post-money SAFE Liquidity Capitalization when the SAFE takes its Conversion Amount.
+    def liquidity_capitalization(self, f, converted=None, safes_converting=None):
+        """A SAFE's Liquidity Capitalization when it takes its Conversion Amount.
 
-        Counted just before the Liquidity Event: all issued stock as converted,
-        all issued options and warrants whether or not they are in the money,
-        and the SAFE's own conversion shares. The unissued pool is left out, and
-        so is anything taking a cash-out or a liquidation preference in lieu of
-        converting (YC): a non-participating series that keeps its preference.
-        (A SAFE taking its Cash-Out Amount is left out too, but then its
-        Liquidity Price is never used.) The SAFE's shares are purchase amount ÷
-        (cap ÷ LC), so LC = everything else ÷ (1 − purchase amount ÷ cap).
+        Post-money SAFE (YC): counted just before the Liquidity Event, all
+        issued stock as converted, all issued options and warrants whether or
+        not they are in the money, and every SAFE taking its Conversion Amount,
+        this one included. It is one count for the company, the same for every
+        SAFE (X13). The unissued pool is left out, and so is anything taking a
+        cash-out or a liquidation preference in lieu of converting: a SAFE
+        taking its Cash-Out Amount, or a non-participating series that keeps
+        its preference. Each converting SAFE's shares are purchase amount ÷
+        (its cap ÷ LC), so LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
+
+        Pre-money SAFE (YC, X14): "shares of Capital Stock (on an as-converted
+        basis) outstanding, assuming exercise or conversion of all outstanding
+        vested and unvested options, warrants and other convertible
+        securities", excluding the unissued pool, this SAFE, other SAFEs and
+        notes. So its shares sit on top, and the count doesn't depend on who
+        converts.
         """
-        converted = converted or {}
         ct = self.ct
+        if f.get("pre_money_cap") is not None:
+            return ct.outstanding_as_converted()
+        converted = converted or {}
+        safes_converting = [f] if safes_converting is None else safes_converting
         others = ct.outstanding_as_converted() - sum(
             (ct.as_converted(s) for s in ct.preferred_ids() if self.keeps_preference_in_lieu(s, converted)), ZERO
         )
-        return others / (1 - f["purchase_amount"] / f["post_money_cap"])
+        own = sum((g["purchase_amount"] / g["post_money_cap"] for g in safes_converting), ZERO)
+        return others / (1 - own)
 
-    def liquidity_price(self, f, converted=None):
-        """Liquidity Price = post-money valuation cap ÷ Liquidity Capitalization."""
-        return f["post_money_cap"] / self.liquidity_capitalization(f, converted)
+    def safes_converting(self, f, d):
+        """The SAFEs taking their Conversion Amount under decisions d, counting f as converting."""
+        return [g for g in self.safes if g is f or d.get(g["id"], False)]
 
-    def safe_conversion_shares(self, f, converted=None):
+    def safe_cap(self, f):
+        return f["pre_money_cap"] if f.get("pre_money_cap") is not None else f["post_money_cap"]
+
+    def liquidity_price(self, f, converted=None, safes_converting=None):
+        """Liquidity Price = valuation cap ÷ Liquidity Capitalization."""
+        return self.safe_cap(f) / self.liquidity_capitalization(f, converted, safes_converting)
+
+    def safe_conversion_shares(self, f, converted=None, safes_converting=None):
         """Purchase amount ÷ Liquidity Price, exact: at exit, as-converted shares aren't rounded (SPEC)."""
-        return f["purchase_amount"] / self.liquidity_price(f, converted)
+        return f["purchase_amount"] / self.liquidity_price(f, converted, safes_converting)
 
     def converting_amount(self, x):
         """What a SAFE or note converts: the purchase amount, or principal plus accrued interest."""
@@ -305,15 +343,18 @@ class Waterfall:
 
         # Unconverted note at exit: the holder takes the greater of repayment
         # (a multiple of principal plus accrued interest) or conversion at the
-        # cap. Repayment is debt, so it is paid ahead of all equity.
+        # cap. Repayment is debt, so it is paid ahead of all equity. Notes rank
+        # equally with each other: a shortfall is shared pro rata by repayment
+        # (X15).
         note_paid = None
-        for n in self.notes:
-            if not d.get(n["id"], False):
-                claim = self.note_repayment(n)
-                paid = min(remaining, claim)
-                total[n["id"]] += paid
-                note_paid = remaining >= claim
-                remaining -= paid
+        repaid = {n["id"]: self.note_repayment(n) for n in self.notes if not d.get(n["id"], False)}
+        if repaid:
+            need = sum(repaid.values(), ZERO)
+            paid = min(remaining, need)
+            for nid, claim in repaid.items():
+                total[nid] += paid * claim / need
+            note_paid = remaining >= need
+            remaining -= paid
 
         # Management carve-out: a percentage of the exit value (before strike
         # cash), paid to listed people before any preference.
@@ -323,24 +364,27 @@ class Waterfall:
             total[CARVE_OUT] = pool
             remaining -= pool
 
-        # Unconverted post-money SAFE at a Liquidity Event (YC): it gets the
-        # greater of its Cash-Out Amount (the purchase amount, paid ahead of
-        # common) or its Conversion Amount (what its conversion shares earn
-        # alongside common). Here: a SAFE taking cash out is paid before the
-        # residual.
-        # Alongside preferred, its Cash-Out Amount ranks on par with the most
-        # junior preferred tier (X9), shared pro rata with it on a shortfall.
+        # Unconverted SAFE at a Liquidity Event (YC): it gets the greater of
+        # its Cash-Out Amount (the purchase amount, paid ahead of common) or
+        # its Conversion Amount (what its conversion shares earn alongside
+        # common). Here: a SAFE taking cash out is paid before the residual.
+        # SAFEs taking cash out share a shortfall pro rata by purchase amount
+        # ("with equal priority and pro rata", X13). Alongside preferred, the
+        # Cash-Out Amount ranks on par with the most junior preferred tier, or
+        # the tier of the series it names (X9), shared pro rata with it.
         safe_paid = None
         safe_in_tier = {}
-        for f in self.safes:
-            if not d[f["id"]]:
-                if ct.seniority:
-                    safe_in_tier.setdefault(len(ct.seniority) - 1, []).append(f)
-                    continue
-                paid = min(remaining, f["purchase_amount"])
-                total[f["id"]] += paid
-                safe_paid = remaining >= f["purchase_amount"]
-                remaining -= paid
+        cash = [f for f in self.safes if not d[f["id"]]]
+        if ct.seniority:
+            for f in cash:
+                safe_in_tier.setdefault(self.safe_tier(f), []).append(f)
+        elif cash:
+            need = sum((f["purchase_amount"] for f in cash), ZERO)
+            paid = min(remaining, need)
+            for f in cash:
+                total[f["id"]] += paid * f["purchase_amount"] / need
+            safe_paid = remaining >= need
+            remaining -= paid
 
         # Preferences, tier by tier, most senior first. Within a tier, pari
         # passu: a shortfall is shared pro rata by preference amount.
@@ -379,7 +423,7 @@ class Waterfall:
                 if self.priced(f):
                     priced.append(f)
                 else:
-                    part[f["id"]] = self.safe_conversion_shares(f, converted)
+                    part[f["id"]] = self.safe_conversion_shares(f, converted, self.safes_converting(f, d))
         for n in self.notes:
             if d.get(n["id"], False):
                 if self.priced(n):
@@ -533,6 +577,7 @@ class _AtExit:
         deciders = [i for i in range(len(wf.players)) if i not in self.options]
         self.group = [i for i in deciders if wf.players[i] in wf.vote]
         self.free = [i for i in deciders if i not in self.group]
+        self.instruments = set(wf.safe_ids) | set(wf.note_ids)
 
     def res(self, bits):
         if bits not in self.results:
@@ -563,7 +608,20 @@ class _AtExit:
         return self.settled_cache[key]
 
     def stable_free(self, bits):
-        return all(self.value(self.settle(_flip(bits, i)), i) <= self.value(bits, i) for i in self.free)
+        """No free decision-maker gains by switching.
+
+        A SAFE takes its Conversion Amount, and a note converts, only when that
+        strictly pays more (E5, X16): where it is indifferent but its choice
+        changes what others get, as when one SAFE's conversion enlarges the
+        Liquidity Capitalization another SAFE's shares are counted on, it takes
+        its Cash-Out Amount or repayment, so the outcome from below holds at
+        exactly that exit value, as in E13.
+        """
+        for i in self.free:
+            here, there = self.value(bits, i), self.value(self.settle(_flip(bits, i)), i)
+            if there > here or (there == here and bits[i] and self.wf.players[i] in self.instruments):
+                return False
+        return True
 
     def settled_sets(self, fixed):
         out = []

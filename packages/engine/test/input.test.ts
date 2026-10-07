@@ -93,12 +93,17 @@ describe("cases outside M2's scope are refused, never skipped", () => {
     ["edge-12b-safe-cap-and-discount", "unconverted_safe", "M5"],
     ["edge-12c-safe-discount-only", "unconverted_safe", "M5"],
     ["edge-12d-safe-alongside-preferred", "unconverted_safe", "M5"],
+    ["edge-12e-safe-ranks-with-series-a", "unconverted_safe", "M5"],
+    ["edge-12f-two-safes", "unconverted_safe", "M5"],
+    ["edge-12g-pre-money-safe-at-a-sale", "unconverted_safe", "M5"],
+    ["edge-12h-mfn-safe", "unconverted_safe", "M5"],
     ["edge-13a-note-with-pool", "unconverted_note", "M5"],
     ["edge-13b-note-without-pool", "unconverted_note", "M5"],
     ["edge-13c-note-common-only", "unconverted_note", "M5"],
     ["edge-13d-note-cap-and-discount", "unconverted_note", "M5"],
     ["edge-13e-note-discount-only", "unconverted_note", "M5"],
     ["edge-13f-note-alongside-preferred", "unconverted_note", "M5"],
+    ["edge-13g-two-notes", "unconverted_note", "M5"],
   ];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[01])/.test(n));
 

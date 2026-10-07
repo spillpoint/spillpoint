@@ -1,0 +1,92 @@
+{
+  "case": "edge-12f-two-safes",
+  "description": "Edge case 12's company with two post-money SAFEs outstanding at a sale: Investor X's $1M at a $10M cap and Investor Y's $500,000 at a $4M cap. Their Cash-Out Amounts share a shortfall pro rata by purchase amount. There is one Liquidity Capitalization for the company: it counts every SAFE taking its Conversion Amount and leaves out any taking its Cash-Out Amount, so Y's conversion raises X's count (ASSUMPTIONS X13).",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_y",
+          "holder": "investor_y",
+          "purchase_amount": "500000",
+          "post_money_cap": "4000000",
+          "discount": "0"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "1500000",
+      "3000000",
+      "6000000",
+      "9000000",
+      "10000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

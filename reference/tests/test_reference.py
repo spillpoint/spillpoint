@@ -645,6 +645,101 @@ class Exits(unittest.TestCase):
         )
         self.assertEqual(Waterfall(part).liquidity_capitalization(part.safes[0], {}), 1_000_000)
 
+    def add_safe(self, ct, sid, holder, amount, **caps):
+        ct.add_holder(holder, holder)
+        ct.safes.append(safe_from_json({"id": sid, "holder": holder, "purchase_amount": amount, "discount": "0", **caps}))
+
+    def test_two_safes_share_one_liquidity_capitalization(self):
+        # 800,000 common; SAFE s, $100k at a $1M post-money cap; SAFE t, $50k at $250k.
+        # Cash-outs share pro rata by purchase amount up to $150k (X13): at $90k, s $60k and t $30k.
+        # One Liquidity Capitalization for the company, counting every converting SAFE:
+        # t alone 800,000 ÷ 0.8 = 1,000,000, t's shares 1/5 of it; both 800,000 ÷ 0.7.
+        # t converts at (E − $100k) ÷ 5 = $50k, E = $350k. s converts, with t converting, at
+        # E ÷ 10 = $100k, E = $1M. There t's shares grow from 200,000 to 228,571.43, so its payout
+        # jumps from $180k to $200k and common's drops from $720k to $700k. At exactly $1M s is
+        # indifferent and takes its Cash-Out Amount (X16), so the outcome from below holds.
+        ct = self.unconverted_safe([COMMON], [("x", "common", 800_000)])
+        self.add_safe(ct, "safe_t", "t", "50000", post_money_cap="250000")
+        wf = Waterfall(ct)
+        s, t = wf.safes
+        self.assertEqual(wf.liquidity_capitalization(s, {}, [s, t]), F(8_000_000, 7))
+        self.assertEqual(wf.liquidity_capitalization(t, {}, [t]), 1_000_000)
+        found = breakpoints.find(wf, 0, 3_000_000, 100_000)
+        self.assertEqual([(x, jumps) for x, _, _, jumps in found], [(150_000, False), (350_000, False), (1_000_000, True)])
+        p = payouts(ct, 90_000)
+        self.assertEqual((p[("s", "safe")], p[("t", "safe_t")]), (60_000, 30_000))
+        p = payouts(ct, 1_000_000)
+        self.assertEqual((p[("s", "safe")], p[("t", "safe_t")], p[("x", "common")]), (100_000, 180_000, 720_000))
+        p = payouts(ct, 2_000_000)
+        self.assertEqual((p[("s", "safe")], p[("t", "safe_t")], p[("x", "common")]), (200_000, 400_000, 1_400_000))
+
+    def test_two_safes_need_post_money_caps(self):
+        ct = self.unconverted_safe([COMMON], [("x", "common", 800_000)])
+        self.add_safe(ct, "safe_t", "t", "50000")
+        with self.assertRaisesRegex(ValueError, "only when each has a post-money cap"):
+            Waterfall(ct)
+
+    def test_safe_cash_out_ranks_with_a_named_series(self):
+        # p (senior) and q (junior), 100,000 shares each at $1, 1x non-participating; 800,000 common;
+        # a $100k SAFE. By default its Cash-Out Amount ranks with q, the most junior tier: at $150k,
+        # p $100k, then q and the SAFE $25k each. Ranking with p: p and the SAFE $75k each, q nothing.
+        def ct(ranks_with=None):
+            c = self.unconverted_safe(
+                [COMMON, pref("p", "1", "1", "non_participating"), pref("q", "1", "1", "non_participating")],
+                [("x", "common", 800_000), ("y", "p", 100_000), ("z", "q", 100_000)],
+                [["p"], ["q"]],
+            )
+            c.safes[0]["cash_out_ranks_with"] = ranks_with
+            return c
+
+        p = payouts(ct(), 150_000)
+        self.assertEqual((p[("y", "p")], p[("s", "safe")], p[("z", "q")]), (100_000, 25_000, 25_000))
+        p = payouts(ct("p"), 150_000)
+        self.assertEqual((p[("y", "p")], p[("s", "safe")], p[("z", "q")]), (75_000, 75_000, 0))
+        with self.assertRaisesRegex(ValueError, "not a preferred series in the seniority tiers"):
+            Waterfall(ct("r"))
+
+    def test_pre_money_safe_at_a_sale(self):
+        # 800,000 common, 100,000 options at $10, a 50,000 unissued pool, and a $100k SAFE on a
+        # $1.8M pre-money cap (X14). Its Liquidity Capitalization counts stock and options, not the
+        # pool or itself: 900,000, so $2 a share and 50,000 shares, on top. It converts once
+        # 50,000 ÷ 850,000 of the exit value beats $100k: E = $1.7M.
+        ct = self.unconverted_safe(
+            [COMMON, {"id": "o", "name": "o", "kind": "option", "strike": "10"}],
+            [("x", "common", 800_000), ("e", "o", 100_000)],
+        )
+        ct.safes[0].update(post_money_cap=None, pre_money_cap=F(1_800_000))
+        wf = Waterfall(ct)
+        (f,) = wf.safes
+        self.assertEqual((wf.liquidity_capitalization(f), wf.liquidity_price(f), wf.safe_conversion_shares(f)), (900_000, 2, 50_000))
+        self.assertEqual(bp_values(ct, 3_000_000), [100_000, 1_700_000])
+        self.assertEqual(payouts(ct, 3_400_000)[("s", "safe")], 200_000)
+        # Alongside preferred it is refused: the pre-money text ranks its cash only against other SAFEs.
+        with_p = self.unconverted_safe([COMMON, pref("p", "1", "1", "non_participating")], [("x", "common", 800_000), ("y", "p", 1)], [["p"]])
+        with_p.safes[0].update(post_money_cap=None, pre_money_cap=F(1_800_000))
+        with self.assertRaisesRegex(ValueError, "pre-money SAFE alongside preferred"):
+            Waterfall(with_p)
+
+    def test_two_notes_rank_equally(self):
+        # 800,000 common. Note n: $100k at 0%, cap $800k on the with_pool base, so $1 a share and
+        # 100,000 shares; note m: $50k, cap $200k, $0.25 and 200,000 shares. Neither counts the other
+        # (X15). Both repaid at 1x, sharing a shortfall pro rata up to $150k: at $90k, $60k and $30k.
+        # m converts at 200,000 ÷ 1,000,000 × (E − $100k) = $50k, E = $350k; then n at
+        # 100,000 ÷ 1,100,000 × E = $100k, E = $1.1M.
+        ct = self.note_table("800000", "0")
+        ct.add_holder("m", "m")
+        ct.notes.append(dict(ct.notes[0], id="note_m", holder="m", principal=F(50_000), valuation_cap=F(200_000)))
+        wf = Waterfall(ct, datetime.date(2024, 1, 1))
+        self.assertEqual([wf.note_conversion_shares(n) for n in wf.notes], [100_000, 200_000])
+        self.assertEqual([(x, jumps) for x, _, _, jumps in breakpoints.find(wf, 0, 2_000_000, 100_000)],
+                         [(150_000, False), (350_000, False), (1_100_000, False)])
+        lines = wf.evaluate(F(90_000))[0]["lines"]
+        self.assertEqual((lines[("n", "note")], lines[("m", "note_m")]), (60_000, 30_000))
+        ct.notes[1]["valuation_cap"] = None
+        ct.notes[1]["discount"] = F(1, 5)
+        with self.assertRaisesRegex(ValueError, "only when each has a valuation cap"):
+            Waterfall(ct, datetime.date(2024, 1, 1))
+
     def note_table(self, cap, discount, multiple="1", preferred=False):
         securities = [COMMON] + ([pref("p", "1", "1", "non_participating")] if preferred else [])
         positions = [{"holder": "x", "security": "common", "shares": 800_000}]

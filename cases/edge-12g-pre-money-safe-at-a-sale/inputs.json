@@ -1,0 +1,92 @@
+{
+  "case": "edge-12g-pre-money-safe-at-a-sale",
+  "description": "Edge case 12's company built from its events, with Investor X's $1M SAFE on a pre-money valuation cap of $8,000,000 instead of a post-money one, still outstanding at a sale. Following the YC pre-money SAFE, its Liquidity Capitalization counts the stock as converted and the options and warrants, vested or not, and leaves out the unissued pool, this SAFE, other SAFEs and notes: its shares sit on top. The exit runs on the cap table after the SAFE (ASSUMPTIONS X14).",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 3000000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "10"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 500000,
+          "strike": "5"
+        }
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2023-01-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "1000000",
+          "pre_money_cap": "8000000",
+          "discount": "0"
+        }
+      ]
+    }
+  ],
+  "exit": {
+    "cap_table_after_event": "safe",
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "500000",
+      "1000000",
+      "5000000",
+      "8000000",
+      "10000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

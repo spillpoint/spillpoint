@@ -162,6 +162,7 @@ class CapTable:
                         else {"post_money_cap": None if f["post_money_cap"] is None else exact(f["post_money_cap"])}
                     ),
                     "discount": exact(f["discount"]),
+                    **({"cash_out_ranks_with": f["cash_out_ranks_with"]} if f.get("cash_out_ranks_with") else {}),
                 }
                 for f in self.safes
             ],
@@ -267,6 +268,9 @@ def safe_from_json(f):
         "post_money_cap": None if f.get("post_money_cap") is None else parse(f["post_money_cap"]),
         "pre_money_cap": None if f.get("pre_money_cap") is None else parse(f["pre_money_cap"]),
         "discount": parse(f.get("discount", "0")),
+        # At a sale, the series whose tier its Cash-Out Amount ranks with (X9);
+        # left out, the most junior tier.
+        "cash_out_ranks_with": f.get("cash_out_ranks_with"),
     }
 
 

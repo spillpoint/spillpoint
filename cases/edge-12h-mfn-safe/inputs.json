@@ -1,0 +1,78 @@
+{
+  "case": "edge-12h-mfn-safe",
+  "description": "Edge case 12's company with a $1M MFN SAFE: no valuation cap and no discount. Converting at the sale's common price is worth exactly its purchase amount, the same as its Cash-Out Amount, so it takes its Cash-Out Amount, a claim of $1,000,000 ahead of common (ASSUMPTIONS X9). Its MFN clause isn't modeled: the inputs carry its terms as they stand at the sale.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "1000000",
+          "post_money_cap": null,
+          "discount": "0"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "500000",
+      "1000000",
+      "5000000",
+      "10000000",
+      "40000000"
+    ]
+  }
+}

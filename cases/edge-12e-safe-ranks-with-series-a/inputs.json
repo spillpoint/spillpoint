@@ -1,0 +1,112 @@
+{
+  "case": "edge-12e-safe-ranks-with-series-a",
+  "description": "Edge case 12d's company and SAFE, with the SAFE's Cash-Out Amount ranking with Series A, the senior tier, instead of the most junior (cash_out_ranks_with, ASSUMPTIONS X9). Series A and the SAFE share the first $3,000,000 pro rata by claim; Seed's preference comes after both. Above $4,000,000 every payout is 12d's.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_s",
+          "name": "Investor S"
+        },
+        {
+          "id": "investor_p",
+          "name": "Investor P"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "0.5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "investor_s",
+          "security": "seed",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_p",
+          "security": "series_a",
+          "shares": 1000000
+        }
+      ],
+      "unconverted_safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0",
+          "cash_out_ranks_with": "series_a"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "20000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "2000000",
+      "3000000",
+      "3500000",
+      "4000000",
+      "6000000",
+      "10000000",
+      "15000000",
+      "20000000"
+    ]
+  }
+}
