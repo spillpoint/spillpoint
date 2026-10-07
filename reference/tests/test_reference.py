@@ -150,6 +150,28 @@ class Rounds(unittest.TestCase):
         self.assertEqual(ct.securities["seed_shadow"]["original_issue_price"], F(1))
         self.assertEqual(ct.positions[("b", "seed")], 1_111_111)
 
+    def test_dividends_on_a_rounds_series(self):
+        # R30: 9,000,000 common; a $1M SAFE at a $10M post-money cap; a $2M round at $18M pre, its
+        # series with an 8% cumulative dividend. They accrue from the round's date, and the series from
+        # SAFEs carries the same terms from the same date, on its own $1.00 issue price.
+        def events(dividend, date="2024-01-01"):
+            series = pref("seed", "1", "1", "non_participating") | {"anti_dilution": "none", "cumulative_dividend": dividend}
+            series.pop("original_issue_price")
+            return [
+                {"id": "f", "type": "issue", "security": COMMON, "issues": [{"holder": "a", "shares": 9_000_000}]},
+                {"id": "s", "type": "safes", "safes": [{"id": "s1", "holder": "s", "purchase_amount": "1000000", "post_money_cap": "10000000", "discount": "0"}]},
+                self.round_event(series=series, date=date),
+            ]
+
+        _, ct, _ = self.run_events(events({"rate": "0.08", "method": "simple", "on_conversion": "forfeited"}))[-1]
+        for sid in ("seed", "seed_shadow"):
+            self.assertEqual(ct.securities[sid]["cumulative_dividend"]["accrual_start"], datetime.date(2024, 1, 1))
+        self.assertEqual(ct.securities["seed_shadow"]["original_issue_price"], 1)
+        with self.assertRaisesRegex(ValueError, "accrue from its date; give no accrual_start"):
+            self.run_events(events({"rate": "0.08", "accrual_start": "2023-01-01"}))
+        with self.assertRaisesRegex(ValueError, "so the round needs a date"):
+            self.run_events(events({"rate": "0.08"}, date=None))
+
     def test_post_money_safe_discount_beats_cap(self):
         # Same company, but the SAFE has a $100M cap and a 20% discount.
         # Discount branch: SAFE shares = 1M / (0.8 × price) = post FD / 16.

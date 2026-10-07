@@ -107,6 +107,8 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     ["edge-13e-note-discount-only", "unconverted_note", "M5"],
     ["edge-13f-note-alongside-preferred", "unconverted_note", "M5"],
     ["edge-13g-two-notes", "unconverted_note", "M5"],
+    // R30: dividends on a round's series; the engine builds them in the PR after case 23.
+    ["edge-23-dividends-from-a-round", "cumulative_dividend_in_rounds", "later"],
   ];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
@@ -127,7 +129,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
     expect(error).toMatchObject({ term, milestone });
-    expect((error as Error).message).toMatch(new RegExp(`supports this from ${milestone}`));
+    expect((error as Error).message).toMatch(milestone === "later" ? /supports this once a case needs it/ : new RegExp(`supports this from ${milestone}`));
   });
 });
 

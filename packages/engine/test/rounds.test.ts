@@ -29,9 +29,12 @@ interface ExpectedTable {
   };
 }
 
-const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
+const WITH_EVENTS = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
+/** Cases with events the engine refuses until the PR that builds them: 23's dividends on a round's series (R30). */
+const REFUSED_FOR_NOW = ["edge-23-dividends-from-a-round"];
+const ROUND_CASES = WITH_EVENTS.filter((name) => !REFUSED_FOR_NOW.includes(name));
 
-/** The 28 cases with events, every one built in full: 26 since M4g, 12g (M5b), which runs its exit after a pre-money SAFE, and 22's warrants (M5d). */
+/** 29 cases with events: 26 built in full since M4g, 12g (M5b), 22's warrants (M5d), and 23, refused until the engine builds R30. */
 const EXPECTED_ROUND_CASES = 28;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
@@ -186,8 +189,15 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 28 cases with events", () => {
+  it("is found: 29 cases with events, 28 of them built and 23 refused for now", () => {
+    expect(WITH_EVENTS).toHaveLength(EXPECTED_ROUND_CASES + REFUSED_FOR_NOW.length);
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
+  });
+
+  it("refuses 23's dividends on the Series A, rather than building without them", () => {
+    expect(() => buildCapTables(readCaseFile("edge-23-dividends-from-a-round", "inputs.json"))).toThrow(
+      "inputs.events[4].series.cumulative_dividend: Cumulative dividends on a series issued in a company's rounds.",
+    );
   });
 
   describe.each(ROUND_CASES)("%s", (name) => {

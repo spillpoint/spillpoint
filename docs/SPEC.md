@@ -109,5 +109,6 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 20. A pre-money SAFE converting in a priced round.
 21. A note and a pre-money SAFE converting in the same round.
 22. Warrants issued, counted like options in a priced round's price, its pool top-up and a converting SAFE's Company Capitalization.
+23. Cumulative dividends on a priced round's series, carried by its series from SAFEs on its own issue price, followed by a sale.
 
-Cases 14–22 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
+Cases 14–23 are round cases, so their expected outputs are cap tables; 23 also runs an exit on its last one, as Millrace and 12g do. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.

@@ -318,6 +318,15 @@ def ev_priced_round(ct, ev):
     after the conversion.
     """
     series = ev["series"]
+    # R30: cumulative dividends on the round's series accrue from the round's date. The series its
+    # SAFEs and notes convert into copy the round's series, so they carry the same terms from the same
+    # date, each on its own issue price (its conversion price), as their preference already is.
+    if series.get("cumulative_dividend"):
+        if "accrual_start" in series["cumulative_dividend"]:
+            raise ValueError(f"round {ev['id']}: a round's dividends accrue from its date; give no accrual_start")
+        if not ev.get("date"):
+            raise ValueError(f"round {ev['id']}: its series accrues cumulative dividends from the round's date, so the round needs a date")
+        series = {**series, "cumulative_dividend": {**series["cumulative_dividend"], "accrual_start": ev["date"]}}
     pre = parse(ev["pre_money"])
     invest = [(i["holder"], parse(i["amount"]), bool(i.get("pro_rata", False))) for i in ev["investments"]]
     money_in = sum(a for _, a, _ in invest)
