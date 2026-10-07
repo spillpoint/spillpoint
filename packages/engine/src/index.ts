@@ -26,7 +26,7 @@ export type * from "./model.ts";
 
 // The waterfall for given decisions, the decisions themselves, and the breakpoints.
 export { payout, prepare } from "./waterfall.ts";
-export type { CarveOutHere, Decisions, Payout, PayoutLine, PreparedCapTable, SafeHere, SeriesHere, TierPayment } from "./waterfall.ts";
+export type { CarveOutHere, Decisions, NoteHere, NoteTerms, Payout, PayoutLine, PreparedCapTable, SafeHere, SeriesHere, TierPayment } from "./waterfall.ts";
 export { solve } from "./decisions.ts";
 export type { Answer, Solution, SolveOptions } from "./decisions.ts";
 export { findBreakpoints } from "./breakpoints.ts";
@@ -34,7 +34,7 @@ export { findBreakpoints } from "./breakpoints.ts";
 // Building cap tables from a company's rounds (M4).
 export { buildCapTables } from "./rounds.ts";
 export type {
-  AntiDilutionAdjustment, CapTableAfterEvent, EventDetails, Note, NoteConversion, PayToPlay, PayToPlayHolder, PayToPlaySeries, ProRata, RoundDetails,
+  AntiDilutionAdjustment, CapTableAfterEvent, EventDetails, NoteConversion, PayToPlay, PayToPlayHolder, PayToPlaySeries, ProRata, RoundDetails,
   SafeConversion,
 } from "./rounds.ts";
 export type { Breakpoint } from "./breakpoints.ts";

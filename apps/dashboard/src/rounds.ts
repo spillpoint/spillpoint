@@ -107,6 +107,24 @@ export function capTableJson(ct: CapTable): Json {
           })),
         }
       : {}),
+    // And notes, likewise.
+    ...(ct.unconvertedNotes && ct.unconvertedNotes.length > 0
+      ? {
+          unconverted_notes: ct.unconvertedNotes.map((n) => ({
+            id: n.id,
+            holder: n.holder,
+            principal: text(n.principal),
+            interest_rate: text(n.interestRate),
+            interest_method: n.interestMethod,
+            issue_date: n.issueDate,
+            valuation_cap: n.valuationCap ? text(n.valuationCap) : null,
+            cap_type: n.capType,
+            conversion_base: n.conversionBase,
+            discount: text(n.discount),
+            repayment_multiple: text(n.repaymentMultiple),
+          })),
+        }
+      : {}),
   };
 }
 

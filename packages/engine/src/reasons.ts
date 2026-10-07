@@ -3,7 +3,8 @@
 // and explains one change: a tier paid in full, a cap reached, options or a
 // warrant coming into the money, a series or a group converting, a SAFE's
 // Cash-Out Amount paid in full or the SAFE switching to its Conversion
-// Amount, a carve-out's tier ending, payouts jumping, or payouts curving.
+// Amount, a note repaid in full or switching to conversion, a carve-out's
+// tier ending, payouts jumping, or payouts curving.
 
 import type { Decimal } from "decimal.js";
 
@@ -20,6 +21,8 @@ export type ReasonCode =
   | "series_converts"
   | "safe_cash_out_paid"
   | "safe_switches"
+  | "note_repayment_paid"
+  | "note_switches"
   | "carve_out_tier"
   | "payouts_jump"
   | "payouts_curve"
@@ -96,6 +99,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   ]);
   const holderName = new Map(capTable.holders.map((h) => [h.id, h.name]));
   for (const f of pc.safes.values()) name.set(f.id, `${holderName.get(f.holder)}'s SAFE`);
+  for (const t of pc.notes.values()) name.set(t.note.id, `${holderName.get(t.note.holder)}'s convertible note`);
   const before = below.answer.decisions;
   const after = above.answer.decisions;
   // Both answers paid out at the breakpoint itself: the outcome from below, and the limit of the outcome from above.
@@ -283,6 +287,56 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     reasons.push({ code: "safe_switches", subject: [f.id], starts: converts, text });
   }
 
+  // Notes repaid in full (X3, X15): debt, ahead of all equity, the notes sharing a shortfall pro rata.
+  const debtBelow = below.answer.payout.noteDebt;
+  const debtAbove = above.answer.payout.noteDebt;
+  if (debtBelow && !debtBelow.full && debtAbove?.full) {
+    const ids = debtAbove.notes;
+    // The next dollar goes to the most senior preference tier still owed, or else to common.
+    const owed = above.answer.payout.tiers.find((t) => !t.full);
+    const nextText = owed
+      ? `goes to ${owed.series.length === 1 ? `${name.get(owed.series[0]!)}'s preference` : `the preferences of ${list(owed.series.map((id) => name.get(id)!))}`}`
+      : (() => {
+          const next = sharers(pc, after).map((id) => name.get(id)!);
+          return next.length === 1 ? `goes to ${next[0]}` : `is shared as common by ${list(next)}`;
+        })();
+    const terms = (id: string) => pc.notes.get(id)!;
+    const text =
+      ids.length === 1
+        ? `${name.get(ids[0]!)} is repaid in full here: ${multiple(terms(ids[0]!).note.repaymentMultiple)} its principal plus interest, ` +
+          `${money(terms(ids[0]!).repayment)}, paid ahead of all equity as debt. Above this exit value, the next dollar ${nextText}.`
+        : `The convertible notes are repaid in full here: ${list(ids.map((id) => `${name.get(id)} (${money(terms(id).repayment)})`))}, ` +
+          `${money(debtAbove.claim)} in all, paid ahead of all equity as debt. Until here they shared every dollar pro rata by repayment. ` +
+          `Above this exit value, the next dollar ${nextText}.`;
+    reasons.push({ code: "note_repayment_paid", subject: ids, starts: true, text });
+  }
+
+  // A note switching between repayment and conversion (X3, X10–X12).
+  for (const t of pc.notes.values()) {
+    const id = t.note.id;
+    const converts = after.converted.has(id);
+    if (before.converted.has(id) === converts) continue;
+    const who = name.get(id)!;
+    let text: string;
+    if (!converts) {
+      text = `${who} switches back to repayment here: above this exit value it pays more.`;
+    } else if (!t.note.valuationCap) {
+      const worth = t.amount.div(ONE.minus(t.note.discount));
+      text =
+        `${who} has no valuation cap, so it converts at the sale's common price less its ${pct(t.note.discount)} discount. ` +
+        `Its principal plus interest, ${money(t.amount)}, is then worth exactly ${money(worth)} wherever that is possible, which is where ` +
+        `what is left for common and the note is more than that, and this is the first exit value where it is. ` +
+        `Below it the note is repaid ${money(t.repayment)}; above it, ${money(worth)}.`;
+    } else {
+      text =
+        `${who} switches from repayment to conversion here. Its principal plus interest, ${money(t.amount)}, converts at ` +
+        `${perShare(t.price!)} a share (the ${money(t.note.valuationCap)} cap ÷ ${shares(t.baseShares!)} shares) into ${shares(t.shares!)} shares, ` +
+        `worth ${perShare(atAfter.commonPrice)} each here, ${money(t.shares!.times(atAfter.commonPrice))} in all, the same as its ${money(t.repayment)} repayment. ` +
+        "Below this exit value repayment pays more; above it, converting does.";
+    }
+    reasons.push({ code: "note_switches", subject: [id], starts: converts, text });
+  }
+
   // Caps reached.
   for (const sid of above.answer.payout.atCap) {
     if (below.answer.payout.atCap.includes(sid)) continue;
@@ -360,9 +414,9 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   return reasons;
 }
 
-/** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs taking their Conversion Amount. */
+/** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs and notes converting. */
 function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
-  const safes = [...pc.safes.keys()].filter((id) => d.converted.has(id));
+  const safes = [...pc.safes.keys(), ...pc.notes.keys()].filter((id) => d.converted.has(id));
   return pc.capTable.securities
     .filter((s) => {
       if (pc.shares.get(s.id)!.isZero()) return false;

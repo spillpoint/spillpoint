@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 10, 12 to 12h, 23 and Millrace", () => {
+  it("are edge cases 1 through 10, 12 to 12h, 13a to 13g, 23 and Millrace", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -41,6 +41,13 @@ describe("the exit cases the engine runs", () => {
       "edge-12f-two-safes",
       "edge-12g-pre-money-safe-at-a-sale",
       "edge-12h-mfn-safe",
+      "edge-13a-note-with-pool",
+      "edge-13b-note-without-pool",
+      "edge-13c-note-common-only",
+      "edge-13d-note-cap-and-discount",
+      "edge-13e-note-discount-only",
+      "edge-13f-note-alongside-preferred",
+      "edge-13g-two-notes",
       "edge-23-dividends-from-a-round",
       "millrace",
     ]);
@@ -100,13 +107,6 @@ describe("the exit cases the engine runs", () => {
 describe("cases outside the engine's scope are refused, never skipped", () => {
   const refused: [string, string, Milestone][] = [
     ["edge-11-earnout", "payment_schedules", "M5"],
-    ["edge-13a-note-with-pool", "unconverted_note", "M5"],
-    ["edge-13b-note-without-pool", "unconverted_note", "M5"],
-    ["edge-13c-note-common-only", "unconverted_note", "M5"],
-    ["edge-13d-note-cap-and-discount", "unconverted_note", "M5"],
-    ["edge-13e-note-discount-only", "unconverted_note", "M5"],
-    ["edge-13f-note-alongside-preferred", "unconverted_note", "M5"],
-    ["edge-13g-two-notes", "unconverted_note", "M5"],
   ];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 

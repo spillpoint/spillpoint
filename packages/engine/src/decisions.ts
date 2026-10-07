@@ -9,9 +9,10 @@
 // - Each warrant decides for itself (E4), alongside the series: it is one of
 //   the free decision-makers below, and "switching" means exercising or not.
 //   So does each SAFE still outstanding: "switching" means taking its
-//   Conversion Amount or its Cash-Out Amount. It takes the Conversion Amount
-//   only when that strictly pays more (X16), so where it is indifferent but
-//   its choice changes what others get, the outcome from below holds (E13).
+//   Conversion Amount or its Cash-Out Amount; and each note that can convert:
+//   converting or being repaid. Either converts only when that strictly pays
+//   more (X16), so where it is indifferent but its choice changes what others
+//   get, the outcome from below holds (E13).
 // - A conversion group decides first (E17). For each of its two choices the
 //   other series settle; the group then votes (E11) on the two outcomes.
 // - The series outside a group, and the warrants, are solved from both ends:
@@ -221,7 +222,7 @@ class AtExit {
     this.free = [...pc.preferred.values()]
       .filter((s) => s.participation !== "participating" && !grouped.has(s.id) && pc.shares.get(s.id)!.gt(0))
       .map((s) => s.id)
-      .concat([...this.warrants], [...pc.safes.keys()]);
+      .concat([...this.warrants], [...pc.safes.keys()], [...pc.notes.values()].filter((t) => t.canConvert).map((t) => t.note.id));
   }
 
   private get where(): string {
@@ -303,7 +304,7 @@ class AtExit {
         value: (set, p) => all(set).payout.bySecurity.get(p)!,
         samePayouts: (a, b) => samePayouts(all(a).payout, all(b).payout),
         size: (set) => all(set).decisions.converted.size + all(set).decisions.exercised.size,
-        strict: (p) => this.pc.safes.has(p),
+        strict: (p) => this.pc.safes.has(p) || this.pc.notes.has(p),
         where: this.where,
       },
       this.options.checkEveryCombination,
@@ -397,6 +398,9 @@ class AtExit {
       // SAFEs: the shared Cash-Out claim not yet paid in full (X13), and a SAFE with no cap's room to convert (X9).
       if (p.safeCash && !p.safeCash.full) margins.set(`${prefix}|safecash`, p.safeCash.paid.minus(p.safeCash.claim));
       for (const [id, f] of p.safes) if (f.room) margins.set(`${prefix}|room:${id}`, f.room);
+      // Notes: the debt not yet repaid in full (X15), and a note with no cap's room to convert (X12).
+      if (p.noteDebt && !p.noteDebt.full) margins.set(`${prefix}|notedebt`, p.noteDebt.paid.minus(p.noteDebt.claim));
+      for (const [id, n] of p.notes) if (n.room) margins.set(`${prefix}|room:${id}`, n.room);
     };
     structural(tag, a.payout);
     const next = this.optionClasses.find((o) => !a.decisions.exercised.has(o.id));

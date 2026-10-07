@@ -2,6 +2,8 @@
 //
 // Given which preferred series convert and which option classes and warrants
 // are exercised, this pays out one exit value:
+//   0. A convertible note still outstanding and repaid is debt: paid ahead of
+//      all equity, notes sharing a shortfall pro rata (X3, X12, X15).
 //   1. Exercised options and warrants pay their strike, which joins the
 //      proceeds (E3). Shares from an exercised warrant for a preferred series
 //      become shares of that series (E12). A management carve-out, a
@@ -27,7 +29,8 @@ import type { Decimal } from "decimal.js";
 import { ONE, ZERO, moreThan } from "./decimal.ts";
 import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
-import type { CapTable, CarveOut, OptionClass, PreferredSeries, Safe, WarrantClass } from "./model.ts";
+import { dayNumber } from "./dates.ts";
+import type { CapTable, CarveOut, Note, OptionClass, PreferredSeries, Safe, WarrantClass } from "./model.ts";
 
 /** The security payouts to a carve-out's recipients are reported under (C6). */
 export const CARVE_OUT = "carve_out";
@@ -45,6 +48,33 @@ export interface SafeHere {
    * common, less its purchase amount. Converting is possible only while it is
    * above zero (X9, reading (a)), so the breakpoint finder follows it.
    */
+  room: Decimal | null;
+}
+
+/** A convertible note at the sale, worked out once from the exit date (X3, X10–X12). */
+export interface NoteTerms {
+  note: Note;
+  /** Simple interest, Actual/365, from the issue date to the exit date. */
+  days: number;
+  interest: Decimal;
+  /** Principal plus interest: what converts (X11). */
+  amount: Decimal;
+  /** The repayment multiple × the amount, paid as debt (X3). */
+  repayment: Decimal;
+  /** A note with neither a cap nor a discount is only ever repaid (X12). */
+  canConvert: boolean;
+  /** With a cap: the base it divides by, the price, and the conversion shares, exact (E2). */
+  baseShares: Decimal | null;
+  price: Decimal | null;
+  shares: Decimal | null;
+}
+
+/** A convertible note at one exit value. */
+export interface NoteHere {
+  converts: boolean;
+  /** Converting: its shares as common. */
+  shares: Decimal | null;
+  /** With no cap and set to convert: (1 − discount) × what is left for it and common, less what converts (X12). */
   room: Decimal | null;
 }
 
@@ -130,6 +160,10 @@ export interface Payout {
   carveOut: CarveOutHere | null;
   /** Each SAFE still outstanding. */
   safes: Map<string, SafeHere>;
+  /** Each convertible note still outstanding. */
+  notes: Map<string, NoteHere>;
+  /** The notes being repaid: one claim, ahead of all equity (X3, X15). */
+  noteDebt: { claim: Decimal; paid: Decimal; full: boolean; notes: string[] } | null;
   /** With no preferred, the SAFEs taking their Cash-Out Amount share one claim ahead of common, pro rata (X13). */
   safeCash: { claim: Decimal; paid: Decimal; full: boolean; safes: string[] } | null;
   /**
@@ -163,6 +197,8 @@ export interface PreparedCapTable {
   warrants: Map<string, WarrantClass>;
   /** SAFEs still outstanding at the sale (C8). */
   safes: Map<string, Safe>;
+  /** Convertible notes still outstanding at the sale (C9), with what accrues to the exit date. */
+  notes: Map<string, NoteTerms>;
   /** All issued stock as converted, options and warrants included, without the unissued pool: what a SAFE's Liquidity Capitalization starts from (X1, X14). */
   outstanding: Decimal;
   commonIds: string[];
@@ -212,7 +248,47 @@ export function prepare(capTable: CapTable, exitDate: string | null = null): Pre
     if (s.kind === "warrant" && s.underlying !== "common") return sum.plus(n.times(preferred.get(s.underlying)!.conversionRatio));
     return sum.plus(n);
   }, ZERO);
-  return { capTable, shares, preferred, options, warrants, safes, outstanding, commonIds, preference, dividends, exitDate, capTotal, asConverted };
+  const notes = new Map<string, NoteTerms>();
+  for (const n of capTable.unconvertedNotes ?? []) {
+    if (exitDate == null) throw new InputError("exit_date", `${n.id} accrues interest, so the exit needs an exit date`);
+    notes.set(n.id, noteTerms(n, exitDate, { outstanding, unissuedPool: capTable.unissuedPool, common: commonIds.reduce((sum, id) => sum.plus(shares.get(id)!), ZERO) }));
+  }
+  return { capTable, shares, preferred, options, warrants, safes, notes, outstanding, commonIds, preference, dividends, exitDate, capTotal, asConverted };
+}
+
+/**
+ * A note at the sale (X3, X10–X12): simple interest, Actual/365, from its
+ * issue date to the exit date; repayment of a multiple of principal plus
+ * interest; and with a cap, conversion of principal plus interest (X11) at
+ * the pre-money cap ÷ its base, counted just before the sale with the note
+ * itself left out, and no other note either (X15):
+ * - with_pool: issued stock as converted, options and warrants, and the unissued pool
+ * - without_pool: the same without the pool
+ * - common_only: issued common only
+ */
+function noteTerms(n: Note, exitDate: string, counts: { outstanding: Decimal; unissuedPool: Decimal; common: Decimal }): NoteTerms {
+  const days = dayNumber(exitDate, "exit_date") - dayNumber(n.issueDate, "issue_date");
+  const interest = n.principal.times(n.interestRate).times(days).div(365);
+  const amount = n.principal.plus(interest);
+  const base = !n.valuationCap
+    ? null
+    : n.conversionBase === "with_pool"
+      ? counts.outstanding.plus(counts.unissuedPool)
+      : n.conversionBase === "without_pool"
+        ? counts.outstanding
+        : counts.common;
+  const price = base && n.valuationCap ? n.valuationCap.div(base) : null;
+  return {
+    note: n,
+    days,
+    interest,
+    amount,
+    repayment: amount.times(n.repaymentMultiple),
+    canConvert: n.valuationCap !== null || n.discount.gt(0),
+    baseShares: base,
+    price,
+    shares: price ? amount.div(price) : null,
+  };
 }
 
 /**
@@ -257,6 +333,10 @@ function safeTier(capTable: CapTable, f: Safe): number {
 function checkDecisions(pc: PreparedCapTable, d: Decisions): void {
   for (const sid of d.converted) {
     if (pc.safes.has(sid)) continue;
+    if (pc.notes.has(sid)) {
+      if (!pc.notes.get(sid)!.canConvert) throw new InputError(`decisions.converted`, `${sid} has neither a cap nor a discount, so it is only ever repaid`);
+      continue;
+    }
     const s = pc.preferred.get(sid);
     if (!s) throw new InputError(`decisions.converted`, `${sid} is not a preferred series or a SAFE`);
     if (s.participation === "participating") {
@@ -279,6 +359,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   const { capTable } = pc;
   const total = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
   for (const id of pc.safes.keys()) total.set(id, ZERO);
+  for (const id of pc.notes.keys()) total.set(id, ZERO);
   const add = (id: string, amount: Decimal) => total.set(id, total.get(id)!.plus(amount));
 
   // 1. Exercised options and warrants pay their strike, which is added to the proceeds.
@@ -286,6 +367,17 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   let strikeCash = ZERO;
   for (const id of decisions.exercised) strikeCash = strikeCash.plus(pc.shares.get(id)!.times(strike(id)));
   let remaining = exitValue.plus(strikeCash);
+
+  // X3, X12, X15: a note repaid is debt, paid ahead of all equity; notes share a shortfall pro rata by repayment.
+  const repaid = [...pc.notes.values()].filter((t) => !decisions.converted.has(t.note.id));
+  let noteDebt: Payout["noteDebt"] = null;
+  if (repaid.length > 0) {
+    const claim = repaid.reduce((sum, t) => sum.plus(t.repayment), ZERO);
+    const paid = remaining.lt(claim) ? remaining : claim;
+    for (const t of repaid) add(t.note.id, paid.times(t.repayment).div(claim));
+    noteDebt = { claim, paid, full: remaining.gte(claim), notes: repaid.map((t) => t.note.id) };
+    remaining = remaining.minus(paid);
+  }
 
   // X7: the carve-out, a percentage of the exit value before any strike cash.
   // Before the preferences it is paid first. Alongside them it claims a share
@@ -381,24 +473,45 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     sharing.set(f.id, n);
     safes.set(f.id, { converts: true, liquidityCapitalization: lc, liquidityPrice: lp, shares: n, room: null });
   }
-  // With no cap it converts at the sale's common price less its discount, a
-  // price it helps set: s = amount × others ÷ ((1 − d) × what is left − amount),
-  // worth exactly amount ÷ (1 − d). Where (1 − d) × what is left is no more
-  // than the amount, no such price exists, and the greater-of has only its
-  // Cash-Out Amount to take (X9, reading (a)): it is paid as if it took that,
-  // a tie, which X16 settles as the Cash-Out Amount. One SAFE at most (X13).
-  const uncapped = convertingSafes.find((f) => !f.postMoneyCap && !f.preMoneyCap);
+  // A note converting shares as common. With a cap, on principal plus
+  // interest ÷ its conversion price (X10, X11).
+  const notes = new Map<string, NoteHere>();
+  for (const t of repaid) notes.set(t.note.id, { converts: false, shares: null, room: null });
+  const convertingNotes = [...pc.notes.values()].filter((t) => decisions.converted.has(t.note.id));
+  for (const t of convertingNotes) {
+    if (!t.shares) continue;
+    sharing.set(t.note.id, t.shares);
+    notes.set(t.note.id, { converts: true, shares: t.shares, room: null });
+  }
+
+  // With no cap a SAFE or a note converts at the sale's common price less its
+  // discount, a price it helps set: s = amount × others ÷ ((1 − d) × what is
+  // left − amount), worth exactly amount ÷ (1 − d). Where (1 − d) × what is
+  // left is no more than the amount, no such price exists, and the
+  // greater-of has only the Cash-Out Amount or repayment to take (X9, X12,
+  // reading (a)): it is paid as if it took that, a tie, which X16 settles
+  // that way. One such instrument at most: notes and SAFEs aren't modeled
+  // together, and several of either need caps (X13, X15).
+  const uncappedSafe = convertingSafes.find((f) => !f.postMoneyCap && !f.preMoneyCap);
+  const uncappedNote = convertingNotes.find((t) => !t.shares);
+  const uncapped = uncappedSafe
+    ? { id: uncappedSafe.id, amount: uncappedSafe.purchaseAmount, discount: uncappedSafe.discount }
+    : uncappedNote
+      ? { id: uncappedNote.note.id, amount: uncappedNote.amount, discount: uncappedNote.note.discount }
+      : null;
   if (uncapped) {
     const others = [...sharing.values()].reduce((sum, n) => sum.plus(n), ZERO);
-    const room = ONE.minus(uncapped.discount).times(remaining).minus(uncapped.purchaseAmount);
+    const room = ONE.minus(uncapped.discount).times(remaining).minus(uncapped.amount);
     if (!room.gt(0) || others.isZero()) {
       const asCash = payout(pc, exitValue, { converted: new Set([...decisions.converted].filter((id) => id !== uncapped.id)), exercised: decisions.exercised });
-      asCash.safes.set(uncapped.id, { ...asCash.safes.get(uncapped.id)!, room });
+      if (uncappedSafe) asCash.safes.set(uncapped.id, { ...asCash.safes.get(uncapped.id)!, room });
+      else asCash.notes.set(uncapped.id, { ...asCash.notes.get(uncapped.id)!, room });
       return { ...asCash, decisions };
     }
-    const n = uncapped.purchaseAmount.times(others).div(room);
+    const n = uncapped.amount.times(others).div(room);
     sharing.set(uncapped.id, n);
-    safes.set(uncapped.id, { converts: true, liquidityCapitalization: null, liquidityPrice: null, shares: n, room });
+    if (uncappedSafe) safes.set(uncapped.id, { converts: true, liquidityCapitalization: null, liquidityPrice: null, shares: n, room });
+    else notes.set(uncapped.id, { converts: true, shares: n, room });
   }
 
   // Capped participation: preference plus participation stops at the cap
@@ -457,8 +570,9 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     total.set(CARVE_OUT, carvePaid);
     for (const a of capTable.carveOut!.allocation) addLine(a.holder, CARVE_OUT, carvePaid.times(a.share));
   }
-  // C8: each SAFE is its own holder × security line.
+  // C8, C9: each SAFE and each note is its own holder × security line.
   for (const f of pc.safes.values()) addLine(f.holder, f.id, total.get(f.id)!);
+  for (const t of pc.notes.values()) addLine(t.note.holder, t.note.id, total.get(t.note.id)!);
   const firstTier = tiers.find((t) => t.index === 0);
   const curved =
     carveInTier && firstTier !== undefined && !firstTier.full && firstTier.series.includes(CARVE_OUT) && carve!.band < capTable.carveOut!.tiers.length && capTable.carveOut!.tiers[carve!.band]!.rate.gt(0);
@@ -473,6 +587,8 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     carveOut: carve ? { claim: carve.claim, paid: carvePaid, band: carve.band } : null,
     safes,
     safeCash,
+    notes,
+    noteDebt,
     curved,
     lines,
     holderTotals,

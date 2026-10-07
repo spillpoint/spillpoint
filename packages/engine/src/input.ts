@@ -23,6 +23,7 @@ import type {
   Holder,
   Participation,
   Position,
+  Note,
   PreferredSeries,
   Safe,
   Security,
@@ -232,11 +233,6 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
   const ct = object(value, path);
 
   // Terms that arrive later are refused before anything else is checked.
-  if (Array.isArray(ct.unconverted_notes) && ct.unconverted_notes.length > 0) {
-    throw new UnsupportedTermError(
-      "unconverted_note", "M5", `${path}.unconverted_notes`, "Convertible notes still outstanding at exit (X3, X10–X12)",
-    );
-  }
   onlyKnownFields(ct, CAP_TABLE_FIELDS, path);
 
   const holders: Holder[] = array(ct.holders, `${path}.holders`).map((v, i) => {
@@ -327,6 +323,10 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
     readSafe(v, `${path}.unconverted_safes[${i}]`),
   );
   checkSafesAtASale(safes, holderIds, byId, seniority, `${path}.unconverted_safes`);
+  const notes = (ct.unconverted_notes == null ? [] : array(ct.unconverted_notes, `${path}.unconverted_notes`)).map((v, i) =>
+    readNote(v, `${path}.unconverted_notes[${i}]`),
+  );
+  checkNotesAtASale(notes, holderIds, byId, new Set(safes.map((f) => f.id)), safes.length > 0 || ct.carve_out != null, `${path}.unconverted_notes`);
 
   return {
     holders,
@@ -335,6 +335,7 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
     conversionGroups,
     positions,
     ...(safes.length > 0 ? { unconvertedSafes: safes } : {}),
+    ...(notes.length > 0 ? { unconvertedNotes: notes } : {}),
     unissuedPool: ct.unissued_pool == null ? ZERO : wholeShares(ct.unissued_pool, `${path}.unissued_pool`),
     // Optional (0.1.0 cap tables have no such field), so left out when there's no carve-out.
     ...(ct.carve_out == null ? {} : { carveOut: readCarveOut(ct.carve_out, holderIds, `${path}.carve_out`) }),
@@ -394,6 +395,72 @@ function checkSafesAtASale(
   if (safes.some((f) => !f.postMoneyCap && !f.preMoneyCap) && preferred.some((s) => s.participation === "participating_capped")) {
     throw new UnsupportedTermError(
       "uncapped_safe_with_capped_participation", "later", path, "A SAFE with no cap alongside capped participating preferred (X9)",
+    );
+  }
+}
+
+const NOTE_FIELDS = [
+  "id", "holder", "principal", "interest_rate", "interest_method", "issue_date", "valuation_cap", "cap_type", "conversion_base", "discount", "repayment_multiple",
+] as const;
+const CONVERSION_BASES = ["with_pool", "without_pool", "common_only"] as const;
+
+/** A convertible note (C9, C14): simple interest, a pre-money cap or none, a base for the cap, a discount below 1, and a repayment multiple. */
+export function readNote(value: unknown, path: string): Note {
+  const n = object(value, path);
+  onlyKnownFields(n, NOTE_FIELDS, path);
+  // R23: refused until a case covers them, never skipped.
+  if ((n.interest_method ?? "simple") !== "simple") {
+    throw new UnsupportedTermError("note_compounding_interest", "later", `${path}.interest_method`, "Notes with interest other than simple (R23)");
+  }
+  if ((n.cap_type ?? "pre_money") !== "pre_money") {
+    throw new UnsupportedTermError("note_post_money_cap", "later", `${path}.cap_type`, "Notes with a post-money cap (R23)");
+  }
+  const base = (n.conversion_base ?? "with_pool") as Note["conversionBase"];
+  if (!CONVERSION_BASES.includes(base)) throw new InputError(`${path}.conversion_base`, `must be one of ${CONVERSION_BASES.join(", ")}`);
+  const issueDate = text(n.issue_date, `${path}.issue_date`);
+  dayNumber(issueDate, `${path}.issue_date`);
+  const discount = n.discount == null ? ZERO : notNegative(n.discount, `${path}.discount`);
+  if (discount.gte(1)) throw new InputError(`${path}.discount`, "must be below 1");
+  return {
+    id: text(n.id, `${path}.id`),
+    holder: text(n.holder, `${path}.holder`),
+    principal: positive(n.principal, `${path}.principal`),
+    interestRate: notNegative(n.interest_rate, `${path}.interest_rate`),
+    interestMethod: "simple",
+    issueDate,
+    valuationCap: n.valuation_cap == null ? null : positive(n.valuation_cap, `${path}.valuation_cap`),
+    capType: "pre_money",
+    conversionBase: base,
+    discount,
+    repaymentMultiple: positive(n.repayment_multiple, `${path}.repayment_multiple`),
+  };
+}
+
+/**
+ * Notes still outstanding at a sale (X12, X15). Their holders must be listed
+ * and their ids new. Setups no case settles yet are refused, never skipped.
+ */
+function checkNotesAtASale(
+  notes: Note[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, safeIds: ReadonlySet<string>, withSafeOrCarveOut: boolean, path: string,
+): void {
+  const ids = new Set<string>();
+  notes.forEach((n, i) => {
+    const at = `${path}[${i}]`;
+    if (!holderIds.has(n.holder)) throw new InputError(`${at}.holder`, `unknown holder ${n.holder}`);
+    if (ids.has(n.id) || byId.has(n.id) || safeIds.has(n.id)) throw new InputError(`${at}.id`, `${n.id} is already used`);
+    ids.add(n.id);
+  });
+  if (notes.length === 0) return;
+  if (withSafeOrCarveOut) {
+    throw new UnsupportedTermError("note_with_safe_or_carve_out", "later", path, "A convertible note at a sale alongside a SAFE or a carve-out (X12)");
+  }
+  if (notes.length > 1 && notes.some((n) => !n.valuationCap)) {
+    throw new UnsupportedTermError("several_notes", "later", path, "More than one convertible note at a sale, unless each has a cap (X15)");
+  }
+  const capped = [...byId.values()].some((s) => s.kind === "preferred" && s.participation === "participating_capped");
+  if (capped && notes.some((n) => !n.valuationCap && n.discount.gt(0))) {
+    throw new UnsupportedTermError(
+      "uncapped_note_with_capped_participation", "later", path, "A convertible note with no cap alongside capped participating preferred (X12)",
     );
   }
 }
@@ -482,6 +549,13 @@ export function readExitOn(value: unknown, tableAfter: (eventId: string, path: s
   // X2: dividends accrue to the exit date, so a table with them needs one, on or after every accrual start.
   const exitDate = exit.exit_date == null ? null : text(exit.exit_date, `${path}.exit_date`);
   if (exitDate != null) dayNumber(exitDate, `${path}.exit_date`);
+  // X3: so does a note's interest, from its issue date.
+  for (const n of capTable.unconvertedNotes ?? []) {
+    if (exitDate == null) throw new InputError(`${path}.exit_date`, `${n.id} accrues interest, so the exit needs an exit_date`);
+    if (dayNumber(exitDate, `${path}.exit_date`) < dayNumber(n.issueDate, "issue_date")) {
+      throw new InputError(`${path}.exit_date`, `${exitDate} is before ${n.id} was issued, ${n.issueDate}`);
+    }
+  }
   for (const s of capTable.securities) {
     if (s.kind !== "preferred" || !s.cumulativeDividend) continue;
     if (exitDate == null) throw new InputError(`${path}.exit_date`, `${s.name} accrues cumulative dividends, so the exit needs an exit_date`);

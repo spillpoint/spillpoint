@@ -2,10 +2,10 @@
 // table given in full, or, for a company built from its rounds, on the cap
 // table after one of its own events (C2), which the engine builds from the
 // events (M4e). Millrace's exit runs on the post–Series B table this way,
-// never on a table copied from expected.json. SAFEs still outstanding there
-// are paid at the sale; notes are refused, never left out of the waterfall.
+// never on a table copied from expected.json. SAFEs and notes still
+// outstanding there are paid at the sale.
 
-import { InputError, UnsupportedTermError } from "./errors.ts";
+import { InputError } from "./errors.ts";
 import { object, readExit, readExitOn } from "./input.ts";
 import type { ExitInput } from "./model.ts";
 import { buildCapTables } from "./rounds.ts";
@@ -24,12 +24,7 @@ export function readInputs(value: unknown): ExitInput {
     (eventId, at) => {
       const after = built.find((t) => t.event === eventId);
       if (!after) throw new InputError(at, `no event ${eventId} in inputs.events`);
-      // SAFEs still outstanding are paid at the sale (C8, X1); they come with the table. Notes are refused until M5h.
-      if (after.unconvertedNotes.length > 0) {
-        throw new UnsupportedTermError(
-          "unconverted_note", "M5", at, `Convertible notes still outstanding at exit (X3, X10–X12): ${after.unconvertedNotes.map((n) => n.id).join(", ")}`,
-        );
-      }
+      // SAFEs and notes still outstanding come with the table and are paid at the sale (C8, C9).
       return after.capTable;
     },
     "exit",
