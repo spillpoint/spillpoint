@@ -1058,6 +1058,8 @@ export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEv
     if (seen.has(id)) throw new InputError(`${at}.id`, `event ${id} is listed twice`);
     seen.add(id);
     const type = text(ev.type, `${at}.type`);
+    // Warrants issued (R29) count like options everywhere: built in M5d, refused until then.
+    if (type === "issue_warrants") throw new UnsupportedTermError("warrant", "M5", `${at}.type`, "Warrants issued (R29)");
     const handler = HANDLERS[type];
     if (!handler) throw new InputError(`${at}.type`, `unknown event type ${JSON.stringify(type)}; the engine reads ${Object.keys(HANDLERS).join(", ")}`);
     onlyKnownFields(ev, [...COMMON_EVENT_FIELDS, ...EVENT_FIELDS[type]!], at);

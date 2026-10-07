@@ -45,12 +45,13 @@ def ev_issue_percent(ct, ev):
     """Issue enough shares that the holder owns `percent` of issued stock immediately after.
 
     x / (N + x) = p  =>  x = p·N / (1 − p), rounded down at issuance.
-    N is all issued stock as converted. Options, the pool, and SAFEs are not
-    counted (none existed when Millrace used this).
+    N is all issued stock as converted. Options, warrants (counted like
+    options, R29), the pool, and SAFEs are not counted (none existed when
+    Millrace used this).
     """
     sid = _ensure_security(ct, ev["security"])
     p = parse(ev["percent"]) / 100
-    n = sum(ct.as_converted(s) for s in ct.securities if ct.kind(s) != "option")
+    n = sum(ct.as_converted(s) for s in ct.securities if ct.kind(s) not in ("option", "warrant"))
     x = floor(p * n / (1 - p))
     ct.issue(ev["holder"], sid, x)
     return {"shares_issued": x, "basis_shares": exact(n)}
@@ -95,6 +96,36 @@ def ev_grant_options(ct, ev):
             raise ValueError(f"grant of {n} exceeds unissued pool {ct.unissued_pool}")
         ct.unissued_pool -= n
         ct.issue(g["holder"], sid, n)
+
+
+def warrant_security_id(underlying, strike):
+    return f"warrants_{underlying}_{exact(strike)}"
+
+
+def ev_issue_warrants(ct, ev):
+    """Warrants issued (R29): counted like options everywhere.
+
+    NVCA's "Option" includes warrants, and so does the YC SAFE's "Options".
+    So every count that includes issued options includes them: a round's
+    post-money fully diluted shares and its pool top-up target, a SAFE's
+    Company Capitalization, a note's with_pool and without_pool bases, the
+    pro-rata base and broad-based A. A warrant for preferred counts as
+    converted. They aren't drawn from the option pool. Issuing them never
+    triggers anti-dilution: NVCA's Exempted Securities cover warrants issued
+    to lenders and equipment lessors.
+    """
+    for w in ev["warrants"]:
+        strike = parse(w["strike"])
+        underlying = w["underlying"]
+        if underlying != "common" and (underlying not in ct.securities or ct.kind(underlying) != "preferred"):
+            raise ValueError(f"warrants for {underlying}: not common or an issued preferred series")
+        sid = warrant_security_id(underlying, strike)
+        if sid not in ct.securities:
+            what = "Common Stock" if underlying == "common" else ct.securities[underlying]["name"]
+            ct.add_security(
+                {"id": sid, "name": f"Warrants for {what} (${exact(strike)} strike)", "kind": "warrant", "strike": strike, "underlying": underlying}
+            )
+        ct.issue(w["holder"], sid, int(parse(w["shares"])))
 
 
 def _anti_dilution_a(ct, sid, rule, include_pool_in_a):
@@ -637,6 +668,7 @@ def ev_priced_round(ct, ev):
 
 HANDLERS = {
     "issue": ev_issue,
+    "issue_warrants": ev_issue_warrants,
     "issue_percent": ev_issue_percent,
     "safes": ev_safes,
     "notes": ev_notes,

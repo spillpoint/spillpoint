@@ -18,6 +18,7 @@ Method:
 
 from fractions import Fraction
 
+from .model import carve_out_pool
 from .num import usd, usd_price, exact, decimal, count
 
 BISECT_WIDTH = Fraction(1, 1000)  # dollars
@@ -107,12 +108,45 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
     return xs.pop()
 
 
+def curved(wf, sig):
+    """Whether payouts curve on the side with this signature (X7)."""
+    return any(wf.curved(flags) for _, flags in sig)
+
+
+def _kink(wf, bracket, sides, pts_left, pts_right):
+    """Where the payout formula changes when a side curves (X7).
+
+    A curve can't be fitted with a line, but what changes there still moves in
+    straight lines: the carve-out's tier edges are fixed exit values, and what
+    is left for a tier less its claims is a straight line within one of the
+    carve-out's tiers. So the exact point comes from those.
+    """
+    (bits_l, flags_l), = sides[0]
+    (bits_r, flags_r), = sides[1]
+    lo, hi = bracket
+    if bits_l != bits_r:
+        raise ValueError(f"a decision changes on a curved stretch near {decimal(lo, 2)}, which the reference doesn't handle yet")
+    xs = set()
+    if flags_l[2] != flags_r[2]:
+        xs.update(t["to"] for t in wf.ct.carve_out["tiers"] if t["to"] is not None and lo - 1 <= t["to"] <= hi + 1)
+    for i, (u, v) in enumerate(zip(flags_l[0], flags_r[0])):
+        if u != v:
+            bits, (x0, x1) = (bits_l, pts_left) if u is False else (bits_r, pts_right)
+            m, c = _line(wf.run(x0, bits, tier_margin=i), wf.run(x1, bits, tier_margin=i), x0, x1)
+            xs.add(-c / m)
+    if len(xs) != 1:
+        raise ValueError(f"cannot place the change on a curve near {decimal(lo, 2)}: {sorted(xs)}")
+    return xs.pop()
+
+
 def _locate(wf, a, b):
     """Exact breakpoint between a and b, b − a tiny. Returns (x, left signature, right signature, jumps)."""
     sl, (l0, l1) = _side(wf, a, -1)
     sr, (r0, r1) = _side(wf, b, +1)
     if sl == sr:
         return None
+    if curved(wf, sl) or curved(wf, sr):
+        return _kink(wf, (a, b), (sl, sr), (l0, l1), (r0, r1)), sl, sr, False
     ml, cl = _affine_fit(wf, l0, l1)
     mr, cr = _affine_fit(wf, r0, r1)
     if ml == mr and cl == cr:
@@ -170,10 +204,19 @@ def find(wf, lo, hi, step, extra=()):
 
 
 def _check_affine(wf, lo, hi, xs):
-    """Between consecutive breakpoints, interior points must lie on one line."""
+    """Between consecutive breakpoints, interior points must lie on one line.
+
+    On a curved stretch (X7) they can't, so there the check is that nothing
+    which sets the formula changes: the signature is the same throughout.
+    """
     pts = [lo] + [x for x in xs if lo < x < hi] + [hi]
     for p, q in zip(pts, pts[1:]):
         ts = (Fraction(1, 7), Fraction(1, 3), Fraction(1, 2), Fraction(2, 3), Fraction(5, 6))
+        mid = wf.signature(p + (q - p) / 2)
+        if curved(wf, mid):
+            if any(wf.signature(p + (q - p) * t) != mid for t in ts + tuple(Fraction(k, 50) for k in range(1, 50))):
+                raise MissedBreakpoint(f"the formula changes on the curve between {decimal(p, 2)} and {decimal(q, 2)}")
+            continue
         vals = [(p + (q - p) * t, wf.payout_vector(p + (q - p) * t)) for t in ts]
         (x0, f0), (x1, f1) = vals[0], vals[1]
         for x, fx in vals[2:]:
@@ -206,6 +249,9 @@ def reasons(wf, x, sa, sb, jumps=False):
     out = []
     outcome = wf.evaluate(x)[0]
     price = outcome["common_price"]
+
+    def carve_out_claim(e):
+        return carve_out_pool(ct.carve_out, e)[0]
     da = dict(zip(wf.players, bits_a))
     db = dict(zip(wf.players, bits_b))
     converted_b = {s: db[p] for p in wf.converters for s in wf.members[p]}
@@ -262,7 +308,13 @@ def reasons(wf, x, sa, sb, jumps=False):
                 if db[pid]:
                     if sec["participation"] == "non_participating":
                         keep = f"its {exact(sec['preference_multiple'])}x preference of {usd(pref_b(pid))}"
-                        if wf.dividend[pid]:
+                        if wf.dividend[pid] and wf.dividends_paid_on_conversion(pid):
+                            keep = (
+                                f"its {exact(sec['preference_multiple'])}x preference of {usd(pref_b(pid) - wf.dividend[pid])}; "
+                                f"its accrued dividends, {usd(wf.dividend[pid])}, are paid in its tier either way, "
+                                f"since they are paid on conversion"
+                            )
+                        elif wf.dividend[pid]:
                             keep = (
                                 f"its {exact(sec['preference_multiple'])}x preference plus accrued dividends, "
                                 f"{usd(pref_b(pid))} (dividends are forfeited on conversion)"
@@ -313,6 +365,10 @@ def reasons(wf, x, sa, sb, jumps=False):
 
     def tier_names(i, tier):
         names = [_name(ct, s) for s in tier if not converted_b.get(s, False)]
+        names += [f"{_name(ct, s)} (its accrued dividends, paid on conversion)" for s in tier
+                  if converted_b.get(s, False) and wf.dividends_paid_on_conversion(s) and wf.dividend[s]]
+        if i == 0 and wf.carve_out_alongside():
+            names.append("the management carve-out")
         names += [f"{ct.holders[f['holder']]}'s SAFE (its Cash-Out Amount)" for f in tier_safes(i)]
         return names
 
@@ -438,7 +494,9 @@ def reasons(wf, x, sa, sb, jumps=False):
 
     for i, tier in enumerate(ct.seniority):
         if tiers_a[i] is False and tiers_b[i] is True:
-            claim = sum(pref_b(s) for s in tier if not converted_b.get(s, False))
+            claim = sum(wf.tier_claim(s, {s: pref_b(s)}, converted_b) for s in tier)
+            if i == 0 and wf.carve_out_alongside():
+                claim += carve_out_claim(x)
             claim += sum((f["purchase_amount"] for f in tier_safes(i)), Fraction(0))
             unpaid_after = [j for j in range(i + 1, len(ct.seniority)) if tiers_b[j] is not None]
             nxt = (
@@ -451,26 +509,37 @@ def reasons(wf, x, sa, sb, jumps=False):
                 f"The preference tier {names} is fully paid ({usd(claim)}). "
                 f"Above this exit value, the next dollar goes to {nxt}."
             )
-            ids = list(tier) + [f["id"] for f in tier_safes(i)]
+            ids = list(tier) + (["carve_out"] if i == 0 and wf.carve_out_alongside() else []) + [f["id"] for f in tier_safes(i)]
             out.append({"code": "tier_fully_paid", "tier": i + 1, "securities": ids, "text": text})
 
     if band_a != band_b and ct.carve_out:
         tiers = ct.carve_out["tiers"]
-        pool = wf.run(x, bits_b)[0]["carve_out"]
+        pool = carve_out_claim(x)
+        paid = wf.run(x, bits_b)[0]["carve_out"]
         ended = tiers[band_a]
         span = f"{usd(ended['from'])} to {usd(ended['to'])}" if ended["to"] is not None else f"above {usd(ended['from'])}"
+        # Alongside preferences (X7), the carve-out is a claim sharing the senior tier, which may not be paid in full.
+        short = wf.carve_out_alongside() and paid != pool
         if band_b < len(tiers):
             nxt = tiers[band_b]
+            grows = "its claim grows by" if short else "it takes"
             more = (
-                f"From here it takes {decimal(nxt['rate'] * 100, 0)}% of each further dollar"
+                f"From here {grows} {decimal(nxt['rate'] * 100, 0)}% of each further dollar"
                 + (f", up to {usd(nxt['to'])}." if nxt["to"] is not None else ".")
             )
         else:
             more = f"That was its last tier: the carve-out stays at {usd(pool)} and takes nothing from further dollars."
-        text = (
-            f"The management carve-out's {decimal(ended['rate'] * 100, 0)}% tier (on exit value from {span}) ends here, "
-            f"with the carve-out at {usd(pool)}. {more}"
-        )
+        if short:
+            text = (
+                f"The management carve-out's {decimal(ended['rate'] * 100, 0)}% tier (on exit value from {span}) ends here, "
+                f"with its claim at {usd(pool)}. Paid alongside the preferences, it shares the senior tier pro rata by claim, "
+                f"and that tier isn't paid in full here, so it receives {usd(paid)}. {more}"
+            )
+        else:
+            text = (
+                f"The management carve-out's {decimal(ended['rate'] * 100, 0)}% tier (on exit value from {span}) ends here, "
+                f"with the carve-out at {usd(pool)}. {more}"
+            )
         out.append({"code": "carve_out_tier", "text": text})
 
     for sid in sorted(set(capped_b) - set(capped_a)):
@@ -481,6 +550,20 @@ def reasons(wf, x, sa, sb, jumps=False):
             f"Above this exit value its payout stays flat until converting to common pays more."
         )
         out.append({"code": "cap_reached", "security": sid, "text": text})
+
+    below, above = curved(wf, sa), curved(wf, sb)
+    if below or above:
+        side = "on both sides of" if below and above else ("just below" if below else "just above")
+        out.append(
+            {
+                "code": "payouts_curve",
+                "text": (
+                    f"Payouts curve {side} this exit value instead of following straight lines. The management carve-out "
+                    f"shares the senior preference tier pro rata by claim while that tier isn't paid in full, and its claim "
+                    f"grows with the exit value. On a curve, a breakpoint is where the formula changes."
+                ),
+            }
+        )
 
     if jumps:
         outs = wf.evaluate(x)

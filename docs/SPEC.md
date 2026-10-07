@@ -95,8 +95,8 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 6. Two non-participating series in one tier with different per-share preferences: per-series conversion vs. forced class conversion. 6d: a conversion group whose pivotal voter is indifferent over a range, then prefers converting (E13).
 7. Options at several strikes: in-the-money thresholds and strike cash.
 8. A warrant for preferred.
-9. Cumulative dividends: they accrue, then are forfeited on conversion.
-10. A management carve-out.
+9. Cumulative dividends: they accrue, then are forfeited on conversion. 9b compounds them; 9c pays them on conversion.
+10. A management carve-out. 10b pays it alongside the preferences.
 11. An earnout: a closing payment plus one later payment.
 12. An unconverted post-money SAFE at exit. 12b adds a discount to the cap; 12c has a discount and no cap; 12d sits alongside two tiers of preferred, and 12e ranks its Cash-Out Amount with the senior one. 12f has two SAFEs; 12g is a pre-money SAFE, built from rounds; 12h is an MFN SAFE.
 13. A convertible note at exit, before conversion, with its cap's base counted with the pool (13a), without it (13b), and as common only (13c). 13d adds a discount to the cap; 13e has a discount and no cap; 13f sits alongside preferred. 13g has two notes.
@@ -108,5 +108,6 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 19. A convertible note converting in a priced round, with its cap's base counted with the pool (19a), without it (19b), and as common only (19c).
 20. A pre-money SAFE converting in a priced round.
 21. A note and a pre-money SAFE converting in the same round.
+22. Warrants issued, counted like options in a priced round's price, its pool top-up and a converting SAFE's Company Capitalization.
 
-Cases 14–21 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
+Cases 14–22 are round cases, so their expected outputs are cap tables. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.

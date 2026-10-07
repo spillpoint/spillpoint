@@ -37,7 +37,11 @@ Each SAFE gets the greater of its Cash-Out Amount, its purchase amount, or its C
 
 ## At $9,592,105.26 the payouts jump
 
-When X converts, the Liquidity Capitalization grows from 10,857,142.86 to 12,258,064.52, because it now counts X's own shares. Y's shares are 1/8 of that count, so they grow too, from 1,357,142.86 to 1,532,258.06, though Y has decided nothing new.
+**Why Y does better when X converts: each post-money SAFE keeps its fixed share of a larger Liquidity Capitalization.**
+- **Each SAFE's share is fixed.** A converting SAFE always gets its purchase amount ÷ its cap of the count: Y 1/8, X 1/10.
+- **X converting makes the count larger.** Its own shares join it, so it grows from 10,857,142.86 to 12,258,064.52.
+- **So Y gets more shares.** One eighth of the larger count is 1,532,258.06 shares instead of 1,357,142.86, though Y has decided nothing new.
+- **Common pays for it.** The founders' 9,000,000 shares are a smaller part of the larger total.
 
 - **X:** gets $1,000,000 either way. At this exit value it is indifferent.
 - **Y:** jumps from $1,125,862.07, with X taking cash, to $1,250,000.00, with X converting.
@@ -45,7 +49,7 @@ When X converts, the Liquidity Capitalization grows from 10,857,142.86 to 12,258
 
 **X doesn't choose for Y.** At exactly $9,592,105.26 it takes its Cash-Out Amount: a SAFE takes its Conversion Amount only when that strictly pays more (`ASSUMPTIONS.md` X16). So the outcome from below holds there, and the jump happens just above it, as for a class vote (E13).
 
-This is how the YC text works when two post-money SAFEs are both outstanding at a sale. Each one's Liquidity Price falls as more SAFEs convert, so a SAFE gains when another converts.
+This is how the YC text works when two post-money SAFEs are both outstanding at a sale. Each one's Liquidity Price, its cap ÷ the count, falls as more SAFEs convert, so a converting SAFE gains when another converts.
 
 ## Breakpoints
 

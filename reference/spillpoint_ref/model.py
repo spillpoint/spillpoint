@@ -357,8 +357,8 @@ def group_to_json(g):
     return {"series": list(g["series"]), "vote_threshold_percent": exact(g["threshold"] * 100), "vote_rule": g["rule"]}
 
 
-DIVIDEND_METHODS = ("simple",)
-ON_CONVERSION = ("forfeited",)
+DIVIDEND_METHODS = ("simple", "compounding")
+ON_CONVERSION = ("forfeited", "paid")
 
 
 def dividend_from_json(d):
@@ -372,6 +372,9 @@ def dividend_from_json(d):
     on_conv = d.get("on_conversion", "forfeited")
     if method not in DIVIDEND_METHODS:
         raise ValueError(f"dividend method {method} is not supported by the reference yet")
+    if on_conv == "added_to_conversion":
+        # X5's other reading: (original issue price + accrued) ÷ conversion price converts. Refused.
+        raise ValueError("accrued dividends added to what converts (X5's other reading) are not supported")
     if on_conv not in ON_CONVERSION:
         raise ValueError(f"dividends on conversion '{on_conv}' are not supported by the reference yet")
     return {
@@ -391,12 +394,33 @@ def dividend_to_json(d):
     }
 
 
+def anniversary(start, years):
+    """The date `years` after start. A 29 February start has its anniversaries on 28 February in other years (X5)."""
+    try:
+        return start.replace(year=start.year + years)
+    except ValueError:
+        return start.replace(year=start.year + years, day=28)
+
+
+def compounding_periods(start, exit_date):
+    """Full years from the accrual start to the exit date, on its anniversaries, and the days after the last one."""
+    years = 0
+    while anniversary(start, years + 1) <= exit_date:
+        years += 1
+    return years, (exit_date - anniversary(start, years)).days
+
+
 def accrued_dividend_per_share(sec, exit_date):
     """Cumulative dividend accrued and unpaid per share at the exit date.
 
-    Simple interest on the original issue price, Actual/365: the actual number
-    of days from the accrual start to the exit date (leap days count), divided
-    by 365.
+    Simple (X2): interest on the original issue price, Actual/365: the actual
+    number of days from the accrual start to the exit date (leap days count),
+    divided by 365.
+
+    Compounding (X5): annually, on the accrual start's anniversaries. Each full
+    year multiplies the original issue price plus what has accrued by
+    (1 + rate), whether it has 365 or 366 days; the part-year after the last
+    anniversary is simple, Actual/365, on the compounded amount.
     """
     d = sec.get("cumulative_dividend")
     if not d:
@@ -406,10 +430,14 @@ def accrued_dividend_per_share(sec, exit_date):
     days = (exit_date - d["accrual_start"]).days
     if days < 0:
         raise ValueError(f"exit date is before {sec['id']}'s dividend accrual start")
-    return sec["original_issue_price"] * d["rate"] * Fraction(days, 365)
+    oip = sec["original_issue_price"]
+    if d["method"] == "compounding":
+        years, stub = compounding_periods(d["accrual_start"], exit_date)
+        return oip * (1 + d["rate"]) ** years * (1 + d["rate"] * Fraction(stub, 365)) - oip
+    return oip * d["rate"] * Fraction(days, 365)
 
 
-CARVE_OUT_TIMING = ("before_preferences",)
+CARVE_OUT_TIMING = ("before_preferences", "alongside_preferences")
 
 
 def carve_out_from_json(c):
@@ -417,7 +445,9 @@ def carve_out_from_json(c):
 
     Tiers are marginal, like tax brackets: each tier's percentage applies only
     to the slice of exit value inside it. A flat carve-out is one tier from 0
-    with no upper end. It is paid before all preferences (SPEC default).
+    with no upper end. It is paid before all preferences (SPEC default), or
+    alongside them (the SPEC toggle, X7): in the most senior tier, pro rata by
+    claim.
     """
     if not c:
         return None

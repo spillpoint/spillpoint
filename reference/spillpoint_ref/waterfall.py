@@ -111,7 +111,8 @@ class Waterfall:
         # the preference at 1x: the preference multiple applies to the
         # original issue price only (NVCA: "Original Issue Price, plus any
         # Accruing Dividends accrued but unpaid"). A series that converts
-        # forfeits them.
+        # forfeits them, or, when they are paid on conversion (X5), keeps a
+        # claim for them in its own tier.
         self.dividend = {
             sid: self.shares[sid] * accrued_dividend_per_share(sec[sid], exit_date) for sid in ct.preferred_ids()
         }
@@ -150,6 +151,31 @@ class Waterfall:
                     if s in members:
                         weights[h] = weights.get(h, ZERO) + n * self.ratio[s]
                 self.voters[pid] = weights
+
+    def dividends_paid_on_conversion(self, sid):
+        d = self.ct.securities[sid].get("cumulative_dividend")
+        return bool(d) and d["on_conversion"] == "paid"
+
+    def tier_claim(self, sid, pref, converted):
+        """A series' claim in its tier: its preference, or, once converted, only dividends paid on conversion (X5)."""
+        if not converted.get(sid, False):
+            return pref[sid]
+        return self.dividend[sid] if self.dividends_paid_on_conversion(sid) else ZERO
+
+    def carve_out_alongside(self):
+        """A carve-out paid alongside preferences joins the most senior tier (X7); with no preferred it is paid first."""
+        return bool(self.ct.carve_out) and self.ct.carve_out["timing"] == "alongside_preferences" and bool(self.ct.seniority)
+
+    def curved(self, flags):
+        """Whether payouts curve here (X7): a carve-out alongside preferences, in a senior tier not paid in full.
+
+        Its claim grows with the exit value while it shares the tier pro rata,
+        so its share, exit value × claim ÷ (claim + the preferences there), is
+        not a straight line. Past the carve-out's last tier its claim is fixed,
+        and the payouts are straight again.
+        """
+        tier_full, _, band, _, _ = flags
+        return self.carve_out_alongside() and tier_full[0] is False and band < len(self.ct.carve_out["tiers"])
 
     def holder_group_payout(self, total, pid, holder):
         """What one holder receives on its shares of a conversion group's series."""
@@ -308,14 +334,15 @@ class Waterfall:
                 units[u] += self.shares[w]
         return units
 
-    def run(self, exit_value, bits, room_of=None):
+    def run(self, exit_value, bits, room_of=None, tier_margin=None):
         """Waterfall for one fixed set of decisions.
 
         Returns (per-security totals, common price per share, state flags).
         Option and warrant totals are net of strike. A SAFE or note with no cap
         set to convert where it can't is paid its cash-out or repayment (X9,
         X12). With room_of, returns that instrument's room to convert instead:
-        (1 − discount) × what is left for the residual, less its amount.
+        (1 − discount) × what is left for the residual, less its amount. With
+        tier_margin, returns what is left for that tier less its claims.
         """
         ct = self.ct
         sec = ct.securities
@@ -357,12 +384,18 @@ class Waterfall:
             remaining -= paid
 
         # Management carve-out: a percentage of the exit value (before strike
-        # cash), paid to listed people before any preference.
+        # cash), paid to listed people before any preference (X7). Alongside
+        # preferences (the SPEC toggle), it is a claim in the most senior tier
+        # instead, shared pro rata with the preferences there.
         band = None
+        carve_in_tier = None
         if ct.carve_out:
             pool, band = carve_out_pool(ct.carve_out, exit_value)
-            total[CARVE_OUT] = pool
-            remaining -= pool
+            if self.carve_out_alongside():
+                carve_in_tier = pool
+            else:
+                total[CARVE_OUT] = pool
+                remaining -= pool
 
         # Unconverted SAFE at a Liquidity Event (YC): it gets the greater of
         # its Cash-Out Amount (the purchase amount, paid ahead of common) or
@@ -390,10 +423,15 @@ class Waterfall:
         # passu: a shortfall is shared pro rata by preference amount.
         tier_full = []
         for i, tier in enumerate(ct.seniority):
-            claims = {s: pref[s] for s in tier if not converted.get(s, False) and pref[s] > 0}
+            claims = {s: self.tier_claim(s, pref, converted) for s in tier}
+            claims = {s: c for s, c in claims.items() if c > 0}
+            if i == 0 and carve_in_tier:
+                claims[CARVE_OUT] = carve_in_tier
             for f in safe_in_tier.get(i, []):
                 claims[f["id"]] = f["purchase_amount"]
             need = sum(claims.values(), ZERO)
+            if tier_margin == i:
+                return remaining - need
             if need == 0:
                 tier_full.append(None)
                 continue

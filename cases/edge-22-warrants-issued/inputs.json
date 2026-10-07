@@ -1,0 +1,126 @@
+{
+  "case": "edge-22-warrants-issued",
+  "description": "A warrant issued between the pool and the Series A: Lender L gets warrants for 200,000 common shares at $0.50, not drawn from the option pool. Warrants count like options everywhere (ASSUMPTIONS R29): here in the Series A's post-money fully diluted shares, its pool top-up target, and the converting SAFE's Company Capitalization. Issuing them triggers no anti-dilution.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "lender_l",
+      "name": "Lender L"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 3000000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "10"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 400000,
+          "strike": "0.1"
+        }
+      ]
+    },
+    {
+      "id": "warrants",
+      "date": "2022-09-01",
+      "type": "issue_warrants",
+      "warrants": [
+        {
+          "holder": "lender_l",
+          "shares": 200000,
+          "strike": "0.5",
+          "underlying": "common"
+        }
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2023-01-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-01-01",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "5000000"
+        }
+      ],
+      "convert_safes": true,
+      "pool_target_unissued_percent_post": "10",
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow"
+        ]
+      ]
+    }
+  ]
+}
