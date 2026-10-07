@@ -88,6 +88,23 @@ export interface ConversionGroup {
   voteRule: "more_than" | "at_least";
 }
 
+/**
+ * A management carve-out (C6): a percentage of the exit value, before any
+ * strike cash, paid to listed people (X7).
+ */
+export interface CarveOut {
+  /** Before all preferences (the SPEC default), or alongside them: in the most senior tier, pro rata by claim (X7). */
+  timing: "before_preferences" | "alongside_preferences";
+  /**
+   * Marginal, like tax brackets (X6): each tier's rate applies only to the
+   * slice of exit value inside it. Contiguous from 0; the last may have no
+   * upper end. Past the last end the carve-out stops growing.
+   */
+  tiers: { from: D; to: D | null; rate: D }[];
+  /** Who gets it, by fixed shares adding up to 1. A recipient need hold no equity. */
+  allocation: { holder: string; share: D }[];
+}
+
 /** One holder's shares of one security (E9: payouts are reported per holder × security). */
 export interface Position {
   holder: string;
@@ -104,6 +121,8 @@ export interface CapTable {
   positions: Position[];
   /** Never participates in an exit (SPEC). */
   unissuedPool: D;
+  /** Optional, so 0.1.0 code that builds a cap table keeps working. */
+  carveOut?: CarveOut | null;
 }
 
 /** What the engine needs to run an exit: the cap table, the range to analyse, and the exit values to report. */

@@ -132,10 +132,16 @@ describe("a file that can't be opened", () => {
 
   it("uses a term the engine doesn't model yet, and says when it will", () => {
     const file = good();
-    file.cap_table.carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "ana", percent: "100" }] };
+    file.cap_table.unconverted_safes = [{ id: "safe_z", holder: "ana", purchase_amount: "100000", post_money_cap: "10000000", discount: "0" }];
     expect(refusal(file)).toBe(
-      "Its cap table can't be used. file.cap_table.carve_out: Management carve-outs. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
+      "Its cap table can't be used. file.cap_table.unconverted_safes: SAFEs still outstanding at exit. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
     );
+  });
+
+  it("has a management carve-out, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
+    const file = good();
+    file.cap_table.carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "ana", percent: "100" }] };
+    expect(refusal(file)).toBe("It has a management carve-out, which this page doesn't show yet. It won't open a cap table it can't show in full.");
   });
 
   it("has warrants, which the engine pays but the page doesn't show yet: refused, never shown as something else", () => {

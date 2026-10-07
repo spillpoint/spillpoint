@@ -4,7 +4,9 @@
 // are exercised, this pays out one exit value:
 //   1. Exercised options and warrants pay their strike, which joins the
 //      proceeds (E3). Shares from an exercised warrant for a preferred series
-//      become shares of that series (E12).
+//      become shares of that series (E12). A management carve-out, a
+//      percentage of the exit value, is paid before the preferences, or
+//      alongside them in the most senior tier (X6, X7).
 //   2. Preference tiers are paid top-down; a tier that can't be paid in full
 //      is split pro rata by preference amount (pari passu). A preference
 //      includes accrued cumulative dividends (X4); a series that converts
@@ -22,7 +24,33 @@ import type { Decimal } from "decimal.js";
 import { ZERO, moreThan } from "./decimal.ts";
 import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
-import type { CapTable, OptionClass, PreferredSeries, WarrantClass } from "./model.ts";
+import type { CapTable, CarveOut, OptionClass, PreferredSeries, WarrantClass } from "./model.ts";
+
+/** The security payouts to a carve-out's recipients are reported under (C6). */
+export const CARVE_OUT = "carve_out";
+
+/** The carve-out at one exit value. */
+export interface CarveOutHere {
+  /** What the tiers give at this exit value: paid in full before the preferences, or the claim it makes alongside them. */
+  claim: Decimal;
+  paid: Decimal;
+  /** Which tier the exit value is in; tiers.length once past the last one's upper end, where the carve-out stops growing (X6). */
+  band: number;
+}
+
+/**
+ * X6: marginal tiers. Each contributes its rate × the part of the exit value
+ * (before strike cash, X7) inside it. Also the tier the exit value is in.
+ */
+export function carveOutAt(c: CarveOut, exitValue: Decimal): { claim: Decimal; band: number } {
+  let claim = ZERO;
+  for (const t of c.tiers) {
+    const top = t.to === null || exitValue.lt(t.to) ? exitValue : t.to;
+    if (top.gt(t.from)) claim = claim.plus(top.minus(t.from).times(t.rate));
+  }
+  const band = c.tiers.findIndex((t) => t.to === null || exitValue.lt(t.to));
+  return { claim, band: band < 0 ? c.tiers.length : band };
+}
 
 /** Which preferred series convert to common, and which option classes (one per strike, E4) and warrants are exercised. */
 export interface Decisions {
@@ -75,10 +103,19 @@ export interface Payout {
   bySecurity: Map<string, Decimal>;
   /** Each preferred series as it stands here, with any exercised warrant shares for it. */
   series: Map<string, SeriesHere>;
+  /** The carve-out here, if the cap table has one. */
+  carveOut: CarveOutHere | null;
+  /**
+   * Payouts curve here (X17): a carve-out paid alongside the preferences
+   * shares a tier that isn't paid in full, and its claim grows with the exit
+   * value, so its share, exit value × claim ÷ (claim + the preferences
+   * there), isn't a straight line.
+   */
+  curved: boolean;
   lines: PayoutLine[];
   holderTotals: Map<string, Decimal>;
   classTotals: Map<string, Decimal>;
-  /** Tiers with a claim, most senior first. */
+  /** Tiers with a claim, most senior first. A carve-out alongside the preferences is listed in its tier as "carve_out". */
   tiers: TierPayment[];
   /** Capped participating series held at their cap. */
   atCap: string[];
@@ -171,6 +208,18 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   for (const id of decisions.exercised) strikeCash = strikeCash.plus(pc.shares.get(id)!.times(strike(id)));
   let remaining = exitValue.plus(strikeCash);
 
+  // X7: the carve-out, a percentage of the exit value before any strike cash.
+  // Before the preferences it is paid first. Alongside them it claims a share
+  // of the most senior tier, pro rata with the preferences there; with no
+  // preferred, that means first too.
+  const carve = capTable.carveOut ? carveOutAt(capTable.carveOut, exitValue) : null;
+  const carveInTier = carve !== null && capTable.carveOut!.timing === "alongside_preferences" && capTable.seniority.length > 0;
+  let carvePaid = ZERO;
+  if (carve && !carveInTier) {
+    carvePaid = remaining.lt(carve.claim) ? remaining : carve.claim;
+    remaining = remaining.minus(carvePaid);
+  }
+
   // E12: an exercised warrant for a series adds its shares to the series. They
   // carry the series' per-share preference (its original issue price × the
   // multiple, not the strike), participation, cap and conversion.
@@ -197,12 +246,16 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   const tiers: TierPayment[] = [];
   for (const [index, tier] of capTable.seniority.entries()) {
     // A converted series claims only dividends paid on conversion (X5), where they ranked.
-    const claimants = tier.filter((sid) => series.get(sid)!.claim.gt(0));
-    const claim = claimants.reduce((sum, sid) => sum.plus(series.get(sid)!.claim), ZERO);
+    const claims = new Map(tier.filter((sid) => series.get(sid)!.claim.gt(0)).map((sid) => [sid, series.get(sid)!.claim]));
+    if (index === 0 && carveInTier && carve!.claim.gt(0)) claims.set(CARVE_OUT, carve!.claim);
+    const claim = [...claims.values()].reduce((sum, c) => sum.plus(c), ZERO);
     if (claim.isZero()) continue;
     const paid = remaining.lt(claim) ? remaining : claim;
-    for (const sid of claimants) add(sid, paid.times(series.get(sid)!.claim).div(claim));
-    tiers.push({ index, series: claimants, claim, paid, full: remaining.gte(claim) });
+    for (const [id, c] of claims) {
+      if (id === CARVE_OUT) carvePaid = paid.times(c).div(claim);
+      else add(id, paid.times(c).div(claim));
+    }
+    tiers.push({ index, series: [...claims.keys()], claim, paid, full: remaining.gte(claim) });
     remaining = remaining.minus(paid);
   }
 
@@ -262,13 +315,23 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   const lines: PayoutLine[] = [];
   const holderTotals = new Map<string, Decimal>();
   const classTotals = new Map<string, Decimal>();
+  const addLine = (holder: string, security: string, amount: Decimal) => {
+    lines.push({ holder, security, amount });
+    holderTotals.set(holder, (holderTotals.get(holder) ?? ZERO).plus(amount));
+    classTotals.set(security, (classTotals.get(security) ?? ZERO).plus(amount));
+  };
   for (const p of capTable.positions) {
     if (p.shares.isZero()) continue;
-    const amount = total.get(p.security)!.times(p.shares).div(pc.shares.get(p.security)!);
-    lines.push({ holder: p.holder, security: p.security, amount });
-    holderTotals.set(p.holder, (holderTotals.get(p.holder) ?? ZERO).plus(amount));
-    classTotals.set(p.security, (classTotals.get(p.security) ?? ZERO).plus(amount));
+    addLine(p.holder, p.security, total.get(p.security)!.times(p.shares).div(pc.shares.get(p.security)!));
   }
+  // C6: each recipient gets a holder × carve-out line, its fixed share of what the carve-out is paid.
+  if (carve) {
+    total.set(CARVE_OUT, carvePaid);
+    for (const a of capTable.carveOut!.allocation) addLine(a.holder, CARVE_OUT, carvePaid.times(a.share));
+  }
+  const firstTier = tiers.find((t) => t.index === 0);
+  const curved =
+    carveInTier && firstTier !== undefined && !firstTier.full && firstTier.series.includes(CARVE_OUT) && carve!.band < capTable.carveOut!.tiers.length && capTable.carveOut!.tiers[carve!.band]!.rate.gt(0);
 
   return {
     exitValue,
@@ -277,6 +340,8 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     commonPrice: price,
     bySecurity: total,
     series,
+    carveOut: carve ? { claim: carve.claim, paid: carvePaid, band: carve.band } : null,
+    curved,
     lines,
     holderTotals,
     classTotals,

@@ -1,6 +1,6 @@
 # spillpoint
 
-Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options and warrants. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
+Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options, warrants and management carve-outs. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
 It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play.
 
@@ -223,6 +223,9 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
   - **Simple,** Actual/365 on the original issue price, or **compounding** annually on the accrual start's anniversaries, with the part-year after the last one simple.
   - **On conversion** they are forfeited, or, under a toggle, paid in cash in the series' own tier.
   - **The exit needs an `exit_date`,** the day they accrue to.
+- **Management carve-outs** *(0.2.0)*: a percentage of the exit value, in marginal tiers like tax brackets, paid to listed people under the security `"carve_out"`.
+  - **Before the preferences,** the default.
+  - **Alongside them,** sharing the most senior tier pro rata by claim. While that tier isn't paid in full, payouts curve. A breakpoint on a curve is where the formula changes, and the breakpoints either side of a curved stretch say so (`curveBelow`, `curveAbove`).
 - **Options at any number of strikes,** exercised once they're in the money. The strike money joins the proceeds, and option payouts are reported net of strike.
 - **Warrants** *(0.2.0)*, for common or for a preferred series:
   - **Each warrant decides for itself** whether to exercise: once what it buys is worth more than the strike.
@@ -232,6 +235,7 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
   - a tier paid in full
   - a cap reached
   - options or a warrant coming into the money
+  - a carve-out's tier ending *(0.2.0)*
   - a series or a group converting
   - payouts jumping when a group's vote flips
 
@@ -278,7 +282,6 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
 **Not modeled yet** (milestone `"M5"`):
-- management carve-outs
 - escrow and earnouts
 - SAFEs and convertible notes still outstanding at a sale
 
@@ -297,6 +300,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
   - optional `conversion_groups`
   - `positions`: shares held, per holder and security
   - optional `unissued_pool`
+  - optional `carve_out` *(0.2.0)*: `timing` (`before_preferences` or `alongside_preferences`), `tiers` (`from`, `to`, `percent`) and `allocation` (`holder`, `percent`)
 - `range`: the exit values to analyse
 - `exit_values`: the points to report
 - `exit_date`, as `YYYY-MM-DD`: needed when a series has cumulative dividends *(0.2.0)*
@@ -336,7 +340,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps. `exitDate` is needed only when a series has cumulative dividends. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
-| `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |
+| `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |
 | `D`, `parseExact`, `toCents` | Make and format the engine's Decimals. |
 
 **Errors:**
