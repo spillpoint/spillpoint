@@ -18,9 +18,12 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
 
 /**
  * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,
- * case 9's dividends since M5e, and case 23's sale after a round with dividends (R30) since M5e3.
+ * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, and case 10's
+ * carve-outs since M5f.
  */
-export const EXIT_CASES: string[] = ALL_CASES.filter((name) => /^edge-0[1-9]/.test(name) || name === "edge-23-dividends-from-a-round" || name === "millrace");
+export const EXIT_CASES: string[] = ALL_CASES.filter(
+  (name) => /^edge-(0[1-9]|10)/.test(name) || name === "edge-23-dividends-from-a-round" || name === "millrace",
+);
 
 export function readCaseFile(name: string, file: "inputs.json" | "expected.json"): unknown {
   return JSON.parse(readFileSync(join(CASES_DIR, name, file), "utf8"));

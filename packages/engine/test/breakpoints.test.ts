@@ -1,4 +1,4 @@
-// M2d: the breakpoint finder. For cases 1–9 and Millrace it must find every
+// M2d: the breakpoint finder. For every exit case the engine runs it must find every
 // breakpoint expected.json lists, each within $0.01 of its exact value, with
 // the same reason codes, the same subjects (which series, tier or option
 // class), and the same jump flags (E13). The wording of the reasons is the
@@ -15,6 +15,8 @@ interface ExpectedBreakpoint {
   exit_value: string;
   exact: string;
   payouts_jump?: boolean;
+  payouts_curve_below?: boolean;
+  payouts_curve_above?: boolean;
   reasons: { code: string; security?: string; securities?: string[] }[];
 }
 
@@ -44,10 +46,11 @@ describe.each(EXIT_CASES)("%s", (name) => {
     });
   });
 
-  it("gives the same reasons and jump flags", () => {
+  it("gives the same reasons, jump flags and curve flags", () => {
     found.forEach((b, i) => {
       expect(engineReasons(b), expected[i]!.exit_value).toEqual(expectedReasons(expected[i]!));
       expect(b.jumps, expected[i]!.exit_value).toBe(expected[i]!.payouts_jump ?? false);
+      expect([b.curveBelow, b.curveAbove], expected[i]!.exit_value).toEqual([expected[i]!.payouts_curve_below ?? false, expected[i]!.payouts_curve_above ?? false]);
       for (const r of b.reasons) expect(r.text.length).toBeGreaterThan(30);
     });
   });

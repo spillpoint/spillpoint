@@ -371,11 +371,18 @@ class AtExit {
     }
   }
 
-  /** Tiers not yet paid in full, caps not yet reached, and the next option class's net if it were exercised. */
+  /**
+   * Tiers not yet paid in full, caps not yet reached, the carve-out's next tier
+   * edge, and the next option class's net if it were exercised. A tier's margin
+   * and the carve-out's edge are straight lines even where payouts curve (X17).
+   */
   private addStructure(margins: Map<string, Decimal>, tag: string, a: Answer): void {
+    const edges = this.pc.capTable.carveOut?.tiers;
     const structural = (prefix: string, p: Payout) => {
       for (const t of p.tiers) if (!t.full) margins.set(`${prefix}|tier:${t.index}`, t.paid.minus(t.claim));
       for (const [sid, room] of p.capRoom) margins.set(`${prefix}|cap:${sid}`, room);
+      const edge = p.carveOut && edges ? edges[p.carveOut.band]?.to : null;
+      if (edge) margins.set(`${prefix}|carve:${p.carveOut!.band}`, p.exitValue.minus(edge));
     };
     structural(tag, a.payout);
     const next = this.optionClasses.find((o) => !a.decisions.exercised.has(o.id));

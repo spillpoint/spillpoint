@@ -1,14 +1,14 @@
 // Plain-English reasons for a breakpoint (SPEC, Breakpoints). Each reason
 // compares the answer just below the breakpoint with the answer just above,
 // and explains one change: a tier paid in full, a cap reached, options or a
-// warrant coming into the money, a series or a group converting, or payouts
-// jumping.
+// warrant coming into the money, a series or a group converting, a
+// carve-out's tier ending, payouts jumping, or payouts curving.
 
 import type { Decimal } from "decimal.js";
 
 import { ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
-import { payout } from "./waterfall.ts";
+import { CARVE_OUT, carveOutAt, payout } from "./waterfall.ts";
 import type { PreparedCapTable } from "./waterfall.ts";
 
 export type ReasonCode =
@@ -17,7 +17,9 @@ export type ReasonCode =
   | "option_in_the_money"
   | "warrant_in_the_money"
   | "series_converts"
+  | "carve_out_tier"
   | "payouts_jump"
+  | "payouts_curve"
   | "other";
 
 export interface Reason {
@@ -55,6 +57,11 @@ function shares(n: Decimal): string {
   return `${grouped(whole)}.${frac}`;
 }
 
+/** "10%": a rate as a percentage. */
+function pct(rate: Decimal): string {
+  return `${rate.times(100).toString()}%`;
+}
+
 function multiple(m: Decimal): string {
   return `${m.toString()}x`;
 }
@@ -79,6 +86,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   const name = new Map<string, string>([
     ...capTable.holders.map((h) => [h.id, h.name] as [string, string]),
     ...capTable.securities.map((s) => [s.id, s.name] as [string, string]),
+    [CARVE_OUT, "the management carve-out"],
   ]);
   const before = below.answer.decisions;
   const after = above.answer.decisions;
@@ -185,7 +193,9 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     const a = above.answer.payout.tiers.find((t) => t.index === index);
     if (!(b && !b.full && a && a.full)) continue;
     const paid = atAfter.tiers.find((t) => t.index === index) ?? atBefore.tiers.find((t) => t.index === index)!;
-    const names = paid.series.map((sid) => name.get(sid)!);
+    // X7: a carve-out sharing the tier is named apart: it has a claim, not a preference.
+    const carveShares = paid.series.includes(CARVE_OUT);
+    const names = paid.series.filter((sid) => sid !== CARVE_OUT).map((sid) => name.get(sid)!);
     const next = above.answer.payout.tiers.find((t) => t.index > index && !t.full);
     let nextText: string;
     if (next) {
@@ -196,12 +206,15 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       nextText = sharing.length === 1 ? `goes to ${sharing[0]}` : `is shared as common by ${list(sharing)}`;
     }
     // X4: a preference includes accrued dividends; a converted series' claim is only its dividends (X5).
-    const withDividends = paid.series.some((sid) => !atAfter.series.get(sid)!.dividends.isZero());
+    // A carve-out in the tier (X7) isn't a series, and has no dividends.
+    const withDividends = paid.series.some((sid) => atAfter.series.get(sid)?.dividends.isZero() === false);
     const what = withDividends ? "preference, with accrued dividends," : "preference";
-    const whose = names.length === 1 ? `${names[0]}'s ${what} is` : `The ${withDividends ? "preferences, with accrued dividends," : "preferences"} of ${list(names)} are`;
+    let whose = names.length === 1 ? `${names[0]}'s ${what} is` : `The ${withDividends ? "preferences, with accrued dividends," : "preferences"} of ${list(names)} are`;
+    if (carveShares) whose = `${whose.replace(/ (is|are)$/, "")} and the management carve-out's claim are`;
     reasons.push({
       code: "tier_fully_paid",
-      subject: [...tier],
+      // A carve-out alongside the preferences shares the most senior tier (X7).
+      subject: [...tier, ...(paid.series.includes(CARVE_OUT) ? [CARVE_OUT] : [])],
       starts: true,
       text: `${whose} paid in full here: ${money(paid.claim)}. Above this exit value, the next dollar ${nextText}.`,
     });
@@ -222,6 +235,28 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     });
   }
 
+  // X6, X7: one of the carve-out's tiers ends. Alongside the preferences, it
+  // is a claim on a tier that may not be paid in full, so say what it gets.
+  const bandBelow = below.answer.payout.carveOut?.band;
+  const bandAbove = above.answer.payout.carveOut?.band;
+  if (capTable.carveOut && bandBelow !== undefined && bandAbove !== undefined && bandBelow !== bandAbove) {
+    const tiers = capTable.carveOut.tiers;
+    const ended = tiers[bandBelow]!;
+    const next = tiers[bandAbove];
+    const claim = carveOutAt(capTable.carveOut, x).claim;
+    const paid = atAfter.carveOut!.paid;
+    const span = ended.from.isZero() ? `on exit value up to ${money(ended.to!)}` : `on exit value from ${money(ended.from)} to ${money(ended.to!)}`;
+    const short = !paid.minus(claim).abs().lt("0.005");
+    const opening = `The carve-out's ${pct(ended.rate)} tier, ${span}, ends here`;
+    const what = short
+      ? `${opening}, with its claim at ${money(claim)}. It shares the most senior tier pro rata with the preferences there, and that tier isn't paid in full, so it gets ${money(paid)}.`
+      : `${opening}, with the carve-out at ${money(claim)}.`;
+    const then = next
+      ? ` Above this, ${short ? "its claim grows by" : "it takes"} ${pct(next.rate)} of each further dollar${next.to ? `, up to ${money(next.to)}` : ""}.`
+      : ` That was its last tier: above this it stays at ${money(claim)}.`;
+    reasons.push({ code: "carve_out_tier", subject: [], starts: true, text: what + then });
+  }
+
   // E13: payouts that jump. Say what each class gets either side.
   if (jumps) {
     const moves: string[] = [];
@@ -237,6 +272,21 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       text:
         `Payouts jump here instead of bending: ${list(moves)}. ` +
         `At exactly ${money(x)} the outcome from below still holds; the new one applies just above it.`,
+    });
+  }
+
+  // X17: payouts that curve, either side.
+  const curveBelow = below.answer.payout.curved;
+  const curveAbove = above.answer.payout.curved;
+  if (curveBelow || curveAbove) {
+    const side = curveBelow && curveAbove ? "on both sides of" : curveBelow ? "just below" : "just above";
+    reasons.push({
+      code: "payouts_curve",
+      subject: [],
+      starts: curveAbove,
+      text:
+        `Payouts curve ${side} this exit value instead of following straight lines. The carve-out shares the most senior tier ` +
+        "pro rata by claim while that tier isn't paid in full, and its claim grows with the exit value. On a curve, a breakpoint is where the formula changes.",
     });
   }
 

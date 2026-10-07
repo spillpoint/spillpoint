@@ -2,9 +2,9 @@
 // engine's model, checking everything the waterfall relies on.
 //
 // Two kinds of "no":
-// - UnsupportedTermError for terms the engine doesn't model yet (dividends,
-//   carve-outs, earnouts, and SAFEs and notes at exit). These are checked
-//   first and refused, never skipped.
+// - UnsupportedTermError for terms the engine doesn't model yet (earnouts,
+//   and SAFEs and notes at exit). These are checked first and refused, never
+//   skipped.
 // - InputError for anything malformed. Unknown fields are errors too, so a
 //   misspelt term can't be silently ignored.
 
@@ -16,6 +16,7 @@ import { InputError, UnsupportedTermError } from "./errors.ts";
 import type {
   AntiDilution,
   CapTable,
+  CarveOut,
   ConversionGroup,
   CumulativeDividend,
   ExitInput,
@@ -230,9 +231,6 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
   const ct = object(value, path);
 
   // Terms that arrive later are refused before anything else is checked.
-  if (ct.carve_out != null) {
-    throw new UnsupportedTermError("carve_out", "M5", `${path}.carve_out`, "Management carve-outs (X6, X7)");
-  }
   if (Array.isArray(ct.unconverted_safes) && ct.unconverted_safes.length > 0) {
     throw new UnsupportedTermError("unconverted_safe", "M5", `${path}.unconverted_safes`, "SAFEs still outstanding at exit (X1)");
   }
@@ -334,7 +332,47 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
     conversionGroups,
     positions,
     unissuedPool: ct.unissued_pool == null ? ZERO : wholeShares(ct.unissued_pool, `${path}.unissued_pool`),
+    // Optional (0.1.0 cap tables have no such field), so left out when there's no carve-out.
+    ...(ct.carve_out == null ? {} : { carveOut: readCarveOut(ct.carve_out, holderIds, `${path}.carve_out`) }),
   };
+}
+
+/** C6, X6, X7: marginal tiers from $0, contiguous, and recipients among the holders whose shares add up to 100%. */
+function readCarveOut(value: unknown, holderIds: ReadonlySet<string>, path: string): CarveOut {
+  const c = object(value, path);
+  onlyKnownFields(c, ["timing", "tiers", "allocation"], path);
+  const timing = c.timing ?? "before_preferences";
+  if (timing !== "before_preferences" && timing !== "alongside_preferences") {
+    throw new InputError(`${path}.timing`, "must be before_preferences or alongside_preferences");
+  }
+  const tiers: CarveOut["tiers"] = [];
+  let reached: Decimal | null = ZERO;
+  for (const [i, v] of array(c.tiers, `${path}.tiers`).entries()) {
+    const at = `${path}.tiers[${i}]`;
+    const t = object(v, at);
+    onlyKnownFields(t, ["from", "to", "percent"], at);
+    if (reached === null) throw new InputError(at, "comes after a tier with no upper end");
+    const from = notNegative(t.from, `${at}.from`);
+    if (!from.eq(reached)) throw new InputError(`${at}.from`, `tiers start at 0 and run on without gaps: this one should start at ${reached.toString()}`);
+    const to = t.to == null ? null : positive(t.to, `${at}.to`);
+    if (to && !to.gt(from)) throw new InputError(`${at}.to`, "must be above where the tier starts");
+    const percent = notNegative(t.percent, `${at}.percent`);
+    if (percent.gt(100)) throw new InputError(`${at}.percent`, "can't be more than 100");
+    tiers.push({ from, to, rate: percent.div(100) });
+    reached = to;
+  }
+  if (tiers.length === 0) throw new InputError(`${path}.tiers`, "needs at least one tier");
+  const allocation = array(c.allocation, `${path}.allocation`).map((v, i) => {
+    const at = `${path}.allocation[${i}]`;
+    const a = object(v, at);
+    onlyKnownFields(a, ["holder", "percent"], at);
+    const holder = text(a.holder, `${at}.holder`);
+    if (!holderIds.has(holder)) throw new InputError(`${at}.holder`, `${holder} is not a listed holder`);
+    return { holder, share: positive(a.percent, `${at}.percent`).div(100) };
+  });
+  const total = allocation.reduce((sum, a) => sum.plus(a.share), ZERO);
+  if (!total.eq(ONE)) throw new InputError(`${path}.allocation`, `the recipients' percentages add up to ${total.times(100).toString()}, not 100`);
+  return { timing, tiers, allocation };
 }
 
 // ---------- exits and cases ----------

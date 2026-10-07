@@ -11,6 +11,13 @@
 // read the new answer, and if any payout bends or jumps, that is a
 // breakpoint. Each stretch is checked at its midpoint, so a change the
 // margins failed to predict stops the finder instead of going unnoticed.
+//
+// Where payouts curve (X17: a carve-out alongside the preferences sharing a
+// tier that isn't paid in full), a breakpoint is where the formula changes:
+// the carve-out's tier ends, or the tier it shares is paid in full. Those two
+// margins stay straight on a curve, so they still place the change exactly.
+// The stretch is checked at many points instead of against a line, and the
+// payouts and slopes either side are read at the breakpoint itself.
 
 import type { Decimal } from "decimal.js";
 
@@ -20,13 +27,17 @@ import { snapshotAt } from "./decisions.ts";
 import type { Snapshot } from "./decisions.ts";
 import { describeChange } from "./reasons.ts";
 import type { Reason } from "./reasons.ts";
-import type { PreparedCapTable } from "./waterfall.ts";
+import { payout } from "./waterfall.ts";
+import type { Decisions, PreparedCapTable } from "./waterfall.ts";
 
 export interface Breakpoint {
   /** Where the payouts bend or jump, to 40 digits. */
   exitValue: Decimal;
   /** Payouts jump here rather than bend (E13). At this exit value itself the outcome from below holds. */
   jumps: boolean;
+  /** Payouts curve just below, or just above, this exit value (X17). */
+  curveBelow: boolean;
+  curveAbove: boolean;
   /** Why, in plain English, one reason per change. */
   reasons: Reason[];
 }
@@ -46,7 +57,16 @@ interface Stretch {
   b: Decimal;
   at: Snapshot;
   then: Snapshot;
+  /** Payouts curve along it (X17). */
+  curved: boolean;
 }
+
+/** Margins that stay straight lines where payouts curve (X17): a tier's shortfall, and the distance to the carve-out's next tier edge. */
+const STRAIGHT_ON_A_CURVE = /\|(tier|carve):/;
+/** How many points a curved stretch is checked at. */
+const CURVE_SAMPLES = 64;
+/** The step for reading a slope at a breakpoint on a curved side. */
+const SLOPE_STEP = new D("1e-9");
 
 function sameState(s: Snapshot, t: Snapshot): boolean {
   const d1 = s.answer.decisions;
@@ -65,7 +85,7 @@ function stretchAbove(pc: PreparedCapTable, x: Decimal): Stretch {
     const b = a.plus(step);
     const at = snapshotAt(pc, a);
     const then = snapshotAt(pc, b);
-    if (sameState(at, then)) return { start: x, a, b, at, then };
+    if (sameState(at, then)) return { start: x, a, b, at, then, curved: at.answer.payout.curved };
   }
   throw new NoAnswerError(`Just above $${x.toFixed(2)} the decisions change too often to read the payout curve.`);
 }
@@ -83,6 +103,8 @@ function slope(s: Stretch, va: Decimal, vb: Decimal): Decimal {
 function nextChange(s: Stretch, hi: Decimal): Decimal | null {
   let next: Decimal | null = null;
   for (const [k, va] of s.at.margins) {
+    // On a curve only the straight margins can be extended; any other change there is caught by checkStretch.
+    if (s.curved && !STRAIGHT_ON_A_CURVE.test(k)) continue;
     const vb = s.then.margins.get(k)!;
     const m = slope(s, va, vb);
     if (m.isZero()) continue;
@@ -102,8 +124,36 @@ function payoutsAlong(s: Stretch, x: Decimal): { values: Decimal[]; slopes: Deci
   };
 }
 
-/** Within a stretch, nothing should change: the answer and its payouts at the midpoint must match the straight line. */
-function checkMidpoint(pc: PreparedCapTable, s: Stretch, end: Decimal): void {
+/** The payouts exactly at x under one side's decisions, and their slopes on that side (X17). */
+function exactlyAt(pc: PreparedCapTable, decisions: Decisions, x: Decimal, side: -1 | 1): { values: Decimal[]; slopes: Decimal[] } {
+  const at = payout(pc, x, decisions).lines.map((l) => l.amount);
+  const near = payout(pc, x.plus(SLOPE_STEP.times(side)), decisions).lines.map((l) => l.amount);
+  return { values: at, slopes: at.map((v, i) => near[i]!.minus(v).div(SLOPE_STEP).times(side)) };
+}
+
+/**
+ * Within a stretch, nothing should change. On a straight stretch, the answer
+ * and its payouts at the midpoint must match the straight line. On a curved
+ * one, the answer must be the same at every one of many points along it: a
+ * decision changing on a curve isn't something the finder can place, so it
+ * stops (X17). That is rare: a curve exists only while the most senior tier is
+ * short, when common gets nothing. The exception is a warrant for a series in
+ * that tier, which is paid from the tier itself.
+ */
+function checkStretch(pc: PreparedCapTable, s: Stretch, end: Decimal): void {
+  if (s.curved) {
+    for (let k = 1; k < CURVE_SAMPLES; k++) {
+      const x = s.b.plus(end.minus(s.b).times(k).div(CURVE_SAMPLES));
+      if (!x.gt(s.b)) continue;
+      if (!sameState(s.at, snapshotAt(pc, x))) {
+        throw new NoAnswerError(
+          `Between $${s.start.toFixed(2)} and $${end.toFixed(2)} payouts curve, and a decision changes there. The breakpoint finder places ` +
+            "a change on a curve only where the carve-out's tier ends or the tier it shares is paid in full, so it stops rather than miss one.",
+        );
+      }
+    }
+    return;
+  }
   const mid = s.b.plus(end).div(2);
   if (!mid.gt(s.b)) return;
   const reading = snapshotAt(pc, mid);
@@ -123,15 +173,22 @@ export function findBreakpoints(pc: PreparedCapTable, range: readonly [Decimal, 
   let stretch = stretchAbove(pc, lo);
   for (let i = 0; i < MAX_STEPS; i++) {
     const x = nextChange(stretch, hi);
-    checkMidpoint(pc, stretch, x ?? hi);
+    checkStretch(pc, stretch, x ?? hi);
     if (x === null) return found;
     const after = stretchAbove(pc, x);
-    const below = payoutsAlong(stretch, x);
-    const above = payoutsAlong(after, x);
+    // A straight side extends its two readings; a curved one is read at x itself (X17).
+    const below = stretch.curved ? exactlyAt(pc, stretch.at.answer.decisions, x, -1) : payoutsAlong(stretch, x);
+    const above = after.curved ? exactlyAt(pc, after.at.answer.decisions, x, 1) : payoutsAlong(after, x);
     const jumps = below.values.some((v, j) => v.minus(above.values[j]!).abs().gt(JUMP_TIE));
     const bends = below.slopes.some((m, j) => m.minus(above.slopes[j]!).abs().gt(SLOPE_TIE));
     if (jumps || bends) {
-      found.push({ exitValue: x, jumps, reasons: describeChange(pc, x, stretch.at, after.at, jumps) });
+      found.push({
+        exitValue: x,
+        jumps,
+        curveBelow: stretch.curved,
+        curveAbove: after.curved,
+        reasons: describeChange(pc, x, stretch.at, after.at, jumps),
+      });
     }
     stretch = after;
   }
