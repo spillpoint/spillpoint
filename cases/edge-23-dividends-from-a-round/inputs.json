@@ -1,0 +1,131 @@
+{
+  "case": "edge-23-dividends-from-a-round",
+  "description": "Edge case 15's company, with an 8% simple cumulative dividend on the Series A, forfeited on conversion. The dividends accrue from the round's date, 2023-06-30. The round's SAFE converts at its discount into Series A Preferred (from SAFEs), which carries the same dividend terms from the same date, on its own $2.00 issue price (ASSUMPTIONS R30). The company is sold on 2026-06-30, on the cap table after the Series A.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 1500000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "20"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 500000,
+          "strike": "0.25"
+        }
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2022-09-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "600000",
+          "post_money_cap": "18000000",
+          "discount": "0.2"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none",
+        "cumulative_dividend": {
+          "rate": "0.08",
+          "method": "simple",
+          "on_conversion": "forfeited"
+        }
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "5000000"
+        }
+      ],
+      "convert_safes": true,
+      "pool_target_unissued_percent_post": "12",
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow"
+        ]
+      ]
+    }
+  ],
+  "exit": {
+    "cap_table_after_event": "series_a",
+    "exit_date": "2026-06-30",
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "3000000",
+      "8000000",
+      "10000000",
+      "20000000",
+      "25000000",
+      "30000000",
+      "40000000"
+    ]
+  }
+}
