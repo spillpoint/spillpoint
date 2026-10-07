@@ -1,6 +1,6 @@
 # spillpoint
 
-Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, participation, caps, conversions, options and warrants. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
+Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options and warrants. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
 It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play.
 
@@ -50,7 +50,7 @@ const exit = readExit({
   exit_values: ["10000000", "20000000"],
 });
 
-const table = prepare(exit.capTable);
+const table = prepare(exit.capTable, exit.exitDate);
 
 // Who gets what at each exit value. The engine decides who converts.
 for (const value of exit.exitValues) {
@@ -156,7 +156,7 @@ const exit = readInputs({
   ...company,
   exit: { cap_table_after_event: "series_a", range: ["0", "100000000"], exit_values: ["20000000", "60000000"] },
 });
-const table = prepare(exit.capTable);
+const table = prepare(exit.capTable, exit.exitDate);
 for (const value of exit.exitValues) {
   const [answer] = solve(table, value).answers;
   console.log(`At $${toCents(value)}:`);
@@ -219,6 +219,10 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
 - **Preferences** of any multiple.
 - **Participation:** non-participating, participating, and participating with a cap.
 - **Conversion:** each series converts when that pays it more. Series that must convert together decide by a class vote.
+- **Cumulative dividends** *(0.2.0)*, added to the preference at 1x, on top of its multiple:
+  - **Simple,** Actual/365 on the original issue price, or **compounding** annually on the accrual start's anniversaries, with the part-year after the last one simple.
+  - **On conversion** they are forfeited, or, under a toggle, paid in cash in the series' own tier.
+  - **The exit needs an `exit_date`,** the day they accrue to.
 - **Options at any number of strikes,** exercised once they're in the money. The strike money joins the proceeds, and option payouts are reported net of strike.
 - **Warrants** *(0.2.0)*, for common or for a preferred series:
   - **Each warrant decides for itself** whether to exercise: once what it buys is worth more than the strike.
@@ -269,9 +273,10 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - **A pay-to-play round that also converts SAFEs or notes.**
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
+- Cumulative dividends added to what converts, rather than paid in cash on conversion.
+- Cumulative dividends on a series issued in a company's rounds.
 
 **Not modeled yet** (milestone `"M5"`):
-- cumulative dividends
 - management carve-outs
 - escrow and earnouts
 - SAFEs and convertible notes still outstanding at a sale
@@ -286,13 +291,14 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 **An exit input** is plain JSON:
 - `cap_table`, with:
   - `holders`
-  - `securities` (`common`, `option` with a `strike`, `warrant` with a `strike` and an `underlying`, `"common"` or a preferred series, and `preferred` with its terms)
+  - `securities` (`common`, `option` with a `strike`, `warrant` with a `strike` and an `underlying`, `"common"` or a preferred series, and `preferred` with its terms, including an optional `cumulative_dividend`: `rate`, `method` (`simple` or `compounding`), `accrual_start` and `on_conversion` (`forfeited` or `paid`))
   - `seniority`: the preference tiers, most senior first
   - optional `conversion_groups`
   - `positions`: shares held, per holder and security
   - optional `unissued_pool`
 - `range`: the exit values to analyse
 - `exit_values`: the points to report
+- `exit_date`, as `YYYY-MM-DD`: needed when a series has cumulative dividends *(0.2.0)*
 
 **A company built from its rounds** (`buildCapTables`, `readInputs`) is `holders` and `events`, each event with an `id`, a `date` and a `type`:
 
@@ -326,7 +332,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `readExit(json)`, `readCapTable(json)` | Read and check an input. |
 | `buildCapTables(company)` | Build the cap table after each event. Each comes with the SAFEs and notes still outstanding and what the event worked out. |
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. It refuses SAFEs or notes still outstanding there. |
-| `prepare(capTable)` | Work out the fixed quantities once: shares, preference amounts, caps. |
+| `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps. `exitDate` is needed only when a series has cumulative dividends. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
 | `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |

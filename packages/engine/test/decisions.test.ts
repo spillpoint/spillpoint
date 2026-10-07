@@ -23,7 +23,8 @@ function sum(values: Decimal[]): Decimal {
 }
 
 describe.each(EXIT_CASES)("%s", (name) => {
-  const pc = prepare(readInputs(readCaseFile(name, "inputs.json")).capTable);
+  const exit = readInputs(readCaseFile(name, "inputs.json"));
+  const pc = prepare(exit.capTable, exit.exitDate);
 
   it.each(expectedPoints(name).map((p) => [p.label, p] as const))("solves $%s: the recorded decisions and payouts", (_, point) => {
     const solution = solve(pc, point.exitValue);

@@ -18,6 +18,7 @@ import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO } from "./decimal.ts";
 import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
+import { dayNumber } from "./dates.ts";
 import { array, notNegative, object, onlyKnownFields, positive, readSecurity, text, wholeShares } from "./input.ts";
 import type { CapTable, Holder, Position, PreferredSeries, Security } from "./model.ts";
 
@@ -308,7 +309,22 @@ function fraction(value: unknown, path: string, allowZero = false): Decimal {
 }
 
 /** Adds the security an event names, or checks it against the one already there. */
+/**
+ * Cumulative dividends on a series issued in the rounds are refused until a
+ * case settles them: when they accrue, and whether the series a round's SAFEs
+ * and notes convert into ("… (from SAFEs)") carries them too. An exit on a
+ * cap table given in full takes them (X2, X5).
+ */
+function noDividendsInRounds(value: unknown, path: string): void {
+  if (value != null && typeof value === "object" && (value as Json).cumulative_dividend != null) {
+    throw new UnsupportedTermError(
+      "cumulative_dividend_in_rounds", "later", `${path}.cumulative_dividend`, "Cumulative dividends on a series issued in a company's rounds",
+    );
+  }
+}
+
 function ensureSecurity(company: Company, value: unknown, path: string): Security {
+  noDividendsInRounds(value, path);
   const s = readSecurity(value, path);
   const existing = company.security(s.id);
   if (existing) {
@@ -328,15 +344,6 @@ function readSafe(value: unknown, path: string): Safe {
   const discount = f.discount == null ? ZERO : notNegative(f.discount, `${path}.discount`);
   if (discount.gte(1)) throw new InputError(`${path}.discount`, "must be below 1");
   return { id: text(f.id, `${path}.id`), holder: text(f.holder, `${path}.holder`), purchaseAmount: positive(f.purchase_amount, `${path}.purchase_amount`), postMoneyCap, preMoneyCap, discount };
-}
-
-/** A date as YYYY-MM-DD, as a whole number of days, for Actual/365 interest (X3). */
-function dayNumber(value: unknown, path: string): number {
-  const date = text(value, path);
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  const ms = m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : NaN;
-  if (!m || Number.isNaN(ms) || new Date(ms).toISOString().slice(0, 10) !== date) throw new InputError(path, "expected a date as YYYY-MM-DD");
-  return ms / 86_400_000;
 }
 
 const NOTE_FIELDS = [
@@ -714,6 +721,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   }
 
   const series = object(ev.series, `${path}.series`);
+  noDividendsInRounds(series, `${path}.series`);
   const seriesId = text(series.id, `${path}.series.id`);
   const seriesName = text(series.name, `${path}.series.name`);
   if (company.security(seriesId)) throw new InputError(`${path}.series.id`, `${seriesId} already exists`);

@@ -26,7 +26,8 @@ function sum(values: Iterable<Decimal>): Decimal {
 }
 
 describe.each(EXIT_CASES)("%s", (name) => {
-  const pc = prepare(readInputs(readCaseFile(name, "inputs.json")).capTable);
+  const exit = readInputs(readCaseFile(name, "inputs.json"));
+  const pc = prepare(exit.capTable, exit.exitDate);
   const points = expectedPoints(name);
 
   it.each(points.map((p) => [p.label, p] as const))("pays out $%s to the cent, with the recorded decisions", (_, point) => {

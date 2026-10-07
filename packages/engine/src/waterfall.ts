@@ -6,7 +6,10 @@
 //      proceeds (E3). Shares from an exercised warrant for a preferred series
 //      become shares of that series (E12).
 //   2. Preference tiers are paid top-down; a tier that can't be paid in full
-//      is split pro rata by preference amount (pari passu).
+//      is split pro rata by preference amount (pari passu). A preference
+//      includes accrued cumulative dividends (X4); a series that converts
+//      forfeits them, or keeps a claim for them in its tier when they are paid
+//      on conversion (X5).
 //   3. The residual is shared as common by common stock, exercised options and
 //      warrants for common, converted preferred and participating preferred,
 //      all on an exact as-converted basis (E2). A capped series stops at its cap.
@@ -17,6 +20,7 @@
 import type { Decimal } from "decimal.js";
 
 import { ZERO, moreThan } from "./decimal.ts";
+import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
 import type { CapTable, OptionClass, PreferredSeries, WarrantClass } from "./model.ts";
 
@@ -29,8 +33,12 @@ export interface Decisions {
 /** A preferred series at this exit value, counting the shares of exercised warrants for it (E12). */
 export interface SeriesHere {
   shares: Decimal;
-  /** Shares × original issue price × multiple (SPEC, Preference amount). */
+  /** Shares × original issue price × multiple, plus accrued dividends (SPEC, Preference amount; X4). */
   preference: Decimal;
+  /** Accrued and unpaid cumulative dividends, on the series' own shares (X5), included in the preference. */
+  dividends: Decimal;
+  /** What it claims in its tier: its preference, or once converted only dividends paid on conversion (X5). */
+  claim: Decimal;
   /** Capped participating only: cap multiple × original issue price × shares (E7). */
   capTotal: Decimal | null;
   /** Exact as-converted common shares (E2). */
@@ -48,7 +56,7 @@ export interface PayoutLine {
 export interface TierPayment {
   /** Position in the seniority order, most senior first. */
   index: number;
-  /** The tier's series that still claim their preference (converted series don't). */
+  /** The tier's series with a claim: those keeping their preference, and converted series whose dividends are paid on conversion (X5). */
   series: string[];
   claim: Decimal;
   paid: Decimal;
@@ -90,15 +98,20 @@ export interface PreparedCapTable {
   options: Map<string, OptionClass>;
   warrants: Map<string, WarrantClass>;
   commonIds: string[];
-  /** Preference amount = shares × original issue price × multiple (SPEC, Preference amount). */
+  /** Preference amount = shares × original issue price × multiple, plus accrued dividends (SPEC, Preference amount; X4). */
   preference: Map<string, Decimal>;
+  /** Accrued and unpaid cumulative dividends at the exit date, by series (X2, X5). */
+  dividends: Map<string, Decimal>;
+  /** The day dividends accrue to, if the exit has one. */
+  exitDate: string | null;
   /** Capped participating: the most preference plus participation can reach, cap multiple × original issue price × shares (E7). */
   capTotal: Map<string, Decimal>;
   /** Exact as-converted common shares for each preferred series (E2). */
   asConverted: Map<string, Decimal>;
 }
 
-export function prepare(capTable: CapTable): PreparedCapTable {
+/** The exit date is needed only when a series accrues cumulative dividends (X2): they accrue to it. */
+export function prepare(capTable: CapTable, exitDate: string | null = null): PreparedCapTable {
   const shares = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
   for (const p of capTable.positions) shares.set(p.security, shares.get(p.security)!.plus(p.shares));
   const preferred = new Map<string, PreferredSeries>();
@@ -106,6 +119,7 @@ export function prepare(capTable: CapTable): PreparedCapTable {
   const warrants = new Map<string, WarrantClass>();
   const commonIds: string[] = [];
   const preference = new Map<string, Decimal>();
+  const dividends = new Map<string, Decimal>();
   const capTotal = new Map<string, Decimal>();
   const asConverted = new Map<string, Decimal>();
   for (const s of capTable.securities) {
@@ -115,11 +129,14 @@ export function prepare(capTable: CapTable): PreparedCapTable {
     if (s.kind !== "preferred") continue;
     const n = shares.get(s.id)!;
     preferred.set(s.id, s);
-    preference.set(s.id, n.times(s.originalIssuePrice).times(s.preferenceMultiple));
+    if (s.cumulativeDividend && exitDate == null) throw new InputError("exit_date", `${s.name} accrues cumulative dividends, so the exit needs an exit date`);
+    const accrued = exitDate == null ? ZERO : accruedDividends(s, n, exitDate);
+    dividends.set(s.id, accrued);
+    preference.set(s.id, n.times(s.originalIssuePrice).times(s.preferenceMultiple).plus(accrued));
     if (s.capMultiple) capTotal.set(s.id, n.times(s.originalIssuePrice).times(s.capMultiple));
     asConverted.set(s.id, n.times(s.conversionRatio));
   }
-  return { capTable, shares, preferred, options, warrants, commonIds, preference, capTotal, asConverted };
+  return { capTable, shares, preferred, options, warrants, commonIds, preference, dividends, exitDate, capTotal, asConverted };
 }
 
 /** Decisions must name real convertible series, option classes and warrants, and a conversion group converts as one (E11). */
@@ -161,9 +178,15 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   const series = new Map<string, SeriesHere>();
   for (const [sid, s] of pc.preferred) {
     const n = preferredWarrants.filter((w) => w.underlying === sid).reduce((sum, w) => sum.plus(pc.shares.get(w.id)!), pc.shares.get(sid)!);
+    // Shares from a warrant exercised at exit carry no accrued dividends: they weren't outstanding while they accrued (X5).
+    const dividends = pc.dividends.get(sid)!;
+    const preference = n.times(s.originalIssuePrice).times(s.preferenceMultiple).plus(dividends);
+    const paidOnConversion = s.cumulativeDividend?.onConversion === "paid";
     series.set(sid, {
       shares: n,
-      preference: n.times(s.originalIssuePrice).times(s.preferenceMultiple),
+      preference,
+      dividends,
+      claim: !decisions.converted.has(sid) ? preference : paidOnConversion ? dividends : ZERO,
       capTotal: s.capMultiple ? n.times(s.originalIssuePrice).times(s.capMultiple) : null,
       asConverted: n.times(s.conversionRatio),
     });
@@ -173,11 +196,12 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   // are pari passu: a shortfall is shared in proportion to preference amount.
   const tiers: TierPayment[] = [];
   for (const [index, tier] of capTable.seniority.entries()) {
-    const claimants = tier.filter((sid) => !decisions.converted.has(sid) && series.get(sid)!.preference.gt(0));
-    const claim = claimants.reduce((sum, sid) => sum.plus(series.get(sid)!.preference), ZERO);
+    // A converted series claims only dividends paid on conversion (X5), where they ranked.
+    const claimants = tier.filter((sid) => series.get(sid)!.claim.gt(0));
+    const claim = claimants.reduce((sum, sid) => sum.plus(series.get(sid)!.claim), ZERO);
     if (claim.isZero()) continue;
     const paid = remaining.lt(claim) ? remaining : claim;
-    for (const sid of claimants) add(sid, paid.times(series.get(sid)!.preference).div(claim));
+    for (const sid of claimants) add(sid, paid.times(series.get(sid)!.claim).div(claim));
     tiers.push({ index, series: claimants, claim, paid, full: remaining.gte(claim) });
     remaining = remaining.minus(paid);
   }

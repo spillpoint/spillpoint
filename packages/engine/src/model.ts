@@ -44,6 +44,18 @@ export interface WarrantClass {
   underlying: string;
 }
 
+/** Cumulative dividends on a preferred series (C5). They add to its preference at 1x (X4). */
+export interface CumulativeDividend {
+  /** A year's dividend as a fraction of the original issue price: 0.08 for 8%. */
+  rate: D;
+  /** Simple, Actual/365 (X2); or compounding annually on the accrual start's anniversaries, the part-year simple (X5). */
+  method: "simple" | "compounding";
+  /** When they start to accrue, as YYYY-MM-DD. */
+  accrualStart: string;
+  /** Forfeited by a series that converts, or paid on conversion: in cash, in its own tier (X5). */
+  onConversion: "forfeited" | "paid";
+}
+
 export interface PreferredSeries {
   kind: "preferred";
   id: string;
@@ -62,6 +74,7 @@ export interface PreferredSeries {
   antiDilution: AntiDilution;
   /** What A counts in the weighted-average formula (C10), if the input names it. */
   antiDilutionA: string | null;
+  cumulativeDividend: CumulativeDividend | null;
 }
 
 export type Security = CommonStock | OptionClass | WarrantClass | PreferredSeries;
@@ -98,4 +111,6 @@ export interface ExitInput {
   /** Breakpoints are reported strictly inside this range (SPEC, Breakpoints). */
   range: [D, D];
   exitValues: D[];
+  /** YYYY-MM-DD: the day dividends accrue to. Required when a series has cumulative dividends. */
+  exitDate: string | null;
 }

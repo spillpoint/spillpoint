@@ -148,6 +148,29 @@ describe("a file that can't be opened", () => {
     expect(refusal(rounds)).toBe(message);
   });
 
+  it("has a security of a kind the page doesn't know: refused, never treated as common", () => {
+    const file = good();
+    file.cap_table.securities.push({ id: "bond_x", name: "Bond X", kind: "bond" });
+    expect(refusal(file)).toBe(
+      'It has Bond X, a kind of security ("bond") this page doesn\'t know. It won\'t open the cap table rather than treat it as something it isn\'t.',
+    );
+  });
+
+  it("has cumulative dividends, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
+    const file = good();
+    file.cap_table.securities.find((s: { id: string }) => s.id === "series_a").cumulative_dividend = { rate: "0.08", accrual_start: "2022-06-01" };
+    expect(refusal(file)).toBe("It has cumulative dividends on Series A Preferred, which this page doesn't show yet. It won't open a cap table it can't show in full.");
+  });
+
+  it("has a field nobody models, in the engine's words", () => {
+    const file = good();
+    file.cap_table.securities.find((s: { id: string }) => s.id === "series_a").vesting = "4 years";
+    expect(refusal(file)).toBe(
+      "Its cap table can't be used. file.cap_table.securities[5].vesting: unknown field; the engine reads only id, name, kind, original_issue_price, " +
+        "conversion_price, conversion_ratio, preference_multiple, participation, cap_multiple, anti_dilution, anti_dilution_a, cumulative_dividend, approx",
+    );
+  });
+
   it("has both a cap table and rounds, or rounds without the event the payouts use", () => {
     expect(refusal({ ...withRounds(), cap_table: good().cap_table })).toBe("It has both a cap table and the events that build one; a file has one or the other.");
     const { cap_table_after_event: _after, ...noAfter } = withRounds();

@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 8 and Millrace", () => {
+  it("are edge cases 1 through 9 and Millrace", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -28,6 +28,9 @@ describe("the exit cases the engine runs", () => {
       "edge-06d-voter-indifferent-over-a-range",
       "edge-07-option-strikes",
       "edge-08-preferred-warrant",
+      "edge-09-cumulative-dividends",
+      "edge-09b-compounding-dividends",
+      "edge-09c-dividends-paid-on-conversion",
       "millrace",
     ]);
   });
@@ -86,9 +89,6 @@ describe("the exit cases the engine runs", () => {
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
   const refused: [string, string, Milestone][] = [
-    ["edge-09-cumulative-dividends", "cumulative_dividend", "M5"],
-    ["edge-09b-compounding-dividends", "cumulative_dividend", "M5"],
-    ["edge-09c-dividends-paid-on-conversion", "cumulative_dividend", "M5"],
     ["edge-10-carve-out", "carve_out", "M5"],
     ["edge-10b-carve-out-alongside-preferences", "carve_out", "M5"],
     ["edge-11-earnout", "payment_schedules", "M5"],
