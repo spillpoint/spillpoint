@@ -24,7 +24,7 @@ These are the defaults. Wherever a charter or an instrument could reasonably dif
 
 ## Breakpoints
 
-A breakpoint is any exit value where any holder's payoff slope changes. Report every breakpoint in the analysis range, exact to $0.01, each with a plain-English reason. Possible reasons:
+A breakpoint is any exit value where any holder's payout formula changes, which on a straight stretch is a slope change. Payouts are usually straight lines between breakpoints; where one curves, as when a carve-out paid alongside the preferences shares a tier that isn't paid in full (`ASSUMPTIONS.md` X17), the curved stretch is flagged. Report every breakpoint in the analysis range, exact to $0.01, each with a plain-English reason. Possible reasons:
 - a tier's preference is fully paid
 - a series converts
 - a capped series hits its cap

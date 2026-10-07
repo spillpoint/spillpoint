@@ -7,15 +7,15 @@ import { describe, expect, it } from "vitest";
 import { InputError, UnsupportedTermError, readCapTable, readExit } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, M2_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, EXIT_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
   exit?: { cap_table?: { holders: unknown[]; positions: unknown[] }; exit_values: string[] };
 }
 
-describe("cases in M2's scope", () => {
-  it("are edge cases 1 through 7 and Millrace", () => {
-    expect(M2_CASES).toEqual([
+describe("the exit cases the engine runs", () => {
+  it("are edge cases 1 through 8 and Millrace", () => {
+    expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
       "edge-03-participating",
@@ -27,11 +27,12 @@ describe("cases in M2's scope", () => {
       "edge-06c-forced-class-at-least",
       "edge-06d-voter-indifferent-over-a-range",
       "edge-07-option-strikes",
+      "edge-08-preferred-warrant",
       "millrace",
     ]);
   });
 
-  it.each(M2_CASES)("%s reads cleanly", (name) => {
+  it.each(EXIT_CASES)("%s reads cleanly", (name) => {
     const inputs = readCaseFile(name, "inputs.json") as CaseExit;
     const exit = readInputs(inputs);
     expect(exit.exitValues.map((v) => v.toString())).toEqual(inputs.exit?.exit_values);
@@ -83,9 +84,8 @@ describe("cases in M2's scope", () => {
   });
 });
 
-describe("cases outside M2's scope are refused, never skipped", () => {
+describe("cases outside the engine's scope are refused, never skipped", () => {
   const refused: [string, string, Milestone][] = [
-    ["edge-08-preferred-warrant", "warrant", "M5"],
     ["edge-09-cumulative-dividends", "cumulative_dividend", "M5"],
     ["edge-09b-compounding-dividends", "cumulative_dividend", "M5"],
     ["edge-09c-dividends-paid-on-conversion", "cumulative_dividend", "M5"],
@@ -111,7 +111,7 @@ describe("cases outside M2's scope are refused, never skipped", () => {
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, M2_CASES).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES).sort()).toEqual(ALL_CASES);
   });
 
   it.each(roundCases)("%s has no exit: buildCapTables builds its cap tables", (name) => {
@@ -164,6 +164,16 @@ describe("malformed inputs fail with a clear error", () => {
 
   it("accepts the unchanged table", () => {
     expect(readCapTable(table(() => {})).positions).toHaveLength(2);
+  });
+
+  it("reads a warrant for common or a preferred series, and refuses one for anything else (C4, E12)", () => {
+    const warrant = (underlying: string) =>
+      table((t) => (t.securities as unknown[]).push({ id: "w", name: "Warrant", kind: "warrant", strike: "0.5", underlying }));
+    expect(readCapTable(warrant("seed")).securities[2]).toMatchObject({ kind: "warrant", underlying: "seed" });
+    expect(readCapTable(warrant("common")).securities[2]).toMatchObject({ kind: "warrant", underlying: "common" });
+    expect(() => readCapTable(warrant("series_z"))).toThrow("cap_table.securities[2].underlying: series_z is not common or a preferred series");
+    const misspelt = table((t) => (t.securities as unknown[]).push({ id: "w", name: "Warrant", kind: "warrant", strike: "0.5", underlying: "common", expiry: "2030" }));
+    expect(() => readCapTable(misspelt)).toThrow(/expiry: unknown field/);
   });
 
   it.each([

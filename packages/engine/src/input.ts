@@ -2,9 +2,9 @@
 // engine's model, checking everything the waterfall relies on.
 //
 // Two kinds of "no":
-// - UnsupportedTermError for terms the engine doesn't model yet (warrants,
-//   dividends, carve-outs, earnouts, and SAFEs and notes at exit). These are
-//   checked first and refused, never skipped.
+// - UnsupportedTermError for terms the engine doesn't model yet (dividends,
+//   carve-outs, earnouts, and SAFEs and notes at exit). These are checked
+//   first and refused, never skipped.
 // - InputError for anything malformed. Unknown fields are errors too, so a
 //   misspelt term can't be silently ignored.
 
@@ -165,7 +165,9 @@ export function readSecurity(value: unknown, path: string): Security {
   const name = text(s.name, `${path}.name`);
   switch (s.kind) {
     case "warrant":
-      throw new UnsupportedTermError("warrant", "M5", path, `Warrants (${id}; E12)`);
+      // C4: a strike and an underlying, "common" or a preferred series (checked against the table).
+      onlyKnownFields(s, ["id", "name", "kind", "strike", "underlying"], path);
+      return { kind: "warrant", id, name, strike: notNegative(s.strike, `${path}.strike`), underlying: text(s.underlying, `${path}.underlying`) };
     case "common":
       onlyKnownFields(s, ["id", "name", "kind"], path);
       return { kind: "common", id, name };
@@ -240,6 +242,12 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
     byId.set(s.id, s);
   });
   const preferred = securities.filter((s): s is PreferredSeries => s.kind === "preferred");
+  // E12: a warrant is for common or for a preferred series on this table.
+  securities.forEach((s, i) => {
+    if (s.kind === "warrant" && s.underlying !== "common" && byId.get(s.underlying)?.kind !== "preferred") {
+      throw new InputError(`${path}.securities[${i}].underlying`, `${s.underlying} is not common or a preferred series`);
+    }
+  });
 
   // SPEC, Tiers: every preferred series sits in exactly one seniority tier.
   const seniority = array(ct.seniority, `${path}.seniority`).map((tier, i) =>

@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { D, InputError, payout, prepare } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
 import { readInputs } from "../src/case.ts";
-import { M2_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
+import { EXIT_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 
 const CENT = new D("0.01");
 
@@ -25,7 +25,7 @@ function sum(values: Iterable<Decimal>): Decimal {
   return total;
 }
 
-describe.each(M2_CASES)("%s", (name) => {
+describe.each(EXIT_CASES)("%s", (name) => {
   const pc = prepare(readInputs(readCaseFile(name, "inputs.json")).capTable);
   const points = expectedPoints(name);
 

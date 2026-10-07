@@ -129,10 +129,23 @@ describe("a file that can't be opened", () => {
 
   it("uses a term the engine doesn't model yet, and says when it will", () => {
     const file = good();
-    file.cap_table.securities.push({ id: "w1", name: "Warrant", kind: "warrant" });
+    file.cap_table.carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "ana", percent: "100" }] };
     expect(refusal(file)).toBe(
-      "Its cap table can't be used. file.cap_table.securities[8]: Warrants (w1). The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
+      "Its cap table can't be used. file.cap_table.carve_out: Management carve-outs. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
     );
+  });
+
+  it("has warrants, which the engine pays but the page doesn't show yet: refused, never shown as something else", () => {
+    const warrant = { id: "warrants_common_0.5", name: "Warrants for Common Stock ($0.5 strike)", kind: "warrant", strike: "0.5", underlying: "common" };
+    const file = good();
+    file.cap_table.securities.push(warrant);
+    file.cap_table.positions.push({ holder: "ana", security: warrant.id, shares: "100000" });
+    const message = "It has warrants, Warrants for Common Stock ($0.5 strike), which this page doesn't show yet. It won't open a cap table it can't show in full.";
+    expect(refusal(file)).toBe(message);
+    // The same from rounds: they build, and the page still won't show the table.
+    const rounds = withRounds();
+    rounds.events.splice(3, 0, { id: "warrants", date: "2021-09-20", type: "issue_warrants", warrants: [{ holder: "ana", shares: 100000, strike: "0.5", underlying: "common" }] });
+    expect(refusal(rounds)).toBe(message);
   });
 
   it("has both a cap table and rounds, or rounds without the event the payouts use", () => {

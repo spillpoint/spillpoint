@@ -1,7 +1,8 @@
 // Plain-English reasons for a breakpoint (SPEC, Breakpoints). Each reason
 // compares the answer just below the breakpoint with the answer just above,
-// and explains one change: a tier paid in full, a cap reached, options coming
-// into the money, a series or a group converting, or payouts jumping.
+// and explains one change: a tier paid in full, a cap reached, options or a
+// warrant coming into the money, a series or a group converting, or payouts
+// jumping.
 
 import type { Decimal } from "decimal.js";
 
@@ -14,13 +15,14 @@ export type ReasonCode =
   | "tier_fully_paid"
   | "cap_reached"
   | "option_in_the_money"
+  | "warrant_in_the_money"
   | "series_converts"
   | "payouts_jump"
   | "other";
 
 export interface Reason {
   code: ReasonCode;
-  /** The securities it concerns: a tier's series, a series or a group's series, an option class. */
+  /** The securities it concerns: a tier's series, a series or a group's series, an option class, a warrant. */
   subject: string[];
   /** For a change that can go either way: true when it starts (converts, comes into the money). */
   starts: boolean;
@@ -101,6 +103,26 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     });
   }
 
+  // A warrant coming into (or falling out of) the money (E4, E12). It decides
+  // for itself: exercising pays once a share of what it buys is worth more
+  // than the strike.
+  for (const w of pc.warrants.values()) {
+    const was = before.exercised.has(w.id);
+    const is = after.exercised.has(w.id);
+    if (was === is) continue;
+    const what = w.underlying === "common" ? "common" : name.get(w.underlying)!;
+    const which = `The warrant for ${shares(pc.shares.get(w.id)!)} ${what} shares at a ${perShare(w.strike)} strike`;
+    const joins = w.underlying === "common" ? "the new shares share the residual as common" : `the new shares join ${what}, with its preference and conversion`;
+    reasons.push({
+      code: "warrant_in_the_money",
+      subject: [w.id],
+      starts: is,
+      text: is
+        ? `${which} comes into the money here: each ${what} share is worth the strike. Above this, exercising pays: the strike money joins the proceeds, and ${joins}.`
+        : `${which} falls out of the money here. Above this, exercising no longer pays.`,
+    });
+  }
+
   // A conversion group converting or staying. E11: each holder votes for
   // conversion only if it does strictly better converting; E17: the group
   // decides first, on the two settled outcomes.
@@ -130,13 +152,15 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     const converts = after.converted.has(s.id);
     let text: string;
     if (converts) {
+      // E12: the series here counts the shares of any exercised warrant for it.
+      const here = atAfter.series.get(s.id)!;
       const keep =
         s.participation === "participating_capped"
-          ? `its capped total of ${money(pc.capTotal.get(s.id)!)} (${multiple(s.capMultiple!)} its investment)`
-          : `its ${multiple(s.preferenceMultiple)} preference of ${money(pc.preference.get(s.id)!)}`;
+          ? `its capped total of ${money(here.capTotal!)} (${multiple(s.capMultiple!)} its investment)`
+          : `its ${multiple(s.preferenceMultiple)} preference of ${money(here.preference)}`;
       text =
-        `${s.name} converts to common here. Its ${shares(pc.asConverted.get(s.id)!)} as-converted shares are worth ` +
-        `${money(atAfter.bySecurity.get(s.id)!)} at ${perShare(atAfter.commonPrice)} each, the same as ${keep}. ` +
+        `${s.name} converts to common here. Its ${shares(here.asConverted)} as-converted shares are worth ` +
+        `${money(here.asConverted.times(atAfter.commonPrice))} at ${perShare(atAfter.commonPrice)} each, the same as ${keep}. ` +
         "Below this exit value keeping its preference pays more; above it, converting does.";
     } else {
       text = `${s.name} stops converting here: above this exit value keeping its preference pays more.`;
@@ -179,7 +203,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       starts: true,
       text:
         `${s.name} reaches its cap here: its preference and its share as common together come to ` +
-        `${multiple(s.capMultiple!)} its investment, ${money(pc.capTotal.get(sid)!)}. ` +
+        `${multiple(s.capMultiple!)} its investment, ${money(above.answer.payout.series.get(sid)!.capTotal!)}. ` +
         "Above this exit value its payout stays flat until converting pays more.",
     });
   }
@@ -206,13 +230,15 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   return reasons;
 }
 
-/** Who shares the residual, by class: common, exercised options, and participating or converted preferred (SPEC). */
+/** Who shares the residual, by class: common, exercised options and warrants for common, and participating or converted preferred (SPEC). */
 function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
   return pc.capTable.securities
     .filter((s) => {
       if (pc.shares.get(s.id)!.isZero()) return false;
       if (s.kind === "common") return true;
       if (s.kind === "option") return d.exercised.has(s.id);
+      // A warrant for a series shares as part of that series, which is named instead.
+      if (s.kind === "warrant") return s.underlying === "common" && d.exercised.has(s.id);
       return d.converted.has(s.id) || s.participation !== "non_participating";
     })
     .map((s) => s.id);

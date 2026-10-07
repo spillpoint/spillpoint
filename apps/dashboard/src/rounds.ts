@@ -9,7 +9,7 @@
 import { D, InputError, UnsupportedTermError, buildCapTables, readInputs } from "spillpoint";
 import type { CapTable, CapTableAfterEvent, RoundDetails } from "spillpoint";
 
-import { draftFromExit } from "./draft.ts";
+import { NotShownYet, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
 import { dollars, dollarsAndCents, percent, withoutCodes } from "./format.ts";
 
@@ -45,7 +45,7 @@ export function fromRounds(rounds: Rounds, range: unknown): FromRounds {
     return { ok: true, tables, draft: draftFromExit({ cap_table: capTableJson(after.capTable), range: [String(r[0]), String(r[1])] }) };
   } catch (e) {
     const error = e as Error;
-    if (e instanceof InputError || e instanceof UnsupportedTermError) return { ok: false, message: withoutCodes(error.message), error };
+    if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) return { ok: false, message: withoutCodes(error.message), error };
     throw e;
   }
 }
@@ -62,6 +62,7 @@ export function capTableJson(ct: CapTable): Json {
     securities: ct.securities.map((s) => {
       if (s.kind === "common") return { id: s.id, name: s.name, kind: s.kind };
       if (s.kind === "option") return { id: s.id, name: s.name, kind: s.kind, strike: text(s.strike) };
+      if (s.kind === "warrant") return { id: s.id, name: s.name, kind: s.kind, strike: text(s.strike), underlying: s.underlying };
       return {
         id: s.id,
         name: s.name,
@@ -188,6 +189,16 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name)
       return {
         title: "Options granted",
         lines: items("grants").map((g) => `${holder(g.holder)}: ${count(new D(String(g.shares)))} options at $${String(g.strike)} a share, from the pool.`),
+      };
+    case "issue_warrants":
+      // R29: counted like options, and not drawn from the pool.
+      return {
+        title: "Warrants issued",
+        lines: items("warrants").map(
+          (w) =>
+            `${holder(w.holder)}: warrants for ${count(new D(String(w.shares)))} ${w.underlying === "common" ? "common" : security(w.underlying)} shares ` +
+            `at $${String(w.strike)} a share, not from the pool.`,
+        ),
       };
     case "safes":
       return {

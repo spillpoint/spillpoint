@@ -1,4 +1,4 @@
-// M2d: the breakpoint finder. For cases 1–7 and Millrace it must find every
+// M2d: the breakpoint finder. For cases 1–8 and Millrace it must find every
 // breakpoint expected.json lists, each within $0.01 of its exact value, with
 // the same reason codes, the same subjects (which series, tier or option
 // class), and the same jump flags (E13). The wording of the reasons is the
@@ -6,10 +6,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, findBreakpoints, prepare, readCapTable } from "../src/index.ts";
+import { D, findBreakpoints, prepare, readCapTable, solve } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Breakpoint } from "../src/index.ts";
-import { M2_CASES, readCaseFile } from "./support/cases.ts";
+import { EXIT_CASES, readCaseFile } from "./support/cases.ts";
 
 interface ExpectedBreakpoint {
   exit_value: string;
@@ -31,7 +31,7 @@ function expectedReasons(b: ExpectedBreakpoint): string[] {
     .sort();
 }
 
-describe.each(M2_CASES)("%s", (name) => {
+describe.each(EXIT_CASES)("%s", (name) => {
   const exit = readInputs(readCaseFile(name, "inputs.json"));
   const expected = (readCaseFile(name, "expected.json") as { exit: { breakpoints: ExpectedBreakpoint[] } }).exit.breakpoints;
   const found = findBreakpoints(prepare(exit.capTable), exit.range);
@@ -112,7 +112,7 @@ describe("reason wording for founders (M2d review)", () => {
     return findBreakpoints(prepare(exit.capTable), exit.range);
   };
 
-  it.each(M2_CASES)("%s: no assumption codes or jargon in the text", (name) => {
+  it.each(EXIT_CASES)("%s: no assumption codes or jargon in the text", (name) => {
     for (const b of reasonsFor(name)) {
       for (const r of b.reasons) {
         expect(r.text).not.toMatch(/\b[CERX]\d{1,2}\b/);
@@ -181,5 +181,49 @@ describe("two changes closer than $0.0001 (E18)", () => {
       "option_in_the_money: oa",
       "option_in_the_money: ob",
     ]);
+  });
+});
+
+describe("warrants (E4, E12, R29; M5d)", () => {
+  // 1M common and a warrant for 100,000 common at $1.00. It decides for itself (E4):
+  // exercising pays once a share is worth more than the strike, (E + $100k) ÷ 1.1M > $1,
+  // so above $1,000,000.
+  const pc = prepare(
+    readCapTable({
+      holders: ["f", "l"].map((id) => ({ id, name: id })),
+      securities: [
+        { id: "common", name: "Common Stock", kind: "common" },
+        { id: "w", name: "Warrants for Common Stock ($1 strike)", kind: "warrant", strike: "1", underlying: "common" },
+      ],
+      seniority: [],
+      positions: [
+        { holder: "f", security: "common", shares: 1000000 },
+        { holder: "l", security: "w", shares: 100000 },
+      ],
+      unissued_pool: 0,
+    }),
+  );
+
+  it("a warrant for common comes into the money like an option", () => {
+    const found = findBreakpoints(pc, [new D(0), new D(3000000)]);
+    expect(found.map((b) => [b.exitValue.toFixed(2), engineReasons(b)])).toEqual([["1000000.00", ["warrant_in_the_money: w"]]]);
+    expect(found[0]!.reasons[0]!.text).toBe(
+      "The warrant for 100,000 common shares at a $1.00 strike comes into the money here: each common share is worth the strike. " +
+        "Above this, exercising pays: the strike money joins the proceeds, and the new shares share the residual as common.",
+    );
+  });
+
+  it("is paid net of its strike, sharing the residual as common", () => {
+    // At $2.1M: ($2.1M + $100k) ÷ 1.1M = $2 a share, so the warrant nets 100,000 × $2 − $100,000.
+    const [answer] = solve(pc, new D(2100000)).answers;
+    expect([...answer!.decisions.exercised]).toEqual(["w"]);
+    expect(answer!.payout.bySecurity.get("w")!.toString()).toBe("100000");
+    expect(answer!.payout.bySecurity.get("common")!.toString()).toBe("2000000");
+  });
+
+  it("a warrant for preferred joins its series: case 8's shares, preference and conversion", () => {
+    const exit = readInputs(readCaseFile("edge-08-preferred-warrant", "inputs.json"));
+    const [, , converts] = findBreakpoints(prepare(exit.capTable), exit.range);
+    expect(converts!.reasons[0]!.text).toMatch(/^Seed Preferred converts to common here\. Its 2,200,000 as-converted shares are worth \$2,200,000/);
   });
 });
