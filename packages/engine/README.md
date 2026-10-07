@@ -1,6 +1,6 @@
 # spillpoint
 
-Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options, warrants, management carve-outs and SAFEs still outstanding at the sale. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
+Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options, warrants, management carve-outs, and SAFEs and convertible notes still outstanding at the sale. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
 It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play.
 
@@ -208,7 +208,7 @@ Breakpoint at $22499998.27:
 - **The SAFE converts at its cap.** Its Company Capitalization counts the stock, the pool as it stood before the round, and the SAFE itself: 11,111,111.11 shares. $10,000,000 ÷ 11,111,111.11 is $0.90 a share, so its $1,000,000 buys 1,111,111 shares of "Series A Preferred (from SAFEs)", with the Series A's rights.
 - **The SAFE and the pool top-up sit in the pre-money.** So the Series A Fund's $5,000,000 buys a fifth of the company as the round prices it ($5M of $25M post-money): 2,888,888 shares at $1.730769. The founder bears the dilution.
 - **At $20M** the SAFE's series has converted to common, and the Series A still takes its preference. **At $60M** both have converted.
-- **SAFEs still outstanding** come with the cap table after their event, as `capTable.unconvertedSafes` *(0.2.0)*, and an exit pays them. **`readInputs` refuses an exit** on a cap table with a note still outstanding, rather than leave it out of the waterfall. Running `prepare` directly on a table from `buildCapTables` doesn't check this, so check its `unconvertedNotes` first.
+- **SAFEs and notes still outstanding** come with the cap table after their event, as `capTable.unconvertedSafes` and `capTable.unconvertedNotes` *(0.2.0)*, and an exit on it pays them.
 
 ## What it covers
 
@@ -227,6 +227,10 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
   - **The Cash-Out Amount,** its purchase amount, is paid ahead of common. Alongside preferred it ranks with the most junior tier, or with the series it names (`cash_out_ranks_with`).
   - **The Conversion Amount:** a post-money SAFE converts at its cap ÷ one Liquidity Capitalization for the company, which counts every SAFE that converts and leaves out series keeping their preference. A pre-money SAFE's count leaves out the pool, the SAFEs and the notes. A discount applies only with no cap, at the sale's common price less the discount, where that price exists.
   - **Several SAFEs** share a shortfall pro rata. A SAFE takes its Conversion Amount only when that strictly pays more.
+- **Convertible notes still outstanding at the sale** *(0.2.0)*, each taking the greater of repayment and conversion:
+  - **Repayment,** a multiple of principal plus simple interest to the exit date, is debt, paid ahead of all equity. Several notes share a shortfall pro rata.
+  - **Conversion:** principal plus interest converts at the pre-money cap ÷ the share count just before the sale (with the pool, without it, or common only), leaving out the notes. With no cap it converts at the sale's common price less its discount, where that price exists. A note with neither is only repaid.
+  - **A note converts only when that strictly pays more.**
 - **Management carve-outs** *(0.2.0)*: a percentage of the exit value, in marginal tiers like tax brackets, paid to listed people under the security `"carve_out"`.
   - **Before the preferences,** the default.
   - **Alongside them,** sharing the most senior tier pro rata by claim. While that tier isn't paid in full, payouts curve. A breakpoint on a curve is where the formula changes, and the breakpoints either side of a curved stretch say so (`curveBelow`, `curveAbove`).
@@ -241,6 +245,7 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
   - options or a warrant coming into the money
   - a carve-out's tier ending *(0.2.0)*
   - a SAFE's Cash-Out Amount paid in full, or the SAFE switching to its Conversion Amount *(0.2.0)*
+  - a note repaid in full, or switching to conversion *(0.2.0)*
   - a series or a group converting
   - payouts jumping when a group's vote flips
 
@@ -284,12 +289,11 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
-- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; and a SAFE with no cap alongside capped participating preferred.
+- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; a SAFE with no cap alongside capped participating preferred; more than one note unless each has a cap; a note alongside a SAFE or a carve-out; and a note with no cap alongside capped participating preferred.
 - Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
 **Not modeled yet** (milestone `"M5"`):
 - escrow and earnouts
-- convertible notes still outstanding at a sale
 
 **Refused by design,** with an `InputError`:
 - a pro-rata investment above the investor's entitlement (the message gives the amount to mark pro-rata, and says to enter the rest as an ordinary investment)
@@ -307,10 +311,11 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
   - `positions`: shares held, per holder and security
   - optional `unissued_pool`
   - optional `unconverted_safes` *(0.2.0)*: SAFEs still outstanding, each with an `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, `discount`, and optionally `cash_out_ranks_with`
+  - optional `unconverted_notes` *(0.2.0)*: notes still outstanding, with the fields of the `notes` event below; the exit then needs an `exit_date`
   - optional `carve_out` *(0.2.0)*: `timing` (`before_preferences` or `alongside_preferences`), `tiers` (`from`, `to`, `percent`) and `allocation` (`holder`, `percent`)
 - `range`: the exit values to analyse
 - `exit_values`: the points to report
-- `exit_date`, as `YYYY-MM-DD`: needed when a series has cumulative dividends *(0.2.0)*
+- `exit_date`, as `YYYY-MM-DD`: needed when a series has cumulative dividends or a note is outstanding *(0.2.0)*
 
 **A company built from its rounds** (`buildCapTables`, `readInputs`) is `holders` and `events`, each event with an `id`, a `date` and a `type`:
 
@@ -343,8 +348,8 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 |---|---|
 | `readExit(json)`, `readCapTable(json)` | Read and check an input. |
 | `buildCapTables(company)` | Build the cap table after each event. Each comes with the SAFEs and notes still outstanding and what the event worked out. |
-| `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs still outstanding there are paid *(0.2.0)*; notes are refused. |
-| `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps. `exitDate` is needed only when a series has cumulative dividends. |
+| `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
+| `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps, and each note's interest, repayment and conversion. `exitDate` is needed only for dividends and notes. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
 | `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |

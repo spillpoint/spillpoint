@@ -21,16 +21,17 @@
   - **Cash-Out Amounts** rank ahead of common, with the most junior preferred tier or a named one.
   - **Several SAFEs** share a shortfall pro rata.
   - **A cap table built from rounds** carries its outstanding SAFEs, and an exit on it pays them.
+- **Convertible notes still outstanding at a sale** (M5h): each takes the greater of repayment, as debt ahead of all equity, and conversion at its pre-money cap, or with no cap at the sale's common price less its discount. Several notes share a shortfall pro rata. The exit needs an `exit_date`. A cap table built from rounds carries its outstanding notes.
 - **Management carve-outs** (M5f): a percentage of the exit value in marginal tiers, paid to listed people before the preferences or alongside them in the most senior tier. Alongside them, payouts curve while that tier isn't paid in full. A breakpoint there is where the formula changes.
 - **A round's seniority** may leave out the series its SAFEs and notes convert into (R28, M4j). They then rank alongside its new series.
 
-*To come in M5: notes outstanding at a sale, and escrow and earnouts.*
+*To come in M5: escrow and earnouts.*
 
 ## New in the API
 
 - **`prepare(capTable, exitDate)`:** the exit date is a new, optional second argument. It is needed only when a series has cumulative dividends.
 - **`readExit` and `readInputs`** return `exitDate`.
-- **New types:** `WarrantClass`, `CumulativeDividend`, `SeriesHere`, `CarveOut`, `CarveOutHere` and `SafeHere`. `Safe` is the same type as in 0.1.0, now exported from the model, with an optional `cashOutRanksWith`.
+- **New types:** `WarrantClass`, `CumulativeDividend`, `SeriesHere`, `CarveOut`, `CarveOutHere` and `SafeHere`. `Safe` is the same type as in 0.1.0, now exported from the model, with an optional `cashOutRanksWith`. `Note` is too, unchanged. Also `NoteTerms` and `NoteHere`.
 - **New fields:**
   - **`Payout.series`:** each series' shares, preference, dividends, claim, cap and as-converted shares at that exit value.
   - **`PreparedCapTable.dividends`** and **`.exitDate`**.
@@ -38,12 +39,13 @@
   - **`Payout.curved`:** whether payouts curve at that exit value.
   - **`Breakpoint.curveBelow`** and **`.curveAbove`**.
   - **`Payout.safes`** and **`.safeCash`:** each SAFE's decision, its Liquidity Capitalization, price and shares, and the shared Cash-Out claim.
+  - **`Payout.notes`** and **`.noteDebt`**, and **`PreparedCapTable.notes`:** each note's interest, repayment, base, price and shares, and the debt.
 - **Optional fields,** so 0.1.0 code that builds these objects by hand keeps working:
   - **`PreferredSeries.cumulativeDividend`:** missing means no dividends.
   - **`ExitInput.exitDate`.**
   - **`CapTable.carveOut`.**
-  - **`CapTable.unconvertedSafes`.** A table from `buildCapTables` has it when SAFEs are outstanding.
-- **`Decisions.exercised`** now holds exercised warrants as well as option classes, and **`Decisions.converted`** holds SAFEs taking their Conversion Amount as well as converting series.
+  - **`CapTable.unconvertedSafes`** and **`.unconvertedNotes`.** A table from `buildCapTables` has them when SAFEs or notes are outstanding.
+- **`Decisions.exercised`** now holds exercised warrants as well as option classes, and **`Decisions.converted`** holds SAFEs taking their Conversion Amount and converting notes as well as converting series.
 
 ## Changes that can break 0.1.0 code
 
@@ -51,7 +53,7 @@ These come from new terms widening a union. They break only code that switches o
 
 - **`Security` has a new kind, `"warrant"`.** This is the one you're most likely to meet: code that switches over every security kind needs a `"warrant"` branch.
 - **`EventDetails["kind"]` has `"issue_warrants"`.** It comes from the new event.
-- **`ReasonCode` has `"warrant_in_the_money"`, `"carve_out_tier"`, `"payouts_curve"`, `"safe_cash_out_paid"` and `"safe_switches"`.** Later M5 terms may add more.
+- **`ReasonCode` has `"warrant_in_the_money"`, `"carve_out_tier"`, `"payouts_curve"`, `"safe_cash_out_paid"`, `"safe_switches"`, `"note_repayment_paid"` and `"note_switches"`.** Later M5 terms may add more.
 
 ## Refusals
 
@@ -60,17 +62,21 @@ These come from new terms widening a union. They break only code that switches o
   - cumulative dividends (term `"cumulative_dividend"`)
   - management carve-outs (term `"carve_out"`)
   - SAFEs still outstanding at a sale (term `"unconverted_safe"`), on a cap table given in full or built from rounds
+  - notes still outstanding at a sale (term `"unconverted_note"`), likewise
 - **Newly refused** (milestone `"later"`, until a case settles them):
   - **`"dividends_added_to_conversion"`:** dividends added to what converts, rather than paid in cash on conversion.
   - **`"cumulative_dividend_in_rounds"`:** dividends on a series issued by an `issue` event rather than a priced round.
   - **`"several_safes"`:** more than one SAFE at a sale, unless each has a post-money cap.
   - **`"pre_money_safe_with_preferred"`:** a pre-money SAFE at a sale alongside preferred stock.
   - **`"uncapped_safe_with_capped_participation"`:** a SAFE with no cap alongside capped participating preferred.
+  - **`"several_notes"`:** more than one note at a sale, unless each has a cap.
+  - **`"note_with_safe_or_carve_out"`:** a note at a sale alongside a SAFE or a carve-out.
+  - **`"uncapped_note_with_capped_participation"`:** a note with no cap alongside capped participating preferred.
 
 ## Payouts
 
 - **A carve-out's recipients** get a line each, under the security `"carve_out"`, after the lines for the cap table's positions. A recipient need hold no equity.
-- **Each SAFE** gets its own line, under its id, after those.
+- **Each SAFE, then each note,** gets its own line, under its id, after those.
 
 ## Messages
 

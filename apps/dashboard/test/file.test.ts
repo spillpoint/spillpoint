@@ -130,14 +130,20 @@ describe("a file that can't be opened", () => {
     );
   });
 
-  it("uses a term the engine doesn't model yet, and says when it will", () => {
+  it("uses a term the engine doesn't model yet, in the engine's words", () => {
+    const file = good();
+    file.cap_table.conversion_groups = [["seed", "series_a"], ["series_b"]];
+    expect(refusal(file)).toMatch(
+      /^Its cap table can't be used\. file\.cap_table\.conversion_groups: More than one conversion group .*The engine supports this once a case needs it; until then it refuses the input rather than ignoring the term\.$/,
+    );
+  });
+
+  it("has a convertible note still outstanding, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
     const file = good();
     file.cap_table.unconverted_notes = [
       { id: "note_z", holder: "ana", principal: "100000", interest_rate: "0.06", issue_date: "2023-01-01", valuation_cap: "8000000", conversion_base: "with_pool", discount: "0", repayment_multiple: "2" },
     ];
-    expect(refusal(file)).toBe(
-      "Its cap table can't be used. file.cap_table.unconverted_notes: Convertible notes still outstanding at exit. The engine supports this from M5; until then it refuses the input rather than ignoring the term.",
-    );
+    expect(refusal(file)).toBe("It has convertible notes still outstanding, which this page doesn't show yet. It won't open a cap table it can't show in full.");
   });
 
   it("has a SAFE still outstanding, which the engine pays but the page doesn't show yet: refused, never dropped", () => {

@@ -124,6 +124,31 @@ export interface Safe {
   cashOutRanksWith?: string | null;
 }
 
+/**
+ * A convertible note: converting in a round when it says so (R23), or still
+ * outstanding at a sale (C9; X3, X10–X12, X15), where its holder takes the
+ * greater of repayment and conversion.
+ */
+export interface Note {
+  id: string;
+  holder: string;
+  principal: D;
+  /** Simple interest a year, as a fraction: 0.06 for 6%. */
+  interestRate: D;
+  interestMethod: "simple";
+  /** YYYY-MM-DD: interest runs from here, Actual/365. */
+  issueDate: string;
+  /** Pre-money, so the note's shares sit on top of the base; null for no cap. */
+  valuationCap: D | null;
+  capType: "pre_money";
+  /** What the cap divides by (X10): issued stock as converted, options and warrants, with or without the unissued pool; or common only. */
+  conversionBase: "with_pool" | "without_pool" | "common_only";
+  /** In a round, the discount to the round's price; at a sale, used only with no cap (X12). */
+  discount: D;
+  /** At a sale, repayment is this multiple × (principal + interest), paid ahead of all equity as debt (X3, X12). */
+  repaymentMultiple: D;
+}
+
 /** One holder's shares of one security (E9: payouts are reported per holder × security). */
 export interface Position {
   holder: string;
@@ -144,6 +169,8 @@ export interface CapTable {
   carveOut?: CarveOut | null;
   /** SAFEs still outstanding at the sale (C8). Optional, for the same reason. */
   unconvertedSafes?: Safe[];
+  /** Convertible notes still outstanding at the sale (C9). Optional, for the same reason. */
+  unconvertedNotes?: Note[];
 }
 
 /** What the engine needs to run an exit: the cap table, the range to analyse, and the exit values to report. */

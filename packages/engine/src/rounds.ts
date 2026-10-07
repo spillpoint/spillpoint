@@ -19,27 +19,12 @@ import type { Decimal } from "decimal.js";
 import { D, ONE, ZERO } from "./decimal.ts";
 import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
-import { array, notNegative, object, onlyKnownFields, positive, readSafe, readSecurity, text, wholeShares } from "./input.ts";
-import type { CapTable, Holder, Position, PreferredSeries, Safe, Security } from "./model.ts";
+import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, text, wholeShares } from "./input.ts";
+import type { CapTable, Holder, Note, Position, PreferredSeries, Safe, Security } from "./model.ts";
 
 type Json = Record<string, unknown>;
 
 /** A SAFE, outstanding until a round converts it: post-money (R4) or pre-money (R24), never both. */
-/** A convertible note, outstanding until a round converts it (R23) or the company is sold (C9, C14). */
-export interface Note {
-  id: string;
-  holder: string;
-  principal: Decimal;
-  interestRate: Decimal;
-  interestMethod: "simple";
-  issueDate: string;
-  valuationCap: Decimal | null;
-  capType: "pre_money";
-  conversionBase: "with_pool" | "without_pool" | "common_only";
-  discount: Decimal;
-  repaymentMultiple: Decimal;
-}
-
 /** A SAFE's conversion in a round (R4, R5, R24). */
 export interface SafeConversion {
   safe: string;
@@ -265,6 +250,7 @@ class Company {
       unissuedPool: this.unissuedPool,
       // SAFEs not yet converted, which an exit on this table pays (C2, C8). Left out when there are none.
       ...(this.safes.length > 0 ? { unconvertedSafes: this.safes.map((f) => ({ ...f })) } : {}),
+      ...(this.notes.length > 0 ? { unconvertedNotes: this.notes.map((n) => ({ ...n })) } : {}),
     };
   }
 }
@@ -348,41 +334,6 @@ function ensureSecurity(company: Company, value: unknown, path: string): Securit
   return s;
 }
 
-const NOTE_FIELDS = [
-  "id", "holder", "principal", "interest_rate", "interest_method", "issue_date", "valuation_cap", "cap_type", "conversion_base", "discount", "repayment_multiple",
-] as const;
-const CONVERSION_BASES = ["with_pool", "without_pool", "common_only"] as const;
-
-function readNote(value: unknown, path: string): Note {
-  const n = object(value, path);
-  onlyKnownFields(n, NOTE_FIELDS, path);
-  // R23: refused until a case covers them, never skipped.
-  if ((n.interest_method ?? "simple") !== "simple") {
-    throw new UnsupportedTermError("note_compounding_interest", "later", `${path}.interest_method`, "Notes with interest other than simple (R23)");
-  }
-  if ((n.cap_type ?? "pre_money") !== "pre_money") {
-    throw new UnsupportedTermError("note_post_money_cap", "later", `${path}.cap_type`, "Notes with a post-money cap (R23)");
-  }
-  const base = (n.conversion_base ?? "with_pool") as Note["conversionBase"];
-  if (!CONVERSION_BASES.includes(base)) throw new InputError(`${path}.conversion_base`, `must be one of ${CONVERSION_BASES.join(", ")}`);
-  const issueDate = text(n.issue_date, `${path}.issue_date`);
-  dayNumber(issueDate, `${path}.issue_date`);
-  const discount = n.discount == null ? ZERO : notNegative(n.discount, `${path}.discount`);
-  if (discount.gte(1)) throw new InputError(`${path}.discount`, "must be below 1");
-  return {
-    id: text(n.id, `${path}.id`),
-    holder: text(n.holder, `${path}.holder`),
-    principal: positive(n.principal, `${path}.principal`),
-    interestRate: notNegative(n.interest_rate, `${path}.interest_rate`),
-    interestMethod: "simple",
-    issueDate,
-    valuationCap: n.valuation_cap == null ? null : positive(n.valuation_cap, `${path}.valuation_cap`),
-    capType: "pre_money",
-    conversionBase: base,
-    discount,
-    repaymentMultiple: positive(n.repayment_multiple, `${path}.repayment_multiple`),
-  };
-}
 
 /**
  * SPEC, Tiers: every preferred series in exactly one tier, and nothing else in
