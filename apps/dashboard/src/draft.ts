@@ -90,15 +90,76 @@ const grouped = (v: unknown) => {
   return /^\d+$/.test(s) ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : s;
 };
 
-/** A draft of an exit input already in the case-file format, such as an example. */
-/** A cap table the engine reads but the page can't show in full yet: refused, never shown with something left out. */
+/** A cap table the page can't show in full: refused, never shown with something left out or read as something else. */
 export class NotShownYet extends Error {
   override name = "NotShownYet";
+  /** False for a field nobody models, such as a misspelling: then the engine's own message says more. */
+  readonly known: boolean;
+
+  constructor(message: string, known = true) {
+    super(message);
+    this.known = known;
+  }
 }
 
+/** What the editor carries, kind by kind. Anything else on a cap table is refused, never dropped. */
+const SHOWN_FIELDS: Record<string, readonly string[]> = {
+  common: ["id", "name", "kind"],
+  option: ["id", "name", "kind", "strike"],
+  preferred: [
+    "id", "name", "kind", "original_issue_price", "conversion_price", "conversion_ratio", "preference_multiple",
+    "participation", "cap_multiple", "anti_dilution", "anti_dilution_a", "approx",
+  ],
+};
+const SHOWN_TABLE_FIELDS = ["holders", "securities", "seniority", "conversion_groups", "positions", "unissued_pool", "totals"];
+/** Terms the engine models that the page doesn't show yet, by field, as a founder would name them. */
+const TERM_NAMES: Record<string, string> = {
+  cumulative_dividend: "cumulative dividends",
+  carve_out: "a management carve-out",
+  unconverted_safes: "SAFEs still outstanding",
+  unconverted_notes: "convertible notes still outstanding",
+};
+
+/**
+ * The page shows a cap table only if it can show all of it. A security of a
+ * kind it doesn't know is refused, never treated as common stock; so is a term
+ * it doesn't carry, such as a series' cumulative dividends, never dropped.
+ * Run before anything else reads the cap table, so a founder hears what the
+ * page can't show rather than what the engine would need to run it.
+ */
+export function checkShown(capTable: unknown): void {
+  if (capTable == null || typeof capTable !== "object") return;
+  const ct = capTable as Json;
+  const refuse = (what: string, known = true) => {
+    throw new NotShownYet(`It has ${what}, which this page doesn't show yet. It won't open a cap table it can't show in full.`, known);
+  };
+  for (const field of Object.keys(ct)) {
+    const value = ct[field];
+    const empty = value == null || (Array.isArray(value) && value.length === 0);
+    if (!SHOWN_TABLE_FIELDS.includes(field) && !empty) refuse(TERM_NAMES[field] ?? `"${field}"`, field in TERM_NAMES);
+  }
+  if (Array.isArray(ct.conversion_groups) && ct.conversion_groups.length > 1) refuse("more than one group of series that must convert together");
+  if (!Array.isArray(ct.securities)) return;
+  for (const s of ct.securities as Json[]) {
+    if (s == null || typeof s !== "object") continue;
+    const name = str(s.name) || str(s.id);
+    if (s.kind === "warrant") refuse(`warrants, ${name}`);
+    const fields = SHOWN_FIELDS[str(s.kind)];
+    if (!fields) {
+      throw new NotShownYet(
+        `It has ${name}, a kind of security ("${str(s.kind)}") this page doesn't know. It won't open the cap table rather than treat it as something it isn't.`,
+      );
+    }
+    const extra = Object.keys(s).find((f) => !fields.includes(f) && s[f] != null);
+    if (extra) refuse(`${TERM_NAMES[extra] ?? `"${extra}"`} on ${name}`, extra in TERM_NAMES);
+  }
+}
+
+/** A draft of an exit input already in the case-file format, such as an example. */
 export function draftFromExit(exit: unknown): Draft {
   const e = exit as Json;
   const ct = e.cap_table as Json;
+  checkShown(ct);
   let n = 0;
   const key = () => `k${++n}`;
   const holderKeys = new Map<string, string>();
@@ -110,16 +171,8 @@ export function draftFromExit(exit: unknown): Draft {
   const tierOf = new Map<string, number>();
   (ct.seniority as string[][]).forEach((tier, i) => tier.forEach((sid) => tierOf.set(sid, i + 1)));
   const securityKeys = new Map<string, string>();
-  const securities = (ct.securities as Json[]).map((s, i): DraftSecurity => {
-    // The editor shows common, options and preferred. Anything else is refused,
-    // never turned into something it isn't: the engine pays warrants (E12,
-    // R29), but the page shows them only from M5k.
-    if (s.kind === "warrant") {
-      throw new NotShownYet(`It has warrants, ${str(s.name)}, which this page doesn't show yet. It won't open a cap table it can't show in full.`);
-    }
-    if (s.kind !== "common" && s.kind !== "option" && s.kind !== "preferred") {
-      throw new InputError(`cap_table.securities[${i}].kind`, `unknown security kind ${JSON.stringify(s.kind)}`);
-    }
+  // checkShown has refused anything but common, options and preferred, with only the fields the editor carries.
+  const securities = (ct.securities as Json[]).map((s): DraftSecurity => {
     const k = key();
     const id = str(s.id);
     securityKeys.set(id, k);

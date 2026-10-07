@@ -1,4 +1,4 @@
-// M2d: the breakpoint finder. For cases 1–8 and Millrace it must find every
+// M2d: the breakpoint finder. For cases 1–9 and Millrace it must find every
 // breakpoint expected.json lists, each within $0.01 of its exact value, with
 // the same reason codes, the same subjects (which series, tier or option
 // class), and the same jump flags (E13). The wording of the reasons is the
@@ -34,7 +34,7 @@ function expectedReasons(b: ExpectedBreakpoint): string[] {
 describe.each(EXIT_CASES)("%s", (name) => {
   const exit = readInputs(readCaseFile(name, "inputs.json"));
   const expected = (readCaseFile(name, "expected.json") as { exit: { breakpoints: ExpectedBreakpoint[] } }).exit.breakpoints;
-  const found = findBreakpoints(prepare(exit.capTable), exit.range);
+  const found = findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range);
 
   it("finds the same breakpoints, each within a cent", () => {
     expect(found).toHaveLength(expected.length);
@@ -98,7 +98,7 @@ describe("the range", () => {
   it("reports only breakpoints strictly inside it (SPEC)", () => {
     // Edge case 2: the preference is paid at $3M and Seed converts at $15M.
     const exit = readInputs(readCaseFile("edge-02-non-participating", "inputs.json"));
-    const pc = prepare(exit.capTable);
+    const pc = prepare(exit.capTable, exit.exitDate);
     const at = (lo: number, hi: number) => findBreakpoints(pc, [new D(lo), new D(hi)]).map((b) => b.exitValue.toFixed(2));
     expect(at(0, 20000000)).toEqual(["3000000.00", "15000000.00"]);
     expect(at(3000000, 15000000)).toEqual([]);
@@ -109,7 +109,7 @@ describe("the range", () => {
 describe("reason wording for founders (M2d review)", () => {
   const reasonsFor = (name: string) => {
     const exit = readInputs(readCaseFile(name, "inputs.json"));
-    return findBreakpoints(prepare(exit.capTable), exit.range);
+    return findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range);
   };
 
   it.each(EXIT_CASES)("%s: no assumption codes or jargon in the text", (name) => {
@@ -223,7 +223,7 @@ describe("warrants (E4, E12, R29; M5d)", () => {
 
   it("a warrant for preferred joins its series: case 8's shares, preference and conversion", () => {
     const exit = readInputs(readCaseFile("edge-08-preferred-warrant", "inputs.json"));
-    const [, , converts] = findBreakpoints(prepare(exit.capTable), exit.range);
+    const [, , converts] = findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range);
     expect(converts!.reasons[0]!.text).toMatch(/^Seed Preferred converts to common here\. Its 2,200,000 as-converted shares are worth \$2,200,000/);
   });
 });

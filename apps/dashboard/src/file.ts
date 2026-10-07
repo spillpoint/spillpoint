@@ -22,7 +22,7 @@
 import { InputError, UnsupportedTermError, parseExact, readExit } from "spillpoint";
 import type { ExitInput } from "spillpoint";
 
-import { NotShownYet, buildExit, draftFromExit } from "./draft.ts";
+import { NotShownYet, buildExit, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { fromRounds } from "./rounds.ts";
@@ -120,10 +120,27 @@ type Contents = { read: ExitInput; draft: Draft; rounds: Rounds | null } | { mes
 /** A cap table entered directly. */
 function openCapTable(file: Record<string, unknown>): Contents {
   const exit = { cap_table: file.cap_table, range: file.range, exit_values: [] };
+  let read: ExitInput;
   try {
-    return { read: readExit(exit, undefined, "file"), draft: draftFromExit(exit), rounds: null };
+    read = readExit(exit, undefined, "file");
   } catch (e) {
-    if (e instanceof InputError || e instanceof UnsupportedTermError) return { message: `Its cap table can't be used. ${withoutCodes(e.message)}` };
+    // A term the engine doesn't model yet: its message says when.
+    if (e instanceof UnsupportedTermError) return { message: `Its cap table can't be used. ${withoutCodes(e.message)}` };
+    if (e instanceof InputError) {
+      // Anything the page can't show comes before the engine's other complaints, such as a missing exit date for dividends.
+      try {
+        checkShown(file.cap_table);
+      } catch (shown) {
+        if (!(shown instanceof NotShownYet)) throw shown;
+        if (shown.known) return { message: shown.message };
+      }
+      return { message: `Its cap table can't be used. ${withoutCodes(e.message)}` };
+    }
+    throw e;
+  }
+  try {
+    return { read, draft: draftFromExit(exit), rounds: null };
+  } catch (e) {
     if (e instanceof NotShownYet) return { message: e.message };
     throw e;
   }

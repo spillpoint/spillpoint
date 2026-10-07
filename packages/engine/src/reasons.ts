@@ -154,10 +154,21 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     if (converts) {
       // E12: the series here counts the shares of any exercised warrant for it.
       const here = atAfter.series.get(s.id)!;
-      const keep =
-        s.participation === "participating_capped"
-          ? `its capped total of ${money(here.capTotal!)} (${multiple(s.capMultiple!)} its investment)`
-          : `its ${multiple(s.preferenceMultiple)} preference of ${money(here.preference)}`;
+      // X4, X5: accrued dividends are part of the preference. Converting gives them up, unless they are paid on conversion.
+      let keep: string;
+      if (s.participation === "participating_capped") {
+        keep = `its capped total of ${money(here.capTotal!)} (${multiple(s.capMultiple!)} its investment)`;
+      } else if (here.dividends.isZero()) {
+        keep = `its ${multiple(s.preferenceMultiple)} preference of ${money(here.preference)}`;
+      } else if (s.cumulativeDividend!.onConversion === "paid") {
+        keep =
+          `its ${multiple(s.preferenceMultiple)} preference of ${money(here.preference.minus(here.dividends))}. ` +
+          `Its accrued dividends, ${money(here.dividends)}, are paid either way: converting keeps them, in its tier`;
+      } else {
+        keep =
+          `its ${multiple(s.preferenceMultiple)} preference plus ${money(here.dividends)} of accrued dividends, ` +
+          `${money(here.preference)} in all, which converting gives up`;
+      }
       text =
         `${s.name} converts to common here. Its ${shares(here.asConverted)} as-converted shares are worth ` +
         `${money(here.asConverted.times(atAfter.commonPrice))} at ${perShare(atAfter.commonPrice)} each, the same as ${keep}. ` +
@@ -184,7 +195,10 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       const sharing = sharers(pc, after).map((id) => name.get(id)!);
       nextText = sharing.length === 1 ? `goes to ${sharing[0]}` : `is shared as common by ${list(sharing)}`;
     }
-    const whose = names.length === 1 ? `${names[0]}'s preference is` : `The preferences of ${list(names)} are`;
+    // X4: a preference includes accrued dividends; a converted series' claim is only its dividends (X5).
+    const withDividends = paid.series.some((sid) => !atAfter.series.get(sid)!.dividends.isZero());
+    const what = withDividends ? "preference, with accrued dividends," : "preference";
+    const whose = names.length === 1 ? `${names[0]}'s ${what} is` : `The ${withDividends ? "preferences, with accrued dividends," : "preferences"} of ${list(names)} are`;
     reasons.push({
       code: "tier_fully_paid",
       subject: [...tier],

@@ -74,6 +74,17 @@ export function capTableJson(ct: CapTable): Json {
         cap_multiple: s.capMultiple ? text(s.capMultiple) : null,
         anti_dilution: s.antiDilution,
         ...(s.antiDilutionA != null ? { anti_dilution_a: s.antiDilutionA } : {}),
+        // Written out so the page's own check (checkShown) sees the term, never drops it.
+        ...(s.cumulativeDividend != null
+          ? {
+              cumulative_dividend: {
+                rate: text(s.cumulativeDividend.rate),
+                method: s.cumulativeDividend.method,
+                accrual_start: s.cumulativeDividend.accrualStart,
+                on_conversion: s.cumulativeDividend.onConversion,
+              },
+            }
+          : {}),
       };
     }),
     seniority: ct.seniority.map((t) => [...t]),

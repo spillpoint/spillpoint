@@ -10,12 +10,14 @@
 
 import type { Decimal } from "decimal.js";
 
+import { dayNumber } from "./dates.ts";
 import { D, ONE, ZERO, parseExact } from "./decimal.ts";
 import { InputError, UnsupportedTermError } from "./errors.ts";
 import type {
   AntiDilution,
   CapTable,
   ConversionGroup,
+  CumulativeDividend,
   ExitInput,
   Holder,
   Participation,
@@ -98,10 +100,26 @@ const PREFERRED_FIELDS = [
 /** The as-converted ratio a cap table states must match original issue price ÷ conversion price. */
 const RATIO_AGREEMENT = new D("1e-30");
 
-function readPreferred(s: Json, id: string, name: string, path: string): PreferredSeries {
-  if (s.cumulative_dividend != null) {
-    throw new UnsupportedTermError("cumulative_dividend", "M5", `${path}.cumulative_dividend`, "Cumulative dividends (X2, X4)");
+/** C5: a rate, simple or compounding, an accrual start, and what happens on conversion (X2, X4, X5). */
+function readDividend(value: unknown, path: string): CumulativeDividend {
+  const d = object(value, path);
+  onlyKnownFields(d, ["rate", "method", "accrual_start", "on_conversion"], path);
+  const method = d.method ?? "simple";
+  if (method !== "simple" && method !== "compounding") throw new InputError(`${path}.method`, "must be simple or compounding");
+  const onConversion = d.on_conversion ?? "forfeited";
+  // X5's other reading: (original issue price + accrued) ÷ conversion price converts. Refused until a case settles it.
+  if (onConversion === "added_to_conversion") {
+    throw new UnsupportedTermError(
+      "dividends_added_to_conversion", "later", `${path}.on_conversion`, "Accrued dividends added to what converts, the other reading (X5)",
+    );
   }
+  if (onConversion !== "forfeited" && onConversion !== "paid") throw new InputError(`${path}.on_conversion`, "must be forfeited or paid");
+  const accrualStart = text(d.accrual_start, `${path}.accrual_start`);
+  dayNumber(accrualStart, `${path}.accrual_start`);
+  return { rate: notNegative(d.rate, `${path}.rate`), method, accrualStart, onConversion };
+}
+
+function readPreferred(s: Json, id: string, name: string, path: string): PreferredSeries {
   onlyKnownFields(s, PREFERRED_FIELDS, path);
   const originalIssuePrice = positive(s.original_issue_price, `${path}.original_issue_price`);
   // A series' conversion price starts at its original issue price; anti-dilution lowers it.
@@ -156,6 +174,7 @@ function readPreferred(s: Json, id: string, name: string, path: string): Preferr
     capMultiple,
     antiDilution,
     antiDilutionA,
+    cumulativeDividend: s.cumulative_dividend == null ? null : readDividend(s.cumulative_dividend, `${path}.cumulative_dividend`),
   };
 }
 
@@ -320,7 +339,7 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
 
 // ---------- exits and cases ----------
 
-// exit_date is read only by dividends and notes, which M2 refuses; it is accepted and unused.
+// exit_date: dividends accrue to it (X2); notes, still refused at exit, will too.
 const EXIT_FIELDS = ["cap_table", "cap_table_after_event", "range", "exit_values", "exit_date", "payment_schedules"] as const;
 
 export function readExit(value: unknown, resolveCapTable?: CapTableResolver, path = "exit"): ExitInput {
@@ -361,5 +380,16 @@ export function readExitOn(value: unknown, tableAfter: (eventId: string, path: s
     return x;
   });
 
-  return { capTable, range: [lo, hi], exitValues };
+  // X2: dividends accrue to the exit date, so a table with them needs one, on or after every accrual start.
+  const exitDate = exit.exit_date == null ? null : text(exit.exit_date, `${path}.exit_date`);
+  if (exitDate != null) dayNumber(exitDate, `${path}.exit_date`);
+  for (const s of capTable.securities) {
+    if (s.kind !== "preferred" || !s.cumulativeDividend) continue;
+    if (exitDate == null) throw new InputError(`${path}.exit_date`, `${s.name} accrues cumulative dividends, so the exit needs an exit_date`);
+    if (dayNumber(exitDate, `${path}.exit_date`) < dayNumber(s.cumulativeDividend.accrualStart, "accrual_start")) {
+      throw new InputError(`${path}.exit_date`, `${exitDate} is before ${s.name}'s dividends start to accrue, ${s.cumulativeDividend.accrualStart}`);
+    }
+  }
+
+  return { capTable, range: [lo, hi], exitValues, exitDate };
 }

@@ -7,7 +7,20 @@ import type { CapTable } from "spillpoint";
 import examples from "virtual:examples";
 import { describe, expect, it } from "vitest";
 
-import { addHolder, addSecurity, buildExit, checkBuilt, fieldForPath, fieldId, removeRow, scratchDraft, setPrice, sharesKey } from "../src/draft.ts";
+import {
+  NotShownYet,
+  addHolder,
+  addSecurity,
+  buildExit,
+  checkBuilt,
+  draftFromExit,
+  fieldForPath,
+  fieldId,
+  removeRow,
+  scratchDraft,
+  setPrice,
+  sharesKey,
+} from "../src/draft.ts";
 import { exampleContents } from "../src/rounds.ts";
 
 /** Millrace's draft, built from its rounds as the page builds it. */
@@ -124,6 +137,34 @@ describe("where an engine error lands", () => {
     });
     expect(!checked.ok && checked.error.message).toBe(
       `exit.cap_table.securities[${index}].cap_multiple: the cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower (E7)`,
+    );
+  });
+});
+
+describe("a cap table the page can't show in full (M5d review)", () => {
+  // The page's own guard, whatever the engine reads: a kind it doesn't know is
+  // never treated as common stock, and a term it doesn't carry is never dropped.
+  const exit = (security: Record<string, unknown>) => ({
+    cap_table: {
+      holders: [{ id: "a", name: "A" }],
+      securities: [{ id: "common", name: "Common Stock", kind: "common" }, security],
+      seniority: [],
+      positions: [{ holder: "a", security: "common", shares: "100" }],
+      unissued_pool: "0",
+    },
+    range: ["0", "1000000"],
+  });
+
+  it("refuses a made-up kind of security", () => {
+    expect(() => draftFromExit(exit({ id: "g", name: "Gizmo shares", kind: "gizmo" }))).toThrow(
+      new NotShownYet('It has Gizmo shares, a kind of security ("gizmo") this page doesn\'t know. It won\'t open the cap table rather than treat it as something it isn\'t.'),
+    );
+  });
+
+  it("refuses a term it doesn't carry, such as a series' dividends", () => {
+    const series = { id: "p", name: "Seed Preferred", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null };
+    expect(() => draftFromExit(exit({ ...series, cumulative_dividend: { rate: "0.08", accrual_start: "2024-01-01" } }))).toThrow(
+      "It has cumulative dividends on Seed Preferred, which this page doesn't show yet.",
     );
   });
 });

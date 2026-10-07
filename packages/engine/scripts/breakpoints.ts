@@ -22,7 +22,7 @@ if (!caseName) {
 const exit = readInputs(readCaseFile(caseName, "inputs.json"));
 const range: [Decimal, Decimal] =
   lowText && highText ? [parseExact(lowText, "low"), parseExact(highText, "high")] : exit.range;
-const found = findBreakpoints(prepare(exit.capTable), range);
+const found = findBreakpoints(prepare(exit.capTable, exit.exitDate), range);
 
 interface Recorded {
   exit: { breakpoints: { exit_value: string; payouts_jump?: boolean }[] };

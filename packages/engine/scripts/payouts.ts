@@ -54,7 +54,7 @@ const tableSource = inputs.events
 
 if (all) {
   // Every exit value expected.json reports: the engine's own decisions, and every line within a cent.
-  const pc = prepare(exit.capTable);
+  const pc = prepare(exit.capTable, exit.exitDate);
   const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((x) => b.has(x));
   const points = expectedPoints(caseName);
   console.log(`${caseName} runs on ${tableSource}.\n`);
@@ -90,7 +90,7 @@ const exitValue = parseExact(exitText!, "exit value");
 const convert = flag("--convert");
 const exercise = flag("--exercise");
 
-const pc = prepare(exit.capTable);
+const pc = prepare(exit.capTable, exit.exitDate);
 const point = expectedPoints(caseName).find((p) => sameAmount(p.exitValue, exitValue) || p.label === toCents(exitValue));
 // At a breakpoint expected.json reports, use its exact value rather than the cent it displays.
 const at = point ? point.exitValue : exitValue;
