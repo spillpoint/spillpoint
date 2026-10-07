@@ -136,7 +136,9 @@ function exactlyAt(pc: PreparedCapTable, decisions: Decisions, x: Decimal, side:
  * and its payouts at the midpoint must match the straight line. On a curved
  * one, the answer must be the same at every one of many points along it: a
  * decision changing on a curve isn't something the finder can place, so it
- * stops (X17).
+ * stops (X17). That is rare: a curve exists only while the most senior tier is
+ * short, when common gets nothing. The exception is a warrant for a series in
+ * that tier, which is paid from the tier itself.
  */
 function checkStretch(pc: PreparedCapTable, s: Stretch, end: Decimal): void {
   if (s.curved) {

@@ -6,7 +6,7 @@ Branch `m5f-carve-outs`. The engine now pays management carve-outs:
 
 The breakpoint finder places breakpoints on a curve exactly, and flags the curved stretches.
 
-**It is stacked on M5e3 (#32),** which was still open when I finished. The PR is opened against #32's branch, so its diff is M5f alone. Merge #32 first; this PR then moves onto main.
+**It was stacked on M5e3 (#32).** With #32 merged, main is merged into this branch, and the PR targets main; its diff is the carve-out work alone.
 
 ## Run it
 
@@ -56,7 +56,10 @@ pnpm breakpoints edge-10b-carve-out-alongside-preferences
 1. **Placing the next change.** It uses only the two margins that stay straight on a curve: what is left for the tier less its claims, and the distance to the carve-out's next tier edge. So the breakpoint is exact, as on a straight stretch.
 2. **Checking the stretch.** It checks the decisions at 64 points along the stretch, in place of checking that payouts lie on a line.
 3. **Reading the breakpoint.** It reads payouts and slopes at the breakpoint itself, not by extending two readings. A curved side's slope is measured over $0.000000001, at 40 digits.
-4. **A decision changing on a curve** stops it with a clear error, as it stops the reference. No case has one, and I couldn't build one: while the carve-out's tier is short, nothing below it is paid.
+4. **A decision changing on a curve** stops it with a clear error, as it stops the reference. No case has one.
+   - **Why it's rare** (now in X17, from your review): the curve exists only while the most senior tier is short. Common gets nothing then, so no conversion or exercise of an option or a warrant for common can become worth it.
+   - **The exception:** a warrant for a series in that tier. Its shares join the tier's claim, so it is paid from the tier.
+   - **Checked:** I ran case 8's company with a 10% carve-out alongside. The warrant comes into the money at about $1.05M, on the curve, and both the engine and the reference stop there with the error.
 
 **The page's charts and the "For you" line** on curves still come with the dashboard work. Your approved wording is in X17.
 
@@ -120,4 +123,6 @@ None. X7, X17 and C12 are updated.
 
 ## Open questions
 
-None. M5g, SAFEs at a sale, is next. I'm stopping here.
+**A warrant for a senior-tier series, on a curve:** do you want a case for it, or is the guard error enough? Until there's a case, a cap table like that is refused with the error above rather than answered.
+
+M5g, SAFEs at a sale, is next. I'm stopping here.
