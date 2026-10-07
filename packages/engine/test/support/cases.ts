@@ -18,11 +18,11 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
 
 /**
  * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,
- * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, and case 10's
- * carve-outs since M5f.
+ * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, case 10's
+ * carve-outs since M5f, and case 12's SAFEs at a sale since M5g.
  */
 export const EXIT_CASES: string[] = ALL_CASES.filter(
-  (name) => /^edge-(0[1-9]|10)/.test(name) || name === "edge-23-dividends-from-a-round" || name === "millrace",
+  (name) => /^edge-(0[1-9]|10|12)/.test(name) || name === "edge-23-dividends-from-a-round" || name === "millrace",
 );
 
 export function readCaseFile(name: string, file: "inputs.json" | "expected.json"): unknown {
@@ -84,14 +84,15 @@ export function expectedPoints(name: string): ExpectedPoint[] {
   }));
 }
 
-/** expected.json's decisions in the engine's form. A conversion group is named by its series joined with "+". */
+/** expected.json's decisions in the engine's form. A conversion group is named by its series joined with "+"; a SAFE taking its Conversion Amount is "converted". */
 export function decisionsFrom(recorded: Record<string, string>): Decisions {
   const converted = new Set<string>();
   const exercised = new Set<string>();
   for (const [player, decision] of Object.entries(recorded)) {
     if (decision === "converts") for (const sid of player.split("+")) converted.add(sid);
+    else if (decision === "conversion_amount") converted.add(player);
     else if (decision === "exercised") exercised.add(player);
-    else if (decision !== "keeps_preference" && decision !== "not_exercised") throw new Error(`unknown decision ${decision}`);
+    else if (!["keeps_preference", "not_exercised", "cash_out_amount"].includes(decision)) throw new Error(`unknown decision ${decision}`);
   }
   return { converted, exercised };
 }

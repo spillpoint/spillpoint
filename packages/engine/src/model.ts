@@ -105,6 +105,25 @@ export interface CarveOut {
   allocation: { holder: string; share: D }[];
 }
 
+/**
+ * A SAFE: converting in a round (R4, R24), or still outstanding at a sale
+ * (C8; X1, X9, X13, X14), where it takes the greater of its Cash-Out Amount
+ * and its Conversion Amount.
+ */
+export interface Safe {
+  id: string;
+  holder: string;
+  purchaseAmount: D;
+  /** The YC post-money SAFE's valuation cap, or null. */
+  postMoneyCap: D | null;
+  /** The YC pre-money SAFE's valuation cap, or null. Never both. */
+  preMoneyCap: D | null;
+  /** In a round, the discount to the round's price; at a sale, used only with no cap (X9). */
+  discount: D;
+  /** At a sale, the series whose tier its Cash-Out Amount ranks with; missing, the most junior tier (X9). */
+  cashOutRanksWith?: string | null;
+}
+
 /** One holder's shares of one security (E9: payouts are reported per holder × security). */
 export interface Position {
   holder: string;
@@ -123,6 +142,8 @@ export interface CapTable {
   unissuedPool: D;
   /** Optional, so 0.1.0 code that builds a cap table keeps working. */
   carveOut?: CarveOut | null;
+  /** SAFEs still outstanding at the sale (C8). Optional, for the same reason. */
+  unconvertedSafes?: Safe[];
 }
 
 /** What the engine needs to run an exit: the cap table, the range to analyse, and the exit values to report. */

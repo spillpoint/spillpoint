@@ -24,6 +24,7 @@ import type {
   Participation,
   Position,
   PreferredSeries,
+  Safe,
   Security,
 } from "./model.ts";
 
@@ -231,9 +232,6 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
   const ct = object(value, path);
 
   // Terms that arrive later are refused before anything else is checked.
-  if (Array.isArray(ct.unconverted_safes) && ct.unconverted_safes.length > 0) {
-    throw new UnsupportedTermError("unconverted_safe", "M5", `${path}.unconverted_safes`, "SAFEs still outstanding at exit (X1)");
-  }
   if (Array.isArray(ct.unconverted_notes) && ct.unconverted_notes.length > 0) {
     throw new UnsupportedTermError(
       "unconverted_note", "M5", `${path}.unconverted_notes`, "Convertible notes still outstanding at exit (X3, X10–X12)",
@@ -325,16 +323,79 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
     return { holder, security, shares: wholeShares(p.shares, `${path}.positions[${i}].shares`) };
   });
 
+  const safes = (ct.unconverted_safes == null ? [] : array(ct.unconverted_safes, `${path}.unconverted_safes`)).map((v, i) =>
+    readSafe(v, `${path}.unconverted_safes[${i}]`),
+  );
+  checkSafesAtASale(safes, holderIds, byId, seniority, `${path}.unconverted_safes`);
+
   return {
     holders,
     securities,
     seniority,
     conversionGroups,
     positions,
+    ...(safes.length > 0 ? { unconvertedSafes: safes } : {}),
     unissuedPool: ct.unissued_pool == null ? ZERO : wholeShares(ct.unissued_pool, `${path}.unissued_pool`),
     // Optional (0.1.0 cap tables have no such field), so left out when there's no carve-out.
     ...(ct.carve_out == null ? {} : { carveOut: readCarveOut(ct.carve_out, holderIds, `${path}.carve_out`) }),
   };
+}
+
+/** A SAFE (C8, C14): a post-money or a pre-money cap, never both, or neither; a discount below 1; and at a sale, optionally, the series its Cash-Out Amount ranks with (X9). */
+export function readSafe(value: unknown, path: string): Safe {
+  const f = object(value, path);
+  onlyKnownFields(f, ["id", "holder", "purchase_amount", "post_money_cap", "pre_money_cap", "discount", "cash_out_ranks_with"], path);
+  const postMoneyCap = f.post_money_cap == null ? null : positive(f.post_money_cap, `${path}.post_money_cap`);
+  const preMoneyCap = f.pre_money_cap == null ? null : positive(f.pre_money_cap, `${path}.pre_money_cap`);
+  if (postMoneyCap && preMoneyCap) throw new InputError(path, "a SAFE has a post-money cap or a pre-money cap, not both (R24)");
+  const discount = f.discount == null ? ZERO : notNegative(f.discount, `${path}.discount`);
+  if (discount.gte(1)) throw new InputError(`${path}.discount`, "must be below 1");
+  return {
+    id: text(f.id, `${path}.id`),
+    holder: text(f.holder, `${path}.holder`),
+    purchaseAmount: positive(f.purchase_amount, `${path}.purchase_amount`),
+    postMoneyCap,
+    preMoneyCap,
+    discount,
+    ...(f.cash_out_ranks_with == null ? {} : { cashOutRanksWith: text(f.cash_out_ranks_with, `${path}.cash_out_ranks_with`) }),
+  };
+}
+
+/**
+ * SAFEs still outstanding at a sale (X9, X13, X14). Their holders must be
+ * listed, their ids new, and a named ranking a preferred series in the
+ * tiers. Setups no case settles yet are refused, never skipped.
+ */
+function checkSafesAtASale(
+  safes: Safe[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, seniority: string[][], path: string,
+): void {
+  const ids = new Set<string>();
+  safes.forEach((f, i) => {
+    const at = `${path}[${i}]`;
+    if (!holderIds.has(f.holder)) throw new InputError(`${at}.holder`, `unknown holder ${f.holder}`);
+    if (ids.has(f.id) || byId.has(f.id)) throw new InputError(`${at}.id`, `${f.id} is already used`);
+    ids.add(f.id);
+    if (f.cashOutRanksWith != null && !seniority.some((tier) => tier.includes(f.cashOutRanksWith!))) {
+      throw new InputError(`${at}.cash_out_ranks_with`, `${f.cashOutRanksWith} is not a preferred series in the seniority tiers`);
+    }
+  });
+  const preferred = [...byId.values()].filter((s): s is PreferredSeries => s.kind === "preferred");
+  const preMoney = safes.find((f) => f.preMoneyCap);
+  if (preMoney && preferred.length > 0) {
+    throw new UnsupportedTermError(
+      "pre_money_safe_with_preferred", "later", path, "A pre-money SAFE at a sale alongside preferred stock: its text ranks its cash only against other SAFEs (X14)",
+    );
+  }
+  if (safes.length > 1 && safes.some((f) => !f.postMoneyCap)) {
+    throw new UnsupportedTermError(
+      "several_safes", "later", path, "More than one SAFE at a sale, unless each has a post-money cap (X13, X14)",
+    );
+  }
+  if (safes.some((f) => !f.postMoneyCap && !f.preMoneyCap) && preferred.some((s) => s.participation === "participating_capped")) {
+    throw new UnsupportedTermError(
+      "uncapped_safe_with_capped_participation", "later", path, "A SAFE with no cap alongside capped participating preferred (X9)",
+    );
+  }
 }
 
 /** C6, X6, X7: marginal tiers from $0, contiguous, and recipients among the holders whose shares add up to 100%. */

@@ -94,6 +94,19 @@ export function capTableJson(ct: CapTable): Json {
     conversion_groups: [],
     positions: ct.positions.map((p) => ({ holder: p.holder, security: p.security, shares: text(p.shares) })),
     unissued_pool: text(ct.unissuedPool),
+    // Written out so the page's own check (checkShown) sees SAFEs still outstanding, never drops them.
+    ...(ct.unconvertedSafes && ct.unconvertedSafes.length > 0
+      ? {
+          unconverted_safes: ct.unconvertedSafes.map((f) => ({
+            id: f.id,
+            holder: f.holder,
+            purchase_amount: text(f.purchaseAmount),
+            ...(f.postMoneyCap ? { post_money_cap: text(f.postMoneyCap) } : {}),
+            ...(f.preMoneyCap ? { pre_money_cap: text(f.preMoneyCap) } : {}),
+            discount: text(f.discount),
+          })),
+        }
+      : {}),
   };
 }
 
