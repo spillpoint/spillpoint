@@ -91,6 +91,11 @@ const grouped = (v: unknown) => {
 };
 
 /** A draft of an exit input already in the case-file format, such as an example. */
+/** A cap table the engine reads but the page can't show in full yet: refused, never shown with something left out. */
+export class NotShownYet extends Error {
+  override name = "NotShownYet";
+}
+
 export function draftFromExit(exit: unknown): Draft {
   const e = exit as Json;
   const ct = e.cap_table as Json;
@@ -105,7 +110,16 @@ export function draftFromExit(exit: unknown): Draft {
   const tierOf = new Map<string, number>();
   (ct.seniority as string[][]).forEach((tier, i) => tier.forEach((sid) => tierOf.set(sid, i + 1)));
   const securityKeys = new Map<string, string>();
-  const securities = (ct.securities as Json[]).map((s): DraftSecurity => {
+  const securities = (ct.securities as Json[]).map((s, i): DraftSecurity => {
+    // The editor shows common, options and preferred. Anything else is refused,
+    // never turned into something it isn't: the engine pays warrants (E12,
+    // R29), but the page shows them only from M5k.
+    if (s.kind === "warrant") {
+      throw new NotShownYet(`It has warrants, ${str(s.name)}, which this page doesn't show yet. It won't open a cap table it can't show in full.`);
+    }
+    if (s.kind !== "common" && s.kind !== "option" && s.kind !== "preferred") {
+      throw new InputError(`cap_table.securities[${i}].kind`, `unknown security kind ${JSON.stringify(s.kind)}`);
+    }
     const k = key();
     const id = str(s.id);
     securityKeys.set(id, k);

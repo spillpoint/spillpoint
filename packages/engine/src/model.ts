@@ -29,6 +29,21 @@ export interface OptionClass {
   strike: D;
 }
 
+/**
+ * Warrants at one strike for one underlying (C4, C15): like options, but for
+ * common or for a preferred series. Each warrant decides for itself whether to
+ * exercise (E4). Exercised warrant shares for a series become shares of it,
+ * with its per-share preference, participation, cap and conversion (E12).
+ */
+export interface WarrantClass {
+  kind: "warrant";
+  id: string;
+  name: string;
+  strike: D;
+  /** "common", or the id of a preferred series. */
+  underlying: string;
+}
+
 export interface PreferredSeries {
   kind: "preferred";
   id: string;
@@ -49,7 +64,7 @@ export interface PreferredSeries {
   antiDilutionA: string | null;
 }
 
-export type Security = CommonStock | OptionClass | PreferredSeries;
+export type Security = CommonStock | OptionClass | WarrantClass | PreferredSeries;
 
 /** A group of series that must convert together, decided by a class vote (E11). */
 export interface ConversionGroup {

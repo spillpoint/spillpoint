@@ -22,7 +22,7 @@
 import { InputError, UnsupportedTermError, parseExact, readExit } from "spillpoint";
 import type { ExitInput } from "spillpoint";
 
-import { buildExit, draftFromExit } from "./draft.ts";
+import { NotShownYet, buildExit, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { fromRounds } from "./rounds.ts";
@@ -124,6 +124,7 @@ function openCapTable(file: Record<string, unknown>): Contents {
     return { read: readExit(exit, undefined, "file"), draft: draftFromExit(exit), rounds: null };
   } catch (e) {
     if (e instanceof InputError || e instanceof UnsupportedTermError) return { message: `Its cap table can't be used. ${withoutCodes(e.message)}` };
+    if (e instanceof NotShownYet) return { message: e.message };
     throw e;
   }
 }
@@ -137,7 +138,7 @@ function openRounds(file: Record<string, unknown>): Contents {
   }
   const rounds: Rounds = { holders: holders as Rounds["holders"], events: events as Rounds["events"], after };
   const built = fromRounds(rounds, file.range);
-  if (!built.ok) return { message: `Its rounds can't be built. ${built.message}` };
+  if (!built.ok) return { message: built.error instanceof NotShownYet ? built.message : `Its rounds can't be built. ${built.message}` };
   try {
     return { read: readExit(buildExit(built.draft).json, undefined, "file"), draft: built.draft, rounds };
   } catch (e) {

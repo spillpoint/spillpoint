@@ -16,8 +16,8 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
   .map((d) => d.name)
   .sort();
 
-/** The cases M2 must pass: edge cases 1 through 7 and Millrace's exit. */
-export const M2_CASES: string[] = ALL_CASES.filter((name) => /^edge-0[1-7]/.test(name) || name === "millrace");
+/** The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, and case 8's warrant since M5d. */
+export const EXIT_CASES: string[] = ALL_CASES.filter((name) => /^edge-0[1-8]/.test(name) || name === "millrace");
 
 export function readCaseFile(name: string, file: "inputs.json" | "expected.json"): unknown {
   return JSON.parse(readFileSync(join(CASES_DIR, name, file), "utf8"));

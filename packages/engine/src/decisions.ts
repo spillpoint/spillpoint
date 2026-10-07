@@ -2,14 +2,17 @@
 // Options and warrants). The engine solves for the stable decisions directly
 // (E15), not by trying every combination as the reference does:
 //
-// - Options follow the common price (E16). For any set of conversions, the
-//   option classes are exercised lowest strike first, for as long as the next
-//   class strictly gains by exercising (E5: a tie means no).
+// - Options follow the common price (E16). For any set of conversions and
+//   warrant exercises, the option classes are exercised lowest strike first,
+//   for as long as the next class strictly gains by exercising (E5: a tie
+//   means no).
+// - Each warrant decides for itself (E4), alongside the series: it is one of
+//   the free decision-makers below, and "switching" means exercising or not.
 // - A conversion group decides first (E17). For each of its two choices the
 //   other series settle; the group then votes (E11) on the two outcomes.
-// - The series outside a group are solved from both ends: from "nobody
-//   converts" and from "everyone converts", one series at a time makes the
-//   switch that gains it the most, until no one wants to switch. If the two
+// - The series outside a group, and the warrants, are solved from both ends:
+//   from "nobody converts" and from "everyone converts", one at a time makes
+//   the switch that gains it the most, until no one wants to switch. If the two
 //   ends agree, that is the answer. If not, every combination is checked when
 //   there are 12 or fewer of them; above 12 the answers found are reported and
 //   flagged as possibly incomplete. Going round in a circle is an error.
@@ -191,8 +194,9 @@ class AtExit {
   /** Option classes in the order they come into the money: lowest strike first. */
   private readonly optionClasses: OptionClass[];
   private readonly group: ConversionGroup | null;
-  /** Convertible series outside a group: each decides for itself. */
+  /** Convertible series outside a group, and warrants: each decides for itself (E4, E15). */
   private readonly free: string[];
+  private readonly warrants: Set<string>;
 
   constructor(pc: PreparedCapTable, x: Decimal, options: SolveOptions) {
     this.pc = pc;
@@ -203,9 +207,11 @@ class AtExit {
       .sort((a, b) => a.strike.cmp(b.strike) || a.id.localeCompare(b.id));
     this.group = pc.capTable.conversionGroups[0] ?? null;
     const grouped = new Set(this.group?.series ?? []);
+    this.warrants = new Set([...pc.warrants.keys()].filter((id) => pc.shares.get(id)!.gt(0)));
     this.free = [...pc.preferred.values()]
       .filter((s) => s.participation !== "participating" && !grouped.has(s.id) && pc.shares.get(s.id)!.gt(0))
-      .map((s) => s.id);
+      .map((s) => s.id)
+      .concat([...this.warrants]);
   }
 
   private get where(): string {
@@ -273,7 +279,12 @@ class AtExit {
     return group.voteRule === "at_least" ? atThreshold || share.gt(group.voteThreshold) : !atThreshold && share.gt(group.voteThreshold);
   }
 
-  /** The series outside the group, settling around fixed group conversions (E15). */
+  /** The free decision-makers' choices in an answer: the series converted and the warrants exercised. */
+  private chosen(a: Answer): Set<string> {
+    return new Set([...a.decisions.converted, ...[...a.decisions.exercised].filter((id) => this.warrants.has(id))]);
+  }
+
+  /** The series outside the group and the warrants, settling around fixed group conversions (E15). */
   private settleFree(fixed: ReadonlySet<string>): { answers: Answer[]; complete: boolean } {
     const all = (set: ReadonlySet<string>) => this.withOptions(new Set([...fixed, ...set]));
     const { sets, complete } = settleChoice(
@@ -294,13 +305,15 @@ class AtExit {
    * is exercised while doing so strictly pays it. Exercising adds the strike
    * to the proceeds and the shares to the residual, so the common price falls
    * toward that strike but stays above it; the check at the end confirms no
-   * class would gain by switching.
+   * class would gain by switching. `choices` holds the series converted and
+   * the warrants exercised.
    */
-  private withOptions(converted: ReadonlySet<string>): Answer {
-    const k = key(converted);
+  private withOptions(choices: ReadonlySet<string>): Answer {
+    const k = key(choices);
     const cached = this.settled.get(k);
     if (cached) return cached;
-    let exercised = new Set<string>();
+    const converted = new Set([...choices].filter((id) => !this.warrants.has(id)));
+    let exercised = new Set([...choices].filter((id) => this.warrants.has(id)));
     let result = payout(this.pc, this.x, { converted, exercised });
     for (const o of this.optionClasses) {
       const trial = new Set([...exercised, o.id]);
@@ -315,7 +328,7 @@ class AtExit {
         throw new NoAnswerError(`${this.where} option exercise doesn't settle: ${o.id} would gain by switching.`);
       }
     }
-    const answer = { decisions: { converted: new Set(converted), exercised }, payout: result };
+    const answer = { decisions: { converted, exercised }, payout: result };
     this.settled.set(k, answer);
     return answer;
   }
@@ -352,7 +365,7 @@ class AtExit {
     const tag = (a: Answer) => `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
     this.addStructure(margins, tag(answer), answer);
     for (const sid of this.free) {
-      const alternative = this.withOptions(toggled(new Set([...fixed, ...answer.decisions.converted]), sid));
+      const alternative = this.withOptions(toggled(new Set([...fixed, ...this.chosen(answer)]), sid));
       this.addStructure(margins, `${tag(answer)}>${tag(alternative)}`, alternative);
       margins.set(`${tag(answer)}|gain:${sid}`, alternative.payout.bySecurity.get(sid)!.minus(answer.payout.bySecurity.get(sid)!));
     }

@@ -1,6 +1,6 @@
 # spillpoint
 
-Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, participation, caps, conversions and options. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
+Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, participation, caps, conversions, options and warrants. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
 It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play.
 
@@ -210,7 +210,9 @@ Breakpoint at $22499998.27:
 - **At $20M** the SAFE's series has converted to common, and the Series A still takes its preference. **At $60M** both have converted.
 - **`readInputs` refuses an exit** on a cap table with a SAFE or note still outstanding, rather than leave it out of the waterfall. Running `prepare` directly on a table from `buildCapTables` doesn't check this, so check its `unconvertedSafes` and `unconvertedNotes` first.
 
-## What it covers (0.1.0)
+## What it covers
+
+Items marked *(0.2.0)* are on the main branch and come with the next release; 0.1.0 is what's on npm.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -218,16 +220,21 @@ Breakpoint at $22499998.27:
 - **Participation:** non-participating, participating, and participating with a cap.
 - **Conversion:** each series converts when that pays it more. Series that must convert together decide by a class vote.
 - **Options at any number of strikes,** exercised once they're in the money. The strike money joins the proceeds, and option payouts are reported net of strike.
+- **Warrants** *(0.2.0)*, for common or for a preferred series:
+  - **Each warrant decides for itself** whether to exercise: once what it buys is worth more than the strike.
+  - **A warrant for a series** adds its shares to the series, with the series' preference per share, participation, cap and conversion.
+  - **The strike money joins the proceeds,** and warrant payouts are reported net of strike.
 - **Breakpoints with plain-English reasons:**
   - a tier paid in full
   - a cap reached
-  - options coming into the money
+  - options or a warrant coming into the money
   - a series or a group converting
   - payouts jumping when a group's vote flips
 
 **Building a cap table from a company's events,** each event giving the cap table after it:
 - **Shares issued,** including a percentage of the company after the issue.
 - **The option pool:** created at a percentage of fully diluted shares. Grants come out of it, one option class per strike.
+- **Warrants issued** *(0.2.0)*: counted like options everywhere a count includes issued options. That covers a round's price and pool top-up, a SAFE's Company Capitalization, a note's base, the pro-rata base and broad-based anti-dilution. They aren't drawn from the pool, and issuing them never triggers anti-dilution.
 - **Priced rounds:**
   - **The price** is solved exactly, with the pool topped up to its target in the pre-money. Only the shares actually issued are rounded down.
   - **One issuance per holder** in a round, however many investment lines it has.
@@ -264,7 +271,6 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - Notes with compound interest, or with a post-money cap.
 
 **Not modeled yet** (milestone `"M5"`):
-- warrants
 - cumulative dividends
 - management carve-outs
 - escrow and earnouts
@@ -280,7 +286,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 **An exit input** is plain JSON:
 - `cap_table`, with:
   - `holders`
-  - `securities` (`common`, `option` with a `strike`, and `preferred` with its terms)
+  - `securities` (`common`, `option` with a `strike`, `warrant` with a `strike` and an `underlying`, `"common"` or a preferred series, and `preferred` with its terms)
   - `seniority`: the preference tiers, most senior first
   - optional `conversion_groups`
   - `positions`: shares held, per holder and security
@@ -296,6 +302,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 | `issue_percent` | `security`, `holder`, and `percent` of the company after the issue |
 | `create_pool` | `percent` of fully diluted shares after it |
 | `grant_options` | `grants`: `holder`, `shares` and `strike` |
+| `issue_warrants` *(0.2.0)* | `warrants`: `holder`, `shares`, `strike` and `underlying`, `"common"` or a preferred series already issued |
 | `safes` | `safes`: `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, and `discount` |
 | `notes` | `notes`: `id`, `holder`, `principal`, `interest_rate`, `issue_date`, `valuation_cap`, `conversion_base`, `discount` and `repayment_multiple` |
 | `priced_round` | `series`, `pre_money`, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles |

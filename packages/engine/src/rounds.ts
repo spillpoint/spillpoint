@@ -1,6 +1,6 @@
 // Building a company's cap tables from its rounds (M4): shares issued, a
-// percentage issue, the option pool, grants, SAFEs and notes as they're
-// issued, and priced rounds. Each event yields the cap table after it, in the
+// percentage issue, the option pool, grants, warrants (M5d), SAFEs and notes
+// as they're issued, and priced rounds. Each event yields the cap table after it, in the
 // same model an exit runs on.
 //
 // A priced round works out its price, new shares and pool top-up (M4c), the
@@ -175,7 +175,7 @@ export interface RoundDetails {
 }
 
 export type EventDetails =
-  | { kind: "issue" | "grant_options" | "safes" | "notes" }
+  | { kind: "issue" | "grant_options" | "issue_warrants" | "safes" | "notes" }
   | { kind: "issue_percent"; sharesIssued: Decimal; basisShares: Decimal }
   | { kind: "create_pool"; poolCreated: Decimal; basisShares: Decimal }
   | ({ kind: "priced_round" } & RoundDetails);
@@ -247,13 +247,18 @@ class Company {
     return this.positions.filter((p) => p.security === security).reduce((sum, p) => sum.plus(p.shares), ZERO);
   }
 
-  /** A security's shares as common: preferred at its conversion ratio, the rest one for one. */
+  /** A security's shares as common: preferred at its conversion ratio, a warrant for preferred at its series' (R29), the rest one for one. */
   asConverted(s: Security): Decimal {
     const shares = this.sharesOf(s.id);
-    return s.kind === "preferred" ? shares.times(s.conversionRatio) : shares;
+    if (s.kind === "preferred") return shares.times(s.conversionRatio);
+    if (s.kind === "warrant" && s.underlying !== "common") {
+      const series = this.security(s.underlying) as PreferredSeries;
+      return shares.times(series.conversionRatio);
+    }
+    return shares;
   }
 
-  /** Issued stock as converted and issued options: the fully diluted count without the unissued pool or SAFEs. */
+  /** Issued stock as converted, issued options and warrants (R29): the fully diluted count without the unissued pool or SAFEs. */
   outstandingAsConverted(): Decimal {
     return this.securities.reduce((sum, s) => sum.plus(this.asConverted(s)), ZERO);
   }
@@ -281,6 +286,7 @@ const EVENT_FIELDS: Record<string, readonly string[]> = {
   notes: ["notes"],
   create_pool: ["percent"],
   grant_options: ["grants"],
+  issue_warrants: ["warrants"],
   priced_round: [
     "series", "pre_money", "investments", "pool_target_unissued_percent_post", "seniority", "convert_safes", "convert_notes",
     "pay_to_play", "anti_dilution_shares_in_post", "anti_dilution_include_unissued_pool_in_a", "anti_dilution_cp2_rounding",
@@ -408,12 +414,15 @@ function issueEvent(company: Company, ev: Json, path: string): EventDetails {
 /**
  * R1: enough shares that the holder owns the percentage of all issued stock
  * immediately after. x ÷ (N + x) = p, so x = p·N ÷ (1 − p), rounded down. N
- * counts issued stock as converted, not options, the pool or SAFEs.
+ * counts issued stock as converted, not options, warrants (counted like
+ * options, R29), the pool or SAFEs.
  */
 function issuePercentEvent(company: Company, ev: Json, path: string): EventDetails {
   const s = ensureSecurity(company, ev.security, `${path}.security`);
   const p = fraction(ev.percent, `${path}.percent`);
-  const basis = company.securities.filter((x) => x.kind !== "option").reduce((sum, x) => sum.plus(company.asConverted(x)), ZERO);
+  const basis = company.securities
+    .filter((x) => x.kind !== "option" && x.kind !== "warrant")
+    .reduce((sum, x) => sum.plus(company.asConverted(x)), ZERO);
   const shares = roundDownShares(p.times(basis).div(ONE.minus(p)));
   company.issue(text(ev.holder, `${path}.holder`), s.id, shares, `${path}.holder`);
   return { kind: "issue_percent", sharesIssued: shares, basisShares: basis };
@@ -449,6 +458,38 @@ function grantOptionsEvent(company: Company, ev: Json, path: string): EventDetai
     company.issue(text(g.holder, `${at}.holder`), id, shares, `${at}.holder`);
   });
   return { kind: "grant_options" };
+}
+
+/**
+ * R29: warrants issued, one warrant security per underlying and strike (C15).
+ * NVCA's "Option" includes warrants, and so does the YC SAFE's "Options", so
+ * every count that includes issued options includes them: they are positions
+ * like options, and Company.outstandingAsConverted counts them. They aren't
+ * drawn from the option pool. Issuing them never triggers anti-dilution: NVCA's
+ * Exempted Securities cover warrants issued to lenders and equipment lessors.
+ */
+function issueWarrantsEvent(company: Company, ev: Json, path: string): EventDetails {
+  array(ev.warrants, `${path}.warrants`).forEach((v, i) => {
+    const at = `${path}.warrants[${i}]`;
+    const w = object(v, at);
+    onlyKnownFields(w, ["holder", "shares", "strike", "underlying"], at);
+    const strike = notNegative(w.strike, `${at}.strike`);
+    const shares = wholeShares(w.shares, `${at}.shares`);
+    const underlying = text(w.underlying, `${at}.underlying`);
+    const series = underlying === "common" ? null : company.security(underlying);
+    if (underlying !== "common" && series?.kind !== "preferred") {
+      throw new InputError(`${at}.underlying`, `${underlying} is not common or a preferred series issued before these warrants`);
+    }
+    const what = series ? series.name : "Common Stock";
+    const id = `warrants_${underlying}_${strike.toString()}`;
+    ensureSecurity(
+      company,
+      { id, name: `Warrants for ${what} ($${strike.toString()} strike)`, kind: "warrant", strike: strike.toString(), underlying },
+      at,
+    );
+    company.issue(text(w.holder, `${at}.holder`), id, shares, `${at}.holder`);
+  });
+  return { kind: "issue_warrants" };
 }
 
 /** Two prices or amounts held to 40 digits that are the same in exact arithmetic: within one part in 10^30 (E14). */
@@ -1020,6 +1061,7 @@ const HANDLERS: Record<string, (company: Company, ev: Json, path: string) => Eve
   issue_percent: issuePercentEvent,
   create_pool: createPoolEvent,
   grant_options: grantOptionsEvent,
+  issue_warrants: issueWarrantsEvent,
   safes: (company, ev, path) => {
     array(ev.safes, `${path}.safes`).forEach((v, i) => company.safes.push(readSafe(v, `${path}.safes[${i}]`)));
     return { kind: "safes" };
@@ -1058,8 +1100,6 @@ export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEv
     if (seen.has(id)) throw new InputError(`${at}.id`, `event ${id} is listed twice`);
     seen.add(id);
     const type = text(ev.type, `${at}.type`);
-    // Warrants issued (R29) count like options everywhere: built in M5d, refused until then.
-    if (type === "issue_warrants") throw new UnsupportedTermError("warrant", "M5", `${at}.type`, "Warrants issued (R29)");
     const handler = HANDLERS[type];
     if (!handler) throw new InputError(`${at}.type`, `unknown event type ${JSON.stringify(type)}; the engine reads ${Object.keys(HANDLERS).join(", ")}`);
     onlyKnownFields(ev, [...COMMON_EVENT_FIELDS, ...EVENT_FIELDS[type]!], at);

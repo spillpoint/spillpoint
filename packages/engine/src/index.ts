@@ -26,7 +26,7 @@ export type * from "./model.ts";
 
 // The waterfall for given decisions, the decisions themselves, and the breakpoints.
 export { payout, prepare } from "./waterfall.ts";
-export type { Decisions, Payout, PayoutLine, PreparedCapTable, TierPayment } from "./waterfall.ts";
+export type { Decisions, Payout, PayoutLine, PreparedCapTable, SeriesHere, TierPayment } from "./waterfall.ts";
 export { solve } from "./decisions.ts";
 export type { Answer, Solution, SolveOptions } from "./decisions.ts";
 export { findBreakpoints } from "./breakpoints.ts";

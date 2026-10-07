@@ -29,13 +29,10 @@ interface ExpectedTable {
   };
 }
 
-const WITH_EVENTS = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
-/** Cases with events the engine refuses until a later M5 PR builds them: 22 issues warrants (R29, M5d). */
-const REFUSED_UNTIL_M5 = ["edge-22-warrants-issued"];
-const ROUND_CASES = WITH_EVENTS.filter((name) => !REFUSED_UNTIL_M5.includes(name));
+const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
-/** 28 cases with events: 26 built in full since M4g, 12g (M5b), which runs its exit after a pre-money SAFE, and 22, refused until M5d. */
-const EXPECTED_ROUND_CASES = 27;
+/** The 28 cases with events, every one built in full: 26 since M4g, 12g (M5b), which runs its exit after a pre-money SAFE, and 22's warrants (M5d). */
+const EXPECTED_ROUND_CASES = 28;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {
@@ -189,20 +186,8 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 28 cases with events, 27 of them built and 22 refused until M5d", () => {
-    expect(WITH_EVENTS).toHaveLength(EXPECTED_ROUND_CASES + REFUSED_UNTIL_M5.length);
+  it("is found: 28 cases with events", () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
-  });
-
-  it("refuses 22's warrants event, naming warrants and M5, rather than building around it", () => {
-    let error: unknown;
-    try {
-      buildCapTables(readCaseFile("edge-22-warrants-issued", "inputs.json"));
-    } catch (e) {
-      error = e;
-    }
-    expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term: "warrant", milestone: "M5", path: "inputs.events[3].type" });
   });
 
   describe.each(ROUND_CASES)("%s", (name) => {
@@ -214,6 +199,36 @@ describe("every locked round case", () => {
       expect(built).toHaveLength(expected.length);
       built.forEach((t, i) => expectSameTable(t, expected[i]!));
     });
+  });
+});
+
+describe("warrants issued (R29, C15; M5d)", () => {
+  // 900,000 common; a 10% pool, 100,000; warrants for 100,000 common at $1. They aren't drawn
+  // from the pool, and a second 10% pool counts them like options (R2): its basis is the stock,
+  // options and warrants, 900,000 + 100,000, so it is 1,000,000 × 0.1 ÷ 0.9 = 111,111.1…, rounded
+  // down. Without the warrants it would be 900,000 and 100,000.
+  const company = (warrants: Record<string, unknown>[]) => ({
+    holders: [{ id: "a", name: "A" }, { id: "l", name: "L" }],
+    events: [
+      { id: "f", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "a", shares: 900000 }] },
+      { id: "p", date: null, type: "create_pool", percent: "10" },
+      { id: "w", date: null, type: "issue_warrants", warrants },
+      { id: "p2", date: null, type: "create_pool", percent: "10" },
+    ],
+  });
+
+  it("count like options, and aren't drawn from the pool", () => {
+    const [, pool, warrants, second] = buildCapTables(company([{ holder: "l", shares: 100000, strike: "1", underlying: "common" }]));
+    expect(warrants!.capTable.unissuedPool.eq(pool!.capTable.unissuedPool)).toBe(true);
+    expect(warrants!.capTable.securities.at(-1)).toMatchObject({ id: "warrants_common_1", name: "Warrants for Common Stock ($1 strike)", kind: "warrant", underlying: "common" });
+    const details = second!.details as { kind: string; basisShares: D; poolCreated: D };
+    expect([details.kind, details.basisShares.toString(), details.poolCreated.toString()]).toEqual(["create_pool", "1000000", "111111"]);
+  });
+
+  it("refuse an underlying that isn't common or a preferred series already issued", () => {
+    expect(() => buildCapTables(company([{ holder: "l", shares: 100000, strike: "1", underlying: "series_a" }]))).toThrow(
+      "inputs.events[2].warrants[0].underlying: series_a is not common or a preferred series issued before these warrants",
+    );
   });
 });
 
