@@ -74,7 +74,8 @@ export interface PreferredSeries {
   antiDilution: AntiDilution;
   /** What A counts in the weighted-average formula (C10), if the input names it. */
   antiDilutionA: string | null;
-  cumulativeDividend: CumulativeDividend | null;
+  /** Missing or null: no cumulative dividends. Optional, so series built by 0.1.0 code keep working. */
+  cumulativeDividend?: CumulativeDividend | null;
 }
 
 export type Security = CommonStock | OptionClass | WarrantClass | PreferredSeries;
@@ -111,6 +112,6 @@ export interface ExitInput {
   /** Breakpoints are reported strictly inside this range (SPEC, Breakpoints). */
   range: [D, D];
   exitValues: D[];
-  /** YYYY-MM-DD: the day dividends accrue to. Required when a series has cumulative dividends. */
-  exitDate: string | null;
+  /** YYYY-MM-DD: the day dividends accrue to. Needed when a series has cumulative dividends; optional, so 0.1.0 code that builds an ExitInput keeps working. */
+  exitDate?: string | null;
 }

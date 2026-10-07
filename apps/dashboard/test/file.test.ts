@@ -2,6 +2,9 @@
 // table to the cent, and that a file that can't be read says why. Millrace is
 // built from its rounds, so its file keeps the rounds (version 2, M4i).
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import examples from "virtual:examples";
 import { D } from "spillpoint";
 import { describe, expect, it } from "vitest";
@@ -160,6 +163,12 @@ describe("a file that can't be opened", () => {
     const file = good();
     file.cap_table.securities.find((s: { id: string }) => s.id === "series_a").cumulative_dividend = { rate: "0.08", accrual_start: "2022-06-01" };
     expect(refusal(file)).toBe("It has cumulative dividends on Series A Preferred, which this page doesn't show yet. It won't open a cap table it can't show in full.");
+  });
+
+  it("has rounds with dividends, which the engine builds but the page doesn't show yet: refused, never dropped", () => {
+    const company = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-23-dividends-from-a-round/inputs.json"), "utf8"));
+    const file = { format: "spillpoint", version: 2, name: "Case 23", holders: company.holders, events: company.events, cap_table_after_event: "series_a", range: ["0", "40000000"] };
+    expect(refusal(file)).toBe("It has cumulative dividends on Series A Preferred (from SAFEs), which this page doesn't show yet. It won't open a cap table it can't show in full.");
   });
 
   it("has a field nobody models, in the engine's words", () => {

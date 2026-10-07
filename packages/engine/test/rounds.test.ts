@@ -5,7 +5,7 @@ import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, buildCapTables, parseExact } from "../src/index.ts";
-import type { CapTableAfterEvent } from "../src/index.ts";
+import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
 import { roundDownShares, roundHalfUp } from "../src/rounds.ts";
 import { D } from "../src/decimal.ts";
 import { ALL_CASES, readCaseFile } from "./support/cases.ts";
@@ -29,13 +29,10 @@ interface ExpectedTable {
   };
 }
 
-const WITH_EVENTS = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
-/** Cases with events the engine refuses until the PR that builds them: 23's dividends on a round's series (R30). */
-const REFUSED_FOR_NOW = ["edge-23-dividends-from-a-round"];
-const ROUND_CASES = WITH_EVENTS.filter((name) => !REFUSED_FOR_NOW.includes(name));
+const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
-/** 29 cases with events: 26 built in full since M4g, 12g (M5b), 22's warrants (M5d), and 23, refused until the engine builds R30. */
-const EXPECTED_ROUND_CASES = 28;
+/** The 29 cases with events, every one built in full: 26 since M4g, 12g (M5b), 22's warrants (M5d), and 23's dividends (R30, M5e3). */
+const EXPECTED_ROUND_CASES = 29;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {
@@ -189,15 +186,8 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 29 cases with events, 28 of them built and 23 refused for now", () => {
-    expect(WITH_EVENTS).toHaveLength(EXPECTED_ROUND_CASES + REFUSED_FOR_NOW.length);
+  it("is found: 29 cases with events", () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
-  });
-
-  it("refuses 23's dividends on the Series A, rather than building without them", () => {
-    expect(() => buildCapTables(readCaseFile("edge-23-dividends-from-a-round", "inputs.json"))).toThrow(
-      "inputs.events[4].series.cumulative_dividend: Cumulative dividends on a series issued in a company's rounds.",
-    );
   });
 
   describe.each(ROUND_CASES)("%s", (name) => {
@@ -239,6 +229,43 @@ describe("warrants issued (R29, C15; M5d)", () => {
     expect(() => buildCapTables(company([{ holder: "l", shares: 100000, strike: "1", underlying: "series_a" }]))).toThrow(
       "inputs.events[2].warrants[0].underlying: series_a is not common or a preferred series issued before these warrants",
     );
+  });
+});
+
+describe("cumulative dividends on a round's series (R30, M5e3)", () => {
+  const case23 = () => readCaseFile("edge-23-dividends-from-a-round", "inputs.json") as { holders: unknown[]; events: Record<string, unknown>[] };
+  const seriesA = (inputs: { events: Record<string, unknown>[] }) => inputs.events[4]! as { date: string | null; series: Record<string, Record<string, unknown>> };
+
+  it("accrue from the round's date, on the round's series and its series from SAFEs, each on its own issue price", () => {
+    const after = buildCapTables(case23()).at(-1)!.capTable.securities;
+    const terms = (id: string) => after.find((s) => s.id === id) as PreferredSeries;
+    for (const id of ["series_a", "series_a_shadow"]) {
+      expect(terms(id).cumulativeDividend).toMatchObject({ method: "simple", accrualStart: "2023-06-30", onConversion: "forfeited" });
+      expect(terms(id).cumulativeDividend!.rate.toString()).toBe("0.08");
+    }
+    expect([terms("series_a").originalIssuePrice.toString(), terms("series_a_shadow").originalIssuePrice.toString()]).toEqual(["2.5", "2"]);
+  });
+
+  it("refuse an accrual start of their own, and a round with no date", () => {
+    const own = case23();
+    seriesA(own).series.cumulative_dividend!.accrual_start = "2023-01-01";
+    expect(() => buildCapTables(own)).toThrow(
+      "inputs.events[4].series.cumulative_dividend.accrual_start: a round's dividends accrue from the round's date; leave accrual_start out",
+    );
+    const undated = case23();
+    seriesA(undated).date = null;
+    expect(() => buildCapTables(undated)).toThrow(
+      "inputs.events[4].date: Series A Preferred accrues cumulative dividends from the round's date, so the round needs a date",
+    );
+  });
+
+  it("stay refused on a series issued outside a priced round, until a case settles when they accrue", () => {
+    const issued = case23();
+    issued.events.splice(1, 0, {
+      id: "pref", date: "2022-02-01", type: "issue", issues: [{ holder: "founder_a", shares: 1000 }],
+      security: { id: "pref", name: "Founders' Preferred", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none", cumulative_dividend: { rate: "0.08", accrual_start: "2022-02-01" } },
+    });
+    expect(() => buildCapTables(issued)).toThrow(UnsupportedTermError);
   });
 });
 

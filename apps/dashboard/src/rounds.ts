@@ -9,7 +9,7 @@
 import { D, InputError, UnsupportedTermError, buildCapTables, readInputs } from "spillpoint";
 import type { CapTable, CapTableAfterEvent, RoundDetails } from "spillpoint";
 
-import { NotShownYet, draftFromExit } from "./draft.ts";
+import { NotShownYet, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
 import { dollars, dollarsAndCents, percent, withoutCodes } from "./format.ts";
 
@@ -37,12 +37,15 @@ export type FromRounds =
 export function fromRounds(rounds: Rounds, range: unknown): FromRounds {
   const company = { holders: rounds.holders, events: rounds.events };
   try {
+    const tables = buildCapTables(company);
+    // What the page can't show comes before the engine's exit checks: a founder can't give
+    // the exit date a table with dividends needs, so being asked for one wouldn't help.
+    const after = tables.find((t) => t.event === rounds.after);
+    if (after) checkShown(capTableJson(after.capTable));
     // The rounds are checked on their own: the range belongs to the cap table, whose editor checks it next to its field.
     readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [] } });
-    const tables = buildCapTables(company);
-    const after = tables.find((t) => t.event === rounds.after)!;
     const r = range as unknown[];
-    return { ok: true, tables, draft: draftFromExit({ cap_table: capTableJson(after.capTable), range: [String(r[0]), String(r[1])] }) };
+    return { ok: true, tables, draft: draftFromExit({ cap_table: capTableJson(after!.capTable), range: [String(r[0]), String(r[1])] }) };
   } catch (e) {
     const error = e as Error;
     if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) return { ok: false, message: withoutCodes(error.message), error };

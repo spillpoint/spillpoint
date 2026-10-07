@@ -310,17 +310,37 @@ function fraction(value: unknown, path: string, allowZero = false): Decimal {
 
 /** Adds the security an event names, or checks it against the one already there. */
 /**
- * Cumulative dividends on a series issued in the rounds are refused until a
- * case settles them: when they accrue, and whether the series a round's SAFEs
- * and notes convert into ("… (from SAFEs)") carries them too. An exit on a
- * cap table given in full takes them (X2, X5).
+ * Cumulative dividends on a series issued outside a priced round, by an
+ * `issue` event, are refused until a case settles when they accrue. A priced
+ * round's series takes them under R30; an exit on a cap table given in full
+ * takes them too (X2, X5).
  */
 function noDividendsInRounds(value: unknown, path: string): void {
   if (value != null && typeof value === "object" && (value as Json).cumulative_dividend != null) {
     throw new UnsupportedTermError(
-      "cumulative_dividend_in_rounds", "later", `${path}.cumulative_dividend`, "Cumulative dividends on a series issued in a company's rounds",
+      "cumulative_dividend_in_rounds", "later", `${path}.cumulative_dividend`, "Cumulative dividends on a series issued outside a priced round",
     );
   }
+}
+
+/**
+ * R30: cumulative dividends on a priced round's series accrue from the round's
+ * date. The series its SAFEs and notes convert into ("… (from SAFEs)", "…
+ * (from notes)") are built from the round's series, so they carry the same
+ * terms from the same date, each on its own issue price (its conversion
+ * price), as their preference already is.
+ */
+function roundSeries(ev: Json, path: string): Json {
+  const series = object(ev.series, `${path}.series`);
+  if (series.cumulative_dividend == null) return series;
+  const at = `${path}.series.cumulative_dividend`;
+  const d = object(series.cumulative_dividend, at);
+  if (d.accrual_start != null) throw new InputError(`${at}.accrual_start`, "a round's dividends accrue from the round's date; leave accrual_start out");
+  if (ev.date == null) {
+    throw new InputError(`${path}.date`, `${text(series.name, `${path}.series.name`)} accrues cumulative dividends from the round's date, so the round needs a date`);
+  }
+  dayNumber(ev.date, `${path}.date`);
+  return { ...series, cumulative_dividend: { ...d, accrual_start: ev.date } };
 }
 
 function ensureSecurity(company: Company, value: unknown, path: string): Security {
@@ -720,8 +740,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     throw new InputError(`${path}.anti_dilution_cp2_rounding`, "must be exact, 0.0001 or 0.01");
   }
 
-  const series = object(ev.series, `${path}.series`);
-  noDividendsInRounds(series, `${path}.series`);
+  const series = roundSeries(ev, path);
   const seriesId = text(series.id, `${path}.series.id`);
   const seriesName = text(series.name, `${path}.series.name`);
   if (company.security(seriesId)) throw new InputError(`${path}.series.id`, `${seriesId} already exists`);
