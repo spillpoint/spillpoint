@@ -1,0 +1,108 @@
+{
+  "case": "edge-10b-carve-out-alongside-preferences",
+  "description": "Edge case 10's company and carve-out, paid alongside the preferences instead of before them. The carve-out joins the most senior tier, here Series A's, sharing it pro rata by claim until the tier is paid in full at $11,052,631.58 (ASSUMPTIONS X7). Below that, its claim grows with the exit value while it shares the tier, so payouts curve. Above it, every payout is case 10's.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "manager_m",
+          "name": "Manager M"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2.5",
+          "conversion_price": "2.5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 1500000
+        },
+        {
+          "holder": "investor_x",
+          "security": "series_a",
+          "shares": 4000000
+        }
+      ],
+      "unissued_pool": 0,
+      "carve_out": {
+        "timing": "alongside_preferences",
+        "tiers": [
+          {
+            "from": "0",
+            "to": "10000000",
+            "percent": "10"
+          },
+          {
+            "from": "10000000",
+            "to": "20000000",
+            "percent": "5"
+          }
+        ],
+        "allocation": [
+          {
+            "holder": "founder_a",
+            "percent": "60"
+          },
+          {
+            "holder": "manager_m",
+            "percent": "40"
+          }
+        ]
+      }
+    },
+    "range": [
+      "0",
+      "50000000"
+    ],
+    "exit_values": [
+      "2000000",
+      "5000000",
+      "10000000",
+      "11000000",
+      "15000000",
+      "20000000",
+      "25000000",
+      "26500000",
+      "30000000",
+      "50000000"
+    ]
+  }
+}

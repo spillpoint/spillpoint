@@ -4,7 +4,7 @@ import datetime
 from fractions import Fraction
 
 from . import breakpoints
-from .model import CapTable
+from .model import CapTable, compounding_periods
 from .num import parse, exact, money, decimal
 from .rounds import build
 from .waterfall import Waterfall
@@ -72,6 +72,11 @@ def run_exit(ct, spec):
         entry = {"exit_value": money(x), "exact": exact(x)}
         if jumps:
             entry["payouts_jump"] = True
+        # X7: a carve-out alongside preferences makes payouts curve while it shares an unpaid tier.
+        if breakpoints.curved(wf, sa):
+            entry["payouts_curve_below"] = True
+        if breakpoints.curved(wf, sb):
+            entry["payouts_curve_above"] = True
         entry["reasons"] = breakpoints.reasons(wf, x, sa, sb, jumps)
         bps.append(entry)
     points = {}
@@ -98,8 +103,16 @@ def run_exit(ct, spec):
 def _accrued_json(ct, wf, sid, exit_date):
     sec = ct.securities[sid]
     d = sec["cumulative_dividend"]
+    # Compounding (X5): the full years on the accrual start's anniversaries, and the days after the last one.
+    compounding = {}
+    if d["method"] == "compounding":
+        years, stub = compounding_periods(d["accrual_start"], exit_date)
+        compounding = {"method": "compounding", "full_years": years, "stub_days": stub}
+    paid = {"on_conversion": "paid"} if d["on_conversion"] == "paid" else {}
     return {
         "security": sid,
+        **compounding,
+        **paid,
         "accrual_start": d["accrual_start"].isoformat(),
         "exit_date": exit_date.isoformat(),
         "days": (exit_date - d["accrual_start"]).days,

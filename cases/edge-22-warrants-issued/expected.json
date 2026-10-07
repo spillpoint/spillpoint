@@ -1,0 +1,615 @@
+{
+  "case": "edge-22-warrants-issued",
+  "generated_by": "reference/generate.py",
+  "cap_tables": [
+    {
+      "after_event": "founding",
+      "date": "2022-01-10",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "lender_l",
+            "name": "Lender L"
+          },
+          {
+            "id": "investor_s",
+            "name": "Investor S"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 3000000
+          }
+        ],
+        "unissued_pool": 0,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 9000000
+          },
+          "as_converted_by_security": {
+            "common": "9000000"
+          },
+          "fully_diluted": "9000000",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "66.6667",
+            "founder_b": "33.3333"
+          },
+          "unissued_pool_percent": "0.0000"
+        }
+      }
+    },
+    {
+      "after_event": "option_pool",
+      "date": "2022-03-01",
+      "details": {
+        "pool_created": 1000000,
+        "basis_shares": "9000000"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "lender_l",
+            "name": "Lender L"
+          },
+          {
+            "id": "investor_s",
+            "name": "Investor S"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 3000000
+          }
+        ],
+        "unissued_pool": 1000000,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 9000000
+          },
+          "as_converted_by_security": {
+            "common": "9000000"
+          },
+          "fully_diluted": "10000000",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "60.0000",
+            "founder_b": "30.0000"
+          },
+          "unissued_pool_percent": "10.0000"
+        }
+      }
+    },
+    {
+      "after_event": "grants",
+      "date": "2022-03-01",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "lender_l",
+            "name": "Lender L"
+          },
+          {
+            "id": "investor_s",
+            "name": "Investor S"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 3000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 400000
+          }
+        ],
+        "unissued_pool": 600000,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 9000000,
+            "options_0.1": 400000
+          },
+          "as_converted_by_security": {
+            "common": "9000000",
+            "options_0.1": "400000"
+          },
+          "fully_diluted": "10000000",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "60.0000",
+            "founder_b": "30.0000",
+            "employee_c": "4.0000"
+          },
+          "unissued_pool_percent": "6.0000"
+        }
+      }
+    },
+    {
+      "after_event": "warrants",
+      "date": "2022-09-01",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "lender_l",
+            "name": "Lender L"
+          },
+          {
+            "id": "investor_s",
+            "name": "Investor S"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "warrants_common_0.5",
+            "name": "Warrants for Common Stock ($0.5 strike)",
+            "kind": "warrant",
+            "strike": "0.5",
+            "underlying": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 3000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 400000
+          },
+          {
+            "holder": "lender_l",
+            "security": "warrants_common_0.5",
+            "shares": 200000
+          }
+        ],
+        "unissued_pool": 600000,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 9000000,
+            "options_0.1": 400000,
+            "warrants_common_0.5": 200000
+          },
+          "as_converted_by_security": {
+            "common": "9000000",
+            "options_0.1": "400000",
+            "warrants_common_0.5": "200000"
+          },
+          "fully_diluted": "10200000",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "58.8235",
+            "founder_b": "29.4118",
+            "employee_c": "3.9216",
+            "lender_l": "1.9608"
+          },
+          "unissued_pool_percent": "5.8824"
+        }
+      }
+    },
+    {
+      "after_event": "safe",
+      "date": "2023-01-01",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "lender_l",
+            "name": "Lender L"
+          },
+          {
+            "id": "investor_s",
+            "name": "Investor S"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "warrants_common_0.5",
+            "name": "Warrants for Common Stock ($0.5 strike)",
+            "kind": "warrant",
+            "strike": "0.5",
+            "underlying": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 3000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 400000
+          },
+          {
+            "holder": "lender_l",
+            "security": "warrants_common_0.5",
+            "shares": 200000
+          }
+        ],
+        "unissued_pool": 600000,
+        "unconverted_safes": [
+          {
+            "id": "safe_s",
+            "holder": "investor_s",
+            "purchase_amount": "1000000",
+            "post_money_cap": "10000000",
+            "discount": "0"
+          }
+        ],
+        "totals": {
+          "shares_by_security": {
+            "common": 9000000,
+            "options_0.1": 400000,
+            "warrants_common_0.5": 200000
+          },
+          "as_converted_by_security": {
+            "common": "9000000",
+            "options_0.1": "400000",
+            "warrants_common_0.5": "200000"
+          },
+          "fully_diluted": "10200000",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "58.8235",
+            "founder_b": "29.4118",
+            "employee_c": "3.9216",
+            "lender_l": "1.9608"
+          },
+          "unissued_pool_percent": "5.8824"
+        }
+      }
+    },
+    {
+      "after_event": "series_a",
+      "date": "2024-01-01",
+      "details": {
+        "price_per_share": "75/46",
+        "price_per_share_approx": "1.6304347826",
+        "post_money_valuation": "25000000",
+        "post_money_fully_diluted_solved": "46000000/3",
+        "post_money_fully_diluted_solved_approx": "15333333.3333",
+        "pre_round_fully_diluted": "10200000",
+        "company_capitalization": "34000000/3",
+        "company_capitalization_approx": "11333333.3333",
+        "safe_conversions": [
+          {
+            "safe": "safe_s",
+            "holder": "investor_s",
+            "method": "cap",
+            "conversion_price": "15/17",
+            "conversion_price_approx": "0.8823529412",
+            "shares": 1133333,
+            "series": "series_a_shadow"
+          }
+        ],
+        "new_shares": [
+          {
+            "holder": "investor_y",
+            "shares": 3066666
+          }
+        ],
+        "pool_top_up": 933333,
+        "post_money_fully_diluted_actual": "15333332"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "lender_l",
+            "name": "Lender L"
+          },
+          {
+            "id": "investor_s",
+            "name": "Investor S"
+          },
+          {
+            "id": "investor_y",
+            "name": "Investor Y"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "warrants_common_0.5",
+            "name": "Warrants for Common Stock ($0.5 strike)",
+            "kind": "warrant",
+            "strike": "0.5",
+            "underlying": "common"
+          },
+          {
+            "id": "series_a_shadow",
+            "name": "Series A Preferred (from SAFEs)",
+            "kind": "preferred",
+            "original_issue_price": "15/17",
+            "conversion_price": "15/17",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "0.8823529412",
+              "conversion_price": "0.8823529412",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "75/46",
+            "conversion_price": "75/46",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "1.6304347826",
+              "conversion_price": "1.6304347826",
+              "conversion_ratio": "1.0000000000"
+            }
+          }
+        ],
+        "seniority": [
+          [
+            "series_a",
+            "series_a_shadow"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 3000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 400000
+          },
+          {
+            "holder": "lender_l",
+            "security": "warrants_common_0.5",
+            "shares": 200000
+          },
+          {
+            "holder": "investor_s",
+            "security": "series_a_shadow",
+            "shares": 1133333
+          },
+          {
+            "holder": "investor_y",
+            "security": "series_a",
+            "shares": 3066666
+          }
+        ],
+        "unissued_pool": 1533333,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "common": 9000000,
+            "options_0.1": 400000,
+            "warrants_common_0.5": 200000,
+            "series_a_shadow": 1133333,
+            "series_a": 3066666
+          },
+          "as_converted_by_security": {
+            "common": "9000000",
+            "options_0.1": "400000",
+            "warrants_common_0.5": "200000",
+            "series_a_shadow": "1133333",
+            "series_a": "3066666"
+          },
+          "fully_diluted": "15333332",
+          "fully_diluted_percent_by_holder": {
+            "founder_a": "39.1304",
+            "founder_b": "19.5652",
+            "employee_c": "2.6087",
+            "lender_l": "1.3043",
+            "investor_s": "7.3913",
+            "investor_y": "20.0000"
+          },
+          "unissued_pool_percent": "10.0000"
+        }
+      }
+    }
+  ]
+}

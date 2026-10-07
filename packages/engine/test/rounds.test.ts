@@ -29,9 +29,12 @@ interface ExpectedTable {
   };
 }
 
-const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
+const WITH_EVENTS = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
+/** Cases with events the engine refuses until a later M5 PR builds them: 22 issues warrants (R29, M5d). */
+const REFUSED_UNTIL_M5 = ["edge-22-warrants-issued"];
+const ROUND_CASES = WITH_EVENTS.filter((name) => !REFUSED_UNTIL_M5.includes(name));
 
-/** The 27 cases with events, every one built in full: 26 since M4g, and 12g (M5b), which runs its exit after a pre-money SAFE. */
+/** 28 cases with events: 26 built in full since M4g, 12g (M5b), which runs its exit after a pre-money SAFE, and 22, refused until M5d. */
 const EXPECTED_ROUND_CASES = 27;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
@@ -186,8 +189,20 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 27 cases with events", () => {
+  it("is found: 28 cases with events, 27 of them built and 22 refused until M5d", () => {
+    expect(WITH_EVENTS).toHaveLength(EXPECTED_ROUND_CASES + REFUSED_UNTIL_M5.length);
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
+  });
+
+  it("refuses 22's warrants event, naming warrants and M5, rather than building around it", () => {
+    let error: unknown;
+    try {
+      buildCapTables(readCaseFile("edge-22-warrants-issued", "inputs.json"));
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(UnsupportedTermError);
+    expect(error).toMatchObject({ term: "warrant", milestone: "M5", path: "inputs.events[3].type" });
   });
 
   describe.each(ROUND_CASES)("%s", (name) => {

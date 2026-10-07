@@ -87,7 +87,10 @@ describe("cases outside M2's scope are refused, never skipped", () => {
   const refused: [string, string, Milestone][] = [
     ["edge-08-preferred-warrant", "warrant", "M5"],
     ["edge-09-cumulative-dividends", "cumulative_dividend", "M5"],
+    ["edge-09b-compounding-dividends", "cumulative_dividend", "M5"],
+    ["edge-09c-dividends-paid-on-conversion", "cumulative_dividend", "M5"],
     ["edge-10-carve-out", "carve_out", "M5"],
+    ["edge-10b-carve-out-alongside-preferences", "carve_out", "M5"],
     ["edge-11-earnout", "payment_schedules", "M5"],
     ["edge-12-unconverted-safe", "unconverted_safe", "M5"],
     ["edge-12b-safe-cap-and-discount", "unconverted_safe", "M5"],
@@ -105,7 +108,7 @@ describe("cases outside M2's scope are refused, never skipped", () => {
     ["edge-13f-note-alongside-preferred", "unconverted_note", "M5"],
     ["edge-13g-two-notes", "unconverted_note", "M5"],
   ];
-  const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[01])/.test(n));
+  const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
     expect(refused.map(([n]) => n).concat(roundCases, M2_CASES).sort()).toEqual(ALL_CASES);

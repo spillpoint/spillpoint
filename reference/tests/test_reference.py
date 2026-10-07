@@ -19,7 +19,7 @@ CASES = Path(__file__).resolve().parent.parent.parent / "cases"
 
 from spillpoint_ref import breakpoints  # noqa: E402
 from spillpoint_ref.case import _schedule_json, run_case  # noqa: E402
-from spillpoint_ref.model import CapTable, safe_from_json  # noqa: E402
+from spillpoint_ref.model import CapTable, compounding_periods, safe_from_json  # noqa: E402
 from spillpoint_ref.num import exact, money  # noqa: E402
 from spillpoint_ref.rounds import build, _anti_dilution_factor  # noqa: E402
 from spillpoint_ref.waterfall import Waterfall  # noqa: E402
@@ -85,6 +85,26 @@ class Rounds(unittest.TestCase):
             ]
         )
         self.assertEqual(out[-1][1].positions[("b", "common")], 638_297)
+
+    def test_warrants_issued_count_like_options(self):
+        # R29: 900,000 common; a 10% pool, 100,000; warrants for 100,000 common at $1 to l, not drawn
+        # from the pool. A $110k round at $1.1M pre-money with no pool target is priced on 1,100,000
+        # shares, warrants included: $1.00 a share, so b gets 110,000. Without them it would be $1.10.
+        events = [
+            {"id": "f", "type": "issue", "security": COMMON, "issues": [{"holder": "a", "shares": 900_000}]},
+            {"id": "p", "type": "create_pool", "percent": "10"},
+            {"id": "w", "type": "issue_warrants", "warrants": [{"holder": "l", "shares": 100_000, "strike": "1", "underlying": "common"}]},
+            self.round_event(pre_money="1100000", investments=[{"holder": "b", "amount": "110000"}], seniority=[["seed"]]),
+        ]
+        out = self.run_events(events, holders=("a", "b", "l"))
+        _, after_warrants, _ = out[2]
+        self.assertEqual((after_warrants.unissued_pool, after_warrants.positions[("l", "warrants_common_1")]), (100_000, 100_000))
+        _, ct, d = out[-1]
+        self.assertEqual(d["price_per_share"], "1")
+        self.assertEqual(ct.positions[("b", "seed")], 110_000)
+        events[2]["warrants"][0]["underlying"] = "series_z"
+        with self.assertRaisesRegex(ValueError, "not common or an issued preferred series"):
+            self.run_events(events, holders=("a", "b", "l"))
 
     def test_pool_creation(self):
         # Pool = 10% of (issued + pool): P = 10,638,297 / 9 = 1,182,033 exactly.
@@ -466,6 +486,73 @@ class Exits(unittest.TestCase):
         self.assertEqual(bp_values(ct, 5_000_000), [F(10_000_000, 9), 2_000_000, 2_200_000])
         p = payouts(ct, 3_000_000)  # pool $200k; $2.8M shared 50/50 after conversion
         self.assertEqual((p[("m", "carve_out")], p[("y", "p")], p[("x", "common")]), (200_000, 1_400_000, 1_400_000))
+
+    def test_compounding_dividends(self):
+        # X5: 1M preferred at $1, 10% compounding annually from 2024-02-29. Its anniversaries fall on
+        # 28 February in other years: two full years to 2026-02-28, $1 × 1.1² = $1.21 a share, then
+        # 181 days to a 2026-08-28 exit, simple on $1.21: $1.21 × (1 + 0.1 × 181/365) − $1 accrued.
+        def wf(start, exit_date):
+            sec = pref("p", "1", "1", "non_participating") | {
+                "cumulative_dividend": {"rate": "0.10", "method": "compounding", "accrual_start": start}
+            }
+            return Waterfall(table([COMMON, sec], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]]), exit_date)
+
+        self.assertEqual(compounding_periods(datetime.date(2024, 2, 29), datetime.date(2026, 8, 28)), (2, 181))
+        accrued = wf("2024-02-29", datetime.date(2026, 8, 28)).dividend["p"]
+        self.assertEqual(accrued, 1_000_000 * (F(121, 100) * (1 + F(1, 10) * F(181, 365)) - 1))
+        # A full year is exactly the rate, even with 366 days in it.
+        self.assertEqual(wf("2023-03-01", datetime.date(2024, 3, 1)).dividend["p"], 100_000)
+
+    def test_dividends_paid_on_conversion(self):
+        # X5: 1M preferred at $1 (1x non-participating), 1M common; 10% simple from 2023-01-01 to a
+        # 2024-01-01 exit, 365 days: $100,000. Paid on conversion, converting keeps a $100,000 claim
+        # in p's tier and shares half of the rest: p converts once (E − $100k)/2 > $1M, E > $2.1M.
+        # (Forfeited, it would convert at E/2 > $1.1M, E > $2.2M.) At $3M: $100k + $1.45M = $1.55M.
+        def ct(on_conversion):
+            sec = pref("p", "1", "1", "non_participating") | {
+                "cumulative_dividend": {"rate": "0.10", "method": "simple", "accrual_start": "2023-01-01", "on_conversion": on_conversion}
+            }
+            return table([COMMON, sec], [("x", "common", 1_000_000), ("y", "p", 1_000_000)], [["p"]])
+
+        wf = Waterfall(ct("paid"), datetime.date(2024, 1, 1))
+        self.assertEqual([t[0] for t in breakpoints.find(wf, 0, 5_000_000, 100_000)], [1_100_000, 2_100_000])
+        self.assertEqual(wf.evaluate(F(3_000_000))[0]["lines"][("y", "p")], 1_550_000)
+        # The other reading, the dividends added to what converts, is refused.
+        with self.assertRaisesRegex(ValueError, "X5's other reading"):
+            ct("added_to_conversion")
+
+    def test_carve_out_alongside_preferences(self):
+        # X7: 1M preferred at $1 (1x non-participating, $1M), 1M common; a flat 10% carve-out to m,
+        # paid alongside the preferences. It shares p's tier pro rata by claim, and its claim is 0.1E,
+        # so it gets E × 0.1E ÷ (0.1E + $1M): a curve, until the tier is paid at E = $1M + 0.1E,
+        # E = $10M/9. At $1M: m $1M × $100k ÷ $1.1M = $90,909.09…, p $909,090.90…
+        # Above, as before the preferences: p converts once 0.9E/2 > $1M, E > $20M/9.
+        def ct(seniority=(["p"],), securities=None, positions=None):
+            return CapTable.from_json(
+                {
+                    "holders": [{"id": h, "name": h} for h in ("x", "y", "m")],
+                    "securities": securities or [COMMON, pref("p", "1", "1", "non_participating")],
+                    "seniority": list(seniority),
+                    "positions": positions or [{"holder": "x", "security": "common", "shares": 1_000_000},
+                                               {"holder": "y", "security": "p", "shares": 1_000_000}],
+                    "carve_out": {
+                        "timing": "alongside_preferences",
+                        "tiers": [{"from": "0", "to": None, "percent": "10"}],
+                        "allocation": [{"holder": "m", "percent": "100"}],
+                    },
+                }
+            )
+
+        wf = Waterfall(ct())
+        found = breakpoints.find(wf, 0, 5_000_000, 100_000)
+        self.assertEqual([(x, jumps) for x, _, _, jumps in found], [(F(10_000_000, 9), False), (F(20_000_000, 9), False)])
+        self.assertEqual([(breakpoints.curved(wf, sa), breakpoints.curved(wf, sb)) for _, sa, sb, _ in found], [(True, False), (False, False)])
+        p = payouts(ct(), 1_000_000)
+        self.assertEqual((p[("m", "carve_out")], p[("y", "p")]), (F(1_000_000, 11), F(10_000_000, 11)))
+        # With no preferred, alongside them is simply first.
+        common_only = ct(seniority=(), securities=[COMMON], positions=[{"holder": "x", "security": "common", "shares": 1_000_000}])
+        p = payouts(common_only, 1_000_000)
+        self.assertEqual((p[("m", "carve_out")], p[("x", "common")]), (100_000, 900_000))
 
     def test_earnout_runs_on_cumulative_proceeds(self):
         # 1M preferred at $1 (1x non-participating), 1M common.
