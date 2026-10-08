@@ -347,6 +347,44 @@ class Rounds(unittest.TestCase):
         inputs["events"][-1]["anti_dilution_exempts_conversions"] = False
         details = run_case(inputs)["cap_tables"][-1]["details"]
         self.assertEqual([p["counted"] for p in details["anti_dilution"][0]["pieces"]], [True, True])
+        # Refused only where the Seed would actually be adjusted (Jordan, 03d review). In an up round, $3,000,000 at a
+        # $12,000,000 pre-money valuation, the new money is above $1.00: x = 10,000,000 + x/5 + $1,000,000 ÷ (0.8 ×
+        # $15,000,000 ÷ x), so x = 10,000,000 ÷ (0.8 − 1/12) and the price is $1.075. The SAFE converts at $0.86, below
+        # $1.00, but exempt, so it isn't a piece, nothing adjusts the Seed, and the round builds exactly.
+        inputs["events"][-1].update({"pre_money": "12000000", "investments": [{"holder": "investor_y", "amount": "3000000"}]})
+        inputs["events"][-1]["anti_dilution_exempts_conversions"] = True
+        details = run_case(inputs)["cap_tables"][-1]["details"]
+        self.assertEqual(details["price_per_share"], "1.075")
+        self.assertEqual(details["safe_conversions"][0]["conversion_price"], "0.86")
+        self.assertNotIn("anti_dilution", details)
+
+    def test_a_conversion_from_before_the_series_counts_in_its_a(self):
+        # Answer 3d (case 16j): a note issued before the Seed was already outstanding when the Seed bought in, so its
+        # conversion doesn't count against the Seed. 16j's note, here with no cap: at its 20% discount its shares
+        # depend on the round's price, so in 16j's down round, with them in A and the adjustment shares in the price,
+        # the price would not be exact, and the round is refused.
+        inputs = json.loads((CASES / "edge-16j-note-and-safe-from-before-the-seed" / "inputs.json").read_text())
+        inputs["events"][1]["notes"][0]["valuation_cap"] = None
+        with self.assertRaisesRegex(ValueError, "its price would not be exact"):
+            run_case(inputs)
+        # In an up round, $3,000,000 at a $13,500,000 pre-money valuation, nothing adjusts the Seed, so it builds:
+        # x = 10,000,000 + 1,500,000 (the SAFE, at its $0.40 cap) + 2x/11 + $440,000 ÷ (0.8 × $16,500,000 ÷ x), so
+        # x = 11,500,000 ÷ (1 − 2/11 − 1/30) and the price is $16,500,000 ÷ x = $1.126087 (259/230). The note converts
+        # at 0.8 × that, $0.900870 (518/575), below $1.00, but it is from before the Seed, so it isn't a piece of the round.
+        inputs["events"][-1].update({"pre_money": "13500000", "investments": [{"holder": "investor_y", "amount": "3000000"}]})
+        details = run_case(inputs)["cap_tables"][-1]["details"]
+        self.assertEqual(details["price_per_share"], "259/230")
+        self.assertEqual(details["note_conversions"][0]["conversion_price"], "518/575")
+        self.assertNotIn("anti_dilution", details)
+        # The same note issued after the Seed is a piece of the round, as in 16i, and adjusts it on its own, while the
+        # SAFE from before the Seed still counts in A at its 1,500,000 shares.
+        events = inputs["events"]
+        inputs["events"] = [events[0], events[2], events[3], events[1], events[4]]
+        adjusted = run_case(inputs)["cap_tables"][-1]["details"]["anti_dilution"][0]
+        self.assertEqual([p["counted"] for p in adjusted["pieces"]], [False, False, True])
+        self.assertEqual([p.get("in_a") for p in adjusted["pieces"]], [None, 1_500_000, None])
+        self.assertEqual(adjusted["A"], "11500000")
+        self.assertEqual(adjusted["B"], "440000")
 
     def test_a_safe_has_one_kind_of_cap(self):
         with self.assertRaisesRegex(ValueError, "not both"):

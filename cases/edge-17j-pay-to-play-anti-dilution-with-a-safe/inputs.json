@@ -1,0 +1,162 @@
+{
+  "case": "edge-17j-pay-to-play-anti-dilution-with-a-safe",
+  "description": "Edge case 17e with a bridge SAFE converting in the Series B: a pay-to-play down round that triggers the Series A's broad-based anti-dilution and converts Investor S's $1,000,000 post-money SAFE, capped at $5,000,000 and issued after the Series A. Investor W's 800,000 Series A converts to 80,000 common first (R21). The SAFE's Company Capitalization counts the cap table the round is priced on, after that conversion (R19, the 0.3.0 plan's answer 4): 9,280,000 ÷ 0.8 = 11,600,000, so it converts at $0.431034 into 2,320,000 shares. Both pieces of the round are below the Series A's $2.50, so both count against it (answers 3a, 3c), and only Investor X's 1,200,000 Series A, which remain, are adjusted.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_w",
+      "name": "Investor W"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 4500000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 1500000
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": "2022-03-01",
+      "type": "create_pool",
+      "percent": "20"
+    },
+    {
+      "id": "grants",
+      "date": "2022-03-01",
+      "type": "grant_options",
+      "grants": [
+        {
+          "holder": "employee_c",
+          "shares": 500000,
+          "strike": "0.25"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "3000000"
+        },
+        {
+          "holder": "investor_w",
+          "amount": "2000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "15",
+      "seniority": [
+        [
+          "series_a"
+        ]
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2024-06-30",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "5000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "12000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "600000"
+        },
+        {
+          "holder": "investor_y",
+          "amount": "2400000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "0",
+      "pay_to_play": {
+        "series": [
+          "series_a"
+        ],
+        "offered_amount": "1000000",
+        "conversion_ratio": "0.1",
+        "priced_after_conversion": true
+      },
+      "seniority": [
+        [
+          "series_b",
+          "series_b_shadow"
+        ],
+        [
+          "series_a"
+        ]
+      ]
+    }
+  ]
+}

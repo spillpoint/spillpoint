@@ -453,8 +453,14 @@ def ev_priced_round(ct, ev):
     # principal plus interest, the debt its shares cancel; the new money's cash for its whole shares, R8) and C their
     # shares. A stays the shares outstanding before the round. Under the round's toggle the conversions are exempt (a
     # charter carve-out or a waiver) and count in A at the shares they receive instead (3a, 3b).
+    # A SAFE or note issued before a series was already outstanding when that series bought in, so its conversion
+    # doesn't count against that series: it is out of the series' B and C, and counts in its A at the shares it
+    # receives, as an exempt conversion does (3d, 16j). It can still count against a series issued after it.
     exempt = ev.get("anti_dilution_exempts_conversions", False)
-    pieces = 1 + (0 if exempt else len(converting))
+
+    def in_a(sid, i):
+        """Whether conversion i counts in this series' A rather than as a piece of the round (3b, 3d)."""
+        return exempt or after.order[converting[i][1]["id"]] < after.order[sid]
 
     def conv_price(i, x, top_up, branch):
         k, f, _ = converting[i]
@@ -465,11 +471,15 @@ def ev_priced_round(ct, ev):
         rule = after.securities[sid]["anti_dilution"]
         price = post_val / x
         shares = [converting[i][2] / conv_price(i, x, top_up, branch) for i in range(len(converting))]
-        counted = [i for i in range(len(converting)) if not exempt and flags[1 + i]]
+        counted = [i for i in range(len(converting)) if not in_a(sid, i) and flags[1 + i]]
         consideration = (money_in if flags[0] else 0) + sum((converting[i][2] for i in counted), Fraction(0))
         issued = (money_in / price if flags[0] else 0) + sum((shares[i] for i in counted), Fraction(0))
-        extra_a = sum(shares, Fraction(0)) if exempt else Fraction(0)
+        extra_a = sum((shares[i] for i in range(len(converting)) if in_a(sid, i)), Fraction(0))
         return _anti_dilution_factor(after, sid, rule, issued, consideration, price, include_pool_in_a, extra_a)
+
+    def piece_flags(sid):
+        """The choices for one series: the new money, then each conversion; one counted in A is never a piece."""
+        return list(itertools.product((False, True), *[((False,) if in_a(sid, i) else (False, True)) for i in range(len(converting))]))
 
     solutions = []
     not_exact = False
@@ -479,7 +489,7 @@ def ev_priced_round(ct, ev):
         if any(b == "cap" and not has_cap(k, f) for b, (k, f, _) in zip(safe_branch, converting)):
             continue
         # For each protected series, which pieces (the new money, then each conversion) are priced below its conversion price.
-        flag_sets = itertools.product(list(itertools.product((False, True), repeat=pieces)), repeat=len(ad_series))
+        flag_sets = itertools.product(*[piece_flags(sid) for sid in ad_series])
         for ad_branch, top_up in itertools.product(list(flag_sets), (True, False)):
 
             def share_count(x):
@@ -512,16 +522,18 @@ def ev_priced_round(ct, ev):
                     cp1 = after.securities[sid]["conversion_price"]
                     if flags[0] != (price < cp1):
                         return False
-                    if any(flags[1 + i] != (conv_price(i, x, top_up, safe_branch) < cp1) for i in range(pieces - 1)):
+                    if any(not in_a(sid, i) and flags[1 + i] != (conv_price(i, x, top_up, safe_branch) < cp1) for i in range(len(converting))):
                         return False
                 # A top-up happens only if the pool before the round is below
                 # the target; if it meets or exceeds it, the pool stays as it is.
                 return top_up == (target * x > u0)
 
             # share_count is affine in x under fixed branches, so solve x = share_count(x) directly. The one exception:
-            # a conversion exempt from anti-dilution counts in A at its shares, and at its discount those depend on the
-            # price, so with the adjustment shares in the price (R10) the price is the root of a quadratic: irrational,
-            # never exact. If such a branch has a consistent root, the round is refused (not_exact).
+            # a conversion counted in A (exempt, or issued before the series) counts at its shares, and at its discount
+            # those depend on the price, so with the adjustment shares in the price (R10) the price is the root of a
+            # quadratic: irrational, never exact. Only a branch that adjusts a series can be one, so the round is
+            # refused (not_exact) only if such a branch has a consistent root: only when a series would actually be
+            # adjusted (Jordan, 03d review).
             h0 = share_count(Fraction(1)) - 1
             h1 = share_count(Fraction(2)) - 2
             h2 = share_count(Fraction(3)) - 3
@@ -542,8 +554,9 @@ def ev_priced_round(ct, ev):
 
     if not_exact:
         raise ValueError(
-            f"round {ev['id']}: a SAFE or note converting at its discount, exempt from anti-dilution and so counted in A, "
-            "in a round whose price counts the adjustment shares: its price would not be exact, so it is not supported yet"
+            f"round {ev['id']}: a SAFE or note converting at its discount and counted in a series' A (exempt from "
+            "anti-dilution, or issued before the series), in a round that adjusts that series and whose price counts the "
+            "adjustment shares: its price would not be exact, so it is not supported yet"
         )
     if len(solutions) != 1:
         raise ValueError(f"round {ev['id']}: expected one consistent solution, found {len(solutions)}")
@@ -607,15 +620,13 @@ def ev_priced_round(ct, ev):
             if converting and rule != "broad_based":
                 # Which piece's price a full ratchet would take, and whether a narrow A counts conversion shares, are unsettled.
                 raise ValueError(f"round {ev['id']}: {rule} anti-dilution on {sid} in a round that converts SAFEs or notes is not supported by the reference yet")
-            if any(after.order.get(f["id"], -1) < after.order.get(sid, -1) for _, f, _ in converting):
-                # Answer 3d: a SAFE or note issued before the series was already outstanding when it bought in (03d2).
-                raise ValueError(f"round {ev['id']}: a SAFE or note issued before {sid} converting where {sid} is adjusted is not supported by the reference yet")
             # The final CP2 uses the shares actually issued and what was paid for them (R8): the new money's cash for its
-            # whole shares; a SAFE's purchase amount; a note's principal plus interest.
-            counted = [i for i in range(len(converting)) if not exempt and flags[1 + i]]
+            # whole shares; a SAFE's purchase amount; a note's principal plus interest. A conversion counted in A
+            # counts its whole shares there (3b, 3d).
+            counted = [i for i in range(len(converting)) if not in_a(sid, i) and flags[1 + i]]
             piece_consideration = (consideration if flags[0] else 0) + sum((converting[i][2] for i in counted), Fraction(0))
             piece_shares = (c_issued if flags[0] else 0) + sum(conv_issued[i] for i in counted)
-            extra_a = sum(conv_issued) if exempt else 0
+            extra_a = sum(conv_issued[i] for i in range(len(converting)) if in_a(sid, i))
             factor = _anti_dilution_factor(after, sid, rule, piece_shares, piece_consideration, price, include_pool_in_a, extra_a)
             cp2 = cp1 / factor
             unrounded = {}
@@ -635,7 +646,7 @@ def ev_priced_round(ct, ev):
                 {
                     "pieces": [{"piece": "new money", "price": exact(price), "counted": flags[0]}]
                     + [
-                        {"piece": f["id"], "price": exact(conv_prices[i]), "counted": (not exempt) and flags[1 + i], **({"in_a": conv_issued[i]} if exempt else {})}
+                        {"piece": f["id"], "price": exact(conv_prices[i]), "counted": (not in_a(sid, i)) and flags[1 + i], **({"in_a": conv_issued[i]} if in_a(sid, i) else {})}
                         for i, (_, f, _) in enumerate(converting)
                     ]
                 }
