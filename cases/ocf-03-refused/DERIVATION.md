@@ -1,6 +1,6 @@
 # OCF case 03, refused: derivation
 
-One small OCF file for each thing the importer refuses. Each fixture is added to case 01's package, Larkspur Instruments, as a file of its own; the two manifests here replace Larkspur's. Each has exactly one problem, so each result is one refusal: its kind, a term naming it, and the object it's about.
+One small OCF file for each thing the importer refuses: 35 in all, 22 unsupported and 13 malformed. A SAFE whose cap gives no pre- or post-money timing was here, but OCF makes the timing optional, so it's now a term to fill in, in case 04 (Jordan, 04a2 review). Each fixture is added to case 01's package, Larkspur Instruments, as a file of its own; the two manifests here replace Larkspur's. Each has exactly one problem, so each result is one refusal: its kind, a term naming it, and the object it's about.
 
 **Two kinds of refusal:**
 - **Unsupported:** valid OCF that spillpoint doesn't model yet, so an import would change payouts without saying so. On the later list where the plan says.
@@ -42,7 +42,6 @@ One small OCF file for each thing the importer refuses. Each fixture is added to
 
 | Fixture | The problem | Refused |
 |---|---|---|
-| `safe-cap-without-timing` | a SAFE with a cap but no pre- or post-money timing | unsupported |
 | `safe-exit-multiple` | a SAFE with an exit multiple of 2 | unsupported |
 | `convertible-seniority` | a SAFE of seniority 2 beside convertibles of seniority 1 | unsupported, on the later list |
 | `convertible-mechanism-mismatch` | a SAFE carrying a note's conversion mechanism | malformed |
@@ -72,4 +71,4 @@ Each adds a preferred class, with no shares issued in it, so only the class itse
 | `several-conversion-rights` | two conversion rights | unsupported |
 | `conversion-into-preferred` | converts into Seed Preferred | unsupported |
 | `conversion-ratio-mismatch` | price and conversion price $1.50, ratio 2 for 1, where $1.50 ÷ $1.50 is 1 | malformed |
-| `cap-below-preference` | a 2x preference with a participation cap of 1.5x | malformed, as E7 refuses |
+| `cap-below-preference` | a 2x preference with a participation cap of 1.5x | unsupported, on the later list. OCF doesn't say whether the cap includes the preference. This class only makes sense if it excludes it, and spillpoint reads caps as including it (O4, E7), so it can't be read either way without a guess. |

@@ -1,0 +1,42 @@
+{
+  "case": "ocf-04-to-fill",
+  "worked_by": "hand (DERIVATION.md)",
+  "base": "ocf-01-larkspur",
+  "fixtures": {
+    "safe-cap-without-timing.ocf.json": {
+      "adds": {
+        "read": { "TX_CONVERTIBLE_ISSUANCE": 1 },
+        "unconverted_safes": [
+          { "id": "safe-f-timing", "holder": "sh-investor-s", "purchase_amount": "100000", "valuation_cap": "12000000", "cap_type": null, "discount": "0.2" }
+        ],
+        "to_fill": [{ "safe": "safe-f-timing", "field": "cap_type" }],
+        "notes": [{ "code": "not_in_manifest", "subject": "safe-cap-without-timing.ocf.json" }]
+      }
+    },
+    "note-base-unreadable.ocf.json": {
+      "adds": {
+        "read": { "TX_CONVERTIBLE_ISSUANCE": 1 },
+        "unconverted_notes": [
+          {
+            "id": "note-f-base",
+            "holder": "sh-investor-n",
+            "principal": "200000",
+            "interest_rate": "0.05",
+            "interest_method": "simple",
+            "issue_date": "2025-06-15",
+            "valuation_cap": "15000000",
+            "cap_type": "pre_money",
+            "conversion_base": null,
+            "discount": "0.15",
+            "repayment_multiple": "1.5"
+          }
+        ],
+        "to_fill": [{ "note": "note-f-base", "field": "conversion_base" }],
+        "notes": [
+          { "code": "not_in_manifest", "subject": "note-base-unreadable.ocf.json" },
+          { "code": "note_cap_read_as_pre_money", "subject": "note-f-base" }
+        ]
+      }
+    }
+  }
+}

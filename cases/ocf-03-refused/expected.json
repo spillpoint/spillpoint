@@ -20,7 +20,6 @@
     "stock-appreciation-right.ocf.json": { "refused": { "kind": "unsupported", "term": "stock_appreciation_right", "subject": "tx-r-sar" } },
     "return-to-pool-conflict.ocf.json": { "refused": { "kind": "unsupported", "term": "return_to_pool_conflict", "subject": "tx-r-return" } },
     "pool-overdrawn.ocf.json": { "refused": { "kind": "malformed", "term": "pool_overdrawn", "subject": "plan-2023" } },
-    "safe-cap-without-timing.ocf.json": { "refused": { "kind": "unsupported", "term": "safe_cap_without_timing", "subject": "tx-r-safe-timing" } },
     "safe-exit-multiple.ocf.json": { "refused": { "kind": "unsupported", "term": "safe_exit_multiple", "subject": "tx-r-safe-multiple" } },
     "convertible-seniority.ocf.json": { "refused": { "kind": "unsupported", "term": "convertible_seniority", "subject": "tx-r-seniority" } },
     "convertible-mechanism-mismatch.ocf.json": { "refused": { "kind": "malformed", "term": "convertible_mechanism_mismatch", "subject": "tx-r-mismatch" } },
@@ -38,6 +37,6 @@
     "several-conversion-rights.ocf.json": { "refused": { "kind": "unsupported", "term": "several_conversion_rights", "subject": "cls-r-two" } },
     "conversion-into-preferred.ocf.json": { "refused": { "kind": "unsupported", "term": "conversion_into_preferred", "subject": "cls-r-into-seed" } },
     "conversion-ratio-mismatch.ocf.json": { "refused": { "kind": "malformed", "term": "conversion_ratio_mismatch", "subject": "cls-r-ratio" } },
-    "cap-below-preference.ocf.json": { "refused": { "kind": "malformed", "term": "cap_below_preference", "subject": "cls-r-cap" } }
+    "cap-below-preference.ocf.json": { "refused": { "kind": "unsupported", "term": "cap_below_preference", "subject": "cls-r-cap" } }
   }
 }

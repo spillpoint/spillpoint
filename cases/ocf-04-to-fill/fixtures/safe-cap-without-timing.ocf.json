@@ -3,10 +3,10 @@
   "items": [
     {
       "object_type": "TX_CONVERTIBLE_ISSUANCE",
-      "id": "tx-r-safe-timing",
-      "date": "2025-01-01",
-      "security_id": "safe-r-timing",
-      "custom_id": "SAFE-R-TIMING",
+      "id": "tx-f-safe-timing",
+      "date": "2025-06-15",
+      "security_id": "safe-f-timing",
+      "custom_id": "SAFE-F-TIMING",
       "stakeholder_id": "sh-investor-s",
       "convertible_type": "SAFE",
       "investment_amount": {
@@ -28,7 +28,8 @@
                 "amount": "12000000",
                 "currency": "USD"
               },
-              "conversion_discount": "0.20"
+              "conversion_discount": "0.20",
+              "exit_multiple": "1"
             }
           }
         }

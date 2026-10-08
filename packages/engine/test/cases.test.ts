@@ -242,7 +242,20 @@ describe.each(ocfPackageDirs)("OCF case %s", (dir) => {
 interface FixtureExpected {
   case: string;
   base: string;
-  fixtures: Record<string, { adds?: { not_needed?: Record<string, number>; notes?: { code: string; subject?: string }[] }; refused?: { kind: string; term: string; subject: string } }>;
+  fixtures: Record<
+    string,
+    {
+      adds?: {
+        read?: Record<string, number>;
+        not_needed?: Record<string, number>;
+        notes?: { code: string; subject?: string }[];
+        unconverted_safes?: Json[];
+        unconverted_notes?: Json[];
+        to_fill?: { safe?: string; note?: string; field: string }[];
+      };
+      refused?: { kind: string; term: string; subject: string };
+    }
+  >;
 }
 
 // Fixture cases (C16): each file is added to a base package, or replaces its manifest.
@@ -275,7 +288,7 @@ describe.each(ocfFixtureDirs)("OCF fixtures %s", (dir) => {
     expect(FILE_TYPES).toContain(read(name).file_type);
   });
 
-  it("counts what each set-aside fixture adds as the file has it, and notes the unlisted file", () => {
+  it("counts what each fixture adds as the file has it, and notes the unlisted file", () => {
     for (const [name, r] of Object.entries(expected.fixtures)) {
       if (!r.adds) continue;
       const f = read(name);
@@ -285,8 +298,19 @@ describe.each(ocfFixtureDirs)("OCF fixtures %s", (dir) => {
       }
       const counts: Record<string, number> = {};
       for (const o of f.items as Json[]) counts[o.object_type as string] = (counts[o.object_type as string] ?? 0) + 1;
-      expect(r.adds.not_needed, name).toEqual(counts);
-      expect(r.adds.notes, name).toEqual([{ code: "not_in_manifest", subject: name }]);
+      expect({ ...r.adds.read, ...r.adds.not_needed }, name).toEqual(counts);
+      expect(r.adds.notes?.[0], name).toEqual({ code: "not_in_manifest", subject: name });
+    }
+  });
+
+  it("leaves blank, in what a fixture adds, exactly the terms it adds to fill in", () => {
+    for (const [name, r] of Object.entries(expected.fixtures)) {
+      if (!r.adds) continue;
+      const blanks = [
+        ...(r.adds.unconverted_safes ?? []).flatMap((x) => Object.entries(x).filter(([, v]) => v === null).map(([k]) => ({ safe: x.id as string, field: k }))),
+        ...(r.adds.unconverted_notes ?? []).flatMap((x) => Object.entries(x).filter(([, v]) => v === null).map(([k]) => ({ note: x.id as string, field: k }))),
+      ];
+      expect(blanks, name).toEqual(r.adds.to_fill ?? []);
     }
   });
 
