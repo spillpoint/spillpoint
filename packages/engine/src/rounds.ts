@@ -270,7 +270,7 @@ const EVENT_FIELDS: Record<string, readonly string[]> = {
   priced_round: [
     "series", "pre_money", "investments", "pool_target_unissued_percent_post", "seniority", "convert_safes", "convert_notes",
     "pay_to_play", "anti_dilution_shares_in_post", "anti_dilution_include_unissued_pool_in_a", "anti_dilution_cp2_rounding",
-    "pro_rata_base_includes_unissued_pool",
+    "pro_rata_base_includes_unissued_pool", "anti_dilution_exempts_conversions",
   ],
 };
 
@@ -666,6 +666,13 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   if (payToPlay) applyPayToPlay(afterConversion, payToPlay, `${path}.pay_to_play`);
   if (payToPlay?.pricedAfterConversion) applyPayToPlay(company, payToPlay, `${path}.pay_to_play`);
   const adjustmentInPost = bool(ev.anti_dilution_shares_in_post, true, `${path}.anti_dilution_shares_in_post`);
+  // The 0.3.0 plan's answer 3a: a round may exempt its SAFE and note conversions from anti-dilution (case 16h). Read from 03h.
+  if (bool(ev.anti_dilution_exempts_conversions, false, `${path}.anti_dilution_exempts_conversions`)) {
+    throw new UnsupportedTermError(
+      "anti_dilution_exempts_conversions", "later", `${path}.anti_dilution_exempts_conversions`,
+      "A round exempting its SAFE and note conversions from anti-dilution (R25)",
+    );
+  }
   const poolInA = bool(ev.anti_dilution_include_unissued_pool_in_a, false, `${path}.anti_dilution_include_unissued_pool_in_a`);
   const poolInProRataBase = bool(ev.pro_rata_base_includes_unissued_pool, false, `${path}.pro_rata_base_includes_unissued_pool`);
   const rounding = ev.anti_dilution_cp2_rounding ?? "exact";

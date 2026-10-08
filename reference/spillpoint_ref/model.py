@@ -34,6 +34,9 @@ class CapTable:
         self.seniority = []  # list of tiers, most senior first; each a list of preferred ids
         self.conversion_groups = []  # series that must convert together (SPEC toggle)
         self.carve_out = None  # management carve-out plan, if any
+        # When a table is built from events: which event issued each series, SAFE and note (answer 3d).
+        self.order = {}
+        self.event_no = None
 
     def copy(self):
         return copy.deepcopy(self)
@@ -47,6 +50,7 @@ class CapTable:
 
     def add_security(self, sec):
         sid = sec["id"]
+        self.order.setdefault(sid, self.event_no)
         if sid in self.securities:
             raise ValueError(f"security {sid} already exists")
         self.securities[sid] = sec

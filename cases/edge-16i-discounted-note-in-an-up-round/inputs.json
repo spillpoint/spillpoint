@@ -1,0 +1,126 @@
+{
+  "case": "edge-16i-discounted-note-in-an-up-round",
+  "description": "A note converting at its 20% discount below the Seed's $1.00 conversion price, in a Series A priced above it. Investor N's $500,000 note, with no cap, was issued after the Seed. Each piece is tested at its own price (the 0.3.0 plan's answer 3c): the new money, above $1.00, stays out of the formula; the note's conversion, below it, counts in B and C, so it adjusts the Seed on its own.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_n",
+      "name": "Investor N"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 2000000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based",
+        "anti_dilution_a": "outstanding_common_options_preferred"
+      },
+      "pre_money": "8000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "2000000"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "note",
+      "date": "2023-07-01",
+      "type": "notes",
+      "notes": [
+        {
+          "id": "note_n",
+          "holder": "investor_n",
+          "principal": "500000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2023-07-01",
+          "valuation_cap": null,
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0.2",
+          "repayment_multiple": "1"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "12000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "3000000"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a",
+          "series_a_notes"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "convert_notes": true
+    }
+  ]
+}
