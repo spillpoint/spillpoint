@@ -1,0 +1,16 @@
+{
+  "file_type": "OCF_STOCK_PLANS_FILE",
+  "items": [
+    {
+      "object_type": "STOCK_PLAN",
+      "id": "plan",
+      "plan_name": "2021 Equity Incentive Plan",
+      "board_approval_date": "2021-10-01",
+      "initial_shares_reserved": "1182033",
+      "default_cancellation_behavior": "RETURN_TO_POOL",
+      "stock_class_ids": [
+        "common"
+      ]
+    }
+  ]
+}

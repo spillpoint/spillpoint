@@ -1,0 +1,77 @@
+{
+  "file_type": "OCF_STAKEHOLDERS_FILE",
+  "items": [
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "ana",
+      "name": {
+        "legal_name": "Ana Ortiz"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "dev",
+      "name": {
+        "legal_name": "Dev Patel"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "lena",
+      "name": {
+        "legal_name": "Lena Fischer"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "other_employees",
+      "name": {
+        "legal_name": "Other employees"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "priya",
+      "name": {
+        "legal_name": "Priya Shah"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "marcus",
+      "name": {
+        "legal_name": "Marcus Lee"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "harbor_lane",
+      "name": {
+        "legal_name": "Harbor Lane Ventures Fund I"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "ridgeline",
+      "name": {
+        "legal_name": "Ridgeline Capital Fund III"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "cobalt",
+      "name": {
+        "legal_name": "Cobalt Family Office LLC"
+      },
+      "stakeholder_type": "INSTITUTION"
+    }
+  ]
+}
