@@ -357,8 +357,11 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
   // Settings that matter only here (Jordan, 03h review), each also shown while it's on, so a saved setting is never hidden.
   const protectedBefore = antiDilutionBefore(draft, event.key);
   const converting = (outstandingSafes && json.convert_safes !== false) || (outstandingNotes && json.convert_notes === true);
-  const showPoolInA = protectedBefore.has("broad_based") || json.anti_dilution_include_unissued_pool_in_a === true;
-  const showExempt = (converting && protectedBefore.size > 0) || json.anti_dilution_exempts_conversions === true;
+  const poolInAApplies = protectedBefore.has("broad_based");
+  const exemptApplies = converting && protectedBefore.size > 0;
+  const showPoolInA = poolInAApplies || json.anti_dilution_include_unissued_pool_in_a === true;
+  const showExempt = exemptApplies || json.anti_dilution_exempts_conversions === true;
+  const notHere = (label: string, applies: boolean) => (applies ? label : `${label} (doesn't apply to this round)`);
   return (
     <>
       <h4>The round</h4>
@@ -420,9 +423,18 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
       <details className="event-form__more">
         <summary>More terms</summary>
         {f.check("pro_rata_base_includes_unissued_pool", "Pro-rata counts the unissued pool", false)}
-        {showPoolInA && f.check("anti_dilution_include_unissued_pool_in_a", "Anti-dilution base includes the unused option pool (smaller adjustments for earlier investors)", false)}
+        {showPoolInA &&
+          f.check(
+            "anti_dilution_include_unissued_pool_in_a",
+            notHere("Anti-dilution base includes the unused option pool (smaller adjustments for earlier investors)", poolInAApplies),
+            false,
+          )}
         {showExempt &&
-          f.check("anti_dilution_exempts_conversions", "SAFE and note conversions in this round don't count toward anti-dilution (a charter carve-out or waiver)", false)}
+          f.check(
+            "anti_dilution_exempts_conversions",
+            notHere("SAFE and note conversions in this round don't count toward anti-dilution (a charter carve-out or waiver)", exemptApplies),
+            false,
+          )}
         {f.check("anti_dilution_shares_in_post", "The round's price counts the anti-dilution adjustment shares", true)}
         {f.select(
           "anti_dilution_cp2_rounding",

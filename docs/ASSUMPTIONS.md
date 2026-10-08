@@ -59,6 +59,7 @@ Deferred by Jordan's decisions since the 0.3.0 plan, each until a case settles i
 - **Full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes (R25).** Refused, as `anti_dilution_with_conversions`. Which piece's price a full ratchet takes, and whether a narrow-based A counts conversion shares, are unsettled. (03d review.)
 - **A conversion counted in a series' A at its discount, in a round that adjusts that series, with the adjustment shares in the price (R25).** Refused, as `discounted_conversion_in_anti_dilution_a`: the price would be the root of a quadratic, not exact. A conversion is counted in A when exempt under the round's toggle or issued before the series. Refused only where the series would actually be adjusted. (03d review.)
 - **Conversions counting toward a pay-to-play requirement (R17).** Not refused: today only new money counts. A possible toggle. (03d2 review.)
+- **The page's "Pro-rata counts the unissued pool" setting (R6),** under a round's "More terms": relabel it in plain words, as 03i did for the anti-dilution pool setting. For the 1.0 pass. (03i review.)
 
 ## Exit waterfall
 

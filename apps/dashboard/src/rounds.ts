@@ -173,13 +173,16 @@ export interface TableRow {
   fullyDiluted: Decimal;
 }
 
+/** A sentence about what an event did, with any sentences that explain it, shown under it. */
+export type Line = string | { text: string; details: string[] };
+
 export interface EventView {
   id: string;
   /** "Jun 30, 2022", or null when the event has no date. */
   date: string | null;
   title: string;
   /** What it did, in plain sentences. */
-  lines: string[];
+  lines: Line[];
   rows: TableRow[];
   pool: { shares: Decimal; fullyDiluted: Decimal };
   /** Each holder's fully diluted share after it, by holder id: what the "For you" line compares. */
@@ -246,7 +249,7 @@ type Name = (id: unknown) => string;
 /** ", with a 20% discount", or nothing without one. */
 const discountText = (discount: unknown) => (discount != null && !new D(String(discount)).isZero() ? `, with a ${pct(new D(String(discount)))} discount` : "");
 
-function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name): { title: string; lines: string[] } {
+function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name): { title: string; lines: Line[] } {
   const d = t.details;
   const items = (key: string) => (ev[key] as Json[] | undefined) ?? [];
   switch (d.kind) {
@@ -320,13 +323,13 @@ function dividendLines(ev: Json, t: CapTableAfterEvent): string[] {
   });
 }
 
-function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): string[] {
+function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): Line[] {
   const seriesName = security((ev.series as Json).id);
   const investments = (ev.investments as Json[]).map((inv) => ({ holder: String(inv.holder), amount: new D(String(inv.amount)) }));
   const byHolder = new Map<string, Decimal>();
   for (const inv of investments) byHolder.set(inv.holder, (byHolder.get(inv.holder) ?? ZERO).plus(inv.amount));
   const raised = investments.reduce((sum, inv) => sum.plus(inv.amount), ZERO);
-  const lines = [
+  const lines: Line[] = [
     `${dollars(raised)} at a ${money(ev.pre_money)} pre-money valuation, ${dollars(d.postMoneyValuation)} post-money: ${price(d.price)} a share.`,
     ...d.newShares.map((n) => `${holder(n.holder)} invests ${dollars(byHolder.get(n.holder) ?? ZERO)} for ${count(n.shares)} shares of ${seriesName}.`),
   ];
@@ -341,7 +344,7 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): st
   }
   for (const c of d.noteConversions) {
     lines.push(
-      `${holder(c.holder)}'s note converts ${dollarsAndCents(c.amountConverting)} (${dollars(c.principal)} and ${dollarsAndCents(c.interest)} interest) ` +
+      `${holder(c.holder)}'s note converts ${dollarsAndCents(c.amountConverting)} (${dollarsAndCents(c.principal)} and ${dollarsAndCents(c.interest)} interest) ` +
         `at its ${c.method} price, ${price(c.conversionPrice)} a share, into ${count(c.shares)} shares of ${security(c.series)}.`,
     );
   }
@@ -350,14 +353,15 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): st
     const pool = ev.pro_rata_base_includes_unissued_pool === true ? "counting" : "not counting";
     lines.push(
       `${holder(p.holder)} may buy up to ${dollarsAndCents(p.entitlement)} as pro-rata: its ${percent(p.preRoundShare)} of the company before the round ` +
-        `(${pool} the unissued pool), times the ${dollars(raised)} raised. It takes ${dollars(p.amountInvested)} of it.`,
+        `(${pool} the unissued pool), times the ${dollarsAndCents(raised)} raised. It takes ${dollarsAndCents(p.amountInvested)} of it.`,
     );
   }
   if (d.payToPlay) {
     const pp = d.payToPlay;
     lines.push(`Pay-to-play: ${dollars(pp.offeredAmount)} is offered to the holders of ${list(pp.series.map(security))}, each in proportion to what it holds.`);
     for (const h of pp.holders) {
-      const required = `${dollars(h.invested)} of its ${dollars(h.required)}`;
+      // To the cent: a holder a cent short of its requirement converts (R20).
+      const required = `${dollarsAndCents(h.invested)} of its ${dollarsAndCents(h.required)}`;
       if (h.participates) {
         lines.push(`${holder(h.holder)} buys ${required} and keeps its preferred.`);
         continue;
@@ -370,11 +374,12 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): st
     }
   }
   for (const a of d.antiDilution) {
-    lines.push(
+    const text =
       `${security(a.series)}'s anti-dilution (${RULES[a.rule]}) lowers its conversion price from ${price(a.cp1)} to ${price(a.cp2)}, ` +
-        `so each share converts into ${a.newConversionRatio.toFixed(6, D.ROUND_HALF_UP)} common. Its preference doesn't change.`,
-    );
-    lines.push(...pieceLines(a, ev, d, holder, security));
+      `so each share converts into ${a.newConversionRatio.toFixed(6, D.ROUND_HALF_UP)} common. Its preference doesn't change.`;
+    // With conversions, each piece's line goes under it, as its explanation.
+    const details = pieceLines(a, ev, d, holder, security);
+    lines.push(details.length > 0 ? { text, details } : text);
   }
   return lines;
 }

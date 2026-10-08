@@ -238,3 +238,24 @@ describe("curved payouts (X17), on case 10b", () => {
     expect(within(table).getByRole("rowheader", { name: /^Management carve-out/ }).closest("tr")!.textContent).toContain("no shares");
   });
 });
+
+describe("a warrant coming into the money on a curve (X17), on case 8b (0.3.0 work, 03j)", () => {
+  it("opens 8b as a file with exactly its inputs, and words the kink at $1,052,631.58 with the rate curving on both sides", async () => {
+    const exit = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-08b-warrant-on-the-curve/inputs.json"), "utf8")).exit;
+    render(<App />);
+    // Its cap table and range as the case gives them, carve-out in the cap table. Investor X, the Seed, is "you":
+    // Founder A gets nothing on either side while the Seed's tier is short.
+    const file = { format: "spillpoint", version: 5, name: "Case 8b", cap_table: exit.cap_table, range: exit.range, view: { exit_value: "1500000", you: "investor_x" } };
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([JSON.stringify(file)], "8b.json", { type: "application/json" })] } });
+    await screen.findByText("Opened 8b.json.");
+    const list = await breakpointList();
+    const kink = list.querySelector("ol.breakpoints > li")!;
+    expect(kink.querySelector(".breakpoints__head")!.textContent).toBe("1$1,052,632 ($1.05M)Changes your payout");
+    expect(kink.textContent).toContain("The warrant for 200,000 Seed Preferred shares at a $0.50 strike comes into the money here");
+    // Investor X gets x × $2,000,000 ÷ ($2,000,000 + 0.1x) below, so $902,500 per $1M at x = $20,000,000 ÷ 19, and
+    // 2,000,000 × (x + $100,000) ÷ ($2,200,000 + 0.1x) above, so $824,201 per $1M there.
+    expect(kink.querySelector(".breakpoints__yours")!.textContent).toBe(
+      "For you: just below here each extra $1M adds about $902,500; just above, about $824,201. The rate keeps changing on both sides, because the carve-out's claim grows with the exit value.",
+    );
+  });
+});

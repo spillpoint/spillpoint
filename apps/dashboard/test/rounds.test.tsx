@@ -20,7 +20,9 @@ const click = (name: string) => fireEvent.click(screen.getByRole("button", { nam
 const roundsPanel = () => document.getElementById("panel-rounds")!;
 /** The event card headed by this title. */
 const event = (title: RegExp) => within(roundsPanel()).getByRole("heading", { level: 3, name: title }).closest("li")!;
-const lines = (card: HTMLElement) => [...card.querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
+/** A line's own words, without the lines under it that explain it. */
+const ownText = (li: Element) => [...li.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join("");
+const lines = (card: HTMLElement) => [...card.querySelectorAll(".rounds__lines li")].map(ownText);
 
 const EDIT_DIRECTLY =
   "Edit the cap table directly? This drops the 10 events that build it, and what each one worked out on the Rounds tab. " +
@@ -79,7 +81,7 @@ describe("the Rounds tab", () => {
       "Marcus Lee's SAFE converts at its cap price, $0.384930 a share, into 389,681 shares of Seed Preferred (from SAFEs).",
     ]);
     expect(lines(event(/Series A Preferred/))).toContain(
-      "Harbor Lane Ventures Fund I may buy up to $3,444,369.64 as pro-rata: its 28.7% of the company before the round (not counting the unissued pool), times the $12,000,000 raised. It takes $3,000,000 of it.",
+      "Harbor Lane Ventures Fund I may buy up to $3,444,369.64 as pro-rata: its 28.7% of the company before the round (not counting the unissued pool), times the $12,000,000.00 raised. It takes $3,000,000.00 of it.",
     );
     expect(lines(event(/Series B Preferred/))).toContain(
       "Series A Preferred's anti-dilution (broad-based weighted average) lowers its conversion price from $2.075472 to $1.824752, so each share converts into 1.137399 common. Its preference doesn't change.",

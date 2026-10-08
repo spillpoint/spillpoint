@@ -34,7 +34,7 @@ The page doesn't build a few combinations within a round: the engine's README li
 
 ## The engine
 
-The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. From 0.2.0 it also pays warrants, cumulative dividends, management carve-outs, escrow and earnouts, and SAFEs and notes still outstanding at a sale. Its README lists what it still refuses.
+The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. From 0.2.0 it also pays warrants, cumulative dividends, management carve-outs, escrow and earnouts, and SAFEs and notes still outstanding at a sale. From 0.3.0 it also converts SAFEs and notes in a round that triggers anti-dilution or has pay-to-play, and a post-money SAFE beside notes or other SAFEs; and it takes a carve-out as a term of the sale. Its README lists what it still refuses.
 
 Coming next:
 - **Open Cap Format import,** so you can load a cap table exported from your cap table software.

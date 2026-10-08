@@ -148,3 +148,19 @@ describe("paid over time (M5 plan, item 14)", () => {
     expect(row("Investor Y")).toEqual(["$3,000,000.00", "$100,000.00", "$3,100,000.00"]);
   });
 });
+
+describe("case 11b, opened as a file with exactly its inputs (0.3.0 work, 03j)", () => {
+  it("warns that the earnout lowers what the founders have been paid so far (X8)", async () => {
+    const exit = caseExit("edge-11b-earnout-negative-take");
+    render(<App />);
+    await openFile({ format: "spillpoint", version: 5, name: "Case 11b", cap_table: exit.cap_table, range: exit.range, payment_schedules: exit.payment_schedules });
+    // At $29M the Seeds keep their preferences; at the cumulative $31M they convert together, so the earnout is paid
+    // where it would have gone at closing, and the founders' running totals fall: $150,000 and $50,000 (11b's derivation).
+    const warning = document.querySelector(".payments__warning")!;
+    expect(warning.textContent).toBe(
+      "The payment “earnout” lowers what Founder A and Founder B have been paid so far. Founder A gives back $150,000.00 and Founder B gives back $50,000.00. " +
+        "At $31,000,000 paid in all, Seed-1 Preferred and Seed-2 Preferred convert, unlike at $29,000,000. " +
+        "Each payment's takes are worked out on everything paid so far, as if it had all been paid at closing, so a later payment can take back part of an earlier one.",
+    );
+  });
+});

@@ -269,9 +269,20 @@ function Built({ view: e, previous, you, atSale }: { view: EventView; previous: 
     <>
       {forYou(previous?.stakes.get(you) ?? ZERO, e.stakes.get(you) ?? ZERO)}
       <ul className="rounds__lines">
-        {e.lines.map((line, j) => (
-          <li key={j}>{line}</li>
-        ))}
+        {e.lines.map((line, j) =>
+          typeof line === "string" ? (
+            <li key={j}>{line}</li>
+          ) : (
+            <li key={j}>
+              {line.text}
+              <ul className="rounds__details">
+                {line.details.map((detail, k) => (
+                  <li key={k}>{detail}</li>
+                ))}
+              </ul>
+            </li>
+          ),
+        )}
       </ul>
       <AtSale lines={atSale} />
       <details className="rounds__table">
