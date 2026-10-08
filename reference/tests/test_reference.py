@@ -543,6 +543,25 @@ class Exits(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "X5's other reading"):
             ct("added_to_conversion")
 
+    def test_warrant_comes_into_the_money_on_the_curve(self):
+        # 800,000 common; p, 200,000 shares at $1, non-participating; a warrant for 20,000 p at $0.50; and a flat 10%
+        # carve-out alongside the preferences, sharing p's tier (X7, X17). Exercised, the warrant's shares join p's tier,
+        # so each p share gets (x + $10,000 strike cash) / ($220,000 + 0.1x). That reaches the $0.50 strike where
+        # x + 10,000 = 110,000 + 0.05x: x = $2,000,000 / 19 = $105,263.16, on the curve. Payouts meet there: a kink
+        # (case 8b, 0.3.0 work). The gain from exercising is fitted from three readings and checked against a fourth.
+        ct = table(
+            [COMMON, pref("p", "1", "1", "non_participating"), {"id": "w", "name": "w", "kind": "warrant", "strike": "0.5", "underlying": "p"}],
+            [("x", "common", 800_000), ("y", "p", 200_000), ("z", "w", 20_000)],
+            [["p"]],
+        )
+        ct.add_holder("m", "m")
+        ct.carve_out = {"timing": "alongside_preferences", "tiers": [{"from": F(0), "to": None, "rate": F(1, 10)}], "allocation": [{"holder": "m", "share": F(1)}]}
+        found = breakpoints.find(Waterfall(ct), 0, 300_000, 50_000)
+        self.assertEqual(found[0][0], F(2_000_000, 19))
+        self.assertFalse(found[0][3])
+        # The tier ($220,000 + 0.1x) is paid in full where x + $10,000 reaches it: 0.9x = $210,000.
+        self.assertEqual(found[1][0], F(700_000, 3))
+
     def test_carve_out_alongside_preferences(self):
         # X7: 1M preferred at $1 (1x non-participating, $1M), 1M common; a flat 10% carve-out to m,
         # paid alongside the preferences. It shares p's tier pro rata by claim, and its claim is 0.1E,

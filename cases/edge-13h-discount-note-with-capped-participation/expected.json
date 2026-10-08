@@ -55,7 +55,7 @@
             "code": "note_switches",
             "security": "note_z",
             "converts": true,
-            "text": "Investor Z's convertible note has no valuation cap, so it converts at the common price per share less its 20% discount. Its principal plus interest, $1,120,000.00, is then worth exactly $1,400,000.00 ($1,120,000.00 \u00f7 0.80) wherever there is room for it, and this is the first exit value where there is: what is left for common and the note reaches $1,400,000.00. Below it no such price exists, so the note is repaid, $1,120,000.00; above it the note converts, and its payout jumps to $1,400,000.00."
+            "text": "Investor Z's convertible note has no valuation cap, so it converts at the common price per share less its 20% discount. Its principal plus interest, $1,120,000.00, is then worth exactly $1,400,000.00 ($1,120,000.00 \u00f7 0.80) wherever there is room for it, and this is the first exit value where there is: what is left after the preferences reaches $1,400,000.00. Below it no such price exists, so the note is repaid, $1,120,000.00; above it the note converts, and its payout jumps to $1,400,000.00."
           },
           {
             "code": "payouts_jump",

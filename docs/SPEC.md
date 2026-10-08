@@ -94,7 +94,7 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 5. Two series, stacked vs. pari passu.
 6. Two non-participating series in one tier with different per-share preferences: per-series conversion vs. forced class conversion. 6d: a conversion group whose pivotal voter is indifferent over a range, then prefers converting (E13).
 7. Options at several strikes: in-the-money thresholds and strike cash.
-8. A warrant for preferred.
+8. A warrant for preferred. 8b adds a carve-out alongside the preferences, so the warrant comes into the money on the curve.
 9. Cumulative dividends: they accrue, then are forfeited on conversion. 9b compounds them; 9c pays them on conversion.
 10. A management carve-out. 10b pays it alongside the preferences.
 11. An earnout: a closing payment plus one later payment. 11b's earnout crosses a group-conversion jump, so it lowers the founders' running totals: their takes are negative.

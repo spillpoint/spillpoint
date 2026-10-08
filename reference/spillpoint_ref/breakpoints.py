@@ -125,7 +125,7 @@ def _kink(wf, bracket, sides, pts_left, pts_right):
     (bits_r, flags_r), = sides[1]
     lo, hi = bracket
     if bits_l != bits_r:
-        raise ValueError(f"a decision changes on a curved stretch near {decimal(lo, 2)}, which the reference doesn't handle yet")
+        return _decision_on_curve(wf, bracket, bits_l, bits_r, pts_left + pts_right)
     xs = set()
     if flags_l[2] != flags_r[2]:
         xs.update(t["to"] for t in wf.ct.carve_out["tiers"] if t["to"] is not None and lo - 1 <= t["to"] <= hi + 1)
@@ -137,6 +137,59 @@ def _kink(wf, bracket, sides, pts_left, pts_right):
     if len(xs) != 1:
         raise ValueError(f"cannot place the change on a curve near {decimal(lo, 2)}: {sorted(xs)}")
     return xs.pop()
+
+
+def _guard(lo):
+    return ValueError(f"a decision changes on a curved stretch near {decimal(lo, 2)}, which the reference doesn't handle yet")
+
+
+def _decision_on_curve(wf, bracket, bits_l, bits_r, pts):
+    """Where one decision changes on a curved stretch (X17, case 8b).
+
+    On a curve the decision-maker's gain from switching isn't a straight line,
+    but here it is one straight line over another: a warrant's share of a tier
+    that isn't paid in full is (x + strike cash) times its claim over the
+    tier's claims, which grow with x. So the gain is (a·x + b) ÷ (c·x + 1):
+    fitted exactly from three readings, checked against a fourth, and solved
+    where it is zero. Payouts must meet there, a kink on the curve. Anything
+    else, a group's vote, two decisions at once, a gain of another shape or a
+    jump, stops with the guard error rather than be guessed at.
+    """
+    lo, hi = bracket
+    changed = [i for i, (u, v) in enumerate(zip(bits_l, bits_r)) if u != v]
+    if len(changed) != 1 or wf.players[changed[0]] in wf.vote:
+        raise _guard(lo)
+    player = wf.players[changed[0]]
+
+    def gain(x):
+        right = wf.player_value(wf.run(x, wf.settled(x, bits_r))[0], player)
+        left = wf.player_value(wf.run(x, wf.settled(x, bits_l))[0], player)
+        return right - left
+
+    readings = [(x, gain(x)) for x in pts]
+    # g = (a·x + b) ÷ (c·x + 1), so a·x + b − c·x·g = g: three equations in a, b and c.
+    rows = [[x, Fraction(1), -x * g, g] for x, g in readings[:3]]
+    for col in range(3):
+        pivot = next((r for r in range(col, 3) if rows[r][col] != 0), None)
+        if pivot is None:
+            raise _guard(lo)
+        rows[col], rows[pivot] = rows[pivot], rows[col]
+        for r in range(3):
+            if r != col and rows[r][col] != 0:
+                k = rows[r][col] / rows[col][col]
+                rows[r] = [u - k * v for u, v in zip(rows[r], rows[col])]
+    a, b, c = (rows[i][3] / rows[i][i] for i in range(3))
+    x3, g3 = readings[3]
+    if c * x3 + 1 == 0 or (a * x3 + b) / (c * x3 + 1) != g3 or a == 0:
+        raise _guard(lo)
+    x = -b / a
+    if not (lo - 1 <= x <= hi + 1):
+        raise _guard(lo)
+    below = wf.payout_vector_with(x, wf.settled(x, bits_l))
+    above = wf.payout_vector_with(x, wf.settled(x, bits_r))
+    if below != above:
+        raise _guard(lo)
+    return x
 
 
 def _locate(wf, a, b):
@@ -393,7 +446,7 @@ def reasons(wf, x, sa, sb, jumps=False):
                     f"{holder}'s SAFE has no valuation cap, so it converts at the common price per share less its "
                     f"{decimal(f['discount'] * 100, 0)}% discount. That is worth exactly {usd(worth)} "
                     f"({usd(f['purchase_amount'])} ÷ {decimal(1 - f['discount'], 2)}) wherever there is room for it, and this is the "
-                    f"first exit value where there is: what is left for common and the SAFE reaches {usd(worth)}. Below it no such "
+                    f"first exit value where there is: {left_for(wf, 'the SAFE')} reaches {usd(worth)}. Below it no such "
                     f"price exists, so the SAFE takes its Cash-Out Amount, {usd(f['purchase_amount'])}; above it the SAFE converts, "
                     f"and its payout jumps to {usd(worth)}."
                 )
@@ -471,7 +524,7 @@ def reasons(wf, x, sa, sb, jumps=False):
                     f"{holder}'s convertible note has no valuation cap, so it converts at the common price per share less its "
                     f"{decimal(n['discount'] * 100, 0)}% discount. Its principal plus interest, {usd(amount)}, is then worth exactly "
                     f"{usd(worth)} ({usd(amount)} ÷ {decimal(1 - n['discount'], 2)}) wherever there is room for it, and this is the "
-                    f"first exit value where there is: what is left for common and the note reaches {usd(worth)}. Below it no such "
+                    f"first exit value where there is: {left_for(wf, 'the note')} reaches {usd(worth)}. Below it no such "
                     f"price exists, so the note is repaid, {usd(repay)}; above it the note converts, and its payout jumps to {usd(worth)}."
                 )
             else:
@@ -585,3 +638,9 @@ def reasons(wf, x, sa, sb, jumps=False):
     if not out:
         out.append({"code": "other", "text": "Payoff slopes change here."})
     return out
+
+
+def left_for(wf, what):
+    """What a SAFE or note with no cap needs room in (X9, X12): with no preferred, what is left for common and it; with
+    preferred, what is left after the preferences, since participating or converted preferred shares it too (12i, 13h)."""
+    return "what is left after the preferences" if wf.ct.preferred_ids() else f"what is left for common and {what}"

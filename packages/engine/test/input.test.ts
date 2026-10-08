@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { InputError, UnsupportedTermError, readCapTable, readExit } from "../src/index.ts";
+import { InputError, UnsupportedTermError, findBreakpoints, prepare, readCapTable, readExit } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
 import { ALL_CASES, EXIT_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
@@ -114,9 +114,16 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     ["edge-24-carve-out-on-the-sale", "carve_out_on_the_exit", "later"],
   ];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
+  // Read, but its breakpoint finder stops with the guard error on a decision changing on a curve (X17) until 03f.
+  const guarded = ["edge-08b-warrant-on-the-curve"];
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, guarded, EXIT_CASES).sort()).toEqual(ALL_CASES);
+  });
+
+  it.each(guarded)("%s is read, and its breakpoint finder stops with the guard error until 03f (X17)", (name) => {
+    const exit = readInputs(readCaseFile(name, "inputs.json"));
+    expect(() => findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range)).toThrow(/payouts curve, and a decision changes there/);
   });
 
   it.each(roundCases)("%s has no exit: buildCapTables builds its cap tables", (name) => {

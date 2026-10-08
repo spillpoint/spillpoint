@@ -21,9 +21,10 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
  * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, case 10's
  * carve-outs since M5f, case 12's SAFEs at a sale since M5g, case 13's notes at a sale since M5h, and case 11's
  * earnout since M5i, and case 11b's earnout with a negative take since its case (0.3.0 work, 03a). Cases 12i, 13h
- * and 24 are refused until 03e (input.test.ts).
+ * and 24 are refused until 03e, and case 8b's breakpoint finder stops with its guard error until 03f (input.test.ts).
  */
 export const NOT_YET: readonly string[] = [
+  "edge-08b-warrant-on-the-curve",
   "edge-12i-discount-safe-with-capped-participation",
   "edge-13h-discount-note-with-capped-participation",
   "edge-24-carve-out-on-the-sale",
