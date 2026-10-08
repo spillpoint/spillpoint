@@ -8,7 +8,7 @@
 import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
-import { D, InputError, payout, prepare } from "../src/index.ts";
+import { D, InputError, payout, prepare, readCapTable, solve } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
 import { readInputs } from "../src/case.ts";
 import { EXIT_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
@@ -59,6 +59,35 @@ describe.each(EXIT_CASES)("%s", (name) => {
       // The common price per share, as recorded to six places.
       expect(result.commonPrice.toDecimalPlaces(6, D.ROUND_HALF_UP).toFixed(6)).toBe(outcome.common_price_per_share);
     }
+  });
+});
+
+describe("two warrants for one series (E12; fixed in 03f)", () => {
+  it("each takes its pro rata part of the series' whole total, not of what an earlier warrant left", () => {
+    // 8,000,000 common; Investor Y's 2,000,000 Seed at $1.00, 1x non-participating; warrants for 100,000 Seed shares
+    // at $0.50 and at $0.60. At $1,500,000 both exercise: the strike cash makes $1,610,000 of proceeds, all paid to
+    // the Seed's tier of 2,200,000 shares, $161/220 a share, above both strikes. So the Seed gets $1,463,636.36, the
+    // $0.50 warrant $73,181.82 − $50,000 and the $0.60 warrant $73,181.82 − $60,000. Before 03f the second warrant
+    // split was paid its part of what the first left: $9,855.37 net for the $0.60 warrant, split after the $0.50 one.
+    const ct = readCapTable({
+      holders: [{ id: "x", name: "X" }, { id: "y", name: "Y" }, { id: "l", name: "L" }],
+      securities: [
+        { id: "common", name: "Common Stock", kind: "common" },
+        { id: "seed", name: "Seed", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null },
+        { id: "w1", name: "W1", kind: "warrant", strike: "0.5", underlying: "seed" },
+        { id: "w2", name: "W2", kind: "warrant", strike: "0.6", underlying: "seed" },
+      ],
+      seniority: [["seed"]],
+      positions: [{ holder: "x", security: "common", shares: 8000000 }, { holder: "y", security: "seed", shares: 2000000 }, { holder: "l", security: "w1", shares: 100000 }, { holder: "l", security: "w2", shares: 100000 }],
+      unissued_pool: 0,
+    });
+    const [answer] = solve(prepare(ct, null), new D(1500000)).answers;
+    const paid = answer!.payout.bySecurity;
+    const perShare = new D(161).div(220);
+    expect([...answer!.decisions.exercised].sort()).toEqual(["w1", "w2"]);
+    expect(sameAmount(paid.get("seed")!, perShare.times(2000000))).toBe(true);
+    expect(sameAmount(paid.get("w1")!, perShare.times(100000).minus(50000))).toBe(true);
+    expect(sameAmount(paid.get("w2")!, perShare.times(100000).minus(60000))).toBe(true);
   });
 });
 

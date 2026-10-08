@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 13h, 23, 24 and Millrace: every exit case but 8b, guarded until 03f", () => {
+  it("are edge cases 1 through 13h, 23, 24 and Millrace: every exit case", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -28,6 +28,7 @@ describe("the exit cases the engine runs", () => {
       "edge-06d-voter-indifferent-over-a-range",
       "edge-07-option-strikes",
       "edge-08-preferred-warrant",
+      "edge-08b-warrant-on-the-curve",
       "edge-09-cumulative-dividends",
       "edge-09b-compounding-dividends",
       "edge-09c-dividends-paid-on-conversion",
@@ -113,16 +114,9 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
   // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too. Kept for the next case refused.
   const refused: [string, string, Milestone][] = [];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
-  // Read, but its breakpoint finder stops with the guard error on a decision changing on a curve (X17) until 03f.
-  const guarded = ["edge-08b-warrant-on-the-curve"];
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, guarded, EXIT_CASES).sort()).toEqual(ALL_CASES);
-  });
-
-  it.each(guarded)("%s is read, and its breakpoint finder stops with the guard error until 03f (X17)", (name) => {
-    const exit = readInputs(readCaseFile(name, "inputs.json"));
-    expect(() => findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range)).toThrow(/payouts curve, and a decision changes there/);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES).sort()).toEqual(ALL_CASES);
   });
 
   it.each(roundCases)("%s has no exit: buildCapTables builds its cap tables", (name) => {

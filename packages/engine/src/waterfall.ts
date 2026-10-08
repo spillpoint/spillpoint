@@ -553,8 +553,11 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   for (const [sid, r] of room) if (sharing.has(sid)) capRoom.set(sid, r.minus(price.times(sharing.get(sid)!)));
 
   // E12: a series' total splits between its own shares and those from exercised warrants for it, pro rata by shares.
+  // Each part is of the series' whole total, taken before any warrant's part comes out (03f: with two warrants for
+  // one series, the second was a share of what the first left).
+  const seriesTotal = new Map([...series.keys()].map((sid) => [sid, total.get(sid)!]));
   for (const w of preferredWarrants) {
-    const part = total.get(w.underlying)!.times(pc.shares.get(w.id)!).div(series.get(w.underlying)!.shares);
+    const part = seriesTotal.get(w.underlying)!.times(pc.shares.get(w.id)!).div(series.get(w.underlying)!.shares);
     add(w.id, part);
     add(w.underlying, part.neg());
   }

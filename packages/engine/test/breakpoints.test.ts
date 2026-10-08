@@ -56,6 +56,51 @@ describe.each(EXIT_CASES)("%s", (name) => {
   });
 });
 
+describe("a decision changing on a curve (X17; 0.3.0 work, 03f)", () => {
+  // Case 8b's company: 8,000,000 common, Investor X's 2,000,000 Seed at $1.00, and a 10% carve-out alongside the
+  // preferences, sharing the Seed's tier while it is short. A warrant for Seed shares joins that tier when exercised.
+  const company = (warrants: [string, string, number][]) => {
+    const inputs = readCaseFile("edge-08b-warrant-on-the-curve", "inputs.json") as { exit: { cap_table: { securities: unknown[]; positions: unknown[] } } };
+    const ct = structuredClone(inputs.exit.cap_table);
+    ct.securities = [...ct.securities.slice(0, 2), ...warrants.map(([id, strike]) => ({ id, name: `Warrant ${id}`, kind: "warrant", strike, underlying: "seed" }))];
+    ct.positions = [...ct.positions.slice(0, 3), ...warrants.map(([id, , shares]) => ({ holder: "lender_l", security: id, shares }))];
+    return prepare(readCapTable(ct), null);
+  };
+  const exact = (n: string, d: string) => new D(n).div(d);
+
+  it("places 8b's kink to 30 digits: $20,000,000 ÷ 19", () => {
+    const exit = readInputs(readCaseFile("edge-08b-warrant-on-the-curve", "inputs.json"));
+    const [kink] = findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range);
+    expect(kink!.exitValue.minus(exact("20000000", "19")).abs().lt("1e-30")).toBe(true);
+  });
+
+  it("places two warrants' kinks on one curve, one after the other", () => {
+    // 100,000 at $0.50 comes in where (X + $50,000) ÷ ($2,100,000 + 0.1X) = $0.50: X = $1,000,000 ÷ 0.95.
+    // 100,000 at $0.60 then comes in where (X + $110,000) ÷ ($2,200,000 + 0.1X) = $0.60: X = $1,210,000 ÷ 0.94.
+    // The tier is still short there; it is paid in full where X + $110,000 = $2,200,000 + 0.1X: X = $2,090,000 ÷ 0.9.
+    const found = findBreakpoints(company([["w1", "0.5", 100000], ["w2", "0.6", 100000]]), [new D(0), new D(3000000)]);
+    expect(found.map((b) => b.reasons.map((r) => `${r.code}: ${r.subject.join("+")}`))).toEqual([
+      ["warrant_in_the_money: w1", "payouts_curve: "],
+      ["warrant_in_the_money: w2", "payouts_curve: "],
+      ["tier_fully_paid: seed+carve_out", "payouts_curve: "],
+    ]);
+    const where = [exact("20000000", "19"), exact("121000000", "94"), exact("20900000", "9")];
+    found.forEach((b, i) => expect(b.exitValue.minus(where[i]!).abs().lt("1e-30"), b.exitValue.toString()).toBe(true));
+    expect(found.map((b) => [b.jumps, b.curveBelow, b.curveAbove])).toEqual([
+      [false, true, true],
+      [false, true, true],
+      [false, true, false],
+    ]);
+  });
+
+  it("still stops with the guard error where two decisions change at once", () => {
+    // Two warrants at the same strike come into the money together, at $20,000,000 ÷ 19.
+    expect(() => findBreakpoints(company([["w1", "0.5", 100000], ["w2", "0.5", 100000]]), [new D(0), new D(3000000)])).toThrow(
+      /payouts curve, and a decision changes there/,
+    );
+  });
+});
+
 describe("a pivotal voter indifferent over a range (E13, sharpened in the M2c review)", () => {
   // s1 ($7.5M, 1x) and s0 ($15M, 3x, capped at 4x) share the senior tier; s2 ($9M, 3x)
   // is junior; s0 and s2 convert together by at least 50%, half each. Below $7.5M s2's

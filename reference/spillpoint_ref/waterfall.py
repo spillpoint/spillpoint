@@ -509,11 +509,15 @@ class Waterfall:
         common_price = p
 
         # Split each series' total between its original shares and the shares
-        # from exercised warrants for it, pro rata by shares.
+        # from exercised warrants for it, pro rata by shares (E12). Each part is
+        # of the series' whole total, taken before any warrant's part comes out:
+        # with two warrants for one series, the second was a share of what the
+        # first left (found in the engine's 03f work).
+        whole = dict(total)
         for w in self.warrants:
             u = sec[w]["underlying"]
             if d[w] and u != "common":
-                part_w = total[u] * self.shares[w] / units[u]
+                part_w = whole[u] * self.shares[w] / units[u]
                 total[w] += part_w
                 total[u] -= part_w
 
