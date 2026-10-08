@@ -332,7 +332,7 @@ Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
   - **The price** is solved exactly, with the pool topped up to its target in the pre-money. Only the shares actually issued are rounded down.
   - **One issuance per holder** in a round, however many investment lines it has.
 - **SAFEs:**
-  - **Post-money (YC):** its cap divides by a Company Capitalization that counts the pool before the round and the SAFEs themselves.
+  - **Post-money (YC):** its cap divides by a Company Capitalization that counts the pool before the round and the SAFEs themselves. It also counts the notes and other SAFEs converting beside it, at their exact conversion shares, solved together with the round's price *(0.3.0)*.
   - **Pre-money:** its Company Capitalization counts the pool's increase and no SAFE or note.
   - **Either kind** converts at the lower of its cap price and its discount price, into "… (from SAFEs)".
 - **Convertible notes:**
@@ -349,6 +349,7 @@ Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
   - **A holder that doesn't buy it** converts to common, all of its preferred or, under a toggle, the fraction it didn't buy.
   - **Several series** may be named, each with its own ratio.
   - **The price:** the round is priced after the conversion, or before it under a toggle.
+  - **SAFEs and notes converting in the round** *(0.3.0)*: a SAFE's Company Capitalization and a note's base count the cap table the round is priced on.
 
 Each round reports what it worked out: the price, each SAFE's and note's conversion, the pro-rata entitlements, each anti-dilution adjustment, and each pay-to-play holder's outcome.
 
@@ -356,10 +357,8 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 
 **Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported.
 
-**Not settled yet** (milestone `"later"`). No worked test case settles these yet, so they're refused until one does. The first three are common in real rounds, and are on the project's list to support:
-- **A post-money SAFE converting in the same round as notes or pre-money SAFEs.**
+**Not settled yet** (milestone `"later"`). No worked test case settles these yet, so they're refused until one does. The first is common in real rounds, and is on the project's list to support:
 - **SAFEs or notes converting in a round that triggers anti-dilution.**
-- **A pay-to-play round that also converts SAFEs or notes.**
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
