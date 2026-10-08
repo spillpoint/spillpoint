@@ -31,7 +31,7 @@ import { fileName, fileText, readFile } from "./file.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
-import { blankRounds, buildRounds, draftFromRounds, locate } from "./roundsDraft.ts";
+import { BLANK, blankRounds, buildRounds, draftFromRounds, locate, otherBlanks } from "./roundsDraft.ts";
 import type { RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 const SCRATCH = "scratch";
@@ -179,7 +179,14 @@ export function App() {
       const result = fromRounds(built, s.draft.range);
       if (!result.ok) {
         const path = (result.error as { path?: string }).path ?? "";
-        return { ...s, rounds: next, roundsProblem: locate(next, path, result.message) };
+        const problem = locate(next, path, result.message);
+        // A blank field: the event's other blanks too, all at once.
+        if (problem.message !== BLANK || !problem.event) return { ...s, rounds: next, roundsProblem: problem };
+        const ask = (r: typeof built) => {
+          const again = fromRounds(r, s.draft.range);
+          return again.ok ? null : { path: (again.error as { path?: string }).path ?? "", message: again.message };
+        };
+        return { ...s, rounds: next, roundsProblem: { ...problem, blanks: otherBlanks(next, built, problem, path, ask) } };
       }
       // The sale's terms stay as typed: its date, its carve-out and its payment schedules (M5 plan, item 13).
       const draft = carryExitTerms(s.draft, result.draft);

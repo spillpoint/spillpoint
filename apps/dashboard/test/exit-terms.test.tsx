@@ -62,7 +62,7 @@ describe("a carve-out on Millrace, built from its rounds (M5l review)", () => {
     expect(headline()).not.toBe("At $100M you get $9.75M");
   });
 
-  it("keeps it when the rounds change, and saves it beside the events", async () => {
+  it("keeps it when the rounds change, and saves it with the sale's terms (file version 5)", async () => {
     render(<App />);
     openTab("Cap table");
     fireEvent.click(within(terms()).getByRole("button", { name: "Add a carve-out" }));
@@ -84,7 +84,7 @@ describe("a carve-out on Millrace, built from its rounds (M5l review)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     const file = JSON.parse(await downloads.at(-1)!.text());
-    expect(Object.keys(file)).toEqual(["format", "version", "name", "holders", "events", "cap_table_after_event", "carve_out", "range", "view"]);
+    expect(Object.keys(file)).toEqual(["format", "version", "name", "holders", "events", "cap_table_after_event", "range", "carve_out", "view"]);
     expect(file.carve_out).toEqual({ timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "dev", percent: "100" }] });
     await openFile(file, "millrace-with-carve-out.json");
     expect(headline()).toBe(anaWithCarveOut("5", changed));

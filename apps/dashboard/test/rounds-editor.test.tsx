@@ -2,7 +2,11 @@
 // opening an event, changes reaching the payouts, the engine's messages next
 // to the fields they name, lines added and removed, holders, seniority,
 // pay-to-play, and what a save keeps; and since M5k, SAFEs and notes still
-// outstanding, from the events as typed.
+// outstanding, from the events as typed. Since 03i, SAFEs and notes in a round
+// that triggers anti-dilution: each piece's line, and the settings that apply.
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { D, buildCapTables, prepare, readInputs, solve } from "spillpoint";
@@ -282,6 +286,21 @@ describe("adding, moving and removing events (M4k)", () => {
     ]);
   });
 
+  it("marks every blank field a new event needs at once, and only those (M4 review's polish)", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/Start from/), { target: { value: "scratch-rounds" } });
+    openTab("Rounds");
+    addEvent("A priced round");
+    const round = card(/Series A Preferred, a priced round/);
+    const invalid = () => within(round).queryAllByRole("textbox").filter((el) => el.getAttribute("aria-invalid") === "true").map((el) => (el as HTMLInputElement).labels?.[0]?.textContent);
+    // The pre-money valuation and the investment are needed; the pool target, blank for no top-up, isn't.
+    await vi.waitFor(() => expect(invalid()).toEqual(["Pre-money valuation ($)", "Amount ($)"]), { timeout: ANALYSIS_TIMEOUT });
+    type(within(round).getByLabelText("Pre-money valuation ($)"), "8M");
+    expect(invalid()).toEqual(["Amount ($)"]);
+    type(within(round).getByLabelText("Amount ($)"), "2M");
+    expect(invalid()).toEqual([]);
+  });
+
   it("moves an event, and the payouts follow: Series A's grants after the Series B", async () => {
     render(<App />);
     openTab("Rounds");
@@ -460,5 +479,68 @@ describe("warrants and dividends in the rounds (M5k2)", () => {
     expect(headline()).toBe(expected);
     // Two years, 730 days, at 8% on Series B's 9,241,189 shares at $1.082112 (the locked case's 12003689592480000/11092836539841877): $1,599,999.98.
     expect(screen.getByText(/^Series B Preferred has accrued \$1,599,999\.98 of cumulative dividends by Mar 31, 2027, the date of the sale\./)).toBeTruthy();
+  });
+});
+
+describe("SAFEs and notes in a round that triggers anti-dilution (R25; 0.3.0 work, 03i)", () => {
+  /** A locked round case, opened as a file, its payouts on the last event. */
+  async function openCase(name: string) {
+    const inputs = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases", name, "inputs.json"), "utf8")) as { holders: unknown[]; events: { id: string }[] };
+    const file = { format: "spillpoint", version: 5, name, holders: inputs.holders, events: inputs.events, cap_table_after_event: inputs.events.at(-1)!.id, range: ["0", "50000000"] };
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([JSON.stringify(file)], "case.json", { type: "application/json" })] } });
+    await screen.findByText("Opened case.json.");
+    openTab("Rounds");
+  }
+  const POOL_IN_A = "Anti-dilution base includes the unused option pool (smaller adjustments for earlier investors)";
+  const EXEMPT = "SAFE and note conversions in this round don't count toward anti-dilution (a charter carve-out or waiver)";
+  const setting = (title: RegExp, label: string) => within(card(title)).queryByLabelText(label) as HTMLInputElement | null;
+
+  it("says, piece by piece, why 16i's note adjusts the Seed in a round priced above it", async () => {
+    await openCase("edge-16i-discounted-note-in-an-up-round");
+    expect(lines(/Series A Preferred, a priced round/)).toEqual(
+      expect.arrayContaining([
+        "New money at $1.13 a share: above Seed Preferred's $1.00, so it doesn't count.",
+        "Investor N's note converts at $0.91 a share: below $1.00, so it counts against Seed Preferred.",
+      ]),
+    );
+  });
+
+  it("says 16j's note and SAFE were issued before the Seed, and 16h's SAFE is exempt, so each counts in the starting share count", async () => {
+    await openCase("edge-16j-note-and-safe-from-before-the-seed");
+    expect(lines(/Series A Preferred, a priced round/)).toEqual(
+      expect.arrayContaining([
+        "New money at $0.63 a share: below Seed Preferred's $1.00, so it counts against Seed Preferred.",
+        "Investor S's SAFE was issued before Seed Preferred, so it counts in the starting share count instead.",
+        "Investor N's note was issued before Seed Preferred, so it counts in the starting share count instead.",
+      ]),
+    );
+  });
+
+  it("shows 16h's exemption as on, and its SAFE as exempt under the round's setting", async () => {
+    await openCase("edge-16h-safe-conversion-exempt");
+    expect(lines(/Series A Preferred, a priced round/)).toContain("Investor S's SAFE is exempt under this round's setting, so it counts in the starting share count instead.");
+    edit("Series A Preferred, a priced round");
+    expect(setting(/Series A Preferred, a priced round/, EXEMPT)?.checked).toBe(true);
+  });
+
+  it("shows each setting only where it applies: the pool for broad-based, the exemption for conversions beside anti-dilution", async () => {
+    await openCase("edge-16g-safe-converts-in-a-down-round");
+    edit("Seed Preferred, a priced round");
+    // The first round: no earlier series has anti-dilution.
+    expect([setting(/Seed Preferred, a priced round/, POOL_IN_A), setting(/Seed Preferred, a priced round/, EXEMPT)]).toEqual([null, null]);
+    edit("Series A Preferred, a priced round");
+    const seriesA = /Series A Preferred, a priced round/;
+    expect([setting(seriesA, POOL_IN_A)?.checked, setting(seriesA, EXEMPT)?.checked]).toEqual([false, false]);
+    // Without the SAFE converting, there's nothing to exempt.
+    fireEvent.click(within(card(seriesA)).getByLabelText("Converts the SAFEs still outstanding"));
+    expect(setting(seriesA, EXEMPT)).toBeNull();
+    expect(setting(seriesA, POOL_IN_A)).not.toBeNull();
+  });
+
+  it("hides the pool setting where no series is broad-based: 16c's full ratchet", async () => {
+    await openCase("edge-16c-full-ratchet");
+    edit("Series B Preferred, a priced round");
+    expect([setting(/Series B Preferred, a priced round/, POOL_IN_A), setting(/Series B Preferred, a priced round/, EXEMPT)]).toEqual([null, null]);
   });
 });

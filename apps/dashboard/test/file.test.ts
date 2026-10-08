@@ -56,10 +56,10 @@ describe("saving and opening again", () => {
     expect(securityA(fileText("Millrace", typed))).toMatchObject({ original_issue_price: "2.075472", conversion_price: saved.conversion_price });
   });
 
-  it("writes the agreed format: version 4, a name, the rounds or the cap table, the range, the sale's date if given, and the view if there is one", () => {
+  it("writes the agreed format: version 5, a name, the rounds or the cap table, the range, the sale's date if given, and the view if there is one", () => {
     const built = JSON.parse(fileText("  Millrace Robotics (fictional) ", millraceTable, undefined, millraceRounds));
     expect(Object.keys(built)).toEqual(["format", "version", "name", "holders", "events", "cap_table_after_event", "range"]);
-    expect(built).toMatchObject({ format: "spillpoint", version: 4, name: "Millrace Robotics (fictional)", cap_table_after_event: "series_b", range: ["0", "300000000"] });
+    expect(built).toMatchObject({ format: "spillpoint", version: 5, name: "Millrace Robotics (fictional)", cap_table_after_event: "series_b", range: ["0", "300000000"] });
     const dated = JSON.parse(fileText("Millrace", { ...millraceTable, exitDate: "2026-06-30" }, { exitValue: "39424995.32", you: "cobalt" }));
     expect(Object.keys(dated)).toEqual(["format", "version", "name", "cap_table", "range", "exit_date", "view"]);
     expect(dated.exit_date).toBe("2026-06-30");
@@ -117,8 +117,8 @@ describe("a file that can't be opened", () => {
   });
 
   it("comes from a newer version, or has no version", () => {
-    expect(refusal({ ...good(), version: 5 })).toBe(
-      "It was saved by a newer version of spillpoint (file version 5); this page reads files up to version 4. Open it with the newer version.",
+    expect(refusal({ ...good(), version: 6 })).toBe(
+      "It was saved by a newer version of spillpoint (file version 6); this page reads files up to version 5. Open it with the newer version.",
     );
     const { version: _version, ...unversioned } = good();
     expect(refusal(unversioned)).toBe("Its version number is missing or unreadable, so it's not clear how to read it.");
@@ -357,19 +357,45 @@ describe("the sale's terms in a file (M5l)", () => {
     ]);
   });
 
-  it("keeps a carve-out beside the rounds, and opens it onto the cap table they build", () => {
-    const carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "dev", percent: "100" }] };
+  const carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "dev", percent: "100" }] };
+
+  it("keeps a carve-out with the rounds' sale terms, and gives it to the engine as a term of the sale (C6, 0.3.0)", () => {
     const file = { ...JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds)), carve_out };
     const opened = readFile(JSON.stringify(file));
     if (!opened.ok) throw new Error(opened.message);
-    expect(buildExit(opened.draft).json.cap_table.carve_out).toEqual(carve_out);
+    const json = buildExit(opened.draft).json;
+    expect([json.carve_out, json.cap_table.carve_out]).toEqual([carve_out, undefined]);
     expect(JSON.parse(fileText(opened.name, opened.draft, undefined, opened.rounds)).carve_out).toEqual(carve_out);
   });
 
-  it("refuses a carve-out beside a cap table entered directly, which keeps it in the cap table (C6)", () => {
-    const file = { ...JSON.parse(fileText("Millrace", millraceTable)), carve_out: { tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "dev", percent: "100" }] } };
+  it("keeps a carve-out with the sale's terms for a cap table entered directly too (file version 5)", () => {
+    const file = { ...JSON.parse(fileText("Millrace", millraceTable)), carve_out };
     const opened = readFile(JSON.stringify(file));
-    expect(opened.ok ? null : opened.message).toBe("Its carve-out is beside its cap table; a cap table entered directly keeps its carve-out in the cap table.");
+    if (!opened.ok) throw new Error(opened.message);
+    const saved = JSON.parse(fileText(opened.name, opened.draft));
+    expect(Object.keys(saved)).toEqual(["format", "version", "name", "cap_table", "range", "carve_out"]);
+    expect([saved.carve_out, saved.cap_table.carve_out]).toEqual([carve_out, undefined]);
+  });
+
+  it("opens a version 4 file with its carve-out in its cap table, moved to the sale's terms (Jordan's answer 1)", () => {
+    const v4 = { ...JSON.parse(fileText("Millrace", millraceTable)), version: 4 };
+    v4.cap_table.carve_out = carve_out;
+    const opened = readFile(JSON.stringify(v4));
+    if (!opened.ok) throw new Error(opened.message);
+    expect(opened.draft.carveOut!.tiers.map((t) => t.percent)).toEqual(["5"]);
+    const saved = JSON.parse(fileText(opened.name, opened.draft));
+    expect([saved.version, saved.carve_out, saved.cap_table.carve_out]).toEqual([5, carve_out, undefined]);
+    // A version 4 rounds file already kept its carve-out beside the rounds, and opens as it was.
+    const rounds = { ...JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds)), version: 4, carve_out };
+    const reopened = readFile(JSON.stringify(rounds));
+    expect(reopened.ok && JSON.parse(fileText(reopened.name, reopened.draft, undefined, reopened.rounds)).carve_out).toEqual(carve_out);
+  });
+
+  it("refuses a carve-out in both the cap table and the sale's terms, in the engine's words: which governs would be a guess", () => {
+    const file = { ...JSON.parse(fileText("Millrace", millraceTable)), carve_out };
+    file.cap_table.carve_out = carve_out;
+    const opened = readFile(JSON.stringify(file));
+    expect(opened.ok ? null : opened.message).toBe("Its cap table can't be used. file.carve_out: the carve-out is on both the cap table and the exit; give it once");
   });
 
   it("says which of the sale's terms a rounds file can't use", () => {
