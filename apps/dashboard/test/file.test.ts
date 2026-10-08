@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import examples from "virtual:examples";
-import { D, readExit, readInputs } from "spillpoint";
+import { D, prepare, readExit, readInputs, solve } from "spillpoint";
 import type { CapTable } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
@@ -180,37 +180,12 @@ describe("a file that can't be opened", () => {
     expect(refusal(file)).toBe("It has a management carve-out, which this page doesn't show yet. It won't open a cap table it can't show in full.");
   });
 
-  it("has warrants, which the engine pays but the page doesn't show yet: refused, never shown as something else", () => {
-    const warrant = { id: "warrants_common_0.5", name: "Warrants for Common Stock ($0.5 strike)", kind: "warrant", strike: "0.5", underlying: "common" };
-    const file = good();
-    file.cap_table.securities.push(warrant);
-    file.cap_table.positions.push({ holder: "ana", security: warrant.id, shares: "100000" });
-    const message = "It has warrants, Warrants for Common Stock ($0.5 strike), which this page doesn't show yet. It won't open a cap table it can't show in full.";
-    expect(refusal(file)).toBe(message);
-    // The same from rounds: they build, and the page still won't show the table.
-    const rounds = withRounds();
-    rounds.events.splice(3, 0, { id: "warrants", date: "2021-09-20", type: "issue_warrants", warrants: [{ holder: "ana", shares: 100000, strike: "0.5", underlying: "common" }] });
-    expect(refusal(rounds)).toBe(message);
-  });
-
   it("has a security of a kind the page doesn't know: refused, never treated as common", () => {
     const file = good();
     file.cap_table.securities.push({ id: "bond_x", name: "Bond X", kind: "bond" });
     expect(refusal(file)).toBe(
       'It has Bond X, a kind of security ("bond") this page doesn\'t know. It won\'t open the cap table rather than treat it as something it isn\'t.',
     );
-  });
-
-  it("has cumulative dividends, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
-    const file = good();
-    file.cap_table.securities.find((s: { id: string }) => s.id === "series_a").cumulative_dividend = { rate: "0.08", accrual_start: "2022-06-01" };
-    expect(refusal(file)).toBe("It has cumulative dividends on Series A Preferred, which this page doesn't show yet. It won't open a cap table it can't show in full.");
-  });
-
-  it("has rounds with dividends, which the engine builds but the page doesn't show yet: refused, never dropped", () => {
-    const company = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-23-dividends-from-a-round/inputs.json"), "utf8"));
-    const file = { format: "spillpoint", version: 2, name: "Case 23", holders: company.holders, events: company.events, cap_table_after_event: "series_a", range: ["0", "40000000"] };
-    expect(refusal(file)).toBe("It has cumulative dividends on Series A Preferred (from SAFEs), which this page doesn't show yet. It won't open a cap table it can't show in full.");
   });
 
   it("has a field nobody models, in the engine's words", () => {
@@ -236,36 +211,70 @@ describe("a file that can't be opened", () => {
   });
 });
 
+const casesDir = resolve(import.meta.dirname, "../../../cases");
+const caseInputs = (name: string) => JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8"));
+/** A cap table as plain strings, so two can be compared exactly. */
+const plain = (ct: CapTable) => JSON.parse(JSON.stringify(ct, (_, v) => (v && typeof v === "object" && "d" in v && "e" in v ? v.toString() : v)));
+
+/**
+ * A locked exit case, saved as a file and opened: the page gives the engine
+ * exactly the case's cap table and sale date, the same payouts at every
+ * breakpoint, and saving it again writes the same file. A case built from its
+ * events opens as its rounds, exiting on the table the case names (C2).
+ */
+function opensExactly(name: string) {
+  const inputs = caseInputs(name);
+  const { exit } = inputs;
+  const contents = inputs.events ? { holders: inputs.holders, events: inputs.events, cap_table_after_event: exit.cap_table_after_event } : { cap_table: exit.cap_table };
+  const file = { format: "spillpoint", version: 3, name, ...contents, range: exit.range, ...(exit.exit_date ? { exit_date: exit.exit_date } : {}) };
+  const opened = readFile(JSON.stringify(file));
+  if (!opened.ok) throw new Error(opened.message);
+  const expected = inputs.events ? readInputs(inputs) : readExit(exit);
+  const built = readExit(buildExit(opened.draft).json);
+  expect(plain(built.capTable)).toEqual(plain(expected.capTable));
+  expect(built.exitDate).toBe(expected.exitDate);
+  if (!inputs.events) expect(payoutsAtBreakpoints(buildExit(opened.draft).json)).toEqual(payoutsAtBreakpoints(exit));
+  const saved = fileText(opened.name, opened.draft, undefined, opened.rounds);
+  const again = readFile(saved);
+  expect(again.ok && fileText(again.name, again.draft, undefined, again.rounds)).toBe(saved);
+  return opened.draft;
+}
+
 describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
-  const casesDir = resolve(import.meta.dirname, "../../../cases");
   const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name));
-  /** A cap table as plain strings, so two can be compared exactly. */
-  const plain = (ct: CapTable) => JSON.parse(JSON.stringify(ct, (_, v) => (v && typeof v === "object" && "d" in v && "e" in v ? v.toString() : v)));
 
   it("covers every case with a SAFE or a note at a sale: 12 to 12h, and 13a to 13g", () => {
     expect(cases).toHaveLength(15);
   });
 
   it.each(cases)("%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts", (name) => {
-    const inputs = JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8"));
-    const { exit } = inputs;
-    // 12g is built from its events and exits on the table after its SAFE (C2); the rest are cap tables as they stand.
-    const contents = inputs.events
-      ? { holders: inputs.holders, events: inputs.events, cap_table_after_event: exit.cap_table_after_event }
-      : { cap_table: exit.cap_table };
-    const file = { format: "spillpoint", version: 3, name, ...contents, range: exit.range, ...(exit.exit_date ? { exit_date: exit.exit_date } : {}) };
+    const draft = opensExactly(name);
+    expect(draft.safes.length + draft.notes.length).toBeGreaterThan(0);
+  });
+
+  it("keeps a SAFE's ranking on a cap table built from rounds: its cash is paid with Series A, not the Seed", () => {
+    const series = (id: string, name: string) => ({ id, name, kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" });
+    const file = {
+      format: "spillpoint", version: 3, name: "Two tiers and a SAFE",
+      holders: [{ id: "ana", name: "Ana" }, { id: "s", name: "Seed Fund" }, { id: "a", name: "A Fund" }, { id: "x", name: "X" }],
+      events: [
+        { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "ana", shares: "8000000" }] },
+        { id: "seed", date: "2022-01-01", type: "priced_round", series: series("seed", "Seed Preferred"), pre_money: "8000000", investments: [{ holder: "s", amount: "2000000" }], seniority: [["seed"]] },
+        { id: "series_a", date: "2023-01-01", type: "priced_round", series: series("series_a", "Series A Preferred"), pre_money: "20000000", investments: [{ holder: "a", amount: "4000000" }], seniority: [["series_a"], ["seed"]] },
+        { id: "safe", date: "2024-01-01", type: "safes", safes: [{ id: "safe_x", holder: "x", purchase_amount: "1000000", post_money_cap: "40000000", cash_out_ranks_with: "series_a" }] },
+      ],
+      cap_table_after_event: "safe",
+      range: ["0", "10000000"],
+    };
     const opened = readFile(JSON.stringify(file));
     if (!opened.ok) throw new Error(opened.message);
-    expect(opened.draft.safes.length + opened.draft.notes.length).toBeGreaterThan(0);
-    const expected = inputs.events ? readInputs(inputs) : readExit(exit);
-    const built = readExit(buildExit(opened.draft).json);
-    expect(plain(built.capTable)).toEqual(plain(expected.capTable));
-    expect(built.exitDate).toBe(expected.exitDate);
-    if (!inputs.events) expect(payoutsAtBreakpoints(buildExit(opened.draft).json)).toEqual(payoutsAtBreakpoints(exit));
-    // Saving it again and opening that gives the same file.
-    const saved = fileText(opened.name, opened.draft, undefined, opened.rounds);
-    const again = readFile(saved);
-    expect(again.ok && fileText(again.name, again.draft, undefined, again.rounds)).toBe(saved);
+    const seriesA = opened.draft.securities.find((s) => s.name === "Series A Preferred")!;
+    expect(opened.draft.safes[0]!.ranksWith).toBe(seriesA.key);
+    // At $5M the senior tier, A Fund's $4M and X's $1M, is paid in full and the Seed gets nothing.
+    // Ranked by default, with the Seed, X would get $333,333.33 and Seed Fund $666,666.67.
+    const exit = readExit(buildExit(opened.draft).json);
+    const totals = solve(prepare(exit.capTable), new D("5000000")).answers[0]!.payout.holderTotals;
+    expect([totals.get("a")!.toFixed(2), totals.get("x")!.toFixed(2), totals.get("s")!.toFixed(2)]).toEqual(["4000000.00", "1000000.00", "0.00"]);
   });
 
   it("opens rounds whose payouts use a cap table with SAFEs still outstanding, with the SAFEs", () => {
@@ -288,5 +297,31 @@ describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
     const saved = (d: typeof opened.draft) => readExit(buildExit(d).json).capTable.unconvertedSafes![0]!.discount;
     expect(saved(opened.draft).eq(readExit({ cap_table: file.cap_table, range: file.range, exit_values: [] }).capTable.unconvertedSafes![0]!.discount)).toBe(true);
     expect(saved({ ...opened.draft, safes: [{ ...opened.draft.safes[0]!, discount: "20" }] }).toString()).toBe("0.2");
+  });
+});
+
+describe("warrants and cumulative dividends (M5k2)", () => {
+  it.each(["edge-08-preferred-warrant", "edge-09-cumulative-dividends", "edge-09b-compounding-dividends", "edge-09c-dividends-paid-on-conversion", "edge-23-dividends-from-a-round"])(
+    "%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts",
+    (name) => {
+      const draft = opensExactly(name);
+      expect(draft.securities.some((s) => s.kind === "warrant" || (s.kind === "preferred" && s.dividend !== null))).toBe(true);
+    },
+  );
+
+  it("shows case 9's dividends as a percentage, and case 8's warrant as one for the Seed", () => {
+    const nine = opensExactly("edge-09-cumulative-dividends");
+    expect(nine.securities.find((s) => s.kind === "preferred")).toMatchObject({ dividend: { rate: "8", method: "simple", accrualStart: "2022-03-31", onConversion: "forfeited" } });
+    const eight = opensExactly("edge-08-preferred-warrant");
+    const seed = eight.securities.find((s) => s.kind === "preferred")!;
+    expect(eight.securities.find((s) => s.kind === "warrant")).toMatchObject({ strike: "0.5", underlying: seed.key });
+  });
+
+  it("opens case 22's rounds, with Lender L's warrants for common", () => {
+    const inputs = caseInputs("edge-22-warrants-issued");
+    const file = { format: "spillpoint", version: 3, name: "Case 22", holders: inputs.holders, events: inputs.events, cap_table_after_event: "series_a", range: ["0", "40000000"] };
+    const opened = readFile(JSON.stringify(file));
+    if (!opened.ok) throw new Error(opened.message);
+    expect(opened.draft.securities.find((s) => s.kind === "warrant")).toMatchObject({ name: "Warrants for Common Stock ($0.5 strike)", strike: "0.5", underlying: "common" });
   });
 });

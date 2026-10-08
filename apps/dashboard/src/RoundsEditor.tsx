@@ -131,6 +131,7 @@ export function EventForm(props: EventFormProps) {
             {f.text(`grants[${i}].strike`, "Strike ($ a share)", { numeric: true })}
           </>
         ))}
+      {type === "issue_warrants" && <WarrantRows f={f} draft={draft} event={event} before={props.before} />}
       {type === "safes" && <SafeRows f={f} json={json} draft={draft} />}
       {type === "notes" && <NoteRows f={f} json={json} draft={draft} />}
       {type === "priced_round" && <RoundFields {...props} f={f} />}
@@ -230,6 +231,29 @@ function fieldsFor(event: EventDraft, draft: RoundsDraft, onDraft: (d: RoundsDra
       );
     },
   };
+}
+
+/**
+ * C15: each line is warrants for common or for a preferred series already
+ * issued, by the events before it as typed, and as last built for the series
+ * a round made from its SAFEs and notes.
+ */
+function WarrantRows({ f, draft, event, before }: { f: Fields; draft: RoundsDraft; event: EventDraft; before: CapTableAfterEvent | null }) {
+  const at = draft.events.findIndex((e) => e.key === event.key);
+  const typed = draft.events.slice(0, at).flatMap((e) => {
+    const series = e.json.type === "priced_round" ? (e.json.series as Json | undefined) : undefined;
+    return series?.id ? [{ value: String(series.id), label: String(series.name ?? series.id) }] : [];
+  });
+  const built = (before?.capTable.securities ?? []).filter((s) => s.kind === "preferred" && !typed.some((t) => t.value === s.id)).map((s) => ({ value: s.id, label: s.name }));
+  const underlyings = [{ value: "common", label: "Common stock" }, ...typed, ...built];
+  return f.rows("warrants", "Warrant", { holder: firstHolder(draft), shares: "", strike: "", underlying: "common" }, (i) => (
+    <>
+      {f.holder(`warrants[${i}].holder`, "Holder")}
+      {f.text(`warrants[${i}].shares`, "Shares", { numeric: true })}
+      {f.text(`warrants[${i}].strike`, "Strike ($ a share)", { numeric: true })}
+      {f.select(`warrants[${i}].underlying`, "It buys", underlyings, { fallback: "common", narrow: true })}
+    </>
+  ));
 }
 
 const CAPS = [
@@ -383,6 +407,7 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
           onChange: (v) => f.update(setIn(setIn(json, "series.anti_dilution", v), "series.anti_dilution_a", null)),
         })}
       </div>
+      <RoundDividend f={f} series={series} />
       {earlierPreferred.length > 0 &&
         f.select("seniority", "How it ranks against the earlier series", seniorityOptions, {
           value: choice,
@@ -424,6 +449,43 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
           { fallback: "exact" },
         )}
       </details>
+    </>
+  );
+}
+
+const DIVIDEND_METHODS = [
+  { value: "simple", label: "Simple: the same each year" },
+  { value: "compounding", label: "Compounding once a year" },
+];
+const ON_CONVERSION = [
+  { value: "forfeited", label: "Gives them up: converting forfeits them" },
+  { value: "paid", label: "Is still paid them, in its own place in the order" },
+];
+
+/**
+ * R30: the new series' cumulative dividends, with no start date of their own:
+ * they accrue from the round's date, on this series and on the series its
+ * SAFEs and notes convert into, each on its own issue price.
+ */
+function RoundDividend({ f, series }: { f: Fields; series: Json }) {
+  const on = series.cumulative_dividend != null;
+  return (
+    <>
+      <CheckField
+        id={f.id("series.cumulative_dividend")}
+        label="Cumulative dividends"
+        checked={on}
+        onChange={(c) => f.set("series.cumulative_dividend", c ? { rate: "", method: "simple", on_conversion: "forfeited" } : null)}
+        error={f.errorFor("series.cumulative_dividend")}
+        hint={on ? "They accrue from the round's date, so the round needs one, on this series and on its series from SAFEs and notes." : undefined}
+      />
+      {on && (
+        <div className="series__grid">
+          {f.text("series.cumulative_dividend.rate", "Rate (% of the issue price a year)", { numeric: true })}
+          {f.select("series.cumulative_dividend.method", "They accrue", DIVIDEND_METHODS, { fallback: "simple" })}
+          {f.select("series.cumulative_dividend.on_conversion", "If it converts, it", ON_CONVERSION, { fallback: "forfeited" })}
+        </div>
+      )}
     </>
   );
 }

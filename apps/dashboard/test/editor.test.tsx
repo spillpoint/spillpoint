@@ -357,6 +357,79 @@ describe("SAFEs and notes still outstanding (M5k)", () => {
   });
 });
 
+describe("warrants and cumulative dividends (M5k2)", () => {
+  /** Two founders and a Seed series, typed in from a blank cap table, with the holders given. */
+  function seedCompany(holders: string[], seedPrice: string) {
+    render(<App />);
+    startFrom("scratch");
+    openTab("Cap table");
+    const card_ = card("Holders");
+    type(within(card_).getByRole("textbox", { name: "Holder name" }), holders[0]!);
+    for (const name of holders.slice(1)) {
+      fireEvent.click(within(card_).getByRole("button", { name: "Add a holder" }));
+      type(within(card_).getAllByRole("textbox", { name: "Holder name" }).at(-1)!, name);
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Add a preferred series" }));
+    const added = series("New preferred series");
+    type(within(added).getByLabelText("Original issue price ($ a share)"), seedPrice);
+    type(within(added).getByLabelText("Name"), "Seed Preferred");
+    type(screen.getByRole("textbox", { name: "Founder A, Common Stock" }), "6,000,000");
+    type(screen.getByRole("textbox", { name: "Founder B, Common Stock" }), "2,000,000");
+  }
+
+  /** Every holder's payout on the page at each of the locked case's listed exit values, against its expected.json. */
+  function paysAsExpected(name: string, names: Record<string, string>) {
+    const expected = JSON.parse(readFileSync(resolve(import.meta.dirname, `../../../cases/${name}/expected.json`), "utf8")).exit;
+    openTab("Payouts");
+    const box = screen.getByRole("textbox", { name: "Exit value" });
+    for (const p of expected.payouts.filter((x: { tags: string[] }) => x.tags.includes("listed"))) {
+      type(box, p.exit_value);
+      fireEvent.keyDown(box, { key: "Enter" });
+      const table = screen.getByRole("table");
+      for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
+        const row = within(table).getByText(names[holder]!).closest("tr")!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+      }
+    }
+  }
+
+  it("takes case 9's dividends, typed in, asks for the sale's date, and pays what the case expects", () => {
+    seedCompany(["Founder A", "Founder B", "Investor X", "Investor Y"], "1.50");
+    type(screen.getByRole("textbox", { name: "Investor X, Seed Preferred" }), "1,500,000");
+    type(screen.getByRole("textbox", { name: "Investor Y, Seed Preferred" }), "500,000");
+    type(screen.getByLabelText("To"), "60M");
+    const seed = series("Seed Preferred");
+    fireEvent.click(within(seed).getByLabelText("Cumulative dividends"));
+    type(within(seed).getByLabelText("Rate (% of the issue price a year)"), "8");
+    expect((within(seed).getByLabelText("They accrue") as HTMLSelectElement).value).toBe("simple");
+    type(within(seed).getByLabelText("From"), "2022-03-31");
+    expect((within(seed).getByLabelText("If it converts, it") as HTMLSelectElement).value).toBe("forfeited");
+    expect(status()).toBe("The payouts can't update until this is fixed: Fill this in: Seed Preferred's cumulative dividends accrue up to the date of the sale. Go to the field");
+    type(screen.getByLabelText("Date of the sale"), "2026-03-31");
+    expect(status()).toMatch(/Every change updates the payouts\.$/);
+    paysAsExpected("edge-09-cumulative-dividends", { founder_a: "Founder A", founder_b: "Founder B", investor_x: "Investor X", investor_y: "Investor Y" });
+    // 1,461 days, a leap day among them, at 8% a year on $1.50, Actual/365 (X2): 2,000,000 × $1.50 × 0.08 × 1,461 ÷ 365 = $960,657.53.
+    expect(screen.getByText(/^Seed Preferred has accrued \$960,657\.53 of cumulative dividends by Mar 31, 2026, the date of the sale\./)).toBeTruthy();
+  });
+
+  it("takes case 8's warrant for the Seed, typed in, and pays what the case expects", () => {
+    seedCompany(["Founder A", "Founder B", "Investor X", "Lender L"], "1");
+    type(screen.getByRole("textbox", { name: "Investor X, Seed Preferred" }), "2,000,000");
+    type(screen.getByLabelText("To"), "20M");
+    fireEvent.click(screen.getByRole("button", { name: "Add a warrant class" }));
+    const classes = card("Classes of stock");
+    type(within(classes).getAllByLabelText("Strike price ($ a share)").at(-1)!, "0.50");
+    const buys = within(classes).getByLabelText("It buys") as HTMLSelectElement;
+    expect(buys.value).toBe("common");
+    fireEvent.change(buys, { target: { value: (within(buys).getByRole("option", { name: "Seed Preferred" }) as HTMLOptionElement).value } });
+    type(screen.getByRole("textbox", { name: "Lender L, New warrant class" }), "200,000");
+    expect(status()).toMatch(/Every change updates the payouts\.$/);
+    paysAsExpected("edge-08-preferred-warrant", { founder_a: "Founder A", founder_b: "Founder B", investor_x: "Investor X", lender_l: "Lender L" });
+    // At $20M the Seed converts and the warrant is worth exercising: 200,000 more Seed shares at $0.50.
+    expect(screen.getByText(/The warrant is exercised\./)).toBeTruthy();
+  });
+});
+
 describe("the tabs", () => {
   it("switch with the arrow keys", () => {
     render(<App />);

@@ -4,8 +4,8 @@
 // - events name holders by the editor's keys, so a holder can be renamed, or
 //   added before it has a name; building gives each its id, as the cap table
 //   editor does (M3c);
-// - SAFE and note discounts and note interest rates, fractions in the file
-//   ("0.2"), are held as the percentages people type ("20"), and turned back
+// - SAFE and note discounts, note interest rates and a round's dividend rate,
+//   fractions in the file ("0.2"), are held as the percentages people type ("20"), and turned back
 //   into fractions as exact decimals, never through floating point (M4j plan,
 //   answer 4): "6.5" becomes "0.065".
 // Everything else is the event as loaded, so a field nobody edits is saved as
@@ -37,7 +37,9 @@ export interface RoundsDraft {
 }
 
 /** The list of lines each event type has, and which of their fields name a holder or are percentages. */
-const LISTS: Record<string, string> = { issue: "issues", grant_options: "grants", safes: "safes", notes: "notes", priced_round: "investments" };
+const LISTS: Record<string, string> = {
+  issue: "issues", grant_options: "grants", issue_warrants: "warrants", safes: "safes", notes: "notes", priced_round: "investments",
+};
 const PERCENTS: Record<string, string[]> = { safes: ["discount"], notes: ["interest_rate", "discount"] };
 
 function mapEvent(ev: Json, holder: (v: unknown) => unknown, percent: (v: unknown) => unknown): Json {
@@ -52,6 +54,9 @@ function mapEvent(ev: Json, holder: (v: unknown) => unknown, percent: (v: unknow
       return r;
     });
   }
+  // R30: a round's series may carry cumulative dividends, its rate a fraction like the others.
+  const dividend = type === "priced_round" ? ((out.series as Json | undefined)?.cumulative_dividend as Json | undefined) : undefined;
+  if (dividend && dividend.rate != null) dividend.rate = percent(dividend.rate);
   return out;
 }
 
@@ -144,7 +149,7 @@ function keepingAfter(before: RoundsDraft, next: RoundsDraft): RoundsDraft {
   return followed ? { ...next, after: lastId(next) } : next;
 }
 
-export type EventType = "issue" | "issue_percent" | "create_pool" | "grant_options" | "safes" | "notes" | "priced_round";
+export type EventType = "issue" | "issue_percent" | "create_pool" | "grant_options" | "issue_warrants" | "safes" | "notes" | "priced_round";
 
 /** What "Add an event" offers, in the order a company usually meets them. */
 export const EVENT_TYPES: { type: EventType; label: string }[] = [
@@ -152,6 +157,7 @@ export const EVENT_TYPES: { type: EventType; label: string }[] = [
   { type: "issue_percent", label: "Shares issued for a percentage of the company" },
   { type: "create_pool", label: "An option pool" },
   { type: "grant_options", label: "Options granted" },
+  { type: "issue_warrants", label: "Warrants issued" },
   { type: "safes", label: "SAFEs" },
   { type: "notes", label: "Convertible notes" },
   { type: "priced_round", label: "A priced round" },
@@ -199,12 +205,17 @@ export function addEvent(d: RoundsDraft, type: EventType, seniority: string[][])
       convert_notes: true,
     };
   } else {
-    const id = freshId(ids, { issue: "issue", issue_percent: "issue_percent", create_pool: "option_pool", grant_options: "grants", safes: "safes", notes: "notes" }[type]);
+    const id = freshId(
+      ids,
+      { issue: "issue", issue_percent: "issue_percent", create_pool: "option_pool", grant_options: "grants", issue_warrants: "warrants", safes: "safes", notes: "notes" }[type],
+    );
     const fresh: Record<Exclude<EventType, "priced_round">, Json> = {
       issue: { security: common, issues: [{ holder, shares: "" }] },
       issue_percent: { security: common, holder, percent: "" },
       create_pool: { percent: "" },
       grant_options: { grants: [{ holder, shares: "", strike: "" }] },
+      // C15: for common, until someone chooses a series.
+      issue_warrants: { warrants: [{ holder, shares: "", strike: "", underlying: "common" }] },
       safes: { safes: [{ ...rows(`${id}_1`), purchase_amount: "", post_money_cap: "", discount: "" }] },
       notes: {
         notes: [
@@ -312,6 +323,8 @@ export function draftTitle(json: Json): string {
       return "Option pool created";
     case "grant_options":
       return "Options granted";
+    case "issue_warrants":
+      return "Warrants issued";
     case "safes":
       return items("safes") === 1 ? "A SAFE" : "SAFEs";
     case "notes":

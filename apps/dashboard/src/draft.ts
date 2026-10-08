@@ -7,7 +7,9 @@
 // preference, participation and cap, seniority tiers, one conversion group
 // (E17 refuses more), the unissued pool, and the range to explore. Since M5k
 // it also covers SAFEs and convertible notes still outstanding at a sale (C8,
-// C9), and the sale's date, which notes accrue interest up to (X3).
+// C9), and the sale's date, which notes accrue interest up to (X3); since
+// M5k2, warrants (C4, R29) and a series' cumulative dividends (C5, X2–X5),
+// which accrue up to the sale's date too.
 // Anti-dilution is kept as loaded but not edited: at exit it matters only
 // through the conversion price, which is edited directly (SPEC, Anti-dilution).
 
@@ -32,6 +34,16 @@ interface DraftClassBase {
 
 export type PriceField = "strike" | "originalIssuePrice" | "conversionPrice";
 
+/** A series' cumulative dividends (C5): a rate as typed, as a percentage of the issue price a year. */
+export interface DraftDividend {
+  rate: string;
+  /** Simple, Actual/365 (X2), or compounding once a year on the accrual start's anniversaries (X5). */
+  method: "simple" | "compounding";
+  accrualStart: string;
+  /** What a series that converts does with them: gives them up, or is still paid them, in its own tier (X5). */
+  onConversion: "forfeited" | "paid";
+}
+
 /**
  * A loaded price too long to read ("3900000/1879091", as rounds produce) is
  * shown to six decimal places, and its exact value is kept here and used
@@ -42,6 +54,13 @@ type ExactPrices = Partial<Record<PriceField, string>>;
 export type DraftSecurity =
   | (DraftClassBase & { kind: "common" })
   | (DraftClassBase & { kind: "option"; strike: string; exact: ExactPrices })
+  | (DraftClassBase & {
+      kind: "warrant";
+      strike: string;
+      /** What it buys: "common", or a preferred series by key; blank once that series is removed, for someone to choose again. */
+      underlying: string;
+      exact: ExactPrices;
+    })
   | (DraftClassBase & {
       kind: "preferred";
       exact: ExactPrices;
@@ -56,6 +75,8 @@ export type DraftSecurity =
       rank: number;
       antiDilution: string;
       antiDilutionA: string | null;
+      /** Null for none. */
+      dividend: DraftDividend | null;
     });
 
 export type DraftPreferred = Extract<DraftSecurity, { kind: "preferred" }>;
@@ -170,9 +191,10 @@ export class NotShownYet extends Error {
 const SHOWN_FIELDS: Record<string, readonly string[]> = {
   common: ["id", "name", "kind"],
   option: ["id", "name", "kind", "strike"],
+  warrant: ["id", "name", "kind", "strike", "underlying"],
   preferred: [
     "id", "name", "kind", "original_issue_price", "conversion_price", "conversion_ratio", "preference_multiple",
-    "participation", "cap_multiple", "anti_dilution", "anti_dilution_a", "approx",
+    "participation", "cap_multiple", "anti_dilution", "anti_dilution_a", "cumulative_dividend", "approx",
   ],
 };
 const SHOWN_TABLE_FIELDS = ["holders", "securities", "seniority", "conversion_groups", "positions", "unissued_pool", "unconverted_safes", "unconverted_notes", "totals"];
@@ -185,7 +207,6 @@ const SHOWN_OUTSTANDING_FIELDS: Record<"unconverted_safes" | "unconverted_notes"
 };
 /** Terms the engine models that the page doesn't show yet, by field, as a founder would name them. */
 const TERM_NAMES: Record<string, string> = {
-  cumulative_dividend: "cumulative dividends",
   carve_out: "a management carve-out",
 };
 
@@ -221,7 +242,6 @@ export function checkShown(capTable: unknown): void {
   for (const s of ct.securities as Json[]) {
     if (s == null || typeof s !== "object") continue;
     const name = str(s.name) || str(s.id);
-    if (s.kind === "warrant") refuse(`warrants, ${name}`);
     const fields = SHOWN_FIELDS[str(s.kind)];
     if (!fields) {
       throw new NotShownYet(
@@ -262,7 +282,10 @@ export function draftFromExit(exit: unknown): Draft {
       return text;
     };
     if (s.kind === "option") return { ...base, kind: "option", strike: shown("strike", str(s.strike)), exact };
+    // Its underlying is the series' id for now: the series may come later in the list. Made a key below.
+    if (s.kind === "warrant") return { ...base, kind: "warrant", strike: shown("strike", str(s.strike)), underlying: str(s.underlying), exact };
     if (s.kind === "preferred") {
+      const div = s.cumulative_dividend as Json | null | undefined;
       const oip = str(s.original_issue_price);
       const cp = str(s.conversion_price);
       return {
@@ -278,10 +301,20 @@ export function draftFromExit(exit: unknown): Draft {
         rank: tierOf.get(id) ?? 1,
         antiDilution: str(s.anti_dilution) || "none",
         antiDilutionA: s.anti_dilution_a == null ? null : str(s.anti_dilution_a),
+        dividend:
+          div == null
+            ? null
+            : {
+                rate: fractionToPercent(div.rate),
+                method: div.method === "compounding" ? "compounding" : "simple",
+                accrualStart: str(div.accrual_start),
+                onConversion: div.on_conversion === "paid" ? "paid" : "forfeited",
+              },
       };
     }
     return { ...base, kind: "common" };
   });
+  for (const s of securities) if (s.kind === "warrant" && s.underlying !== "common") s.underlying = securityKeys.get(s.underlying) ?? "";
   const shares: Record<string, string> = {};
   const order: string[] = (ct.seniority as string[][]).flat().map((sid) => securityKeys.get(sid)!);
   for (const p of ct.positions as Json[]) {
@@ -387,6 +420,7 @@ export function addSecurity(d: Draft, kind: DraftSecurity["kind"]): Draft {
   let securities = d.securities;
   if (kind === "common") added = { ...base, kind, name: "Common Stock" };
   else if (kind === "option") added = { ...base, kind, name: "New option class", strike: "0", exact: {} };
+  else if (kind === "warrant") added = { ...base, kind, name: "New warrant class", strike: "0", underlying: "common", exact: {} };
   else {
     // A new series gets a tier of its own, paid first, as later rounds usually are; change it under "Who is paid first".
     securities = securities.map((s) => (s.kind === "preferred" ? { ...s, rank: s.rank + 1 } : s));
@@ -403,6 +437,7 @@ export function addSecurity(d: Draft, kind: DraftSecurity["kind"]): Draft {
       rank: 1,
       antiDilution: "none",
       antiDilutionA: null,
+      dividend: null,
     };
   }
   return { ...d, securities: [...securities, added], nextKey: d.nextKey + 1 };
@@ -410,15 +445,16 @@ export function addSecurity(d: Draft, kind: DraftSecurity["kind"]): Draft {
 
 /**
  * Removing a holder or a class removes its shares too; a holder's SAFEs and
- * notes go with it; a class leaves the conversion group, and a SAFE that
- * ranked with it goes back to the default, the most junior tier (X9).
+ * notes go with it; a class leaves the conversion group, a SAFE that ranked
+ * with it goes back to the default, the most junior tier (X9), and a warrant
+ * for it is left asking which class it buys, never quietly given another.
  */
 export function removeRow(d: Draft, key: string): Draft {
   const shares = Object.fromEntries(Object.entries(d.shares).filter(([k]) => !k.split("/").includes(key)));
   return {
     ...d,
     holders: d.holders.filter((h) => h.key !== key),
-    securities: d.securities.filter((s) => s.key !== key),
+    securities: d.securities.filter((s) => s.key !== key).map((s) => (s.kind === "warrant" && s.underlying === key ? { ...s, underlying: "" } : s)),
     shares,
     safes: d.safes.filter((f) => f.holder !== key).map((f) => (f.ranksWith === key ? { ...f, ranksWith: null } : f)),
     notes: d.notes.filter((n) => n.holder !== key),
@@ -501,6 +537,12 @@ export const fieldId = {
   preferenceMultiple: (key: string) => `edit-pref-${key}`,
   participation: (key: string) => `edit-part-${key}`,
   capMultiple: (key: string) => `edit-cap-${key}`,
+  underlying: (key: string) => `edit-underlying-${key}`,
+  dividend: (key: string) => `edit-dividend-${key}`,
+  dividendRate: (key: string) => `edit-dividend-rate-${key}`,
+  dividendMethod: (key: string) => `edit-dividend-method-${key}`,
+  dividendStart: (key: string) => `edit-dividend-start-${key}`,
+  dividendOnConversion: (key: string) => `edit-dividend-conversion-${key}`,
   shares: (holder: string, security: string) => `edit-shares-${holder}-${security}`,
   pool: "edit-pool",
   seniority: "edit-seniority",
@@ -588,6 +630,16 @@ export function buildExit(d: Draft): Built {
     return { id: holderIds.get(h.key)!, name: h.name.trim() };
   });
 
+  /** C5's fields, the rate as the engine's fraction. A blank rate goes through as typed, for the engine to ask for. */
+  const dividendJson = (s: DraftPreferred, p: string) => {
+    const div = s.dividend!;
+    at(p, fieldId.dividend(s.key));
+    at(`${p}.rate`, fieldId.dividendRate(s.key));
+    at(`${p}.method`, fieldId.dividendMethod(s.key));
+    at(`${p}.accrual_start`, fieldId.dividendStart(s.key));
+    at(`${p}.on_conversion`, fieldId.dividendOnConversion(s.key));
+    return { rate: div.rate.trim() ? percentToFraction(div.rate) : "", method: div.method, accrual_start: div.accrualStart.trim(), on_conversion: div.onConversion };
+  };
   const securities = d.securities.map((s, i) => {
     const p = `securities[${i}]`;
     at(p, fieldId.securityName(s.key));
@@ -596,6 +648,13 @@ export function buildExit(d: Draft): Built {
     if (s.kind === "option") {
       at(`${p}.strike`, fieldId.strike(s.key));
       return { ...base, kind: "option", strike: s.exact.strike ?? moneyText(s.strike) };
+    }
+    if (s.kind === "warrant") {
+      at(`${p}.strike`, fieldId.strike(s.key));
+      at(`${p}.underlying`, fieldId.underlying(s.key));
+      // C4: "common", or the series' id; blank, for the engine to ask for, once its series is gone.
+      const underlying = s.underlying === "common" ? "common" : (securityIds.get(s.underlying) ?? "");
+      return { ...base, kind: "warrant", strike: s.exact.strike ?? moneyText(s.strike), underlying };
     }
     at(`${p}.original_issue_price`, fieldId.originalIssuePrice(s.key));
     at(`${p}.conversion_price`, fieldId.conversionPrice(s.key));
@@ -617,6 +676,7 @@ export function buildExit(d: Draft): Built {
       cap_multiple: capped ? multipleText(s.capMultiple) : null,
       anti_dilution: s.antiDilution,
       ...(s.antiDilutionA != null ? { anti_dilution_a: s.antiDilutionA } : {}),
+      ...(s.dividend ? { cumulative_dividend: dividendJson(s, `${p}.cumulative_dividend`) } : {}),
     };
   });
 
@@ -772,9 +832,12 @@ export function checkBuilt(b: Built): Checked {
     return { ok: true, exit, pc: prepare(exit.capTable, exit.exitDate) };
   } catch (e) {
     const error = e as Error;
-    // X3: a note accrues interest up to the sale, so the payouts need its date. Said plainly, without the note's id.
+    // X2, X3: a note's interest and a series' cumulative dividends accrue up to the sale, so the payouts need its date.
+    // Said plainly, without the note's id.
     if (e instanceof InputError && e.path === "exit.exit_date" && b.json.exit_date === undefined) {
-      return { ok: false, field: fieldId.exitDate, message: "Fill this in: a convertible note accrues interest up to the date of the sale.", error };
+      const series = /^exit\.exit_date: (.+) accrues cumulative dividends/.exec(e.message)?.[1];
+      const what = series ? `${series}'s cumulative dividends accrue` : "a convertible note accrues interest";
+      return { ok: false, field: fieldId.exitDate, message: `Fill this in: ${what} up to the date of the sale.`, error };
     }
     if (e instanceof InputError || e instanceof UnsupportedTermError) {
       const field = fieldForPath(b.fields, e.path);
