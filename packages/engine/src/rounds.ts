@@ -636,22 +636,14 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   const safes = convertSafes ? company.safes : [];
   const notes = convertNotes ? company.notes : [];
   const postSafes = safes.filter((f) => f.postMoneyCap !== null);
-  if (postSafes.length > 0 && (notes.length > 0 || safes.some((f) => f.preMoneyCap !== null))) {
-    // R24: a post-money SAFE's Company Capitalization counts every other converting security. Owed before release.
-    throw new UnsupportedTermError(
-      "post_money_safe_with_pre_money_instruments", "later", `${path}.convert_safes`,
-      "A post-money SAFE converting alongside notes or pre-money SAFEs (R24)",
-    );
-  }
 
-  // Pay-to-play (R17–R22). No case settles whether a SAFE's Company
-  // Capitalization or a note's base counts the table before or after the
-  // conversion: owed before release. In a pay-to-play round its requirement
-  // takes the place of pro-rata (R6), so nothing there is marked pro-rata.
+  // Pay-to-play (R17–R22). In a pay-to-play round its requirement takes the
+  // place of pro-rata (R6), so nothing there is marked pro-rata. SAFEs and
+  // notes converting in it see the cap table the round is priced on (R19,
+  // the 0.3.0 plan's answer 4; case 17i): a SAFE's Company Capitalization and
+  // a note's base count it after the conversion, or before it under R19's
+  // toggle, so they and the new investors see one share count.
   const payToPlay = ev.pay_to_play == null ? null : planPayToPlay(company, ev.pay_to_play, investments, `${path}.pay_to_play`);
-  if (payToPlay && (safes.length > 0 || notes.length > 0)) {
-    throw new UnsupportedTermError("pay_to_play_with_conversions", "later", `${path}.pay_to_play`, "A pay-to-play round that also converts SAFEs or notes (R17–R22)");
-  }
   const proRataLine = investments.findIndex((inv) => inv.proRata);
   if (payToPlay && proRataLine >= 0) {
     const { holder, amount } = investments[proRataLine]!;
@@ -694,10 +686,9 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   const pool0 = company.unissuedPool;
   if (outstanding.plus(pool0).isZero()) throw new InputError(path, "a priced round needs shares outstanding to price against");
 
-  // R4: the post-money SAFEs' Company Capitalization.
+  // R4: the post-money SAFEs own their purchase ÷ cap of Company Capitalization.
   const owned = postSafes.reduce((sum, f) => sum.plus(f.purchaseAmount.div(f.postMoneyCap!)), ZERO);
   if (owned.gte(ONE)) throw new InputError(`${path}.convert_safes`, "the post-money SAFEs would own the whole company at their caps");
-  const companyCap = postSafes.length > 0 ? outstanding.plus(pool0).div(ONE.minus(owned)) : null;
 
   // R23: a note converts its principal plus simple interest, Actual/365, to
   // the round's date. Its pre-money cap divides by the share count just
@@ -716,8 +707,43 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   });
 
   type Choice = "cap" | "discount";
-  /** A SAFE's cap price, given the pool after the round (a pre-money SAFE counts it, R24); null without a cap. */
-  const capPrice = (f: Safe, pool: Decimal): Decimal | null =>
+  /** A share count that may grow with the post-money fully diluted shares x: fixed + growing × x. */
+  type Line = { fixed: Decimal; growing: Decimal };
+  const at = (l: Line, x: Decimal) => l.fixed.plus(l.growing.times(x));
+  /** A SAFE's shares under its choice, other than a post-money SAFE at its cap (that needs Company Capitalization). */
+  const safeShares = (f: Safe, choice: Choice, topUp: boolean): Line =>
+    choice === "discount"
+      ? { fixed: ZERO, growing: f.purchaseAmount.div(post.times(ONE.minus(f.discount))) }
+      : // R24: a pre-money SAFE's Company Capitalization counts the pool including this round's increase.
+        { fixed: f.purchaseAmount.times(outstanding.plus(topUp ? ZERO : pool0)).div(f.preMoneyCap!), growing: topUp ? f.purchaseAmount.times(target).div(f.preMoneyCap!) : ZERO };
+  /**
+   * R4, R24: the post-money SAFEs' Company Capitalization, CC = (O + U + the
+   * others' shares) ÷ (1 − Σ purchase ÷ cap). O is the stock and options
+   * outstanding, U the pool as it stood before the round, and the others are
+   * the notes and the other SAFEs converting beside them, counted at their
+   * exact conversion shares, before rounding down (YC's Converting
+   * Securities; the 0.3.0 plan's answer 2; cases 21b–21d). A note or SAFE at
+   * its discount has shares that grow with the round's price, so CC is a
+   * line in x too, solved together with the price.
+   */
+  const companyCapLine = (topUp: boolean, choices: Choice[], noteChoices: Choice[]): Line | null => {
+    if (postSafes.length === 0) return null;
+    let fixed = outstanding.plus(pool0);
+    let growing = ZERO;
+    safes.forEach((f, i) => {
+      if (f.postMoneyCap) return;
+      const l = safeShares(f, choices[i]!, topUp);
+      fixed = fixed.plus(l.fixed);
+      growing = growing.plus(l.growing);
+    });
+    noteTerms.forEach((t, i) => {
+      if (noteChoices[i] === "discount") growing = growing.plus(t.amount.div(post.times(ONE.minus(t.note.discount))));
+      else fixed = fixed.plus(t.amount.div(t.capPrice!));
+    });
+    return { fixed: fixed.div(ONE.minus(owned)), growing: growing.div(ONE.minus(owned)) };
+  };
+  /** A SAFE's cap price at x, given the pool after the round and Company Capitalization (R4, R24); null without a cap. */
+  const capPrice = (f: Safe, pool: Decimal, companyCap: Decimal | null): Decimal | null =>
     f.postMoneyCap ? f.postMoneyCap.div(companyCap!) : f.preMoneyCap ? f.preMoneyCap.div(outstanding.plus(pool)) : null;
 
   // The series with anti-dilution, as they stand before the round (after any
@@ -753,13 +779,12 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   const solve = (topUp: boolean, choices: Choice[], noteChoices: Choice[], triggered: boolean[]): Decimal => {
     let fixed = outstanding.plus(topUp ? ZERO : pool0);
     let growing = money.div(post).plus(topUp ? target : ZERO);
+    const cc = companyCapLine(topUp, choices, noteChoices);
     safes.forEach((f, i) => {
-      if (choices[i] === "discount") growing = growing.plus(f.purchaseAmount.div(post.times(ONE.minus(f.discount))));
-      else if (f.postMoneyCap) fixed = fixed.plus(f.purchaseAmount.times(companyCap!).div(f.postMoneyCap));
-      else {
-        fixed = fixed.plus(f.purchaseAmount.times(outstanding.plus(topUp ? ZERO : pool0)).div(f.preMoneyCap!));
-        if (topUp) growing = growing.plus(f.purchaseAmount.times(target).div(f.preMoneyCap!));
-      }
+      // A post-money SAFE at its cap takes purchase ÷ cap of Company Capitalization.
+      const l = choices[i] === "cap" && f.postMoneyCap ? { fixed: cc!.fixed.times(f.purchaseAmount).div(f.postMoneyCap), growing: cc!.growing.times(f.purchaseAmount).div(f.postMoneyCap) } : safeShares(f, choices[i]!, topUp);
+      fixed = fixed.plus(l.fixed);
+      growing = growing.plus(l.growing);
     });
     noteTerms.forEach((t, i) => {
       if (noteChoices[i] === "discount") growing = growing.plus(t.amount.div(post.times(ONE.minus(t.note.discount))));
@@ -792,8 +817,9 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     const x = solve(nextTopUp, choices, noteChoices, triggered);
     const price = post.div(x);
     const pool = nextTopUp ? target.times(x) : pool0;
+    const cc = companyCapLine(nextTopUp, choices, noteChoices);
     const next = safes.map((f): Choice => {
-      const cap = capPrice(f, pool);
+      const cap = capPrice(f, pool, cc && at(cc, x));
       const discount = price.times(ONE.minus(f.discount));
       return cap && (cap.lt(discount) || nearlyEqual(cap, discount)) ? "cap" : "discount";
     });
@@ -816,6 +842,9 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   const solved = solve(topUp, choices, noteChoices, triggered);
   const price = post.div(solved);
   const poolAfter = topUp ? target.times(solved) : pool0;
+  // R24 (21d): Company Capitalization at the solved count, from the others' exact shares.
+  const ccLine = companyCapLine(topUp, choices, noteChoices);
+  const companyCap = ccLine && at(ccLine, solved);
 
   // A round that both converts SAFEs or notes and triggers anti-dilution
   // raises questions no case settles yet: whether the conversion is itself a
@@ -854,7 +883,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   const safeSeries: { price: Decimal; id: string }[] = [];
   const safeConversions: SafeConversion[] = safes.map((f, i) => {
     const capped = choices[i] === "cap";
-    const conversionPrice = capped ? capPrice(f, poolAfter)! : price.times(ONE.minus(f.discount));
+    const conversionPrice = capped ? capPrice(f, poolAfter, companyCap)! : price.times(ONE.minus(f.discount));
     // Shares from the exact terms rather than the rounded price, then rounded down (R3, E19).
     const shares = roundDownShares(
       !capped

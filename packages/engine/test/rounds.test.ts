@@ -33,23 +33,18 @@ const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json"
 
 /**
  * The 39 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
- * sale carries a carve-out (0.3.0 work, 03a), 21b, 21c, 17i (03c) and 21d (03c2), which the engine refuses until 03g,
+ * sale carries a carve-out (0.3.0 work, 03a), 21b, 21c, 17i (03c) and 21d (03c2), which the engine builds since 03g,
  * and 16g, 16h, 16i (03d), 16j and 17j (03d2), refused until 03h.
  */
 const EXPECTED_ROUND_CASES = 39;
 /**
- * The 0.3.0 work's round cases the engine refuses until 03g or 03h, by the first term it names. 17i also converts a
- * post-money SAFE beside a note; 17j's round also triggers anti-dilution, refused until 03h.
+ * The 0.3.0 work's round cases the engine refuses until 03h, by the first term it names.
  */
 const NOT_YET: Record<string, string> = {
   "edge-16g-safe-converts-in-a-down-round": "anti_dilution_with_conversions",
   "edge-16h-safe-conversion-exempt": "anti_dilution_exempts_conversions",
   "edge-16j-note-and-safe-from-before-the-seed": "anti_dilution_with_conversions",
-  "edge-17i-pay-to-play-with-conversions": "post_money_safe_with_pre_money_instruments",
-  "edge-17j-pay-to-play-anti-dilution-with-a-safe": "pay_to_play_with_conversions",
-  "edge-21b-post-money-safe-and-note": "post_money_safe_with_pre_money_instruments",
-  "edge-21c-post-money-and-pre-money-safes": "post_money_safe_with_pre_money_instruments",
-  "edge-21d-post-money-safe-and-discounted-note": "post_money_safe_with_pre_money_instruments",
+  "edge-17j-pay-to-play-anti-dilution-with-a-safe": "anti_dilution_with_conversions",
 };
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
@@ -204,11 +199,11 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 37 cases with events", () => {
+  it(`is found: ${EXPECTED_ROUND_CASES} cases with events`, () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
   });
 
-  it.each(Object.entries(NOT_YET))("%s is refused until 03g or 03h, naming %s", (name, term) => {
+  it.each(Object.entries(NOT_YET))("%s is refused until 03h, naming %s", (name, term) => {
     let error: unknown;
     try {
       buildCapTables(readCaseFile(name, "inputs.json") as Inputs);
@@ -445,17 +440,31 @@ describe("what M4d refuses", () => {
     expect(() => buildCapTables(inputs)).toThrow(/a pro-rata round with a SAFE or note that stays outstanding is refused/);
   });
 
-  it("a post-money SAFE converting alongside a pre-money SAFE: owed before release (R24)", () => {
-    const inputs = case18();
-    inputs.holders.push({ id: "investor_s", name: "Investor S" });
-    inputs.events.splice(3, 0, { id: "safe_2", date: "2023-06-01", type: "safes", safes: [{ id: "safe_s", holder: "investor_s", purchase_amount: "500000", pre_money_cap: "20000000" }] });
-    let error: unknown;
-    try {
-      buildCapTables(inputs);
-    } catch (e) {
-      error = e;
-    }
-    expect(error).toMatchObject({ term: "post_money_safe_with_pre_money_instruments", milestone: "later" });
+  it("counts a SAFE with no cap in a post-money SAFE's Company Capitalization, at its exact shares (R4, R24; 03g)", () => {
+    // 9,000,000 common; Investor S's $1,000,000 post-money SAFE capped at $10,000,000; Investor D's $500,000 SAFE at a
+    // 20% discount with no cap; $5,000,000 at a $20,000,000 pre-money valuation. With x the post-money shares, D gets
+    // $500,000 ÷ (0.8 × $25,000,000 ÷ x) = x ÷ 40, and CC = (9,000,000 + x ÷ 40) ÷ 0.9, of which S takes a tenth. So
+    // x = 9,000,000 + x/40 + (9,000,000 + x/40) ÷ 9 + x/5: x = 1,800,000,000 ÷ 139, priced at $139 ÷ 72, and CC is
+    // 1,440,000,000 ÷ 139. 0.2.0 didn't refuse this, but left D's shares out of CC: 10,000,000, and S's 1,000,000.
+    const built = buildCapTables({
+      holders: [{ id: "a", name: "Founder A" }, { id: "s", name: "Investor S" }, { id: "d", name: "Investor D" }, { id: "y", name: "Investor Y" }],
+      events: [
+        { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "a", shares: 9000000 }] },
+        {
+          id: "safes", date: null, type: "safes",
+          safes: [{ id: "safe_s", holder: "s", purchase_amount: "1000000", post_money_cap: "10000000", discount: "0" }, { id: "safe_d", holder: "d", purchase_amount: "500000", discount: "0.2" }],
+        },
+        {
+          id: "series_a", date: null, type: "priced_round", pre_money: "20000000", investments: [{ holder: "y", amount: "5000000" }],
+          series: { id: "series_a", name: "Series A Preferred", kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
+          seniority: [["series_a", "series_a_shadow", "series_a_shadow_2"]],
+        },
+      ],
+    }).at(-1)!.details;
+    if (built.kind !== "priced_round") throw new Error("a priced round");
+    expectClose(built.price, "139/72", "price");
+    expectClose(built.companyCapitalization!, "1440000000/139", "Company Capitalization");
+    expect(built.safeConversions.map((c) => [c.safe, c.method, c.shares.toNumber()])).toEqual([["safe_s", "cap", 1_035_971], ["safe_d", "discount", 323_741]]);
   });
 
   it("gives a SAFE its cap when its cap price ties its discount price", () => {
@@ -589,10 +598,20 @@ describe("pay-to-play beyond the cases (M4f)", () => {
     ]);
   });
 
-  it("refuses a pay-to-play round that also converts a SAFE, until a case settles it", () => {
-    const inputs = company({});
-    inputs.events.splice(2, 0, { id: "safe", date: null, type: "safes", safes: [{ id: "safe_s", holder: "y", purchase_amount: "100000", post_money_cap: "20000000" }] } as never);
-    expect(refusal(inputs)).toMatchObject({ term: "pay_to_play_with_conversions", milestone: "later" });
+  it("counts the cap table the round is priced on in a converting SAFE's Company Capitalization (R19, answer 4; 03g)", () => {
+    // Q and R convert their 1,000,000 Series A each to 100,000 common, so after the conversion the stock outstanding is
+    // 6,200,000 common and P's 1,000,000 Series A, 7,200,000 in all, against 9,000,000 before. A $100,000 SAFE capped
+    // at $20,000,000 owns 0.5% of CC: 7,200,000 ÷ 0.995 priced after the conversion, 9,000,000 ÷ 0.995 under the toggle.
+    const withSafe = (pricedAfter: boolean) => {
+      const inputs = company({});
+      inputs.events.splice(2, 0, { id: "safe", date: null, type: "safes", safes: [{ id: "safe_s", holder: "y", purchase_amount: "100000", post_money_cap: "20000000" }] } as never);
+      (inputs.events[3] as { pay_to_play: Record<string, unknown> }).pay_to_play.priced_after_conversion = pricedAfter;
+      const series = buildCapTables(inputs).at(-1)!.details;
+      if (series.kind !== "priced_round") throw new Error("a priced round");
+      return series.companyCapitalization!;
+    };
+    expectClose(withSafe(true), "1440000000/199", "Company Capitalization, priced after the conversion");
+    expectClose(withSafe(false), "1800000000/199", "Company Capitalization, priced before it");
   });
 
   it("refuses a pro-rata investment in a pay-to-play round: the requirement takes its place (R6, R17)", () => {
@@ -685,7 +704,7 @@ describe("notes beyond the cases (M4g)", () => {
     expect(refusal(inputs)).toMatchObject({ message: "inputs.events[4].date: expected a date as YYYY-MM-DD" });
   });
 
-  it("refuses a note converting in a down round or a pay-to-play round, until a case settles each (owed before release)", () => {
+  it("refuses a note converting in a down round until 03h, and counts the table after a pay-to-play conversion in its base (R19, answer 4)", () => {
     const down = readCaseFile("edge-16a-broad-based", "inputs.json") as Case;
     down.holders.push({ id: "investor_n", name: "Investor N" });
     down.events.splice(4, 0, {
@@ -700,7 +719,10 @@ describe("notes beyond the cases (M4g)", () => {
     payToPlay.holders.push({ id: "investor_n", name: "Investor N" });
     payToPlay.events.splice(4, 0, down.events[4]!);
     payToPlay.events.at(-1)!.convert_notes = true;
-    expect(refusal(payToPlay)).toMatchObject({ term: "pay_to_play_with_conversions", milestone: "later" });
+    // 17a's Investor W converts its 800,000 Series A to 80,000 common first, so the note's base, with the pool, is
+    // 10,000,000 − 800,000 + 80,000 = 9,280,000 (as in 17e).
+    const series = buildCapTables(payToPlay).at(-1)!.details;
+    expect(series.kind === "priced_round" && series.noteConversions.map((c) => c.baseShares.toString())).toEqual(["9280000"]);
   });
 });
 
