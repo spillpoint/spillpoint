@@ -9,8 +9,12 @@
 // of their own, after who holds what: they hold no shares until they convert.
 // Rates are typed as percentages, as in the rounds editor. Warrants (M5k2)
 // are a kind of class, with a strike and the class they buy, and a preferred
-// series can carry cumulative dividends. A management carve-out (M5k3) has a
-// card of its own: its tiers of the exit value, and who it's split among.
+// series can carry cumulative dividends.
+//
+// The sale's own terms (M5 plan, item 13) are in an "Exit terms" card: its
+// date, a management carve-out (M5k3) and payment schedules for escrow and
+// earnouts (M5l). They aren't the cap table's, so the card stays editable on
+// a cap table built from rounds.
 //
 // A cap table built from rounds (M4i) is shown read-only: the rounds build it,
 // so an edit here would contradict them. Its name and range stay editable.
@@ -18,15 +22,16 @@
 // asking (M4 plan, answer 9).
 
 import type React from "react";
+import { D } from "spillpoint";
 import type { Participation } from "spillpoint";
 
 import {
-  addCarveOut, addCarveOutRow, addHolder, addNote, addSafe, addSecurity, fieldId, outstandingHeldBy, removeOutstanding, removeRow, setNote, setPrice,
-  setSafe, sharesHeldBy, sharesKey, tiers,
+  addCarveOut, addCarveOutRow, addHolder, addNote, addPayment, addSafe, addSchedule, addSecurity, fieldId, outstandingHeldBy, removeOutstanding, removeRow,
+  setNote, setPrice, setSafe, sharesHeldBy, sharesKey, tiers,
 } from "./draft.ts";
-import type { ConversionBase, Draft, DraftCarveOut, DraftDividend, DraftNote, DraftPreferred, DraftSafe, DraftSecurity } from "./draft.ts";
+import type { ConversionBase, Draft, DraftCarveOut, DraftDividend, DraftNote, DraftPreferred, DraftSafe, DraftSchedule, DraftSecurity } from "./draft.ts";
 import { CheckField, Field, SelectField } from "./fields.tsx";
-import { amountHint, fractionValue } from "./format.ts";
+import { amountHint, dollars, fractionValue, parseDollars } from "./format.ts";
 
 /** The engine's objection to the draft, and the field it names (null: none the editor shows). */
 export interface DraftError {
@@ -57,7 +62,7 @@ export function CapTableEditor({ draft, onDraft, name, onName, error, summary, r
         <div className="notice editor__built" role="note">
           <p>
             <strong>This cap table is built from the {rounds.events} events on the Rounds tab, so it can't be edited here.</strong> You can still
-            rename it and change the range of exit values.
+            rename it, set the sale's terms and change the range of exit values.
           </p>
           <button type="button" className="file-button" onClick={rounds.onEditDirectly}>
             Edit the cap table directly
@@ -74,10 +79,10 @@ export function CapTableEditor({ draft, onDraft, name, onName, error, summary, r
         <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />
         <OutstandingCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
-        <CarveOutCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         {preferred.length > 0 && <SeniorityCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
         {preferred.length > 0 && <GroupCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
       </fieldset>
+      <ExitTermsCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
       <RangeCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
     </div>
   );
@@ -659,14 +664,14 @@ const CARVE_TIMINGS = [
 ];
 
 /** C6: marginal tiers of the exit value from $0, each starting where the one before ends; X7: paid first, or alongside the preferences. */
-function CarveOutCard({ draft, onDraft, errorFor }: CardProps) {
+function CarveOutFields({ draft, onDraft, errorFor }: CardProps) {
   const carve = draft.carveOut;
   const set = (change: Partial<DraftCarveOut>) => onDraft({ ...draft, carveOut: { ...carve!, ...change } });
   const holders = draft.holders.map((h) => ({ value: h.key, label: h.name || "Unnamed holder" }));
   const error = errorFor(fieldId.carveOut) ?? errorFor(fieldId.carveTiers) ?? errorFor(fieldId.carveAllocation);
   return (
-    <section className="card" aria-labelledby="edit-carve-out-heading" id={fieldId.carveOut} tabIndex={-1}>
-      <h2 id="edit-carve-out-heading">Management carve-out</h2>
+    <div className="exit-terms__part" role="group" aria-labelledby="edit-carve-out-heading" id={fieldId.carveOut} tabIndex={-1}>
+      <h3 id="edit-carve-out-heading">Management carve-out</h3>
       <p className="card__intro">
         A share of the sale set aside for management, usually when the preferences would otherwise leave common little or nothing. It's a percentage
         of the exit value, which can step down in tiers, split among the people it names. It holds no shares.
@@ -691,7 +696,7 @@ function CarveOutCard({ draft, onDraft, errorFor }: CardProps) {
             }
             wide
           />
-          <h3>Tiers of the exit value</h3>
+          <h4>Tiers of the exit value</h4>
           <ul className="edit-rows" id={fieldId.carveTiers} tabIndex={-1}>
             {carve.tiers.map((t, i) => {
               const before = carve.tiers[i - 1];
@@ -732,7 +737,7 @@ function CarveOutCard({ draft, onDraft, errorFor }: CardProps) {
           <button type="button" className="add" onClick={() => onDraft(addCarveOutRow(draft, "tiers"))}>
             Add a tier
           </button>
-          <h3>Who it's split among</h3>
+          <h4>Who it's split among</h4>
           <ul className="edit-rows" id={fieldId.carveAllocation} tabIndex={-1}>
             {carve.allocation.map((a, i) => (
               <li key={a.key} className="edit-row edit-row--top">
@@ -775,7 +780,7 @@ function CarveOutCard({ draft, onDraft, errorFor }: CardProps) {
           </div>
         </>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -897,10 +902,29 @@ function GroupCard({ draft, onDraft, errorFor }: CardProps) {
 
 function RangeCard({ draft, onDraft, errorFor }: CardProps) {
   const set = (i: 0 | 1, v: string) => onDraft({ ...draft, range: (i === 0 ? [v, draft.range[1]] : [draft.range[0], v]) as [string, string] });
-  // Notes' interest (X3) and cumulative dividends (X2) accrue up to the sale, so the date is asked for once
-  // either is there, or kept once given.
+  return (
+    <section className="card" aria-labelledby="edit-range-heading">
+      <h2 id="edit-range-heading">Exit values to explore</h2>
+      <p className="card__intro">The slider, the curves and the breakpoints cover this range of sale prices. Type amounts like 300M or 1.5B.</p>
+      <div className="edit-row edit-row--top">
+        <Field id={fieldId.rangeLow} label="From" numeric value={draft.range[0]} onChange={(v) => set(0, v)} error={errorFor(fieldId.rangeLow)} hint={rangeHint(draft.range[0])} />
+        <Field id={fieldId.rangeHigh} label="To" numeric value={draft.range[1]} onChange={(v) => set(1, v)} error={errorFor(fieldId.rangeHigh)} hint={rangeHint(draft.range[1])} />
+      </div>
+    </section>
+  );
+}
+
+// ---------- the sale's terms ----------
+
+/**
+ * The Exit terms card (M5 plan, item 13): the sale's date, a carve-out and
+ * payment schedules. They're terms of the sale, not of the cap table, so
+ * they're here, editable whether the cap table was entered directly or built
+ * from rounds.
+ */
+function ExitTermsCard({ draft, onDraft, errorFor }: CardProps) {
+  // Notes' interest (X3) and cumulative dividends (X2) accrue up to the sale's date.
   const dividends = draft.securities.some((s) => s.kind === "preferred" && s.dividend !== null);
-  const dated = draft.notes.length > 0 || dividends || draft.exitDate.trim() !== "";
   const notes = draft.notes.length > 0;
   const accrue =
     notes && dividends
@@ -909,27 +933,101 @@ function RangeCard({ draft, onDraft, errorFor }: CardProps) {
         ? "Convertible notes accrue interest up to this date."
         : dividends
           ? "Cumulative dividends accrue up to this date."
-          : "Nothing here accrues up to it yet.";
+          : "Nothing here accrues up to it yet: notes' interest and cumulative dividends would.";
   return (
-    <section className="card" aria-labelledby="edit-range-heading">
-      <h2 id="edit-range-heading">Exit values to explore</h2>
-      <p className="card__intro">The slider, the curves and the breakpoints cover this range of sale prices. Type amounts like 300M or 1.5B.</p>
+    <section className="card" aria-labelledby="edit-exit-terms-heading" id={fieldId.exitTerms} tabIndex={-1}>
+      <h2 id="edit-exit-terms-heading">Exit terms</h2>
+      <p className="card__intro">The sale's own terms, apart from who holds what: its date, a management carve-out, and how the price is paid over time.</p>
       <div className="edit-row edit-row--top">
-        <Field id={fieldId.rangeLow} label="From" numeric value={draft.range[0]} onChange={(v) => set(0, v)} error={errorFor(fieldId.rangeLow)} hint={rangeHint(draft.range[0])} />
-        <Field id={fieldId.rangeHigh} label="To" numeric value={draft.range[1]} onChange={(v) => set(1, v)} error={errorFor(fieldId.rangeHigh)} hint={rangeHint(draft.range[1])} />
-        {dated && (
-          <Field
-            id={fieldId.exitDate}
-            label="Date of the sale"
-            type="date"
-            value={draft.exitDate}
-            onChange={(v) => onDraft({ ...draft, exitDate: v })}
-            error={errorFor(fieldId.exitDate)}
-            hint={accrue}
-          />
-        )}
+        <Field
+          id={fieldId.exitDate}
+          label="Date of the sale"
+          type="date"
+          value={draft.exitDate}
+          onChange={(v) => onDraft({ ...draft, exitDate: v })}
+          error={errorFor(fieldId.exitDate)}
+          hint={accrue}
+        />
       </div>
+      <CarveOutFields draft={draft} onDraft={onDraft} errorFor={errorFor} />
+      <SchedulesFields draft={draft} onDraft={onDraft} errorFor={errorFor} />
     </section>
+  );
+}
+
+/** C7, X8: escrow and earnouts, each schedule a closing and later payments, each paid where it would have gone at closing. */
+function SchedulesFields({ draft, onDraft, errorFor }: CardProps) {
+  const setSchedule = (key: string, change: Partial<DraftSchedule>) =>
+    onDraft({ ...draft, schedules: draft.schedules.map((s) => (s.key === key ? { ...s, ...change } : s)) });
+  const error = errorFor(fieldId.schedules);
+  return (
+    <div className="exit-terms__part" role="group" aria-labelledby="edit-schedules-heading" id={fieldId.schedules} tabIndex={-1}>
+      <h3 id="edit-schedules-heading">Paid over time</h3>
+      <p className="card__intro">
+        Escrow and earnouts: the price paid as a closing and later payments. Each payment goes where it would have gone had it all been paid at
+        closing, and the Payouts tab shows each holder's take of each. The slider and the curves stay on the price in all.
+      </p>
+      {draft.schedules.map((sch, i) => {
+        const name = sch.description.trim() || `Schedule ${i + 1}`;
+        const total = sch.payments.reduce<D | null>((sum, p) => {
+          const v = parseDollars(p.amount);
+          return sum && v ? sum.plus(v) : null;
+        }, new D(0));
+        return (
+          <fieldset key={sch.key} className="series" id={fieldId.schedule(sch.key)} tabIndex={-1}>
+            <legend>{name}</legend>
+            <Field
+              id={fieldId.scheduleName(sch.key)}
+              label="What it's called"
+              value={sch.description}
+              onChange={(v) => setSchedule(sch.key, { description: v })}
+              error={errorFor(fieldId.scheduleName(sch.key)) ?? errorFor(fieldId.schedule(sch.key))}
+              hint="Optional, such as “Earnout met in full”."
+            />
+            <ul className="edit-rows">
+              {sch.payments.map((pay, j) => {
+                const set = (change: Partial<DraftSchedule["payments"][number]>) =>
+                  setSchedule(sch.key, { payments: sch.payments.map((x) => (x.key === pay.key ? { ...x, ...change } : x)) });
+                return (
+                  <li key={pay.key} className="edit-row edit-row--top">
+                    <Field id={fieldId.paymentLabel(pay.key)} label={`Payment ${j + 1}`} value={pay.label} onChange={(v) => set({ label: v })} error={errorFor(fieldId.paymentLabel(pay.key))} />
+                    <Field
+                      id={fieldId.paymentAmount(pay.key)}
+                      label="Amount ($)"
+                      numeric
+                      value={pay.amount}
+                      onChange={(v) => set({ amount: v })}
+                      error={errorFor(fieldId.paymentAmount(pay.key))}
+                      hint={amountHint(pay.amount) ?? undefined}
+                    />
+                    <button
+                      type="button"
+                      className="remove"
+                      aria-label={`Remove payment ${j + 1} of ${name}`}
+                      disabled={sch.payments.length === 1}
+                      onClick={() => setSchedule(sch.key, { payments: sch.payments.filter((x) => x.key !== pay.key) })}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {total && <p className="field__hint">In all, {dollars(total)}.</p>}
+            <button type="button" className="add" onClick={() => onDraft(addPayment(draft, sch.key))}>
+              Add a payment
+            </button>
+            <button type="button" className="remove" onClick={() => onDraft({ ...draft, schedules: draft.schedules.filter((s) => s.key !== sch.key) })}>
+              Remove {name}
+            </button>
+          </fieldset>
+        );
+      })}
+      <button type="button" className="add" onClick={() => onDraft(addSchedule(draft))}>
+        {draft.schedules.length === 0 ? "Add a payment schedule" : "Add another schedule"}
+      </button>
+      {error && <p className="field-error">{error}</p>}
+    </div>
   );
 }
 

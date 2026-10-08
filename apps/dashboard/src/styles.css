@@ -282,3 +282,15 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
   .shares-grid tbody th { white-space: normal; max-width: 7rem; }
   .shares-grid input { width: 6.5rem; }
 }
+
+/* The Exit terms card's parts: the carve-out and the payment schedules, each under a rule (M5l). */
+.exit-terms__part { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.exit-terms__part:focus { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+/* Paid over time (M5l): each payment's takes, and X8's warning where a payment lowers a running total. */
+.payments + .payments { margin-top: 24px; }
+.payments h3 { margin: 16px 0 8px; }
+.payments__amount { display: block; font-weight: 400; color: var(--muted); }
+.payments__lowered { color: var(--error); font-weight: 600; }
+.payments__warning { margin: 8px 0 12px; }
+.rounds__terms { margin: 12px 0 0; color: var(--muted); }

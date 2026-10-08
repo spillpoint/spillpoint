@@ -55,6 +55,7 @@ const pick = (selector, index, value) => `(() => {
 const clickAll = (selector) => `document.querySelectorAll(${JSON.stringify(selector)}).forEach((e) => e.click())`;
 const HOLDERS = "section[aria-labelledby=edit-holders-heading] input";
 const SERIES = "fieldset.series input";
+const SERIES_NAME = "fieldset.series input[id^=edit-class-]";
 /** Case 6b, built from scratch in the editor, click by click. */
 const BUILD_6B = [
   choose("Start from", "scratch"),
@@ -66,12 +67,13 @@ const BUILD_6B = [
   fill(HOLDERS, 1, "Founder B"),
   fill(HOLDERS, 2, "Investor X"),
   fill(HOLDERS, 3, "Investor Y"),
+  // By id, not position: a series' fields have grown since M3 (dividends, M5k2).
   click("Add a preferred series"),
-  fill(SERIES, 1, "1"),
-  fill(SERIES, 0, "Seed-1 Preferred"),
+  fill("input[id^=edit-oip-]", 0, "1"),
+  fill(SERIES_NAME, 0, "Seed-1 Preferred"),
   click("Add a preferred series"),
-  fill(SERIES, 5, "3"),
-  fill(SERIES, 4, "Seed-2 Preferred"),
+  fill("input[id^=edit-oip-]", 1, "3"),
+  fill(SERIES_NAME, 1, "Seed-2 Preferred"),
   fill('[aria-label="Founder A, Common Stock"]', 0, "6,000,000"),
   fill('[aria-label="Founder B, Common Stock"]', 0, "2,000,000"),
   fill('[aria-label="Investor X, Seed-1 Preferred"]', 0, "1,000,000"),
@@ -260,6 +262,28 @@ const SHOTS = {
     clip: ["ol.breakpoints > li:nth-child(1)", "ol.breakpoints > li:nth-child(2)"],
     quality: 50,
   },
+  // M5l: the sale's terms, and what each payment pays.
+  "m5l-exit-terms": {
+    width: 1100,
+    height: 900,
+    steps: [click("Cap table"), click("Add a carve-out"), fill("[id^=edit-carve-percent-]", 0, "5"), pickText("[id^=edit-carve-holder-]", 0, "Dev Patel")],
+    clip: ["section[aria-labelledby=edit-exit-terms-heading]"],
+    quality: 50,
+  },
+  "m5l-paid-over-time": {
+    width: 1100,
+    height: 900,
+    steps: [
+      ...BUILD_6B,
+      click("Add a payment schedule"),
+      fill("input[id^=edit-payment-amount-]", 0, "29M"),
+      fill("input[id^=edit-payment-amount-]", 1, "2M"),
+      click("Payouts"),
+    ],
+    clip: ["section[aria-labelledby=paid-over-time-heading]"],
+    quality: 50,
+  },
+  "m5l-rounds-terms": { width: 1100, height: 900, steps: [click("Rounds")], clip: ["section[aria-labelledby=rounds-heading]"], quality: 50 },
   "m4j-error": {
     width: 1100,
     height: 900,

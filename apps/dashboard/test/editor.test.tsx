@@ -308,7 +308,7 @@ describe("SAFEs and notes still outstanding (M5k)", () => {
     type(within(safe).getByLabelText("Valuation cap ($)"), "10M");
     expect(status()).toMatch(/Every change updates the payouts\.$/);
     // No sale date: a SAFE accrues nothing, so none is asked for.
-    expect(screen.queryByLabelText("Date of the sale")).toBeNull();
+    expect((screen.getByLabelText("Date of the sale") as HTMLInputElement).value).toBe("");
     paysAsExpected("edge-12-unconverted-safe");
     // A SAFE holds no shares, so it has none of the company; the class view names it as the reasons do.
     fireEvent.click(screen.getByRole("button", { name: "By class" }));
