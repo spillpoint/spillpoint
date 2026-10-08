@@ -1,0 +1,87 @@
+{
+  "file_type": "OCF_STOCK_CLASSES_FILE",
+  "items": [
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "common",
+      "name": "Common Stock",
+      "class_type": "COMMON",
+      "default_id_prefix": "CS-",
+      "initial_shares_authorized": "20000000",
+      "votes_per_share": "1",
+      "seniority": "1",
+      "par_value": {
+        "amount": "0.0001",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "series_a",
+      "name": "Series A Preferred",
+      "class_type": "PREFERRED",
+      "default_id_prefix": "PS-",
+      "initial_shares_authorized": "5000000",
+      "votes_per_share": "1",
+      "seniority": "2",
+      "price_per_share": {
+        "amount": "2.00",
+        "currency": "USD"
+      },
+      "liquidation_preference_multiple": "1",
+      "participation_cap_multiple": "1",
+      "conversion_rights": [
+        {
+          "type": "STOCK_CLASS_CONVERSION_RIGHT",
+          "converts_to_stock_class_id": "common",
+          "conversion_mechanism": {
+            "type": "RATIO_CONVERSION",
+            "conversion_price": {
+              "amount": "2.00",
+              "currency": "USD"
+            },
+            "ratio": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "rounding_type": "NORMAL"
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "series_b",
+      "name": "Series B Preferred",
+      "class_type": "PREFERRED",
+      "default_id_prefix": "PS-",
+      "initial_shares_authorized": "5000000",
+      "votes_per_share": "1",
+      "seniority": "3",
+      "price_per_share": {
+        "amount": "4.00",
+        "currency": "USD"
+      },
+      "liquidation_preference_multiple": "1",
+      "participation_cap_multiple": "1",
+      "conversion_rights": [
+        {
+          "type": "STOCK_CLASS_CONVERSION_RIGHT",
+          "converts_to_stock_class_id": "common",
+          "conversion_mechanism": {
+            "type": "RATIO_CONVERSION",
+            "conversion_price": {
+              "amount": "4.00",
+              "currency": "USD"
+            },
+            "ratio": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "rounding_type": "NORMAL"
+          }
+        }
+      ]
+    }
+  ]
+}

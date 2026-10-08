@@ -122,4 +122,5 @@ An import reads an Open Cap Format package into a cap table, as `docs/ASSUMPTION
 2. **Set aside** (`ocf-02-not-needed`): one small file for each kind of object read and set aside, because it doesn't change payouts (legends, vesting, valuations, financings, documents, acceptances, authorized shares, stakeholder changes), each added to Larkspur's package. Plus a manifest at OCF 1.0.0, read as before.
 3. **Refused** (`ocf-03-refused`): one small file for each refusal, each added to Larkspur's package: 22 where it's valid OCF that spillpoint doesn't model yet, and 13 where the files disagree with each other or with OCF.
 4. **To fill in** (`ocf-04-to-fill`): valid OCF that leaves a term open, each added to Larkspur's package: a SAFE whose cap gives no pre- or post-money timing, and a note whose capitalization rules don't say what its cap divides by.
+5. **Locked cases in OCF** (`ocf-05` to `ocf-10`): edge cases 4, 5a, 7, 8, 12b and 13a, each written by hand as an OCF package whose import is the locked case's cap table, so the locked payouts and breakpoints are its own. Case 08 names its warrant class as the engine does, where edge case 8 named it by hand.
 

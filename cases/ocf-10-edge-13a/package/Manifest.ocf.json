@@ -1,0 +1,49 @@
+{
+  "file_type": "OCF_MANIFEST_FILE",
+  "ocf_version": "1.2.0",
+  "as_of": "2024-01-01",
+  "generated_at": "2024-01-01T12:00:00Z",
+  "issuer": {
+    "object_type": "ISSUER",
+    "id": "issuer",
+    "legal_name": "Edge Thirteen, Inc.",
+    "formation_date": "2021-12-01",
+    "country_of_formation": "US",
+    "country_subdivision_of_formation": "DE"
+  },
+  "stakeholders_files": [
+    {
+      "filepath": "Stakeholders.ocf.json"
+    }
+  ],
+  "stock_classes_files": [
+    {
+      "filepath": "StockClasses.ocf.json"
+    }
+  ],
+  "stock_plans_files": [
+    {
+      "filepath": "StockPlans.ocf.json"
+    }
+  ],
+  "transactions_files": [
+    {
+      "filepath": "Transactions.ocf.json"
+    }
+  ],
+  "stock_legend_templates_files": [
+    {
+      "filepath": "StockLegends.ocf.json"
+    }
+  ],
+  "vesting_terms_files": [
+    {
+      "filepath": "VestingTerms.ocf.json"
+    }
+  ],
+  "valuations_files": [
+    {
+      "filepath": "Valuations.ocf.json"
+    }
+  ]
+}

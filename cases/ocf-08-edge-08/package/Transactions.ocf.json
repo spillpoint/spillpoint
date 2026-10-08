@@ -1,0 +1,86 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-01",
+      "date": "2022-01-10",
+      "security_id": "sec-01",
+      "custom_id": "S-1",
+      "stakeholder_id": "founder_a",
+      "stock_class_id": "common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "6000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-02",
+      "date": "2022-01-10",
+      "security_id": "sec-02",
+      "custom_id": "S-2",
+      "stakeholder_id": "founder_b",
+      "stock_class_id": "common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "2000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-03",
+      "date": "2023-06-30",
+      "security_id": "sec-03",
+      "custom_id": "S-3",
+      "stakeholder_id": "investor_x",
+      "stock_class_id": "seed",
+      "share_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "quantity": "2000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-04",
+      "date": "2023-09-01",
+      "security_id": "war-04",
+      "custom_id": "W-1",
+      "stakeholder_id": "lender_l",
+      "quantity": "200000",
+      "exercise_price": {
+        "amount": "0.50",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2033-09-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-04-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "seed",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "200000"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

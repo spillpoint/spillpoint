@@ -227,6 +227,26 @@ describe.each(ocfPackageDirs)("OCF case %s", (dir) => {
     expect([...holders].filter((h) => !holding.has(h))).toEqual([]);
   });
 
+  // 04b: a locked case written in OCF imports to that case's cap table, up to the ids the import names its own way.
+  const locked = (expected as { locked_case?: string }).locked_case;
+  if (locked) {
+    it(`imports to ${locked}'s cap table`, () => {
+      const renamed = (expected as { renamed?: Record<string, string> }).renamed ?? {};
+      const name = (id: string) => renamed[id] ?? id;
+      const ct = (readJson<{ exit: { cap_table: Json & { securities: Json[]; positions: { security: string }[] } } }>(locked, "inputs.json")).exit.cap_table;
+      const theirs = {
+        ...ct,
+        conversion_groups: ct.conversion_groups ?? [],
+        securities: ct.securities.map((s) => ({ ...s, id: name(s.id as string) })),
+        positions: ct.positions.map((p) => ({ ...p, security: name(p.security) })),
+      };
+      // A renamed class keeps every term; only its name differs, so names aren't compared there.
+      const imported = new Set(Object.values(renamed));
+      const unnamed = (securities: Json[]) => securities.map((s) => (imported.has(s.id as string) ? { ...s, name: undefined } : s));
+      expect({ ...result.cap_table, securities: unnamed(result.cap_table.securities) }).toEqual({ ...theirs, securities: unnamed(theirs.securities) });
+    });
+  }
+
   it("leaves blank exactly the terms it lists to fill in", () => {
     const ct = result.cap_table;
     const blanks = [

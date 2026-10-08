@@ -1,0 +1,92 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-01",
+      "date": "2022-01-10",
+      "security_id": "sec-01",
+      "custom_id": "S-1",
+      "stakeholder_id": "founder_a",
+      "stock_class_id": "common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "6000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-02",
+      "date": "2022-01-10",
+      "security_id": "sec-02",
+      "custom_id": "S-2",
+      "stakeholder_id": "founder_b",
+      "stock_class_id": "common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "3000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-03",
+      "date": "2022-06-01",
+      "security_id": "opt-03",
+      "custom_id": "O-3",
+      "stakeholder_id": "employee_c",
+      "stock_plan_id": "plan",
+      "compensation_type": "OPTION_NSO",
+      "quantity": "500000",
+      "exercise_price": {
+        "amount": "5.00",
+        "currency": "USD"
+      },
+      "expiration_date": "2032-06-01",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-04",
+      "date": "2023-01-01",
+      "security_id": "safe_x",
+      "custom_id": "SAFE-1",
+      "stakeholder_id": "investor_x",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "1000000",
+        "currency": "USD"
+      },
+      "seniority": 1,
+      "security_law_exemptions": [],
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_timing": "POST_MONEY",
+              "conversion_valuation_cap": {
+                "amount": "10000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20",
+              "exit_multiple": "1"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

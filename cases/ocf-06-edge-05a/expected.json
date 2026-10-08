@@ -1,0 +1,137 @@
+{
+  "case": "ocf-06-edge-05a",
+  "worked_by": "hand (DERIVATION.md)",
+  "locked_case": "edge-05a-stacked",
+  "result": {
+    "as_of": "2024-01-01",
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "conversion_price": "2",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_b",
+          "name": "Series B Preferred",
+          "kind": "preferred",
+          "original_issue_price": "4",
+          "conversion_price": "4",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ]
+      ],
+      "conversion_groups": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "series_a",
+          "shares": 1000000
+        },
+        {
+          "holder": "investor_y",
+          "security": "series_b",
+          "shares": 1000000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "to_fill": [],
+    "report": {
+      "read": {
+        "ISSUER": 1,
+        "STAKEHOLDER": 4,
+        "STOCK_CLASS": 3,
+        "TX_STOCK_ISSUANCE": 4
+      },
+      "not_needed": {},
+      "notes": [
+        {
+          "code": "no_dividend_field"
+        },
+        {
+          "code": "no_conversion_group_field"
+        },
+        {
+          "code": "no_carve_out_field"
+        },
+        {
+          "code": "no_sale_date_field"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "series_a"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "series_b"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "series_a"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "series_b"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "series_a"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "series_b"
+        }
+      ]
+    }
+  }
+}

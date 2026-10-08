@@ -41,9 +41,9 @@
           "anti_dilution": "none"
         },
         { "id": "options_0.08", "name": "Options ($0.08 strike)", "kind": "option", "strike": "0.08" },
-        { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
+        { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
         { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-        { "id": "warrants_cls-seed_1", "name": "Warrants for Seed Preferred ($1.00 strike)", "kind": "warrant", "strike": "1", "underlying": "cls-seed" }
+        { "id": "warrants_cls-seed_1", "name": "Warrants for Seed Preferred ($1 strike)", "kind": "warrant", "strike": "1", "underlying": "cls-seed" }
       ],
       "seniority": [["cls-series-a"], ["cls-seed"]],
       "conversion_groups": [],

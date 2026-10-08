@@ -1,0 +1,37 @@
+{
+  "file_type": "OCF_STAKEHOLDERS_FILE",
+  "items": [
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "founder_a",
+      "name": {
+        "legal_name": "Founder A"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "founder_b",
+      "name": {
+        "legal_name": "Founder B"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "investor_x",
+      "name": {
+        "legal_name": "Investor X"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "lender_l",
+      "name": {
+        "legal_name": "Lender L"
+      },
+      "stakeholder_type": "INSTITUTION"
+    }
+  ]
+}
