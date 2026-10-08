@@ -353,20 +353,16 @@ def ev_priced_round(ct, ev):
     safes = list(ct.safes) if ev.get("convert_safes", True) else []
     notes = list(ct.notes) if ev.get("convert_notes", False) else []
     post_safes = [f for f in safes if f["post_money_cap"] is not None]
-    pre_instruments = [f for f in safes if f["pre_money_cap"] is not None] + notes
-    if post_safes and pre_instruments:
-        # A post-money SAFE's Company Capitalization counts every other
-        # converting security, which itself depends on the round: owed before
-        # release (ASSUMPTIONS.md, "Owed before release").
-        raise ValueError(
-            f"round {ev['id']}: a post-money SAFE converting alongside notes or pre-money SAFEs is not supported by the reference yet"
-        )
 
     # Post-money SAFE Company Capitalization (R4). Each capped SAFE owns
-    # purchase ÷ cap of it, and the SAFEs are counted inside it, so
-    # CC = (O + U0) ÷ (1 − Σ purchase/cap).
+    # purchase ÷ cap of it, and the SAFEs are counted inside it. The YC text
+    # counts every Converting Security, so the shares the notes and pre-money
+    # SAFEs converting alongside it receive count too (R24, case 21b, 21c; the
+    # 0.3.0 plan's answer 2): CC = (O + U0 + their shares) ÷ (1 − Σ purchase/cap).
+    # Their shares can depend on the round's price, so CC is worked out inside
+    # the solve, below. The notes and pre-money SAFEs leave every SAFE and note
+    # out of their own bases, as before (R23, R24).
     own = sum((f["purchase_amount"] / f["post_money_cap"] for f in post_safes), Fraction(0))
-    company_cap = (o + u0) / (1 - own) if post_safes else None
 
     # A note's pre-money cap divides by the share count just before the round,
     # as at exit (X10's conversion_base): the pool as it stood before this
@@ -388,12 +384,24 @@ def ev_priced_round(ct, ev):
     def pool_at(x, top_up):
         return target * x if top_up else u0
 
-    def cap_price(kind, f, x, top_up):
+    def is_post(k, f):
+        return k == "safe" and f["post_money_cap"] is not None
+
+    def company_cap_at(x, top_up, branch):
+        """R4's Company Capitalization, with the other converting securities' shares, under these branches."""
+        others = Fraction(0)
+        for b, (k, f, amount) in zip(branch, converting):
+            if is_post(k, f):
+                continue
+            others += amount / (cap_price(k, f, x, top_up) if b == "cap" else (post_val / x) * (1 - f["discount"]))
+        return (o + u0 + others) / (1 - own)
+
+    def cap_price(kind, f, x, top_up, branch=None):
         """The price at the instrument's cap, or None if it has no cap."""
         if kind == "note":
             return None if f["valuation_cap"] is None else f["valuation_cap"] / note_base(f)
         if f["post_money_cap"] is not None:
-            return f["post_money_cap"] / company_cap
+            return f["post_money_cap"] / company_cap_at(x, top_up, branch)
         if f["pre_money_cap"] is not None:
             # YC pre-money SAFE: Company Capitalization counts the stock and
             # options outstanding and the pool, including any increase made in
@@ -401,16 +409,13 @@ def ev_priced_round(ct, ev):
             return f["pre_money_cap"] / (o + pool_at(x, top_up))
         return None
 
-    def safe_price(f):
-        return f["post_money_cap"] / company_cap if f["post_money_cap"] is not None else None
-
     ad_series = [
         sid for sid in after.preferred_ids() if after.securities[sid]["anti_dilution"] != "none"
     ]
 
     solutions = []
     for safe_branch in itertools.product(("cap", "discount"), repeat=len(converting)):
-        if any(b == "cap" and cap_price(k, f, Fraction(1), True) is None for b, (k, f, _) in zip(safe_branch, converting)):
+        if any(b == "cap" and cap_price(k, f, Fraction(1), True, safe_branch) is None for b, (k, f, _) in zip(safe_branch, converting)):
             continue
         for ad_branch, top_up in itertools.product(itertools.product((False, True), repeat=len(ad_series)), (True, False)):
 
@@ -421,7 +426,7 @@ def ev_priced_round(ct, ev):
                 total = o + pool_at(x, top_up) + new
                 for b, (k, f, amount) in zip(safe_branch, converting):
                     if b == "cap":
-                        total += amount / cap_price(k, f, x, top_up)
+                        total += amount / cap_price(k, f, x, top_up, safe_branch)
                     else:
                         total += amount / (price * (1 - f["discount"]))
                 if ad_in_post:
@@ -447,7 +452,7 @@ def ev_priced_round(ct, ev):
             ok = True
             for b, (k, f, _) in zip(safe_branch, converting):
                 disc_price = price * (1 - f["discount"])
-                sp = cap_price(k, f, x, top_up)
+                sp = cap_price(k, f, x, top_up, safe_branch)
                 if b == "cap" and not (sp <= disc_price):
                     ok = False
                 if b == "discount" and sp is not None and not (disc_price < sp):
@@ -552,8 +557,9 @@ def ev_priced_round(ct, ev):
     # SAFE conversions into shadow series, one per distinct conversion price.
     shadow_by_price = {}
     conv = []
+    company_cap = company_cap_at(x, top_up, safe_branch) if post_safes else None
     for b, (k, f, _) in zip(safe_branch[: len(safes)], converting[: len(safes)]):
-        cp = cap_price(k, f, x, top_up) if b == "cap" else price * (1 - f["discount"])
+        cp = cap_price(k, f, x, top_up, safe_branch) if b == "cap" else price * (1 - f["discount"])
         if cp not in shadow_by_price:
             idx = len(shadow_by_price)
             sid = f"{series['id']}_shadow" + ("" if idx == 0 else f"_{idx + 1}")
@@ -594,7 +600,7 @@ def ev_priced_round(ct, ev):
     notes_by_price = {}
     note_conv = []
     for b, (k, f, amount) in zip(safe_branch[len(safes):], converting[len(safes):]):
-        cp = cap_price(k, f, x, top_up) if b == "cap" else price * (1 - f["discount"])
+        cp = cap_price(k, f, x, top_up, safe_branch) if b == "cap" else price * (1 - f["discount"])
         if cp not in notes_by_price:
             idx = len(notes_by_price)
             sid = f"{series['id']}_notes" + ("" if idx == 0 else f"_{idx + 1}")

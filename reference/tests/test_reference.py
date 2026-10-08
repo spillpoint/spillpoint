@@ -287,17 +287,35 @@ class Rounds(unittest.TestCase):
             str(caught.exception),
         )
 
-    def test_post_money_safe_with_a_note_is_refused(self):
-        # A post-money SAFE's Company Capitalization counts every other converting security: owed before release.
-        inputs = json.loads((CASES / "edge-18-pro-rata-with-safe" / "inputs.json").read_text())
-        inputs["holders"].append({"id": "investor_n", "name": "Investor N"})
-        inputs["events"].insert(3, {"id": "note", "date": "2023-05-01", "type": "notes", "notes": [{
-            "id": "note_n", "holder": "investor_n", "principal": "500000", "interest_rate": "0", "interest_method": "simple",
-            "issue_date": "2023-05-01", "valuation_cap": "9000000", "cap_type": "pre_money", "conversion_base": "with_pool",
-            "discount": "0", "repayment_multiple": "1"}]})
-        inputs["events"][-1]["convert_notes"] = True
-        with self.assertRaisesRegex(ValueError, "post-money SAFE converting alongside notes or pre-money SAFEs"):
-            run_case(inputs)
+    def test_post_money_safe_counts_a_note_converting_alongside_it(self):
+        # 900,000 common; Investor S's $100k post-money SAFE capped at $1M; Investor N's $50k note at 0%, capped at $800k
+        # pre-money on 900,000 shares: $0.888889, so 56,250 shares. The SAFE's Company Capitalization counts them, as YC's
+        # "Converting Securities" (R24, case 21b): (900,000 + 56,250) / (1 - 0.1) = 1,062,500, so it gets 106,250 shares,
+        # 10% of it. The round, $500k at $2M pre-money, is priced on 900,000 + 56,250 + 106,250 = 1,062,500 shares plus
+        # the new ones, a fifth of the whole: 1,328,125 shares, $2.5M / 1,328,125 = $1.882353 each.
+        inputs = {
+            "case": "post-money SAFE with a note",
+            "holders": [{"id": h, "name": h} for h in ("a", "s", "n", "y")],
+            "events": [
+                {"id": "founding", "date": None, "type": "issue", "security": dict(COMMON), "issues": [{"holder": "a", "shares": 900_000}]},
+                {"id": "safe", "date": "2023-01-01", "type": "safes", "safes": [
+                    {"id": "safe_s", "holder": "s", "purchase_amount": "100000", "post_money_cap": "1000000", "discount": "0"}]},
+                {"id": "note", "date": "2023-01-01", "type": "notes", "notes": [{
+                    "id": "note_n", "holder": "n", "principal": "50000", "interest_rate": "0", "interest_method": "simple",
+                    "issue_date": "2023-01-01", "valuation_cap": "800000", "cap_type": "pre_money", "conversion_base": "with_pool",
+                    "discount": "0", "repayment_multiple": "1"}]},
+                {"id": "series_a", "date": "2024-01-01", "type": "priced_round",
+                 "series": {"id": "series_a", "name": "Series A", "kind": "preferred", "preference_multiple": "1",
+                            "participation": "non_participating", "cap_multiple": None, "anti_dilution": "none"},
+                 "pre_money": "2000000", "investments": [{"holder": "y", "amount": "500000"}], "convert_notes": True,
+                 "seniority": [["series_a", "series_a_shadow", "series_a_notes"]]},
+            ],
+        }
+        details = run_case(inputs)["cap_tables"][-1]["details"]
+        self.assertEqual(details["company_capitalization"], "1062500")
+        self.assertEqual([c["shares"] for c in details["safe_conversions"]], [106_250])
+        self.assertEqual([c["shares"] for c in details["note_conversions"]], [56_250])
+        self.assertEqual(details["post_money_fully_diluted_solved"], "1328125")
 
     def test_a_safe_has_one_kind_of_cap(self):
         with self.assertRaisesRegex(ValueError, "not both"):

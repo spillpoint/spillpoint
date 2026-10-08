@@ -32,10 +32,16 @@ interface ExpectedTable {
 const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
 /**
- * The 30 cases with events, every one built in full: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends
- * (R30, M5e3), and 24, whose sale carries a carve-out (0.3.0 work, 03a).
+ * The 33 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
+ * sale carries a carve-out (0.3.0 work, 03a), and 21b, 21c and 17i (03c), which the engine refuses until 03g.
  */
-const EXPECTED_ROUND_CASES = 30;
+const EXPECTED_ROUND_CASES = 33;
+/** The 0.3.0 work's round cases the engine refuses until 03g, by the first term it names. 17i also converts a post-money SAFE beside a note. */
+const NOT_YET: Record<string, string> = {
+  "edge-17i-pay-to-play-with-conversions": "post_money_safe_with_pre_money_instruments",
+  "edge-21b-post-money-safe-and-note": "post_money_safe_with_pre_money_instruments",
+  "edge-21c-post-money-and-pre-money-safes": "post_money_safe_with_pre_money_instruments",
+};
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {
@@ -189,11 +195,22 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 30 cases with events", () => {
+  it("is found: 33 cases with events", () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
   });
 
-  describe.each(ROUND_CASES)("%s", (name) => {
+  it.each(Object.entries(NOT_YET))("%s is refused until 03g, naming %s", (name, term) => {
+    let error: unknown;
+    try {
+      buildCapTables(readCaseFile(name, "inputs.json") as Inputs);
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(UnsupportedTermError);
+    expect(error).toMatchObject({ term, milestone: "later" });
+  });
+
+  describe.each(ROUND_CASES.filter((name) => !(name in NOT_YET)))("%s", (name) => {
     const inputs = readCaseFile(name, "inputs.json") as Inputs;
     const expected = (readCaseFile(name, "expected.json") as { cap_tables: ExpectedTable[] }).cap_tables;
 

@@ -7,7 +7,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { buildCapTables } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import type { Rounds } from "../src/rounds.ts";
@@ -121,10 +120,15 @@ describe("SAFEs and notes, read from the events as typed (M5k)", () => {
     return d.events.map((_, k) => convertibles(d).filter((c) => at(c.event) <= k && at(c.convertedBy) > k).map(rowId).sort());
   };
 
-  it.each(ROUND_CASES)("%s: the SAFEs and notes outstanding after each event are the ones the engine builds", (name) => {
+  // Against the locked case's own record of each cap table, from the reference calculator: independent of the
+  // engine, and there for the cases the engine reads only from 03g.
+  it.each(ROUND_CASES)("%s: the SAFEs and notes outstanding after each event are the ones the locked case records", (name) => {
     const rounds = roundsOf(name);
-    const engine = buildCapTables({ holders: rounds.holders, events: rounds.events }).map((t) => [...t.unconvertedSafes, ...t.unconvertedNotes].map((x) => x.id).sort());
-    expect(predicted(draftFromRounds(rounds))).toEqual(engine);
+    const expected = JSON.parse(readFileSync(resolve(casesDir, name, "expected.json"), "utf8")) as {
+      cap_tables: { cap_table: { unconverted_safes?: { id: string }[]; unconverted_notes?: { id: string }[] } }[];
+    };
+    const recorded = expected.cap_tables.map((t) => [...(t.cap_table.unconverted_safes ?? []), ...(t.cap_table.unconverted_notes ?? [])].map((x) => x.id).sort());
+    expect(predicted(draftFromRounds(rounds))).toEqual(recorded);
   });
 
   it("follows each round's choice: SAFEs convert unless it says not to, notes only when it says so", () => {
