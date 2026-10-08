@@ -34,18 +34,9 @@ const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json"
 /**
  * The 39 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
  * sale carries a carve-out (0.3.0 work, 03a), 21b, 21c, 17i (03c) and 21d (03c2), which the engine builds since 03g,
- * and 16g, 16h, 16i (03d), 16j and 17j (03d2), refused until 03h.
+ * and 16g, 16h, 16i (03d), 16j and 17j (03d2), since 03h. Every one is built.
  */
 const EXPECTED_ROUND_CASES = 39;
-/**
- * The 0.3.0 work's round cases the engine refuses until 03h, by the first term it names.
- */
-const NOT_YET: Record<string, string> = {
-  "edge-16g-safe-converts-in-a-down-round": "anti_dilution_with_conversions",
-  "edge-16h-safe-conversion-exempt": "anti_dilution_exempts_conversions",
-  "edge-16j-note-and-safe-from-before-the-seed": "anti_dilution_with_conversions",
-  "edge-17j-pay-to-play-anti-dilution-with-a-safe": "anti_dilution_with_conversions",
-};
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {
@@ -170,6 +161,12 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
       if (e.B != null) expectClose(x.b!, e.B, `${what} B`);
       else expect(x.b, `${what} B`).toBeNull();
       expectClose(x.newConversionRatio, e.new_conversion_ratio, `${what} new conversion ratio`);
+      // R25: with conversions, each piece's price, whether it counted, and its shares in A when it counted there instead.
+      const pieces = (e.pieces ?? null) as { piece: string; price: string; counted: boolean; in_a?: number }[] | null;
+      expect(x.pieces?.map((p) => [p.piece, p.counted, p.inA?.toNumber() ?? null]) ?? null, `${what} pieces`).toEqual(
+        pieces && pieces.map((p) => [p.piece, p.counted, p.in_a ?? null]),
+      );
+      x.pieces?.forEach((p, j) => expectClose(p.price, pieces![j]!.price, `${what} ${p.piece} price`));
     });
     const p2p = ed.pay_to_play as Record<string, unknown> | undefined;
     if (p2p == null) expect(d.payToPlay, `${at} pay-to-play`).toBeNull();
@@ -203,27 +200,7 @@ describe("every locked round case", () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
   });
 
-  it.each(Object.entries(NOT_YET))("%s is refused until 03h, naming %s", (name, term) => {
-    let error: unknown;
-    try {
-      buildCapTables(readCaseFile(name, "inputs.json") as Inputs);
-    } catch (e) {
-      error = e;
-    }
-    expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term, milestone: "later" });
-  });
-
-  // R25 before the 0.3.0 plan's answer 3c adjusted a series only when the round's own price was below its conversion
-  // price, so the engine builds 16i without refusing it, and leaves the Seed unadjusted: the round is priced above it.
-  // The locked case, testing the note's discounted conversion at its own price, adjusts it. The engine follows from 03h.
-  const OLD_RULE = "edge-16i-discounted-note-in-an-up-round";
-  it(`${OLD_RULE} is built under the old rule until 03h: the Seed isn't adjusted, where the case adjusts it to $0.994808`, () => {
-    const seed = buildCapTables(readCaseFile(OLD_RULE, "inputs.json") as Inputs).at(-1)!.capTable.securities.find((s) => s.id === "seed");
-    expect(seed?.kind === "preferred" && seed.conversionPrice.toString()).toBe("1");
-  });
-
-  describe.each(ROUND_CASES.filter((name) => !(name in NOT_YET) && name !== OLD_RULE))("%s", (name) => {
+  describe.each(ROUND_CASES)("%s", (name) => {
     const inputs = readCaseFile(name, "inputs.json") as Inputs;
     const expected = (readCaseFile(name, "expected.json") as { cap_tables: ExpectedTable[] }).cap_tables;
 
@@ -531,8 +508,11 @@ describe("anti-dilution beyond the cases (M4e)", () => {
     expectClose(series.postMoneyFullyDilutedSolved, "2957629360296304074074/150944435388889", "post-money fully diluted, solved");
   });
 
-  it("refuses a round that converts a SAFE and triggers anti-dilution, until a case settles it", () => {
-    const inputs = case16a();
+  it.each([
+    ["edge-16b-narrow-based", /^.*Narrow-based anti-dilution on series_a in a round that converts SAFEs or notes \(R25\)/],
+    ["edge-16c-full-ratchet", /^.*Full-ratchet anti-dilution on series_a in a round that converts SAFEs or notes \(R25\)/],
+  ])("%s with a SAFE converting is refused, as later (R25: which price a ratchet takes, and a narrow A, are unsettled)", (name, message) => {
+    const inputs = readCaseFile(name, "inputs.json") as { holders: { id: string; name: string }[]; events: Record<string, unknown>[] };
     inputs.holders.push({ id: "investor_s", name: "Investor S" });
     inputs.events.splice(4, 0, { id: "safe", date: "2024-06-01", type: "safes", safes: [{ id: "safe_s", holder: "investor_s", purchase_amount: "500000", post_money_cap: "30000000" }] });
     let error: unknown;
@@ -543,7 +523,64 @@ describe("anti-dilution beyond the cases (M4e)", () => {
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
     expect(error).toMatchObject({ term: "anti_dilution_with_conversions", milestone: "later" });
-    expect((error as Error).message).toMatch(/converts SAFEs or notes and triggers series_a's anti-dilution/);
+    expect((error as Error).message).toMatch(message);
+  });
+
+  // A conversion counted in a series' A at its discount, with the adjustment in the price (R10), would make the price
+  // the root of a quadratic. It is refused only where the series is actually adjusted (Jordan, 03d review), as the
+  // reference's unit tests check on the same inputs.
+  const lastRound = (inputs: { events: Record<string, unknown>[] }, pre: string, amount: string) =>
+    Object.assign(inputs.events.at(-1)!, { pre_money: pre, investments: [{ holder: "investor_y", amount }] });
+  const pricedRound = (inputs: unknown) => {
+    const d = buildCapTables(inputs).at(-1)!.details;
+    if (d.kind !== "priced_round") throw new Error("a priced round");
+    return d;
+  };
+  const refusedAs = (inputs: unknown) => {
+    try {
+      buildCapTables(inputs);
+    } catch (e) {
+      return e;
+    }
+    return null;
+  };
+
+  it("refuses 16h's exempt SAFE at its discount where the Seed is adjusted, and builds it where nothing adjusts the Seed", () => {
+    const inputs = readCaseFile("edge-16h-safe-conversion-exempt", "inputs.json") as { events: Record<string, unknown>[] };
+    ((inputs.events[2]!.safes as Record<string, unknown>[])[0]!).post_money_cap = null;
+    ((inputs.events[2]!.safes as Record<string, unknown>[])[0]!).discount = "0.2";
+    expect(refusedAs(inputs)).toMatchObject({ term: "discounted_conversion_in_anti_dilution_a", milestone: "later" });
+    // $3,000,000 at a $12,000,000 pre-money valuation: x = 10,000,000 ÷ (0.8 − 1/12), $1.075 a share. The SAFE
+    // converts at $0.86, below $1.00, but exempt, so nothing adjusts the Seed.
+    lastRound(inputs, "12000000", "3000000");
+    const d = pricedRound(inputs);
+    expectClose(d.price, "1.075", "price");
+    expectClose(d.safeConversions[0]!.conversionPrice, "0.86", "the SAFE's price");
+    expect(d.antiDilution).toEqual([]);
+  });
+
+  it("refuses 16j's note from before the Seed at its discount where the Seed is adjusted, and counts it in A otherwise (3d)", () => {
+    const inputs = readCaseFile("edge-16j-note-and-safe-from-before-the-seed", "inputs.json") as { events: Record<string, unknown>[] };
+    ((inputs.events[1]!.notes as Record<string, unknown>[])[0]!).valuation_cap = null;
+    expect(refusedAs(inputs)).toMatchObject({ term: "discounted_conversion_in_anti_dilution_a", milestone: "later" });
+    // $3,000,000 at a $13,500,000 pre-money valuation: x = 11,500,000 ÷ (1 − 2/11 − 1/30), $259/230 a share. The note
+    // converts at 0.8 × that, $518/575, below $1.00, but it was issued before the Seed, so it isn't a piece.
+    lastRound(inputs, "13500000", "3000000");
+    const d = pricedRound(inputs);
+    expectClose(d.price, "259/230", "price");
+    expectClose(d.noteConversions[0]!.conversionPrice, "518/575", "the note's price");
+    expect(d.antiDilution).toEqual([]);
+    // Issued after the Seed instead, the note is a piece of the round and adjusts it on its own, as in 16i, while the
+    // SAFE from before the Seed still counts in its A at 1,500,000 shares: A = 11,500,000, B = $440,000 ÷ $1.00.
+    const [founding, note, safe, seed, seriesA] = inputs.events;
+    inputs.events = [founding!, safe!, seed!, note!, seriesA!];
+    const [seedAdjusted] = pricedRound(inputs).antiDilution;
+    expect(seedAdjusted!.pieces!.map((x) => [x.piece, x.counted, x.inA?.toNumber() ?? null])).toEqual([
+      ["new money", false, null],
+      ["safe_s", false, 1_500_000],
+      ["note_n", true, null],
+    ]);
+    expect([seedAdjusted!.a!.toString(), seedAdjusted!.b!.toString()]).toEqual(["11500000", "440000"]);
   });
 
   it("refuses a series that names the pool in A in a round that leaves it out (C10)", () => {
@@ -704,20 +741,13 @@ describe("notes beyond the cases (M4g)", () => {
     expect(refusal(inputs)).toMatchObject({ message: "inputs.events[4].date: expected a date as YYYY-MM-DD" });
   });
 
-  it("refuses a note converting in a down round until 03h, and counts the table after a pay-to-play conversion in its base (R19, answer 4)", () => {
-    const down = readCaseFile("edge-16a-broad-based", "inputs.json") as Case;
-    down.holders.push({ id: "investor_n", name: "Investor N" });
-    down.events.splice(4, 0, {
+  it("counts the table after a pay-to-play conversion in a converting note's base (R19, answer 4)", () => {
+    const payToPlay = readCaseFile("edge-17a-pay-to-play-priced-after", "inputs.json") as Case;
+    payToPlay.holders.push({ id: "investor_n", name: "Investor N" });
+    payToPlay.events.splice(4, 0, {
       id: "note", date: "2024-06-01", type: "notes",
       notes: [{ id: "note_n", holder: "investor_n", principal: "500000", interest_rate: "0.06", issue_date: "2024-06-01", valuation_cap: "20000000", conversion_base: "with_pool", discount: "0.2", repayment_multiple: "2" }],
     });
-    down.events.at(-1)!.convert_notes = true;
-    down.events.at(-1)!.seniority = [["series_b", "series_b_notes"], ["series_a"]];
-    expect(refusal(down)).toMatchObject({ term: "anti_dilution_with_conversions", milestone: "later" });
-
-    const payToPlay = readCaseFile("edge-17a-pay-to-play-priced-after", "inputs.json") as Case;
-    payToPlay.holders.push({ id: "investor_n", name: "Investor N" });
-    payToPlay.events.splice(4, 0, down.events[4]!);
     payToPlay.events.at(-1)!.convert_notes = true;
     // 17a's Investor W converts its 800,000 Series A to 80,000 common first, so the note's base, with the pool, is
     // 10,000,000 − 800,000 + 80,000 = 9,280,000 (as in 17e).

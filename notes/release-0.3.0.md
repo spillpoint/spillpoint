@@ -19,7 +19,14 @@ The items owed before release, and the carve-out as a term of the sale. The vers
 - **A post-money SAFE converting beside notes or other SAFEs** (03g, cases 21b–21d): its Company Capitalization counts their exact conversion shares, before rounding down, solved together with the round's price (YC's Converting Securities). Before 0.3.0, beside a note or a pre-money SAFE, this was refused, as `post_money_safe_with_pre_money_instruments`.
 - **A pay-to-play round that also converts SAFEs or notes** (03g, case 17i): a SAFE's Company Capitalization and a note's base count the cap table the round is priced on, after the conversion by default, before it under the toggle. Before 0.3.0 this was refused, as `pay_to_play_with_conversions`.
 
-*To come:* 03h, conversions in a round that triggers anti-dilution (16g–16j, 17j); 03i, the page.
+- **SAFEs and notes converting in a round that triggers anti-dilution** (03h, cases 16g–16j and 17j):
+  - **Each conversion is a piece of the round,** tested at the price it converts at, as the new money is at the round's price. A series is adjusted when any piece is priced below its conversion price, and only those pieces count in B and C: what was paid for them (the new money's cash, a SAFE's purchase amount, a note's principal plus interest) and their shares.
+  - **A conversion counts in A instead,** at the shares it receives, when the round exempts conversions (the new round field `anti_dilution_exempts_conversions`) or when the SAFE or note was issued before the series.
+  - **With pay-to-play,** the conversion comes first, as before (R21), and only the preferred that remains is adjusted.
+  - **Each adjustment reports its pieces** (`AntiDilutionAdjustment.pieces`).
+  - Before 0.3.0 every such round was refused, as `anti_dilution_with_conversions`.
+
+*To come:* 03i, the page.
 
 ## Changed answers
 
@@ -35,7 +42,12 @@ Inputs that gave one answer in 0.2.0 and give another in 0.3.0:
 ## New in the API
 
 - **`exit.carve_out`** (03e): see above.
+- **`anti_dilution_exempts_conversions`** on a priced round (03h): see above.
+- **`AntiDilutionAdjustment.pieces`** (03h): each piece of the round, its price, whether it counted, and its shares in A when it counted there instead. Null when nothing converts. A new exported type, `AntiDilutionPiece`.
+- **`AntiDilutionAdjustment.a`** (03h) counts the conversions that go in A.
 
 ## Still refused
 
-The engine README's list of terms refused as `"later"` loses, in 03e, a SAFE or a note with no cap beside capped participating preferred, and in 03g, a post-money SAFE beside notes or pre-money SAFEs and a pay-to-play round that converts SAFEs or notes. 03h narrows its anti-dilution line to what stays refused (`docs/ASSUMPTIONS.md`, "Later").
+The engine README's list of terms refused as `"later"` loses, in 03e, a SAFE or a note with no cap beside capped participating preferred, and in 03g, a post-money SAFE beside notes or pre-money SAFEs and a pay-to-play round that converts SAFEs or notes. In 03h its anti-dilution line narrows to what stays refused (`docs/ASSUMPTIONS.md`, "Later"):
+- full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes, still `anti_dilution_with_conversions`
+- a SAFE or note at its discount counted in a series' A, in a round that adjusts that series with the adjustment shares in its price, `discounted_conversion_in_anti_dilution_a` (new)

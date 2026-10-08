@@ -97,9 +97,14 @@ function show(t: CapTableAfterEvent): void {
       console.log(`Anti-dilution, ${a.series} (${rules[a.rule]}): conversion price $${a.cp1.toFixed(10)} → $${a.cp2.toFixed(10)}${rounded}, ratio ${a.newConversionRatio.toFixed(10)}`);
       console.log(
         a.a && a.b
-          ? `  A ${grouped(a.a)}, B ${a.b.toFixed(4).replace(/\B(?=(\d{3})+(?!\d)\.)/g, ",")} ($${grouped(a.b.times(a.cp1))} paid ÷ CP1), C ${grouped(a.c)} new shares`
+          ? `  A ${grouped(a.a)}, B ${a.b.toFixed(4).replace(/\B(?=(\d{3})+(?!\d)\.)/g, ",")} ($${grouped(a.b.times(a.cp1))} paid ÷ CP1), C ${grouped(a.c)} shares`
           : `  CP2 is the round's price; C ${grouped(a.c)} new shares`,
       );
+      // R25: with conversions, each piece at its own price, and where it went.
+      for (const p of a.pieces ?? []) {
+        const where = p.inA ? `in A, ${grouped(p.inA)} shares (exempt, or issued before ${a.series})` : p.counted ? "below CP1: counted in B and C" : "not below CP1: left out";
+        console.log(`  piece ${p.piece} at $${p.price.toFixed(6)}: ${where}`);
+      }
     }
     for (const c of d.noteConversions) {
       console.log(
