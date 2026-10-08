@@ -21,7 +21,9 @@ def build(inputs):
     for h in inputs["holders"]:
         ct.add_holder(h["id"], h["name"])
     out = []
-    for ev in inputs["events"]:
+    for i, ev in enumerate(inputs["events"]):
+        # Which event issued each series, SAFE and note: answer 3d asks which came first.
+        ct.event_no = i
         handler = HANDLERS[ev["type"]]
         details = handler(ct, ev) or {}
         ct.validate()
@@ -60,12 +62,14 @@ def ev_issue_percent(ct, ev):
 def ev_safes(ct, ev):
     for f in ev["safes"]:
         ct.safes.append(safe_from_json(f))
+        ct.order[f["id"]] = ct.event_no
 
 
 def ev_notes(ct, ev):
     """Convertible notes, outstanding until a round converts them (convert_notes) or the company is sold (C9)."""
     for n in ev["notes"]:
         ct.notes.append(note_from_json(n))
+        ct.order[n["id"]] = ct.event_no
 
 
 def ev_create_pool(ct, ev):
@@ -147,7 +151,7 @@ def _anti_dilution_a(ct, sid, rule, include_pool_in_a):
     return None
 
 
-def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, include_pool_in_a):
+def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, include_pool_in_a, extra_a=0):
     """CP1 ÷ CP2 for one series, as a function of the round's terms.
 
     NVCA weighted average: CP2 = CP1 × (A + B) ÷ (A + C)
@@ -164,9 +168,35 @@ def _anti_dilution_factor(ct, sid, rule, new_shares, consideration, price, inclu
         return cp1 / price
     if rule not in ("broad_based", "narrow_based"):
         raise ValueError(rule)
-    a = _anti_dilution_a(ct, sid, rule, include_pool_in_a)
+    a = _anti_dilution_a(ct, sid, rule, include_pool_in_a) + extra_a
     b = consideration / cp1
     return (a + new_shares) / (a + b)
+
+
+def _consistent_root(g, consistent, lo):
+    """Whether g has a root where `consistent` holds, searched from lo to 10,000 × lo.
+
+    Only for the branches that can't be solved exactly (a rational g, at most a quadratic's worth of roots): it
+    brackets each sign change on a fine geometric grid and narrows it by bisection, then asks whether the branch's
+    choices hold there. It decides only whether to refuse, never an answer.
+    """
+    start = float(max(lo, 1))
+    xs = [Fraction(start * 1.001**k).limit_denominator(1000) for k in range(9300)]
+    vals = [g(x) for x in xs]
+    for (a, ga), (b, gb) in zip(zip(xs, vals), zip(xs[1:], vals[1:])):
+        if ga == 0 and consistent(a):
+            return True
+        if (ga < 0) != (gb < 0):
+            for _ in range(60):
+                m = (a + b) / 2
+                gm = g(m)
+                if (gm < 0) == (ga < 0):
+                    a, ga = m, gm
+                else:
+                    b = m
+            if consistent((a + b) / 2):
+                return True
+    return False
 
 
 def _pay_to_play(ct, ev, invest):
@@ -416,13 +446,41 @@ def ev_priced_round(ct, ev):
         sid for sid in after.preferred_ids() if after.securities[sid]["anti_dilution"] != "none"
     ]
 
+    # Anti-dilution with SAFEs and notes converting (the 0.3.0 plan's answer 3; R25). Each SAFE or note issued after a
+    # series is a convertible security whose share count first becomes known in this round, so it is an issue of its
+    # own, tested at its own price, as the new money is at the round's price (3a, 3c). Only the pieces priced below a
+    # series' conversion price go into its B and C: B counts what was paid for them (a SAFE's purchase amount, a note's
+    # principal plus interest, the debt its shares cancel; the new money's cash for its whole shares, R8) and C their
+    # shares. A stays the shares outstanding before the round. Under the round's toggle the conversions are exempt (a
+    # charter carve-out or a waiver) and count in A at the shares they receive instead (3a, 3b).
+    exempt = ev.get("anti_dilution_exempts_conversions", False)
+    pieces = 1 + (0 if exempt else len(converting))
+
+    def conv_price(i, x, top_up, branch):
+        k, f, _ = converting[i]
+        return cap_price(k, f, x, top_up, branch) if branch[i] == "cap" else (post_val / x) * (1 - f["discount"])
+
+    def factor_at(sid, flags, x, top_up, branch):
+        """CP1 ÷ CP2 for one series, given which pieces are priced below its conversion price (flags)."""
+        rule = after.securities[sid]["anti_dilution"]
+        price = post_val / x
+        shares = [converting[i][2] / conv_price(i, x, top_up, branch) for i in range(len(converting))]
+        counted = [i for i in range(len(converting)) if not exempt and flags[1 + i]]
+        consideration = (money_in if flags[0] else 0) + sum((converting[i][2] for i in counted), Fraction(0))
+        issued = (money_in / price if flags[0] else 0) + sum((shares[i] for i in counted), Fraction(0))
+        extra_a = sum(shares, Fraction(0)) if exempt else Fraction(0)
+        return _anti_dilution_factor(after, sid, rule, issued, consideration, price, include_pool_in_a, extra_a)
+
     solutions = []
+    not_exact = False
     for safe_branch in itertools.product(("cap", "discount"), repeat=len(converting)):
         # A branch that converts at a cap the instrument doesn't have is impossible; asked without pricing anything,
         # since a post-money SAFE's cap price needs the others' shares under this branch (21d).
         if any(b == "cap" and not has_cap(k, f) for b, (k, f, _) in zip(safe_branch, converting)):
             continue
-        for ad_branch, top_up in itertools.product(itertools.product((False, True), repeat=len(ad_series)), (True, False)):
+        # For each protected series, which pieces (the new money, then each conversion) are priced below its conversion price.
+        flag_sets = itertools.product(list(itertools.product((False, True), repeat=pieces)), repeat=len(ad_series))
+        for ad_branch, top_up in itertools.product(list(flag_sets), (True, False)):
 
             def share_count(x):
                 """Post-money FD shares implied by a guess x for post-money FD shares."""
@@ -435,17 +493,42 @@ def ev_priced_round(ct, ev):
                     else:
                         total += amount / (price * (1 - f["discount"]))
                 if ad_in_post:
-                    for trig, sid in zip(ad_branch, ad_series):
-                        if trig:
-                            factor = _anti_dilution_factor(
-                                after, sid, after.securities[sid]["anti_dilution"], new, money_in, price, include_pool_in_a
-                            )
+                    for flags, sid in zip(ad_branch, ad_series):
+                        if any(flags):
+                            factor = factor_at(sid, flags, x, top_up, safe_branch)
                             total += after.shares_of(sid) * (after.conversion_ratio(sid) * factor - after.conversion_ratio(sid))
                 return total
 
-            # share_count is affine in x under fixed branches, so solve x = share_count(x) directly.
+            def consistent(x):
+                price = post_val / x
+                for b, (k, f, _) in zip(safe_branch, converting):
+                    disc_price = price * (1 - f["discount"])
+                    sp = cap_price(k, f, x, top_up, safe_branch)
+                    if b == "cap" and not (sp <= disc_price):
+                        return False
+                    if b == "discount" and sp is not None and not (disc_price < sp):
+                        return False
+                for flags, sid in zip(ad_branch, ad_series):
+                    cp1 = after.securities[sid]["conversion_price"]
+                    if flags[0] != (price < cp1):
+                        return False
+                    if any(flags[1 + i] != (conv_price(i, x, top_up, safe_branch) < cp1) for i in range(pieces - 1)):
+                        return False
+                # A top-up happens only if the pool before the round is below
+                # the target; if it meets or exceeds it, the pool stays as it is.
+                return top_up == (target * x > u0)
+
+            # share_count is affine in x under fixed branches, so solve x = share_count(x) directly. The one exception:
+            # a conversion exempt from anti-dilution counts in A at its shares, and at its discount those depend on the
+            # price, so with the adjustment shares in the price (R10) the price is the root of a quadratic: irrational,
+            # never exact. If such a branch has a consistent root, the round is refused (not_exact).
             h0 = share_count(Fraction(1)) - 1
             h1 = share_count(Fraction(2)) - 2
+            h2 = share_count(Fraction(3)) - 3
+            if h2 - h1 != h1 - h0:
+                if _consistent_root(lambda x: share_count(x) - x, consistent, o + u0):
+                    not_exact = True
+                continue
             slope = h1 - h0
             if slope == 0:
                 continue
@@ -454,25 +537,14 @@ def ev_priced_round(ct, ev):
                 continue
             assert share_count(x) == x
             price = post_val / x
-            ok = True
-            for b, (k, f, _) in zip(safe_branch, converting):
-                disc_price = price * (1 - f["discount"])
-                sp = cap_price(k, f, x, top_up, safe_branch)
-                if b == "cap" and not (sp <= disc_price):
-                    ok = False
-                if b == "discount" and sp is not None and not (disc_price < sp):
-                    ok = False
-            for trig, sid in zip(ad_branch, ad_series):
-                down = price < after.securities[sid]["conversion_price"]
-                if trig != down:
-                    ok = False
-            # A top-up happens only if the pool before the round is below
-            # the target; if it meets or exceeds it, the pool stays as it is.
-            if top_up != (target * x > u0):
-                ok = False
-            if ok:
+            if consistent(x):
                 solutions.append((safe_branch, ad_branch, top_up, x, price))
 
+    if not_exact:
+        raise ValueError(
+            f"round {ev['id']}: a SAFE or note converting at its discount, exempt from anti-dilution and so counted in A, "
+            "in a round whose price counts the adjustment shares: its price would not be exact, so it is not supported yet"
+        )
     if len(solutions) != 1:
         raise ValueError(f"round {ev['id']}: expected one consistent solution, found {len(solutions)}")
     safe_branch, ad_branch, top_up, x, price = solutions[0]
@@ -523,12 +595,28 @@ def ev_priced_round(ct, ev):
     new_shares = {h: floor(a / price) for h, a in invested_by_holder.items()}
     c_issued = sum(new_shares.values())
     consideration = c_issued * price
+    # Each conversion's price and whole shares (R3), as the series from SAFEs and notes below get them.
+    conv_prices = [conv_price(i, x, top_up, safe_branch) for i in range(len(converting))]
+    conv_issued = [floor(converting[i][2] / conv_prices[i]) for i in range(len(converting))]
     ad_details = []
-    for trig, sid in zip(ad_branch, ad_series):
-        if trig:
+    for flags, sid in zip(ad_branch, ad_series):
+        if any(flags):
             sec = ct.securities[sid]
             cp1 = sec["conversion_price"]
-            factor = _anti_dilution_factor(after, sid, sec["anti_dilution"], c_issued, consideration, price, include_pool_in_a)
+            rule = sec["anti_dilution"]
+            if converting and rule != "broad_based":
+                # Which piece's price a full ratchet would take, and whether a narrow A counts conversion shares, are unsettled.
+                raise ValueError(f"round {ev['id']}: {rule} anti-dilution on {sid} in a round that converts SAFEs or notes is not supported by the reference yet")
+            if any(after.order.get(f["id"], -1) < after.order.get(sid, -1) for _, f, _ in converting):
+                # Answer 3d: a SAFE or note issued before the series was already outstanding when it bought in (03d2).
+                raise ValueError(f"round {ev['id']}: a SAFE or note issued before {sid} converting where {sid} is adjusted is not supported by the reference yet")
+            # The final CP2 uses the shares actually issued and what was paid for them (R8): the new money's cash for its
+            # whole shares; a SAFE's purchase amount; a note's principal plus interest.
+            counted = [i for i in range(len(converting)) if not exempt and flags[1 + i]]
+            piece_consideration = (consideration if flags[0] else 0) + sum((converting[i][2] for i in counted), Fraction(0))
+            piece_shares = (c_issued if flags[0] else 0) + sum(conv_issued[i] for i in counted)
+            extra_a = sum(conv_issued) if exempt else 0
+            factor = _anti_dilution_factor(after, sid, rule, piece_shares, piece_consideration, price, include_pool_in_a, extra_a)
             cp2 = cp1 / factor
             unrounded = {}
             # R9's toggle: the adjusted conversion price to the nearest step, half up.
@@ -540,18 +628,32 @@ def ev_priced_round(ct, ev):
                 step = parse(rounding)
                 unrounded = {"cp2_unrounded": exact(cp2)}
                 cp2 = floor(cp2 / step + Fraction(1, 2)) * step
-            a_val = _anti_dilution_a(after, sid, sec["anti_dilution"], include_pool_in_a)
+            a_val = _anti_dilution_a(after, sid, rule, include_pool_in_a)
+            a_val = None if a_val is None else a_val + extra_a
+            # With conversions, which pieces were priced below the conversion price, and so counted.
+            pieces_json = (
+                {
+                    "pieces": [{"piece": "new money", "price": exact(price), "counted": flags[0]}]
+                    + [
+                        {"piece": f["id"], "price": exact(conv_prices[i]), "counted": (not exempt) and flags[1 + i], **({"in_a": conv_issued[i]} if exempt else {})}
+                        for i, (_, f, _) in enumerate(converting)
+                    ]
+                }
+                if converting
+                else {}
+            )
             ad_details.append(
                 {
                     "series": sid,
-                    "rule": sec["anti_dilution"],
+                    "rule": rule,
                     "cp1": exact(cp1),
                     **unrounded,
                     "cp2": exact(cp2),
                     "cp2_approx": decimal(cp2, 10),
                     "A": None if a_val is None else exact(a_val),
-                    "B": None if a_val is None else exact(consideration / cp1),
-                    "C": c_issued,
+                    "B": None if a_val is None else exact(piece_consideration / cp1),
+                    "C": piece_shares,
+                    **pieces_json,
                     "new_conversion_ratio": exact(sec["original_issue_price"] / cp2),
                 }
             )

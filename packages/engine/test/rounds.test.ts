@@ -32,12 +32,18 @@ interface ExpectedTable {
 const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
 /**
- * The 34 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
- * sale carries a carve-out (0.3.0 work, 03a), and 21b, 21c, 17i (03c) and 21d (03c2), which the engine refuses until 03g.
+ * The 37 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
+ * sale carries a carve-out (0.3.0 work, 03a), 21b, 21c, 17i (03c) and 21d (03c2), which the engine refuses until 03g,
+ * and 16g, 16h and 16i (03d), refused until 03h.
  */
-const EXPECTED_ROUND_CASES = 34;
-/** The 0.3.0 work's round cases the engine refuses until 03g, by the first term it names. 17i also converts a post-money SAFE beside a note. */
+const EXPECTED_ROUND_CASES = 37;
+/**
+ * The 0.3.0 work's round cases the engine refuses until 03g or 03h, by the first term it names. 17i also converts a
+ * post-money SAFE beside a note.
+ */
 const NOT_YET: Record<string, string> = {
+  "edge-16g-safe-converts-in-a-down-round": "anti_dilution_with_conversions",
+  "edge-16h-safe-conversion-exempt": "anti_dilution_exempts_conversions",
   "edge-17i-pay-to-play-with-conversions": "post_money_safe_with_pre_money_instruments",
   "edge-21b-post-money-safe-and-note": "post_money_safe_with_pre_money_instruments",
   "edge-21c-post-money-and-pre-money-safes": "post_money_safe_with_pre_money_instruments",
@@ -196,11 +202,11 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 34 cases with events", () => {
+  it("is found: 37 cases with events", () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
   });
 
-  it.each(Object.entries(NOT_YET))("%s is refused until 03g, naming %s", (name, term) => {
+  it.each(Object.entries(NOT_YET))("%s is refused until 03g or 03h, naming %s", (name, term) => {
     let error: unknown;
     try {
       buildCapTables(readCaseFile(name, "inputs.json") as Inputs);
@@ -211,7 +217,16 @@ describe("every locked round case", () => {
     expect(error).toMatchObject({ term, milestone: "later" });
   });
 
-  describe.each(ROUND_CASES.filter((name) => !(name in NOT_YET)))("%s", (name) => {
+  // R25 before the 0.3.0 plan's answer 3c adjusted a series only when the round's own price was below its conversion
+  // price, so the engine builds 16i without refusing it, and leaves the Seed unadjusted: the round is priced above it.
+  // The locked case, testing the note's discounted conversion at its own price, adjusts it. The engine follows from 03h.
+  const OLD_RULE = "edge-16i-discounted-note-in-an-up-round";
+  it(`${OLD_RULE} is built under the old rule until 03h: the Seed isn't adjusted, where the case adjusts it to $0.994808`, () => {
+    const seed = buildCapTables(readCaseFile(OLD_RULE, "inputs.json") as Inputs).at(-1)!.capTable.securities.find((s) => s.id === "seed");
+    expect(seed?.kind === "preferred" && seed.conversionPrice.toString()).toBe("1");
+  });
+
+  describe.each(ROUND_CASES.filter((name) => !(name in NOT_YET) && name !== OLD_RULE))("%s", (name) => {
     const inputs = readCaseFile(name, "inputs.json") as Inputs;
     const expected = (readCaseFile(name, "expected.json") as { cap_tables: ExpectedTable[] }).cap_tables;
 

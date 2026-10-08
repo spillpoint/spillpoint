@@ -334,6 +334,20 @@ class Rounds(unittest.TestCase):
         self.assertEqual([c["shares"] for c in details["note_conversions"]], [32_374])
         self.assertEqual([c["shares"] for c in details["safe_conversions"]], [103_597])
 
+    def test_an_exempt_conversion_at_its_discount_is_refused_where_the_price_would_not_be_exact(self):
+        # Case 16h with its SAFE at a 20% discount and no cap: exempt, its shares count in A, and at its discount they
+        # depend on the round's price. With the adjustment shares in the price (R10) that price is the root of a
+        # quadratic, not a rational number, so the round is refused rather than approximated. Without the toggle the
+        # same SAFE counts in B and C, which stays exact.
+        inputs = json.loads((CASES / "edge-16h-safe-conversion-exempt" / "inputs.json").read_text())
+        safe = inputs["events"][2]["safes"][0]
+        safe.update({"post_money_cap": None, "discount": "0.2"})
+        with self.assertRaisesRegex(ValueError, "its price would not be exact"):
+            run_case(inputs)
+        inputs["events"][-1]["anti_dilution_exempts_conversions"] = False
+        details = run_case(inputs)["cap_tables"][-1]["details"]
+        self.assertEqual([p["counted"] for p in details["anti_dilution"][0]["pieces"]], [True, True])
+
     def test_a_safe_has_one_kind_of_cap(self):
         with self.assertRaisesRegex(ValueError, "not both"):
             safe_from_json({"id": "s", "holder": "h", "purchase_amount": "1", "post_money_cap": "10", "pre_money_cap": "8"})

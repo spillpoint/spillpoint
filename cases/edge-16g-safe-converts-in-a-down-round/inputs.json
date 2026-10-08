@@ -1,0 +1,119 @@
+{
+  "case": "edge-16g-safe-converts-in-a-down-round",
+  "description": "A bridge SAFE converting in a down round that triggers the Seed's broad-based anti-dilution. The Seed is $1.00 a share. Investor S's $1,000,000 post-money SAFE, capped at $6,000,000, was issued after the Seed, so its conversion is an issue of its own, tested at its own price, $0.50 (the 0.3.0 plan's answers 3a and 3c). The Series A's new money is tested at the round's price. Both are below $1.00, so both count in B and C.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 2000000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based",
+        "anti_dilution_a": "outstanding_common_options_preferred"
+      },
+      "pre_money": "8000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "2000000"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2023-06-30",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "6000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "8000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "2000000"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    }
+  ]
+}
