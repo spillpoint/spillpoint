@@ -22,16 +22,18 @@
   - **Several SAFEs** share a shortfall pro rata.
   - **A cap table built from rounds** carries its outstanding SAFEs, and an exit on it pays them.
 - **Convertible notes still outstanding at a sale** (M5h): each takes the greater of repayment, as debt ahead of all equity, and conversion at its pre-money cap, or with no cap at the sale's common price less its discount. Several notes share a shortfall pro rata. The exit needs an `exit_date`. A cap table built from rounds carries its outstanding notes.
+- **Escrow and earnouts** (M5i): `paySchedule` pays each payment's take on cumulative proceeds, with every decision re-made at each step. A take can be negative when a later payment tips a series into converting; it is reported as is, and `lowered` names the holders it falls for.
 - **Management carve-outs** (M5f): a percentage of the exit value in marginal tiers, paid to listed people before the preferences or alongside them in the most senior tier. Alongside them, payouts curve while that tier isn't paid in full. A breakpoint there is where the formula changes.
 - **A round's seniority** may leave out the series its SAFEs and notes convert into (R28, M4j). They then rank alongside its new series.
 
-*To come in M5: escrow and earnouts.*
+*Every term planned for M5 is in. Nothing is refused as `"M5"` any more; the `Milestone` type keeps the value, so 0.1.0 code that compares with it still typechecks.*
 
 ## New in the API
 
+- **`paySchedule(table, schedule)`:** a new function, for escrow and earnouts. It returns a `PaymentTake` for each payment.
 - **`prepare(capTable, exitDate)`:** the exit date is a new, optional second argument. It is needed only when a series has cumulative dividends.
 - **`readExit` and `readInputs`** return `exitDate`.
-- **New types:** `WarrantClass`, `CumulativeDividend`, `SeriesHere`, `CarveOut`, `CarveOutHere` and `SafeHere`. `Safe` is the same type as in 0.1.0, now exported from the model, with an optional `cashOutRanksWith`. `Note` is too, unchanged. Also `NoteTerms` and `NoteHere`.
+- **New types:** `PaymentSchedule`, `PaymentTake`, `WarrantClass`, `CumulativeDividend`, `SeriesHere`, `CarveOut`, `CarveOutHere` and `SafeHere`. `Safe` is the same type as in 0.1.0, now exported from the model, with an optional `cashOutRanksWith`. `Note` is too, unchanged. Also `NoteTerms` and `NoteHere`.
 - **New fields:**
   - **`Payout.series`:** each series' shares, preference, dividends, claim, cap and as-converted shares at that exit value.
   - **`PreparedCapTable.dividends`** and **`.exitDate`**.
@@ -44,6 +46,7 @@
   - **`PreferredSeries.cumulativeDividend`:** missing means no dividends.
   - **`ExitInput.exitDate`.**
   - **`CapTable.carveOut`.**
+  - **`ExitInput.paymentSchedules`.**
   - **`CapTable.unconvertedSafes`** and **`.unconvertedNotes`.** A table from `buildCapTables` has them when SAFEs or notes are outstanding.
 - **`Decisions.exercised`** now holds exercised warrants as well as option classes, and **`Decisions.converted`** holds SAFEs taking their Conversion Amount and converting notes as well as converting series.
 
@@ -63,6 +66,7 @@ These come from new terms widening a union. They break only code that switches o
   - management carve-outs (term `"carve_out"`)
   - SAFEs still outstanding at a sale (term `"unconverted_safe"`), on a cap table given in full or built from rounds
   - notes still outstanding at a sale (term `"unconverted_note"`), likewise
+  - payment schedules (term `"payment_schedules"`)
 - **Newly refused** (milestone `"later"`, until a case settles them):
   - **`"dividends_added_to_conversion"`:** dividends added to what converts, rather than paid in cash on conversion.
   - **`"cumulative_dividend_in_rounds"`:** dividends on a series issued by an `issue` event rather than a priced round.
