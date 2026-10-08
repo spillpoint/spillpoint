@@ -32,19 +32,21 @@ interface ExpectedTable {
 const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
 /**
- * The 37 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
+ * The 39 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
  * sale carries a carve-out (0.3.0 work, 03a), 21b, 21c, 17i (03c) and 21d (03c2), which the engine refuses until 03g,
- * and 16g, 16h and 16i (03d), refused until 03h.
+ * and 16g, 16h, 16i (03d), 16j and 17j (03d2), refused until 03h.
  */
-const EXPECTED_ROUND_CASES = 37;
+const EXPECTED_ROUND_CASES = 39;
 /**
  * The 0.3.0 work's round cases the engine refuses until 03g or 03h, by the first term it names. 17i also converts a
- * post-money SAFE beside a note.
+ * post-money SAFE beside a note; 17j's round also triggers anti-dilution, refused until 03h.
  */
 const NOT_YET: Record<string, string> = {
   "edge-16g-safe-converts-in-a-down-round": "anti_dilution_with_conversions",
   "edge-16h-safe-conversion-exempt": "anti_dilution_exempts_conversions",
+  "edge-16j-note-and-safe-from-before-the-seed": "anti_dilution_with_conversions",
   "edge-17i-pay-to-play-with-conversions": "post_money_safe_with_pre_money_instruments",
+  "edge-17j-pay-to-play-anti-dilution-with-a-safe": "pay_to_play_with_conversions",
   "edge-21b-post-money-safe-and-note": "post_money_safe_with_pre_money_instruments",
   "edge-21c-post-money-and-pre-money-safes": "post_money_safe_with_pre_money_instruments",
   "edge-21d-post-money-safe-and-discounted-note": "post_money_safe_with_pre_money_instruments",
