@@ -11,36 +11,10 @@ import type { CapTableAfterEvent, Participation } from "spillpoint";
 
 import { CheckField, Field, SelectField } from "./fields.tsx";
 import { amountHint } from "./format.ts";
-import { addHolder, eventFieldId, eventsNaming, holderFieldId, outstandingBefore, setEvent } from "./roundsDraft.ts";
+import { BLANK, addHolder, antiDilutionBefore, eventFieldId, eventsNaming, getIn, holderFieldId, outstandingBefore, setEvent, setIn } from "./roundsDraft.ts";
 import type { EventDraft, RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 type Json = Record<string, unknown>;
-type Path = (string | number)[];
-
-/** "investments[0].amount" → ["investments", 0, "amount"]. */
-const parse = (path: string): Path => path.split(/\.|\[(\d+)\]/).filter((p) => p !== undefined && p !== "").map((p) => (/^\d+$/.test(p) ? Number(p) : p));
-
-function getIn(json: unknown, path: string): unknown {
-  return parse(path).reduce<unknown>((v, k) => (v == null ? undefined : (v as Record<string | number, unknown>)[k]), json);
-}
-
-/** The event with one value changed, everything else as it was. null removes the field. */
-function setIn(json: Json, path: string, value: unknown): Json {
-  const keys = parse(path);
-  const set = (node: unknown, i: number): unknown => {
-    const k = keys[i]!;
-    const copy = (Array.isArray(node) ? [...node] : { ...(node as object) }) as Record<string | number, unknown>;
-    if (i === keys.length - 1) {
-      if (value === null && !Array.isArray(copy)) delete copy[k];
-      else copy[k] = value;
-    } else {
-      copy[k] = set(copy[k] ?? (typeof keys[i + 1] === "number" ? [] : {}), i + 1);
-    }
-    return copy;
-  };
-  return set(json, 0) as Json;
-}
-
 // ---------- holders ----------
 
 export function RoundsHolders({ draft, onDraft, problem }: { draft: RoundsDraft; onDraft: (d: RoundsDraft) => void; problem: RoundsProblem | null }) {
@@ -157,7 +131,12 @@ function fieldsFor(event: EventDraft, draft: RoundsDraft, onDraft: (d: RoundsDra
   const update = (next: Json) => onDraft(setEvent(draft, event.key, next));
   const set = (path: string, value: unknown) => update(setIn(json, path, value));
   const id = (path: string) => eventFieldId(event.key, path);
-  const errorFor = (path: string) => (problem && problem.event === event.key && problem.fields.includes(id(path)) ? problem.message : null);
+  const errorFor = (path: string) => {
+    if (!problem || problem.event !== event.key) return null;
+    if (problem.fields.includes(id(path))) return problem.message;
+    // The other fields the engine needs filled in this event, all marked at once (M4 review's polish).
+    return problem.blanks?.some((chain) => chain.includes(id(path))) ? BLANK : null;
+  };
   const value = (path: string) => {
     const v = getIn(json, path);
     return v == null ? "" : String(v);
@@ -375,6 +354,11 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
   const waiting = outstandingBefore(draft, event.key);
   const outstandingSafes = waiting.some((c) => c.kind === "safe");
   const outstandingNotes = waiting.some((c) => c.kind === "note");
+  // Settings that matter only here (Jordan, 03h review), each also shown while it's on, so a saved setting is never hidden.
+  const protectedBefore = antiDilutionBefore(draft, event.key);
+  const converting = (outstandingSafes && json.convert_safes !== false) || (outstandingNotes && json.convert_notes === true);
+  const showPoolInA = protectedBefore.has("broad_based") || json.anti_dilution_include_unissued_pool_in_a === true;
+  const showExempt = (converting && protectedBefore.size > 0) || json.anti_dilution_exempts_conversions === true;
   return (
     <>
       <h4>The round</h4>
@@ -436,7 +420,9 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
       <details className="event-form__more">
         <summary>More terms</summary>
         {f.check("pro_rata_base_includes_unissued_pool", "Pro-rata counts the unissued pool", false)}
-        {f.check("anti_dilution_include_unissued_pool_in_a", "Broad-based anti-dilution counts the unissued pool in A", false)}
+        {showPoolInA && f.check("anti_dilution_include_unissued_pool_in_a", "Anti-dilution base includes the unused option pool (smaller adjustments for earlier investors)", false)}
+        {showExempt &&
+          f.check("anti_dilution_exempts_conversions", "SAFE and note conversions in this round don't count toward anti-dilution (a charter carve-out or waiver)", false)}
         {f.check("anti_dilution_shares_in_post", "The round's price counts the anti-dilution adjustment shares", true)}
         {f.select(
           "anti_dilution_cp2_rounding",

@@ -291,6 +291,21 @@ export function outstandingBefore(d: RoundsDraft, eventKey: string): Convertible
 }
 
 /**
+ * The anti-dilution of the preferred series issued before an event, as typed:
+ * by a priced round's new series, or an issue of preferred stock. A round's
+ * series from SAFEs and notes carry its terms, so they add nothing new.
+ */
+export function antiDilutionBefore(d: RoundsDraft, eventKey: string): Set<string> {
+  const rules = new Set<string>();
+  for (const e of d.events) {
+    if (e.key === eventKey) break;
+    const s = (e.json.series ?? e.json.security) as Json | undefined;
+    if (s?.kind === "preferred" && typeof s.anti_dilution === "string" && s.anti_dilution !== "none") rules.add(s.anti_dilution);
+  }
+  return rules;
+}
+
+/**
  * The SAFEs and notes still outstanding at the sale: those on the cap table
  * the payouts use, after the event they name (C2). Each says why: no later
  * round converts it, or the round that does comes after that cap table.
@@ -338,6 +353,66 @@ export function draftTitle(json: Json): string {
 
 // ---------- where the engine's message goes ----------
 
+type Path = (string | number)[];
+
+/** "investments[0].amount" → ["investments", 0, "amount"]. */
+const parse = (path: string): Path => path.split(/\.|\[(\d+)\]/).filter((p) => p !== undefined && p !== "").map((p) => (/^\d+$/.test(p) ? Number(p) : p));
+
+export function getIn(json: unknown, path: string): unknown {
+  return parse(path).reduce<unknown>((v, k) => (v == null ? undefined : (v as Record<string | number, unknown>)[k]), json);
+}
+
+/** The event with one value changed, everything else as it was. null removes the field. */
+export function setIn(json: Json, path: string, value: unknown): Json {
+  const keys = parse(path);
+  const set = (node: unknown, i: number): unknown => {
+    const k = keys[i]!;
+    const copy = (Array.isArray(node) ? [...node] : { ...(node as object) }) as Record<string | number, unknown>;
+    if (i === keys.length - 1) {
+      if (value === null && !Array.isArray(copy)) delete copy[k];
+      else copy[k] = value;
+    } else {
+      copy[k] = set(copy[k] ?? (typeof keys[i + 1] === "number" ? [] : {}), i + 1);
+    }
+    return copy;
+  };
+  return set(json, 0) as Json;
+}
+
+/** What the page says for a field left blank. */
+export const BLANK = "Fill this in: it can't be blank.";
+
+/**
+ * When the engine names a blank field, every other field in the same event it
+ * also needs filled, so a new event's blanks are all marked at once (M4
+ * review's polish item). The engine names one problem at a time, and many
+ * blank fields are fine (no cap, no top-up), so the page doesn't guess: it
+ * fills each named blank with a stand-in, in a copy only it sees, and asks
+ * again, until the engine names something else. Each field found is one the
+ * engine itself says can't be blank.
+ */
+export function otherBlanks(
+  d: RoundsDraft, rounds: Rounds, first: RoundsProblem, path: string, ask: (r: Rounds) => { path: string; message: string } | null,
+): string[][] {
+  const found: string[][] = [];
+  let events = rounds.events;
+  let at = path;
+  for (let i = 0; i < 40; i++) {
+    const m = /^inputs\.events\[(\d+)\]\.(.+)$/.exec(at);
+    if (!m) break;
+    const n = Number(m[1]);
+    // A stand-in the engine reads as filled: a date where it wants one, otherwise 1.
+    events = events.map((e, j) => (j === n ? setIn(e as Json, m[2]!, /date$/.test(m[2]!) ? "2000-01-01" : "1") : e));
+    const next = ask({ ...rounds, events });
+    if (!next || next.path === at) break;
+    const problem = locate(d, next.path, next.message);
+    if (problem.message !== BLANK || problem.event !== first.event) break;
+    found.push(problem.fields);
+    at = next.path;
+  }
+  return found;
+}
+
 /** The DOM id of an event's field: "investments[0].amount" in event r12 → "ev-r12-investments-0-amount". */
 export function eventFieldId(eventKey: string, path: string): string {
   return `ev-${eventKey}-${path.replace(/\[(\d+)\]/g, "-$1").replace(/\./g, "-")}`;
@@ -352,6 +427,8 @@ export interface RoundsProblem {
   event: string | null;
   /** The field it names, and the fields above it, nearest first: the page marks the first one it shows. */
   fields: string[];
+  /** When it's a blank field: the event's other fields the engine also needs filled, each nearest first. */
+  blanks?: string[][];
 }
 
 /** Where an engine error about the rounds belongs. */
@@ -359,7 +436,7 @@ export function locate(d: RoundsDraft, path: string, message: string): RoundsPro
   const detail = message.startsWith(`${path}: `) ? message.slice(path.length + 2) : message;
   // A field left blank reaches the engine as nothing at all; say so plainly.
   const blank = /^expected an exact number as a string, got null$|^expected a non-empty string$/.test(detail);
-  const text = blank ? "Fill this in: it can't be blank." : detail.charAt(0).toUpperCase() + detail.slice(1);
+  const text = blank ? BLANK : detail.charAt(0).toUpperCase() + detail.slice(1);
   const holder = /^inputs\.holders\[(\d+)\]/.exec(path);
   if (holder) return { message: text, event: null, fields: [holderFieldId(d.holders[Number(holder[1])]?.key ?? "")] };
   const m = /^inputs\.events\[(\d+)\]\.?(.*)$/.exec(path);

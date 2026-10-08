@@ -10,7 +10,7 @@
 // by `pnpm --filter @spillpoint/dashboard preview` at http://localhost:4173/.
 
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -128,6 +128,20 @@ const openRound = (index) => `document.querySelectorAll(".rounds__table")[${inde
 const ROUND = (n) => `.rounds__event:nth-child(${n})`;
 /** Opens the index-th event's form on the Rounds tab. */
 const editRound = (index) => `document.querySelectorAll(".rounds__edit")[${index}].click()`;
+/** Opens a locked round case as a saved file, its payouts on its last event, and waits until it has opened. */
+const openCase = (name) => {
+  const inputs = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases", name, "inputs.json"), "utf8"));
+  const file = { format: "spillpoint", version: 5, name, holders: inputs.holders, events: inputs.events, cap_table_after_event: inputs.events.at(-1).id, range: ["0", "50000000"] };
+  return `new Promise((done) => {
+    const input = document.querySelector("input[type=file]");
+    const files = new DataTransfer();
+    files.items.add(new File([${JSON.stringify(JSON.stringify(file))}], "case.json", { type: "application/json" }));
+    input.files = files.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    const wait = () => (document.body.innerText.includes("Opened case.json.") ? done() : setTimeout(wait, 50));
+    wait();
+  })`;
+};
 
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
@@ -284,6 +298,22 @@ const SHOTS = {
     quality: 50,
   },
   "m5l-rounds-terms": { width: 1100, height: 900, steps: [click("Rounds")], clip: ["section[aria-labelledby=rounds-heading]"], quality: 50 },
+  // 03i: SAFEs and notes in a round that triggers anti-dilution, the round's settings, and blanks marked at once.
+  "03i-pieces": { width: 1100, height: 900, steps: [openCase("edge-16i-discounted-note-in-an-up-round"), click("Rounds")], clip: [ROUND(4)], quality: 50 },
+  "03i-more-terms": {
+    width: 1100,
+    height: 900,
+    steps: [openCase("edge-16g-safe-converts-in-a-down-round"), click("Rounds"), editRound(3), `document.querySelector("${ROUND(4)} details.event-form__more").open = true`],
+    clip: [`${ROUND(4)} details.event-form__more`],
+    quality: 50,
+  },
+  "03i-blanks": {
+    width: 1100,
+    height: 900,
+    steps: [choose("Start from", "scratch-rounds"), click("Rounds"), pick("#rounds-add-type", 0, "priced_round"), click("Add it at the end")],
+    clip: [`${ROUND(2)} .rounds__heading`, `${ROUND(2)} .rounds__problem`, "[id$='-investments-0-amount-error']"],
+    quality: 50,
+  },
   "m4j-error": {
     width: 1100,
     height: 900,

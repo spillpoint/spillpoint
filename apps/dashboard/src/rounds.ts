@@ -7,7 +7,7 @@
 // to edit it directly, which drops them.
 
 import { D, InputError, UnsupportedTermError, buildCapTables, readInputs } from "spillpoint";
-import type { CapTable, CapTableAfterEvent, RoundDetails } from "spillpoint";
+import type { AntiDilutionAdjustment, CapTable, CapTableAfterEvent, RoundDetails } from "spillpoint";
 
 import { NotShownYet, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
@@ -60,8 +60,10 @@ export function fromRounds(rounds: Rounds, range: unknown, terms: ExitTerms = {}
     readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [], exit_date: "9999-12-31" } });
     const r = range as unknown[];
     const exit = {
-      cap_table: { ...capTableJson(after!.capTable), ...(terms.carve_out != null ? { carve_out: terms.carve_out } : {}) },
+      cap_table: capTableJson(after!.capTable),
       range: [String(r[0]), String(r[1])],
+      // C6: the carve-out is a term of the sale, on the exit (0.3.0).
+      ...(terms.carve_out != null ? { carve_out: terms.carve_out } : {}),
       ...(terms.exit_date != null && terms.exit_date !== "" ? { exit_date: terms.exit_date } : {}),
       ...(terms.payment_schedules != null ? { payment_schedules: terms.payment_schedules } : {}),
     };
@@ -372,6 +374,39 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): st
       `${security(a.series)}'s anti-dilution (${RULES[a.rule]}) lowers its conversion price from ${price(a.cp1)} to ${price(a.cp2)}, ` +
         `so each share converts into ${a.newConversionRatio.toFixed(6, D.ROUND_HALF_UP)} common. Its preference doesn't change.`,
     );
+    lines.push(...pieceLines(a, ev, d, holder, security));
   }
   return lines;
+}
+
+/**
+ * With SAFEs or notes converting, one plain line for each piece of the round
+ * as this series' anti-dilution saw it (R25; Jordan's wording, 03h review):
+ * the new money at the round's price, and each SAFE and note at the price it
+ * converts at. A piece below the series' conversion price counts against it;
+ * one at or above it doesn't; a conversion the round exempts, or one issued
+ * before the series, counts in the starting share count instead (A).
+ */
+function pieceLines(a: AntiDilutionAdjustment, ev: Json, d: RoundDetails, holder: (id: unknown) => string, security: (id: unknown) => string): string[] {
+  const series = security(a.series);
+  const owner = (id: string) => {
+    const safe = d.safeConversions.find((c) => c.safe === id);
+    if (safe) return `${holder(safe.holder)}'s SAFE`;
+    const note = d.noteConversions.find((c) => c.note === id);
+    return note ? `${holder(note.holder)}'s note` : id;
+  };
+  return (a.pieces ?? []).map((p) => {
+    if (p.inA) {
+      const why = ev.anti_dilution_exempts_conversions === true ? "is exempt under this round's setting" : `was issued before ${series}`;
+      return `${owner(p.piece)} ${why}, so it counts in the starting share count instead.`;
+    }
+    // To the cent, as a founder reads a price, unless that would show it equal to the conversion price it's compared with.
+    const close = p.price.toFixed(2, D.ROUND_HALF_UP) === a.cp1.toFixed(2, D.ROUND_HALF_UP) && !p.price.eq(a.cp1);
+    const show = (x: Decimal) => `$${x.toFixed(close ? 6 : 2, D.ROUND_HALF_UP)}`;
+    const where = p.price.lt(a.cp1) ? "below" : p.price.eq(a.cp1) ? "at" : "above";
+    const verdict = p.counted ? `so it counts against ${series}` : "so it doesn't count";
+    return p.piece === "new money"
+      ? `New money at ${show(p.price)} a share: ${where} ${series}'s ${show(a.cp1)}, ${verdict}.`
+      : `${owner(p.piece)} converts at ${show(p.price)} a share: ${where} ${show(a.cp1)}, ${verdict}.`;
+  });
 }

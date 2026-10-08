@@ -274,17 +274,7 @@ export function checkShown(capTable: unknown): void {
       if (extra) refuse(`"${extra}" on ${holderName(x.holder)}'s ${list === "unconverted_safes" ? "SAFE" : "convertible note"}`, false);
     }
   }
-  // C6: what the editor carries for a carve-out, at each level.
-  const carve = ct.carve_out as Json | null | undefined;
-  if (carve != null && typeof carve === "object") {
-    const extra = (x: unknown, fields: string[]) => (x != null && typeof x === "object" ? Object.keys(x).find((f) => !fields.includes(f) && (x as Json)[f] != null) : undefined);
-    const found =
-      extra(carve, ["timing", "tiers", "allocation"]) ??
-      [...(Array.isArray(carve.tiers) ? carve.tiers : []), ...(Array.isArray(carve.allocation) ? carve.allocation : [])]
-        .map((x) => extra(x, ["from", "to", "percent", "holder"]))
-        .find(Boolean);
-    if (found) refuse(`"${found}" on its management carve-out`, false);
-  }
+  checkShownCarveOut(ct.carve_out);
   if (!Array.isArray(ct.securities)) return;
   for (const s of ct.securities as Json[]) {
     if (s == null || typeof s !== "object") continue;
@@ -300,11 +290,27 @@ export function checkShown(capTable: unknown): void {
   }
 }
 
-/** A draft of an exit input already in the case-file format, such as an example. */
+/** C6: what the editor carries for a carve-out, at each level, on the cap table or on the sale. */
+export function checkShownCarveOut(carve: unknown): void {
+  if (carve == null || typeof carve !== "object") return;
+  const c = carve as Json;
+  const extra = (x: unknown, fields: string[]) => (x != null && typeof x === "object" ? Object.keys(x).find((f) => !fields.includes(f) && (x as Json)[f] != null) : undefined);
+  const found =
+    extra(c, ["timing", "tiers", "allocation"]) ??
+    [...(Array.isArray(c.tiers) ? c.tiers : []), ...(Array.isArray(c.allocation) ? c.allocation : [])].map((x) => extra(x, ["from", "to", "percent", "holder"])).find(Boolean);
+  if (found) throw new NotShownYet(`It has "${found}" on its management carve-out, which this page doesn't show yet. It won't open a cap table it can't show in full.`, false);
+}
+
+/**
+ * A draft of an exit input already in the case-file format, such as an
+ * example. Its carve-out is a term of the sale, given on the exit (C6, 0.3.0),
+ * or, as older inputs give it, on the cap table.
+ */
 export function draftFromExit(exit: unknown): Draft {
   const e = exit as Json;
   const ct = e.cap_table as Json;
   checkShown(ct);
+  checkShownCarveOut(e.carve_out);
   let n = 0;
   const key = () => `k${++n}`;
   const holderKeys = new Map<string, string>();
@@ -408,7 +414,7 @@ export function draftFromExit(exit: unknown): Draft {
       repaymentMultiple: str(x.repayment_multiple),
     }),
   );
-  const carve = ct.carve_out as Json | null | undefined;
+  const carve = (e.carve_out ?? ct.carve_out) as Json | null | undefined;
   const carveOut: DraftCarveOut | null =
     carve == null
       ? null
@@ -660,7 +666,7 @@ function inLoadedOrder<T>(items: T[], key: (item: T) => string, order: readonly 
 /** What one editor field is called in the engine's error paths, so its message lands next to it. */
 export interface Built {
   /** The exit input, in the case-file format. */
-  json: { cap_table: Json; range: string[]; exit_values: string[]; exit_date?: string; payment_schedules?: Json[] };
+  json: { cap_table: Json; range: string[]; exit_values: string[]; exit_date?: string; carve_out?: Json; payment_schedules?: Json[] };
   /** Engine path ("exit.cap_table.securities[2].cap_multiple") to the editor field it names. */
   fields: Map<string, string>;
   /** Each holder's id in this input, by editor key; and back. */
@@ -929,19 +935,21 @@ export function buildExit(d: Draft): Built {
   });
 
   // C6: each tier starts where the one before ends, at $0 for the first; a message about where one starts names the end before it.
+  // Since 0.3.0 (file version 5) it is a term of the sale, given on the exit beside its date and payment schedules.
   const carve = d.carveOut;
   let carve_out: Json | undefined;
   if (carve) {
-    at("carve_out", fieldId.carveOut);
-    at("carve_out.timing", fieldId.carveTiming);
-    at("carve_out.tiers", fieldId.carveTiers);
-    at("carve_out.allocation", fieldId.carveAllocation);
+    const on = (path: string, field: string) => fields.set(`exit.${path}`, field);
+    on("carve_out", fieldId.carveOut);
+    on("carve_out.timing", fieldId.carveTiming);
+    on("carve_out.tiers", fieldId.carveTiers);
+    on("carve_out.allocation", fieldId.carveAllocation);
     const tiers = carve.tiers.map((t, i) => {
       const p = `carve_out.tiers[${i}]`;
-      at(p, fieldId.carveTier(t.key));
-      at(`${p}.from`, i === 0 ? fieldId.carveTier(t.key) : fieldId.carveTo(carve.tiers[i - 1]!.key));
-      at(`${p}.to`, fieldId.carveTo(t.key));
-      at(`${p}.percent`, fieldId.carvePercent(t.key));
+      on(p, fieldId.carveTier(t.key));
+      on(`${p}.from`, i === 0 ? fieldId.carveTier(t.key) : fieldId.carveTo(carve.tiers[i - 1]!.key));
+      on(`${p}.to`, fieldId.carveTo(t.key));
+      on(`${p}.percent`, fieldId.carvePercent(t.key));
       const before = carve.tiers[i - 1];
       return {
         from: i === 0 ? "0" : before!.to.trim() ? moneyText(before!.to) : null,
@@ -951,9 +959,9 @@ export function buildExit(d: Draft): Built {
     });
     const allocation = carve.allocation.map((a, i) => {
       const p = `carve_out.allocation[${i}]`;
-      at(p, fieldId.carveHolder(a.key));
-      at(`${p}.holder`, fieldId.carveHolder(a.key));
-      at(`${p}.percent`, fieldId.carveShare(a.key));
+      on(p, fieldId.carveHolder(a.key));
+      on(`${p}.holder`, fieldId.carveHolder(a.key));
+      on(`${p}.percent`, fieldId.carveShare(a.key));
       return { holder: holderId(a.holder), percent: percentText(a.percent) };
     });
     carve_out = { timing: carve.timing, tiers, allocation };
@@ -991,11 +999,11 @@ export function buildExit(d: Draft): Built {
         ...(d.pool.trim() ? { unissued_pool: shareText(d.pool) } : {}),
         ...(unconverted_safes.length > 0 ? { unconverted_safes } : {}),
         ...(unconverted_notes.length > 0 ? { unconverted_notes } : {}),
-        ...(carve_out ? { carve_out } : {}),
       },
       range: [moneyText(d.range[0]), moneyText(d.range[1])],
       exit_values: [],
       ...(d.exitDate.trim() ? { exit_date: d.exitDate.trim() } : {}),
+      ...(carve_out ? { carve_out } : {}),
       ...(payment_schedules.length > 0 ? { payment_schedules } : {}),
     },
     fields,

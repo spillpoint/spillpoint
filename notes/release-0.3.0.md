@@ -26,7 +26,12 @@ The items owed before release, and the carve-out as a term of the sale. The vers
   - **Each adjustment reports its pieces** (`AntiDilutionAdjustment.pieces`).
   - Before 0.3.0 every such round was refused, as `anti_dilution_with_conversions`.
 
-*To come:* 03i, the page.
+**On the page** (03i):
+- **The carve-out is a term of the sale** for every cap table, entered directly or built from rounds. Files are saved as version 5, with the carve-out beside the sale's date and payment schedules; a version 4 file with one in its cap table opens with it moved there.
+- **A round's anti-dilution shows each piece** in a plain line: the new money and each SAFE and note, at its price, and whether it counts against the series, or counts in the starting share count because it was issued before the series or the round exempts it.
+- **The round's new setting,** "SAFE and note conversions in this round don't count toward anti-dilution (a charter carve-out or waiver)", under "More terms", shown when a SAFE or note converts in the round and a series has anti-dilution.
+- **The unissued-pool setting** is now "Anti-dilution base includes the unused option pool (smaller adjustments for earlier investors)", shown only when a series has broad-based anti-dilution. Either setting also shows whenever it is on.
+- **A new event's blank fields** are all marked at once, not one at a time.
 
 ## Changed answers
 
@@ -45,6 +50,8 @@ Inputs that gave one answer in 0.2.0 and give another in 0.3.0:
 - **`anti_dilution_exempts_conversions`** on a priced round (03h): see above.
 - **`AntiDilutionAdjustment.pieces`** (03h): each piece of the round, its price, whether it counted, and its shares in A when it counted there instead. Null when nothing converts. A new exported type, `AntiDilutionPiece`.
 - **`AntiDilutionAdjustment.a`** (03h) counts the conversions that go in A.
+- **A new refusal name** (03h): `discounted_conversion_in_anti_dilution_a`, milestone `"later"`, for a SAFE or note at its discount counted in a series' A in a round that adjusts that series with the adjustment shares in its price. Code that caught 0.2.0's `anti_dilution_with_conversions` for every round with conversions and anti-dilution won't see this case under that name; `anti_dilution_with_conversions` now means only full-ratchet or narrow-based anti-dilution with conversions.
+- **Refusals no longer raised:** `uncapped_safe_with_capped_participation` and `uncapped_note_with_capped_participation` (03e), and `post_money_safe_with_pre_money_instruments` and `pay_to_play_with_conversions` (03g).
 
 ## Still refused
 
