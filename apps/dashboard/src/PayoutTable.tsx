@@ -10,7 +10,8 @@ import { D } from "spillpoint";
 import type { Answer, PreparedCapTable } from "spillpoint";
 
 import { classShares, fractionOf, fullyDiluted, holderShares, outstandingNames } from "./capTable.ts";
-import { dollars, percent, shortDollars } from "./format.ts";
+import { dollars, dollarsAndCents, percent, shortDollars } from "./format.ts";
+import { dateText } from "./rounds.ts";
 
 type Decimal = D;
 
@@ -119,10 +120,11 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
         </table>
       </div>
       <p className="footnote">
-        Share of the company is fully diluted: every share, option and preferred share as converted
+        Share of the company is fully diluted: every share, option{pc.warrants.size > 0 ? ", warrant" : ""} and preferred share as converted
         {capTable.unissuedPool.gt(0) ? ", and the unissued option pool" : ""}.
         {outstanding.size > 0 && ` ${outstandingFootnote(pc)}`}
       </p>
+      <Dividends pc={pc} />
       <Decisions pc={pc} answer={answer} />
     </section>
   );
@@ -137,6 +139,26 @@ function outstandingFootnote(pc: PreparedCapTable): string {
 }
 
 /**
+ * What each series' cumulative dividends come to by the sale's date (X2, X5),
+ * whatever the exit value: they add to its preference at 1x (X4), and a
+ * series that converts gives them up or is still paid them (X5).
+ */
+function Dividends({ pc }: { pc: PreparedCapTable }) {
+  const accruing = [...pc.preferred.values()].filter((s) => s.cumulativeDividend);
+  if (accruing.length === 0) return null;
+  return (
+    <p className="footnote">
+      {accruing
+        .map((s) => {
+          const conversion = s.cumulativeDividend!.onConversion === "paid" ? "if it converts, they're still paid, in its own place in the order" : "if it converts, it gives them up";
+          return `${s.name} has accrued ${dollarsAndCents(pc.dividends.get(s.id)!)} of cumulative dividends by ${dateText(pc.exitDate)}, the date of the sale. They add to its preference; ${conversion}.`;
+        })
+        .join(" ")}
+    </p>
+  );
+}
+
+/**
  * Which series convert, what each SAFE and note does (X1, X3: a SAFE takes
  * its Cash-Out Amount or converts; a note is repaid or converts), and which
  * options are exercised at this exit value.
@@ -145,34 +167,47 @@ function Decisions({ pc, answer }: { pc: PreparedCapTable; answer: Answer }) {
   const name = (id: string) => pc.capTable.securities.find((s) => s.id === id)?.name ?? id;
   const { converted: chosen } = answer.decisions;
   const converted = [...chosen].filter((id) => pc.preferred.has(id)).map(name);
-  const exercised = [...answer.decisions.exercised].map(name);
+  const exercised = [...answer.decisions.exercised].filter((id) => !pc.warrants.has(id)).map(name);
   const options = pc.capTable.securities.filter((s) => s.kind === "option");
+  // R29: warrants are exercised like options, once what they buy is worth more than the strike.
+  const warrants = [...pc.warrants.keys()];
+  const warrantsExercised = warrants.filter((id) => answer.decisions.exercised.has(id)).map(name);
   const outstanding = outstandingNames(pc);
   const safes = (pc.capTable.unconvertedSafes ?? []).map((f) => `${outstanding.get(f.id)} ${chosen.has(f.id) ? "converts to common" : "takes its Cash-Out Amount"} here.`);
   const notes = (pc.capTable.unconvertedNotes ?? []).map((n) => `${outstanding.get(n.id)} ${chosen.has(n.id) ? "converts to common" : "is repaid"} here.`);
-  return (
-    <p className="decisions">
-      {converted.length > 0 ? `Converting to common here: ${converted.join(", ")}.` : "No preferred series converts here."}
-      {[...safes, ...notes].map((t) => ` ${t}`).join("")}{" "}
-      {options.length > 0 &&
-        (exercised.length === options.length
-          ? "All options are exercised."
-          : exercised.length > 0
-            ? `Options exercised: ${exercised.join(", ")}.`
-            : "No options are worth exercising here.")}
-    </p>
-  );
+  const sentences = [
+    converted.length > 0 ? `Converting to common here: ${converted.join(", ")}.` : "No preferred series converts here.",
+    ...safes,
+    ...notes,
+    options.length === 0
+      ? null
+      : exercised.length === options.length
+        ? "All options are exercised."
+        : exercised.length > 0
+          ? `Options exercised: ${exercised.join(", ")}.`
+          : "No options are worth exercising here.",
+    warrants.length === 0
+      ? null
+      : warrantsExercised.length === warrants.length
+        ? `${warrants.length === 1 ? "The warrant is" : "All warrants are"} exercised.`
+        : warrantsExercised.length > 0
+          ? `Warrants exercised: ${warrantsExercised.join(", ")}.`
+          : `No ${warrants.length === 1 ? "warrant is" : "warrants are"} worth exercising here.`,
+  ];
+  return <p className="decisions">{sentences.filter(Boolean).join(" ")}</p>;
 }
 
 /**
  * Classes in the order cap tables are usually read: common, then options by
- * strike, then preferred from the most junior to the most senior.
+ * strike, then warrants by strike, then preferred from the most junior to
+ * the most senior.
  */
 function classOrder(pc: PreparedCapTable) {
   const { securities, seniority } = pc.capTable;
   const rank = new Map(seniority.flat().map((sid, i) => [sid, i]));
+  const byStrike = (kind: "option" | "warrant") =>
+    securities.filter((s) => s.kind === kind).sort((a, b) => ("strike" in a && "strike" in b ? a.strike.cmp(b.strike) : 0));
   const common = securities.filter((s) => s.kind === "common");
-  const options = securities.filter((s) => s.kind === "option").sort((a, b) => (a.kind === "option" && b.kind === "option" ? a.strike.cmp(b.strike) : 0));
   const preferred = securities.filter((s) => s.kind === "preferred").sort((a, b) => rank.get(b.id)! - rank.get(a.id)!);
-  return [...common, ...options, ...preferred];
+  return [...common, ...byStrike("option"), ...byStrike("warrant"), ...preferred];
 }

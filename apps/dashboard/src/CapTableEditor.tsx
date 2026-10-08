@@ -7,7 +7,9 @@
 //
 // SAFEs and convertible notes still outstanding at the sale (M5k) have a card
 // of their own, after who holds what: they hold no shares until they convert.
-// Rates are typed as percentages, as in the rounds editor.
+// Rates are typed as percentages, as in the rounds editor. Warrants (M5k2)
+// are a kind of class, with a strike and the class they buy, and a preferred
+// series can carry cumulative dividends.
 //
 // A cap table built from rounds (M4i) is shown read-only: the rounds build it,
 // so an edit here would contradict them. Its name and range stay editable.
@@ -20,8 +22,8 @@ import type { Participation } from "spillpoint";
 import {
   addHolder, addNote, addSafe, addSecurity, fieldId, outstandingHeldBy, removeOutstanding, removeRow, setNote, setPrice, setSafe, sharesHeldBy, sharesKey, tiers,
 } from "./draft.ts";
-import type { ConversionBase, Draft, DraftNote, DraftPreferred, DraftSafe, DraftSecurity } from "./draft.ts";
-import { Field, SelectField } from "./fields.tsx";
+import type { ConversionBase, Draft, DraftDividend, DraftNote, DraftPreferred, DraftSafe, DraftSecurity } from "./draft.ts";
+import { CheckField, Field, SelectField } from "./fields.tsx";
 import { amountHint, fractionValue } from "./format.ts";
 
 /** The engine's objection to the draft, and the field it names (null: none the editor shows). */
@@ -161,11 +163,12 @@ function ClassesCard({ draft, onDraft, errorFor }: CardProps) {
     onDraft({ ...draft, securities: draft.securities.map((s) => (s.key === key ? ({ ...s, ...change } as DraftSecurity) : s)) });
   const common = draft.securities.filter((s) => s.kind === "common");
   const options = draft.securities.filter((s): s is Extract<DraftSecurity, { kind: "option" }> => s.kind === "option");
+  const warrants = draft.securities.filter((s): s is Extract<DraftSecurity, { kind: "warrant" }> => s.kind === "warrant");
   const preferred = draft.securities.filter((s): s is DraftPreferred => s.kind === "preferred");
   return (
     <section className="card" aria-labelledby="edit-classes-heading">
       <h2 id="edit-classes-heading">Classes of stock</h2>
-      <p className="card__intro">Common stock, options and each series of preferred, with the terms that decide who gets what at a sale.</p>
+      <p className="card__intro">Common stock, options, warrants and each series of preferred, with the terms that decide who gets what at a sale.</p>
 
       <h3>Common stock</h3>
       <ul className="edit-rows">
@@ -205,6 +208,46 @@ function ClassesCard({ draft, onDraft, errorFor }: CardProps) {
       )}
       <button type="button" className="add" onClick={() => onDraft(addSecurity(draft, "option"))}>
         Add an option class
+      </button>
+
+      <h3>Warrants</h3>
+      <p className="card__intro">
+        Each class is one strike, for common stock or for one preferred series. Like options, they're exercised once what they buy is worth more than
+        the strike; they aren't drawn from the pool.
+      </p>
+      {warrants.length > 0 && (
+        <ul className="edit-rows">
+          {warrants.map((s) => (
+            <li key={s.key} className="edit-row edit-row--top">
+              <Field id={fieldId.securityName(s.key)} label="Class name" value={s.name} onChange={(v) => update(s.key, { name: v })} error={errorFor(fieldId.securityName(s.key))} />
+              <Field
+                id={fieldId.strike(s.key)}
+                label="Strike price ($ a share)"
+                numeric
+                value={s.strike}
+                onChange={(v) => onDraft(setPrice(draft, s.key, "strike", v))}
+                hint={priceHint(s.strike)}
+                error={errorFor(fieldId.strike(s.key))}
+              />
+              <SelectField
+                id={fieldId.underlying(s.key)}
+                label="It buys"
+                value={s.underlying}
+                options={[
+                  ...(s.underlying === "" ? [{ value: "", label: "Choose a class" }] : []),
+                  { value: "common", label: "Common stock" },
+                  ...preferred.map((p) => ({ value: p.key, label: p.name || "Unnamed series" })),
+                ]}
+                onChange={(v) => update(s.key, { underlying: v })}
+                error={errorFor(fieldId.underlying(s.key))}
+              />
+              <RemoveButton draft={draft} onDraft={onDraft} rowKey={s.key} name={s.name} />
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" className="add" onClick={() => onDraft(addSecurity(draft, "warrant"))}>
+        Add a warrant class
       </button>
 
       <h3>Preferred series</h3>
@@ -298,8 +341,66 @@ function PreferredFields({
           />
         )}
       </div>
+      <DividendFields s={s} update={update} errorFor={errorFor} />
       <RemoveButton draft={draft} onDraft={onDraft} rowKey={s.key} name={s.name} />
     </fieldset>
+  );
+}
+
+const DIVIDEND_METHODS = [
+  { value: "simple", label: "Simple: the same each year" },
+  { value: "compounding", label: "Compounding once a year" },
+];
+const ON_CONVERSION = [
+  { value: "forfeited", label: "Gives them up: converting forfeits them" },
+  { value: "paid", label: "Is still paid them, in its own place in the order" },
+];
+
+/** C5: cumulative dividends add to the preference at 1x (X4), up to the sale's date (X2), simple or compounding (X5). */
+function DividendFields({ s, update, errorFor }: { s: DraftPreferred; update: (key: string, change: Partial<DraftSecurity>) => void; errorFor: (field: string) => string | null }) {
+  const div = s.dividend;
+  const set = (change: Partial<DraftDividend>) => update(s.key, { dividend: { ...div!, ...change } } as Partial<DraftSecurity>);
+  return (
+    <>
+      <CheckField
+        id={fieldId.dividend(s.key)}
+        label="Cumulative dividends"
+        checked={div !== null}
+        onChange={(on) => update(s.key, { dividend: on ? { rate: "", method: "simple", accrualStart: "", onConversion: "forfeited" } : null } as Partial<DraftSecurity>)}
+        error={errorFor(fieldId.dividend(s.key))}
+        hint={div ? "They add to its preference, and accrue up to the date of the sale." : undefined}
+      />
+      {div && (
+        <div className="series__grid">
+          <Field
+            id={fieldId.dividendRate(s.key)}
+            label="Rate (% of the issue price a year)"
+            numeric
+            value={div.rate}
+            onChange={(v) => set({ rate: v })}
+            error={errorFor(fieldId.dividendRate(s.key))}
+          />
+          <SelectField
+            id={fieldId.dividendMethod(s.key)}
+            label="They accrue"
+            value={div.method}
+            options={DIVIDEND_METHODS}
+            onChange={(v) => set({ method: v as DraftDividend["method"] })}
+            error={errorFor(fieldId.dividendMethod(s.key))}
+          />
+          <Field id={fieldId.dividendStart(s.key)} label="From" type="date" value={div.accrualStart} onChange={(v) => set({ accrualStart: v })} error={errorFor(fieldId.dividendStart(s.key))} />
+          <SelectField
+            id={fieldId.dividendOnConversion(s.key)}
+            label="If it converts, it"
+            value={div.onConversion}
+            options={ON_CONVERSION}
+            onChange={(v) => set({ onConversion: v as DraftDividend["onConversion"] })}
+            error={errorFor(fieldId.dividendOnConversion(s.key))}
+            wide
+          />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -662,8 +763,19 @@ function GroupCard({ draft, onDraft, errorFor }: CardProps) {
 
 function RangeCard({ draft, onDraft, errorFor }: CardProps) {
   const set = (i: 0 | 1, v: string) => onDraft({ ...draft, range: (i === 0 ? [v, draft.range[1]] : [draft.range[0], v]) as [string, string] });
-  // Only notes accrue interest up to the sale (X3), so the date is asked for once there's a note, or kept once given.
-  const dated = draft.notes.length > 0 || draft.exitDate.trim() !== "";
+  // Notes' interest (X3) and cumulative dividends (X2) accrue up to the sale, so the date is asked for once
+  // either is there, or kept once given.
+  const dividends = draft.securities.some((s) => s.kind === "preferred" && s.dividend !== null);
+  const dated = draft.notes.length > 0 || dividends || draft.exitDate.trim() !== "";
+  const notes = draft.notes.length > 0;
+  const accrue =
+    notes && dividends
+      ? "Convertible notes' interest and cumulative dividends accrue up to this date."
+      : notes
+        ? "Convertible notes accrue interest up to this date."
+        : dividends
+          ? "Cumulative dividends accrue up to this date."
+          : "Nothing here accrues up to it yet.";
   return (
     <section className="card" aria-labelledby="edit-range-heading">
       <h2 id="edit-range-heading">Exit values to explore</h2>
@@ -679,7 +791,7 @@ function RangeCard({ draft, onDraft, errorFor }: CardProps) {
             value={draft.exitDate}
             onChange={(v) => onDraft({ ...draft, exitDate: v })}
             error={errorFor(fieldId.exitDate)}
-            hint="Convertible notes accrue interest up to this date."
+            hint={accrue}
           />
         )}
       </div>

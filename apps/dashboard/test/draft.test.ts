@@ -141,6 +141,47 @@ describe("where an engine error about a SAFE, a note or the sale's date lands (M
   });
 });
 
+describe("warrants and cumulative dividends (M5k2)", () => {
+  const capTable = (securities: Record<string, unknown>[]) => ({
+    cap_table: {
+      holders: [{ id: "a", name: "A" }],
+      securities: [{ id: "common", name: "Common Stock", kind: "common" }, ...securities],
+      seniority: [["seed"]],
+      positions: [{ holder: "a", security: "common", shares: "100" }],
+    },
+    range: ["0", "1000000"],
+  });
+  const seed = { id: "seed", name: "Seed Preferred", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null };
+  const warrant = { id: "w", name: "Warrant for Seed", kind: "warrant", strike: "0.5", underlying: "seed" };
+
+  it("reads a warrant for a series listed after it, and builds it back", () => {
+    const d = draftFromExit(capTable([warrant, seed]));
+    const seedKey = d.securities.find((s) => s.kind === "preferred")!.key;
+    expect(d.securities.find((s) => s.kind === "warrant")).toMatchObject({ underlying: seedKey });
+    expect((buildExit(d).json.cap_table.securities as Record<string, unknown>[])[1]).toEqual(warrant);
+  });
+
+  it("leaves a warrant asking which class it buys once its series is removed, rather than give it another", () => {
+    const d = draftFromExit(capTable([seed, warrant]));
+    const removed = removeRow(d, d.securities.find((s) => s.kind === "preferred")!.key);
+    expect(removed.securities.find((s) => s.kind === "warrant")).toMatchObject({ underlying: "" });
+    const checked = checkBuilt(buildExit({ ...removed }));
+    const w = removed.securities.find((s) => s.kind === "warrant")!;
+    expect(checked).toMatchObject({ ok: false, field: fieldId.underlying(w.key), message: "Fill this in: it can't be blank." });
+  });
+
+  it("puts a dividend's messages next to its fields, and asks for the sale's date by the series' name", () => {
+    const d = draftFromExit(capTable([{ ...seed, cumulative_dividend: { rate: "0.08", accrual_start: "2022-03-31" } }]));
+    const s = d.securities.find((x) => x.kind === "preferred")!;
+    expect(checkBuilt(buildExit(d))).toMatchObject({ ok: false, field: fieldId.exitDate, message: "Fill this in: Seed Preferred's cumulative dividends accrue up to the date of the sale." });
+    const dated = { ...d, exitDate: "2026-03-31" };
+    expect(checkBuilt(buildExit(dated)).ok).toBe(true);
+    const blankRate = { ...dated, securities: dated.securities.map((x) => (x.kind === "preferred" ? { ...x, dividend: { ...x.dividend!, rate: "" } } : x)) };
+    expect(checkBuilt(buildExit(blankRate))).toMatchObject({ ok: false, field: fieldId.dividendRate(s.key), message: "Fill this in: it can't be blank." });
+    expect(checkBuilt(buildExit({ ...d, exitDate: "2022-03-30" }))).toMatchObject({ field: fieldId.exitDate, message: "2022-03-30 is before Seed Preferred's dividends start to accrue, 2022-03-31" });
+  });
+});
+
 describe("where an engine error lands", () => {
   const draft = millraceDraft();
   const { fields } = buildExit(draft);
@@ -192,10 +233,17 @@ describe("a cap table the page can't show in full (M5d review)", () => {
     );
   });
 
-  it("refuses a term it doesn't carry, such as a series' dividends", () => {
-    const series = { id: "p", name: "Seed Preferred", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null };
-    expect(() => draftFromExit(exit({ ...series, cumulative_dividend: { rate: "0.08", accrual_start: "2024-01-01" } }))).toThrow(
-      "It has cumulative dividends on Seed Preferred, which this page doesn't show yet.",
-    );
+  it("refuses a term it doesn't carry, such as a management carve-out, and a field nobody models", () => {
+    const withCarveOut = { ...exit({ id: "p", name: "Seed Preferred", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null }) };
+    (withCarveOut.cap_table as Record<string, unknown>).carve_out = { tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "a", percent: "100" }] };
+    expect(() => draftFromExit(withCarveOut)).toThrow("It has a management carve-out, which this page doesn't show yet.");
+    let refused: unknown;
+    try {
+      draftFromExit(exit({ id: "w", name: "Warrant", kind: "warrant", strike: "1", underlying: "common", expiry: "2030-01-01" }));
+    } catch (e) {
+      refused = e;
+    }
+    // A field nobody models: the page's check says so, and the engine's message, read first, names it.
+    expect(refused).toMatchObject({ name: "NotShownYet", known: false });
   });
 });

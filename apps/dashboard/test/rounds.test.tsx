@@ -9,7 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
 import { buildExit } from "../src/draft.ts";
-import { exampleContents } from "../src/rounds.ts";
+import { buildCapTables } from "spillpoint";
+
+import { eventViews, exampleContents } from "../src/rounds.ts";
 import { lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
@@ -219,5 +221,27 @@ describe("saving and opening rounds", () => {
     click("Save");
     const file = JSON.parse(await downloads[0]!.text());
     expect(Object.keys(file)).toEqual(["format", "version", "name", "cap_table", "range", "view"]);
+  });
+});
+
+describe("a warrant for preferred on the Rounds tab (M5k2)", () => {
+  it("counts as converted in the fully diluted share, at its series' ratio (R29)", () => {
+    const company = structuredClone(examples[0]!.company!) as { holders: Record<string, unknown>[]; events: Record<string, unknown>[] };
+    company.events.push({ id: "warrants", date: null, type: "issue_warrants", warrants: [{ holder: "lena", shares: "100000", strike: "1", underlying: "series_a" }] });
+    const rounds = { holders: company.holders, events: company.events, after: "warrants" };
+    const tables = buildCapTables(company);
+    const view = eventViews(rounds, tables).at(-1)!;
+    const ct = tables.at(-1)!.capTable;
+    const seriesA = ct.securities.find((s) => s.id === "series_a")!;
+    const ratio = seriesA.kind === "preferred" ? seriesA.conversionRatio : null;
+    const row = view.rows.find((r) => r.security.startsWith("Warrants for Series A Preferred"))!;
+    // Every row's share and the pool's add up to the whole, and the warrant's is its 100,000 × Series A's 1.137399.
+    const total = view.rows.reduce((sum, r) => sum.plus(r.fullyDiluted), view.pool.fullyDiluted);
+    expect(total.minus(1).abs().lt("1e-30")).toBe(true);
+    const all = ct.positions.reduce((sum, p) => {
+      const s = ct.securities.find((x) => x.id === p.security)!;
+      return sum.plus(s.kind === "preferred" ? p.shares.times(s.conversionRatio) : s.kind === "warrant" && s.underlying !== "common" ? p.shares.times(ratio!) : p.shares);
+    }, ct.unissuedPool);
+    expect(row.fullyDiluted.minus(ratio!.times(100000).div(all)).abs().lt("1e-30")).toBe(true);
   });
 });

@@ -195,8 +195,10 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
     const ct = t.capTable;
     const holder = (id: unknown) => ct.holders.find((h) => h.id === id)?.name ?? String(id);
     const security = (id: unknown) => ct.securities.find((s) => s.id === id)?.name ?? String(id);
-    const asConverted = (securityId: string, shares: Decimal) => {
+    // Preferred as converted, and a warrant for a series at that series' ratio (R29).
+    const asConverted = (securityId: string, shares: Decimal): Decimal => {
       const s = ct.securities.find((x) => x.id === securityId);
+      if (s?.kind === "warrant" && s.underlying !== "common") return asConverted(s.underlying, shares);
       return s?.kind === "preferred" ? shares.times(s.conversionRatio) : shares;
     };
     const total = ct.positions.reduce((sum, p) => sum.plus(asConverted(p.security, p.shares)), ct.unissuedPool);
@@ -278,8 +280,25 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name)
     case "create_pool":
       return { title: "Option pool created", lines: [`${count(d.poolCreated)} shares set aside for options: ${pct(new D(String(ev.percent)).div(100))} of the fully diluted shares after it.`] };
     case "priced_round":
-      return { title: `${security((ev.series as Json).id)}, a priced round`, lines: roundLines(ev, d, holder, security) };
+      return { title: `${security((ev.series as Json).id)}, a priced round`, lines: [...roundLines(ev, d, holder, security), ...dividendLines(ev, t)] };
   }
+}
+
+/**
+ * R30: a round's cumulative dividends accrue from its date, on its series and
+ * on the series its SAFEs and notes convert into, each on its own issue price.
+ */
+function dividendLines(ev: Json, t: CapTableAfterEvent): string[] {
+  const id = String((ev.series as Json).id);
+  return t.capTable.securities.flatMap((s) => {
+    if (s.kind !== "preferred" || !s.cumulativeDividend || !(s.id === id || s.id.startsWith(`${id}_`)) || s.cumulativeDividend.accrualStart !== ev.date) return [];
+    const div = s.cumulativeDividend;
+    const conversion = div.onConversion === "paid" ? "if it converts, they're still paid" : "if it converts, it gives them up";
+    return [
+      `${s.name} accrues cumulative dividends of ${pct(div.rate)} a year on its ${price(s.originalIssuePrice)} issue price, ${div.method === "compounding" ? "compounding once a year" : "simple"}, ` +
+        `from ${dateText(div.accrualStart)}; ${conversion}.`,
+    ];
+  });
 }
 
 function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): string[] {

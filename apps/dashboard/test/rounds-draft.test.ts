@@ -152,3 +152,23 @@ describe("SAFEs and notes, read from the events as typed (M5k)", () => {
     expect(d.events.at(-1)!.json.convert_safes).toBeUndefined();
   });
 });
+
+describe("warrants and a round's dividends, as typed (M5k2)", () => {
+  it("holds case 23's dividend rate as the percentage people type, and gives it back exactly", () => {
+    const d = draftFromRounds(roundsOf("edge-23-dividends-from-a-round"));
+    const round = d.events.find((e) => e.json.type === "priced_round")!;
+    expect((round.json.series as Record<string, Record<string, unknown>>).cumulative_dividend).toMatchObject({ rate: "8" });
+    expect(buildRounds(d)).toEqual(roundsOf("edge-23-dividends-from-a-round"));
+  });
+
+  it("names case 22's lender in its warrants event, so the lender can't be removed while named", () => {
+    const d = draftFromRounds(roundsOf("edge-22-warrants-issued"));
+    const lender = d.holders.find((h) => h.fileId === "lender_l")!;
+    expect(eventsNaming(d, lender.key)).toBe(1);
+  });
+
+  it("adds warrants for common, for the first holder, with their amounts blank", () => {
+    const d = addEvent(draftFromRounds(roundsOf("millrace")), "issue_warrants", []);
+    expect(d.events.at(-1)!.json).toEqual({ id: "warrants", date: "", type: "issue_warrants", warrants: [{ holder: d.holders[0]!.key, shares: "", strike: "", underlying: "common" }] });
+  });
+});

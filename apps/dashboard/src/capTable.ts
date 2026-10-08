@@ -9,15 +9,21 @@ type Decimal = D;
 
 const ZERO = new D(0);
 
-/** As-converted shares of one security: preferred by its conversion ratio, everything else one for one. */
+/**
+ * As-converted shares of one security: preferred by its conversion ratio, a
+ * warrant for a series by that series' ratio (R29: it counts as converted),
+ * everything else one for one.
+ */
 function asConverted(pc: PreparedCapTable, security: string, shares: Decimal): Decimal {
-  const series = pc.preferred.get(security);
+  const warrant = pc.warrants.get(security);
+  const series = pc.preferred.get(warrant ? warrant.underlying : security);
   return series ? shares.times(series.conversionRatio) : shares;
 }
 
 /**
  * The fully diluted share count, including the unissued pool (M3 plan,
- * answer 1): issued stock and options, preferred as converted, and the pool.
+ * answer 1): issued stock, options and warrants, preferred as converted, and
+ * the pool.
  */
 export function fullyDiluted(pc: PreparedCapTable): Decimal {
   return pc.capTable.positions

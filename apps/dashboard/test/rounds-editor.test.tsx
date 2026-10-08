@@ -394,3 +394,71 @@ describe("SAFEs and notes in the rounds (M5k)", () => {
     await screen.findByRole("heading", { name: "Breakpoints" }, { timeout: ANALYSIS_TIMEOUT });
   });
 });
+
+describe("warrants and dividends in the rounds (M5k2)", () => {
+  /** What Ana gets at $100M on Millrace with its events changed, the payouts after `after`, by the engine alone. */
+  function anaAt(change: (events: Record<string, unknown>[]) => Record<string, unknown>[], after: string, exitDate?: string): string {
+    const company = structuredClone(examples[0]!.company!) as { holders: unknown[]; events: Record<string, unknown>[] };
+    const exit = readInputs({
+      holders: company.holders,
+      events: change(company.events),
+      exit: { cap_table_after_event: after, range: ["0", "300000000"], exit_values: [], ...(exitDate ? { exit_date: exitDate } : {}) },
+    });
+    return `At $100M you get ${shortDollars(solve(prepare(exit.capTable, exit.exitDate), new D("100000000")).answers[0]!.payout.holderTotals.get("ana")!)}`;
+  }
+
+  it("adds warrants for common at the end, and the payouts follow", () => {
+    render(<App />);
+    openTab("Rounds");
+    addEvent("Warrants issued");
+    const warrants = card(/Warrants issued/);
+    const line = group(/Warrants issued/, /Warrant 1/);
+    fireEvent.change(within(line).getByLabelText("Holder"), { target: { value: (within(line).getByRole("option", { name: "Lena Fischer" }) as HTMLOptionElement).value } });
+    type(within(line).getByLabelText("Shares"), "500,000");
+    type(within(line).getByLabelText("Strike ($ a share)"), "1");
+    expect((within(line).getByLabelText("It buys") as HTMLSelectElement).value).toBe("common");
+    expect(within(panel()).queryAllByRole("alert")).toEqual([]);
+    expect(lines(/Warrants issued/)).toEqual(["Lena Fischer: warrants for 500,000 common shares at $1 a share, not from the pool."]);
+    expect(within(warrants).getByText("The payouts use the cap table after this event.")).toBeTruthy();
+    openTab("Payouts");
+    const expected = anaAt((events) => [...events, { id: "warrants", date: null, type: "issue_warrants", warrants: [{ holder: "lena", shares: "500000", strike: "1", underlying: "common" }] }], "warrants");
+    expect(headline()).toBe(expected);
+    expect(headline()).not.toBe("At $100M you get $9.75M");
+  });
+
+  it("offers a warrant for a series an earlier round issued", () => {
+    render(<App />);
+    openTab("Rounds");
+    addEvent("Warrants issued");
+    const buys = within(group(/Warrants issued/, /Warrant 1/)).getByLabelText("It buys");
+    expect(within(buys).getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "Common stock", "Seed Preferred", "Series A Preferred", "Series B Preferred", "Seed Preferred (from SAFEs)",
+    ]);
+  });
+
+  it("gives Series B 8% dividends from its round's date, asks for the sale's date, and pays what the engine pays", () => {
+    render(<App />);
+    openTab("Rounds");
+    edit("Series B Preferred, a priced round");
+    const round = card(/Series B Preferred/);
+    fireEvent.click(within(round).getByLabelText("Cumulative dividends"));
+    type(within(round).getByLabelText("Rate (% of the issue price a year)"), "8");
+    expect(within(panel()).queryAllByRole("alert")).toEqual([]);
+    expect(lines(/Series B Preferred/).at(-1)).toMatch(/^Series B Preferred accrues cumulative dividends of 8% a year on its \$\d\.\d{6} issue price, simple, from Mar 31, 2025; if it converts, it gives them up\.$/);
+    // The rounds build; the cap table now needs the sale's date.
+    openTab("Payouts");
+    expect(within(document.getElementById("panel-payouts")!).getByText(/Fill this in: Series B Preferred's cumulative dividends accrue up to the date of the sale\./)).toBeTruthy();
+    openTab("Cap table");
+    type(screen.getByLabelText("Date of the sale"), "2027-03-31");
+    openTab("Payouts");
+    const dividend = { rate: "0.08", method: "simple", on_conversion: "forfeited" };
+    const expected = anaAt(
+      (events) => events.map((e) => (e.id === "series_b" ? { ...e, series: { ...(e.series as object), cumulative_dividend: dividend } } : e)),
+      "series_b",
+      "2027-03-31",
+    );
+    expect(headline()).toBe(expected);
+    // Two years, 730 days, at 8% on Series B's 9,241,189 shares at $1.082112 (the locked case's 12003689592480000/11092836539841877): $1,599,999.98.
+    expect(screen.getByText(/^Series B Preferred has accrued \$1,599,999\.98 of cumulative dividends by Mar 31, 2027, the date of the sale\./)).toBeTruthy();
+  });
+});
