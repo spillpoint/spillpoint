@@ -76,5 +76,5 @@ Size each milestone so Jordan can review it in one evening. Split any that won't
   - Each term appears in the dashboard.
 - **M6: OCF import.**
   - Read Open Cap Format files into the engine's model.
-  - Test against OCF's published examples.
+  - Test against our own OCF-format cases; run OCF's published examples locally, outside the repo, as a check.
   - Give a clear error for anything unsupported, never a silent skip.

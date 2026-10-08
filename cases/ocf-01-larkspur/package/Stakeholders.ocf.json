@@ -1,0 +1,101 @@
+{
+  "file_type": "OCF_STAKEHOLDERS_FILE",
+  "items": [
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-founder-a",
+      "name": {
+        "legal_name": "Founder A"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-founder-b",
+      "name": {
+        "legal_name": "Founder B"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-employee-c",
+      "name": {
+        "legal_name": "Employee C"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-employee-d",
+      "name": {
+        "legal_name": "Employee D"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-d-trust",
+      "name": {
+        "legal_name": "D Family Trust"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-employee-e",
+      "name": {
+        "legal_name": "Employee E"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-advisor-f",
+      "name": {
+        "legal_name": "Advisor F"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-investor-x",
+      "name": {
+        "legal_name": "Investor X"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-investor-y",
+      "name": {
+        "legal_name": "Investor Y"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-investor-s",
+      "name": {
+        "legal_name": "Investor S"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-investor-n",
+      "name": {
+        "legal_name": "Investor N"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "sh-lender-l",
+      "name": {
+        "legal_name": "Lender L"
+      },
+      "stakeholder_type": "INSTITUTION"
+    }
+  ]
+}

@@ -15,6 +15,8 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
   .filter((d) => d.isDirectory())
   .map((d) => d.name)
   .sort();
+/** OCF cases (M6, C16): an OCF package and its import, with no inputs.json. The engine reads them from 04d. */
+export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("ocf-"));
 
 /**
  * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,

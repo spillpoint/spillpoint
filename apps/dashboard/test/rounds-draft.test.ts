@@ -22,7 +22,8 @@ const roundsOf = (name: string): Rounds => {
   return { holders: inputs.holders, events: inputs.events, after: inputs.exit?.cap_table_after_event ?? last };
 };
 const ROUND_CASES = readdirSync(casesDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory())
+  // OCF cases (C16) hold a package, not inputs.json.
+  .filter((d) => d.isDirectory() && !d.name.startsWith("ocf-"))
   .map((d) => d.name)
   .filter((name) => JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).events);
 

@@ -1,0 +1,27 @@
+{
+  "file_type": "OCF_STOCK_PLANS_FILE",
+  "items": [
+    {
+      "object_type": "STOCK_PLAN",
+      "id": "plan-2023",
+      "plan_name": "2023 Stock Plan",
+      "board_approval_date": "2023-03-01",
+      "initial_shares_reserved": "1000000",
+      "default_cancellation_behavior": "RETURN_TO_POOL",
+      "stock_class_ids": [
+        "cls-common"
+      ]
+    },
+    {
+      "object_type": "STOCK_PLAN",
+      "id": "plan-2025",
+      "plan_name": "2025 Advisor Plan",
+      "board_approval_date": "2025-01-01",
+      "initial_shares_reserved": "100000",
+      "default_cancellation_behavior": "DEFINED_PER_PLAN_SECURITY",
+      "stock_class_ids": [
+        "cls-common"
+      ]
+    }
+  ]
+}
