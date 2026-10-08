@@ -1,0 +1,42 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-r-warrant-valuation",
+      "date": "2025-06-15",
+      "security_id": "war-r-valuation",
+      "custom_id": "WAR-R-VALUATION",
+      "stakeholder_id": "sh-lender-l",
+      "quantity": "10000",
+      "exercise_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2035-06-15",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-r-valuation-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-seed",
+            "conversion_mechanism": {
+              "type": "VALUATION_BASED_CONVERSION",
+              "valuation_type": "CAP",
+              "valuation_amount": {
+                "amount": "20000000",
+                "currency": "USD"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

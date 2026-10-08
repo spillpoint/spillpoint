@@ -1,0 +1,25 @@
+{
+  "case": "ocf-02-not-needed",
+  "worked_by": "hand (DERIVATION.md)",
+  "base": "ocf-01-larkspur",
+  "fixtures": {
+    "stock-legend-template.ocf.json": { "adds": { "not_needed": { "STOCK_LEGEND_TEMPLATE": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "stock-legend-template.ocf.json" }] } },
+    "vesting-terms.ocf.json": { "adds": { "not_needed": { "VESTING_TERMS": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "vesting-terms.ocf.json" }] } },
+    "valuation.ocf.json": { "adds": { "not_needed": { "VALUATION": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "valuation.ocf.json" }] } },
+    "financing.ocf.json": { "adds": { "not_needed": { "FINANCING": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "financing.ocf.json" }] } },
+    "document.ocf.json": { "adds": { "not_needed": { "DOCUMENT": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "document.ocf.json" }] } },
+    "stock-acceptance.ocf.json": { "adds": { "not_needed": { "TX_STOCK_ACCEPTANCE": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "stock-acceptance.ocf.json" }] } },
+    "equity-compensation-acceptance.ocf.json": { "adds": { "not_needed": { "TX_EQUITY_COMPENSATION_ACCEPTANCE": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "equity-compensation-acceptance.ocf.json" }] } },
+    "plan-security-acceptance.ocf.json": { "adds": { "not_needed": { "TX_PLAN_SECURITY_ACCEPTANCE": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "plan-security-acceptance.ocf.json" }] } },
+    "warrant-acceptance.ocf.json": { "adds": { "not_needed": { "TX_WARRANT_ACCEPTANCE": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "warrant-acceptance.ocf.json" }] } },
+    "convertible-acceptance.ocf.json": { "adds": { "not_needed": { "TX_CONVERTIBLE_ACCEPTANCE": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "convertible-acceptance.ocf.json" }] } },
+    "vesting-start.ocf.json": { "adds": { "not_needed": { "TX_VESTING_START": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "vesting-start.ocf.json" }] } },
+    "vesting-event.ocf.json": { "adds": { "not_needed": { "TX_VESTING_EVENT": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "vesting-event.ocf.json" }] } },
+    "vesting-acceleration.ocf.json": { "adds": { "not_needed": { "TX_VESTING_ACCELERATION": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "vesting-acceleration.ocf.json" }] } },
+    "issuer-authorized-shares.ocf.json": { "adds": { "not_needed": { "TX_ISSUER_AUTHORIZED_SHARES_ADJUSTMENT": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "issuer-authorized-shares.ocf.json" }] } },
+    "class-authorized-shares.ocf.json": { "adds": { "not_needed": { "TX_STOCK_CLASS_AUTHORIZED_SHARES_ADJUSTMENT": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "class-authorized-shares.ocf.json" }] } },
+    "stakeholder-relationship.ocf.json": { "adds": { "not_needed": { "CE_STAKEHOLDER_RELATIONSHIP": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "stakeholder-relationship.ocf.json" }] } },
+    "stakeholder-status.ocf.json": { "adds": { "not_needed": { "CE_STAKEHOLDER_STATUS": 1 }, "notes": [{ "code": "not_in_manifest", "subject": "stakeholder-status.ocf.json" }] } },
+    "version-1-0.ocf.json": { "adds": {} }
+  }
+}

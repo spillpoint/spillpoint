@@ -1,0 +1,15 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_CLASS_SPLIT",
+      "id": "tx-r-split-preferred",
+      "date": "2025-06-15",
+      "stock_class_id": "cls-series-a",
+      "split_ratio": {
+        "numerator": "2",
+        "denominator": "1"
+      }
+    }
+  ]
+}

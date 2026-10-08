@@ -1,0 +1,22 @@
+{
+  "file_type": "OCF_VESTING_TERMS_FILE",
+  "items": [
+    {
+      "object_type": "VESTING_TERMS",
+      "id": "vest-4y-1y",
+      "name": "Four years, one-year cliff",
+      "description": "A quarter after a year, then monthly for three years.",
+      "allocation_type": "CUMULATIVE_ROUNDING",
+      "vesting_conditions": [
+        {
+          "id": "start",
+          "quantity": "0",
+          "trigger": {
+            "type": "VESTING_START_DATE"
+          },
+          "next_condition_ids": []
+        }
+      ]
+    }
+  ]
+}

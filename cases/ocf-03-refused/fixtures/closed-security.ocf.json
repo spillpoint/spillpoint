@@ -1,0 +1,13 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_CANCELLATION",
+      "id": "tx-r-cancel-closed",
+      "date": "2024-06-01",
+      "security_id": "sec-a1",
+      "quantity": "1000",
+      "reason_text": "Already transferred."
+    }
+  ]
+}

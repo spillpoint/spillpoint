@@ -29,6 +29,8 @@ Twelve stakeholders, ten kept. **Employee E** and **Advisor F** hold nothing on 
 
 **Anti-dilution** is "none" on both: OCF has no field for it, and each gets a report line. So does each class's conversion rounding, `NORMAL`: the engine converts without rounding.
 
+**`board_seat` on Series A is deliberately not an OCF field.** It's there to test the report's line for an unrecognized field, so don't take this package as a valid OCF example: a schema validator would reject it.
+
 ## Shares (O5), security by security
 
 **Common Stock:**

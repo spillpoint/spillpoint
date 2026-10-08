@@ -1,0 +1,12 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "CE_STAKEHOLDER_STATUS",
+      "id": "ce-status",
+      "date": "2024-08-01",
+      "stakeholder_id": "sh-employee-e",
+      "new_status": "TERMINATION_VOLUNTARY_OTHER"
+    }
+  ]
+}

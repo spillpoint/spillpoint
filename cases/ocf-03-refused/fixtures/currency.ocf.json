@@ -1,0 +1,21 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-r-currency",
+      "date": "2025-06-15",
+      "security_id": "sec-r-currency",
+      "custom_id": "SEC-R-CURRENCY",
+      "stakeholder_id": "sh-founder-a",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.10",
+        "currency": "CAD"
+      },
+      "quantity": "1000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    }
+  ]
+}

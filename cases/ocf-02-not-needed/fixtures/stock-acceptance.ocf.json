@@ -1,0 +1,11 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ACCEPTANCE",
+      "id": "tx-stock-acceptance",
+      "date": "2025-06-15",
+      "security_id": "sec-x1"
+    }
+  ]
+}

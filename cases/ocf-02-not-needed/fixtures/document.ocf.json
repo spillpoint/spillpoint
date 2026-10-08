@@ -1,0 +1,11 @@
+{
+  "file_type": "OCF_DOCUMENTS_FILE",
+  "items": [
+    {
+      "object_type": "DOCUMENT",
+      "id": "doc-charter",
+      "path": "charter.pdf",
+      "md5": "0123456789abcdef0123456789abcdef"
+    }
+  ]
+}

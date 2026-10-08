@@ -1,0 +1,48 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_TRANSFER",
+      "id": "tx-r-transfer",
+      "date": "2025-06-15",
+      "security_id": "sec-b5",
+      "quantity": "400000",
+      "resulting_security_ids": [
+        "sec-r-to-a"
+      ],
+      "balance_security_id": "sec-r-balance"
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-r-to-a",
+      "date": "2025-06-15",
+      "security_id": "sec-r-to-a",
+      "custom_id": "SEC-R-TO-A",
+      "stakeholder_id": "sh-founder-a",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "400000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-r-balance",
+      "date": "2025-06-15",
+      "security_id": "sec-r-balance",
+      "custom_id": "SEC-R-BALANCE",
+      "stakeholder_id": "sh-founder-b",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "3100000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    }
+  ]
+}

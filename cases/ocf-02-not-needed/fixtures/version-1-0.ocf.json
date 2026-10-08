@@ -1,0 +1,49 @@
+{
+  "file_type": "OCF_MANIFEST_FILE",
+  "ocf_version": "1.0.0",
+  "as_of": "2025-06-30",
+  "generated_at": "2025-07-01T09:00:00Z",
+  "issuer": {
+    "object_type": "ISSUER",
+    "id": "issuer-larkspur",
+    "legal_name": "Larkspur Instruments, Inc.",
+    "formation_date": "2023-01-05",
+    "country_of_formation": "US",
+    "country_subdivision_of_formation": "DE"
+  },
+  "stakeholders_files": [
+    {
+      "filepath": "Stakeholders.ocf.json"
+    }
+  ],
+  "stock_classes_files": [
+    {
+      "filepath": "StockClasses.ocf.json"
+    }
+  ],
+  "stock_plans_files": [
+    {
+      "filepath": "StockPlans.ocf.json"
+    }
+  ],
+  "transactions_files": [
+    {
+      "filepath": "Transactions.ocf.json"
+    }
+  ],
+  "stock_legend_templates_files": [
+    {
+      "filepath": "StockLegends.ocf.json"
+    }
+  ],
+  "vesting_terms_files": [
+    {
+      "filepath": "VestingTerms.ocf.json"
+    }
+  ],
+  "valuations_files": [
+    {
+      "filepath": "Valuations.ocf.json"
+    }
+  ]
+}
