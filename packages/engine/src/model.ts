@@ -173,6 +173,17 @@ export interface CapTable {
   unconvertedNotes?: Note[];
 }
 
+/**
+ * Escrow and earnouts (C7, X8): the sale's proceeds arriving as a series of
+ * payments. The waterfall runs on cumulative proceeds, so each later payment
+ * goes where it would have gone had it all been paid at closing.
+ */
+export interface PaymentSchedule {
+  id: string;
+  description: string;
+  payments: { label: string; amount: D }[];
+}
+
 /** What the engine needs to run an exit: the cap table, the range to analyse, and the exit values to report. */
 export interface ExitInput {
   capTable: CapTable;
@@ -181,4 +192,6 @@ export interface ExitInput {
   exitValues: D[];
   /** YYYY-MM-DD: the day dividends accrue to. Needed when a series has cumulative dividends; optional, so 0.1.0 code that builds an ExitInput keeps working. */
   exitDate?: string | null;
+  /** Escrow and earnout schedules to pay out (C7). Optional, so 0.1.0 code that builds an ExitInput keeps working. */
+  paymentSchedules?: PaymentSchedule[];
 }

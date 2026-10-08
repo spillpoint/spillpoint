@@ -24,6 +24,7 @@ import type {
   Participation,
   Position,
   Note,
+  PaymentSchedule,
   PreferredSeries,
   Safe,
   Security,
@@ -524,9 +525,6 @@ export function readExit(value: unknown, resolveCapTable?: CapTableResolver, pat
 /** An exit whose cap table, when it names one by event (C2), comes from `tableAfter`. */
 export function readExitOn(value: unknown, tableAfter: (eventId: string, path: string) => CapTable, path: string): ExitInput {
   const exit = object(value, path);
-  if (exit.payment_schedules != null) {
-    throw new UnsupportedTermError("payment_schedules", "M5", `${path}.payment_schedules`, "Escrow and earnout payment schedules (X8)");
-  }
   onlyKnownFields(exit, EXIT_FIELDS, path);
 
   const capTable =
@@ -564,5 +562,28 @@ export function readExitOn(value: unknown, tableAfter: (eventId: string, path: s
     }
   }
 
-  return { capTable, range: [lo, hi], exitValues, exitDate };
+  const paymentSchedules = exit.payment_schedules == null ? [] : readSchedules(exit.payment_schedules, `${path}.payment_schedules`);
+
+  return { capTable, range: [lo, hi], exitValues, exitDate, ...(paymentSchedules.length > 0 ? { paymentSchedules } : {}) };
+}
+
+/** C7: each schedule has an id, an optional description, and payments, each a label and a positive amount. */
+function readSchedules(value: unknown, path: string): PaymentSchedule[] {
+  const ids = new Set<string>();
+  return array(value, path).map((v, i) => {
+    const at = `${path}[${i}]`;
+    const sched = object(v, at);
+    onlyKnownFields(sched, ["id", "description", "payments"], at);
+    const id = text(sched.id, `${at}.id`);
+    if (ids.has(id)) throw new InputError(`${at}.id`, `schedule ${id} is listed twice`);
+    ids.add(id);
+    const payments = array(sched.payments, `${at}.payments`).map((p, j) => {
+      const pat = `${at}.payments[${j}]`;
+      const pay = object(p, pat);
+      onlyKnownFields(pay, ["label", "amount"], pat);
+      return { label: text(pay.label, `${pat}.label`), amount: positive(pay.amount, `${pat}.amount`) };
+    });
+    if (payments.length === 0) throw new InputError(`${at}.payments`, "needs at least one payment");
+    return { id, description: sched.description == null ? "" : text(sched.description, `${at}.description`), payments };
+  });
 }

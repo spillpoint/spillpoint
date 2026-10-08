@@ -13,6 +13,7 @@ it("exports exactly the public API", () => {
     "buildCapTables",
     "findBreakpoints",
     "parseExact",
+    "paySchedule",
     "payout",
     "prepare",
     "readCapTable",

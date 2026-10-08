@@ -231,6 +231,8 @@ Items marked *(0.2.0)* are on the main branch and come with the next release; 0.
   - **Repayment,** a multiple of principal plus simple interest to the exit date, is debt, paid ahead of all equity. Several notes share a shortfall pro rata.
   - **Conversion:** principal plus interest converts at the pre-money cap ÷ the share count just before the sale (with the pool, without it, or common only), leaving out the notes. With no cap it converts at the sale's common price less its discount, where that price exists. A note with neither is only repaid.
   - **A note converts only when that strictly pays more.**
+- **Escrow and earnouts** *(0.2.0)*: proceeds paid over time. `paySchedule` pays each payment's take on cumulative proceeds, as if everything so far had been paid at closing, with every decision re-made at each step.
+  - **A take is negative** when a later payment lowers a holder's running total, as when it tips a series into converting. It is reported as is, and `lowered` names the holders it falls for.
 - **Management carve-outs** *(0.2.0)*: a percentage of the exit value, in marginal tiers like tax brackets, paid to listed people under the security `"carve_out"`.
   - **Before the preferences,** the default.
   - **Alongside them,** sharing the most senior tier pro rata by claim. While that tier isn't paid in full, payouts curve. A breakpoint on a curve is where the formula changes, and the breakpoints either side of a curved stretch say so (`curveBelow`, `curveAbove`).
@@ -292,9 +294,6 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; a SAFE with no cap alongside capped participating preferred; more than one note unless each has a cap; a note alongside a SAFE or a carve-out; and a note with no cap alongside capped participating preferred.
 - Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
-**Not modeled yet** (milestone `"M5"`):
-- escrow and earnouts
-
 **Refused by design,** with an `InputError`:
 - a pro-rata investment above the investor's entitlement (the message gives the amount to mark pro-rata, and says to enter the rest as an ordinary investment)
 - a pro-rata investment in a round where a SAFE or note stays outstanding
@@ -316,6 +315,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - `range`: the exit values to analyse
 - `exit_values`: the points to report
 - `exit_date`, as `YYYY-MM-DD`: needed when a series has cumulative dividends or a note is outstanding *(0.2.0)*
+- optional `payment_schedules` *(0.2.0)*: each with an `id`, a `description`, and `payments`, each a `label` and an `amount`
 
 **A company built from its rounds** (`buildCapTables`, `readInputs`) is `holders` and `events`, each event with an `id`, a `date` and a `type`:
 
@@ -352,12 +352,13 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps, and each note's interest, repayment and conversion. `exitDate` is needed only for dividends and notes. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
+| `paySchedule(table, schedule)` *(0.2.0)* | Each payment's take: `cumulative`, the `decisions` there, the take per holder × security in `lines`, holder and class totals, and `lowered`, the holders whose running total falls. |
 | `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |
 | `D`, `parseExact`, `toCents` | Make and format the engine's Decimals. |
 
 **Errors:**
 - `InputError`: the input is malformed.
-- `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"M5"`, or `"later"` for a term that waits until a case settles it.
+- `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"later"`, for a term that waits until a case settles it. *(0.2.0: nothing is refused as `"M5"` any more, though the type keeps the value.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable.
 
 ## License

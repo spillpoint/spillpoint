@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 10, 12 to 12h, 13a to 13g, 23 and Millrace", () => {
+  it("are edge cases 1 through 13g, 23 and Millrace: every exit case", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -33,6 +33,7 @@ describe("the exit cases the engine runs", () => {
       "edge-09c-dividends-paid-on-conversion",
       "edge-10-carve-out",
       "edge-10b-carve-out-alongside-preferences",
+      "edge-11-earnout",
       "edge-12-unconverted-safe",
       "edge-12b-safe-cap-and-discount",
       "edge-12c-safe-discount-only",
@@ -105,9 +106,8 @@ describe("the exit cases the engine runs", () => {
 });
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
-  const refused: [string, string, Milestone][] = [
-    ["edge-11-earnout", "payment_schedules", "M5"],
-  ];
+  // Since M5i every exit case runs; a case added later and refused would be listed here.
+  const refused: [string, string, Milestone][] = [];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
@@ -118,17 +118,20 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     expect(() => readInputs(readCaseFile(name, "inputs.json"))).toThrow("inputs: a round case with no exit to run; buildCapTables builds its cap tables");
   });
 
-  it.each(refused)("%s is refused for %s (%s)", (name, term, milestone) => {
-    let error: unknown;
-    try {
-      readInputs(readCaseFile(name, "inputs.json"));
-    } catch (e) {
-      error = e;
-    }
-    expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term, milestone });
-    expect((error as Error).message).toMatch(milestone === "later" ? /supports this once a case needs it/ : new RegExp(`supports this from ${milestone}`));
-  });
+  // it.each takes no empty table, so the per-case check runs only while some case is refused.
+  if (refused.length > 0) {
+    it.each(refused)("%s is refused for %s (%s)", (name, term, milestone) => {
+      let error: unknown;
+      try {
+        readInputs(readCaseFile(name, "inputs.json"));
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(UnsupportedTermError);
+      expect(error).toMatchObject({ term, milestone });
+      expect((error as Error).message).toMatch(milestone === "later" ? /supports this once a case needs it/ : new RegExp(`supports this from ${milestone}`));
+    });
+  }
 });
 
 describe("malformed inputs fail with a clear error", () => {

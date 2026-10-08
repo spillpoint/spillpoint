@@ -30,6 +30,8 @@ export type { CarveOutHere, Decisions, NoteHere, NoteTerms, Payout, PayoutLine, 
 export { solve } from "./decisions.ts";
 export type { Answer, Solution, SolveOptions } from "./decisions.ts";
 export { findBreakpoints } from "./breakpoints.ts";
+export { paySchedule } from "./payments.ts";
+export type { PaymentTake } from "./payments.ts";
 
 // Building cap tables from a company's rounds (M4).
 export { buildCapTables } from "./rounds.ts";
