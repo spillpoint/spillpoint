@@ -103,11 +103,11 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 14. An option pool top-up in the pre-money.
 15. A post-money SAFE converting in a round that tops up the pool, with a discount that beats the cap.
 16. One down round under three anti-dilution methods: broad-based, narrow-based, and full ratchet. 16e counts the unissued pool in A; 16f rounds the adjusted conversion price to $0.0001.
-17. Pay-to-play: a holder that doesn't pay (17a, 17b), one that pays part of its pro-rata (17c, 17d), in a round that triggers anti-dilution (17e, 17f), and on two series (17g, 17h).
+17. Pay-to-play: a holder that doesn't pay (17a, 17b), one that pays part of its pro-rata (17c, 17d), in a round that triggers anti-dilution (17e, 17f), and on two series (17g, 17h). 17i also converts a SAFE and a note.
 18. Pro-rata rights in a round that converts a SAFE. 18b counts the unissued pool in the pro-rata base; 18c invests beyond the entitlement as an ordinary investment.
 19. A convertible note converting in a priced round, with its cap's base counted with the pool (19a), without it (19b), and as common only (19c).
 20. A pre-money SAFE converting in a priced round.
-21. A note and a pre-money SAFE converting in the same round.
+21. A note and a pre-money SAFE converting in the same round. 21b converts a post-money SAFE beside a note; 21c, beside a pre-money SAFE.
 22. Warrants issued, counted like options in a priced round's price, its pool top-up and a converting SAFE's Company Capitalization.
 23. Cumulative dividends on a priced round's series, carried by its series from SAFEs on its own issue price, followed by a sale.
 24. A management carve-out given as a term of the sale, on the exit, for a company built from its rounds.

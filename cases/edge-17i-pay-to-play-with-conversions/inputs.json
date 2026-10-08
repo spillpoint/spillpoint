@@ -1,0 +1,164 @@
+{
+  "case": "edge-17i-pay-to-play-with-conversions",
+  "description": "A pay-to-play Series B that also converts a SAFE and a note. Series A is Investor X's 1,800,000 and Investor W's 1,200,000 shares at $1.00. The Series B offers Series A holders $1,000,000: Investor X buys its $600,000; Investor W buys nothing, so its Series A converts to 120,000 common (1 for 10) just before the round, which is priced after the conversion (R19). Investor S's $1,000,000 post-money SAFE and Investor N's $500,000 note convert in it. The SAFE's Company Capitalization and the note's base count the cap table the round is priced on: after the conversion (the 0.3.0 plan's answer 4).",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "investor_w",
+      "name": "Investor W"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_n",
+      "name": "Investor N"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 3000000
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2023-01-01",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "9000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "1800000"
+        },
+        {
+          "holder": "investor_w",
+          "amount": "1200000"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a"
+        ]
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2024-06-30",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "date": "2024-06-30",
+      "type": "notes",
+      "notes": [
+        {
+          "id": "note_n",
+          "holder": "investor_n",
+          "principal": "500000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2024-06-30",
+          "valuation_cap": "8000000",
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0.2",
+          "repayment_multiple": "1"
+        }
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-06-30",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "12000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "600000"
+        },
+        {
+          "holder": "investor_y",
+          "amount": "2400000"
+        }
+      ],
+      "convert_notes": true,
+      "pay_to_play": {
+        "series": [
+          "series_a"
+        ],
+        "offered_amount": "1000000",
+        "conversion_ratio": "0.1",
+        "priced_after_conversion": true
+      },
+      "seniority": [
+        [
+          "series_b",
+          "series_b_shadow",
+          "series_b_notes"
+        ],
+        [
+          "series_a"
+        ]
+      ]
+    }
+  ]
+}

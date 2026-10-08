@@ -1,0 +1,104 @@
+{
+  "case": "edge-21c-post-money-and-pre-money-safes",
+  "description": "A post-money SAFE and a pre-money SAFE converting in the same Series A. Investor P's $800,000 SAFE has an $8,000,000 pre-money cap, its Company Capitalization leaving out every SAFE and note (R24). Investor S's $1,000,000 SAFE has a $10,000,000 post-money cap, and its Company Capitalization counts Investor P's conversion shares (R24). Each converts into a series of its own, one per conversion price.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_p",
+      "name": "Investor P"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 3000000
+        }
+      ]
+    },
+    {
+      "id": "pre_money_safe",
+      "date": "2022-06-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_p",
+          "holder": "investor_p",
+          "purchase_amount": "800000",
+          "pre_money_cap": "8000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "post_money_safe",
+      "date": "2023-01-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-01-01",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "5000000"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow",
+          "series_a_shadow_2"
+        ]
+      ]
+    }
+  ]
+}
