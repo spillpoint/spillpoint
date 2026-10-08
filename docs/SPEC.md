@@ -107,7 +107,7 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 18. Pro-rata rights in a round that converts a SAFE. 18b counts the unissued pool in the pro-rata base; 18c invests beyond the entitlement as an ordinary investment.
 19. A convertible note converting in a priced round, with its cap's base counted with the pool (19a), without it (19b), and as common only (19c).
 20. A pre-money SAFE converting in a priced round.
-21. A note and a pre-money SAFE converting in the same round. 21b converts a post-money SAFE beside a note; 21c, beside a pre-money SAFE.
+21. A note and a pre-money SAFE converting in the same round. 21b converts a post-money SAFE beside a note; 21c, beside a pre-money SAFE; 21d, beside a note at its discount, whose shares depend on the round's price.
 22. Warrants issued, counted like options in a priced round's price, its pool top-up and a converting SAFE's Company Capitalization.
 23. Cumulative dividends on a priced round's series, carried by its series from SAFEs on its own issue price, followed by a sale.
 24. A management carve-out given as a term of the sale, on the exit, for a company built from its rounds.

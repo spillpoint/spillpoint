@@ -387,6 +387,9 @@ def ev_priced_round(ct, ev):
     def is_post(k, f):
         return k == "safe" and f["post_money_cap"] is not None
 
+    def has_cap(k, f):
+        return f["valuation_cap"] is not None if k == "note" else (f["post_money_cap"] is not None or f["pre_money_cap"] is not None)
+
     def company_cap_at(x, top_up, branch):
         """R4's Company Capitalization, with the other converting securities' shares, under these branches."""
         others = Fraction(0)
@@ -415,7 +418,9 @@ def ev_priced_round(ct, ev):
 
     solutions = []
     for safe_branch in itertools.product(("cap", "discount"), repeat=len(converting)):
-        if any(b == "cap" and cap_price(k, f, Fraction(1), True, safe_branch) is None for b, (k, f, _) in zip(safe_branch, converting)):
+        # A branch that converts at a cap the instrument doesn't have is impossible; asked without pricing anything,
+        # since a post-money SAFE's cap price needs the others' shares under this branch (21d).
+        if any(b == "cap" and not has_cap(k, f) for b, (k, f, _) in zip(safe_branch, converting)):
             continue
         for ad_branch, top_up in itertools.product(itertools.product((False, True), repeat=len(ad_series)), (True, False)):
 
