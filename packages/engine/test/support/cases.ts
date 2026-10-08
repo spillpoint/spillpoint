@@ -20,10 +20,16 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
  * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,
  * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, case 10's
  * carve-outs since M5f, case 12's SAFEs at a sale since M5g, case 13's notes at a sale since M5h, and case 11's
- * earnout since M5i: every exit case.
+ * earnout since M5i, and case 11b's earnout with a negative take since its case (0.3.0 work, 03a). Cases 12i, 13h
+ * and 24 are refused until 03e (input.test.ts).
  */
+export const NOT_YET: readonly string[] = [
+  "edge-12i-discount-safe-with-capped-participation",
+  "edge-13h-discount-note-with-capped-participation",
+  "edge-24-carve-out-on-the-sale",
+];
 export const EXIT_CASES: string[] = ALL_CASES.filter(
-  (name) => /^edge-(0[1-9]|1[0-3])/.test(name) || name === "edge-23-dividends-from-a-round" || name === "millrace",
+  (name) => (/^edge-(0[1-9]|1[0-3])/.test(name) || name === "edge-23-dividends-from-a-round" || name === "millrace") && !NOT_YET.includes(name),
 );
 
 export function readCaseFile(name: string, file: "inputs.json" | "expected.json"): unknown {

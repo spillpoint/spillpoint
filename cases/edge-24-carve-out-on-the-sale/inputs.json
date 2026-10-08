@@ -1,0 +1,99 @@
+{
+  "case": "edge-24-carve-out-on-the-sale",
+  "description": "A company built from its events: two founders' common, then a $3M Seed at a $12M pre-money valuation. It is sold with a 10% management carve-out, given on the exit as a term of the sale rather than on a cap table, since this company's cap table is built from its rounds (C6). The carve-out is paid before the preferences, all to Manager M, who holds no shares.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_x",
+      "name": "Investor X"
+    },
+    {
+      "id": "manager_m",
+      "name": "Manager M"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-01",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 2000000
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2023-01-01",
+      "type": "priced_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "12000000",
+      "investments": [
+        {
+          "holder": "investor_x",
+          "amount": "3000000"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ]
+    }
+  ],
+  "exit": {
+    "cap_table_after_event": "seed",
+    "carve_out": {
+      "timing": "before_preferences",
+      "tiers": [
+        {
+          "from": "0",
+          "to": null,
+          "percent": "10"
+        }
+      ],
+      "allocation": [
+        {
+          "holder": "manager_m",
+          "percent": "100"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "2000000",
+      "10000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

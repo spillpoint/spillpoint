@@ -730,6 +730,25 @@ class Exits(unittest.TestCase):
         ct.safes[0]["discount"] = F(0)
         self.assertEqual(Waterfall(ct).evaluate(F(500_000))[0]["decisions"], (False,))
 
+    def test_unconverted_safe_with_no_cap_beside_a_capped_series(self):
+        # 800,000 common; p, 200,000 shares at $1, participating, capped at 2x ($400k in all), its own tier;
+        # a $100k SAFE with no cap and a 20% discount, its Cash-Out Amount ranking with p's tier. Converting
+        # is worth exactly $100k / 0.8 = $125k, taken out first; p and common share the rest, p stopping at
+        # its cap (12i, 0.3.0 work). The tier ($200k + $100k) is paid at $300k; conversion is possible above
+        # $200k + $125k = $325k; at a price of (X - $325k) / 1,000,000 = $1 p reaches its cap, at $1,325k;
+        # and p converts once a fifth of X - $125k beats $400k, above $2,125k.
+        ct = self.unconverted_safe(
+            [COMMON, pref("p", "1", "1", "participating_capped", cap="2")], [("x", "common", 800_000), ("y", "p", 200_000)], [["p"]]
+        )
+        ct.safes[0]["post_money_cap"] = None
+        ct.safes[0]["discount"] = F(1, 5)
+        self.assertEqual(bp_values(ct, 3_000_000), [300_000, 325_000, 1_325_000, 2_125_000])
+        # At $1M: the price is $0.675; p gets $200k + $135k, common $540k, the SAFE $125k.
+        self.assertEqual(payouts(ct, 1_000_000), {("x", "common"): 540_000, ("y", "p"): 335_000, ("s", "safe"): 125_000})
+        # At $1.8M p sits at its cap; at $3M it has converted, a fifth of $2,875k.
+        self.assertEqual(payouts(ct, 1_800_000), {("x", "common"): 1_275_000, ("y", "p"): 400_000, ("s", "safe"): 125_000})
+        self.assertEqual(payouts(ct, 3_000_000), {("x", "common"): 2_300_000, ("y", "p"): 575_000, ("s", "safe"): 125_000})
+
     def test_unconverted_safe_alongside_preferred(self):
         # 800,000 common; p, 100,000 shares at $1 (non-participating, its own tier); a $100k SAFE
         # capped at $1M. Its Cash-Out Amount ranks with p's tier, pro rata: at $150k each gets 1/2.
@@ -939,3 +958,40 @@ class Exits(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SaleTerms(unittest.TestCase):
+    """A carve-out given on the exit, as a term of the sale (C6, case 24, 0.3.0 work)."""
+
+    def company(self, **exit_terms):
+        return {
+            "case": "carve-out on the sale",
+            "holders": [{"id": "a", "name": "A"}, {"id": "m", "name": "M"}],
+            "events": [
+                {"id": "founding", "date": None, "type": "issue", "security": dict(COMMON), "issues": [{"holder": "a", "shares": 1_000_000}]},
+            ],
+            "exit": {"cap_table_after_event": "founding", "range": ["0", "1000000"], "exit_values": ["500000"], **exit_terms},
+        }
+
+    def test_carve_out_on_the_exit_of_a_company_built_from_rounds(self):
+        # 10% of $500k to M, before everything; A's common takes the other $450k.
+        carve_out = {"tiers": [{"from": "0", "to": None, "percent": "10"}], "allocation": [{"holder": "m", "percent": "100"}]}
+        out = run_case(self.company(carve_out=carve_out))
+        totals = out["exit"]["payouts"][0]["equilibria"][0]["holder_totals"]
+        self.assertEqual(totals, {"a": "450000.00", "m": "50000.00"})
+
+    def test_carve_out_on_both_the_cap_table_and_the_exit_is_refused(self):
+        carve_out = {"tiers": [{"from": "0", "to": None, "percent": "10"}], "allocation": [{"holder": "m", "percent": "100"}]}
+        inputs = self.company(carve_out=carve_out)
+        table = CapTable.from_json(
+            {
+                "holders": inputs["holders"],
+                "securities": [dict(COMMON)],
+                "seniority": [],
+                "positions": [{"holder": "a", "security": "common", "shares": 1_000_000}],
+                "carve_out": carve_out,
+            }
+        ).to_json()
+        exit_ = {k: v for k, v in inputs["exit"].items() if k != "cap_table_after_event"}
+        with self.assertRaisesRegex(ValueError, "on both the cap table and the exit"):
+            run_case({"case": "both", "exit": {**exit_, "cap_table": table}})

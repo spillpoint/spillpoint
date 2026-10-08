@@ -96,12 +96,6 @@ class Waterfall:
                 raise ValueError(
                     f"{n['id']}: an unconverted note alongside a SAFE or a carve-out is not supported by the reference yet"
                 )
-        # A SAFE or note with no cap converts at the price it helps set: the
-        # fixed point is solved where only uncapped holders share the residual.
-        if any(self.priced(x) for x in self.safes + self.notes) and any(
-            sec[s]["participation"] == "participating_capped" for s in ct.preferred_ids()
-        ):
-            raise ValueError("a SAFE or note with no cap alongside capped participating preferred is not supported by the reference yet")
         self.note_ids = [n["id"] for n in self.notes if self.note_can_convert(n)]
         self.note_interest = {n["id"]: note_interest(n, exit_date) for n in self.notes}
         self.players = self.converters + self.options + self.warrants + self.safe_ids + self.note_ids
@@ -469,12 +463,15 @@ class Waterfall:
                 else:
                     part[n["id"]] = self.note_conversion_shares(n)
         part = {k: v for k, v in part.items() if v > 0}
-        # No cap: shares s at the common price p less the discount, s = amount ÷ ((1 − d) p),
-        # and p = remaining ÷ (others + s). So s = amount × others ÷ ((1 − d) × remaining − amount),
-        # which is worth exactly amount ÷ (1 − d). Where (1 − d) × remaining is no more than the
-        # amount there is no such price: converting isn't possible, so the greater-of falls back to
-        # the cash-out or repayment (X9, X12, the literal reading). It is paid exactly as if it had
-        # chosen that, which ties, and E5 reports the cash-out or repayment.
+        # No cap: shares s at the common price p less the discount, s = amount ÷ ((1 − d) p), each
+        # worth p, so the conversion is worth exactly amount ÷ (1 − d), whatever p is. It takes that
+        # out of the residual first, and the rest share what is left, capped participating preferred
+        # stopping at its cap (M5 owed cases 12i, 13h); p is then the price they share it at. Where
+        # (1 − d) × remaining is no more than the amount there is no such price: converting isn't
+        # possible, so the greater-of falls back to the cash-out or repayment (X9, X12, the literal
+        # reading). It is paid exactly as if it had chosen that, which ties, and E5 reports the
+        # cash-out or repayment.
+        fixed = {}
         for x in priced:
             others = sum(part.values(), ZERO)
             room = (1 - x["discount"]) * remaining - self.converting_amount(x)
@@ -483,7 +480,8 @@ class Waterfall:
             if room <= 0 or others == 0:
                 i = self.players.index(x["id"])
                 return self.run(exit_value, bits[:i] + (False,) + bits[i + 1 :])
-            part[x["id"]] = self.converting_amount(x) * others / room
+            fixed[x["id"]] = self.converting_amount(x) / (1 - x["discount"])
+            remaining -= fixed[x["id"]]
 
         # Capped participation: preference plus participation stops at the cap.
         room = {
@@ -506,6 +504,8 @@ class Waterfall:
             del active[s]
         for s, n_s in active.items():
             total[s] += p * n_s
+        for fid, worth in fixed.items():
+            total[fid] += worth
         common_price = p
 
         # Split each series' total between its original shares and the shares

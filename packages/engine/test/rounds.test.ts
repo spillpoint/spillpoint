@@ -31,8 +31,11 @@ interface ExpectedTable {
 
 const ROUND_CASES = ALL_CASES.filter((name) => (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
-/** The 29 cases with events, every one built in full: 26 since M4g, 12g (M5b), 22's warrants (M5d), and 23's dividends (R30, M5e3). */
-const EXPECTED_ROUND_CASES = 29;
+/**
+ * The 30 cases with events, every one built in full: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends
+ * (R30, M5e3), and 24, whose sale carries a carve-out (0.3.0 work, 03a).
+ */
+const EXPECTED_ROUND_CASES = 30;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {
@@ -186,7 +189,7 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
 }
 
 describe("every locked round case", () => {
-  it("is found: 29 cases with events", () => {
+  it("is found: 30 cases with events", () => {
     expect(ROUND_CASES).toHaveLength(EXPECTED_ROUND_CASES);
   });
 
