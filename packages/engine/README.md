@@ -282,7 +282,7 @@ earnout: $10000000.00, $20000000.00 so far (converts: seed)
 
 ## What it covers
 
-Items marked *(0.2.0)* are new in 0.2.0.
+Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -296,16 +296,18 @@ Items marked *(0.2.0)* are new in 0.2.0.
 - **SAFEs still outstanding at the sale** *(0.2.0)*, each taking the greater of its Cash-Out Amount and its Conversion Amount (YC):
   - **The Cash-Out Amount,** its purchase amount, is paid ahead of common. Alongside preferred it ranks with the most junior tier, or with the series it names (`cash_out_ranks_with`).
   - **The Conversion Amount:** a post-money SAFE converts at its cap ÷ one Liquidity Capitalization for the company, which counts every SAFE that converts and leaves out series keeping their preference. A pre-money SAFE's count leaves out the pool, the SAFEs and the notes. A discount applies only with no cap, at the sale's common price less the discount, where that price exists.
+  - **With no cap, converting is worth exactly** its purchase amount ÷ (1 − discount), taken out of what is left after the preferences first. That holds beside capped participating preferred too, which stops at its cap in what remains *(0.3.0)*.
   - **Several SAFEs** share a shortfall pro rata. A SAFE takes its Conversion Amount only when that strictly pays more.
 - **Convertible notes still outstanding at the sale** *(0.2.0)*, each taking the greater of repayment and conversion:
   - **Repayment,** a multiple of principal plus simple interest to the exit date, is debt, paid ahead of all equity. Several notes share a shortfall pro rata.
-  - **Conversion:** principal plus interest converts at the pre-money cap ÷ the share count just before the sale (with the pool, without it, or common only), leaving out the notes. With no cap it converts at the sale's common price less its discount, where that price exists. A note with neither is only repaid.
+  - **Conversion:** principal plus interest converts at the pre-money cap ÷ the share count just before the sale (with the pool, without it, or common only), leaving out the notes. With no cap it converts at the sale's common price less its discount, where that price exists, worth exactly principal plus interest ÷ (1 − discount), beside capped participating preferred too *(0.3.0)*. A note with neither is only repaid.
   - **A note converts only when that strictly pays more.**
 - **Escrow and earnouts** *(0.2.0)*: proceeds paid over time. `paySchedule` pays each payment's take on cumulative proceeds, as if everything so far had been paid at closing, with every decision re-made at each step.
   - **A take is negative** when a later payment lowers a holder's running total, as when it tips a series into converting. It is reported as is, and `lowered` names the holders it falls for.
 - **Management carve-outs** *(0.2.0)*: a percentage of the exit value, in marginal tiers like tax brackets, paid to listed people under the security `"carve_out"`.
   - **Before the preferences,** the default.
   - **Alongside them,** sharing the most senior tier pro rata by claim. While that tier isn't paid in full, payouts curve. A breakpoint on a curve is where the formula changes, and the breakpoints either side of a curved stretch say so (`curveBelow`, `curveAbove`).
+  - **A term of the sale** *(0.3.0)*: the exit input can carry it, so a company built from its rounds can have one. It may still be on the cap table instead, but not on both.
 - **Options at any number of strikes,** exercised once they're in the money. The strike money joins the proceeds, and option payouts are reported net of strike.
 - **Warrants** *(0.2.0)*, for common or for a preferred series:
   - **Each warrant decides for itself** whether to exercise: once what it buys is worth more than the strike.
@@ -361,7 +363,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
-- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; a SAFE with no cap alongside capped participating preferred; more than one note unless each has a cap; a note alongside a SAFE or a carve-out; and a note with no cap alongside capped participating preferred.
+- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; more than one note unless each has a cap; and a note alongside a SAFE or a carve-out.
 - Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
 **Refused by design,** with an `InputError`:
@@ -386,6 +388,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - `exit_values`: the points to report
 - `exit_date`, as `YYYY-MM-DD`: needed when a series has cumulative dividends or a note is outstanding *(0.2.0)*
 - optional `payment_schedules` *(0.2.0)*: each with an `id`, a `description`, and `payments`, each a `label` and an `amount`
+- optional `carve_out` *(0.3.0)*: a carve-out as a term of the sale, in the same fields as the cap table's, which then must not have one. It works on a cap table built from rounds (`cap_table_after_event`).
 
 **A company built from its rounds** (`buildCapTables`, `readInputs`) is `holders` and `events`, each event with an `id`, a `date` and a `type`:
 

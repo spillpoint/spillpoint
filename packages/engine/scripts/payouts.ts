@@ -117,9 +117,13 @@ if (convert || exercise) {
 }
 
 const result = payout(pc, at, decisions);
+// Payout lines also name the carve-out (C6) and each SAFE and note still outstanding (C8, C9), which aren't securities.
 const name = new Map<string, string>([
   ...exit.capTable.holders.map((h) => [h.id, h.name] as [string, string]),
   ...exit.capTable.securities.map((s) => [s.id, s.name] as [string, string]),
+  ["carve_out", "Management carve-out"],
+  ...(exit.capTable.unconvertedSafes ?? []).map((f) => [f.id, `SAFE (${f.id})`] as [string, string]),
+  ...(exit.capTable.unconvertedNotes ?? []).map((n) => [n.id, `Convertible note (${n.id})`] as [string, string]),
 ]);
 
 const converted = [...decisions.converted].map((id) => name.get(id)).join(", ") || "none";

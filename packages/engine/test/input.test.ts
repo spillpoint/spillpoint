@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 13g, 23 and Millrace, with 11b: every exit case but those refused until 03e", () => {
+  it("are edge cases 1 through 13h, 23, 24 and Millrace: every exit case but 8b, guarded until 03f", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -43,6 +43,7 @@ describe("the exit cases the engine runs", () => {
       "edge-12f-two-safes",
       "edge-12g-pre-money-safe-at-a-sale",
       "edge-12h-mfn-safe",
+      "edge-12i-discount-safe-with-capped-participation",
       "edge-13a-note-with-pool",
       "edge-13b-note-without-pool",
       "edge-13c-note-common-only",
@@ -50,7 +51,9 @@ describe("the exit cases the engine runs", () => {
       "edge-13e-note-discount-only",
       "edge-13f-note-alongside-preferred",
       "edge-13g-two-notes",
+      "edge-13h-discount-note-with-capped-participation",
       "edge-23-dividends-from-a-round",
+      "edge-24-carve-out-on-the-sale",
       "millrace",
     ]);
   });
@@ -107,12 +110,8 @@ describe("the exit cases the engine runs", () => {
 });
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
-  // Since M5i every exit case runs. The 0.3.0 work's cases come first (03a) and the engine after (03e).
-  const refused: [string, string, Milestone][] = [
-    ["edge-12i-discount-safe-with-capped-participation", "uncapped_safe_with_capped_participation", "later"],
-    ["edge-13h-discount-note-with-capped-participation", "uncapped_note_with_capped_participation", "later"],
-    ["edge-24-carve-out-on-the-sale", "carve_out_on_the_exit", "later"],
-  ];
+  // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too. Kept for the next case refused.
+  const refused: [string, string, Milestone][] = [];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
   // Read, but its breakpoint finder stops with the guard error on a decision changing on a curve (X17) until 03f.
   const guarded = ["edge-08b-warrant-on-the-curve"];
