@@ -11,7 +11,13 @@ export class InputError extends Error {
   }
 }
 
-/** When a refused term arrives: a milestone, or "later" for a term that waits until a case needs it. */
+/**
+ * When a refused term arrives: a milestone, or "later" for a term that waits
+ * until a case needs it. Since 0.2.0 nothing is refused as "M5"; the value
+ * stays so 0.1.0 code that compares with it still typechecks. Milestone names
+ * are deprecated and will be removed at 1.0, where a refusal will describe
+ * what's unsupported instead.
+ */
 export type Milestone = "M5" | "later";
 
 /**

@@ -210,9 +210,79 @@ Breakpoint at $22499998.27:
 - **At $20M** the SAFE's series has converted to common, and the Series A still takes its preference. **At $60M** both have converted.
 - **SAFEs and notes still outstanding** come with the cap table after their event, as `capTable.unconvertedSafes` and `capTable.unconvertedNotes` *(0.2.0)*, and an exit on it pays them.
 
+## A worked example: an earnout
+
+The same company is sold for $10,000,000 at closing, with a $10,000,000 earnout to follow. The waterfall runs on cumulative proceeds, so each payment goes where it would have gone had it all been paid at closing, and every decision is re-made at each step.
+
+```js
+import { paySchedule, prepare, readExit, toCents } from "spillpoint";
+
+const exit = readExit({
+  cap_table: {
+    holders: [
+      { id: "ana", name: "Ana (founder)" },
+      { id: "fund", name: "Seed Fund" },
+    ],
+    securities: [
+      { id: "common", name: "Common Stock", kind: "common" },
+      {
+        id: "seed",
+        name: "Seed Preferred",
+        kind: "preferred",
+        original_issue_price: "1.5",
+        preference_multiple: "1",
+        participation: "non_participating",
+      },
+    ],
+    seniority: [["seed"]],
+    positions: [
+      { holder: "ana", security: "common", shares: 8000000 },
+      { holder: "fund", security: "seed", shares: 2000000 },
+    ],
+  },
+  range: ["0", "60000000"],
+  exit_values: [],
+  payment_schedules: [
+    {
+      id: "deal",
+      description: "$10M at closing, then a $10M earnout",
+      payments: [
+        { label: "closing", amount: "10000000" },
+        { label: "earnout", amount: "10000000" },
+      ],
+    },
+  ],
+});
+
+const table = prepare(exit.capTable, exit.exitDate);
+
+// Each payment's take: the cumulative payout after it, less before it.
+for (const take of paySchedule(table, exit.paymentSchedules[0])) {
+  const converts = [...take.decisions.converted].join(", ") || "nobody";
+  console.log(`${take.label}: $${toCents(take.amount)}, $${toCents(take.cumulative)} so far (converts: ${converts})`);
+  for (const line of take.lines) console.log(`  ${line.holder} on ${line.security}: $${toCents(line.amount)}`);
+  if (take.lowered.length > 0) console.log(`  running total falls for: ${take.lowered.join(", ")}`);
+}
+```
+
+Output:
+
+```
+closing: $10000000.00, $10000000.00 so far (converts: nobody)
+  ana on common: $7000000.00
+  fund on seed: $3000000.00
+earnout: $10000000.00, $20000000.00 so far (converts: seed)
+  ana on common: $9000000.00
+  fund on seed: $1000000.00
+```
+
+- **The closing** pays the fund its $3M preference, and the founder the rest.
+- **The earnout** brings the total to $20M, past the $15M where the fund does better converting. At $20M the fund's 20% as common is worth $4M, so the earnout adds $1M for the fund and $9M for the founder.
+- **A take can be negative.** If a later payment tips a series into converting and that takes from someone what an earlier payment gave them, their take is negative. It is reported as is, and `lowered` names them.
+
 ## What it covers
 
-Items marked *(0.2.0)* are on the main branch and come with the next release; 0.1.0 is what's on npm.
+Items marked *(0.2.0)* are new in 0.2.0.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -358,7 +428,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 
 **Errors:**
 - `InputError`: the input is malformed.
-- `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"later"`, for a term that waits until a case settles it. *(0.2.0: nothing is refused as `"M5"` any more, though the type keeps the value.)*
+- `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"later"`, for a term that waits until a case settles it. *(0.2.0: nothing is refused as `"M5"` any more, though the type keeps the value. Milestone names are deprecated and will be removed at 1.0, where a refusal will describe what's unsupported instead.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable.
 
 ## License

@@ -1,6 +1,6 @@
-# spillpoint 0.2.0: release notes (draft)
+# spillpoint 0.2.0: release notes
 
-**A draft, kept up to date through M5.** M5j finishes it and releases 0.2.0. Until then, 0.1.0 is what's on npm.
+Everything planned for the engine in M5: warrants, cumulative dividends, management carve-outs, SAFEs and notes still outstanding at a sale, and escrow and earnouts. The version in `packages/engine/package.json` is 0.2.0; it is published from there.
 
 ## New
 
@@ -26,13 +26,14 @@
 - **Management carve-outs** (M5f): a percentage of the exit value in marginal tiers, paid to listed people before the preferences or alongside them in the most senior tier. Alongside them, payouts curve while that tier isn't paid in full. A breakpoint there is where the formula changes.
 - **A round's seniority** may leave out the series its SAFEs and notes convert into (R28, M4j). They then rank alongside its new series.
 
-*Every term planned for M5 is in. Nothing is refused as `"M5"` any more; the `Milestone` type keeps the value, so 0.1.0 code that compares with it still typechecks.*
+*Every term planned for M5 is in.*
 
 ## New in the API
 
 - **`paySchedule(table, schedule)`:** a new function, for escrow and earnouts. It returns a `PaymentTake` for each payment.
 - **`prepare(capTable, exitDate)`:** the exit date is a new, optional second argument. It is needed only when a series has cumulative dividends.
 - **`readExit` and `readInputs`** return `exitDate`.
+- **A README example for `paySchedule`:** a closing plus an earnout, with each payment's takes. Like the other two, the README test runs it.
 - **New types:** `PaymentSchedule`, `PaymentTake`, `WarrantClass`, `CumulativeDividend`, `SeriesHere`, `CarveOut`, `CarveOutHere` and `SafeHere`. `Safe` is the same type as in 0.1.0, now exported from the model, with an optional `cashOutRanksWith`. `Note` is too, unchanged. Also `NoteTerms` and `NoteHere`.
 - **New fields:**
   - **`Payout.series`:** each series' shares, preference, dividends, claim, cap and as-converted shares at that exit value.
@@ -57,6 +58,10 @@ These come from new terms widening a union. They break only code that switches o
 - **`Security` has a new kind, `"warrant"`.** This is the one you're most likely to meet: code that switches over every security kind needs a `"warrant"` branch.
 - **`EventDetails["kind"]` has `"issue_warrants"`.** It comes from the new event.
 - **`ReasonCode` has `"warrant_in_the_money"`, `"carve_out_tier"`, `"payouts_curve"`, `"safe_cash_out_paid"`, `"safe_switches"`, `"note_repayment_paid"` and `"note_switches"`.** Later M5 terms may add more.
+
+## Deprecated
+
+- **The milestone names in the `Milestone` type.** Nothing is refused as `"M5"` any more, but the type keeps the value, so 0.1.0 code that compares with it still typechecks. Milestone names are deprecated and will be removed at 1.0, where a refusal will describe what's unsupported instead of naming when it might arrive.
 
 ## Refusals
 
