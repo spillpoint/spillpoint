@@ -1,7 +1,10 @@
-// The payoff curves, from the analysis's curve points. Every payout is a
-// straight line between breakpoints (SPEC, Breakpoints), so a curve is exact
-// as a list of nodes: its value at each breakpoint from below, and just above
-// where it jumps. Values are Decimals; they become numbers only for drawing.
+// The payoff curves, from the analysis's curve points. A payout is a
+// straight line between breakpoints (SPEC, Breakpoints), except where it
+// curves (X17), so a straight stretch is exact as two nodes: the value at
+// each breakpoint from below, and just above where it jumps. A curved stretch
+// has sample nodes along it, which draw it; values between them are read
+// from the engine, never from the straight line between them. Values are
+// Decimals; they become numbers only for drawing.
 
 import { D } from "spillpoint";
 
@@ -16,6 +19,10 @@ export interface Node {
   x: Decimal;
   left: Decimal;
   right: Decimal;
+  /** A point along a curved stretch, not a breakpoint or an end of the range. */
+  sample: boolean;
+  /** Payouts curve from here to the next node (X17). */
+  curvedAfter: boolean;
 }
 
 const ZERO = new D(0);
@@ -26,10 +33,27 @@ export function seriesNodes(curve: readonly CurvePoint[], kind: SeriesKind, id: 
   for (const p of curve) {
     const value = new D((kind === "holder" ? p.holders : p.classes)[id] ?? "0");
     const x = new D(p.exitValue);
-    if (p.side === "above") nodes[nodes.length - 1]!.right = value;
-    else nodes.push({ x, left: value, right: value });
+    if (p.side === "above") Object.assign(nodes[nodes.length - 1]!, { right: value, curvedAfter: p.curvedAfter });
+    else nodes.push({ x, left: value, right: value, sample: p.side === "sample", curvedAfter: p.curvedAfter });
   }
   return nodes;
+}
+
+/**
+ * Whether x falls strictly inside a curved stretch, between two nodes: there
+ * the straight line between them isn't the payout, so it's read from the
+ * engine instead.
+ */
+export function curvedAt(nodes: readonly Node[], x: Decimal): boolean {
+  for (let i = 0; i < nodes.length - 1; i++) {
+    if (x.gt(nodes[i]!.x) && x.lt(nodes[i + 1]!.x)) return nodes[i]!.curvedAfter;
+  }
+  return false;
+}
+
+/** The node at a breakpoint, by its exit value. */
+export function nodeAt(nodes: readonly Node[], x: Decimal): number {
+  return nodes.findIndex((n) => !n.sample && n.x.eq(x));
 }
 
 /** The value at any exit value: the node's own value there, or the straight line between its neighbours. */
@@ -52,20 +76,26 @@ const MILLION = new D("1e6");
 /**
  * How a curve changes at node i, if it does: a jump from one payout to
  * another, or a bend, given as what each extra $1M of exit value adds to the
- * payout just below the breakpoint and just above it. Between breakpoints a
- * payout is a straight line, so that rate holds across each whole segment.
+ * payout just below the breakpoint and just above it. On a straight side that
+ * rate holds across the whole stretch. On a curved side it keeps changing
+ * (X17), so it's the rate right at the breakpoint, given in `rates` per
+ * dollar, and the change says which sides curve.
  */
-export type Change = { kind: "jump"; from: Decimal; to: Decimal } | { kind: "bend"; before: Decimal; after: Decimal };
+export type Change =
+  | { kind: "jump"; from: Decimal; to: Decimal }
+  | { kind: "bend"; before: Decimal; after: Decimal; curvedBefore: boolean; curvedAfter: boolean };
 
-export function changeAt(nodes: readonly Node[], i: number): Change | null {
+export function changeAt(nodes: readonly Node[], i: number, rates: { below?: Decimal | undefined; above?: Decimal | undefined } = {}): Change | null {
   const n = nodes[i];
   const before = nodes[i - 1];
   const after = nodes[i + 1];
   if (!n || !before || !after) return null;
   if (n.right.minus(n.left).abs().gt(VALUE_TIE)) return { kind: "jump", from: n.left, to: n.right };
-  const perMillionBefore = n.left.minus(before.right).div(n.x.minus(before.x)).times(MILLION);
-  const perMillionAfter = after.left.minus(n.right).div(after.x.minus(n.x)).times(MILLION);
-  if (perMillionBefore.minus(perMillionAfter).abs().gt(VALUE_TIE)) return { kind: "bend", before: perMillionBefore, after: perMillionAfter };
+  const curvedBefore = before.curvedAfter && rates.below !== undefined;
+  const curvedAfter = n.curvedAfter && rates.above !== undefined;
+  const perMillionBefore = curvedBefore ? rates.below!.times(MILLION) : n.left.minus(before.right).div(n.x.minus(before.x)).times(MILLION);
+  const perMillionAfter = curvedAfter ? rates.above!.times(MILLION) : after.left.minus(n.right).div(after.x.minus(n.x)).times(MILLION);
+  if (perMillionBefore.minus(perMillionAfter).abs().gt(VALUE_TIE)) return { kind: "bend", before: perMillionBefore, after: perMillionAfter, curvedBefore, curvedAfter };
   return null;
 }
 
@@ -90,10 +120,12 @@ export function niceScale(max: number): { top: number; step: number } {
 export type ChartRow = { x: number } & Record<string, number | null>;
 
 /**
- * The rows the chart draws between from and to: every node inside, evenly
- * spaced samples so hovering finds a value anywhere, and at a jump three
- * rows (below, a break, above) so the line breaks there and the jump is drawn
- * on its own.
+ * The rows the chart draws between from and to: every node inside, curved
+ * stretches' samples among them, evenly spaced samples so hovering finds a
+ * value anywhere, and at a jump three rows (below, a break, above) so the
+ * line breaks there and the jump is drawn on its own. On a curved stretch a
+ * row between samples is drawn on the line between them, far less than a
+ * pixel from the curve; the readout and legend read the engine there.
  */
 export function chartRows(series: ReadonlyMap<string, Node[]>, from: number, to: number, samples = 240): ChartRow[] {
   const xs = new Set<number>([from, to]);

@@ -1,16 +1,20 @@
 // The payoff curves as nodes: exact values between breakpoints, jumps kept
 // apart from bends, and the rows the chart draws.
 
-import { D } from "spillpoint";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { D, prepare, readExit, solve } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
+import { computeAnalysis } from "../src/analysis.ts";
 import type { CurvePoint } from "../src/analysis.ts";
-import { changeAt, changesAt, chartRows, niceScale, seriesNodes, valueAt } from "../src/curves.ts";
+import { changeAt, changesAt, chartRows, curvedAt, niceScale, nodeAt, seriesNodes, valueAt } from "../src/curves.ts";
 
 // Two holders over exit values $0 to $30. "a" gets nothing until $10, then
 // half of each dollar; at $20 its payout jumps from $5 to $8, then it gets
 // every dollar. "b" gets every dollar throughout, a straight line.
-const at = (exitValue: string, a: string, b: string): CurvePoint => ({ exitValue, side: "at", holders: { a, b }, classes: {} });
+const at = (exitValue: string, a: string, b: string): CurvePoint => ({ exitValue, side: "at", curvedAfter: false, holders: { a, b }, classes: {} });
 const curve: CurvePoint[] = [at("0", "0", "0"), at("10", "0", "10"), at("20", "5", "20"), { ...at("20", "8", "20"), side: "above" }, at("30", "18", "30")];
 const a = seriesNodes(curve, "holder", "a");
 const b = seriesNodes(curve, "holder", "b");
@@ -107,5 +111,56 @@ describe("tidy axes", () => {
 
   it("still draws an axis when every value is zero", () => {
     expect(niceScale(0)).toEqual({ top: 1, step: 0.25 });
+  });
+});
+
+describe("curved stretches (X17), on case 10b", () => {
+  // 10b's carve-out shares the Series A tier until it's paid in full, so payouts curve from $0 to $10M, where the
+  // carve-out's first tier ends, and on to $11,052,631.58, where the tier is paid in full.
+  const exit = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-10b-carve-out-alongside-preferences/inputs.json"), "utf8")).exit;
+  const analysis = computeAnalysis(exit);
+  const read = readExit(exit);
+  const pc = prepare(read.capTable);
+  const nodes = seriesNodes(analysis.curve, "holder", "founder_a");
+
+  it("flags the breakpoints next to a curve, as the case does", () => {
+    expect(analysis.breakpoints.map((b) => [new D(b.exitValue).toFixed(2), b.curveBelow, b.curveAbove])).toEqual([
+      ["10000000.00", true, true],
+      ["11052631.58", true, false],
+      ["20000000.00", false, false],
+      ["26500000.00", false, false],
+    ]);
+  });
+
+  it("draws each curved stretch through 63 points along it, each the engine's own payout, and no others", () => {
+    const samples = nodes.filter((n) => n.sample);
+    expect(samples).toHaveLength(126);
+    expect(samples.every((n) => n.x.gt(0) && n.x.lt("11052631.58"))).toBe(true);
+    for (const n of samples.filter((_, i) => i % 9 === 0)) expect(n.left.eq(solve(pc, n.x).answers[0]!.payout.holderTotals.get("founder_a")!)).toBe(true);
+  });
+
+  it("knows where it curves, so values there are read from the engine, not the line between two points", () => {
+    expect(curvedAt(nodes, new D("5100000"))).toBe(true);
+    expect(curvedAt(nodes, new D("10500000"))).toBe(true);
+    expect(curvedAt(nodes, new D("15000000"))).toBe(false);
+    // Between two samples the straight line is near the curve, not on it. It's farthest where the curve bends most,
+    // midway to the first sample, $78,125: there the line is $36.54 off, under a pixel on the chart but not to the cent.
+    const x = new D("78125");
+    const exact = solve(pc, x).answers[0]!.payout.holderTotals.get("founder_a")!;
+    expect(exact.minus(valueAt(nodes, x)).abs().toFixed(2)).toBe("36.54");
+  });
+
+  it("gives Founder A's rate right at each breakpoint on a curved side, as X17's approved wording reads it", () => {
+    const at = (x: string) => {
+      const b = analysis.breakpoints.find((v) => new D(v.exitValue).toFixed(2) === x)!;
+      const rate = (r: { holders: Record<string, string> } | undefined) => (r ? new D(r.holders.founder_a!) : undefined);
+      return changeAt(nodes, nodeAt(nodes, new D(b.exitValue)), { below: rate(b.rates.below), above: rate(b.rates.above) });
+    };
+    const ten = at("10000000.00");
+    expect(ten).toMatchObject({ kind: "bend", curvedBefore: true, curvedAfter: true });
+    if (ten?.kind === "bend") expect([ten.before.toFixed(0), ten.after.toFixed(0)]).toEqual(["104132", "79339"]);
+    const paid = at("11052631.58");
+    expect(paid).toMatchObject({ kind: "bend", curvedBefore: true, curvedAfter: false });
+    if (paid?.kind === "bend") expect([paid.before.toFixed(0), paid.after.toFixed(0)]).toEqual(["84286", "742500"]);
   });
 });

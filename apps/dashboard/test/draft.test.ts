@@ -233,17 +233,19 @@ describe("a cap table the page can't show in full (M5d review)", () => {
     );
   });
 
-  it("refuses a term it doesn't carry, such as a management carve-out, and a field nobody models", () => {
-    const withCarveOut = { ...exit({ id: "p", name: "Seed Preferred", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "non_participating", cap_multiple: null }) };
-    (withCarveOut.cap_table as Record<string, unknown>).carve_out = { tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "a", percent: "100" }] };
-    expect(() => draftFromExit(withCarveOut)).toThrow("It has a management carve-out, which this page doesn't show yet.");
-    let refused: unknown;
-    try {
-      draftFromExit(exit({ id: "w", name: "Warrant", kind: "warrant", strike: "1", underlying: "common", expiry: "2030-01-01" }));
-    } catch (e) {
-      refused = e;
-    }
+  it("refuses a field nobody models, on a security or a carve-out, for the engine's message to name", () => {
+    const refused = (input: unknown) => {
+      try {
+        draftFromExit(input);
+      } catch (e) {
+        return e;
+      }
+      return null;
+    };
     // A field nobody models: the page's check says so, and the engine's message, read first, names it.
-    expect(refused).toMatchObject({ name: "NotShownYet", known: false });
+    expect(refused(exit({ id: "w", name: "Warrant", kind: "warrant", strike: "1", underlying: "common", expiry: "2030-01-01" }))).toMatchObject({ name: "NotShownYet", known: false });
+    const carved = exit({ id: "c2", name: "More common", kind: "common" }) as { cap_table: Record<string, unknown> };
+    carved.cap_table.carve_out = { tiers: [{ from: "0", to: null, percent: "5", vesting: "4 years" }], allocation: [{ holder: "a", percent: "100" }] };
+    expect(refused(carved)).toMatchObject({ name: "NotShownYet", known: false, message: 'It has "vesting" on its management carve-out, which this page doesn\'t show yet. It won\'t open a cap table it can\'t show in full.' });
   });
 });

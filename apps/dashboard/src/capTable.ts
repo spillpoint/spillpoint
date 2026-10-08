@@ -71,6 +71,10 @@ export function outstandingNames(pc: PreparedCapTable): Map<string, string> {
   return names;
 }
 
+/** C6: a carve-out's payouts appear under this security, as a class of its own. */
+export const CARVE_OUT = "carve_out";
+export const CARVE_OUT_NAME = "Management carve-out";
+
 /** The holder the founder view opens on: whoever holds the most common stock. */
 export function defaultHolder(capTable: CapTable): string {
   const common = new Set(capTable.securities.filter((s) => s.kind === "common").map((s) => s.id));
