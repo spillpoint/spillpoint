@@ -173,7 +173,16 @@ interface OcfResult {
 
 // The importer arrives in 04d. Until then these check that each OCF case's package and its hand-worked result
 // agree with each other: no engine code is involved.
-describe.each(ocfDirs)("OCF case %s", (dir) => {
+const ocfPackageDirs = ocfDirs.filter((d) => existsSync(join(CASES, d, "package")));
+const ocfFixtureDirs = ocfDirs.filter((d) => existsSync(join(CASES, d, "fixtures")));
+
+describe("OCF cases", () => {
+  it("are each a package or a set of fixtures", () => {
+    expect([...ocfPackageDirs, ...ocfFixtureDirs].sort()).toEqual(ocfDirs);
+  });
+});
+
+describe.each(ocfPackageDirs)("OCF case %s", (dir) => {
   const packageDir = join(CASES, dir, "package");
   it("has a package, expected.json and DERIVATION.md", () => {
     for (const f of ["package", "expected.json", "DERIVATION.md"]) expect(existsSync(join(CASES, dir, f)), f).toBe(true);
@@ -227,5 +236,98 @@ describe.each(ocfDirs)("OCF case %s", (dir) => {
       // A series that isn't capped has no cap multiple: that blank isn't a term to fill in.
     ].filter((b) => b.field !== "cap_multiple");
     expect(blanks).toEqual(result.to_fill);
+  });
+});
+
+interface FixtureExpected {
+  case: string;
+  base: string;
+  fixtures: Record<
+    string,
+    {
+      adds?: {
+        read?: Record<string, number>;
+        not_needed?: Record<string, number>;
+        notes?: { code: string; subject?: string }[];
+        unconverted_safes?: Json[];
+        unconverted_notes?: Json[];
+        to_fill?: { safe?: string; note?: string; field: string }[];
+      };
+      refused?: { kind: string; term: string; subject: string };
+    }
+  >;
+}
+
+// Fixture cases (C16): each file is added to a base package, or replaces its manifest.
+describe.each(ocfFixtureDirs)("OCF fixtures %s", (dir) => {
+  const fixtureDir = join(CASES, dir, "fixtures");
+  const expected = readJson<FixtureExpected>(dir, "expected.json");
+  const names = readdirSync(fixtureDir).sort();
+  const read = (name: string) => JSON.parse(readFileSync(join(fixtureDir, name), "utf8")) as Json;
+  const baseIds = new Set(
+    readdirSync(join(CASES, expected.base, "package")).flatMap((name) => {
+      const f = JSON.parse(readFileSync(join(CASES, expected.base, "package", name), "utf8")) as Json;
+      return Array.isArray(f.items) ? (f.items as Json[]).map((o) => o.id as string) : [];
+    }),
+  );
+  const FILE_TYPES = ["OCF_MANIFEST_FILE", "OCF_STAKEHOLDERS_FILE", "OCF_STOCK_CLASSES_FILE", "OCF_STOCK_LEGEND_TEMPLATES_FILE", "OCF_STOCK_PLANS_FILE",
+    "OCF_TRANSACTIONS_FILE", "OCF_VALUATIONS_FILE", "OCF_VESTING_TERMS_FILE", "OCF_FINANCINGS_FILE", "OCF_DOCUMENTS_FILE"];
+
+  it("has fixtures, expected.json and DERIVATION.md, and a base package", () => {
+    expect(expected.case).toBe(dir);
+    expect(existsSync(join(CASES, dir, "DERIVATION.md"))).toBe(true);
+    expect(existsSync(join(CASES, expected.base, "package"))).toBe(true);
+  });
+
+  it("gives one result for each fixture file, and only for those", () => {
+    expect(Object.keys(expected.fixtures).sort()).toEqual(names);
+    for (const [name, r] of Object.entries(expected.fixtures)) expect(("adds" in r) !== ("refused" in r), name).toBe(true);
+  });
+
+  it.each(names)("%s is one OCF file of a known type", (name) => {
+    expect(FILE_TYPES).toContain(read(name).file_type);
+  });
+
+  it("counts what each fixture adds as the file has it, and notes the unlisted file", () => {
+    for (const [name, r] of Object.entries(expected.fixtures)) {
+      if (!r.adds) continue;
+      const f = read(name);
+      if (f.file_type === "OCF_MANIFEST_FILE") {
+        expect(r.adds, name).toEqual({});
+        continue;
+      }
+      const counts: Record<string, number> = {};
+      for (const o of f.items as Json[]) counts[o.object_type as string] = (counts[o.object_type as string] ?? 0) + 1;
+      expect({ ...r.adds.read, ...r.adds.not_needed }, name).toEqual(counts);
+      expect(r.adds.notes?.[0], name).toEqual({ code: "not_in_manifest", subject: name });
+    }
+  });
+
+  it("leaves blank, in what a fixture adds, exactly the terms it adds to fill in", () => {
+    for (const [name, r] of Object.entries(expected.fixtures)) {
+      if (!r.adds) continue;
+      const blanks = [
+        ...(r.adds.unconverted_safes ?? []).flatMap((x) => Object.entries(x).filter(([, v]) => v === null).map(([k]) => ({ safe: x.id as string, field: k }))),
+        ...(r.adds.unconverted_notes ?? []).flatMap((x) => Object.entries(x).filter(([, v]) => v === null).map(([k]) => ({ note: x.id as string, field: k }))),
+      ];
+      expect(blanks, name).toEqual(r.adds.to_fill ?? []);
+    }
+  });
+
+  it("names, in each refusal, something its fixture contains", () => {
+    for (const [name, r] of Object.entries(expected.fixtures)) {
+      if (!r.refused) continue;
+      expect(["unsupported", "malformed"], name).toContain(r.refused.kind);
+      expect(readFileSync(join(fixtureDir, name), "utf8"), name).toContain(r.refused.subject);
+    }
+  });
+
+  it("reuses a base id only where the refusal is the duplicate id", () => {
+    for (const [name, r] of Object.entries(expected.fixtures)) {
+      const f = read(name);
+      const ids = Array.isArray(f.items) ? (f.items as Json[]).map((o) => o.id as string) : [];
+      const reused = ids.filter((id) => baseIds.has(id));
+      expect(reused, name).toEqual(r.refused?.term === "duplicate_id" ? [r.refused.subject] : []);
+    }
   });
 });

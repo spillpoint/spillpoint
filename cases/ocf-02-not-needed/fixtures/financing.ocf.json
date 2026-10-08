@@ -1,0 +1,15 @@
+{
+  "file_type": "OCF_FINANCINGS_FILE",
+  "items": [
+    {
+      "object_type": "FINANCING",
+      "id": "fin-series-a",
+      "name": "Series A",
+      "date": "2025-01-15",
+      "issuance_ids": [
+        "tx-55",
+        "tx-56"
+      ]
+    }
+  ]
+}

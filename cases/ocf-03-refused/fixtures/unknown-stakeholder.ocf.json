@@ -1,0 +1,21 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-r-who",
+      "date": "2025-06-15",
+      "security_id": "sec-r-who",
+      "custom_id": "SEC-R-WHO",
+      "stakeholder_id": "sh-nobody",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      },
+      "quantity": "1000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    }
+  ]
+}

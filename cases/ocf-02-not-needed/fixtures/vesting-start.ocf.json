@@ -1,0 +1,12 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_VESTING_START",
+      "id": "tx-vesting-start",
+      "date": "2023-03-15",
+      "security_id": "opt-c1",
+      "vesting_condition_id": "start"
+    }
+  ]
+}

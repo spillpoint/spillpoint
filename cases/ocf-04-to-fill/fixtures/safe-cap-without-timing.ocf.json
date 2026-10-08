@@ -1,0 +1,41 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-f-safe-timing",
+      "date": "2025-06-15",
+      "security_id": "safe-f-timing",
+      "custom_id": "SAFE-F-TIMING",
+      "stakeholder_id": "sh-investor-s",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "100000",
+        "currency": "USD"
+      },
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_valuation_cap": {
+                "amount": "12000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20",
+              "exit_multiple": "1"
+            }
+          }
+        }
+      ],
+      "seniority": 1,
+      "security_law_exemptions": []
+    }
+  ]
+}

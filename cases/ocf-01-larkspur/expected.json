@@ -138,6 +138,7 @@
         { "code": "common_preference_ignored", "subject": "cls-common" },
         { "code": "no_anti_dilution_field", "subject": "cls-seed" },
         { "code": "no_anti_dilution_field", "subject": "cls-series-a" },
+        { "code": "participation_cap_includes_preference", "subject": "cls-series-a" },
         { "code": "conversion_rounding_not_modeled", "subject": "cls-seed" },
         { "code": "conversion_rounding_not_modeled", "subject": "cls-series-a" },
         { "code": "unrecognized_field", "subject": "cls-series-a", "field": "board_seat" },

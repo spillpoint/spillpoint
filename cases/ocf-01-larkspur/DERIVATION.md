@@ -21,13 +21,15 @@ Twelve stakeholders, ten kept. **Employee E** and **Advisor F** hold nothing on 
 |---|---|---|
 | **Common Stock** | common; a liquidation preference multiple of 1 | common. The preference field is ignored, with a report line. |
 | **Seed Preferred** | price $1.00; preference 1x; **no participation cap**; converts at $1.00, 1 for 1, then adjusted to $0.80, 5 for 4 (tx-57); seniority 2 | OIP $1.00, CP **$0.80**, 1x. **Participation blank:** with no cap, OCF can't say whether it's non-participating or participating without a cap. |
-| **Series A Preferred** | price $2.00; preference 1x; **participation cap 3**; converts at $2.00, 1 for 1; seniority 3; an unrecognized field, `board_seat` | OIP $2.00, CP $2.00, 1x, **participating, capped at 3x** (cap above the preference, which it includes, as E7). |
+| **Series A Preferred** | price $2.00; preference 1x; **participation cap 3**; converts at $2.00, 1 for 1; seniority 3; an unrecognized field, `board_seat` | OIP $2.00, CP $2.00, 1x, **participating, capped at 3x** (cap above the preference). OCF doesn't say whether the cap includes the preference; spillpoint reads it as including it, as E7 does, and the report says so. |
 
 **Checking the adjusted ratio:** the conversion ratio must equal the price over the conversion price: $1.00 ÷ $0.80 = 1.25 = 5 ÷ 4.
 
 **Seniority:** a higher number is more senior, so Series A, then Seed, each a tier of its own.
 
 **Anti-dilution** is "none" on both: OCF has no field for it, and each gets a report line. So does each class's conversion rounding, `NORMAL`: the engine converts without rounding.
+
+**`board_seat` on Series A is deliberately not an OCF field.** It's there to test the report's line for an unrecognized field, so don't take this package as a valid OCF example: a schema validator would reject it.
 
 ## Shares (O5), security by security
 
@@ -122,6 +124,7 @@ Every convertible gives seniority 1, so it's ignored, with one report line (O8).
 - **Fields OCF lacks** (one line each): dividends, conversion groups, a carve-out, the sale date.
 - **Convertible seniority** ignored.
 - **Common's preference field** ignored.
+- **Series A's cap read as including its preference.**
 - **No anti-dilution field** (Seed, Series A).
 - **Conversion rounding not modeled** (Seed, Series A).
 - **An unrecognized field** (`board_seat` on Series A).

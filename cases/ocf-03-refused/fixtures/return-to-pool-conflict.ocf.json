@@ -1,0 +1,14 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_PLAN_RETURN_TO_POOL",
+      "id": "tx-r-return",
+      "date": "2025-06-15",
+      "security_id": "opt-e1",
+      "stock_plan_id": "plan-2023",
+      "quantity": "50000",
+      "reason_text": "Returned twice."
+    }
+  ]
+}

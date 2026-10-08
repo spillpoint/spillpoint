@@ -1,0 +1,21 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-01",
+      "date": "2025-06-15",
+      "security_id": "sec-r-duplicate",
+      "custom_id": "SEC-R-DUPLICATE",
+      "stakeholder_id": "sh-founder-a",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      },
+      "quantity": "1000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    }
+  ]
+}

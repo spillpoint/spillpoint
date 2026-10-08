@@ -1,0 +1,30 @@
+{
+  "file_type": "OCF_STOCK_CLASSES_FILE",
+  "items": [
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "cls-r-fixed",
+      "name": "Class cls-r-fixed",
+      "class_type": "PREFERRED",
+      "default_id_prefix": "PX-",
+      "initial_shares_authorized": "1000000",
+      "votes_per_share": "1",
+      "seniority": "4",
+      "price_per_share": {
+        "amount": "1.50",
+        "currency": "USD"
+      },
+      "liquidation_preference_multiple": "1",
+      "conversion_rights": [
+        {
+          "type": "STOCK_CLASS_CONVERSION_RIGHT",
+          "converts_to_stock_class_id": "cls-common",
+          "conversion_mechanism": {
+            "type": "FIXED_AMOUNT_CONVERSION",
+            "converts_to_quantity": "1"
+          }
+        }
+      ]
+    }
+  ]
+}

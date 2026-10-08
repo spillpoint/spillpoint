@@ -1,0 +1,11 @@
+{
+  "file_type": "OCF_STOCK_LEGEND_TEMPLATES_FILE",
+  "items": [
+    {
+      "object_type": "STOCK_LEGEND_TEMPLATE",
+      "id": "legend-1933",
+      "name": "Securities Act legend",
+      "text": "These shares have not been registered and may not be sold without registration or an exemption."
+    }
+  ]
+}

@@ -120,7 +120,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
   });
 
   it("leaves the OCF cases to the importer, from 04d", () => {
-    expect(OCF_CASES).toEqual(["ocf-01-larkspur"]);
+    expect(OCF_CASES).toEqual(["ocf-01-larkspur", "ocf-02-not-needed", "ocf-03-refused", "ocf-04-to-fill"]);
   });
 
   it.each(roundCases)("%s has no exit: buildCapTables builds its cap tables", (name) => {

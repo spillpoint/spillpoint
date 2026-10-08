@@ -1,0 +1,12 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_ISSUER_AUTHORIZED_SHARES_ADJUSTMENT",
+      "id": "tx-issuer-authorized",
+      "date": "2025-01-10",
+      "issuer_id": "issuer-larkspur",
+      "new_shares_authorized": "30000000"
+    }
+  ]
+}

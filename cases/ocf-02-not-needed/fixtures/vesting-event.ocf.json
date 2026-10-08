@@ -1,0 +1,12 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_VESTING_EVENT",
+      "id": "tx-vesting-event",
+      "date": "2024-03-15",
+      "security_id": "opt-c1",
+      "vesting_condition_id": "cliff"
+    }
+  ]
+}
