@@ -113,3 +113,10 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 24. A management carve-out given as a term of the sale, on the exit, for a company built from its rounds.
 
 Cases 14–24 are round cases, so their expected outputs are cap tables; 23 and 24 also run an exit on their last one, as Millrace and 12g do. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
+
+## OCF import (M6)
+
+An import reads an Open Cap Format package into a cap table, as `docs/ASSUMPTIONS.md` O1–O12 describe: the cap table as of the package's date, the terms OCF leaves open to fill in, and a report of what was read, set aside and noted. Anything that would change payouts and isn't modeled is refused by name. Every OCF-format file in `cases/` is our own, written by hand (O12).
+
+1. **Larkspur Instruments** (`ocf-01-larkspur`): a small fictional company that uses every kind of object the importer reads. 66 transactions: issuances, transfers, cancellations, a repurchase, retractions, a split with its reissuance, a consolidation, a conversion and a ratio adjustment; options exercised, repriced, transferred, cancelled, expired and returned to a pool; RSUs released; warrants exercised, transferred and cancelled; SAFEs converted, transferred and retracted; and notes.
+

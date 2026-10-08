@@ -1,0 +1,1198 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-01",
+      "date": "2023-01-10",
+      "security_id": "sec-a1",
+      "custom_id": "SEC-A1",
+      "stakeholder_id": "sh-founder-a",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "3000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-02",
+      "date": "2023-01-10",
+      "security_id": "sec-b1",
+      "custom_id": "SEC-B1",
+      "stakeholder_id": "sh-founder-b",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "1500000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_CLASS_SPLIT",
+      "id": "tx-03",
+      "date": "2023-02-01",
+      "stock_class_id": "cls-common",
+      "split_ratio": {
+        "numerator": "2",
+        "denominator": "1"
+      }
+    },
+    {
+      "object_type": "TX_STOCK_REISSUANCE",
+      "id": "tx-04",
+      "date": "2023-02-01",
+      "security_id": "sec-b1",
+      "resulting_security_ids": [
+        "sec-b2"
+      ],
+      "split_transaction_id": "tx-03"
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-05",
+      "date": "2023-02-01",
+      "security_id": "sec-b2",
+      "custom_id": "SEC-B2",
+      "stakeholder_id": "sh-founder-b",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "3000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-06",
+      "date": "2023-03-15",
+      "security_id": "opt-c0",
+      "custom_id": "OPT-C0",
+      "stakeholder_id": "sh-employee-c",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION",
+      "quantity": "25000",
+      "expiration_date": "2025-01-20",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.05",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-07",
+      "date": "2023-03-15",
+      "security_id": "opt-c1",
+      "custom_id": "OPT-C1",
+      "stakeholder_id": "sh-employee-c",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION_ISO",
+      "quantity": "200000",
+      "expiration_date": "2033-03-15",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_PLAN_SECURITY_ISSUANCE",
+      "id": "tx-08",
+      "date": "2023-03-15",
+      "security_id": "opt-d1",
+      "custom_id": "OPT-D1",
+      "stakeholder_id": "sh-employee-d",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION_NSO",
+      "quantity": "100000",
+      "expiration_date": "2033-03-15",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-09",
+      "date": "2023-03-15",
+      "security_id": "opt-e1",
+      "custom_id": "OPT-E1",
+      "stakeholder_id": "sh-employee-e",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION",
+      "quantity": "50000",
+      "expiration_date": "2033-03-15",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_EXERCISE",
+      "id": "tx-10",
+      "date": "2023-06-30",
+      "security_id": "opt-c1",
+      "quantity": "50000",
+      "resulting_security_ids": [
+        "sec-c1"
+      ]
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-11",
+      "date": "2023-06-30",
+      "security_id": "sec-c1",
+      "custom_id": "SEC-C1",
+      "stakeholder_id": "sh-employee-c",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      },
+      "quantity": "50000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-12",
+      "date": "2023-12-01",
+      "security_id": "safe-s0",
+      "custom_id": "SAFE-S0",
+      "stakeholder_id": "sh-investor-s",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "100000",
+        "currency": "USD"
+      },
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_timing": "POST_MONEY",
+              "conversion_valuation_cap": {
+                "amount": "4000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20"
+            }
+          }
+        }
+      ],
+      "seniority": 1,
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_STOCK_TRANSFER",
+      "id": "tx-13",
+      "date": "2024-01-15",
+      "security_id": "sec-a1",
+      "quantity": "500000",
+      "resulting_security_ids": [
+        "sec-b3"
+      ],
+      "balance_security_id": "sec-a2"
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-14",
+      "date": "2024-01-15",
+      "security_id": "sec-b3",
+      "custom_id": "SEC-B3",
+      "stakeholder_id": "sh-founder-b",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "500000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-15",
+      "date": "2024-01-15",
+      "security_id": "sec-a2",
+      "custom_id": "SEC-A2",
+      "stakeholder_id": "sh-founder-a",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "5500000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_REPURCHASE",
+      "id": "tx-16",
+      "date": "2024-02-01",
+      "security_id": "sec-b2",
+      "quantity": "100000",
+      "price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "balance_security_id": "sec-b4"
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-17",
+      "date": "2024-02-01",
+      "security_id": "sec-b4",
+      "custom_id": "SEC-B4",
+      "stakeholder_id": "sh-founder-b",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "2900000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-18",
+      "date": "2024-03-01",
+      "security_id": "sec-x1",
+      "custom_id": "SEC-X1",
+      "stakeholder_id": "sh-investor-x",
+      "stock_class_id": "cls-seed",
+      "share_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "quantity": "2000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-19",
+      "date": "2024-03-01",
+      "security_id": "sec-y0",
+      "custom_id": "SEC-Y0",
+      "stakeholder_id": "sh-investor-y",
+      "stock_class_id": "cls-seed",
+      "share_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "quantity": "500000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_RETRACTION",
+      "id": "tx-20",
+      "date": "2024-03-02",
+      "security_id": "sec-y0",
+      "reason_text": "Entered twice."
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-21",
+      "date": "2024-03-01",
+      "security_id": "sec-y1",
+      "custom_id": "SEC-Y1",
+      "stakeholder_id": "sh-investor-y",
+      "stock_class_id": "cls-seed",
+      "share_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "quantity": "1000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_CONVERSION",
+      "id": "tx-22",
+      "date": "2024-03-01",
+      "security_id": "safe-s0",
+      "trigger_id": "next-equity-financing",
+      "resulting_security_ids": [
+        "sec-s1"
+      ],
+      "reason_text": "Converted in the Seed."
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-23",
+      "date": "2024-03-01",
+      "security_id": "sec-s1",
+      "custom_id": "SEC-S1",
+      "stakeholder_id": "sh-investor-s",
+      "stock_class_id": "cls-seed",
+      "share_price": {
+        "amount": "0.80",
+        "currency": "USD"
+      },
+      "quantity": "125000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_CONSOLIDATION",
+      "id": "tx-24",
+      "date": "2024-04-01",
+      "security_ids": [
+        "sec-b3",
+        "sec-b4"
+      ],
+      "resulting_security_id": "sec-b5"
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-25",
+      "date": "2024-04-01",
+      "security_id": "sec-b5",
+      "custom_id": "SEC-B5",
+      "stakeholder_id": "sh-founder-b",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00005",
+        "currency": "USD"
+      },
+      "quantity": "3400000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_PLAN_POOL_ADJUSTMENT",
+      "id": "tx-26",
+      "date": "2024-05-01",
+      "stock_plan_id": "plan-2023",
+      "shares_reserved": "1500000"
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_REPRICING",
+      "id": "tx-27",
+      "date": "2024-05-15",
+      "security_id": "opt-c1",
+      "new_exercise_price": {
+        "amount": "0.08",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-28",
+      "date": "2024-06-01",
+      "security_id": "rsu-d2",
+      "custom_id": "RSU-D2",
+      "stakeholder_id": "sh-employee-d",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "RSU",
+      "quantity": "40000",
+      "expiration_date": "2034-06-01",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_RELEASE",
+      "id": "tx-29",
+      "date": "2025-06-01",
+      "security_id": "rsu-d2",
+      "quantity": "10000",
+      "release_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "settlement_date": "2025-06-01",
+      "resulting_security_ids": [
+        "sec-d1"
+      ]
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-30",
+      "date": "2025-06-01",
+      "security_id": "sec-d1",
+      "custom_id": "SEC-D1",
+      "stakeholder_id": "sh-employee-d",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "quantity": "10000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_TRANSFER",
+      "id": "tx-31",
+      "date": "2024-07-01",
+      "security_id": "opt-d1",
+      "quantity": "20000",
+      "resulting_security_ids": [
+        "opt-dt1"
+      ],
+      "balance_security_id": "opt-d2"
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-32",
+      "date": "2024-07-01",
+      "security_id": "opt-dt1",
+      "custom_id": "OPT-DT1",
+      "stakeholder_id": "sh-d-trust",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION_NSO",
+      "quantity": "20000",
+      "expiration_date": "2033-03-15",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-33",
+      "date": "2024-07-01",
+      "security_id": "opt-d2",
+      "custom_id": "OPT-D2",
+      "stakeholder_id": "sh-employee-d",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION_NSO",
+      "quantity": "80000",
+      "expiration_date": "2033-03-15",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_CANCELLATION",
+      "id": "tx-34",
+      "date": "2024-08-01",
+      "security_id": "opt-e1",
+      "quantity": "50000",
+      "reason_text": "Left the company."
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-35",
+      "date": "2024-08-01",
+      "security_id": "opt-x0",
+      "custom_id": "OPT-X0",
+      "stakeholder_id": "sh-investor-x",
+      "stock_plan_id": "plan-2023",
+      "compensation_type": "OPTION",
+      "quantity": "10000",
+      "expiration_date": "2034-08-01",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_RETRACTION",
+      "id": "tx-36",
+      "date": "2024-08-02",
+      "security_id": "opt-x0",
+      "reason_text": "Granted to the wrong stakeholder."
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-37",
+      "date": "2024-09-01",
+      "security_id": "safe-s1",
+      "custom_id": "SAFE-S1",
+      "stakeholder_id": "sh-investor-s",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "500000",
+        "currency": "USD"
+      },
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_timing": "POST_MONEY",
+              "conversion_valuation_cap": {
+                "amount": "12000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20"
+            }
+          }
+        }
+      ],
+      "seniority": 1,
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-38",
+      "date": "2024-09-01",
+      "security_id": "safe-s9",
+      "custom_id": "SAFE-S9",
+      "stakeholder_id": "sh-investor-s",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "75000",
+        "currency": "USD"
+      },
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_timing": "POST_MONEY",
+              "conversion_valuation_cap": {
+                "amount": "12000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20"
+            }
+          }
+        }
+      ],
+      "seniority": 1,
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_RETRACTION",
+      "id": "tx-39",
+      "date": "2024-09-02",
+      "security_id": "safe-s9",
+      "reason_text": "Never funded."
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-40",
+      "date": "2024-10-01",
+      "security_id": "note-n1",
+      "custom_id": "NOTE-N1",
+      "stakeholder_id": "sh-investor-n",
+      "convertible_type": "NOTE",
+      "investment_amount": {
+        "amount": "250000",
+        "currency": "USD"
+      },
+      "seniority": 1,
+      "security_law_exemptions": [],
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "qualified-financing",
+          "trigger_condition": "A qualified financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "CONVERTIBLE_NOTE_CONVERSION",
+              "interest_rates": [
+                {
+                  "rate": "0.06",
+                  "accrual_start_date": "2024-10-01"
+                }
+              ],
+              "day_count_convention": "ACTUAL_365",
+              "interest_payout": "DEFERRED",
+              "interest_accrual_period": "DAILY",
+              "compounding_type": "SIMPLE",
+              "conversion_discount": "0.20",
+              "conversion_valuation_cap": {
+                "amount": "10000000",
+                "currency": "USD"
+              },
+              "capitalization_definition_rules": {
+                "include_outstanding_shares": true,
+                "include_outstanding_options": true,
+                "include_outstanding_unissued_options": true,
+                "include_this_security": false,
+                "include_other_converting_securities": false,
+                "include_option_pool_topup_for_promised_options": false,
+                "include_additional_option_pool_topup": false,
+                "include_new_money": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-41",
+      "date": "2024-10-01",
+      "security_id": "note-n0",
+      "custom_id": "NOTE-N0",
+      "stakeholder_id": "sh-investor-n",
+      "convertible_type": "NOTE",
+      "investment_amount": {
+        "amount": "50000",
+        "currency": "USD"
+      },
+      "seniority": 1,
+      "security_law_exemptions": [],
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "qualified-financing",
+          "trigger_condition": "A qualified financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "CONVERTIBLE_NOTE_CONVERSION",
+              "interest_rates": [
+                {
+                  "rate": "0.06",
+                  "accrual_start_date": "2024-10-01"
+                }
+              ],
+              "day_count_convention": "ACTUAL_365",
+              "interest_payout": "DEFERRED",
+              "interest_accrual_period": "DAILY",
+              "compounding_type": "SIMPLE",
+              "conversion_discount": "0.20",
+              "conversion_valuation_cap": {
+                "amount": "10000000",
+                "currency": "USD"
+              },
+              "capitalization_definition_rules": {
+                "include_outstanding_shares": true,
+                "include_outstanding_options": true,
+                "include_outstanding_unissued_options": true,
+                "include_this_security": false,
+                "include_other_converting_securities": false,
+                "include_option_pool_topup_for_promised_options": false,
+                "include_additional_option_pool_topup": false,
+                "include_new_money": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_CANCELLATION",
+      "id": "tx-42",
+      "date": "2025-01-31",
+      "security_id": "note-n0",
+      "amount": {
+        "amount": "50000",
+        "currency": "USD"
+      },
+      "reason_text": "Repaid."
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-43",
+      "date": "2024-11-01",
+      "security_id": "war-l1",
+      "custom_id": "WAR-L1",
+      "stakeholder_id": "sh-lender-l",
+      "quantity": "100000",
+      "exercise_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2034-11-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-l1-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-seed",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "100000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-44",
+      "date": "2024-11-01",
+      "security_id": "war-l0",
+      "custom_id": "WAR-L0",
+      "stakeholder_id": "sh-lender-l",
+      "quantity": "20000",
+      "exercise_price": {
+        "amount": "0.50",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2034-11-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-l0-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-common",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "20000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_WARRANT_EXERCISE",
+      "id": "tx-45",
+      "date": "2025-04-01",
+      "security_id": "war-l0",
+      "trigger_id": "war-l0-exercise",
+      "resulting_security_ids": [
+        "sec-l1"
+      ]
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-46",
+      "date": "2025-04-01",
+      "security_id": "sec-l1",
+      "custom_id": "SEC-L1",
+      "stakeholder_id": "sh-lender-l",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.50",
+        "currency": "USD"
+      },
+      "quantity": "20000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-47",
+      "date": "2024-11-01",
+      "security_id": "war-l2",
+      "custom_id": "WAR-L2",
+      "stakeholder_id": "sh-lender-l",
+      "quantity": "10000",
+      "exercise_price": {
+        "amount": "0.50",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2034-11-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-l2-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-common",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "10000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_WARRANT_CANCELLATION",
+      "id": "tx-48",
+      "date": "2025-01-15",
+      "security_id": "war-l2",
+      "quantity": "10000",
+      "reason_text": "Terms renegotiated."
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-49",
+      "date": "2024-11-01",
+      "security_id": "war-l4",
+      "custom_id": "WAR-L4",
+      "stakeholder_id": "sh-lender-l",
+      "quantity": "5000",
+      "exercise_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2034-11-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-l4-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-seed",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "5000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_WARRANT_RETRACTION",
+      "id": "tx-50",
+      "date": "2024-11-02",
+      "security_id": "war-l4",
+      "reason_text": "Duplicate."
+    },
+    {
+      "object_type": "TX_WARRANT_TRANSFER",
+      "id": "tx-51",
+      "date": "2025-05-01",
+      "security_id": "war-l1",
+      "quantity": "25000",
+      "resulting_security_ids": [
+        "war-x1"
+      ],
+      "balance_security_id": "war-l3"
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-52",
+      "date": "2025-05-01",
+      "security_id": "war-x1",
+      "custom_id": "WAR-X1",
+      "stakeholder_id": "sh-investor-x",
+      "quantity": "25000",
+      "exercise_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2034-11-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-x1-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-seed",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "25000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_WARRANT_ISSUANCE",
+      "id": "tx-53",
+      "date": "2025-05-01",
+      "security_id": "war-l3",
+      "custom_id": "WAR-L3",
+      "stakeholder_id": "sh-lender-l",
+      "quantity": "75000",
+      "exercise_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "purchase_price": {
+        "amount": "0.00",
+        "currency": "USD"
+      },
+      "security_law_exemptions": [],
+      "warrant_expiration_date": "2034-11-01",
+      "exercise_triggers": [
+        {
+          "type": "ELECTIVE_AT_WILL",
+          "trigger_id": "war-l3-exercise",
+          "conversion_right": {
+            "type": "WARRANT_CONVERSION_RIGHT",
+            "converts_to_stock_class_id": "cls-seed",
+            "conversion_mechanism": {
+              "type": "FIXED_AMOUNT_CONVERSION",
+              "converts_to_quantity": "75000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "object_type": "TX_STOCK_CANCELLATION",
+      "id": "tx-54",
+      "date": "2024-12-01",
+      "security_id": "sec-a2",
+      "quantity": "100000",
+      "reason_text": "Forfeited."
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-55",
+      "date": "2025-01-15",
+      "security_id": "sec-y2",
+      "custom_id": "SEC-Y2",
+      "stakeholder_id": "sh-investor-y",
+      "stock_class_id": "cls-series-a",
+      "share_price": {
+        "amount": "2.00",
+        "currency": "USD"
+      },
+      "quantity": "1500000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-56",
+      "date": "2025-01-15",
+      "security_id": "sec-x2",
+      "custom_id": "SEC-X2",
+      "stakeholder_id": "sh-investor-x",
+      "stock_class_id": "cls-series-a",
+      "share_price": {
+        "amount": "2.00",
+        "currency": "USD"
+      },
+      "quantity": "500000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_CLASS_CONVERSION_RATIO_ADJUSTMENT",
+      "id": "tx-57",
+      "date": "2025-02-01",
+      "stock_class_id": "cls-seed",
+      "new_ratio_conversion_mechanism": {
+        "type": "RATIO_CONVERSION",
+        "conversion_price": {
+          "amount": "0.80",
+          "currency": "USD"
+        },
+        "ratio": {
+          "numerator": "5",
+          "denominator": "4"
+        },
+        "rounding_type": "NORMAL"
+      }
+    },
+    {
+      "object_type": "TX_STOCK_CONVERSION",
+      "id": "tx-58",
+      "date": "2025-03-01",
+      "security_id": "sec-y1",
+      "quantity_converted": "200000",
+      "resulting_security_ids": [
+        "sec-y3"
+      ],
+      "balance_security_id": "sec-y4"
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-59",
+      "date": "2025-03-01",
+      "security_id": "sec-y3",
+      "custom_id": "SEC-Y3",
+      "stakeholder_id": "sh-investor-y",
+      "stock_class_id": "cls-common",
+      "share_price": {
+        "amount": "0.80",
+        "currency": "USD"
+      },
+      "quantity": "250000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-60",
+      "date": "2025-03-01",
+      "security_id": "sec-y4",
+      "custom_id": "SEC-Y4",
+      "stakeholder_id": "sh-investor-y",
+      "stock_class_id": "cls-seed",
+      "share_price": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "quantity": "800000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_TRANSFER",
+      "id": "tx-61",
+      "date": "2025-05-15",
+      "security_id": "safe-s1",
+      "amount": {
+        "amount": "250000",
+        "currency": "USD"
+      },
+      "resulting_security_ids": [
+        "safe-x1"
+      ],
+      "balance_security_id": "safe-s3"
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-62",
+      "date": "2025-05-15",
+      "security_id": "safe-x1",
+      "custom_id": "SAFE-X1",
+      "stakeholder_id": "sh-investor-x",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "250000",
+        "currency": "USD"
+      },
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_timing": "POST_MONEY",
+              "conversion_valuation_cap": {
+                "amount": "12000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20"
+            }
+          }
+        }
+      ],
+      "seniority": 1,
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-63",
+      "date": "2025-05-15",
+      "security_id": "safe-s3",
+      "custom_id": "SAFE-S3",
+      "stakeholder_id": "sh-investor-s",
+      "convertible_type": "SAFE",
+      "investment_amount": {
+        "amount": "250000",
+        "currency": "USD"
+      },
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "next-equity-financing",
+          "trigger_condition": "The next equity financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "SAFE_CONVERSION",
+              "conversion_mfn": false,
+              "conversion_timing": "POST_MONEY",
+              "conversion_valuation_cap": {
+                "amount": "12000000",
+                "currency": "USD"
+              },
+              "conversion_discount": "0.20"
+            }
+          }
+        }
+      ],
+      "seniority": 1,
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-64",
+      "date": "2025-02-01",
+      "security_id": "opt-f1",
+      "custom_id": "OPT-F1",
+      "stakeholder_id": "sh-advisor-f",
+      "stock_plan_id": "plan-2025",
+      "compensation_type": "OPTION_NSO",
+      "quantity": "10000",
+      "expiration_date": "2035-02-01",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": [],
+      "exercise_price": {
+        "amount": "0.10",
+        "currency": "USD"
+      }
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_CANCELLATION",
+      "id": "tx-65",
+      "date": "2025-04-30",
+      "security_id": "opt-f1",
+      "quantity": "10000",
+      "reason_text": "Advisory agreement ended."
+    },
+    {
+      "object_type": "TX_STOCK_PLAN_RETURN_TO_POOL",
+      "id": "tx-66",
+      "date": "2025-04-30",
+      "security_id": "opt-f1",
+      "stock_plan_id": "plan-2025",
+      "quantity": "10000",
+      "reason_text": "Cancelled grant returns to the plan."
+    }
+  ]
+}
