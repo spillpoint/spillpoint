@@ -67,8 +67,8 @@ describe("two warrants for one series (E12; fixed in 03f)", () => {
     // 8,000,000 common; Investor Y's 2,000,000 Seed at $1.00, 1x non-participating; warrants for 100,000 Seed shares
     // at $0.50 and at $0.60. At $1,500,000 both exercise: the strike cash makes $1,610,000 of proceeds, all paid to
     // the Seed's tier of 2,200,000 shares, $161/220 a share, above both strikes. So the Seed gets $1,463,636.36, the
-    // $0.50 warrant $73,181.82 − $50,000 and the $0.60 warrant $73,181.82 − $60,000. Before 03f the second warrant
-    // split was paid its part of what the first left: $9,855.37 net for the $0.60 warrant, split after the $0.50 one.
+    // $0.50 warrant $73,181.82 − $50,000 and the $0.60 warrant $73,181.82 − $60,000. Before 03f a warrant split after
+    // another got its part of what the first left: $9,855.37 net for the $0.60 warrant, split after the $0.50 one.
     const ct = readCapTable({
       holders: [{ id: "x", name: "X" }, { id: "y", name: "Y" }, { id: "l", name: "L" }],
       securities: [
