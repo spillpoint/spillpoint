@@ -583,6 +583,11 @@ class Waterfall:
         """Everything that fixes the slope of every payout: decisions, tiers filled, caps binding."""
         return tuple(sorted((o["decisions"], o["flags"]) for o in self.evaluate(exit_value)))
 
+    def payout_vector_with(self, exit_value, bits):
+        """The payout lines under one fixed set of decisions, in line order."""
+        lines = self.split_to_lines(self.run(exit_value, bits)[0])
+        return [lines[(h, s)] for h, s, _ in self.lines]
+
     def payout_vector(self, exit_value):
         outs = self.evaluate(exit_value)
         if len(outs) != 1:

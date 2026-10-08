@@ -42,7 +42,7 @@
             "code": "safe_switches",
             "security": "safe_z",
             "conversion_amount": true,
-            "text": "Investor Z's SAFE has no valuation cap, so it converts at the common price per share less its 20% discount. That is worth exactly $1,250,000.00 ($1,000,000.00 \u00f7 0.80) wherever there is room for it, and this is the first exit value where there is: what is left for common and the SAFE reaches $1,250,000.00. Below it no such price exists, so the SAFE takes its Cash-Out Amount, $1,000,000.00; above it the SAFE converts, and its payout jumps to $1,250,000.00."
+            "text": "Investor Z's SAFE has no valuation cap, so it converts at the common price per share less its 20% discount. That is worth exactly $1,250,000.00 ($1,000,000.00 \u00f7 0.80) wherever there is room for it, and this is the first exit value where there is: what is left after the preferences reaches $1,250,000.00. Below it no such price exists, so the SAFE takes its Cash-Out Amount, $1,000,000.00; above it the SAFE converts, and its payout jumps to $1,250,000.00."
           },
           {
             "code": "payouts_jump",
