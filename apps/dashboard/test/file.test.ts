@@ -240,10 +240,18 @@ function opensExactly(name: string) {
 }
 
 describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
-  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name));
+  // 0.3.0 work: these cases come first (03a), and the engine reads them from 03e.
+  const notYet = ["edge-12i-discount-safe-with-capped-participation", "edge-13h-discount-note-with-capped-participation"];
+  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name) && !notYet.includes(name));
 
   it("covers every case with a SAFE or a note at a sale: 12 to 12h, and 13a to 13g", () => {
     expect(cases).toHaveLength(15);
+  });
+
+  it.each(notYet)("%s is refused until the engine reads it, in the engine's words", (name) => {
+    const { exit } = caseInputs(name);
+    const opened = readFile(JSON.stringify({ format: "spillpoint", version: 4, name, cap_table: exit.cap_table, range: exit.range, exit_date: exit.exit_date }));
+    expect(opened.ok ? null : opened.message).toMatch(/with no cap alongside capped participating preferred\. The engine supports this once a case needs it/);
   });
 
   it.each(cases)("%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts", (name) => {

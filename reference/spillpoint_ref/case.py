@@ -230,8 +230,22 @@ def run_case(inputs):
             ct = tables[spec["cap_table_after_event"]]
         else:
             ct = CapTable.from_json(spec["cap_table"])
-        out["exit"] = run_exit(ct, spec)
+        out["exit"] = run_exit(with_sale_carve_out(ct, spec), spec)
     return out
+
+
+def with_sale_carve_out(ct, spec):
+    """C6: a carve-out is a term of the sale, so the exit may carry one,
+    whichever cap table it runs on, one built from rounds included. A cap
+    table may still carry its own, for compatibility, but not both: then
+    which one governs would be a guess."""
+    if spec.get("carve_out") is None:
+        return ct
+    if ct.carve_out:
+        raise ValueError("the carve-out is on both the cap table and the exit; give it once (C6)")
+    data = ct.to_json()
+    data["carve_out"] = spec["carve_out"]
+    return CapTable.from_json(data)
 
 
 def _decisions_json(wf, bits):

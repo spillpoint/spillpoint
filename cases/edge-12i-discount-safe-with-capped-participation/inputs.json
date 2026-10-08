@@ -1,0 +1,100 @@
+{
+  "case": "edge-12i-discount-safe-with-capped-participation",
+  "description": "Edge case 4's company, with Investor Z's $1M SAFE that has no valuation cap and a 20% discount. Seed Preferred is participating, capped at 3x. Converting, the SAFE is worth exactly $1,250,000, its purchase amount \u00f7 (1 \u2212 discount), taken out of the residual before the Seed and common share the rest, the Seed stopping at its cap (X9). Below where conversion is possible, its Cash-Out Amount ranks with the Seed's tier.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        },
+        {
+          "id": "investor_z",
+          "name": "Investor Z"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.5",
+          "conversion_price": "1.5",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "3",
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "seed",
+          "shares": 1500000
+        },
+        {
+          "holder": "investor_y",
+          "security": "seed",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 0,
+      "unconverted_safes": [
+        {
+          "id": "safe_z",
+          "holder": "investor_z",
+          "purchase_amount": "1000000",
+          "post_money_cap": null,
+          "discount": "0.2"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "60000000"
+    ],
+    "exit_values": [
+      "2000000",
+      "4000000",
+      "4250000",
+      "10000000",
+      "34250000",
+      "40000000",
+      "46250000",
+      "50000000",
+      "60000000"
+    ]
+  }
+}

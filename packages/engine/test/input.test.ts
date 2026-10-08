@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 13g, 23 and Millrace: every exit case", () => {
+  it("are edge cases 1 through 13g, 23 and Millrace, with 11b: every exit case but those refused until 03e", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -34,6 +34,7 @@ describe("the exit cases the engine runs", () => {
       "edge-10-carve-out",
       "edge-10b-carve-out-alongside-preferences",
       "edge-11-earnout",
+      "edge-11b-earnout-negative-take",
       "edge-12-unconverted-safe",
       "edge-12b-safe-cap-and-discount",
       "edge-12c-safe-discount-only",
@@ -106,8 +107,12 @@ describe("the exit cases the engine runs", () => {
 });
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
-  // Since M5i every exit case runs; a case added later and refused would be listed here.
-  const refused: [string, string, Milestone][] = [];
+  // Since M5i every exit case runs. The 0.3.0 work's cases come first (03a) and the engine after (03e).
+  const refused: [string, string, Milestone][] = [
+    ["edge-12i-discount-safe-with-capped-participation", "uncapped_safe_with_capped_participation", "later"],
+    ["edge-13h-discount-note-with-capped-participation", "uncapped_note_with_capped_participation", "later"],
+    ["edge-24-carve-out-on-the-sale", "carve_out_on_the_exit", "later"],
+  ];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {

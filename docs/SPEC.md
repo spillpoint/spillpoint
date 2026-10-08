@@ -97,9 +97,9 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 8. A warrant for preferred.
 9. Cumulative dividends: they accrue, then are forfeited on conversion. 9b compounds them; 9c pays them on conversion.
 10. A management carve-out. 10b pays it alongside the preferences.
-11. An earnout: a closing payment plus one later payment.
-12. An unconverted post-money SAFE at exit. 12b adds a discount to the cap; 12c has a discount and no cap; 12d sits alongside two tiers of preferred, and 12e ranks its Cash-Out Amount with the senior one. 12f has two SAFEs; 12g is a pre-money SAFE, built from rounds; 12h is an MFN SAFE.
-13. A convertible note at exit, before conversion, with its cap's base counted with the pool (13a), without it (13b), and as common only (13c). 13d adds a discount to the cap; 13e has a discount and no cap; 13f sits alongside preferred. 13g has two notes.
+11. An earnout: a closing payment plus one later payment. 11b's earnout crosses a group-conversion jump, so it lowers the founders' running totals: their takes are negative.
+12. An unconverted post-money SAFE at exit. 12b adds a discount to the cap; 12c has a discount and no cap; 12d sits alongside two tiers of preferred, and 12e ranks its Cash-Out Amount with the senior one. 12f has two SAFEs; 12g is a pre-money SAFE, built from rounds; 12h is an MFN SAFE; 12i has a discount and no cap, alongside capped participating preferred.
+13. A convertible note at exit, before conversion, with its cap's base counted with the pool (13a), without it (13b), and as common only (13c). 13d adds a discount to the cap; 13e has a discount and no cap; 13f sits alongside preferred. 13g has two notes; 13h has a discount and no cap, alongside capped participating preferred.
 14. An option pool top-up in the pre-money.
 15. A post-money SAFE converting in a round that tops up the pool, with a discount that beats the cap.
 16. One down round under three anti-dilution methods: broad-based, narrow-based, and full ratchet. 16e counts the unissued pool in A; 16f rounds the adjusted conversion price to $0.0001.
@@ -110,5 +110,6 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 21. A note and a pre-money SAFE converting in the same round.
 22. Warrants issued, counted like options in a priced round's price, its pool top-up and a converting SAFE's Company Capitalization.
 23. Cumulative dividends on a priced round's series, carried by its series from SAFEs on its own issue price, followed by a sale.
+24. A management carve-out given as a term of the sale, on the exit, for a company built from its rounds.
 
-Cases 14–23 are round cases, so their expected outputs are cap tables; 23 also runs an exit on its last one, as Millrace and 12g do. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
+Cases 14–24 are round cases, so their expected outputs are cap tables; 23 and 24 also run an exit on their last one, as Millrace and 12g do. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.

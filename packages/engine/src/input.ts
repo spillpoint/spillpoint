@@ -507,7 +507,8 @@ function readCarveOut(value: unknown, holderIds: ReadonlySet<string>, path: stri
 // ---------- exits and cases ----------
 
 // exit_date: dividends (X2) and notes' interest (X3) accrue to it.
-const EXIT_FIELDS = ["cap_table", "cap_table_after_event", "range", "exit_values", "exit_date", "payment_schedules"] as const;
+// carve_out: a carve-out given as a term of the sale (C6, case 24), refused until the engine reads it.
+const EXIT_FIELDS = ["cap_table", "cap_table_after_event", "range", "exit_values", "exit_date", "payment_schedules", "carve_out"] as const;
 
 export function readExit(value: unknown, resolveCapTable?: CapTableResolver, path = "exit"): ExitInput {
   return readExitOn(
@@ -526,6 +527,9 @@ export function readExit(value: unknown, resolveCapTable?: CapTableResolver, pat
 export function readExitOn(value: unknown, tableAfter: (eventId: string, path: string) => CapTable, path: string): ExitInput {
   const exit = object(value, path);
   onlyKnownFields(exit, EXIT_FIELDS, path);
+  if (exit.carve_out != null) {
+    throw new UnsupportedTermError("carve_out_on_the_exit", "later", `${path}.carve_out`, "A carve-out given on the exit, as a term of the sale (C6)");
+  }
 
   const capTable =
     exit.cap_table_after_event != null
