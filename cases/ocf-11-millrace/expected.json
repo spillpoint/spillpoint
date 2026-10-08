@@ -1,0 +1,296 @@
+{
+  "case": "ocf-11-millrace",
+  "worked_by": "hand (DERIVATION.md)",
+  "locked_case": "millrace",
+  "locked_after_event": "series_b",
+  "price_places": 10,
+  "result": {
+    "as_of": "2025-03-31",
+    "cap_table": {
+      "holders": [
+        {
+          "id": "ana",
+          "name": "Ana Ortiz"
+        },
+        {
+          "id": "dev",
+          "name": "Dev Patel"
+        },
+        {
+          "id": "lena",
+          "name": "Lena Fischer"
+        },
+        {
+          "id": "other_employees",
+          "name": "Other employees"
+        },
+        {
+          "id": "priya",
+          "name": "Priya Shah"
+        },
+        {
+          "id": "marcus",
+          "name": "Marcus Lee"
+        },
+        {
+          "id": "harbor_lane",
+          "name": "Harbor Lane Ventures Fund I"
+        },
+        {
+          "id": "ridgeline",
+          "name": "Ridgeline Capital Fund III"
+        },
+        {
+          "id": "cobalt",
+          "name": "Cobalt Family Office LLC"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed_shadow",
+          "name": "Seed Preferred (from SAFEs)",
+          "kind": "preferred",
+          "original_issue_price": "0.3849300316",
+          "conversion_price": "0.3849300316",
+          "preference_multiple": "1.5",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "0.4635148503",
+          "conversion_price": "0.4635148503",
+          "preference_multiple": "1.5",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2.0754715977",
+          "conversion_price": "1.8247520242",
+          "preference_multiple": "1.25",
+          "participation": "participating_capped",
+          "cap_multiple": "2.75",
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_b",
+          "name": "Series B Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.082111825",
+          "conversion_price": "1.082111825",
+          "preference_multiple": "2",
+          "participation": null,
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "options_0.05",
+          "name": "Options ($0.05 strike)",
+          "kind": "option",
+          "strike": "0.05"
+        },
+        {
+          "id": "options_0.11",
+          "name": "Options ($0.11 strike)",
+          "kind": "option",
+          "strike": "0.11"
+        },
+        {
+          "id": "options_0.42",
+          "name": "Options ($0.42 strike)",
+          "kind": "option",
+          "strike": "0.42"
+        }
+      ],
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ],
+        [
+          "seed_shadow",
+          "seed"
+        ]
+      ],
+      "conversion_groups": [],
+      "positions": [
+        {
+          "holder": "ana",
+          "security": "common",
+          "shares": 5500000
+        },
+        {
+          "holder": "dev",
+          "security": "common",
+          "shares": 4500000
+        },
+        {
+          "holder": "dev",
+          "security": "options_0.42",
+          "shares": 250000
+        },
+        {
+          "holder": "lena",
+          "security": "common",
+          "shares": 638297
+        },
+        {
+          "holder": "lena",
+          "security": "options_0.05",
+          "shares": 40000
+        },
+        {
+          "holder": "lena",
+          "security": "options_0.42",
+          "shares": 300000
+        },
+        {
+          "holder": "other_employees",
+          "security": "options_0.05",
+          "shares": 450000
+        },
+        {
+          "holder": "other_employees",
+          "security": "options_0.11",
+          "shares": 1100000
+        },
+        {
+          "holder": "other_employees",
+          "security": "options_0.42",
+          "shares": 2250000
+        },
+        {
+          "holder": "priya",
+          "security": "seed_shadow",
+          "shares": 779362
+        },
+        {
+          "holder": "marcus",
+          "security": "seed_shadow",
+          "shares": 389681
+        },
+        {
+          "holder": "harbor_lane",
+          "security": "seed",
+          "shares": 5393570
+        },
+        {
+          "holder": "harbor_lane",
+          "security": "series_a",
+          "shares": 1445454
+        },
+        {
+          "holder": "ridgeline",
+          "security": "series_a",
+          "shares": 4336363
+        },
+        {
+          "holder": "cobalt",
+          "security": "series_b",
+          "shares": 9241189
+        }
+      ],
+      "unissued_pool": 5101136
+    },
+    "to_fill": [
+      {
+        "security": "series_b",
+        "field": "participation"
+      }
+    ],
+    "report": {
+      "read": {
+        "ISSUER": 1,
+        "STAKEHOLDER": 9,
+        "STOCK_CLASS": 5,
+        "STOCK_PLAN": 1,
+        "TX_CONVERTIBLE_CONVERSION": 2,
+        "TX_CONVERTIBLE_ISSUANCE": 2,
+        "TX_EQUITY_COMPENSATION_ISSUANCE": 6,
+        "TX_STOCK_CLASS_CONVERSION_RATIO_ADJUSTMENT": 1,
+        "TX_STOCK_ISSUANCE": 9,
+        "TX_STOCK_PLAN_POOL_ADJUSTMENT": 3
+      },
+      "not_needed": {},
+      "notes": [
+        {
+          "code": "no_dividend_field"
+        },
+        {
+          "code": "no_conversion_group_field"
+        },
+        {
+          "code": "no_carve_out_field"
+        },
+        {
+          "code": "no_sale_date_field"
+        },
+        {
+          "code": "convertible_seniority_ignored"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "seed_shadow"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "seed"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "series_a"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "series_b"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "seed_shadow"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "seed"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "series_a"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "seed_shadow"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "seed"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "series_a"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "series_b"
+        },
+        {
+          "code": "conversion_ratio_rounded",
+          "subject": "series_a"
+        }
+      ]
+    }
+  }
+}

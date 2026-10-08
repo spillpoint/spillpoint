@@ -123,6 +123,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     expect(OCF_CASES).toEqual([
       "ocf-01-larkspur", "ocf-02-not-needed", "ocf-03-refused", "ocf-04-to-fill",
       "ocf-05-edge-04", "ocf-06-edge-05a", "ocf-07-edge-07", "ocf-08-edge-08", "ocf-09-edge-12b", "ocf-10-edge-13a",
+      "ocf-11-millrace",
     ]);
   });
 

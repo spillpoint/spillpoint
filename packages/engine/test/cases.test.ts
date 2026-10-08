@@ -9,6 +9,9 @@ import { describe, expect, it } from "vitest";
 
 const CASES = resolve(import.meta.dirname, "../../../cases");
 const CENT = new Decimal("0.01");
+// A locked price can be a long exact fraction; dividing it out at 40 digits rounds it to 10 places correctly.
+const Decimal40 = Decimal.clone({ precision: 40 });
+const byId = (a: Record<string, unknown>, b: Record<string, unknown>) => String(a.id).localeCompare(String(b.id));
 
 interface Line {
   holder: string;
@@ -228,22 +231,56 @@ describe.each(ocfPackageDirs)("OCF case %s", (dir) => {
   });
 
   // 04b: a locked case written in OCF imports to that case's cap table, up to the ids the import names its own way.
-  const locked = (expected as { locked_case?: string }).locked_case;
+  // 04b2: a case built from rounds gives the event its table follows. OCF writes numbers to at most 10 places, so
+  // such a case writes each price rounded to nearest, and its table is the locked one with those prices.
+  const lockedTerms = expected as { locked_case?: string; locked_after_event?: string; price_places?: number; renamed?: Record<string, string> };
+  const locked = lockedTerms.locked_case;
   if (locked) {
     it(`imports to ${locked}'s cap table`, () => {
-      const renamed = (expected as { renamed?: Record<string, string> }).renamed ?? {};
+      type Table = Json & { holders: Json[]; securities: Json[]; positions: { holder: string; security: string }[]; seniority?: string[][] };
+      const renamed = lockedTerms.renamed ?? {};
       const name = (id: string) => renamed[id] ?? id;
-      const ct = (readJson<{ exit: { cap_table: Json & { securities: Json[]; positions: { security: string }[] } } }>(locked, "inputs.json")).exit.cap_table;
+      const ct = lockedTerms.locked_after_event
+        ? readJson<{ cap_tables: { after_event: string; cap_table: Table }[] }>(locked, "expected.json").cap_tables.find((t) => t.after_event === lockedTerms.locked_after_event)!.cap_table
+        : readJson<{ exit: { cap_table: Table } }>(locked, "inputs.json").exit.cap_table;
+      // A built table also gives its totals and each series' conversion ratio, and an empty list of SAFEs: none is a term the import reads.
+      const { totals: _totals, unconverted_safes, ...rest } = ct;
       const theirs = {
-        ...ct,
+        ...rest,
+        ...((unconverted_safes as Json[] | undefined)?.length ? { unconverted_safes } : {}),
         conversion_groups: ct.conversion_groups ?? [],
-        securities: ct.securities.map((s) => ({ ...s, id: name(s.id as string) })),
+        securities: ct.securities.map(({ conversion_ratio: _ratio, approx: _approx, ...s }) => ({ ...s, id: name(s.id as string) })),
         positions: ct.positions.map((p) => ({ ...p, security: name(p.security) })),
+        seniority: ct.seniority?.map((tier) => tier.map(name)),
       };
+      // What OCF can't carry: anti-dilution imports as none (O11), and each blank the import lists to fill in is
+      // compared as a blank. A price is compared at the places the package writes it to, rounded to nearest.
+      const blank = new Set(result.to_fill.filter((f) => f.security).map((f) => `${f.security} ${f.field}`));
+      const places = lockedTerms.price_places;
+      const price = (v: unknown, rounded: boolean) => {
+        if (typeof v !== "string") return v;
+        const [n, d = "1"] = v.split("/");
+        const x = new Decimal40(n!).div(d);
+        return (rounded && places !== undefined ? x.toDecimalPlaces(places, Decimal.ROUND_HALF_UP) : x).toFixed();
+      };
+      const asImported = (s: Json, rounded: boolean) =>
+        Object.fromEntries(
+          Object.entries(s).map(([k, v]) => [
+            k,
+            blank.has(`${s.id} ${k}`) ? null : k === "anti_dilution" ? "none" : k === "original_issue_price" || k === "conversion_price" ? price(v, rounded) : v,
+          ]),
+        );
       // A renamed class keeps every term; only its name differs, so names aren't compared there.
       const imported = new Set(Object.values(renamed));
-      const unnamed = (securities: Json[]) => securities.map((s) => (imported.has(s.id as string) ? { ...s, name: undefined } : s));
-      expect({ ...result.cap_table, securities: unnamed(result.cap_table.securities) }).toEqual({ ...theirs, securities: unnamed(theirs.securities) });
+      const comparable = (t: Table, rounded: boolean) => ({
+        ...t,
+        holders: [...t.holders].sort(byId),
+        securities: t.securities.map((s) => asImported(imported.has(s.id as string) ? { ...s, name: undefined } : s, rounded)).sort(byId),
+        positions: [...t.positions].sort((a, b) => `${a.holder} ${a.security}`.localeCompare(`${b.holder} ${b.security}`)),
+        seniority: t.seniority?.map((tier) => [...tier].sort()),
+      });
+      for (const s of result.cap_table.securities) if (s.kind === "preferred") expect(s.anti_dilution, String(s.id)).toBe("none");
+      expect(comparable(result.cap_table as unknown as Table, false)).toEqual(comparable(theirs as Table, true));
     });
   }
 

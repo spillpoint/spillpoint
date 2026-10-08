@@ -70,5 +70,5 @@ Each adds a preferred class, with no shares issued in it, so only the class itse
 | `class-conversion-mechanism` | conversion by a fixed amount, not a ratio | unsupported |
 | `several-conversion-rights` | two conversion rights | unsupported |
 | `conversion-into-preferred` | converts into Seed Preferred | unsupported |
-| `conversion-ratio-mismatch` | price and conversion price $1.50, ratio 2 for 1, where $1.50 ÷ $1.50 is 1 | malformed |
+| `conversion-ratio-mismatch` | price and conversion price $1.50, ratio 2 for 1. Written to 2 places, each price could be off by half a cent, so $1.50 ÷ $1.50 could be anything from 0.993 to 1.007; a ratio in whole numbers is exact, so 2 is far outside (O4) | malformed |
 | `cap-below-preference` | a 2x preference with a participation cap of 1.5x | unsupported, on the later list. OCF doesn't say whether the cap includes the preference. This class only makes sense if it excludes it, and spillpoint reads caps as including it (O4, E7), so it can't be read either way without a guess. |
