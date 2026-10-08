@@ -20,6 +20,7 @@ const exact = (fraction: string) => {
   const [n, d = "1"] = fraction.split("/");
   return new D(n!).div(d);
 };
+const same = (a: D, b: string) => a.minus(exact(b)).abs().lt("1e-30");
 
 describe("the Liquidity Capitalization (X1, X13, X14)", () => {
   // expected.json reports it at the top of the range, where the decisions have settled (C8).
@@ -95,11 +96,6 @@ describe("what is refused, never skipped", () => {
     ["two SAFEs where one has no cap (X13)", table([post("x", "s"), { id: "y", holder: "t", purchase_amount: "100000", discount: "0.2" }]), "several_safes"],
     ["two SAFEs where one is pre-money (X14)", table([post("x", "s"), { id: "y", holder: "t", purchase_amount: "100000", pre_money_cap: "900000" }]), "several_safes"],
     ["a pre-money SAFE alongside preferred (X14)", table([{ id: "x", holder: "s", purchase_amount: "100000", pre_money_cap: "900000" }], seed), "pre_money_safe_with_preferred"],
-    [
-      "a SAFE with no cap alongside capped participating preferred (X9)",
-      table([{ id: "x", holder: "s", purchase_amount: "100000", discount: "0.2" }], { ...seed, participation: "participating_capped", cap_multiple: "2" }),
-      "uncapped_safe_with_capped_participation",
-    ],
   ])("refuses %s, until a case settles it", (_, ct, term) => {
     let error: unknown;
     try {
@@ -109,6 +105,31 @@ describe("what is refused, never skipped", () => {
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
     expect(error).toMatchObject({ term, milestone: "later" });
+  });
+
+  it("pays a SAFE with no cap beside capped participating preferred: its worth comes out first, then the cap applies (X9, 12i)", () => {
+    // 1,000,000 common; a 1,000,000-share Seed at $1.00, participating to a 2x cap; a $100,000 SAFE, 20% discount, no
+    // cap. At $3,500,000 the Seed keeps its $1,000,000 preference, leaving $2,500,000. Converting at the common price
+    // less 20% is worth exactly $100,000 ÷ 0.8 = $125,000, so the SAFE takes that first. The other $2,375,000 would
+    // give the Seed $1,187,500 more, past its cap, so it stops at $2,000,000 and common gets $1,375,000: $1.375 a
+    // share, so the SAFE's shares are $100,000 ÷ (0.8 × $1.375) = 90,909.09. (Sharing the whole residual at one
+    // price first, as before 03e, would have paid the SAFE $142,857.14.) Converting the Seed would pay it only
+    // ($3,500,000 − $125,000) ÷ 2 = $1,687,500, so it keeps its preference.
+    const ct = readCapTable({
+      holders: [{ id: "a", name: "A" }, { id: "b", name: "B" }, { id: "s", name: "S" }],
+      securities: [{ id: "common", name: "Common Stock", kind: "common" }, { ...seed, participation: "participating_capped", cap_multiple: "2" }],
+      seniority: [["p"]],
+      positions: [{ holder: "a", security: "common", shares: 1000000 }, { holder: "b", security: "p", shares: 1000000 }],
+      unissued_pool: 0,
+      unconverted_safes: [{ id: "x", holder: "s", purchase_amount: "100000", discount: "0.2" }],
+    });
+    const [answer] = solve(prepare(ct, null), new D(3500000)).answers;
+    const paid = answer!.payout.bySecurity;
+    expect([...answer!.decisions.converted]).toEqual(["x"]);
+    expect([paid.get("p")!, paid.get("common")!, paid.get("x")!].map((v) => v.toString())).toEqual(["2000000", "1375000", "125000"]);
+    expect(answer!.payout.atCap).toEqual(["p"]);
+    expect(answer!.payout.commonPrice.toString()).toBe("1.375");
+    expect(same(answer!.payout.safes.get("x")!.shares!, "1000000/11")).toBe(true);
   });
 
   it.each([

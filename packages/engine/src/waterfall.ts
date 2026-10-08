@@ -484,10 +484,13 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     notes.set(t.note.id, { converts: true, shares: t.shares, room: null });
   }
 
-  // With no cap a SAFE or a note converts at the sale's common price less its
-  // discount, a price it helps set: s = amount × others ÷ ((1 − d) × what is
-  // left − amount), worth exactly amount ÷ (1 − d). Where (1 − d) × what is
-  // left is no more than the amount, no such price exists, and the
+  // With no cap a SAFE or a note converts at the sale's common price p less
+  // its discount d, a price it helps set: amount ÷ ((1 − d) × p) shares, each
+  // worth p, so converting is worth exactly amount ÷ (1 − d) whatever p is.
+  // It takes that out of what is left after the preferences first, and the
+  // rest is shared below, capped participating preferred stopping at its cap
+  // (cases 12i, 13h); p is the price they share it at. Where (1 − d) × what
+  // is left is no more than the amount, no such price exists, and the
   // greater-of has only the Cash-Out Amount or repayment to take (X9, X12,
   // reading (a)): it is paid as if it took that, a tie, which X16 settles
   // that way. One such instrument at most: notes and SAFEs aren't modeled
@@ -499,6 +502,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     : uncappedNote
       ? { id: uncappedNote.note.id, amount: uncappedNote.amount, discount: uncappedNote.note.discount }
       : null;
+  let uncappedRoom: Decimal | null = null;
   if (uncapped) {
     const others = [...sharing.values()].reduce((sum, n) => sum.plus(n), ZERO);
     const room = ONE.minus(uncapped.discount).times(remaining).minus(uncapped.amount);
@@ -508,10 +512,10 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
       else asCash.notes.set(uncapped.id, { ...asCash.notes.get(uncapped.id)!, room });
       return { ...asCash, decisions };
     }
-    const n = uncapped.amount.times(others).div(room);
-    sharing.set(uncapped.id, n);
-    if (uncappedSafe) safes.set(uncapped.id, { converts: true, liquidityCapitalization: null, liquidityPrice: null, shares: n, room });
-    else notes.set(uncapped.id, { converts: true, shares: n, room });
+    const worth = uncapped.amount.div(ONE.minus(uncapped.discount));
+    add(uncapped.id, worth);
+    remaining = remaining.minus(worth);
+    uncappedRoom = room;
   }
 
   // Capped participation: preference plus participation stops at the cap
@@ -539,6 +543,12 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     sharing.delete(first);
   }
   for (const [id, n] of sharing) add(id, price.times(n));
+  // Its shares, now that the price they share at is known: amount ÷ ((1 − d) × p).
+  if (uncapped) {
+    const n = uncapped.amount.div(ONE.minus(uncapped.discount).times(price));
+    if (uncappedSafe) safes.set(uncapped.id, { converts: true, liquidityCapitalization: null, liquidityPrice: null, shares: n, room: uncappedRoom });
+    else notes.set(uncapped.id, { converts: true, shares: n, room: uncappedRoom });
+  }
   const capRoom = new Map<string, Decimal>();
   for (const [sid, r] of room) if (sharing.has(sid)) capRoom.set(sid, r.minus(price.times(sharing.get(sid)!)));
 

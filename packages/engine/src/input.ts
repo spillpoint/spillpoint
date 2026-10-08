@@ -393,11 +393,6 @@ function checkSafesAtASale(
       "several_safes", "later", path, "More than one SAFE at a sale, unless each has a post-money cap (X13, X14)",
     );
   }
-  if (safes.some((f) => !f.postMoneyCap && !f.preMoneyCap) && preferred.some((s) => s.participation === "participating_capped")) {
-    throw new UnsupportedTermError(
-      "uncapped_safe_with_capped_participation", "later", path, "A SAFE with no cap alongside capped participating preferred (X9)",
-    );
-  }
 }
 
 const NOTE_FIELDS = [
@@ -458,12 +453,6 @@ function checkNotesAtASale(
   if (notes.length > 1 && notes.some((n) => !n.valuationCap)) {
     throw new UnsupportedTermError("several_notes", "later", path, "More than one convertible note at a sale, unless each has a cap (X15)");
   }
-  const capped = [...byId.values()].some((s) => s.kind === "preferred" && s.participation === "participating_capped");
-  if (capped && notes.some((n) => !n.valuationCap && n.discount.gt(0))) {
-    throw new UnsupportedTermError(
-      "uncapped_note_with_capped_participation", "later", path, "A convertible note with no cap alongside capped participating preferred (X12)",
-    );
-  }
 }
 
 /** C6, X6, X7: marginal tiers from $0, contiguous, and recipients among the holders whose shares add up to 100%. */
@@ -507,7 +496,8 @@ function readCarveOut(value: unknown, holderIds: ReadonlySet<string>, path: stri
 // ---------- exits and cases ----------
 
 // exit_date: dividends (X2) and notes' interest (X3) accrue to it.
-// carve_out: a carve-out given as a term of the sale (C6, case 24), refused until the engine reads it.
+// carve_out: a management carve-out, a term of the sale (C6, case 24), so it can be given here whichever cap table the
+// exit runs on, one built from rounds included.
 const EXIT_FIELDS = ["cap_table", "cap_table_after_event", "range", "exit_values", "exit_date", "payment_schedules", "carve_out"] as const;
 
 export function readExit(value: unknown, resolveCapTable?: CapTableResolver, path = "exit"): ExitInput {
@@ -527,14 +517,12 @@ export function readExit(value: unknown, resolveCapTable?: CapTableResolver, pat
 export function readExitOn(value: unknown, tableAfter: (eventId: string, path: string) => CapTable, path: string): ExitInput {
   const exit = object(value, path);
   onlyKnownFields(exit, EXIT_FIELDS, path);
-  if (exit.carve_out != null) {
-    throw new UnsupportedTermError("carve_out_on_the_exit", "later", `${path}.carve_out`, "A carve-out given on the exit, as a term of the sale (C6)");
-  }
 
-  const capTable =
+  const onTable =
     exit.cap_table_after_event != null
       ? tableAfter(text(exit.cap_table_after_event, `${path}.cap_table_after_event`), `${path}.cap_table_after_event`)
       : readCapTable(exit.cap_table, `${path}.cap_table`);
+  const capTable = exit.carve_out == null ? onTable : withSaleCarveOut(onTable, exit.carve_out, `${path}.carve_out`);
 
   const range = array(exit.range, `${path}.range`);
   if (range.length !== 2) throw new InputError(`${path}.range`, "expected [low, high]");
@@ -569,6 +557,20 @@ export function readExitOn(value: unknown, tableAfter: (eventId: string, path: s
   const paymentSchedules = exit.payment_schedules == null ? [] : readSchedules(exit.payment_schedules, `${path}.payment_schedules`);
 
   return { capTable, range: [lo, hi], exitValues, exitDate, ...(paymentSchedules.length > 0 ? { paymentSchedules } : {}) };
+}
+
+/**
+ * C6: a carve-out given on the exit, as a term of the sale. A cap table may still carry its own, for compatibility, but
+ * not both: which one governs would be a guess. It is paid exactly as one on the cap table, and a note at the sale
+ * alongside it is refused the same way (X12).
+ */
+function withSaleCarveOut(capTable: CapTable, value: unknown, path: string): CapTable {
+  if (capTable.carveOut) throw new InputError(path, "the carve-out is on both the cap table and the exit; give it once (C6)");
+  const carveOut = readCarveOut(value, new Set(capTable.holders.map((h) => h.id)), path);
+  if ((capTable.unconvertedNotes ?? []).length > 0) {
+    throw new UnsupportedTermError("note_with_safe_or_carve_out", "later", path, "A convertible note at a sale alongside a SAFE or a carve-out (X12)");
+  }
+  return { ...capTable, carveOut };
 }
 
 /** C7: each schedule has an id, an optional description, and payments, each a label and a positive amount. */

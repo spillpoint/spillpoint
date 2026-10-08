@@ -115,6 +115,18 @@ describe("reason wording for founders (M2d review)", () => {
     return findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range);
   };
 
+  // Jordan, 03a review: the Seed participates in the residual too, so the room a SAFE or note with no cap needs is
+  // what is left after the preferences, not what is left for common and the SAFE or note.
+  it.each([
+    ["edge-12i-discount-safe-with-capped-participation", "4250000.00", "safe_switches"],
+    ["edge-13h-discount-note-with-capped-participation", "4400000.00", "note_switches"],
+  ])("%s: at %s the switch names what is left after the preferences", (name, at, code) => {
+    const b = reasonsFor(name).find((p) => p.exitValue.toFixed(2) === at)!;
+    const text = b.reasons.find((r) => r.code === code)!.text;
+    expect(text).toContain("what is left after the preferences");
+    expect(text).not.toMatch(/what is left for common/);
+  });
+
   it.each(EXIT_CASES)("%s: no assumption codes or jargon in the text", (name) => {
     for (const b of reasonsFor(name)) {
       for (const r of b.reasons) {

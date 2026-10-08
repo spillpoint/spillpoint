@@ -267,7 +267,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       const priced = f.discount.isZero() ? "the sale's common price" : `the sale's common price less its ${pct(f.discount)} discount`;
       text =
         `${who} has no valuation cap, so it converts at ${priced}. That is worth exactly ${money(worth)} wherever it is possible, ` +
-        `which is where what is left for common and the SAFE is more than that, and this is the first exit value where it is. ` +
+        `which is where ${leftFor(pc, "the SAFE")} is more than that, and this is the first exit value where it is. ` +
         `Below it the SAFE takes its ${money(f.purchaseAmount)} Cash-Out Amount; above it, ${money(worth)}.`;
     } else {
       const here = atAfter.safes.get(f.id)!;
@@ -325,7 +325,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       text =
         `${who} has no valuation cap, so it converts at the sale's common price less its ${pct(t.note.discount)} discount. ` +
         `Its principal plus interest, ${money(t.amount)}, is then worth exactly ${money(worth)} wherever that is possible, which is where ` +
-        `what is left for common and the note is more than that, and this is the first exit value where it is. ` +
+        `${leftFor(pc, "the note")} is more than that, and this is the first exit value where it is. ` +
         `Below it the note is repaid ${money(t.repayment)}; above it, ${money(worth)}.`;
     } else {
       text =
@@ -415,6 +415,15 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
 }
 
 /** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs and notes converting. */
+/**
+ * What a SAFE or note with no cap needs room in to convert (X9, X12). With no preferred, what is left for common and
+ * it; with preferred, what is left after the preferences, since participating or converted preferred shares it too
+ * (12i, 13h; Jordan, 03a review).
+ */
+function leftFor(pc: PreparedCapTable, what: string): string {
+  return pc.preferred.size > 0 ? "what is left after the preferences" : `what is left for common and ${what}`;
+}
+
 function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
   const safes = [...pc.safes.keys(), ...pc.notes.keys()].filter((id) => d.converted.has(id));
   return pc.capTable.securities

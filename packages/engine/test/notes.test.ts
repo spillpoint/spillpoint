@@ -44,6 +44,8 @@ describe("each note's figures (X3, X10, X11)", () => {
   );
 });
 
+const capped = { id: "p", name: "Seed", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "participating_capped", cap_multiple: "2" };
+
 /** 800,000 common and a $100,000 note at 0%, repaid at 1x, with these terms. */
 function table(note: Record<string, unknown>, extra: { notes?: Record<string, unknown>[]; safes?: Record<string, unknown>[]; preferred?: Record<string, unknown> } = {}) {
   return {
@@ -73,6 +75,25 @@ describe("a note with neither a cap nor a discount (X12)", () => {
   });
 });
 
+describe("a note with no cap beside capped participating preferred (X12, 13h)", () => {
+  it("converts for exactly its amount ÷ (1 − discount), taken out first, and the Seed stops at its cap", () => {
+    // 800,000 common; Investor M's 800,000-share Seed at $1.00, participating to a 2x cap; the $100,000 note at 0%, a
+    // 20% discount and no cap. At $3,000,000 the Seed keeps its $800,000 preference, leaving $2,200,000. Converting is
+    // worth exactly $100,000 ÷ 0.8 = $125,000, more than the $100,000 repayment, so the note takes that first. Half
+    // of the other $2,075,000 would pass the Seed's cap, so it stops at $1,600,000, and common gets $1,275,000:
+    // $1.59375 a share, so the note's shares are $100,000 ÷ (0.8 × $1.59375) = 78,431.37.
+    const ct = table({ valuation_cap: null, discount: "0.2" }, { preferred: capped });
+    ct.positions.push({ holder: "m", security: "p", shares: 800000 });
+    const exit = exitOn(ct);
+    const [answer] = solve(prepare(exit.capTable, exit.exitDate), new D(3000000)).answers;
+    const paid = answer!.payout.bySecurity;
+    expect([...answer!.decisions.converted]).toEqual(["note"]);
+    expect([paid.get("p")!, paid.get("common")!, paid.get("note")!].map((v) => v.toString())).toEqual(["1600000", "1275000", "125000"]);
+    expect(answer!.payout.atCap).toEqual(["p"]);
+    expect(same(answer!.payout.notes.get("note")!.shares!, "4000000/51")).toBe(true);
+  });
+});
+
 describe("the exit date (X3)", () => {
   it("is needed, on or after every note's issue date", () => {
     expect(() => exitOn(table({}), null)).toThrow("exit.exit_date: note accrues interest, so the exit needs an exit_date");
@@ -82,11 +103,9 @@ describe("the exit date (X3)", () => {
 
 describe("what is refused, never skipped", () => {
   const second = { id: "note_m", holder: "m", principal: "50000", interest_rate: "0", issue_date: "2023-01-01", conversion_base: "with_pool", discount: "0.2", repayment_multiple: "1" };
-  const capped = { id: "p", name: "Seed", kind: "preferred", original_issue_price: "1", preference_multiple: "1", participation: "participating_capped", cap_multiple: "2" };
   it.each([
     ["two notes where one has no cap (X15)", table({}, { notes: [{ ...second, valuation_cap: null }] }), "several_notes"],
     ["a note alongside a SAFE (X12)", table({}, { safes: [{ id: "s", holder: "m", purchase_amount: "100000", post_money_cap: "1000000" }] }), "note_with_safe_or_carve_out"],
-    ["a note with no cap alongside capped participating preferred (X12)", table({ valuation_cap: null, discount: "0.2" }, { preferred: capped }), "uncapped_note_with_capped_participation"],
   ])("refuses %s, until a case settles it", (_, ct, term) => {
     let error: unknown;
     try {

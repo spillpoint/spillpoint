@@ -1,10 +1,11 @@
-// M5f: management carve-outs (C6, X6, X7, X17). Cases 10 and 10b run through
-// every exit test; these check what the cases don't reach: reading one, the
-// refusals, and a carve-out alongside the preferences with no preferred.
+// M5f: management carve-outs (C6, X6, X7, X17). Cases 10, 10b and 24 run
+// through every exit test; these check what the cases don't reach: reading
+// one, the refusals, a carve-out alongside the preferences with no preferred,
+// and one given on the exit as a term of the sale (03e).
 
 import { describe, expect, it } from "vitest";
 
-import { D, findBreakpoints, prepare, readCapTable, solve } from "../src/index.ts";
+import { D, InputError, UnsupportedTermError, findBreakpoints, prepare, readCapTable, readExit, solve } from "../src/index.ts";
 
 /** 1M common, a flat 10% carve-out, all to m. */
 function table(carveOut: Record<string, unknown>, preferred = false) {
@@ -45,6 +46,48 @@ describe("reading a carve-out (C6)", () => {
     ["a timing it doesn't know", { timing: "after_preferences" }, "carve_out.timing: must be before_preferences or alongside_preferences"],
   ])("refuses %s", (_, change, message) => {
     expect(() => readCapTable(table(change))).toThrow(message);
+  });
+});
+
+describe("a carve-out given on the exit, as a term of the sale (C6, 03e)", () => {
+  const flat = { tiers: [{ from: "0", to: null, percent: "10" }], allocation: [{ holder: "m", percent: "100" }] };
+  const { carve_out: _, ...bare } = table({}, true);
+  const exitWith = (capTable: unknown, carveOut: unknown) => readExit({ cap_table: capTable, carve_out: carveOut, range: ["0", "5000000"], exit_values: [] });
+
+  it("is paid exactly as the same carve-out on the cap table", () => {
+    const onExit = exitWith(bare, flat).capTable;
+    const onTable = readCapTable(table({}, true));
+    expect(onExit.carveOut).toEqual(onTable.carveOut);
+    const at = (ct: typeof onTable) => [...solve(prepare(ct, null), new D(2000000)).answers[0]!.payout.holderTotals].map(([h, v]) => [h, v.toString()]);
+    // At $2,000,000: $200,000 to M first, then the $1,000,000 preference, which beats converting for half of
+    // $1,800,000, and $800,000 to common.
+    expect(at(onExit)).toEqual(at(onTable));
+    expect(at(onExit)).toEqual([["x", "800000"], ["y", "1000000"], ["m", "200000"]]);
+  });
+
+  it("is refused when the cap table has one too: which governs would be a guess", () => {
+    expect(() => exitWith(table({}, true), flat)).toThrow(InputError);
+    expect(() => exitWith(table({}, true), flat)).toThrow("exit.carve_out: the carve-out is on both the cap table and the exit; give it once (C6)");
+  });
+
+  it("is read like one on the cap table: its recipients must be holders", () => {
+    expect(() => exitWith(bare, { ...flat, allocation: [{ holder: "z", percent: "100" }] })).toThrow("exit.carve_out.allocation[0].holder");
+  });
+
+  it("refuses a note at the sale beside it, as on the cap table (X12)", () => {
+    const withNote = {
+      ...bare,
+      holders: [...bare.holders, { id: "n", name: "N" }],
+      unconverted_notes: [{ id: "note", holder: "n", principal: "100000", interest_rate: "0", issue_date: "2023-01-01", valuation_cap: "800000", conversion_base: "with_pool", discount: "0", repayment_multiple: "1" }],
+    };
+    let error: unknown;
+    try {
+      readExit({ cap_table: withNote, carve_out: flat, range: ["0", "5000000"], exit_values: [], exit_date: "2024-01-01" });
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(UnsupportedTermError);
+    expect(error).toMatchObject({ term: "note_with_safe_or_carve_out", milestone: "later" });
   });
 });
 
