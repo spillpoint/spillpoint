@@ -38,13 +38,15 @@ interface Props {
   /** Which events are open for editing, by key. */
   editing: ReadonlySet<string>;
   onEditing: (update: (open: ReadonlySet<string>) => ReadonlySet<string>) => void;
+  /** Opens the Cap table tab at its Exit terms card. */
+  onExitTerms: () => void;
 }
 
 const count = (n: D) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const ZERO = new D(0);
 const ADD_TYPE = "rounds-add-type";
 
-export function RoundsView({ events, you, rounds, onRounds, problem, tables, editing, onEditing }: Props) {
+export function RoundsView({ events, you, rounds, onRounds, problem, tables, editing, onEditing, onExitTerms }: Props) {
   const [adding, setAdding] = useState<EventType>("priced_round");
   if (!events || !rounds) {
     return (
@@ -140,6 +142,14 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
           </select>
           <span className="field__hint">The last event, unless you choose an earlier one: then events added later don't change it.</span>
         </div>
+        {/* The sale's terms aren't events: they're on the Cap table tab, editable here too (M5 plan, item 13). */}
+        <p className="rounds__terms">
+          The sale's terms (date, management carve-out, earnout or escrow) are on the Cap table tab, under{" "}
+          <button type="button" className="link-button" onClick={onExitTerms}>
+            Exit terms
+          </button>
+          .
+        </p>
       </section>
       {problem && !problem.event && (
         <p className="notice notice--problem" role="alert" id="round-problem-rounds" tabIndex={-1}>

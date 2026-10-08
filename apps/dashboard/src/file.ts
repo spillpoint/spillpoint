@@ -11,7 +11,13 @@
 //   {..., "holders": [...], "events": [...], "cap_table_after_event": "series_b", "range": [...], ...}
 //
 // The sale's date (version 3, M5k) is there only when it's given: notes
-// still outstanding accrue interest up to it (X3, C9).
+// still outstanding accrue interest up to it (X3, C9). Version 4 (M5l) adds
+// the sale's payment schedules (C7), and lets a cap table built from rounds
+// have a carve-out, a term of the sale (M5 plan, item 13): it's kept beside
+// the events, where a cap table entered directly keeps it in its cap table
+// (C6). The sale's terms come after the range:
+//
+//   {..., "range": [...], "exit_date": ..., "payment_schedules": [...], "view": {...}}
 //
 // Both are the engine's own input format (C1–C4, C14), so a saved file is
 // also valid engine input. A field nobody edited keeps the exact value it was
@@ -32,9 +38,11 @@ import { fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
 
 export const FORMAT = "spillpoint";
-export const VERSION = 3;
+export const VERSION = 4;
 
-const FIELDS = ["format", "version", "name", "cap_table", "holders", "events", "cap_table_after_event", "range", "exit_date", "view"];
+const FIELDS = [
+  "format", "version", "name", "cap_table", "holders", "events", "cap_table_after_event", "carve_out", "range", "exit_date", "payment_schedules", "view",
+];
 const VIEW_FIELDS = ["exit_value", "you"];
 
 /** Where you were looking: the exit value, exact, and the holder you are, by id. */
@@ -54,9 +62,12 @@ export function fileText(name: string, draft: Draft, view?: View, rounds?: Round
     format: FORMAT,
     version: VERSION,
     name: name.trim() || "Untitled cap table",
-    ...(rounds ? { holders: rounds.holders, events: rounds.events, cap_table_after_event: rounds.after } : { cap_table: json.cap_table }),
+    ...(rounds
+      ? { holders: rounds.holders, events: rounds.events, cap_table_after_event: rounds.after, ...(json.cap_table.carve_out ? { carve_out: json.cap_table.carve_out } : {}) }
+      : { cap_table: json.cap_table }),
     range: json.range,
     ...(json.exit_date ? { exit_date: json.exit_date } : {}),
+    ...(json.payment_schedules ? { payment_schedules: json.payment_schedules } : {}),
     ...(view ? { view: { exit_value: view.exitValue, you: view.you } } : {}),
   };
   return `${JSON.stringify(file, null, 2)}\n`;
@@ -77,11 +88,14 @@ export type Opened = { ok: true; name: string; draft: Draft; view: View | null; 
  * How each older version becomes the next one, keyed by the version it
  * upgrades. Version 2 adds rounds, as an alternative to the cap table, so a
  * version 1 file is already a version 2 file without them. Version 3 adds the
- * sale's date, which older files had no need for: they had no notes.
+ * sale's date, which older files had no need for: they had no notes. Version
+ * 4 adds payment schedules, and a carve-out beside the rounds; older files had
+ * neither.
  */
 const MIGRATIONS: Record<number, (file: Record<string, unknown>) => Record<string, unknown>> = {
   1: (file) => ({ ...file, version: 2 }),
   2: (file) => ({ ...file, version: 3 }),
+  3: (file) => ({ ...file, version: 4 }),
 };
 
 /** Reads a saved file back into the editor, or says plainly why it can't. */
@@ -125,7 +139,15 @@ type Contents = { read: ExitInput; draft: Draft; rounds: Rounds | null } | { mes
 
 /** A cap table entered directly. */
 function openCapTable(file: Record<string, unknown>): Contents {
-  const exit = { cap_table: file.cap_table, range: file.range, exit_values: [], ...(file.exit_date != null ? { exit_date: file.exit_date } : {}) };
+  // C6: a cap table entered directly keeps its carve-out in itself; only rounds keep one beside them.
+  if (file.carve_out != null) return { message: "Its carve-out is beside its cap table; a cap table entered directly keeps its carve-out in the cap table." };
+  const exit = {
+    cap_table: file.cap_table,
+    range: file.range,
+    exit_values: [],
+    ...(file.exit_date != null ? { exit_date: file.exit_date } : {}),
+    ...(file.payment_schedules != null ? { payment_schedules: file.payment_schedules } : {}),
+  };
   let read: ExitInput;
   try {
     read = readExit(exit, undefined, "file");
@@ -161,13 +183,16 @@ function openRounds(file: Record<string, unknown>): Contents {
   }
   const rounds: Rounds = { holders: holders as Rounds["holders"], events: events as Rounds["events"], after };
   if (file.exit_date != null && typeof file.exit_date !== "string") return { message: "Its sale date isn't readable: it should be a date, like 2026-06-30." };
-  const built = fromRounds(rounds, file.range, file.exit_date ?? "");
+  const built = fromRounds(rounds, file.range, { exit_date: file.exit_date, carve_out: file.carve_out, payment_schedules: file.payment_schedules });
   if (!built.ok) return { message: built.error instanceof NotShownYet ? built.message : `Its rounds can't be built. ${built.message}` };
   try {
     return { read: readExit(buildExit(built.draft).json, undefined, "file"), draft: built.draft, rounds };
   } catch (e) {
-    // The rounds are fine; what's left is the range, or the sale's date.
-    if (e instanceof InputError) return { message: `Its ${e.path.endsWith("exit_date") ? "sale date" : "range"} can't be used. ${withoutCodes(e.message)}` };
+    // The rounds are fine; what's left is the range or one of the sale's terms.
+    if (e instanceof InputError || e instanceof UnsupportedTermError) {
+      const what = /exit_date/.test(e.path) ? "sale date" : /carve_out/.test(e.path) ? "carve-out" : /payment_schedules/.test(e.path) ? "payment schedule" : "range";
+      return { message: `Its ${what} can't be used. ${withoutCodes(e.message)}` };
+    }
     throw e;
   }
 }

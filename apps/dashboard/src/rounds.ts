@@ -29,13 +29,25 @@ export type FromRounds =
   | { ok: false; message: string; error: Error };
 
 /**
+ * The sale's terms (M5 plan, item 13), as a file or an example gives them: its
+ * date, its carve-out and its payment schedules. A carve-out is a term of the
+ * sale, not a security, so a company built from rounds can have one: the page
+ * adds it to the cap table the rounds build, as C6 places it.
+ */
+export interface ExitTerms {
+  exit_date?: unknown;
+  carve_out?: unknown;
+  payment_schedules?: unknown;
+}
+
+/**
  * Builds the cap tables from the rounds, and the draft of the one the exit
  * runs on. readInputs checks the whole input as the engine reads it,
  * including the SAFEs and notes still outstanding at the sale (C8, C9). The
- * sale's date, which notes accrue interest up to, comes from the cap table's
- * editor, like the range, and goes into the draft.
+ * sale's terms come from the Exit terms card, like the range, and go into
+ * the draft; they're checked next to their fields.
  */
-export function fromRounds(rounds: Rounds, range: unknown, exitDate = ""): FromRounds {
+export function fromRounds(rounds: Rounds, range: unknown, terms: ExitTerms = {}): FromRounds {
   const company = { holders: rounds.holders, events: rounds.events };
   try {
     const tables = buildCapTables(company);
@@ -47,7 +59,12 @@ export function fromRounds(rounds: Rounds, range: unknown, exitDate = ""): FromR
     // editor checks them next to their fields, so here they're stand-ins that pass: a date after any event.
     readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [], exit_date: "9999-12-31" } });
     const r = range as unknown[];
-    const exit = { cap_table: capTableJson(after!.capTable), range: [String(r[0]), String(r[1])], ...(exitDate ? { exit_date: exitDate } : {}) };
+    const exit = {
+      cap_table: { ...capTableJson(after!.capTable), ...(terms.carve_out != null ? { carve_out: terms.carve_out } : {}) },
+      range: [String(r[0]), String(r[1])],
+      ...(terms.exit_date != null && terms.exit_date !== "" ? { exit_date: terms.exit_date } : {}),
+      ...(terms.payment_schedules != null ? { payment_schedules: terms.payment_schedules } : {}),
+    };
     return { ok: true, tables, draft: draftFromExit(exit) };
   } catch (e) {
     const error = e as Error;
@@ -135,9 +152,9 @@ export function capTableJson(ct: CapTable): Json {
 /** An example's draft, and its rounds when it's built from them: Millrace's cap table comes from its events. */
 export function exampleContents(example: { exit: unknown; company?: { holders: unknown[]; events: unknown[] } }): { draft: Draft; rounds: Rounds | null } {
   if (!example.company) return { draft: draftFromExit(example.exit), rounds: null };
-  const exit = example.exit as { cap_table_after_event: string; range: unknown; exit_date?: string };
+  const exit = example.exit as { cap_table_after_event: string; range: unknown } & ExitTerms;
   const rounds = { holders: example.company.holders as Json[], events: example.company.events as Json[], after: exit.cap_table_after_event };
-  const built = fromRounds(rounds, exit.range, exit.exit_date ?? "");
+  const built = fromRounds(rounds, exit.range, exit);
   // The examples are locked cases the engine builds in its own tests.
   if (!built.ok) throw built.error;
   return { draft: built.draft, rounds };

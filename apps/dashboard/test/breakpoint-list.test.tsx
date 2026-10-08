@@ -60,6 +60,12 @@ describe("how a breakpoint changes your payout", () => {
     );
   });
 
+  it("says \"up from\" or \"down from\" by which way the rate moves, on a curve above too (X17, confirmed in the M5k3 review)", () => {
+    expect(forYou(bend("0", "84285.7", false, true))).toBe(
+      "For you: just above here each extra $1M adds about $84,286, up from $0. Above here the rate keeps changing, because the carve-out's claim grows with the exit value.",
+    );
+  });
+
   it("says nothing when the breakpoint doesn't change your payout", () => {
     render(<BreakpointList breakpoints={[breakpoint("50000000")]} changes={[null]} yourName="Ana" exitValue={new D(0)} onExitValue={() => {}} />);
     expect(document.querySelector(".breakpoints__yours")).toBeNull();

@@ -1,5 +1,6 @@
 // The dashboard: the founder view, the exit value, the payoff curves, who
-// gets what, and the breakpoints, on one tab; the cap table editor on the
+// gets what, what each payment pays when the price is paid over time (M5l),
+// and the breakpoints, on one tab; the cap table editor on the
 // second; and the rounds that built the cap table, if it was built from them,
 // on the third (M4i). It starts from an example, a blank table or a saved
 // file (M3 plan, answers 2 and 4), and saves to a file; nothing is kept
@@ -18,12 +19,13 @@ import type { DraftError } from "./CapTableEditor.tsx";
 import { ExitSlider } from "./ExitSlider.tsx";
 import { FounderView } from "./FounderView.tsx";
 import { PayoffChart } from "./PayoffChart.tsx";
+import { PaymentsView } from "./PaymentsView.tsx";
 import { PayoutTable } from "./PayoutTable.tsx";
 import { RoundsView } from "./RoundsView.tsx";
 import { useAnalysis } from "./analysis.ts";
 import { defaultHolder } from "./capTable.ts";
 import { changeAt, nodeAt, seriesNodes } from "./curves.ts";
-import { buildExit, checkBuilt, scratchDraft } from "./draft.ts";
+import { buildExit, carryExitTerms, checkBuilt, fieldId, scratchDraft } from "./draft.ts";
 import type { Built, Checked, Draft } from "./draft.ts";
 import { fileName, fileText, readFile } from "./file.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
@@ -174,14 +176,16 @@ export function App() {
   const changeRounds = (next: RoundsDraft) => {
     setSession((s) => {
       const built = buildRounds(next);
-      const result = fromRounds(built, s.draft.range, s.draft.exitDate);
+      const result = fromRounds(built, s.draft.range);
       if (!result.ok) {
         const path = (result.error as { path?: string }).path ?? "";
         return { ...s, rounds: next, roundsProblem: locate(next, path, result.message) };
       }
+      // The sale's terms stay as typed: its date, its carve-out and its payment schedules (M5 plan, item 13).
+      const draft = carryExitTerms(s.draft, result.draft);
       const id = s.youKey !== null ? buildExit(s.draft).holderIds.get(s.youKey) : undefined;
-      const youKey = id ? ([...buildExit(result.draft).holderIds].find(([, v]) => v === id)?.[0] ?? null) : s.youKey;
-      return { ...s, rounds: next, roundsGood: built, roundsProblem: null, draft: result.draft, youKey };
+      const youKey = id ? ([...buildExit(draft).holderIds].find(([, v]) => v === id)?.[0] ?? null) : s.youKey;
+      return { ...s, rounds: next, roundsGood: built, roundsProblem: null, draft, youKey };
     });
     edit();
   };
@@ -423,6 +427,11 @@ function Workspace(props: WorkspaceProps) {
     focusAfterSwitch.current = draftError?.field ?? null;
     setTab("editor");
   };
+  // The Rounds tab's link to the sale's terms: the Cap table tab, at its Exit terms card.
+  const toExitTerms = () => {
+    focusAfterSwitch.current = fieldId.exitTerms;
+    setTab("editor");
+  };
   // Which events are open for editing on the Rounds tab, by key.
   const [editing, setEditing] = useState<ReadonlySet<string>>(new Set());
   const fixRounds = () => {
@@ -492,6 +501,7 @@ function Workspace(props: WorkspaceProps) {
           />
         )}
         {solved.ok && <PayoutTable pc={pc} answer={solved.answer} exitValue={exitValue} you={you} />}
+        {exit.paymentSchedules && <PaymentsView pc={pc} schedules={exit.paymentSchedules} you={you} />}
         {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
       </div>
 
@@ -517,6 +527,7 @@ function Workspace(props: WorkspaceProps) {
           tables={tables}
           editing={editing}
           onEditing={setEditing}
+          onExitTerms={toExitTerms}
         />
       </div>
     </main>

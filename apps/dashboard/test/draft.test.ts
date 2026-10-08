@@ -12,7 +12,9 @@ import {
   addHolder,
   addNote,
   addSafe,
+  addSchedule,
   addSecurity,
+  carryExitTerms,
   buildExit,
   checkBuilt,
   draftFromExit,
@@ -179,6 +181,42 @@ describe("warrants and cumulative dividends (M5k2)", () => {
     const blankRate = { ...dated, securities: dated.securities.map((x) => (x.kind === "preferred" ? { ...x, dividend: { ...x.dividend!, rate: "" } } : x)) };
     expect(checkBuilt(buildExit(blankRate))).toMatchObject({ ok: false, field: fieldId.dividendRate(s.key), message: "Fill this in: it can't be blank." });
     expect(checkBuilt(buildExit({ ...d, exitDate: "2022-03-30" }))).toMatchObject({ field: fieldId.exitDate, message: "2022-03-30 is before Seed Preferred's dividends start to accrue, 2022-03-31" });
+  });
+});
+
+describe("the sale's terms (M5l)", () => {
+  it("carries the date, the carve-out and the schedules onto a rebuilt cap table, matching recipients by id", () => {
+    const before = millraceDraft();
+    const dev = before.holders.find((h) => h.name === "Dev Patel")!;
+    const lena = before.holders.find((h) => h.name === "Lena Fischer")!;
+    let d = addSchedule({ ...before, exitDate: "2027-01-01" });
+    d = {
+      ...d,
+      carveOut: {
+        timing: "before_preferences",
+        tiers: [{ key: "t", to: "", percent: "5" }],
+        allocation: [
+          { key: "a1", holder: dev.key, percent: "60" },
+          { key: "a2", holder: lena.key, percent: "40" },
+        ],
+      },
+    };
+    // The rebuilt table has new keys, and Lena is gone from it.
+    const rebuilt = removeRow(millraceDraft(), millraceDraft().holders.find((h) => h.name === "Lena Fischer")!.key);
+    const carried = carryExitTerms(d, rebuilt);
+    const name = (key: string) => carried.holders.find((h) => h.key === key)?.name ?? "";
+    expect(carried.exitDate).toBe("2027-01-01");
+    expect(carried.carveOut!.allocation.map((a) => [name(a.holder), a.percent])).toEqual([["Dev Patel", "60"], ["", "40"]]);
+    expect(carried.schedules.map((s) => s.payments.map((p) => p.label))).toEqual([["Closing", "Earnout"]]);
+    // A recipient the rounds no longer have is asked for, never given to someone else.
+    const checked = checkBuilt(buildExit({ ...carried, carveOut: { ...carried.carveOut!, allocation: [carried.carveOut!.allocation[1]!] } }));
+    expect(checked).toMatchObject({ ok: false, field: fieldId.carveHolder(carried.carveOut!.allocation[1]!.key), message: "Fill this in: it can't be blank." });
+  });
+
+  it("puts a schedule's messages next to its payments", () => {
+    const d = addSchedule(scratchDraft());
+    const [closing] = d.schedules[0]!.payments;
+    expect(checkBuilt(buildExit(d))).toMatchObject({ ok: false, field: fieldId.paymentAmount(closing!.key), message: "Fill this in: it can't be blank." });
   });
 });
 

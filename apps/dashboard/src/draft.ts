@@ -9,8 +9,12 @@
 // it also covers SAFEs and convertible notes still outstanding at a sale (C8,
 // C9), and the sale's date, which notes accrue interest up to (X3); since
 // M5k2, warrants (C4, R29) and a series' cumulative dividends (C5, X2–X5),
-// which accrue up to the sale's date too; and since M5k3, a management
-// carve-out (C6, X6, X7).
+// which accrue up to the sale's date too; since M5k3, a management carve-out
+// (C6, X6, X7); and since M5l, payment schedules, for escrow and earnouts
+// (C7, X8). The sale's date, the carve-out and the payment schedules are the
+// sale's terms, not the cap table's: the editor keeps them in an "Exit terms"
+// card that stays editable on a cap table built from rounds, and they're
+// carried across each rebuild of the rounds (M5 plan, item 13).
 // Anti-dilution is kept as loaded but not edited: at exit it matters only
 // through the conversion price, which is edited directly (SPEC, Anti-dilution).
 
@@ -100,6 +104,15 @@ export interface DraftSafe {
 
 export type ConversionBase = "with_pool" | "without_pool" | "common_only";
 
+/** A schedule of payments (C7): a closing and later payments, each a label and an amount as typed. */
+export interface DraftSchedule {
+  key: string;
+  fileId: string | null;
+  /** What it's called on the page; optional in the file. */
+  description: string;
+  payments: { key: string; label: string; amount: string }[];
+}
+
 /**
  * A management carve-out (C6): marginal tiers of the exit value from $0, each
  * starting where the one before ends, so only where each ends is typed; and
@@ -143,6 +156,8 @@ export interface Draft {
   exitDate: string;
   /** Null for none. */
   carveOut: DraftCarveOut | null;
+  /** Escrow and earnouts: each schedule is one way the sale could be paid over time (C7, X8). */
+  schedules: DraftSchedule[];
   /** The one conversion group: series that convert together by a class vote (E11). No members, no group. */
   group: { members: string[]; threshold: string; rule: "more_than" | "at_least" };
   range: [string, string];
@@ -403,6 +418,14 @@ export function draftFromExit(exit: unknown): Draft {
           tiers: ((carve.tiers as Json[] | undefined) ?? []).map((t) => ({ key: key(), to: str(t.to), percent: str(t.percent) })),
           allocation: ((carve.allocation as Json[] | undefined) ?? []).map((a) => ({ key: key(), holder: holderKey(a.holder), percent: str(a.percent) })),
         };
+  const schedules = ((e.payment_schedules as Json[] | undefined) ?? []).map(
+    (sch): DraftSchedule => ({
+      key: key(),
+      fileId: str(sch.id),
+      description: str(sch.description),
+      payments: ((sch.payments as Json[] | undefined) ?? []).map((p) => ({ key: key(), label: str(p.label), amount: str(p.amount) })),
+    }),
+  );
   const range = e.range as unknown[];
   return {
     holders,
@@ -413,6 +436,7 @@ export function draftFromExit(exit: unknown): Draft {
     notes,
     exitDate: str(e.exit_date),
     carveOut,
+    schedules,
     group,
     range: [str(range[0]), str(range[1])],
     order,
@@ -431,6 +455,7 @@ export function scratchDraft(): Draft {
     notes: [],
     exitDate: "",
     carveOut: null,
+    schedules: [],
     group: { members: [], threshold: "50", rule: "more_than" },
     range: ["0", "100000000"],
     order: [],
@@ -559,6 +584,54 @@ export function addCarveOutRow(d: Draft, list: "tiers" | "allocation"): Draft {
   return { ...d, carveOut, nextKey: d.nextKey + 1 };
 }
 
+/** A new payment schedule: a closing and an earnout, their amounts blank for the engine to ask for (C7). */
+export function addSchedule(d: Draft): Draft {
+  const n = d.nextKey;
+  const schedule: DraftSchedule = {
+    key: `k${n}`,
+    fileId: null,
+    description: "",
+    payments: [
+      { key: `k${n + 1}`, label: "Closing", amount: "" },
+      { key: `k${n + 2}`, label: "Earnout", amount: "" },
+    ],
+  };
+  return { ...d, schedules: [...d.schedules, schedule], nextKey: n + 3 };
+}
+
+/** A payment added at the end of a schedule. */
+export function addPayment(d: Draft, scheduleKey: string): Draft {
+  const key = `k${d.nextKey}`;
+  return {
+    ...d,
+    schedules: d.schedules.map((s) => (s.key === scheduleKey ? { ...s, payments: [...s.payments, { key, label: "", amount: "" }] } : s)),
+    nextKey: d.nextKey + 1,
+  };
+}
+
+/**
+ * The sale's terms carried onto a cap table built again from the rounds
+ * (M5 plan, item 13): its date, its carve-out and its payment schedules, as
+ * typed. The rebuilt table gives its holders new keys, so the carve-out's
+ * recipients are matched by id; one the rounds no longer have is left blank,
+ * for the engine to ask for, never given to someone else.
+ */
+export function carryExitTerms(from: Draft, onto: Draft): Draft {
+  const oldIds = buildExit(from).holderIds;
+  const newKeys = new Map([...buildExit(onto).holderIds].map(([key, id]) => [id, key]));
+  const recipient = (key: string) => newKeys.get(oldIds.get(key) ?? "") ?? "";
+  // The carried rows get keys after the rebuilt table's, so no two rows share one.
+  let n = onto.nextKey;
+  const fresh = () => `k${n++}`;
+  const carveOut = from.carveOut && {
+    timing: from.carveOut.timing,
+    tiers: from.carveOut.tiers.map((t) => ({ ...t, key: fresh() })),
+    allocation: from.carveOut.allocation.map((a) => ({ ...a, key: fresh(), holder: recipient(a.holder) })),
+  };
+  const schedules = from.schedules.map((sch) => ({ ...sch, key: fresh(), payments: sch.payments.map((p) => ({ ...p, key: fresh() })) }));
+  return { ...onto, exitDate: from.exitDate, carveOut, schedules, nextKey: n };
+}
+
 export function removeOutstanding(d: Draft, key: string): Draft {
   return { ...d, safes: d.safes.filter((f) => f.key !== key), notes: d.notes.filter((n) => n.key !== key) };
 }
@@ -587,7 +660,7 @@ function inLoadedOrder<T>(items: T[], key: (item: T) => string, order: readonly 
 /** What one editor field is called in the engine's error paths, so its message lands next to it. */
 export interface Built {
   /** The exit input, in the case-file format. */
-  json: { cap_table: Json; range: string[]; exit_values: string[]; exit_date?: string };
+  json: { cap_table: Json; range: string[]; exit_values: string[]; exit_date?: string; payment_schedules?: Json[] };
   /** Engine path ("exit.cap_table.securities[2].cap_multiple") to the editor field it names. */
   fields: Map<string, string>;
   /** Each holder's id in this input, by editor key; and back. */
@@ -619,6 +692,8 @@ export const fieldId = {
   rangeLow: "edit-range-low",
   rangeHigh: "edit-range-high",
   exitDate: "edit-exit-date",
+  /** The Exit terms card, which the Rounds tab links to. */
+  exitTerms: "edit-exit-terms",
   /** The card listing SAFEs and notes: where a message about them all goes. */
   outstanding: "edit-outstanding",
   carveOut: "edit-carve-out",
@@ -626,6 +701,11 @@ export const fieldId = {
   carveTiers: "edit-carve-tiers",
   carveAllocation: "edit-carve-allocation",
   carveTier: (key: string) => `edit-carve-tier-${key}`,
+  schedules: "edit-schedules",
+  schedule: (key: string) => `edit-schedule-${key}`,
+  scheduleName: (key: string) => `edit-schedule-name-${key}`,
+  paymentLabel: (key: string) => `edit-payment-label-${key}`,
+  paymentAmount: (key: string) => `edit-payment-amount-${key}`,
   carveTo: (key: string) => `edit-carve-to-${key}`,
   carvePercent: (key: string) => `edit-carve-percent-${key}`,
   carveHolder: (key: string) => `edit-carve-holder-${key}`,
@@ -879,6 +959,27 @@ export function buildExit(d: Draft): Built {
     carve_out = { timing: carve.timing, tiers, allocation };
   }
 
+  // C7: each schedule's id is the one it was loaded with, or a new one, each unique.
+  fields.set("exit.payment_schedules", fieldId.schedules);
+  const scheduleIds = new Set(d.schedules.flatMap((x) => (x.fileId ? [x.fileId] : [])));
+  const payment_schedules = d.schedules.map((sch, i) => {
+    const p = `exit.payment_schedules[${i}]`;
+    fields.set(p, fieldId.schedule(sch.key));
+    fields.set(`${p}.id`, fieldId.scheduleName(sch.key));
+    fields.set(`${p}.description`, fieldId.scheduleName(sch.key));
+    fields.set(`${p}.payments`, fieldId.schedule(sch.key));
+    let id = sch.fileId ?? "schedule";
+    for (let n = 2; !sch.fileId && scheduleIds.has(id); n++) id = `schedule_${n}`;
+    scheduleIds.add(id);
+    const payments = sch.payments.map((pay, j) => {
+      fields.set(`${p}.payments[${j}]`, fieldId.paymentLabel(pay.key));
+      fields.set(`${p}.payments[${j}].label`, fieldId.paymentLabel(pay.key));
+      fields.set(`${p}.payments[${j}].amount`, fieldId.paymentAmount(pay.key));
+      return { label: pay.label.trim(), amount: moneyText(pay.amount) };
+    });
+    return { id, ...(sch.description.trim() ? { description: sch.description.trim() } : {}), payments };
+  });
+
   return {
     json: {
       cap_table: {
@@ -895,6 +996,7 @@ export function buildExit(d: Draft): Built {
       range: [moneyText(d.range[0]), moneyText(d.range[1])],
       exit_values: [],
       ...(d.exitDate.trim() ? { exit_date: d.exitDate.trim() } : {}),
+      ...(payment_schedules.length > 0 ? { payment_schedules } : {}),
     },
     fields,
     holderIds,
