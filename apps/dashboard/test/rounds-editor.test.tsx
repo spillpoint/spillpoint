@@ -24,7 +24,9 @@ const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("butto
 const panel = () => document.getElementById("panel-rounds")!;
 /** The event card headed by this title. */
 const card = (title: RegExp) => within(panel()).getByRole("heading", { level: 3, name: title }).closest("li")!;
-const lines = (title: RegExp) => [...card(title).querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
+/** A line's own words, without the lines under it that explain it. */
+const ownText = (li: Element) => [...li.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join("");
+const lines = (title: RegExp) => [...card(title).querySelectorAll(".rounds__lines li")].map(ownText);
 const group = (title: RegExp, name: RegExp) => within(card(title)).getByRole("group", { name });
 const edit = (title: string) => click(`Edit ${title}`);
 /** Adds an event of this type at the end of the list. */
@@ -225,7 +227,7 @@ describe("pay-to-play", () => {
     type(within(seriesB).getByLabelText("Common for each Series A Preferred share, if it doesn't buy"), "0.1");
     const said = lines(/Series B Preferred/);
     expect(said).toContain("Pay-to-play: $1,000,000 is offered to the holders of Series A Preferred, each in proportion to what it holds.");
-    expect(said.some((l) => l?.startsWith("Ridgeline Capital Fund III buys $0 of its "))).toBe(true);
+    expect(said.some((l) => l?.startsWith("Ridgeline Capital Fund III buys $0.00 of its "))).toBe(true);
     openTab("Payouts");
     expect(headline()).toBe(
       anaAt100M((events) => (events[9]!.pay_to_play = { series: ["series_a"], offered_amount: "1000000", conversion_ratio: { series_a: "0.1" } })),
@@ -536,6 +538,30 @@ describe("SAFEs and notes in a round that triggers anti-dilution (R25; 0.3.0 wor
     fireEvent.click(within(card(seriesA)).getByLabelText("Converts the SAFEs still outstanding"));
     expect(setting(seriesA, EXEMPT)).toBeNull();
     expect(setting(seriesA, POOL_IN_A)).not.toBeNull();
+  });
+
+  it("puts each piece under its anti-dilution line, as its explanation (03j)", async () => {
+    await openCase("edge-16i-discounted-note-in-an-up-round");
+    const adjustment = [...card(/Series A Preferred, a priced round/).querySelectorAll(".rounds__lines > li")].find((li) => ownText(li).startsWith("Seed Preferred's anti-dilution"))!;
+    expect([...adjustment.querySelectorAll(".rounds__details > li")].map((li) => li.textContent)).toEqual([
+      "New money at $1.13 a share: above Seed Preferred's $1.00, so it doesn't count.",
+      "Investor N's note converts at $0.91 a share: below $1.00, so it counts against Seed Preferred.",
+    ]);
+  });
+
+  it("says when a setting that's on doesn't apply to the round (03i review)", async () => {
+    // 16c's Series A is a full ratchet, so the pool in its base changes nothing; nothing converts, so nothing is exempt.
+    const inputs = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-16c-full-ratchet/inputs.json"), "utf8")) as { holders: unknown[]; events: Record<string, unknown>[] };
+    Object.assign(inputs.events.at(-1)!, { anti_dilution_include_unissued_pool_in_a: true, anti_dilution_exempts_conversions: true });
+    const file = { format: "spillpoint", version: 5, name: "16c", holders: inputs.holders, events: inputs.events, cap_table_after_event: "series_b", range: ["0", "50000000"] };
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([JSON.stringify(file)], "case.json", { type: "application/json" })] } });
+    await screen.findByText("Opened case.json.");
+    openTab("Rounds");
+    edit("Series B Preferred, a priced round");
+    const seriesB = /Series B Preferred, a priced round/;
+    expect(setting(seriesB, `${POOL_IN_A} (doesn't apply to this round)`)?.checked).toBe(true);
+    expect(setting(seriesB, `${EXEMPT} (doesn't apply to this round)`)?.checked).toBe(true);
   });
 
   it("hides the pool setting where no series is broad-based: 16c's full ratchet", async () => {

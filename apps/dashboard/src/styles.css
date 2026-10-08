@@ -253,6 +253,7 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .rounds__yours { margin: 8px 0 0; font-weight: 600; color: var(--accent); }
 .rounds__lines { margin: 8px 0 0; padding-left: 1.25rem; }
 .rounds__lines li + li { margin-top: 4px; }
+.rounds__details { margin: 4px 0 0; padding-left: 1.25rem; list-style: circle; }
 .rounds__table { margin-top: 12px; }
 .rounds__table summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .rounds__table .payouts { margin-top: 8px; }
