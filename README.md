@@ -22,13 +22,13 @@ Open-source exit waterfall engine and dashboard. Given a cap table and an exit v
 
 Your cap table stays in your browser. GitHub Pages serves the page, and sees the visit as it would for any site. After that, the page makes no network requests and tells the browser to block any it might try. Nothing is kept anywhere unless you save a file.
 
-The page doesn't yet handle cumulative dividends, warrants, management carve-outs, escrow and earnouts, or SAFEs and notes still outstanding at a sale. Nor does it build a few combinations within a round: the engine's README lists them. Anything it doesn't handle is refused with a message saying so, never quietly ignored.
+The page doesn't yet show cumulative dividends, warrants, management carve-outs, escrow and earnouts, or SAFEs and notes still outstanding at a sale, though the engine pays them all. It refuses a cap table with any of them rather than show it with something left out. Nor does it build a few combinations within a round: the engine's README lists them. Anything it doesn't handle is refused with a message saying so, never quietly ignored.
 
 > The charter and the signed documents govern, not this tool.
 
 ## The engine
 
-The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Its README lists what it still refuses.
+The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. From 0.2.0 it also pays warrants, cumulative dividends, management carve-outs, escrow and earnouts, and SAFEs and notes still outstanding at a sale. Its README lists what it still refuses.
 
 Coming next:
 - **Open Cap Format import,** so you can load a cap table exported from your cap table software.
