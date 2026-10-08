@@ -1,10 +1,15 @@
 // The payoff curves, the breakpoint list and the slider's marks, as you'd
 // click through them on Millrace, in a simulated browser.
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { D, prepare, readExit, solve } from "spillpoint";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
+import { dollars } from "../src/format.ts";
 import { analysed } from "./analysis.ts";
 
 afterEach(() => vi.restoreAllMocks());
@@ -188,5 +193,48 @@ describe("the slider's marks", () => {
     expect(exitBox().value).toBe("$39,424,995");
     // Exactly at breakpoint 3, Seed's preference has taken every dollar: common's share starts just above.
     expect(headline()).toBe("At $39.4M you get $0");
+  });
+});
+
+describe("curved payouts (X17), on case 10b", () => {
+  const exit = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-10b-carve-out-alongside-preferences/inputs.json"), "utf8")).exit;
+  /** Case 10b, opened as a file: Founder A, with the most common stock, is "you". */
+  async function open10b() {
+    render(<App />);
+    const file = { format: "spillpoint", version: 3, name: "Case 10b", cap_table: exit.cap_table, range: exit.range };
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([JSON.stringify(file)], "10b.json", { type: "application/json" })] } });
+    await screen.findByText("Opened 10b.json.");
+    return breakpointList();
+  }
+
+  it("says how Founder A's payout bends at each breakpoint next to a curve, in X17's approved wording", async () => {
+    const list = await open10b();
+    expect([...list.querySelectorAll(".breakpoints__yours")].map((p) => p.textContent).slice(0, 2)).toEqual([
+      "For you: just below here each extra $1M adds about $104,132; just above, about $79,339. The rate keeps changing on both sides, because the carve-out's claim grows with the exit value.",
+      "For you: each extra $1M now adds $742,500, up from about $84,286 just below. Below here the rate keeps changing, because the carve-out's claim grows with the exit value.",
+    ]);
+  });
+
+  it("gives every value in the legend exactly on a curve, from the engine, not the line between two points", async () => {
+    await open10b();
+    // Midway to the first point the curve is drawn through, where the line is farthest from it.
+    const box = exitBox();
+    fireEvent.change(box, { target: { value: "78125" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    const card = await curves();
+    const totals = solve(prepare(readExit(exit).capTable), new D("78125")).answers[0]!.payout.holderTotals;
+    const legend = within(card).getByRole("list", { name: /^Values at/ });
+    expect(within(legend).getByRole("button", { name: /Founder A \(you\)/ }).textContent).toBe(`Founder A (you)${dollars(totals.get("founder_a")!)}`);
+    expect(within(legend).getByRole("button", { name: /Manager M/ }).textContent).toBe(`Manager M${dollars(totals.get("manager_m")!)}`);
+  });
+
+  it("shows the carve-out as a class of its own, in the curves and the payouts", async () => {
+    await open10b();
+    const card = await curves();
+    fireEvent.click(within(card).getByRole("button", { name: "By class" }));
+    expect(within(within(card).getByRole("list", { name: /^Values at/ })).getByRole("button", { name: /Management carve-out/ })).toBeTruthy();
+    const table = screen.getByRole("heading", { name: /^Who gets what/ }).closest("section")!;
+    fireEvent.click(within(table).getByRole("button", { name: "By class" }));
+    expect(within(table).getByRole("rowheader", { name: /^Management carve-out/ }).closest("tr")!.textContent).toContain("no shares");
   });
 });

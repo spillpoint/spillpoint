@@ -430,6 +430,79 @@ describe("warrants and cumulative dividends (M5k2)", () => {
   });
 });
 
+describe("a management carve-out (M5k3)", () => {
+  it("takes case 10b's carve-out, typed in, and pays what the case expects, curve and all", () => {
+    render(<App />);
+    startFrom("scratch");
+    openTab("Cap table");
+    const holders = card("Holders");
+    type(within(holders).getByRole("textbox", { name: "Holder name" }), "Founder A");
+    for (const name of ["Founder B", "Investor X", "Manager M"]) {
+      fireEvent.click(within(holders).getByRole("button", { name: "Add a holder" }));
+      type(within(holders).getAllByRole("textbox", { name: "Holder name" }).at(-1)!, name);
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Add a preferred series" }));
+    const added = series("New preferred series");
+    type(within(added).getByLabelText("Original issue price ($ a share)"), "2.50");
+    type(within(added).getByLabelText("Name"), "Series A Preferred");
+    type(screen.getByRole("textbox", { name: "Founder A, Common Stock" }), "4,500,000");
+    type(screen.getByRole("textbox", { name: "Founder B, Common Stock" }), "1,500,000");
+    type(screen.getByRole("textbox", { name: "Investor X, Series A Preferred" }), "4,000,000");
+    type(screen.getByLabelText("To"), "50M");
+
+    // 10% of the first $10M and 5% of the next $10M, alongside the preferences, 60% to Founder A and 40% to Manager M.
+    const carve = card("Management carve-out");
+    fireEvent.click(within(carve).getByRole("button", { name: "Add a carve-out" }));
+    const timing = within(carve).getByLabelText("It's paid") as HTMLSelectElement;
+    expect(timing.value).toBe("before_preferences");
+    fireEvent.change(timing, { target: { value: "alongside_preferences" } });
+    type(within(carve).getByLabelText("To ($)"), "10M");
+    type(within(carve).getByLabelText("Percent of the exit value in it (%)"), "10");
+    fireEvent.click(within(carve).getByRole("button", { name: "Add a tier" }));
+    expect(within(carve).getByText("From $10,000,000")).toBeTruthy();
+    type(within(carve).getAllByLabelText("To ($)")[1]!, "20M");
+    type(within(carve).getAllByLabelText("Percent of the exit value in it (%)")[1]!, "5");
+    type(within(carve).getByLabelText("Their share of it (%)"), "60");
+    expect(status()).toBe("The payouts can't update until this is fixed: The recipients' percentages add up to 60, not 100 Go to the field");
+    fireEvent.click(within(carve).getByRole("button", { name: "Add a recipient" }));
+    const second = within(carve).getByLabelText("Recipient 2") as HTMLSelectElement;
+    fireEvent.change(second, { target: { value: (within(second).getByRole("option", { name: "Manager M" }) as HTMLOptionElement).value } });
+    type(within(carve).getAllByLabelText("Their share of it (%)")[1]!, "40");
+    expect(status()).toMatch(/Every change updates the payouts\.$/);
+
+    const expected = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-10b-carve-out-alongside-preferences/expected.json"), "utf8")).exit;
+    const names: Record<string, string> = { founder_a: "Founder A", founder_b: "Founder B", investor_x: "Investor X", manager_m: "Manager M" };
+    openTab("Payouts");
+    const box = screen.getByRole("textbox", { name: "Exit value" });
+    const listed = expected.payouts.filter((p: { tags: string[] }) => p.tags.includes("listed"));
+    expect(listed).toHaveLength(10);
+    for (const p of listed) {
+      type(box, p.exit_value);
+      fireEvent.keyDown(box, { key: "Enter" });
+      const table = screen.getByRole("table");
+      for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
+        const row = within(table).getByText(names[holder]!).closest("tr")!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+      }
+    }
+  });
+
+  it("asks before removing a recipient holder, and their share of the carve-out goes too", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(true);
+    render(<App />);
+    startFrom("scratch");
+    openTab("Cap table");
+    fireEvent.click(within(card("Holders")).getByRole("button", { name: "Add a holder" }));
+    const carve = card("Management carve-out");
+    fireEvent.click(within(carve).getByRole("button", { name: "Add a carve-out" }));
+    const recipient = within(carve).getByLabelText("Recipient 1") as HTMLSelectElement;
+    fireEvent.change(recipient, { target: { value: (within(recipient).getByRole("option", { name: "New holder" }) as HTMLOptionElement).value } });
+    fireEvent.click(within(card("Holders")).getByRole("button", { name: "Remove New holder" }));
+    expect(confirm).toHaveBeenCalledWith("Remove New holder? Its share of the carve-out goes too.");
+    expect(within(carve).queryByLabelText("Recipient 1")).toBeNull();
+  });
+});
+
 describe("the tabs", () => {
   it("switch with the arrow keys", () => {
     render(<App />);

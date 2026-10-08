@@ -7,17 +7,19 @@
 // edge, and the legend below lists every series with its value at the current
 // exit value, so no one has to match colours. The axes are linear, so the
 // straight lines between breakpoints stay straight (M3 plan, answer 3); drag
-// across the chart, or type a range, to zoom in.
+// across the chart, or type a range, to zoom in. A curved stretch (X17) is
+// drawn through points along it, and its values in the legend and the hover
+// readout come from the engine, exact, not from the line between two points.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
-import { D } from "spillpoint";
-import type { PreparedCapTable } from "spillpoint";
+import { D, solve } from "spillpoint";
+import type { Payout, PreparedCapTable } from "spillpoint";
 
 import type { CurvePoint } from "./analysis.ts";
-import { outstandingNames } from "./capTable.ts";
-import { chartRows, niceScale, seriesNodes, valueAt } from "./curves.ts";
+import { CARVE_OUT, CARVE_OUT_NAME, outstandingNames } from "./capTable.ts";
+import { chartRows, curvedAt, niceScale, seriesNodes, valueAt } from "./curves.ts";
 import type { Node, SeriesKind } from "./curves.ts";
 import { dollars, parseDollars, shortDollars } from "./format.ts";
 
@@ -98,11 +100,25 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
         : [
             ...capTable.securities.map((s) => ({ id: s.id, name: s.name, you: yourClasses.has(s.id) })),
             ...[...outstandingNames(pc)].map(([id, name]) => ({ id, name, you: yourClasses.has(id) })),
+            // The carve-out is a class of its own (C6): yours if you're among the people it's split among.
+            ...(capTable.carveOut ? [{ id: CARVE_OUT, name: CARVE_OUT_NAME, you: capTable.carveOut.allocation.some((a) => a.holder === you) }] : []),
           ];
     return list
       .filter((s) => (kind === "holder" ? curve[0]?.holders[s.id] : curve[0]?.classes[s.id]) !== undefined)
       .map((s, i) => ({ ...s, key: `s${i}`, nodes: seriesNodes(curve, kind, s.id) }));
   }, [kind, curve, capTable, pc, you]);
+
+  // A series' value at any exit value: the engine's own on a curved stretch (X17), else the straight line.
+  const payoutAt = useMemo(() => {
+    const seen = new Map<string, Payout>();
+    return (x: Decimal) => {
+      const key = x.toString();
+      if (!seen.has(key)) seen.set(key, solve(pc, x).answers[0]!.payout);
+      return seen.get(key)!;
+    };
+  }, [pc]);
+  const valueOf = (s: Series, x: Decimal) =>
+    curvedAt(s.nodes, x) ? ((kind === "holder" ? payoutAt(x).holderTotals : payoutAt(x).classTotals).get(s.id) ?? new D(0)) : valueAt(s.nodes, x);
 
   const [from, to] = domain;
   const rows = useMemo(() => chartRows(new Map(series.map((s) => [s.key, s.nodes])), from, to), [series, from, to]);
@@ -164,7 +180,7 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
     placed[i]!.labelY = Math.max(placed[i]!.labelY, prev.labelY + gap);
   }
 
-  const byExitValue = [...series].sort((a, b) => valueAt(b.nodes, exitValue).cmp(valueAt(a.nodes, exitValue)));
+  const byExitValue = [...series].sort((a, b) => valueOf(b, exitValue).cmp(valueOf(a, exitValue)));
   const yourName = capTable.holders.find((h) => h.id === you)?.name ?? "";
 
   // Drag across the plot to zoom into that stretch; a click sets the exit value there.
@@ -304,7 +320,11 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
             <ReferenceLine x={exitValue.toNumber()} stroke="#1d3557" strokeWidth={1.5} label={<ExitValueLabel text={shortDollars(exitValue)} />} />
           )}
           {drag && Math.abs(drag.end - drag.start) > 0 && <ReferenceArea x1={drag.start} x2={drag.end} fill="#1d3557" fillOpacity={0.08} />}
-          <Tooltip content={<Readout series={series} you={you} kind={kind} colour={colour} />} isAnimationActive={false} cursor={{ stroke: INK_MUTED, strokeWidth: 1 }} />
+          <Tooltip
+            content={<Readout series={series} you={you} kind={kind} colour={colour} valueOf={valueOf} />}
+            isAnimationActive={false}
+            cursor={{ stroke: INK_MUTED, strokeWidth: 1 }}
+          />
         </LineChart>
         <svg className="chart__leaders" width={width} height={HEIGHT} aria-hidden="true">
           {placed.map((l) =>
@@ -354,7 +374,7 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
                 {s.name}
                 {kind === "holder" && s.you ? " (you)" : ""}
               </span>
-              <span className="legend__value">{dollars(valueAt(s.nodes, exitValue))}</span>
+              <span className="legend__value">{dollars(valueOf(s, exitValue))}</span>
             </button>
           </li>
         ))}
@@ -392,6 +412,7 @@ function Readout({
   you,
   kind,
   colour,
+  valueOf,
   active,
   label,
 }: {
@@ -399,12 +420,13 @@ function Readout({
   you: string;
   kind: SeriesKind;
   colour: (s: Series) => string;
+  valueOf: (s: Series, x: Decimal) => Decimal;
   active?: boolean;
   label?: number | string;
 }) {
   if (!active || label === undefined) return null;
   const x = new D(label);
-  const rows = series.map((s) => ({ s, v: valueAt(s.nodes, x) })).sort((a, b) => b.v.cmp(a.v));
+  const rows = series.map((s) => ({ s, v: valueOf(s, x) })).sort((a, b) => b.v.cmp(a.v));
   return (
     <div className="readout">
       <div className="readout__title">At {dollars(x)}</div>

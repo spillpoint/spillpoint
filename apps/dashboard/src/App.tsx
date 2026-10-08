@@ -22,7 +22,7 @@ import { PayoutTable } from "./PayoutTable.tsx";
 import { RoundsView } from "./RoundsView.tsx";
 import { useAnalysis } from "./analysis.ts";
 import { defaultHolder } from "./capTable.ts";
-import { changeAt, seriesNodes } from "./curves.ts";
+import { changeAt, nodeAt, seriesNodes } from "./curves.ts";
 import { buildExit, checkBuilt, scratchDraft } from "./draft.ts";
 import type { Built, Checked, Draft } from "./draft.ts";
 import { fileName, fileText, readFile } from "./file.ts";
@@ -401,11 +401,12 @@ function Workspace(props: WorkspaceProps) {
   const analysis = useAnalysis(good.built.json);
   const ready = analysis.status === "ready" ? analysis : null;
   // How your payout bends or jumps at each breakpoint, if it does: the curves mark those breakpoints,
-  // and the list says how.
+  // and the list says how. On a curved side the rate is the one right at the breakpoint (X17).
   const changes = useMemo(() => {
     if (!ready) return [];
     const nodes = seriesNodes(ready.curve, "holder", you);
-    return ready.breakpoints.map((_, i) => changeAt(nodes, i + 1));
+    const rate = (r: { holders: Record<string, string> } | undefined) => (r ? new D(r.holders[you] ?? "0") : undefined);
+    return ready.breakpoints.map((b) => changeAt(nodes, nodeAt(nodes, new D(b.exitValue)), { below: rate(b.rates.below), above: rate(b.rates.above) }));
   }, [ready, you]);
   const yours = useMemo(() => changes.map((c) => c !== null), [changes]);
 

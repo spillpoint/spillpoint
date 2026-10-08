@@ -81,6 +81,44 @@ const BUILD_6B = [
   fill("#edit-range-high", 0, "40M"),
 ];
 
+/** Chooses an option by the text it shows, for a select whose values are the editor's own keys. */
+const pickText = (selector, index, text) => `(() => {
+  const select = document.querySelectorAll(${JSON.stringify(selector)})[${index}];
+  const option = [...select.options].find((o) => o.text === ${JSON.stringify(text)});
+  Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(select, option.value);
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+})()`;
+/** Case 10b, typed in from a blank cap table: a carve-out alongside the preferences, which makes payouts curve (X17). */
+const BUILD_10B = [
+  choose("Start from", "scratch"),
+  click("Cap table"),
+  fill(HOLDERS, 0, "Founder A"),
+  click("Add a holder"),
+  click("Add a holder"),
+  click("Add a holder"),
+  fill(HOLDERS, 1, "Founder B"),
+  fill(HOLDERS, 2, "Investor X"),
+  fill(HOLDERS, 3, "Manager M"),
+  click("Add a preferred series"),
+  fill(SERIES, 1, "2.50"),
+  fill(SERIES, 0, "Series A Preferred"),
+  fill('[aria-label="Founder A, Common Stock"]', 0, "4,500,000"),
+  fill('[aria-label="Founder B, Common Stock"]', 0, "1,500,000"),
+  fill('[aria-label="Investor X, Series A Preferred"]', 0, "4,000,000"),
+  fill("#edit-range-high", 0, "50M"),
+  click("Add a carve-out"),
+  pick("#edit-carve-timing", 0, "alongside_preferences"),
+  fill("input[id^=edit-carve-to-]", 0, "10M"),
+  fill("[id^=edit-carve-percent-]", 0, "10"),
+  click("Add a tier"),
+  fill("input[id^=edit-carve-to-]", 1, "20M"),
+  fill("[id^=edit-carve-percent-]", 1, "5"),
+  fill("[id^=edit-carve-share-]", 0, "60"),
+  click("Add a recipient"),
+  pickText("[id^=edit-carve-holder-]", 1, "Manager M"),
+  fill("[id^=edit-carve-share-]", 1, "40"),
+];
+
 /** Millrace's cap table is built from its rounds (M4i): editing it means dropping them, which asks first. */
 const EDIT_DIRECTLY = ["window.confirm = () => true", click("Edit the cap table directly")];
 /** Opens the cap table after the index-th event on the Rounds tab. */
@@ -205,6 +243,21 @@ const SHOTS = {
       `[...document.querySelectorAll(".rounds__edit")].filter((b) => b.textContent === "Done").forEach((b) => b.click())`,
     ],
     clip: [ROUND(2), ROUND(3)],
+    quality: 50,
+  },
+  // M5k3: a carve-out, and the payouts it makes curve.
+  "m5k3-carve-out": { width: 1100, height: 900, steps: BUILD_10B, clip: ["section[aria-labelledby=edit-carve-out-heading]"], quality: 50 },
+  "m5k3-curves": {
+    width: 1100,
+    height: 900,
+    steps: [...BUILD_10B, click("Payouts"), ...type("Show from", "0"), ...type("to", "20M")],
+    clip: [CURVES],
+  },
+  "m5k3-for-you": {
+    width: 1100,
+    height: 900,
+    steps: [...BUILD_10B, click("Payouts")],
+    clip: ["ol.breakpoints > li:nth-child(1)", "ol.breakpoints > li:nth-child(2)"],
     quality: 50,
   },
   "m4j-error": {

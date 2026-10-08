@@ -52,13 +52,15 @@ export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, br
   );
 }
 
-/** A SAFE or note holds no shares until it converts (C8, C9), so your share of the company leaves it out: say so. */
+/** A SAFE or note holds no shares until it converts (C8, C9), nor does a carve-out (C6), so your share of the company leaves them out: say so. */
 function yourOutstanding(pc: PreparedCapTable, you: string): string {
   const safes = (pc.capTable.unconvertedSafes ?? []).filter((f) => f.holder === you).length;
   const notes = (pc.capTable.unconvertedNotes ?? []).filter((n) => n.holder === you).length;
-  if (safes + notes === 0) return "";
+  const carve = pc.capTable.carveOut?.allocation.some((a) => a.holder === you) ?? false;
+  const carveLine = carve ? " Your share of the management carve-out holds no shares either, so it isn't counted in that share." : "";
+  if (safes + notes === 0) return carve ? " Your share of the management carve-out holds no shares, so it isn't counted in that share." : "";
   const what = [safes > 0 ? (safes === 1 ? "SAFE" : "SAFEs") : null, notes > 0 ? (notes === 1 ? "convertible note" : "convertible notes") : null].filter(Boolean).join(" and ");
-  return ` Your ${what} ${safes + notes === 1 ? "holds" : "hold"} no shares until ${safes + notes === 1 ? "it converts, so it isn't" : "they convert, so they aren't"} counted in that share.`;
+  return ` Your ${what} ${safes + notes === 1 ? "holds" : "hold"} no shares until ${safes + notes === 1 ? "it converts, so it isn't" : "they convert, so they aren't"} counted in that share.${carveLine}`;
 }
 
 function PayoutStartLine({ pc, range, you, breakpoints }: Omit<Props, "answer" | "exitValue" | "onChooseYou">) {

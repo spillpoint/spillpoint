@@ -9,7 +9,8 @@
 // it also covers SAFEs and convertible notes still outstanding at a sale (C8,
 // C9), and the sale's date, which notes accrue interest up to (X3); since
 // M5k2, warrants (C4, R29) and a series' cumulative dividends (C5, X2–X5),
-// which accrue up to the sale's date too.
+// which accrue up to the sale's date too; and since M5k3, a management
+// carve-out (C6, X6, X7).
 // Anti-dilution is kept as loaded but not edited: at exit it matters only
 // through the conversion price, which is edited directly (SPEC, Anti-dilution).
 
@@ -99,6 +100,20 @@ export interface DraftSafe {
 
 export type ConversionBase = "with_pool" | "without_pool" | "common_only";
 
+/**
+ * A management carve-out (C6): marginal tiers of the exit value from $0, each
+ * starting where the one before ends, so only where each ends is typed; and
+ * the people it's split among, by percentage.
+ */
+export interface DraftCarveOut {
+  /** Paid before all preferences (the default), or alongside them in the most senior tier (X7). */
+  timing: "before_preferences" | "alongside_preferences";
+  /** Blank `to`: no upper end. Percentages of the exit value, as typed. */
+  tiers: { key: string; to: string; percent: string }[];
+  /** Each recipient, by holder key, with their share of it as a percentage. */
+  allocation: { key: string; holder: string; percent: string }[];
+}
+
 /** A convertible note still outstanding at a sale (C9): repaid as debt, or converted, whichever is worth more (X3, X10–X12, X15). */
 export interface DraftNote {
   key: string;
@@ -126,6 +141,8 @@ export interface Draft {
   notes: DraftNote[];
   /** The sale's date, YYYY-MM-DD, or blank: notes accrue interest up to it (X3, C9). */
   exitDate: string;
+  /** Null for none. */
+  carveOut: DraftCarveOut | null;
   /** The one conversion group: series that convert together by a class vote (E11). No members, no group. */
   group: { members: string[]; threshold: string; rule: "more_than" | "at_least" };
   range: [string, string];
@@ -197,7 +214,9 @@ const SHOWN_FIELDS: Record<string, readonly string[]> = {
     "participation", "cap_multiple", "anti_dilution", "anti_dilution_a", "cumulative_dividend", "approx",
   ],
 };
-const SHOWN_TABLE_FIELDS = ["holders", "securities", "seniority", "conversion_groups", "positions", "unissued_pool", "unconverted_safes", "unconverted_notes", "totals"];
+const SHOWN_TABLE_FIELDS = [
+  "holders", "securities", "seniority", "conversion_groups", "positions", "unissued_pool", "unconverted_safes", "unconverted_notes", "carve_out", "totals",
+];
 /** What the editor carries for each SAFE and note still outstanding (C8, C9). */
 const SHOWN_OUTSTANDING_FIELDS: Record<"unconverted_safes" | "unconverted_notes", readonly string[]> = {
   unconverted_safes: ["id", "holder", "purchase_amount", "post_money_cap", "pre_money_cap", "discount", "cash_out_ranks_with"],
@@ -205,10 +224,12 @@ const SHOWN_OUTSTANDING_FIELDS: Record<"unconverted_safes" | "unconverted_notes"
     "id", "holder", "principal", "interest_rate", "interest_method", "issue_date", "valuation_cap", "cap_type", "conversion_base", "discount", "repayment_multiple",
   ],
 };
-/** Terms the engine models that the page doesn't show yet, by field, as a founder would name them. */
-const TERM_NAMES: Record<string, string> = {
-  carve_out: "a management carve-out",
-};
+/**
+ * Terms the engine models that the page doesn't show yet, by field, as a
+ * founder would name them. None is left since M5k3; the check stays for the
+ * next one.
+ */
+const TERM_NAMES: Record<string, string> = {};
 
 /**
  * The page shows a cap table only if it can show all of it. A security of a
@@ -237,6 +258,17 @@ export function checkShown(capTable: unknown): void {
       const extra = Object.keys(x).find((f) => !SHOWN_OUTSTANDING_FIELDS[list].includes(f) && x[f] != null);
       if (extra) refuse(`"${extra}" on ${holderName(x.holder)}'s ${list === "unconverted_safes" ? "SAFE" : "convertible note"}`, false);
     }
+  }
+  // C6: what the editor carries for a carve-out, at each level.
+  const carve = ct.carve_out as Json | null | undefined;
+  if (carve != null && typeof carve === "object") {
+    const extra = (x: unknown, fields: string[]) => (x != null && typeof x === "object" ? Object.keys(x).find((f) => !fields.includes(f) && (x as Json)[f] != null) : undefined);
+    const found =
+      extra(carve, ["timing", "tiers", "allocation"]) ??
+      [...(Array.isArray(carve.tiers) ? carve.tiers : []), ...(Array.isArray(carve.allocation) ? carve.allocation : [])]
+        .map((x) => extra(x, ["from", "to", "percent", "holder"]))
+        .find(Boolean);
+    if (found) refuse(`"${found}" on its management carve-out`, false);
   }
   if (!Array.isArray(ct.securities)) return;
   for (const s of ct.securities as Json[]) {
@@ -361,6 +393,16 @@ export function draftFromExit(exit: unknown): Draft {
       repaymentMultiple: str(x.repayment_multiple),
     }),
   );
+  const carve = ct.carve_out as Json | null | undefined;
+  const carveOut: DraftCarveOut | null =
+    carve == null
+      ? null
+      : {
+          timing: carve.timing === "alongside_preferences" ? "alongside_preferences" : "before_preferences",
+          // C6: each tier starts where the one before ends, which the engine checks, so only its end is kept.
+          tiers: ((carve.tiers as Json[] | undefined) ?? []).map((t) => ({ key: key(), to: str(t.to), percent: str(t.percent) })),
+          allocation: ((carve.allocation as Json[] | undefined) ?? []).map((a) => ({ key: key(), holder: holderKey(a.holder), percent: str(a.percent) })),
+        };
   const range = e.range as unknown[];
   return {
     holders,
@@ -370,6 +412,7 @@ export function draftFromExit(exit: unknown): Draft {
     safes,
     notes,
     exitDate: str(e.exit_date),
+    carveOut,
     group,
     range: [str(range[0]), str(range[1])],
     order,
@@ -387,6 +430,7 @@ export function scratchDraft(): Draft {
     safes: [],
     notes: [],
     exitDate: "",
+    carveOut: null,
     group: { members: [], threshold: "50", rule: "more_than" },
     range: ["0", "100000000"],
     order: [],
@@ -458,6 +502,8 @@ export function removeRow(d: Draft, key: string): Draft {
     shares,
     safes: d.safes.filter((f) => f.holder !== key).map((f) => (f.ranksWith === key ? { ...f, ranksWith: null } : f)),
     notes: d.notes.filter((n) => n.holder !== key),
+    // A holder's share of the carve-out goes with them; the shares left then don't add up to 100%, which the engine says.
+    carveOut: d.carveOut && { ...d.carveOut, allocation: d.carveOut.allocation.filter((a) => a.holder !== key) },
     group: { ...d.group, members: d.group.members.filter((m) => m !== key) },
   };
 }
@@ -490,6 +536,27 @@ export function setSafe(d: Draft, key: string, change: Partial<DraftSafe>): Draf
 }
 export function setNote(d: Draft, key: string, change: Partial<DraftNote>): Draft {
   return { ...d, notes: d.notes.map((n) => (n.key === key ? { ...n, ...change } : n)) };
+}
+
+/** A new carve-out, before all preferences (the default, C6), one tier with no upper end, all to the first holder. */
+export function addCarveOut(d: Draft): Draft {
+  const n = d.nextKey;
+  return {
+    ...d,
+    carveOut: { timing: "before_preferences", tiers: [{ key: `k${n}`, to: "", percent: "" }], allocation: [{ key: `k${n + 1}`, holder: d.holders[0]?.key ?? "", percent: "100" }] },
+    nextKey: n + 2,
+  };
+}
+
+/** A new row in the carve-out: a tier after the last, or a recipient with no share yet. */
+export function addCarveOutRow(d: Draft, list: "tiers" | "allocation"): Draft {
+  if (!d.carveOut) return d;
+  const key = `k${d.nextKey}`;
+  const carveOut =
+    list === "tiers"
+      ? { ...d.carveOut, tiers: [...d.carveOut.tiers, { key, to: "", percent: "" }] }
+      : { ...d.carveOut, allocation: [...d.carveOut.allocation, { key, holder: d.holders[0]?.key ?? "", percent: "" }] };
+  return { ...d, carveOut, nextKey: d.nextKey + 1 };
 }
 
 export function removeOutstanding(d: Draft, key: string): Draft {
@@ -554,6 +621,15 @@ export const fieldId = {
   exitDate: "edit-exit-date",
   /** The card listing SAFEs and notes: where a message about them all goes. */
   outstanding: "edit-outstanding",
+  carveOut: "edit-carve-out",
+  carveTiming: "edit-carve-timing",
+  carveTiers: "edit-carve-tiers",
+  carveAllocation: "edit-carve-allocation",
+  carveTier: (key: string) => `edit-carve-tier-${key}`,
+  carveTo: (key: string) => `edit-carve-to-${key}`,
+  carvePercent: (key: string) => `edit-carve-percent-${key}`,
+  carveHolder: (key: string) => `edit-carve-holder-${key}`,
+  carveShare: (key: string) => `edit-carve-share-${key}`,
   safe: (key: string) => `edit-safe-${key}`,
   safeHolder: (key: string) => `edit-safe-holder-${key}`,
   safeAmount: (key: string) => `edit-safe-amount-${key}`,
@@ -772,6 +848,37 @@ export function buildExit(d: Draft): Built {
     };
   });
 
+  // C6: each tier starts where the one before ends, at $0 for the first; a message about where one starts names the end before it.
+  const carve = d.carveOut;
+  let carve_out: Json | undefined;
+  if (carve) {
+    at("carve_out", fieldId.carveOut);
+    at("carve_out.timing", fieldId.carveTiming);
+    at("carve_out.tiers", fieldId.carveTiers);
+    at("carve_out.allocation", fieldId.carveAllocation);
+    const tiers = carve.tiers.map((t, i) => {
+      const p = `carve_out.tiers[${i}]`;
+      at(p, fieldId.carveTier(t.key));
+      at(`${p}.from`, i === 0 ? fieldId.carveTier(t.key) : fieldId.carveTo(carve.tiers[i - 1]!.key));
+      at(`${p}.to`, fieldId.carveTo(t.key));
+      at(`${p}.percent`, fieldId.carvePercent(t.key));
+      const before = carve.tiers[i - 1];
+      return {
+        from: i === 0 ? "0" : before!.to.trim() ? moneyText(before!.to) : null,
+        to: t.to.trim() ? moneyText(t.to) : null,
+        percent: percentText(t.percent),
+      };
+    });
+    const allocation = carve.allocation.map((a, i) => {
+      const p = `carve_out.allocation[${i}]`;
+      at(p, fieldId.carveHolder(a.key));
+      at(`${p}.holder`, fieldId.carveHolder(a.key));
+      at(`${p}.percent`, fieldId.carveShare(a.key));
+      return { holder: holderId(a.holder), percent: percentText(a.percent) };
+    });
+    carve_out = { timing: carve.timing, tiers, allocation };
+  }
+
   return {
     json: {
       cap_table: {
@@ -783,6 +890,7 @@ export function buildExit(d: Draft): Built {
         ...(d.pool.trim() ? { unissued_pool: shareText(d.pool) } : {}),
         ...(unconverted_safes.length > 0 ? { unconverted_safes } : {}),
         ...(unconverted_notes.length > 0 ? { unconverted_notes } : {}),
+        ...(carve_out ? { carve_out } : {}),
       },
       range: [moneyText(d.range[0]), moneyText(d.range[1])],
       exit_values: [],

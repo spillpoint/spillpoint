@@ -9,7 +9,7 @@ import { useState } from "react";
 import { D } from "spillpoint";
 import type { Answer, PreparedCapTable } from "spillpoint";
 
-import { classShares, fractionOf, fullyDiluted, holderShares, outstandingNames } from "./capTable.ts";
+import { CARVE_OUT, CARVE_OUT_NAME, classShares, fractionOf, fullyDiluted, holderShares, outstandingNames } from "./capTable.ts";
 import { dollars, dollarsAndCents, percent, shortDollars } from "./format.ts";
 import { dateText } from "./rounds.ts";
 
@@ -57,12 +57,17 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
           ...[...outstanding]
             .filter(([id]) => answer.payout.classTotals.has(id))
             .map(([id, name]) => ({ key: id, name, amount: answer.payout.classTotals.get(id)!, shares: null, you: false })),
+          // So is the carve-out (C6), which holds no shares either.
+          ...(answer.payout.classTotals.has(CARVE_OUT)
+            ? [{ key: CARVE_OUT, name: CARVE_OUT_NAME, amount: answer.payout.classTotals.get(CARVE_OUT)!, shares: null, you: false }]
+            : []),
         ];
   if (capTable.unissuedPool.gt(0)) {
     rows.push({ key: "pool", name: "Unissued option pool", amount: zero, shares: capTable.unissuedPool, you: false });
   }
   const proceeds = (amount: Decimal) => fractionOf(amount, exitValue);
-  const company = (shares: Decimal | null) => (shares === null ? "no shares until it converts" : `${percent(fractionOf(shares, fd))} of the company`);
+  const company = (key: string, shares: Decimal | null) =>
+    shares === null ? (key === CARVE_OUT ? "no shares" : "no shares until it converts") : `${percent(fractionOf(shares, fd))} of the company`;
 
   return (
     <section className="card" aria-labelledby="who-gets-what">
@@ -100,12 +105,12 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
                   {r.name}
                   {r.you && <span className="you-tag"> (you)</span>}
                   <span className="payouts__shares">
-                    <span>{percent(proceeds(r.amount))} of the proceeds,</span> <span>{company(r.shares)}</span>
+                    <span>{percent(proceeds(r.amount))} of the proceeds,</span> <span>{company(r.key, r.shares)}</span>
                   </span>
                 </th>
                 <td className="num">{dollars(r.amount)}</td>
                 <td className="num share">{percent(proceeds(r.amount))}</td>
-                <td className="num share">{r.shares === null ? <span aria-label="No shares until it converts">—</span> : percent(fractionOf(r.shares, fd))}</td>
+                <td className="num share">{r.shares === null ? <span aria-label={company(r.key, null)}>—</span> : percent(fractionOf(r.shares, fd))}</td>
               </tr>
             ))}
           </tbody>
@@ -123,6 +128,7 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
         Share of the company is fully diluted: every share, option{pc.warrants.size > 0 ? ", warrant" : ""} and preferred share as converted
         {capTable.unissuedPool.gt(0) ? ", and the unissued option pool" : ""}.
         {outstanding.size > 0 && ` ${outstandingFootnote(pc)}`}
+        {pc.capTable.carveOut && " The management carve-out holds no shares: it's paid out of the exit value, to the people it names."}
       </p>
       <Dividends pc={pc} />
       <Decisions pc={pc} answer={answer} />

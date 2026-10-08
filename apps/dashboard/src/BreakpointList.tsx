@@ -64,11 +64,16 @@ export function BreakpointList({ breakpoints, changes, yourName, exitValue, onEx
   );
 }
 
+/** Why a curved rate keeps changing (X17): only a carve-out alongside the preferences makes payouts curve. */
+const CURVE_WHY = "because the carve-out's claim grows with the exit value";
+
 /**
  * One line on how a breakpoint changes your payout. A bend compares what each
  * extra $1M adds just above the breakpoint with just below it; a jump gives
  * its size. Whole dollars, unless they would round two different amounts to
- * the same figure, then cents.
+ * the same figure, then cents. On a curved side the rate is the one right at
+ * the breakpoint, so it's "about" that, and the line says why it keeps
+ * changing, in the wording approved in the M5d review (X17).
  */
 function forYou(change: Change): string {
   if (change.kind === "jump") {
@@ -80,5 +85,15 @@ function forYou(change: Change): string {
     return `For you: your payout ${by.isNegative() ? "drops" : "jumps"} ${money(by.abs())} here, from ${money(change.from)} to ${money(change.to)}.`;
   }
   const money = dollars(change.after) === dollars(change.before) ? dollarsAndCents : dollars;
-  return `For you: each extra $1M now adds ${money(change.after)}, ${change.after.gt(change.before) ? "up" : "down"} from ${money(change.before)}.`;
+  const direction = change.after.gt(change.before) ? "up" : "down";
+  if (change.curvedBefore && change.curvedAfter) {
+    return `For you: just below here each extra $1M adds about ${money(change.before)}; just above, about ${money(change.after)}. The rate keeps changing on both sides, ${CURVE_WHY}.`;
+  }
+  if (change.curvedBefore) {
+    return `For you: each extra $1M now adds ${money(change.after)}, ${direction} from about ${money(change.before)} just below. Below here the rate keeps changing, ${CURVE_WHY}.`;
+  }
+  if (change.curvedAfter) {
+    return `For you: just above here each extra $1M adds about ${money(change.after)}, ${direction} from ${money(change.before)}. Above here the rate keeps changing, ${CURVE_WHY}.`;
+  }
+  return `For you: each extra $1M now adds ${money(change.after)}, ${direction} from ${money(change.before)}.`;
 }

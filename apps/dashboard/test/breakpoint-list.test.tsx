@@ -1,5 +1,6 @@
 // The "For you" line in the breakpoint list, for changes neither example has:
-// jumps up and down, and a bend too small to show in whole dollars.
+// jumps up and down, a bend too small to show in whole dollars, and bends
+// with a curved side (X17).
 
 import { render, screen } from "@testing-library/react";
 import { D } from "spillpoint";
@@ -8,7 +9,15 @@ import { describe, expect, it } from "vitest";
 import { BreakpointList } from "../src/BreakpointList.tsx";
 import type { Change } from "../src/curves.ts";
 
-const breakpoint = (exitValue: string) => ({ exitValue, jumps: false, reasons: [{ code: "other" as const, subject: [], text: "A reason." }] });
+const breakpoint = (exitValue: string) => ({
+  exitValue,
+  jumps: false,
+  curveBelow: false,
+  curveAbove: false,
+  rates: {},
+  reasons: [{ code: "other" as const, subject: [], text: "A reason." }],
+});
+const bend = (before: string, after: string, curvedBefore = false, curvedAfter = false): Change => ({ kind: "bend", before: new D(before), after: new D(after), curvedBefore, curvedAfter });
 
 function forYou(change: Change): string | null {
   render(<BreakpointList breakpoints={[breakpoint("50000000")]} changes={[change]} yourName="Ana" exitValue={new D(0)} onExitValue={() => {}} />);
@@ -27,8 +36,27 @@ describe("how a breakpoint changes your payout", () => {
   });
 
   it("uses cents when whole dollars would show the same amount twice", () => {
-    expect(forYou({ kind: "bend", before: new D("204114.2"), after: new D("204114.31") })).toBe(
+    expect(forYou(bend("204114.2", "204114.31"))).toBe(
       "For you: each extra $1M now adds $204,114.31, up from $204,114.20.",
+    );
+  });
+
+  // X17's wording, approved in the M5d review for Founder A in case 10b; the case itself is checked in curves-ui.test.tsx.
+  it("says \"about\" on a curved side, and why the rate keeps changing: curved on both sides", () => {
+    expect(forYou(bend("104132.2", "79339.4", true, true))).toBe(
+      "For you: just below here each extra $1M adds about $104,132; just above, about $79,339. The rate keeps changing on both sides, because the carve-out's claim grows with the exit value.",
+    );
+  });
+
+  it("says \"about\" on a curved side, and why the rate keeps changing: curved below only", () => {
+    expect(forYou(bend("84285.7", "742500", true, false))).toBe(
+      "For you: each extra $1M now adds $742,500, up from about $84,286 just below. Below here the rate keeps changing, because the carve-out's claim grows with the exit value.",
+    );
+  });
+
+  it("says \"about\" on a curved side, and why the rate keeps changing: curved above only", () => {
+    expect(forYou(bend("500000", "84285.7", false, true))).toBe(
+      "For you: just above here each extra $1M adds about $84,286, down from $500,000. Above here the rate keeps changing, because the carve-out's claim grows with the exit value.",
     );
   });
 

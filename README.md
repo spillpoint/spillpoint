@@ -8,7 +8,7 @@ Open-source exit waterfall engine and dashboard. Given a cap table and an exit v
 
 - Start from a fictional example, a blank cap table, a blank company to build from its rounds, or a file you saved.
 - See what you get at any exit value, against your share of the company, and where your payout starts.
-- Follow the payoff curves by holder or by class. Every breakpoint is marked and explained, including how it changes your payout.
+- Follow the payoff curves by holder or by class. Every breakpoint is marked and explained, including how it changes your payout. Where a carve-out alongside the preferences makes payouts curve, the curves follow it.
 - Edit the cap table:
   - holders
   - common stock
@@ -19,13 +19,14 @@ Open-source exit waterfall engine and dashboard. Given a cap table and an exit v
   - one group of series that convert together
   - the unissued option pool
   - SAFEs and convertible notes still outstanding at the sale
+  - a management carve-out, in tiers, paid before the preferences or alongside them
   - the sale's date, which notes' interest and cumulative dividends accrue up to
 - Build the cap table from the company's history on the Rounds tab: shares issued, the option pool, grants, warrants, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution, pay-to-play and cumulative dividends. Each event shows what it did, what it did to your share, and the cap table after it. The fictional example, Millrace Robotics, opens from its ten events.
 - Save the cap table, or the rounds that build it, to a file on your computer, and open it again.
 
 Your cap table stays in your browser. GitHub Pages serves the page, and sees the visit as it would for any site. After that, the page makes no network requests and tells the browser to block any it might try. Nothing is kept anywhere unless you save a file.
 
-The page doesn't yet show management carve-outs, or escrow and earnouts, though the engine pays them. It refuses a cap table with any of them rather than show it with something left out. Nor does it build a few combinations within a round: the engine's README lists them. Anything it doesn't handle is refused with a message saying so, never quietly ignored.
+The page doesn't yet show escrow and earnouts, though the engine pays them. It refuses a file with them rather than open it with something left out. Nor does it build a few combinations within a round: the engine's README lists them. Anything it doesn't handle is refused with a message saying so, never quietly ignored.
 
 > The charter and the signed documents govern, not this tool.
 

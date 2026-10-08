@@ -174,12 +174,6 @@ describe("a file that can't be opened", () => {
     expect(refusal({ ...note, exit_date: "2022-12-31" })).toBe("Its cap table can't be used. file.exit_date: 2022-12-31 is before note_z was issued, 2023-01-01");
   });
 
-  it("has a management carve-out, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
-    const file = good();
-    file.cap_table.carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "ana", percent: "100" }] };
-    expect(refusal(file)).toBe("It has a management carve-out, which this page doesn't show yet. It won't open a cap table it can't show in full.");
-  });
-
   it("has a security of a kind the page doesn't know: refused, never treated as common", () => {
     const file = good();
     file.cap_table.securities.push({ id: "bond_x", name: "Bond X", kind: "bond" });
@@ -323,5 +317,27 @@ describe("warrants and cumulative dividends (M5k2)", () => {
     const opened = readFile(JSON.stringify(file));
     if (!opened.ok) throw new Error(opened.message);
     expect(opened.draft.securities.find((s) => s.kind === "warrant")).toMatchObject({ name: "Warrants for Common Stock ($0.5 strike)", strike: "0.5", underlying: "common" });
+  });
+});
+
+describe("management carve-outs (M5k3)", () => {
+  it.each(["edge-10-carve-out", "edge-10b-carve-out-alongside-preferences"])("%s opens as a file, and gives the engine exactly the case's cap table and payouts", (name) => {
+    const draft = opensExactly(name);
+    expect(draft.carveOut).not.toBeNull();
+  });
+
+  it("holds case 10b's carve-out as typed: alongside the preferences, two tiers, 60% to Founder A and 40% to Manager M", () => {
+    const draft = opensExactly("edge-10b-carve-out-alongside-preferences");
+    const name = (key: string) => draft.holders.find((h) => h.key === key)?.name;
+    expect(draft.carveOut!.timing).toBe("alongside_preferences");
+    expect(draft.carveOut!.tiers.map((t) => [t.to, t.percent])).toEqual([["10000000", "10"], ["20000000", "5"]]);
+    expect(draft.carveOut!.allocation.map((a) => [name(a.holder), a.percent])).toEqual([["Founder A", "60"], ["Manager M", "40"]]);
+  });
+
+  it("refuses a carve-out with a field nobody models, in the engine's words", () => {
+    const file = JSON.parse(fileText("Millrace", millraceTable));
+    file.cap_table.carve_out = { timing: "before_preferences", tiers: [{ from: "0", to: null, percent: "5" }], allocation: [{ holder: "ana", percent: "100" }], vesting: "4 years" };
+    const opened = readFile(JSON.stringify(file));
+    expect(opened.ok ? null : opened.message).toBe("Its cap table can't be used. file.cap_table.carve_out.vesting: unknown field; the engine reads only timing, tiers, allocation");
   });
 });

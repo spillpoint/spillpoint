@@ -9,7 +9,8 @@
 // of their own, after who holds what: they hold no shares until they convert.
 // Rates are typed as percentages, as in the rounds editor. Warrants (M5k2)
 // are a kind of class, with a strike and the class they buy, and a preferred
-// series can carry cumulative dividends.
+// series can carry cumulative dividends. A management carve-out (M5k3) has a
+// card of its own: its tiers of the exit value, and who it's split among.
 //
 // A cap table built from rounds (M4i) is shown read-only: the rounds build it,
 // so an edit here would contradict them. Its name and range stay editable.
@@ -20,9 +21,10 @@ import type React from "react";
 import type { Participation } from "spillpoint";
 
 import {
-  addHolder, addNote, addSafe, addSecurity, fieldId, outstandingHeldBy, removeOutstanding, removeRow, setNote, setPrice, setSafe, sharesHeldBy, sharesKey, tiers,
+  addCarveOut, addCarveOutRow, addHolder, addNote, addSafe, addSecurity, fieldId, outstandingHeldBy, removeOutstanding, removeRow, setNote, setPrice,
+  setSafe, sharesHeldBy, sharesKey, tiers,
 } from "./draft.ts";
-import type { ConversionBase, Draft, DraftDividend, DraftNote, DraftPreferred, DraftSafe, DraftSecurity } from "./draft.ts";
+import type { ConversionBase, Draft, DraftCarveOut, DraftDividend, DraftNote, DraftPreferred, DraftSafe, DraftSecurity } from "./draft.ts";
 import { CheckField, Field, SelectField } from "./fields.tsx";
 import { amountHint, fractionValue } from "./format.ts";
 
@@ -72,6 +74,7 @@ export function CapTableEditor({ draft, onDraft, name, onName, error, summary, r
         <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />
         <OutstandingCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
+        <CarveOutCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         {preferred.length > 0 && <SeniorityCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
         {preferred.length > 0 && <GroupCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
       </fieldset>
@@ -115,14 +118,17 @@ function priceHint(text: string) {
 function confirmRemove(draft: Draft, key: string, name: string): boolean {
   const held = sharesHeldBy(draft, key);
   const { safes, notes } = outstandingHeldBy(draft, key);
+  const carve = draft.carveOut?.allocation.some((a) => a.holder === key) ?? false;
   const going = [
     held.isZero() ? null : `${held.toNumber().toLocaleString("en-US")} shares`,
     safes === 0 ? null : safes === 1 ? "SAFE" : `${safes} SAFEs`,
     notes === 0 ? null : notes === 1 ? "convertible note" : `${notes} convertible notes`,
+    carve ? "share of the carve-out" : null,
   ].filter(Boolean);
   if (going.length === 0) return true;
   const text = going.length === 1 ? going[0] : `${going.slice(0, -1).join(", ")} and ${going.at(-1)}`;
-  return window.confirm(`Remove ${name || "this row"}? Its ${text} ${going.length === 1 && held.isZero() && safes + notes === 1 ? "goes" : "go"} too.`);
+  const one = going.length === 1 && held.isZero() && safes + notes + Number(carve) === 1;
+  return window.confirm(`Remove ${name || "this row"}? Its ${text} ${one ? "goes" : "go"} too.`);
 }
 
 function RemoveButton({ draft, onDraft, rowKey, name }: { draft: Draft; onDraft: (d: Draft) => void; rowKey: string; name: string }) {
@@ -140,7 +146,7 @@ function HoldersCard({ draft, onDraft, errorFor }: CardProps) {
   return (
     <section className="card" aria-labelledby="edit-holders-heading">
       <h2 id="edit-holders-heading">Holders</h2>
-      <p className="card__intro">Everyone who owns shares or options, or holds a SAFE or note. Their shares go under "Who holds what".</p>
+      <p className="card__intro">Everyone who owns shares or options, holds a SAFE or note, or shares in a carve-out. Their shares go under "Who holds what".</p>
       <ul className="edit-rows">
         {draft.holders.map((h) => (
           <li key={h.key} className="edit-row">
@@ -642,6 +648,134 @@ function NoteFields({ n, i, who, holders, draft, onDraft, errorFor }: RowProps &
         Remove
       </button>
     </fieldset>
+  );
+}
+
+// ---------- the management carve-out ----------
+
+const CARVE_TIMINGS = [
+  { value: "before_preferences", label: "Before all preferences (the default)" },
+  { value: "alongside_preferences", label: "Alongside the preferences, sharing the most senior tier" },
+];
+
+/** C6: marginal tiers of the exit value from $0, each starting where the one before ends; X7: paid first, or alongside the preferences. */
+function CarveOutCard({ draft, onDraft, errorFor }: CardProps) {
+  const carve = draft.carveOut;
+  const set = (change: Partial<DraftCarveOut>) => onDraft({ ...draft, carveOut: { ...carve!, ...change } });
+  const holders = draft.holders.map((h) => ({ value: h.key, label: h.name || "Unnamed holder" }));
+  const error = errorFor(fieldId.carveOut) ?? errorFor(fieldId.carveTiers) ?? errorFor(fieldId.carveAllocation);
+  return (
+    <section className="card" aria-labelledby="edit-carve-out-heading" id={fieldId.carveOut} tabIndex={-1}>
+      <h2 id="edit-carve-out-heading">Management carve-out</h2>
+      <p className="card__intro">
+        A share of the sale set aside for management, usually when the preferences would otherwise leave common little or nothing. It's a percentage
+        of the exit value, which can step down in tiers, split among the people it names. It holds no shares.
+      </p>
+      {!carve ? (
+        <button type="button" className="add" onClick={() => onDraft(addCarveOut(draft))}>
+          Add a carve-out
+        </button>
+      ) : (
+        <>
+          <SelectField
+            id={fieldId.carveTiming}
+            label="It's paid"
+            value={carve.timing}
+            options={CARVE_TIMINGS}
+            onChange={(v) => set({ timing: v as DraftCarveOut["timing"] })}
+            error={errorFor(fieldId.carveTiming)}
+            hint={
+              carve.timing === "alongside_preferences"
+                ? "It shares the most senior tier with the preferences there, by claim, so while that tier isn't paid in full the payouts curve."
+                : undefined
+            }
+            wide
+          />
+          <h3>Tiers of the exit value</h3>
+          <ul className="edit-rows" id={fieldId.carveTiers} tabIndex={-1}>
+            {carve.tiers.map((t, i) => {
+              const before = carve.tiers[i - 1];
+              const from = i === 0 ? "$0" : before!.to.trim() ? (amountHint(before!.to) ?? before!.to) : "the end of the tier before";
+              return (
+                <li key={t.key} className="edit-row edit-row--top" id={fieldId.carveTier(t.key)} tabIndex={-1}>
+                  <span className="edit-row__name">From {from}</span>
+                  <Field
+                    id={fieldId.carveTo(t.key)}
+                    label="To ($)"
+                    numeric
+                    value={t.to}
+                    onChange={(v) => set({ tiers: carve.tiers.map((x) => (x.key === t.key ? { ...x, to: v } : x)) })}
+                    error={errorFor(fieldId.carveTo(t.key)) ?? (i === 0 ? errorFor(fieldId.carveTier(t.key)) : null)}
+                    hint={t.to.trim() ? (amountHint(t.to) ?? undefined) : "Blank for no upper end."}
+                  />
+                  <Field
+                    id={fieldId.carvePercent(t.key)}
+                    label="Percent of the exit value in it (%)"
+                    numeric
+                    value={t.percent}
+                    onChange={(v) => set({ tiers: carve.tiers.map((x) => (x.key === t.key ? { ...x, percent: v } : x)) })}
+                    error={errorFor(fieldId.carvePercent(t.key)) ?? (i > 0 ? errorFor(fieldId.carveTier(t.key)) : null)}
+                  />
+                  <button
+                    type="button"
+                    className="remove"
+                    aria-label={`Remove the tier from ${from}`}
+                    disabled={carve.tiers.length === 1}
+                    onClick={() => set({ tiers: carve.tiers.filter((x) => x.key !== t.key) })}
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <button type="button" className="add" onClick={() => onDraft(addCarveOutRow(draft, "tiers"))}>
+            Add a tier
+          </button>
+          <h3>Who it's split among</h3>
+          <ul className="edit-rows" id={fieldId.carveAllocation} tabIndex={-1}>
+            {carve.allocation.map((a, i) => (
+              <li key={a.key} className="edit-row edit-row--top">
+                <SelectField
+                  id={fieldId.carveHolder(a.key)}
+                  label={`Recipient ${i + 1}`}
+                  value={a.holder}
+                  options={holders}
+                  onChange={(v) => set({ allocation: carve.allocation.map((x) => (x.key === a.key ? { ...x, holder: v } : x)) })}
+                  error={errorFor(fieldId.carveHolder(a.key))}
+                />
+                <Field
+                  id={fieldId.carveShare(a.key)}
+                  label="Their share of it (%)"
+                  numeric
+                  value={a.percent}
+                  onChange={(v) => set({ allocation: carve.allocation.map((x) => (x.key === a.key ? { ...x, percent: v } : x)) })}
+                  error={errorFor(fieldId.carveShare(a.key))}
+                />
+                <button
+                  type="button"
+                  className="remove"
+                  aria-label={`Remove recipient ${i + 1}`}
+                  disabled={carve.allocation.length === 1}
+                  onClick={() => set({ allocation: carve.allocation.filter((x) => x.key !== a.key) })}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="add" onClick={() => onDraft(addCarveOutRow(draft, "allocation"))}>
+            Add a recipient
+          </button>
+          {error && <p className="field-error">{error}</p>}
+          <div>
+            <button type="button" className="remove" onClick={() => onDraft({ ...draft, carveOut: null })}>
+              Remove the carve-out
+            </button>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
