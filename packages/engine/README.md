@@ -344,6 +344,8 @@ Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
 - **Anti-dilution in a down round:**
   - **Methods:** broad-based weighted average, narrow-based weighted average, and full ratchet.
   - **Toggles:** the unissued pool in A, the adjustment shares in the round's price, and rounding the new conversion price to $0.0001 or $0.01.
+  - **With SAFEs and notes converting** *(0.3.0)*: each conversion is a piece of the round of its own, tested at the price it converts at, as the new money is at the round's price. A series is adjusted when any piece is priced below its conversion price, and only those pieces count in B and C: what was paid (a SAFE's purchase amount, a note's principal plus interest) and their shares. Each adjustment reports its `pieces`.
+  - **A conversion that doesn't count against a series** goes into its A at the shares it receives: when the round exempts conversions (`anti_dilution_exempts_conversions`, a charter carve-out or a waiver), or when the SAFE or note was issued before the series *(0.3.0)*.
 - **Pay-to-play:**
   - **Each holder's requirement** is its share of the named series × the amount offered.
   - **A holder that doesn't buy it** converts to common, all of its preferred or, under a toggle, the fraction it didn't buy.
@@ -357,8 +359,9 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 
 **Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported.
 
-**Not settled yet** (milestone `"later"`). No worked test case settles these yet, so they're refused until one does. The first is common in real rounds, and is on the project's list to support:
-- **SAFEs or notes converting in a round that triggers anti-dilution.**
+**Not settled yet** (milestone `"later"`). No worked test case settles these yet, so they're refused until one does:
+- **Full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes** *(0.3.0: before, any anti-dilution there)*.
+- **A SAFE or note converting at its discount and counted in a series' anti-dilution A,** because the round exempts conversions or it was issued before the series, in a round that adjusts that series with the adjustment shares in its price. The price would be the root of a quadratic, not exact. Where nothing adjusts the series, it builds.
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
@@ -400,7 +403,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 | `issue_warrants` *(0.2.0)* | `warrants`: `holder`, `shares`, `strike` and `underlying`, `"common"` or a preferred series already issued |
 | `safes` | `safes`: `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, and `discount` |
 | `notes` | `notes`: `id`, `holder`, `principal`, `interest_rate`, `issue_date`, `valuation_cap`, `conversion_base`, `discount` and `repayment_multiple` |
-| `priced_round` | `series` (which may have a `cumulative_dividend` with no `accrual_start`, *0.2.0*), `pre_money`, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles |
+| `priced_round` | `series` (which may have a `cumulative_dividend` with no `accrual_start`, *0.2.0*), `pre_money`, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles, `anti_dilution_exempts_conversions` among them *(0.3.0)* |
 
 `readInputs` takes `holders`, `events` and an `exit` with `cap_table_after_event` naming the event whose cap table the exit runs on. The project's [`cases`](https://github.com/spillpoint/spillpoint/tree/main/cases) folder has a worked input for each term, with its expected results.
 

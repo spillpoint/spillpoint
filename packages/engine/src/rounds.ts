@@ -85,6 +85,21 @@ export interface AntiDilutionAdjustment {
   c: Decimal;
   /** Original issue price ÷ CP2. */
   newConversionRatio: Decimal;
+  /**
+   * With SAFEs or notes converting in the round (R25; 0.3.0): each piece, the new money first, at the price it
+   * was issued at; whether it counted against the series; and, for a conversion counted in the series' A instead
+   * (exempt, or issued before the series), its shares there. Null when nothing converts.
+   */
+  pieces: AntiDilutionPiece[] | null;
+}
+
+/** One piece of a round, as one series' anti-dilution saw it (R25). */
+export interface AntiDilutionPiece {
+  /** "new money", or the SAFE's or note's id. */
+  piece: string;
+  price: Decimal;
+  counted: boolean;
+  inA: Decimal | null;
 }
 
 /** One holder's outcome in one series named by a pay-to-play (R18, R20). */
@@ -191,6 +206,8 @@ class Company {
   unissuedPool: Decimal = ZERO;
   safes: Safe[] = [];
   notes: Note[] = [];
+  /** Which event first issued each series, SAFE and note, by index (the 0.3.0 plan's answer 3d). */
+  order = new Map<string, number>();
 
   constructor(holders: Holder[]) {
     this.holders = holders;
@@ -209,6 +226,7 @@ class Company {
     copy.unissuedPool = this.unissuedPool;
     copy.safes = [...this.safes];
     copy.notes = [...this.notes];
+    copy.order = this.order;
     return copy;
   }
 
@@ -658,13 +676,6 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   if (payToPlay) applyPayToPlay(afterConversion, payToPlay, `${path}.pay_to_play`);
   if (payToPlay?.pricedAfterConversion) applyPayToPlay(company, payToPlay, `${path}.pay_to_play`);
   const adjustmentInPost = bool(ev.anti_dilution_shares_in_post, true, `${path}.anti_dilution_shares_in_post`);
-  // The 0.3.0 plan's answer 3a: a round may exempt its SAFE and note conversions from anti-dilution (case 16h). Read from 03h.
-  if (bool(ev.anti_dilution_exempts_conversions, false, `${path}.anti_dilution_exempts_conversions`)) {
-    throw new UnsupportedTermError(
-      "anti_dilution_exempts_conversions", "later", `${path}.anti_dilution_exempts_conversions`,
-      "A round exempting its SAFE and note conversions from anti-dilution (R25)",
-    );
-  }
   const poolInA = bool(ev.anti_dilution_include_unissued_pool_in_a, false, `${path}.anti_dilution_include_unissued_pool_in_a`);
   const poolInProRataBase = bool(ev.pro_rata_base_includes_unissued_pool, false, `${path}.pro_rata_base_includes_unissued_pool`);
   const rounding = ev.anti_dilution_cp2_rounding ?? "exact";
@@ -764,38 +775,98 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       // R15: narrow-based A is the preferred only. A full ratchet has no A.
       a: s.antiDilution === "broad_based" ? outstandingForA.plus(poolInA ? pool0 : ZERO) : s.antiDilution === "narrow_based" ? preferredAsConverted : null,
     }));
-  // R10: a weighted average's B and C in the price come from the new shares as fractions, money ÷ price, and the money.
-  const extraShares = protectedSeries.map(({ rule, cp1, asConverted, a }) => {
-    if (rule === "full_ratchet") {
-      // CP2 = price = post ÷ x, so the series grows by asConverted × (CP1 × x ÷ post − 1).
-      return { growing: asConverted.times(cp1).div(post), fixed: asConverted.negated() };
+  /**
+   * Anti-dilution with SAFEs and notes converting (R25; the 0.3.0 plan's
+   * answer 3; cases 16g–16j, 17j). Each SAFE or note converting is a piece of
+   * the round of its own, tested at the price it converts at, as the new money
+   * is tested at the round's price: a SAFE or note issued after a series is a
+   * convertible security whose share count first becomes known in this round
+   * (3a, 3c). A series is adjusted when any piece is priced below its
+   * conversion price, and only those pieces count in its B and C: B is what
+   * was paid for them ÷ CP1 (the new money's cash; a SAFE's purchase amount; a
+   * note's principal plus interest, the debt its shares cancel), C their
+   * shares. A conversion doesn't count against a series when the round exempts
+   * conversions (its toggle, a charter carve-out or a waiver; 3a, 3b) or when
+   * it was issued before the series, already outstanding when the series
+   * bought in (3d): it counts in that series' A at the shares it receives.
+   */
+  const exemptsConversions = bool(ev.anti_dilution_exempts_conversions, false, `${path}.anti_dilution_exempts_conversions`);
+  const conversionIds = [...safes.map((f) => f.id), ...noteTerms.map((t) => t.note.id)];
+  const conversionAmounts = [...safes.map((f) => f.purchaseAmount), ...noteTerms.map((t) => t.amount)];
+  const inA = protectedSeries.map(({ series: s }) =>
+    conversionIds.map((id) => exemptsConversions || company.order.get(id)! < company.order.get(s.id)!),
+  );
+  /** Which pieces are priced below a series' conversion price: the new money first, then each SAFE and note. */
+  type Pieces = boolean[];
+  const adjusts = (pieces: Pieces) => pieces.some(Boolean);
+
+  /** Each SAFE's and note's conversion shares as a line in x, for these choices: SAFEs first, then notes. */
+  const conversionLines = (topUp: boolean, choices: Choice[], noteChoices: Choice[]): Line[] => {
+    const cc = companyCapLine(topUp, choices, noteChoices);
+    return [
+      ...safes.map((f, i) =>
+        // A post-money SAFE at its cap takes purchase ÷ cap of Company Capitalization.
+        choices[i] === "cap" && f.postMoneyCap
+          ? { fixed: cc!.fixed.times(f.purchaseAmount).div(f.postMoneyCap), growing: cc!.growing.times(f.purchaseAmount).div(f.postMoneyCap) }
+          : safeShares(f, choices[i]!, topUp),
+      ),
+      ...noteTerms.map((t, i) =>
+        noteChoices[i] === "discount" ? { fixed: ZERO, growing: t.amount.div(post.times(ONE.minus(t.note.discount))) } : { fixed: t.amount.div(t.capPrice!), growing: ZERO },
+      ),
+    ];
+  };
+
+  /**
+   * The adjustment shares one series adds, as a line in x (R10). Weighted
+   * average: its shares × (CP1 ÷ CP2 − 1) = its shares × (C − B) ÷ (A + B),
+   * with C the counted pieces' shares, the new money's as fractions, money × x
+   * ÷ post, and B what was paid for them ÷ CP1. Full ratchet: CP2 is the
+   * round's price, post ÷ x. A conversion counted in A at its discount has
+   * shares that grow with x, which would make the price the root of a
+   * quadratic: it is refused, but only here, where the series is adjusted
+   * (Jordan, 03d review).
+   */
+  const adjustmentLine = (k: number, pieces: Pieces, lines: Line[]): Line => {
+    const { series: s, rule, cp1, asConverted, a } = protectedSeries[k]!;
+    if (rule === "full_ratchet") return { fixed: asConverted.negated(), growing: asConverted.times(cp1).div(post) };
+    let paid = pieces[0] ? money : ZERO;
+    let c: Line = { fixed: ZERO, growing: pieces[0] ? money.div(post) : ZERO };
+    let extraA: Line = { fixed: ZERO, growing: ZERO };
+    lines.forEach((l, i) => {
+      if (inA[k]![i]) extraA = { fixed: extraA.fixed.plus(l.fixed), growing: extraA.growing.plus(l.growing) };
+      else if (pieces[1 + i]) {
+        paid = paid.plus(conversionAmounts[i]!);
+        c = { fixed: c.fixed.plus(l.fixed), growing: c.growing.plus(l.growing) };
+      }
+    });
+    if (!extraA.growing.isZero()) {
+      throw new UnsupportedTermError(
+        "discounted_conversion_in_anti_dilution_a", "later", `${path}.convert_safes`,
+        `A SAFE or note converting at its discount and counted in ${s.id}'s A (exempt from anti-dilution, or issued before ${s.id}), ` +
+          "in a round that adjusts it with the adjustment shares in its price: the price would not be exact (R25)",
+      );
     }
-    // CP1 ÷ CP2 − 1 = (C − B) ÷ (A + B), with C = money × x ÷ post and B = money ÷ CP1.
-    const b = money.div(cp1);
-    return { growing: asConverted.times(money).div(post.times(a!.plus(b))), fixed: asConverted.times(b).div(a!.plus(b)).negated() };
-  });
+    const b = paid.div(cp1);
+    const d = a!.plus(extraA.fixed).plus(b);
+    return { fixed: asConverted.times(c.fixed.minus(b)).div(d), growing: asConverted.times(c.growing).div(d) };
+  };
 
   /** The post-money fully diluted shares for these choices: x = (fixed shares) ÷ (1 − the parts that grow with x). */
-  const solve = (topUp: boolean, choices: Choice[], noteChoices: Choice[], triggered: boolean[]): Decimal => {
+  const solve = (topUp: boolean, choices: Choice[], noteChoices: Choice[], pieces: Pieces[]): Decimal => {
     let fixed = outstanding.plus(topUp ? ZERO : pool0);
     let growing = money.div(post).plus(topUp ? target : ZERO);
-    const cc = companyCapLine(topUp, choices, noteChoices);
-    safes.forEach((f, i) => {
-      // A post-money SAFE at its cap takes purchase ÷ cap of Company Capitalization.
-      const l = choices[i] === "cap" && f.postMoneyCap ? { fixed: cc!.fixed.times(f.purchaseAmount).div(f.postMoneyCap), growing: cc!.growing.times(f.purchaseAmount).div(f.postMoneyCap) } : safeShares(f, choices[i]!, topUp);
+    const lines = conversionLines(topUp, choices, noteChoices);
+    for (const l of lines) {
       fixed = fixed.plus(l.fixed);
       growing = growing.plus(l.growing);
-    });
-    noteTerms.forEach((t, i) => {
-      if (noteChoices[i] === "discount") growing = growing.plus(t.amount.div(post.times(ONE.minus(t.note.discount))));
-      else fixed = fixed.plus(t.amount.times(t.baseShares).div(t.note.valuationCap!));
-    });
+    }
     // R10: the adjustment shares count in the price, unless the round says otherwise.
     if (adjustmentInPost) {
-      extraShares.forEach((extra, i) => {
-        if (!triggered[i]) return;
-        fixed = fixed.plus(extra.fixed);
-        growing = growing.plus(extra.growing);
+      pieces.forEach((p, k) => {
+        if (!adjusts(p)) return;
+        const l = adjustmentLine(k, p, lines);
+        fixed = fixed.plus(l.fixed);
+        growing = growing.plus(l.growing);
       });
     }
     if (!ONE.minus(growing).isPositive()) throw new InputError(path, "the new money, the pool target, the SAFEs and the notes leave no room for the existing shares");
@@ -804,17 +875,19 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
 
   // Settle the choices by rule: a SAFE or note takes its cap when the cap
   // price is no higher than the discount price (a tie goes to the cap); a
-  // series is adjusted when the round's price is below its conversion price.
+  // piece of the round counts against a series when it is priced below the
+  // series' conversion price (at exactly that price nothing changes).
   let choices: Choice[] = safes.map((f) => (f.postMoneyCap || f.preMoneyCap ? "cap" : "discount"));
   let noteChoices: Choice[] = noteTerms.map((t) => (t.capPrice ? "cap" : "discount"));
-  let triggered: boolean[] = protectedSeries.map(() => false);
+  let pieces: Pieces[] = protectedSeries.map(() => [false, ...conversionIds.map(() => false)]);
   let topUp = false;
+  const below = (p: Decimal, cp1: Decimal) => p.lt(cp1) && !nearlyEqual(p, cp1);
   for (let pass = 0; ; pass++) {
-    if (pass > 2 * (safes.length + notes.length + protectedSeries.length) + 4) {
+    if (pass > 2 * (safes.length + notes.length + protectedSeries.length * (1 + conversionIds.length)) + 4) {
       throw new NoAnswerError(`${path}: the SAFEs' and notes' conversion prices, the anti-dilution adjustments and the pool top-up don't settle on one answer.`);
     }
-    const nextTopUp = target.times(solve(false, choices, noteChoices, triggered)).gt(pool0); // R16
-    const x = solve(nextTopUp, choices, noteChoices, triggered);
+    const nextTopUp = target.times(solve(false, choices, noteChoices, pieces)).gt(pool0); // R16
+    const x = solve(nextTopUp, choices, noteChoices, pieces);
     const price = post.div(x);
     const pool = nextTopUp ? target.times(x) : pool0;
     const cc = companyCapLine(nextTopUp, choices, noteChoices);
@@ -827,33 +900,36 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       const discount = price.times(ONE.minus(t.note.discount));
       return t.capPrice && (t.capPrice.lt(discount) || nearlyEqual(t.capPrice, discount)) ? "cap" : "discount";
     });
-    const nextTriggered = protectedSeries.map(({ cp1 }) => price.lt(cp1) && !nearlyEqual(price, cp1));
+    // Each conversion's price at x: what converts ÷ its shares.
+    const conversionPrices = conversionLines(nextTopUp, choices, noteChoices).map((l, i) => conversionAmounts[i]!.div(at(l, x)));
+    const nextPieces = protectedSeries.map(({ cp1 }, k) => [below(price, cp1), ...conversionPrices.map((p, i) => !inA[k]![i] && below(p, cp1))]);
     if (
       nextTopUp === topUp &&
       next.every((c, i) => c === choices[i]) &&
       nextNotes.every((c, i) => c === noteChoices[i]) &&
-      nextTriggered.every((t, i) => t === triggered[i])
+      nextPieces.every((p, k) => p.every((f, i) => f === pieces[k]![i]))
     ) break;
     topUp = nextTopUp;
     choices = next;
     noteChoices = nextNotes;
-    triggered = nextTriggered;
+    pieces = nextPieces;
   }
-  const solved = solve(topUp, choices, noteChoices, triggered);
+  const triggered = pieces.map(adjusts);
+  const solved = solve(topUp, choices, noteChoices, pieces);
   const price = post.div(solved);
   const poolAfter = topUp ? target.times(solved) : pool0;
   // R24 (21d): Company Capitalization at the solved count, from the others' exact shares.
   const ccLine = companyCapLine(topUp, choices, noteChoices);
   const companyCap = ccLine && at(ccLine, solved);
 
-  // A round that both converts SAFEs or notes and triggers anti-dilution
-  // raises questions no case settles yet: whether the conversion is itself a
-  // new issue at a lower price, and whether its shares count in A, B or C.
-  const firstTriggered = protectedSeries.find((_, i) => triggered[i]);
-  if (firstTriggered && (safes.length > 0 || notes.length > 0)) {
+  // Still refused with conversions (R25, on the later list): which piece's
+  // price a full ratchet would take, and whether a narrow-based A counts the
+  // conversions' shares, are unsettled.
+  const unsettled = protectedSeries.find(({ rule }, k) => triggered[k] && rule !== "broad_based");
+  if (unsettled && conversionIds.length > 0) {
     throw new UnsupportedTermError(
       "anti_dilution_with_conversions", "later", `${path}.convert_safes`,
-      `A round that converts SAFEs or notes and triggers ${firstTriggered.series.id}'s anti-dilution (R7–R10)`,
+      `${unsettled.rule === "full_ratchet" ? "Full-ratchet" : "Narrow-based"} anti-dilution on ${unsettled.series.id} in a round that converts SAFEs or notes (R25)`,
     );
   }
   // C10: a series that names its definition of A must name the one the round uses.
@@ -1006,19 +1082,36 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   for (const inv of investments) byHolder.set(inv.holder, (byHolder.get(inv.holder) ?? ZERO).plus(inv.amount));
   const newShares = [...byHolder].map(([holder, amount]) => ({ holder, shares: roundDownShares(amount.times(solved).div(post)) }));
 
-  // Anti-dilution, as the charter computes it after closing: C is the new
-  // shares actually issued and B what they paid ÷ CP1 (R8). It changes the
-  // conversion price and so the conversion ratio, never the preference.
-  const c = newShares.reduce((sum, n) => sum.plus(n.shares), ZERO);
+  // Anti-dilution, as the charter computes it after closing, from the shares
+  // actually issued and what was paid for them (R8): the new money's cash for
+  // its whole shares; a SAFE's purchase amount; a note's principal plus
+  // interest; and the conversions' whole shares, in C when they count against
+  // the series, in A when they don't (R25). It changes the conversion price
+  // and so the conversion ratio, never the preference.
+  const newIssued = newShares.reduce((sum, n) => sum.plus(n.shares), ZERO);
+  const conversions = [...safeConversions, ...noteConversions];
   const antiDilution: AntiDilutionAdjustment[] = [];
-  protectedSeries.forEach(({ series: s, rule, cp1, a }, i) => {
-    if (!triggered[i]) return;
-    const b = a ? c.times(price).div(cp1) : null;
-    const exact = rule === "full_ratchet" ? price : cp1.times(a!.plus(b!)).div(a!.plus(c));
+  protectedSeries.forEach(({ series: s, rule, cp1, a }, k) => {
+    if (!triggered[k]) return;
+    const p = pieces[k]!;
+    const counted = conversions.filter((_, i) => !inA[k]![i] && p[1 + i]);
+    const c = (p[0] ? newIssued : ZERO).plus(counted.reduce((sum, x) => sum.plus(x.shares), ZERO));
+    const paid = (p[0] ? newIssued.times(price) : ZERO).plus(conversionAmounts.filter((_, i) => !inA[k]![i] && p[1 + i]).reduce((sum, x) => sum.plus(x), ZERO));
+    const aWithConversions = a && a.plus(conversions.filter((_, i) => inA[k]![i]).reduce((sum, x) => sum.plus(x.shares), ZERO));
+    const b = aWithConversions ? paid.div(cp1) : null;
+    const exact = rule === "full_ratchet" ? price : cp1.times(aWithConversions!.plus(b!)).div(aWithConversions!.plus(c));
     const cp2 = rounding === "exact" ? exact : roundHalfUp(exact, new D(rounding as string));
     const newConversionRatio = s.originalIssuePrice.div(cp2);
     company.securities[company.securities.indexOf(s)] = { ...s, conversionPrice: cp2, conversionRatio: newConversionRatio };
-    antiDilution.push({ series: s.id, rule, cp1, cp2Unrounded: rounding === "exact" ? null : exact, cp2, a, b, c, newConversionRatio });
+    // With conversions, each piece: its price, and whether it counted against the series or in its A.
+    const piecesReport =
+      conversions.length === 0
+        ? null
+        : [
+            { piece: "new money", price, counted: p[0]!, inA: null },
+            ...conversions.map((x, i) => ({ piece: conversionIds[i]!, price: x.conversionPrice, counted: !inA[k]![i] && p[1 + i]!, inA: inA[k]![i] ? x.shares : null })),
+          ];
+    antiDilution.push({ series: s.id, rule, cp1, cp2Unrounded: rounding === "exact" ? null : exact, cp2, a: aWithConversions, b, c, newConversionRatio, pieces: piecesReport });
   });
 
   // The new series, at the round price (R3: exact, here to 40 digits).
@@ -1101,6 +1194,9 @@ export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEv
     onlyKnownFields(ev, [...COMMON_EVENT_FIELDS, ...EVENT_FIELDS[type]!], at);
     const date = ev.date == null ? null : text(ev.date, `${at}.date`);
     const details = handler(company, ev, at);
+    for (const sid of [...company.securities.map((s) => s.id), ...company.safes.map((f) => f.id), ...company.notes.map((n) => n.id)]) {
+      if (!company.order.has(sid)) company.order.set(sid, i);
+    }
     return {
       event: id,
       date,

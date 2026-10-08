@@ -36,7 +36,7 @@ export type { PaymentTake } from "./payments.ts";
 // Building cap tables from a company's rounds (M4).
 export { buildCapTables } from "./rounds.ts";
 export type {
-  AntiDilutionAdjustment, CapTableAfterEvent, EventDetails, NoteConversion, PayToPlay, PayToPlayHolder, PayToPlaySeries, ProRata, RoundDetails,
+  AntiDilutionAdjustment, AntiDilutionPiece, CapTableAfterEvent, EventDetails, NoteConversion, PayToPlay, PayToPlayHolder, PayToPlaySeries, ProRata, RoundDetails,
   SafeConversion,
 } from "./rounds.ts";
 export type { Breakpoint } from "./breakpoints.ts";
