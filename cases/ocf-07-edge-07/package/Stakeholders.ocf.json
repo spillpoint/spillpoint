@@ -1,0 +1,45 @@
+{
+  "file_type": "OCF_STAKEHOLDERS_FILE",
+  "items": [
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "founder_a",
+      "name": {
+        "legal_name": "Founder A"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "founder_b",
+      "name": {
+        "legal_name": "Founder B"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_c",
+      "name": {
+        "legal_name": "Employee C"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_d",
+      "name": {
+        "legal_name": "Employee D"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_e",
+      "name": {
+        "legal_name": "Employee E"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    }
+  ]
+}

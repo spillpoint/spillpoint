@@ -1,0 +1,111 @@
+{
+  "case": "ocf-05-edge-04",
+  "worked_by": "hand (DERIVATION.md)",
+  "locked_case": "edge-04-participating-capped",
+  "result": {
+    "as_of": "2024-01-01",
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.5",
+          "conversion_price": "1.5",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "3",
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ],
+      "conversion_groups": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "seed",
+          "shares": 1500000
+        },
+        {
+          "holder": "investor_y",
+          "security": "seed",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "to_fill": [],
+    "report": {
+      "read": {
+        "ISSUER": 1,
+        "STAKEHOLDER": 4,
+        "STOCK_CLASS": 2,
+        "TX_STOCK_ISSUANCE": 4
+      },
+      "not_needed": {},
+      "notes": [
+        {
+          "code": "no_dividend_field"
+        },
+        {
+          "code": "no_conversion_group_field"
+        },
+        {
+          "code": "no_carve_out_field"
+        },
+        {
+          "code": "no_sale_date_field"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "seed"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "seed"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "seed"
+        }
+      ]
+    }
+  }
+}

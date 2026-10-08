@@ -1,0 +1,109 @@
+{
+  "file_type": "OCF_TRANSACTIONS_FILE",
+  "items": [
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-01",
+      "date": "2022-01-10",
+      "security_id": "sec-01",
+      "custom_id": "S-1",
+      "stakeholder_id": "founder_a",
+      "stock_class_id": "common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "6000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_STOCK_ISSUANCE",
+      "id": "tx-02",
+      "date": "2022-01-10",
+      "security_id": "sec-02",
+      "custom_id": "S-2",
+      "stakeholder_id": "founder_b",
+      "stock_class_id": "common",
+      "share_price": {
+        "amount": "0.0001",
+        "currency": "USD"
+      },
+      "quantity": "3000000",
+      "security_law_exemptions": [],
+      "stock_legend_ids": []
+    },
+    {
+      "object_type": "TX_EQUITY_COMPENSATION_ISSUANCE",
+      "id": "tx-03",
+      "date": "2022-06-01",
+      "security_id": "opt-03",
+      "custom_id": "O-3",
+      "stakeholder_id": "employee_c",
+      "stock_plan_id": "plan",
+      "compensation_type": "OPTION_NSO",
+      "quantity": "500000",
+      "exercise_price": {
+        "amount": "5.00",
+        "currency": "USD"
+      },
+      "expiration_date": "2032-06-01",
+      "termination_exercise_windows": [],
+      "security_law_exemptions": []
+    },
+    {
+      "object_type": "TX_CONVERTIBLE_ISSUANCE",
+      "id": "tx-04",
+      "date": "2022-01-01",
+      "security_id": "note_x",
+      "custom_id": "NOTE-1",
+      "stakeholder_id": "investor_x",
+      "convertible_type": "NOTE",
+      "investment_amount": {
+        "amount": "1000000",
+        "currency": "USD"
+      },
+      "seniority": 1,
+      "security_law_exemptions": [],
+      "conversion_triggers": [
+        {
+          "type": "AUTOMATIC_ON_CONDITION",
+          "trigger_id": "qualified-financing",
+          "trigger_condition": "A qualified financing.",
+          "conversion_right": {
+            "type": "CONVERTIBLE_CONVERSION_RIGHT",
+            "converts_to_future_round": true,
+            "conversion_mechanism": {
+              "type": "CONVERTIBLE_NOTE_CONVERSION",
+              "interest_rates": [
+                {
+                  "rate": "0.06",
+                  "accrual_start_date": "2022-01-01"
+                }
+              ],
+              "day_count_convention": "ACTUAL_365",
+              "interest_payout": "DEFERRED",
+              "interest_accrual_period": "DAILY",
+              "compounding_type": "SIMPLE",
+              "conversion_valuation_cap": {
+                "amount": "8000000",
+                "currency": "USD"
+              },
+              "exit_multiple": "2",
+              "capitalization_definition_rules": {
+                "include_outstanding_shares": true,
+                "include_outstanding_options": true,
+                "include_outstanding_unissued_options": true,
+                "include_this_security": false,
+                "include_other_converting_securities": false,
+                "include_option_pool_topup_for_promised_options": false,
+                "include_additional_option_pool_topup": false,
+                "include_new_money": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

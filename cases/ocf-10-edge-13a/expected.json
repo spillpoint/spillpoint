@@ -1,0 +1,110 @@
+{
+  "case": "ocf-10-edge-13a",
+  "worked_by": "hand (DERIVATION.md)",
+  "locked_case": "edge-13a-note-with-pool",
+  "result": {
+    "as_of": "2024-01-01",
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_5",
+          "name": "Options ($5 strike)",
+          "kind": "option",
+          "strike": "5"
+        }
+      ],
+      "seniority": [],
+      "conversion_groups": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_5",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_notes": [
+        {
+          "id": "note_x",
+          "holder": "investor_x",
+          "principal": "1000000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2022-01-01",
+          "valuation_cap": "8000000",
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0",
+          "repayment_multiple": "2"
+        }
+      ]
+    },
+    "to_fill": [],
+    "report": {
+      "read": {
+        "ISSUER": 1,
+        "STAKEHOLDER": 4,
+        "STOCK_CLASS": 1,
+        "STOCK_PLAN": 1,
+        "TX_CONVERTIBLE_ISSUANCE": 1,
+        "TX_EQUITY_COMPENSATION_ISSUANCE": 1,
+        "TX_STOCK_ISSUANCE": 2
+      },
+      "not_needed": {},
+      "notes": [
+        {
+          "code": "no_dividend_field"
+        },
+        {
+          "code": "no_conversion_group_field"
+        },
+        {
+          "code": "no_carve_out_field"
+        },
+        {
+          "code": "no_sale_date_field"
+        },
+        {
+          "code": "convertible_seniority_ignored"
+        },
+        {
+          "code": "note_cap_read_as_pre_money",
+          "subject": "note_x"
+        }
+      ]
+    }
+  }
+}
