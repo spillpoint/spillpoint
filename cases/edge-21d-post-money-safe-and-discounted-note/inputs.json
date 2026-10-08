@@ -1,0 +1,111 @@
+{
+  "case": "edge-21d-post-money-safe-and-discounted-note",
+  "description": "Edge case 21b's company and post-money SAFE, with a note that has no valuation cap and a 20% discount, so its conversion price is the round's price less 20% and its shares depend on the round's price. The SAFE's Company Capitalization counts the note's exact conversion shares, before rounding down, solved together with the price (R3, R24).",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "investor_s",
+      "name": "Investor S"
+    },
+    {
+      "id": "investor_n",
+      "name": "Investor N"
+    },
+    {
+      "id": "investor_y",
+      "name": "Investor Y"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": "2022-01-10",
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder_a",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "shares": 3000000
+        }
+      ]
+    },
+    {
+      "id": "safe",
+      "date": "2023-01-01",
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "date": "2023-01-01",
+      "type": "notes",
+      "notes": [
+        {
+          "id": "note_n",
+          "holder": "investor_n",
+          "principal": "500000",
+          "interest_rate": "0.06",
+          "interest_method": "simple",
+          "issue_date": "2023-01-01",
+          "valuation_cap": null,
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0.2",
+          "repayment_multiple": "1"
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": "2024-01-01",
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "investor_y",
+          "amount": "5000000"
+        }
+      ],
+      "convert_notes": true,
+      "seniority": [
+        [
+          "series_a",
+          "series_a_shadow",
+          "series_a_notes"
+        ]
+      ]
+    }
+  ]
+}
