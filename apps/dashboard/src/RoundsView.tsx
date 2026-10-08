@@ -9,7 +9,9 @@
 // do, so the table fits without scrolling sideways; the stylesheet shows one
 // form or the other, never both. Each event that changes your fully diluted
 // share says so, before and after (M4i review): founders open this tab to see
-// what each round cost them.
+// what each round cost them. A SAFE or note that will still be outstanding at
+// the sale says so on the event that creates it (M5k), and an event the engine
+// can't build yet names the event whose problem it's waiting on, and links to it.
 
 import { useState } from "react";
 import { D } from "spillpoint";
@@ -19,7 +21,7 @@ import { EventForm, RoundsHolders } from "./RoundsEditor.tsx";
 import { percent } from "./format.ts";
 import { dateText } from "./rounds.ts";
 import type { EventView } from "./rounds.ts";
-import { EVENT_TYPES, addEvent, draftTitle, eventFieldId, moveEvent, removeEvent } from "./roundsDraft.ts";
+import { EVENT_TYPES, addEvent, draftTitle, eventFieldId, moveEvent, outstandingAtSale, removeEvent } from "./roundsDraft.ts";
 import type { EventDraft, EventType, RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 interface Props {
@@ -76,6 +78,39 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
       const other = document.getElementById(`move-${by < 0 ? "later" : "earlier"}-${event.key}`);
       (same && !same.disabled ? same : other)?.focus();
     }, 0);
+  };
+  // What's still outstanding at the sale, by the event that creates it, from the events as typed.
+  const atSale = outstandingAtSale(rounds);
+  const number = (key: string) => rounds.events.findIndex((e) => e.key === key) + 1;
+  const holderName = (key: string) => rounds.holders.find((h) => h.key === key)?.name || "Its holder";
+  const saleIndex = rounds.events.findIndex((e) => idOf(e) === rounds.after);
+  const atSaleLines = (event: EventDraft) =>
+    atSale
+      .filter((c) => c.event === event.key)
+      .map((c) => {
+        const what = `${holderName(c.holder)}'s ${c.kind === "safe" ? "SAFE" : "convertible note"}`;
+        return c.convertedBy === null
+          ? `${what} isn't converted by any later round, so it will be outstanding at the sale.`
+          : `${what} converts in event ${number(c.convertedBy)}, after the cap table the payouts use (event ${saleIndex + 1}), so it will be outstanding at the sale.`;
+      });
+  // An event the engine hasn't built is waiting on the problem: name the event it's in, and go to it.
+  const goTo = (id: string) => {
+    const el = document.getElementById(id);
+    el?.scrollIntoView?.({ block: "center" });
+    el?.focus();
+  };
+  const waitingOn = (event: EventDraft) => {
+    if (!problem) return <>Not built yet.</>;
+    const target = `round-problem-${problem.event ?? "rounds"}`;
+    const link = (text: string) => (
+      <button type="button" className="link-button" onClick={() => goTo(target)}>
+        {text}
+      </button>
+    );
+    if (problem.event === event.key) return <>Not built yet: the engine builds it once {link("this event's problem")} is fixed.</>;
+    const n = number(problem.event ?? "");
+    if (n === 0) return <>Not built yet: the engine builds it once {link("the problem at the top of the list")} is fixed.</>;
+    return <>Not built yet: the engine builds it once the problem in {link(`event ${n}, ${draftTitle(rounds.events[n - 1]!.json)}`)}, is fixed.</>;
   };
   const remove = (event: EventDraft, n: number) => {
     if (!window.confirm(`Remove event ${n}, ${draftTitle(event.json)}? What it did goes, and the events after it are built again without it.`)) return;
@@ -172,9 +207,12 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
               )}
               {id === rounds.after && <p className="tag rounds__used">The payouts use the cap table after this event.</p>}
               {view ? (
-                <Built view={view} previous={previous ? views.get(idOf(previous)) : undefined} you={you} />
+                <Built view={view} previous={previous ? views.get(idOf(previous)) : undefined} you={you} atSale={atSaleLines(event)} />
               ) : (
-                <p className="rounds__unbuilt">Not built yet: the engine builds it once the problem above is fixed.</p>
+                <>
+                  <p className="rounds__unbuilt">{waitingOn(event)}</p>
+                  <AtSale lines={atSaleLines(event)} />
+                </>
               )}
             </li>
           );
@@ -206,8 +244,17 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
   );
 }
 
-/** What an event did, as last built: the "For you" line, the sentences, and the cap table after it. */
-function Built({ view: e, previous, you }: { view: EventView; previous: EventView | undefined; you: string }) {
+/** The SAFEs and notes an event creates that will still be outstanding at the sale, one line each. */
+function AtSale({ lines }: { lines: string[] }) {
+  return lines.map((line) => (
+    <p key={line} className="rounds__at-sale">
+      {line}
+    </p>
+  ));
+}
+
+/** What an event did, as last built: the "For you" line, the sentences, what's still outstanding at the sale, and the cap table after it. */
+function Built({ view: e, previous, you, atSale }: { view: EventView; previous: EventView | undefined; you: string; atSale: string[] }) {
   return (
     <>
       {forYou(previous?.stakes.get(you) ?? ZERO, e.stakes.get(you) ?? ZERO)}
@@ -216,6 +263,7 @@ function Built({ view: e, previous, you }: { view: EventView; previous: EventVie
           <li key={j}>{line}</li>
         ))}
       </ul>
+      <AtSale lines={atSale} />
       <details className="rounds__table">
         <summary>The cap table after it</summary>
         <div className="table-scroll">

@@ -5,11 +5,13 @@
 // The editor covers what the engine supports at exit (M3 plan, answer 6):
 // holders, common stock, options with strikes, preferred series with their
 // preference, participation and cap, seniority tiers, one conversion group
-// (E17 refuses more), the unissued pool, and the range to explore.
+// (E17 refuses more), the unissued pool, and the range to explore. Since M5k
+// it also covers SAFEs and convertible notes still outstanding at a sale (C8,
+// C9), and the sale's date, which notes accrue interest up to (X3).
 // Anti-dilution is kept as loaded but not edited: at exit it matters only
 // through the conversion price, which is edited directly (SPEC, Anti-dilution).
 
-import { D, InputError, UnsupportedTermError, prepare, readExit } from "spillpoint";
+import { D, InputError, UnsupportedTermError, parseExact, prepare, readExit } from "spillpoint";
 import type { ExitInput, Participation, PreparedCapTable } from "spillpoint";
 
 import { parseDollars, priceText, withoutCodes } from "./format.ts";
@@ -58,12 +60,51 @@ export type DraftSecurity =
 
 export type DraftPreferred = Extract<DraftSecurity, { kind: "preferred" }>;
 
+/** A SAFE still outstanding at a sale (C8): paid its Cash-Out Amount or its Conversion Amount, whichever is worth more (X1, X9, X13, X14). */
+export interface DraftSafe {
+  key: string;
+  fileId: string | null;
+  /** The holder, by editor key. */
+  holder: string;
+  purchaseAmount: string;
+  /** Post-money and pre-money SAFEs differ in what their cap divides (X1, X14). */
+  cap: "post" | "pre" | "none";
+  capAmount: string;
+  /** As a percentage, as people type it: "20" for a fraction of 0.2. */
+  discount: string;
+  /** The series whose tier its Cash-Out Amount joins, by key; null for the default, the most junior tier (X9). */
+  ranksWith: string | null;
+}
+
+export type ConversionBase = "with_pool" | "without_pool" | "common_only";
+
+/** A convertible note still outstanding at a sale (C9): repaid as debt, or converted, whichever is worth more (X3, X10–X12, X15). */
+export interface DraftNote {
+  key: string;
+  fileId: string | null;
+  holder: string;
+  principal: string;
+  /** Simple interest, as a percentage a year. */
+  interestRate: string;
+  issueDate: string;
+  /** Pre-money; blank for none. */
+  valuationCap: string;
+  conversionBase: ConversionBase;
+  discount: string;
+  repaymentMultiple: string;
+}
+
 export interface Draft {
   holders: DraftHolder[];
   securities: DraftSecurity[];
   /** Shares as typed, by `${holder key}/${security key}`. Blank means no position. */
   shares: Record<string, string>;
   pool: string;
+  /** SAFEs and convertible notes still outstanding at the sale, in the order loaded or added. */
+  safes: DraftSafe[];
+  notes: DraftNote[];
+  /** The sale's date, YYYY-MM-DD, or blank: notes accrue interest up to it (X3, C9). */
+  exitDate: string;
   /** The one conversion group: series that convert together by a class vote (E11). No members, no group. */
   group: { members: string[]; threshold: string; rule: "more_than" | "at_least" };
   range: [string, string];
@@ -90,6 +131,29 @@ const grouped = (v: unknown) => {
   return /^\d+$/.test(s) ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : s;
 };
 
+/**
+ * "0.2" → "20": a fraction as the percentage people type, exactly. Blank
+ * stays blank; anything unreadable stays as it is. The percentage is shown in
+ * full, so turning it back gives the engine the same number: even "1/3" comes
+ * back as the 40-digit decimal the engine reads it as (E14).
+ */
+export function fractionToPercent(v: unknown): string {
+  if (v == null || v === "") return "";
+  try {
+    return parseExact(v, "percent").times(100).toFixed();
+  } catch {
+    return String(v);
+  }
+}
+
+/** "6.5" or "6.5%" → "0.065", exactly; blank stays blank; anything else goes through as typed, for the engine to name. */
+export function percentToFraction(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const t = percentText(v);
+  if (t === "") return "";
+  return /^\d+(\.\d+)?$/.test(t) ? new D(t).div(100).toFixed() : t;
+}
+
 /** A cap table the page can't show in full: refused, never shown with something left out or read as something else. */
 export class NotShownYet extends Error {
   override name = "NotShownYet";
@@ -111,13 +175,18 @@ const SHOWN_FIELDS: Record<string, readonly string[]> = {
     "participation", "cap_multiple", "anti_dilution", "anti_dilution_a", "approx",
   ],
 };
-const SHOWN_TABLE_FIELDS = ["holders", "securities", "seniority", "conversion_groups", "positions", "unissued_pool", "totals"];
+const SHOWN_TABLE_FIELDS = ["holders", "securities", "seniority", "conversion_groups", "positions", "unissued_pool", "unconverted_safes", "unconverted_notes", "totals"];
+/** What the editor carries for each SAFE and note still outstanding (C8, C9). */
+const SHOWN_OUTSTANDING_FIELDS: Record<"unconverted_safes" | "unconverted_notes", readonly string[]> = {
+  unconverted_safes: ["id", "holder", "purchase_amount", "post_money_cap", "pre_money_cap", "discount", "cash_out_ranks_with"],
+  unconverted_notes: [
+    "id", "holder", "principal", "interest_rate", "interest_method", "issue_date", "valuation_cap", "cap_type", "conversion_base", "discount", "repayment_multiple",
+  ],
+};
 /** Terms the engine models that the page doesn't show yet, by field, as a founder would name them. */
 const TERM_NAMES: Record<string, string> = {
   cumulative_dividend: "cumulative dividends",
   carve_out: "a management carve-out",
-  unconverted_safes: "SAFEs still outstanding",
-  unconverted_notes: "convertible notes still outstanding",
 };
 
 /**
@@ -139,6 +208,15 @@ export function checkShown(capTable: unknown): void {
     if (!SHOWN_TABLE_FIELDS.includes(field) && !empty) refuse(TERM_NAMES[field] ?? `"${field}"`, field in TERM_NAMES);
   }
   if (Array.isArray(ct.conversion_groups) && ct.conversion_groups.length > 1) refuse("more than one group of series that must convert together");
+  const holderName = (id: unknown) => str((Array.isArray(ct.holders) ? (ct.holders as Json[]) : []).find((h) => h?.id === id)?.name) || str(id);
+  for (const list of ["unconverted_safes", "unconverted_notes"] as const) {
+    if (!Array.isArray(ct[list])) continue;
+    for (const x of ct[list] as Json[]) {
+      if (x == null || typeof x !== "object") continue;
+      const extra = Object.keys(x).find((f) => !SHOWN_OUTSTANDING_FIELDS[list].includes(f) && x[f] != null);
+      if (extra) refuse(`"${extra}" on ${holderName(x.holder)}'s ${list === "unconverted_safes" ? "SAFE" : "convertible note"}`, false);
+    }
+  }
   if (!Array.isArray(ct.securities)) return;
   for (const s of ct.securities as Json[]) {
     if (s == null || typeof s !== "object") continue;
@@ -223,12 +301,42 @@ export function draftFromExit(exit: unknown): Draft {
             threshold: str((g as Json).vote_threshold_percent) || "50",
             rule: (g as Json).vote_rule === "at_least" ? "at_least" : "more_than",
           };
+  const holderKey = (id: unknown) => holderKeys.get(str(id)) ?? str(id);
+  const safes = ((ct.unconverted_safes as Json[] | undefined) ?? []).map(
+    (f): DraftSafe => ({
+      key: key(),
+      fileId: str(f.id),
+      holder: holderKey(f.holder),
+      purchaseAmount: str(f.purchase_amount),
+      cap: f.post_money_cap != null ? "post" : f.pre_money_cap != null ? "pre" : "none",
+      capAmount: str(f.post_money_cap ?? f.pre_money_cap),
+      discount: fractionToPercent(f.discount),
+      ranksWith: f.cash_out_ranks_with == null ? null : (securityKeys.get(str(f.cash_out_ranks_with)) ?? null),
+    }),
+  );
+  const notes = ((ct.unconverted_notes as Json[] | undefined) ?? []).map(
+    (x): DraftNote => ({
+      key: key(),
+      fileId: str(x.id),
+      holder: holderKey(x.holder),
+      principal: str(x.principal),
+      interestRate: fractionToPercent(x.interest_rate),
+      issueDate: str(x.issue_date),
+      valuationCap: str(x.valuation_cap),
+      conversionBase: (str(x.conversion_base) || "with_pool") as ConversionBase,
+      discount: fractionToPercent(x.discount),
+      repaymentMultiple: str(x.repayment_multiple),
+    }),
+  );
   const range = e.range as unknown[];
   return {
     holders,
     securities,
     shares,
     pool: ct.unissued_pool == null || str(ct.unissued_pool) === "0" ? "" : grouped(ct.unissued_pool),
+    safes,
+    notes,
+    exitDate: str(e.exit_date),
     group,
     range: [str(range[0]), str(range[1])],
     order,
@@ -243,6 +351,9 @@ export function scratchDraft(): Draft {
     securities: [{ key: "k2", fileId: null, kind: "common", name: "Common Stock" }],
     shares: { [sharesKey("k1", "k2")]: "10,000,000" },
     pool: "",
+    safes: [],
+    notes: [],
+    exitDate: "",
     group: { members: [], threshold: "50", rule: "more_than" },
     range: ["0", "100000000"],
     order: [],
@@ -297,7 +408,11 @@ export function addSecurity(d: Draft, kind: DraftSecurity["kind"]): Draft {
   return { ...d, securities: [...securities, added], nextKey: d.nextKey + 1 };
 }
 
-/** Removing a holder or a class removes its shares too, and a class leaves the conversion group. */
+/**
+ * Removing a holder or a class removes its shares too; a holder's SAFEs and
+ * notes go with it; a class leaves the conversion group, and a SAFE that
+ * ranked with it goes back to the default, the most junior tier (X9).
+ */
 export function removeRow(d: Draft, key: string): Draft {
   const shares = Object.fromEntries(Object.entries(d.shares).filter(([k]) => !k.split("/").includes(key)));
   return {
@@ -305,8 +420,44 @@ export function removeRow(d: Draft, key: string): Draft {
     holders: d.holders.filter((h) => h.key !== key),
     securities: d.securities.filter((s) => s.key !== key),
     shares,
+    safes: d.safes.filter((f) => f.holder !== key).map((f) => (f.ranksWith === key ? { ...f, ranksWith: null } : f)),
+    notes: d.notes.filter((n) => n.holder !== key),
     group: { ...d.group, members: d.group.members.filter((m) => m !== key) },
   };
+}
+
+/** How many SAFEs and notes a holder has outstanding, for the "remove?" question. */
+export function outstandingHeldBy(d: Draft, key: string): { safes: number; notes: number } {
+  return { safes: d.safes.filter((f) => f.holder === key).length, notes: d.notes.filter((n) => n.holder === key).length };
+}
+
+/** A new SAFE, for the first holder: a post-money cap, the YC standard, with its amounts blank for the engine to ask for. */
+export function addSafe(d: Draft): Draft {
+  const safe: DraftSafe = {
+    key: `k${d.nextKey}`, fileId: null, holder: d.holders[0]?.key ?? "", purchaseAmount: "", cap: "post", capAmount: "", discount: "", ranksWith: null,
+  };
+  return { ...d, safes: [...d.safes, safe], nextKey: d.nextKey + 1 };
+}
+
+/** A new note, for the first holder: the common terms (C9's defaults), with its amounts and dates blank. */
+export function addNote(d: Draft): Draft {
+  const note: DraftNote = {
+    key: `k${d.nextKey}`, fileId: null, holder: d.holders[0]?.key ?? "", principal: "", interestRate: "", issueDate: "", valuationCap: "",
+    conversionBase: "with_pool", discount: "", repaymentMultiple: "1",
+  };
+  return { ...d, notes: [...d.notes, note], nextKey: d.nextKey + 1 };
+}
+
+/** One SAFE or note changed. */
+export function setSafe(d: Draft, key: string, change: Partial<DraftSafe>): Draft {
+  return { ...d, safes: d.safes.map((f) => (f.key === key ? { ...f, ...change } : f)) };
+}
+export function setNote(d: Draft, key: string, change: Partial<DraftNote>): Draft {
+  return { ...d, notes: d.notes.map((n) => (n.key === key ? { ...n, ...change } : n)) };
+}
+
+export function removeOutstanding(d: Draft, key: string): Draft {
+  return { ...d, safes: d.safes.filter((f) => f.key !== key), notes: d.notes.filter((n) => n.key !== key) };
 }
 
 /** The shares one row holds, as typed and readable, for the "remove?" question. */
@@ -333,7 +484,7 @@ function inLoadedOrder<T>(items: T[], key: (item: T) => string, order: readonly 
 /** What one editor field is called in the engine's error paths, so its message lands next to it. */
 export interface Built {
   /** The exit input, in the case-file format. */
-  json: { cap_table: Json; range: string[]; exit_values: string[] };
+  json: { cap_table: Json; range: string[]; exit_values: string[]; exit_date?: string };
   /** Engine path ("exit.cap_table.securities[2].cap_multiple") to the editor field it names. */
   fields: Map<string, string>;
   /** Each holder's id in this input, by editor key; and back. */
@@ -358,6 +509,25 @@ export const fieldId = {
   groupRule: "edit-group-rule",
   rangeLow: "edit-range-low",
   rangeHigh: "edit-range-high",
+  exitDate: "edit-exit-date",
+  /** The card listing SAFEs and notes: where a message about them all goes. */
+  outstanding: "edit-outstanding",
+  safe: (key: string) => `edit-safe-${key}`,
+  safeHolder: (key: string) => `edit-safe-holder-${key}`,
+  safeAmount: (key: string) => `edit-safe-amount-${key}`,
+  safeCapKind: (key: string) => `edit-safe-cap-kind-${key}`,
+  safeCap: (key: string) => `edit-safe-cap-${key}`,
+  safeDiscount: (key: string) => `edit-safe-discount-${key}`,
+  safeRanks: (key: string) => `edit-safe-ranks-${key}`,
+  note: (key: string) => `edit-note-${key}`,
+  noteHolder: (key: string) => `edit-note-holder-${key}`,
+  notePrincipal: (key: string) => `edit-note-principal-${key}`,
+  noteInterest: (key: string) => `edit-note-interest-${key}`,
+  noteIssued: (key: string) => `edit-note-issued-${key}`,
+  noteCap: (key: string) => `edit-note-cap-${key}`,
+  noteBase: (key: string) => `edit-note-base-${key}`,
+  noteDiscount: (key: string) => `edit-note-discount-${key}`,
+  noteRepayment: (key: string) => `edit-note-repayment-${key}`,
 } as const;
 
 /** "Ana Ortiz" → "ana_ortiz": a readable id, since the engine's messages name ids. */
@@ -476,6 +646,71 @@ export function buildExit(d: Draft): Built {
   fields.set("exit.range", fieldId.rangeHigh);
   fields.set("exit.range[0]", fieldId.rangeLow);
   fields.set("exit.range[1]", fieldId.rangeHigh);
+  fields.set("exit.exit_date", fieldId.exitDate);
+
+  // SAFEs and notes still outstanding (C8, C9). Their ids must differ from every class's and each other's.
+  const outstandingIds = new Map<string, string>();
+  const taken = new Set([...securityIds.values(), ...[...d.safes, ...d.notes].flatMap((x) => (x.fileId ? [x.fileId] : []))]);
+  for (const [base, rows] of [["safe", d.safes], ["note", d.notes]] as const) {
+    for (const x of rows) {
+      let id = x.fileId ?? base;
+      for (let i = 2; !x.fileId && taken.has(id); i++) id = `${base}_${i}`;
+      taken.add(id);
+      outstandingIds.set(x.key, id);
+    }
+  }
+  const holderId = (key: string) => holderIds.get(key) ?? key;
+  /** A rate typed as a percentage, as the engine's fraction; blank leaves it out, for the engine's default. */
+  const rate = (typed: string) => (typed.trim() ? percentToFraction(typed) : undefined);
+  at("unconverted_safes", fieldId.outstanding);
+  const unconverted_safes = d.safes.map((f, i) => {
+    const p = `unconverted_safes[${i}]`;
+    at(p, fieldId.safe(f.key));
+    at(`${p}.holder`, fieldId.safeHolder(f.key));
+    at(`${p}.purchase_amount`, fieldId.safeAmount(f.key));
+    at(`${p}.post_money_cap`, fieldId.safeCap(f.key));
+    at(`${p}.pre_money_cap`, fieldId.safeCap(f.key));
+    at(`${p}.discount`, fieldId.safeDiscount(f.key));
+    at(`${p}.cash_out_ranks_with`, fieldId.safeRanks(f.key));
+    const discount = rate(f.discount);
+    const ranksWith = f.ranksWith ? securityIds.get(f.ranksWith) : undefined;
+    return {
+      id: outstandingIds.get(f.key)!,
+      holder: holderId(f.holder),
+      purchase_amount: moneyText(f.purchaseAmount),
+      ...(f.cap === "post" ? { post_money_cap: moneyText(f.capAmount) } : f.cap === "pre" ? { pre_money_cap: moneyText(f.capAmount) } : {}),
+      ...(discount !== undefined ? { discount } : {}),
+      ...(ranksWith ? { cash_out_ranks_with: ranksWith } : {}),
+    };
+  });
+  at("unconverted_notes", fieldId.outstanding);
+  const unconverted_notes = d.notes.map((n, i) => {
+    const p = `unconverted_notes[${i}]`;
+    at(p, fieldId.note(n.key));
+    at(`${p}.holder`, fieldId.noteHolder(n.key));
+    at(`${p}.principal`, fieldId.notePrincipal(n.key));
+    at(`${p}.interest_rate`, fieldId.noteInterest(n.key));
+    at(`${p}.issue_date`, fieldId.noteIssued(n.key));
+    at(`${p}.valuation_cap`, fieldId.noteCap(n.key));
+    at(`${p}.conversion_base`, fieldId.noteBase(n.key));
+    at(`${p}.discount`, fieldId.noteDiscount(n.key));
+    at(`${p}.repayment_multiple`, fieldId.noteRepayment(n.key));
+    const discount = rate(n.discount);
+    return {
+      id: outstandingIds.get(n.key)!,
+      holder: holderId(n.holder),
+      principal: moneyText(n.principal),
+      // A blank rate goes through as typed, so the engine asks for it: a note's interest has no default.
+      interest_rate: rate(n.interestRate) ?? "",
+      interest_method: "simple",
+      issue_date: n.issueDate.trim(),
+      valuation_cap: n.valuationCap.trim() ? moneyText(n.valuationCap) : null,
+      cap_type: "pre_money",
+      conversion_base: n.conversionBase,
+      ...(discount !== undefined ? { discount } : {}),
+      repayment_multiple: multipleText(n.repaymentMultiple),
+    };
+  });
 
   return {
     json: {
@@ -486,9 +721,12 @@ export function buildExit(d: Draft): Built {
         conversion_groups,
         positions,
         ...(d.pool.trim() ? { unissued_pool: shareText(d.pool) } : {}),
+        ...(unconverted_safes.length > 0 ? { unconverted_safes } : {}),
+        ...(unconverted_notes.length > 0 ? { unconverted_notes } : {}),
       },
       range: [moneyText(d.range[0]), moneyText(d.range[1])],
       exit_values: [],
+      ...(d.exitDate.trim() ? { exit_date: d.exitDate.trim() } : {}),
     },
     fields,
     holderIds,
@@ -531,13 +769,19 @@ export type Checked =
 export function checkBuilt(b: Built): Checked {
   try {
     const exit = readExit(b.json);
-    return { ok: true, exit, pc: prepare(exit.capTable) };
+    return { ok: true, exit, pc: prepare(exit.capTable, exit.exitDate) };
   } catch (e) {
     const error = e as Error;
+    // X3: a note accrues interest up to the sale, so the payouts need its date. Said plainly, without the note's id.
+    if (e instanceof InputError && e.path === "exit.exit_date" && b.json.exit_date === undefined) {
+      return { ok: false, field: fieldId.exitDate, message: "Fill this in: a convertible note accrues interest up to the date of the sale.", error };
+    }
     if (e instanceof InputError || e instanceof UnsupportedTermError) {
       const field = fieldForPath(b.fields, e.path);
       if (!field) return { ok: false, field: null, message: withoutCodes(e.message), error };
       const detail = withoutCodes(e.message.startsWith(`${e.path}: `) ? e.message.slice(e.path.length + 2) : e.message);
+      // A field left blank, said plainly, as the rounds editor says it.
+      if (/^"" is not an exact number|^expected a non-empty string$/.test(detail)) return { ok: false, field, message: "Fill this in: it can't be blank.", error };
       return { ok: false, field, message: detail.charAt(0).toUpperCase() + detail.slice(1), error };
     }
     return { ok: false, field: null, message: withoutCodes(error.message), error };

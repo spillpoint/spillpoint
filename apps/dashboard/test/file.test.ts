@@ -1,12 +1,15 @@
 // Saved files: what a save writes, that opening it gives back the same cap
 // table to the cent, and that a file that can't be read says why. Millrace is
-// built from its rounds, so its file keeps the rounds (version 2, M4i).
+// built from its rounds, so its file keeps the rounds (version 2, M4i). Since
+// version 3 (M5k) a file can carry the sale's date, and a cap table can have
+// SAFEs and notes still outstanding.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import examples from "virtual:examples";
-import { D } from "spillpoint";
+import { D, readExit, readInputs } from "spillpoint";
+import type { CapTable } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import { buildExit, setPrice } from "../src/draft.ts";
@@ -53,10 +56,13 @@ describe("saving and opening again", () => {
     expect(securityA(fileText("Millrace", typed))).toMatchObject({ original_issue_price: "2.075472", conversion_price: saved.conversion_price });
   });
 
-  it("writes the agreed format: version 2, a name, the rounds or the cap table, the range, and the view if there is one", () => {
+  it("writes the agreed format: version 3, a name, the rounds or the cap table, the range, the sale's date if given, and the view if there is one", () => {
     const built = JSON.parse(fileText("  Millrace Robotics (fictional) ", millraceTable, undefined, millraceRounds));
     expect(Object.keys(built)).toEqual(["format", "version", "name", "holders", "events", "cap_table_after_event", "range"]);
-    expect(built).toMatchObject({ format: "spillpoint", version: 2, name: "Millrace Robotics (fictional)", cap_table_after_event: "series_b", range: ["0", "300000000"] });
+    expect(built).toMatchObject({ format: "spillpoint", version: 3, name: "Millrace Robotics (fictional)", cap_table_after_event: "series_b", range: ["0", "300000000"] });
+    const dated = JSON.parse(fileText("Millrace", { ...millraceTable, exitDate: "2026-06-30" }, { exitValue: "39424995.32", you: "cobalt" }));
+    expect(Object.keys(dated)).toEqual(["format", "version", "name", "cap_table", "range", "exit_date", "view"]);
+    expect(dated.exit_date).toBe("2026-06-30");
     expect(built.events).toEqual(millrace.company!.events);
     const entered = JSON.parse(fileText("Millrace", millraceTable));
     expect(Object.keys(entered)).toEqual(["format", "version", "name", "cap_table", "range"]);
@@ -71,6 +77,15 @@ describe("saving and opening again", () => {
     expect(opened.ok && opened.view).toEqual(view);
     const plain = readFile(fileText("Millrace", millraceTable, undefined, millraceRounds));
     expect(plain.ok && plain.view).toBeNull();
+  });
+
+  it("opens a version 2 file, saved before the sale's date, as it was", () => {
+    const v2 = { ...JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds)), version: 2 };
+    const opened = readFile(JSON.stringify(v2));
+    if (!opened.ok) throw new Error(opened.message);
+    expect(opened.rounds).toEqual(millraceRounds);
+    expect(opened.draft.exitDate).toBe("");
+    expect(payoutsAtBreakpoints(buildExit(opened.draft).json)).toEqual(payoutsAtBreakpoints(lockedMillraceExit()));
   });
 
   it("opens a version 1 file, saved before rounds, as it was", () => {
@@ -102,8 +117,8 @@ describe("a file that can't be opened", () => {
   });
 
   it("comes from a newer version, or has no version", () => {
-    expect(refusal({ ...good(), version: 3 })).toBe(
-      "It was saved by a newer version of spillpoint (file version 3); this page reads files up to version 2. Open it with the newer version.",
+    expect(refusal({ ...good(), version: 4 })).toBe(
+      "It was saved by a newer version of spillpoint (file version 4); this page reads files up to version 3. Open it with the newer version.",
     );
     const { version: _version, ...unversioned } = good();
     expect(refusal(unversioned)).toBe("Its version number is missing or unreadable, so it's not clear how to read it.");
@@ -138,18 +153,25 @@ describe("a file that can't be opened", () => {
     );
   });
 
-  it("has a convertible note still outstanding, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
-    const file = good();
-    file.cap_table.unconverted_notes = [
-      { id: "note_z", holder: "ana", principal: "100000", interest_rate: "0.06", issue_date: "2023-01-01", valuation_cap: "8000000", conversion_base: "with_pool", discount: "0", repayment_multiple: "2" },
+  it("has a SAFE or a note with a field nobody models, in the engine's words", () => {
+    const safe = good();
+    safe.cap_table.unconverted_safes = [{ id: "safe_z", holder: "ana", purchase_amount: "100000", post_money_cap: "10000000", mfn: true }];
+    expect(refusal(safe)).toBe(
+      "Its cap table can't be used. file.cap_table.unconverted_safes[0].mfn: unknown field; the engine reads only id, holder, purchase_amount, post_money_cap, pre_money_cap, discount, cash_out_ranks_with",
+    );
+    const note = good();
+    note.cap_table.unconverted_notes = [
+      { id: "note_z", holder: "ana", principal: "100000", interest_rate: "0.06", issue_date: "2023-01-01", valuation_cap: "8000000", repayment_multiple: "2", maturity: "2025-01-01" },
     ];
-    expect(refusal(file)).toBe("It has convertible notes still outstanding, which this page doesn't show yet. It won't open a cap table it can't show in full.");
+    note.exit_date = "2026-01-01";
+    expect(refusal(note)).toMatch(/^Its cap table can't be used\. file\.cap_table\.unconverted_notes\[0\]\.maturity: unknown field; the engine reads only id, holder, principal, /);
   });
 
-  it("has a SAFE still outstanding, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
-    const file = good();
-    file.cap_table.unconverted_safes = [{ id: "safe_z", holder: "ana", purchase_amount: "100000", post_money_cap: "10000000", discount: "0" }];
-    expect(refusal(file)).toBe("It has SAFEs still outstanding, which this page doesn't show yet. It won't open a cap table it can't show in full.");
+  it("has a note but no sale date, or a sale date before the note was issued", () => {
+    const note = good();
+    note.cap_table.unconverted_notes = [{ id: "note_z", holder: "ana", principal: "100000", interest_rate: "0.06", issue_date: "2023-01-01", valuation_cap: "8000000", repayment_multiple: "2" }];
+    expect(refusal(note)).toBe("Its cap table can't be used. file.exit_date: note_z accrues interest, so the exit needs an exit_date");
+    expect(refusal({ ...note, exit_date: "2022-12-31" })).toBe("Its cap table can't be used. file.exit_date: 2022-12-31 is before note_z was issued, 2023-01-01");
   });
 
   it("has a management carve-out, which the engine pays but the page doesn't show yet: refused, never dropped", () => {
@@ -206,13 +228,65 @@ describe("a file that can't be opened", () => {
     expect(refusal(noAfter)).toBe("Its rounds need the holders, the events, and the event whose cap table the payouts use.");
   });
 
-  it("has rounds the engine can't build, in the engine's words, or an exit on a cap table with SAFEs still outstanding, which the page doesn't show yet", () => {
+  it("has rounds the engine can't build, in the engine's words", () => {
     expect(refusal({ ...withRounds(), cap_table_after_event: "series_c" })).toBe("Its rounds can't be built. exit.cap_table_after_event: no event series_c in inputs.events");
-    expect(refusal({ ...withRounds(), cap_table_after_event: "option_pool" })).toBe(
-      "It has SAFEs still outstanding, which this page doesn't show yet. It won't open a cap table it can't show in full.",
-    );
     const file = withRounds();
     file.events[5].investments[0].amount = "a lot";
     expect(refusal(file)).toBe('Its rounds can\'t be built. inputs.events[5].investments[0].amount: "a lot" is not an exact number (an integer, a decimal, or "a/b")');
+  });
+});
+
+describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
+  const casesDir = resolve(import.meta.dirname, "../../../cases");
+  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name));
+  /** A cap table as plain strings, so two can be compared exactly. */
+  const plain = (ct: CapTable) => JSON.parse(JSON.stringify(ct, (_, v) => (v && typeof v === "object" && "d" in v && "e" in v ? v.toString() : v)));
+
+  it("covers every case with a SAFE or a note at a sale: 12 to 12h, and 13a to 13g", () => {
+    expect(cases).toHaveLength(15);
+  });
+
+  it.each(cases)("%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts", (name) => {
+    const inputs = JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8"));
+    const { exit } = inputs;
+    // 12g is built from its events and exits on the table after its SAFE (C2); the rest are cap tables as they stand.
+    const contents = inputs.events
+      ? { holders: inputs.holders, events: inputs.events, cap_table_after_event: exit.cap_table_after_event }
+      : { cap_table: exit.cap_table };
+    const file = { format: "spillpoint", version: 3, name, ...contents, range: exit.range, ...(exit.exit_date ? { exit_date: exit.exit_date } : {}) };
+    const opened = readFile(JSON.stringify(file));
+    if (!opened.ok) throw new Error(opened.message);
+    expect(opened.draft.safes.length + opened.draft.notes.length).toBeGreaterThan(0);
+    const expected = inputs.events ? readInputs(inputs) : readExit(exit);
+    const built = readExit(buildExit(opened.draft).json);
+    expect(plain(built.capTable)).toEqual(plain(expected.capTable));
+    expect(built.exitDate).toBe(expected.exitDate);
+    if (!inputs.events) expect(payoutsAtBreakpoints(buildExit(opened.draft).json)).toEqual(payoutsAtBreakpoints(exit));
+    // Saving it again and opening that gives the same file.
+    const saved = fileText(opened.name, opened.draft, undefined, opened.rounds);
+    const again = readFile(saved);
+    expect(again.ok && fileText(again.name, again.draft, undefined, again.rounds)).toBe(saved);
+  });
+
+  it("opens rounds whose payouts use a cap table with SAFEs still outstanding, with the SAFEs", () => {
+    const file = { ...JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds)), cap_table_after_event: "option_pool" };
+    const opened = readFile(JSON.stringify(file));
+    if (!opened.ok) throw new Error(opened.message);
+    const name = (key: string) => opened.draft.holders.find((h) => h.key === key)?.name;
+    expect(opened.draft.safes.map((f) => [name(f.holder), f.purchaseAmount, f.cap, f.capAmount])).toEqual([
+      ["Priya Shah", "300000", "post", "5000000"],
+      ["Marcus Lee", "150000", "post", "5000000"],
+    ]);
+  });
+
+  it("shows a loaded rate as a percentage, and gives the engine back the same number", () => {
+    const file = JSON.parse(fileText("Millrace", millraceTable));
+    file.cap_table.unconverted_safes = [{ id: "safe_z", holder: "ana", purchase_amount: "100000", post_money_cap: "50000000", discount: "1/3" }];
+    const opened = readFile(JSON.stringify(file));
+    if (!opened.ok) throw new Error(opened.message);
+    expect(opened.draft.safes[0]!.discount).toMatch(/^33\.3333/);
+    const saved = (d: typeof opened.draft) => readExit(buildExit(d).json).capTable.unconvertedSafes![0]!.discount;
+    expect(saved(opened.draft).eq(readExit({ cap_table: file.cap_table, range: file.range, exit_values: [] }).capTable.unconvertedSafes![0]!.discount)).toBe(true);
+    expect(saved({ ...opened.draft, safes: [{ ...opened.draft.safes[0]!, discount: "20" }] }).toString()).toBe("0.2");
   });
 });

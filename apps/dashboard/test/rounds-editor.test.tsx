@@ -1,7 +1,8 @@
 // Editing Millrace's rounds (M4j), clicked through in a simulated browser:
 // opening an event, changes reaching the payouts, the engine's messages next
 // to the fields they name, lines added and removed, holders, seniority,
-// pay-to-play, and what a save keeps.
+// pay-to-play, and what a save keeps; and since M5k, SAFEs and notes still
+// outstanding, from the events as typed.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { D, buildCapTables, prepare, readInputs, solve } from "spillpoint";
@@ -22,6 +23,12 @@ const card = (title: RegExp) => within(panel()).getByRole("heading", { level: 3,
 const lines = (title: RegExp) => [...card(title).querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
 const group = (title: RegExp, name: RegExp) => within(card(title)).getByRole("group", { name });
 const edit = (title: string) => click(`Edit ${title}`);
+/** Adds an event of this type at the end of the list. */
+const addEvent = (label: string) => {
+  const select = within(panel()).getByLabelText("Type of event");
+  fireEvent.change(select, { target: { value: within(select).getByRole("option", { name: label }).getAttribute("value") } });
+  click("Add it at the end");
+};
 
 /** What Ana gets at $100M on Millrace with its inputs changed: the engine on the case's own files, independently of the page. */
 function anaAt100M(change: (events: Record<string, unknown>[]) => void): string {
@@ -231,11 +238,6 @@ it("builds the same cap tables from what the editor saves as from the case", asy
 });
 
 describe("adding, moving and removing events (M4k)", () => {
-  const addEvent = (label: string) => {
-    const select = within(panel()).getByLabelText("Type of event");
-    fireEvent.change(select, { target: { value: within(select).getByRole("option", { name: label }).getAttribute("value") } });
-    click("Add it at the end");
-  };
   /** What Ana gets at $100M with Millrace's events changed and the payouts on the cap table after `after`, by the engine alone. */
   function anaAfter(change: (events: Record<string, unknown>[]) => Record<string, unknown>[], after: string): string {
     const inputs = structuredClone({ holders: examples[0]!.company!.holders, events: examples[0]!.company!.events }) as { holders: unknown[]; events: Record<string, unknown>[] };
@@ -264,7 +266,7 @@ describe("adding, moving and removing events (M4k)", () => {
     const pool = card(/Option pool created/);
     await vi.waitFor(() => expect(document.activeElement).toBe(within(pool).getByLabelText("Date")), { timeout: ANALYSIS_TIMEOUT });
     expect(within(pool).getByRole("alert").textContent).toBe("This event has a problem, so the payouts can't update: Fill this in: it can't be blank.");
-    expect(within(pool).getByText("Not built yet: the engine builds it once the problem above is fixed.")).toBeTruthy();
+    expect(within(pool).getByText((_, el) => el?.textContent === "Not built yet: the engine builds it once this event's problem is fixed.")).toBeTruthy();
     type(within(pool).getByLabelText("Percent of the fully diluted shares after it"), "10");
     expect(within(pool).queryByRole("alert")).toBeNull();
     for (const label of ["Shares issued", "Shares issued for a percentage of the company", "Options granted", "SAFEs", "Convertible notes", "A priced round"]) addEvent(label);
@@ -340,5 +342,55 @@ describe("adding, moving and removing events (M4k)", () => {
     expect(after.value).toBe("series_a");
     openTab("Payouts");
     expect(headline()).toBe(atSeriesA);
+  });
+});
+
+describe("SAFEs and notes in the rounds (M5k)", () => {
+  const unbuilt = (title: RegExp) => card(title).querySelector(".rounds__unbuilt")?.textContent;
+
+  it("shows a round's SAFEs-and-notes section while an earlier note can't be built yet, and names the event each unbuilt one waits on", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/Start from/), { target: { value: "scratch-rounds" } });
+    openTab("Rounds");
+    addEvent("Convertible notes");
+    addEvent("A priced round");
+    // The note is blank, so the engine stops there; the round still offers to convert it, ticked to begin with.
+    const round = card(/Series A Preferred, a priced round/);
+    expect((within(round).getByLabelText("Converts the convertible notes still outstanding") as HTMLInputElement).checked).toBe(true);
+    expect(within(round).queryByLabelText("Converts the SAFEs still outstanding")).toBeNull();
+    expect(unbuilt(/A convertible note/)).toBe("Not built yet: the engine builds it once this event's problem is fixed.");
+    expect(unbuilt(/Series A Preferred, a priced round/)).toBe("Not built yet: the engine builds it once the problem in event 2, A convertible note, is fixed.");
+    // The link goes to the note's problem.
+    fireEvent.click(within(round).getByRole("button", { name: "event 2, A convertible note" }));
+    expect(document.activeElement).toBe(within(card(/A convertible note/)).getByRole("alert"));
+  });
+
+  it("says on a note's event that it will be outstanding at the sale when no round converts it", () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/Start from/), { target: { value: "scratch-rounds" } });
+    openTab("Rounds");
+    addEvent("Convertible notes");
+    addEvent("A priced round");
+    const atSale = () => card(/A convertible note/).querySelector(".rounds__at-sale")?.textContent ?? null;
+    expect(atSale()).toBeNull();
+    fireEvent.click(within(card(/Series A Preferred, a priced round/)).getByLabelText("Converts the convertible notes still outstanding"));
+    expect(atSale()).toBe("Founder's convertible note isn't converted by any later round, so it will be outstanding at the sale.");
+  });
+
+  it("says on Millrace's SAFEs that they'll be outstanding at a sale on a cap table from before the Seed, and pays them", async () => {
+    render(<App />);
+    openTab("Rounds");
+    fireEvent.change(within(panel()).getByLabelText("The payouts use the cap table after"), { target: { value: "option_pool" } });
+    expect([...card(/3\. SAFEs/).querySelectorAll(".rounds__at-sale")].map((p) => p.textContent)).toEqual([
+      "Priya Shah's SAFE converts in event 6, after the cap table the payouts use (event 4), so it will be outstanding at the sale.",
+      "Marcus Lee's SAFE converts in event 6, after the cap table the payouts use (event 4), so it will be outstanding at the sale.",
+    ]);
+    openTab("Payouts");
+    const payouts = document.getElementById("panel-payouts")!;
+    expect(within(payouts).queryByText(/has a problem/)).toBeNull();
+    click("By class");
+    expect(within(payouts).getByRole("rowheader", { name: /^Priya Shah's SAFE/ })).toBeTruthy();
+    expect(within(payouts).getByRole("rowheader", { name: /^Marcus Lee's SAFE/ })).toBeTruthy();
+    await screen.findByRole("heading", { name: "Breakpoints" }, { timeout: ANALYSIS_TIMEOUT });
   });
 });

@@ -43,7 +43,7 @@ const JUST_ABOVE = new D("1e-6");
 /** The work itself, the same wherever it runs. */
 export function computeAnalysis(exit: unknown): Analysis {
   const input = readExit(exit);
-  const pc = prepare(input.capTable);
+  const pc = prepare(input.capTable, input.exitDate);
   const found = findBreakpoints(pc, input.range);
   const point = (x: D, side: CurvePoint["side"]): CurvePoint => {
     const payout = solve(pc, x).answers[0]!.payout;

@@ -1,15 +1,20 @@
 // The rounds as the editor holds them (M4j): every locked round case comes
 // back from the editor exactly as written; percentages become exact
-// fractions; typed amounts become the engine's numbers; and an engine error
-// finds the field it names.
+// fractions; typed amounts become the engine's numbers; an engine error
+// finds the field it names; and which SAFEs and notes are outstanding, read
+// from the events as typed, is what the engine builds (M5k).
 
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { buildCapTables } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import type { Rounds } from "../src/rounds.ts";
-import { addHolder, asFraction, buildRounds, draftFromRounds, eventFieldId, eventsNaming, holderFieldId, locate, setEvent } from "../src/roundsDraft.ts";
+import {
+  addEvent, addHolder, asFraction, buildRounds, convertibles, draftFromRounds, eventFieldId, eventsNaming, holderFieldId, locate, outstandingAtSale,
+  outstandingBefore, setEvent,
+} from "../src/roundsDraft.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../cases");
 const roundsOf = (name: string): Rounds => {
@@ -102,5 +107,48 @@ describe("where the engine's message goes", () => {
       event: null,
       fields: [],
     });
+  });
+});
+
+describe("SAFEs and notes, read from the events as typed (M5k)", () => {
+  /** The ids of the SAFEs and notes the page says are outstanding after each event. */
+  const predicted = (d: ReturnType<typeof draftFromRounds>) => {
+    const rowId = (c: ReturnType<typeof convertibles>[number]) => {
+      const e = d.events.find((x) => x.key === c.event)!;
+      return String((e.json[c.kind === "safe" ? "safes" : "notes"] as Record<string, unknown>[])[c.row]!.id);
+    };
+    const at = (key: string | null) => (key === null ? Infinity : d.events.findIndex((e) => e.key === key));
+    return d.events.map((_, k) => convertibles(d).filter((c) => at(c.event) <= k && at(c.convertedBy) > k).map(rowId).sort());
+  };
+
+  it.each(ROUND_CASES)("%s: the SAFEs and notes outstanding after each event are the ones the engine builds", (name) => {
+    const rounds = roundsOf(name);
+    const engine = buildCapTables({ holders: rounds.holders, events: rounds.events }).map((t) => [...t.unconvertedSafes, ...t.unconvertedNotes].map((x) => x.id).sort());
+    expect(predicted(draftFromRounds(rounds))).toEqual(engine);
+  });
+
+  it("follows each round's choice: SAFEs convert unless it says not to, notes only when it says so", () => {
+    const d = draftFromRounds(roundsOf("edge-19a-note-converts-with-pool"));
+    const round = d.events.find((e) => e.json.type === "priced_round")!;
+    expect(convertibles(d).map((c) => [c.kind, c.convertedBy])).toEqual([["note", round.key]]);
+    const declined = setEvent(d, round.key, { ...round.json, convert_notes: false });
+    expect(convertibles(declined).map((c) => c.convertedBy)).toEqual([null]);
+    // Still outstanding just before that round, so the round can still choose to convert it.
+    expect(outstandingBefore(declined, round.key)).toHaveLength(1);
+    expect(outstandingAtSale(declined)).toHaveLength(1);
+  });
+
+  it("is outstanding at the sale when the payouts use a cap table from before the round that converts it", () => {
+    const d = draftFromRounds(roundsOf("millrace"));
+    expect(outstandingAtSale(d)).toEqual([]);
+    const early = { ...d, after: "option_pool" };
+    const seed = d.events.find((e) => e.json.id === "seed")!;
+    expect(outstandingAtSale(early).map((c) => c.convertedBy)).toEqual([seed.key, seed.key]);
+  });
+
+  it("starts a new priced round converting the notes still outstanding, as it does the SAFEs", () => {
+    const d = addEvent(draftFromRounds(roundsOf("millrace")), "priced_round", []);
+    expect(d.events.at(-1)!.json.convert_notes).toBe(true);
+    expect(d.events.at(-1)!.json.convert_safes).toBeUndefined();
   });
 });

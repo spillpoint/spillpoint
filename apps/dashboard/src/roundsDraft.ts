@@ -10,11 +10,13 @@
 //   answer 4): "6.5" becomes "0.065".
 // Everything else is the event as loaded, so a field nobody edits is saved as
 // it was. Events can be added, moved and removed (M4k); the payouts follow the
-// last event unless someone chooses an earlier one.
+// last event unless someone chooses an earlier one. Which SAFEs and notes are
+// still outstanding, and where each converts, is read from the events as
+// typed (M5k), so the page can say it even while the engine can't build them.
 
-import { D, parseExact } from "spillpoint";
+import { parseExact } from "spillpoint";
 
-import { assignIds, moneyText, multipleText, percentText, shareText } from "./draft.ts";
+import { assignIds, moneyText, multipleText, percentText, percentToFraction, shareText } from "./draft.ts";
 import type { DraftHolder } from "./draft.ts";
 import type { Rounds } from "./rounds.ts";
 
@@ -62,13 +64,8 @@ function asPercent(v: unknown): unknown {
   }
 }
 
-/** "6.5" or "6.5%" → "0.065", exactly; blank stays blank; anything else goes through as typed, for the engine to name. */
-export function asFraction(v: unknown): unknown {
-  if (typeof v !== "string") return v;
-  const t = percentText(v);
-  if (t === "") return "";
-  return /^\d+(\.\d+)?$/.test(t) ? new D(t).div(100).toFixed() : t;
-}
+/** "6.5" or "6.5%" → "0.065", exactly, as the cap table editor reads its rates. */
+export const asFraction = percentToFraction;
 
 /** The rounds as the editor holds them. */
 export function draftFromRounds(rounds: Rounds): RoundsDraft {
@@ -197,6 +194,9 @@ export function addEvent(d: RoundsDraft, type: EventType, seniority: string[][])
       investments: [{ holder, amount: "" }],
       pool_target_unissued_percent_post: "",
       seniority: seniority.length === 0 ? [[series]] : [[series, ...seniority[0]!], ...seniority.slice(1)],
+      // A new round converts the notes still outstanding, as it does the SAFEs (M5k review). The engine's
+      // default, for a round that doesn't say, stays not converting them (C14).
+      convert_notes: true,
     };
   } else {
     const id = freshId(ids, { issue: "issue", issue_percent: "issue_percent", create_pool: "option_pool", grant_options: "grants", safes: "safes", notes: "notes" }[type]);
@@ -232,6 +232,62 @@ export function moveEvent(d: RoundsDraft, key: string, by: -1 | 1): RoundsDraft 
   const events = [...d.events];
   [events[at], events[to]] = [events[to]!, events[at]!];
   return keepingAfter(d, { ...d, events });
+}
+
+// ---------- SAFEs and notes, as typed ----------
+
+/** A SAFE or note one event creates, and the priced round that converts it, as the events are typed. */
+export interface Convertible {
+  kind: "safe" | "note";
+  /** The event that creates it, by key, and its line there. */
+  event: string;
+  row: number;
+  /** Its holder, by editor key. */
+  holder: string;
+  /** The priced round that converts it, by key; null if none does. */
+  convertedBy: string | null;
+}
+
+/**
+ * Every SAFE and note the events create, in order, each with the round that
+ * converts it. As the engine builds them: a priced round converts every SAFE
+ * still outstanding unless it says not to (`convert_safes`, default true),
+ * and every note still outstanding only when it says so (`convert_notes`,
+ * default false; R23, C14). What no round converts is outstanding at a sale
+ * (C8, C9).
+ */
+export function convertibles(d: RoundsDraft): Convertible[] {
+  const found: Convertible[] = [];
+  for (const e of d.events) {
+    const type = e.json.type;
+    if (type === "safes" || type === "notes") {
+      const rows = (e.json[type] as Json[] | undefined) ?? [];
+      rows.forEach((row, i) => found.push({ kind: type === "safes" ? "safe" : "note", event: e.key, row: i, holder: String(row.holder ?? ""), convertedBy: null }));
+    }
+    if (type === "priced_round") {
+      const converts = { safe: e.json.convert_safes !== false, note: e.json.convert_notes === true };
+      for (const c of found) if (c.convertedBy === null && converts[c.kind]) c.convertedBy = e.key;
+    }
+  }
+  return found;
+}
+
+/** The SAFEs and notes still outstanding just before an event: created earlier, and not converted by an earlier round. */
+export function outstandingBefore(d: RoundsDraft, eventKey: string): Convertible[] {
+  const at = (key: string | null) => (key === null ? Infinity : d.events.findIndex((e) => e.key === key));
+  const here = at(eventKey);
+  return convertibles(d).filter((c) => at(c.event) < here && at(c.convertedBy) >= here);
+}
+
+/**
+ * The SAFEs and notes still outstanding at the sale: those on the cap table
+ * the payouts use, after the event they name (C2). Each says why: no later
+ * round converts it, or the round that does comes after that cap table.
+ */
+export function outstandingAtSale(d: RoundsDraft): Convertible[] {
+  const at = (key: string | null) => (key === null ? Infinity : d.events.findIndex((e) => e.key === key));
+  const sale = d.events.findIndex((e) => String(e.json.id) === d.after);
+  return convertibles(d).filter((c) => at(c.event) <= sale && at(c.convertedBy) > sale);
 }
 
 /** A company with one holder and one issue of common stock, to build from (M4k). */

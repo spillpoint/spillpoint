@@ -20,7 +20,7 @@ export interface PayoutsAtBreakpoints {
 
 export function payoutsAtBreakpoints(exitInput: unknown): PayoutsAtBreakpoints {
   const exit = readExit(exitInput);
-  const pc = prepare(exit.capTable);
+  const pc = prepare(exit.capTable, exit.exitDate);
   const breakpoints = findBreakpoints(pc, exit.range).map((b) => b.exitValue);
   const payouts: PayoutsAtBreakpoints["payouts"] = {};
   for (const x of breakpoints) {

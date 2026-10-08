@@ -44,6 +44,27 @@ export function classShares(pc: PreparedCapTable, security: string): Decimal {
     .reduce((sum, p) => sum.plus(asConverted(pc, p.security, p.shares)), ZERO);
 }
 
+/**
+ * Each SAFE and note still outstanding (C8, C9), by id, named as the
+ * engine's reasons name them: "Priya Shah's SAFE". Each is its own class in
+ * the payouts. A holder with two of a kind has each told apart by its amount.
+ */
+export function outstandingNames(pc: PreparedCapTable): Map<string, string> {
+  const { holders, unconvertedSafes = [], unconvertedNotes = [] } = pc.capTable;
+  const holder = (id: string) => holders.find((h) => h.id === id)?.name ?? id;
+  const money = (v: Decimal) => `$${v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  const names = new Map<string, string>();
+  const name = (rows: { id: string; holder: string; amount: Decimal }[], kind: string) => {
+    for (const r of rows) {
+      const twice = rows.filter((x) => x.holder === r.holder).length > 1;
+      names.set(r.id, `${holder(r.holder)}'s ${kind}${twice ? ` (${money(r.amount)})` : ""}`);
+    }
+  };
+  name(unconvertedSafes.map((f) => ({ id: f.id, holder: f.holder, amount: f.purchaseAmount })), "SAFE");
+  name(unconvertedNotes.map((n) => ({ id: n.id, holder: n.holder, amount: n.principal })), "convertible note");
+  return names;
+}
+
 /** The holder the founder view opens on: whoever holds the most common stock. */
 export function defaultHolder(capTable: CapTable): string {
   const common = new Set(capTable.securities.filter((s) => s.kind === "common").map((s) => s.id));

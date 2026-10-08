@@ -5,6 +5,10 @@
 // next to the field it names, and the payouts stay on the last cap table it
 // accepted.
 //
+// SAFEs and convertible notes still outstanding at the sale (M5k) have a card
+// of their own, after who holds what: they hold no shares until they convert.
+// Rates are typed as percentages, as in the rounds editor.
+//
 // A cap table built from rounds (M4i) is shown read-only: the rounds build it,
 // so an edit here would contradict them. Its name and range stay editable.
 // "Edit the cap table directly" drops the rounds and keeps the table, after
@@ -13,9 +17,11 @@
 import type React from "react";
 import type { Participation } from "spillpoint";
 
-import { addHolder, addSecurity, fieldId, removeRow, setPrice, sharesHeldBy, sharesKey, tiers } from "./draft.ts";
-import type { Draft, DraftPreferred, DraftSecurity } from "./draft.ts";
-import { Field } from "./fields.tsx";
+import {
+  addHolder, addNote, addSafe, addSecurity, fieldId, outstandingHeldBy, removeOutstanding, removeRow, setNote, setPrice, setSafe, sharesHeldBy, sharesKey, tiers,
+} from "./draft.ts";
+import type { ConversionBase, Draft, DraftNote, DraftPreferred, DraftSafe, DraftSecurity } from "./draft.ts";
+import { Field, SelectField } from "./fields.tsx";
 import { amountHint, fractionValue } from "./format.ts";
 
 /** The engine's objection to the draft, and the field it names (null: none the editor shows). */
@@ -63,6 +69,7 @@ export function CapTableEditor({ draft, onDraft, name, onName, error, summary, r
         <HoldersCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />
+        <OutstandingCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
         {preferred.length > 0 && <SeniorityCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
         {preferred.length > 0 && <GroupCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
       </fieldset>
@@ -105,8 +112,15 @@ function priceHint(text: string) {
 
 function confirmRemove(draft: Draft, key: string, name: string): boolean {
   const held = sharesHeldBy(draft, key);
-  if (held.isZero()) return true;
-  return window.confirm(`Remove ${name || "this row"}? Its ${held.toNumber().toLocaleString("en-US")} shares go too.`);
+  const { safes, notes } = outstandingHeldBy(draft, key);
+  const going = [
+    held.isZero() ? null : `${held.toNumber().toLocaleString("en-US")} shares`,
+    safes === 0 ? null : safes === 1 ? "SAFE" : `${safes} SAFEs`,
+    notes === 0 ? null : notes === 1 ? "convertible note" : `${notes} convertible notes`,
+  ].filter(Boolean);
+  if (going.length === 0) return true;
+  const text = going.length === 1 ? going[0] : `${going.slice(0, -1).join(", ")} and ${going.at(-1)}`;
+  return window.confirm(`Remove ${name || "this row"}? Its ${text} ${going.length === 1 && held.isZero() && safes + notes === 1 ? "goes" : "go"} too.`);
 }
 
 function RemoveButton({ draft, onDraft, rowKey, name }: { draft: Draft; onDraft: (d: Draft) => void; rowKey: string; name: string }) {
@@ -124,7 +138,7 @@ function HoldersCard({ draft, onDraft, errorFor }: CardProps) {
   return (
     <section className="card" aria-labelledby="edit-holders-heading">
       <h2 id="edit-holders-heading">Holders</h2>
-      <p className="card__intro">Everyone who owns shares or options. Their holdings go under "Who holds what".</p>
+      <p className="card__intro">Everyone who owns shares or options, or holds a SAFE or note. Their shares go under "Who holds what".</p>
       <ul className="edit-rows">
         {draft.holders.map((h) => (
           <li key={h.key} className="edit-row">
@@ -361,6 +375,175 @@ function SharesCard({ draft, onDraft, error, errorFor }: CardProps & { error: Dr
   );
 }
 
+// ---------- SAFEs and notes still outstanding ----------
+
+const SAFE_CAPS = [
+  { value: "post", label: "A post-money valuation cap" },
+  { value: "pre", label: "A pre-money valuation cap" },
+  { value: "none", label: "No cap" },
+];
+
+const NOTE_BASES: { value: ConversionBase; label: string }[] = [
+  { value: "with_pool", label: "Shares outstanding and the option pool" },
+  { value: "without_pool", label: "Shares outstanding, without the option pool" },
+  { value: "common_only", label: "Common stock only" },
+];
+
+function OutstandingCard({ draft, onDraft, errorFor }: CardProps) {
+  const holders = draft.holders.map((h) => ({ value: h.key, label: h.name || "Unnamed holder" }));
+  const who = (key: string) => draft.holders.find((h) => h.key === key)?.name || "";
+  const error = errorFor(fieldId.outstanding);
+  return (
+    <section className="card" aria-labelledby="edit-outstanding-heading" id={fieldId.outstanding} tabIndex={-1}>
+      <h2 id="edit-outstanding-heading">SAFEs and notes still outstanding</h2>
+      <p className="card__intro">
+        SAFEs and convertible notes that haven't converted by the sale. They hold no shares: at the sale each takes whichever is worth more,
+        its cash amount or converting to common.
+      </p>
+      {draft.safes.map((f, i) => (
+        <SafeFields key={f.key} f={f} n={i + 1} who={who(f.holder)} holders={holders} draft={draft} onDraft={onDraft} errorFor={errorFor} />
+      ))}
+      {draft.notes.map((n, i) => (
+        <NoteFields key={n.key} n={n} i={i + 1} who={who(n.holder)} holders={holders} draft={draft} onDraft={onDraft} errorFor={errorFor} />
+      ))}
+      <div className="edit-row">
+        <button type="button" className="add" onClick={() => onDraft(addSafe(draft))}>
+          Add a SAFE
+        </button>
+        <button type="button" className="add" onClick={() => onDraft(addNote(draft))}>
+          Add a convertible note
+        </button>
+      </div>
+      {error && <p className="field-error">{error}</p>}
+    </section>
+  );
+}
+
+type RowProps = CardProps & { who: string; holders: { value: string; label: string }[] };
+
+function SafeFields({ f, n, who, holders, draft, onDraft, errorFor }: RowProps & { f: DraftSafe; n: number }) {
+  const set = (change: Partial<DraftSafe>) => onDraft(setSafe(draft, f.key, change));
+  const name = `SAFE ${n}${who ? `: ${who}` : ""}`;
+  const preferred = draft.securities.filter((s): s is DraftPreferred => s.kind === "preferred");
+  return (
+    <fieldset className="series" id={fieldId.safe(f.key)} tabIndex={-1}>
+      <legend>{name}</legend>
+      <div className="series__grid">
+        <SelectField id={fieldId.safeHolder(f.key)} label="Holder" value={f.holder} options={holders} onChange={(v) => set({ holder: v })} error={errorFor(fieldId.safeHolder(f.key))} />
+        <Field
+          id={fieldId.safeAmount(f.key)}
+          label="Amount ($)"
+          numeric
+          value={f.purchaseAmount}
+          onChange={(v) => set({ purchaseAmount: v })}
+          error={errorFor(fieldId.safeAmount(f.key))}
+          hint={amountHint(f.purchaseAmount) ?? undefined}
+        />
+        <SelectField id={fieldId.safeCapKind(f.key)} label="Cap" value={f.cap} options={SAFE_CAPS} onChange={(v) => set({ cap: v as DraftSafe["cap"] })} error={null} wide />
+        {f.cap !== "none" && (
+          <Field
+            id={fieldId.safeCap(f.key)}
+            label="Valuation cap ($)"
+            numeric
+            value={f.capAmount}
+            onChange={(v) => set({ capAmount: v })}
+            error={errorFor(fieldId.safeCap(f.key))}
+            hint={amountHint(f.capAmount) ?? undefined}
+          />
+        )}
+        <Field
+          id={fieldId.safeDiscount(f.key)}
+          label="Discount (%)"
+          numeric
+          value={f.discount}
+          onChange={(v) => set({ discount: v })}
+          error={errorFor(fieldId.safeDiscount(f.key))}
+          hint="Blank for none. At a sale it counts only for a SAFE with no cap."
+        />
+        {preferred.length > 0 && (
+          <SelectField
+            id={fieldId.safeRanks(f.key)}
+            label="Its cash amount is paid alongside"
+            value={f.ranksWith ?? ""}
+            options={[
+              { value: "", label: "The most junior preferred (the default)" },
+              ...preferred.map((s) => ({ value: s.key, label: s.name || "Unnamed series" })),
+            ]}
+            onChange={(v) => set({ ranksWith: v || null })}
+            error={errorFor(fieldId.safeRanks(f.key))}
+            wide
+          />
+        )}
+      </div>
+      <button type="button" className="remove" aria-label={`Remove ${name}`} onClick={() => onDraft(removeOutstanding(draft, f.key))}>
+        Remove
+      </button>
+    </fieldset>
+  );
+}
+
+function NoteFields({ n, i, who, holders, draft, onDraft, errorFor }: RowProps & { n: DraftNote; i: number }) {
+  const set = (change: Partial<DraftNote>) => onDraft(setNote(draft, n.key, change));
+  const name = `Note ${i}${who ? `: ${who}` : ""}`;
+  return (
+    <fieldset className="series" id={fieldId.note(n.key)} tabIndex={-1}>
+      <legend>{name}</legend>
+      <div className="series__grid">
+        <SelectField id={fieldId.noteHolder(n.key)} label="Holder" value={n.holder} options={holders} onChange={(v) => set({ holder: v })} error={errorFor(fieldId.noteHolder(n.key))} />
+        <Field
+          id={fieldId.notePrincipal(n.key)}
+          label="Principal ($)"
+          numeric
+          value={n.principal}
+          onChange={(v) => set({ principal: v })}
+          error={errorFor(fieldId.notePrincipal(n.key))}
+          hint={amountHint(n.principal) ?? undefined}
+        />
+        <Field id={fieldId.noteInterest(n.key)} label="Simple interest (% a year)" numeric value={n.interestRate} onChange={(v) => set({ interestRate: v })} error={errorFor(fieldId.noteInterest(n.key))} />
+        <Field id={fieldId.noteIssued(n.key)} label="Issued" type="date" value={n.issueDate} onChange={(v) => set({ issueDate: v })} error={errorFor(fieldId.noteIssued(n.key))} />
+        <Field
+          id={fieldId.noteCap(n.key)}
+          label="Pre-money valuation cap ($)"
+          numeric
+          value={n.valuationCap}
+          onChange={(v) => set({ valuationCap: v })}
+          error={errorFor(fieldId.noteCap(n.key))}
+          hint={amountHint(n.valuationCap) ?? "Blank for none."}
+        />
+        <SelectField
+          id={fieldId.noteBase(n.key)}
+          label="The cap divides by"
+          value={n.conversionBase}
+          options={NOTE_BASES}
+          onChange={(v) => set({ conversionBase: v as ConversionBase })}
+          error={errorFor(fieldId.noteBase(n.key))}
+          wide
+        />
+        <Field
+          id={fieldId.noteDiscount(n.key)}
+          label="Discount (%)"
+          numeric
+          value={n.discount}
+          onChange={(v) => set({ discount: v })}
+          error={errorFor(fieldId.noteDiscount(n.key))}
+          hint="Blank for none. At a sale it counts only for a note with no cap."
+        />
+        <Field
+          id={fieldId.noteRepayment(n.key)}
+          label="Repaid at a sale (× principal and interest)"
+          numeric
+          value={n.repaymentMultiple}
+          onChange={(v) => set({ repaymentMultiple: v })}
+          error={errorFor(fieldId.noteRepayment(n.key))}
+        />
+      </div>
+      <button type="button" className="remove" aria-label={`Remove ${name}`} onClick={() => onDraft(removeOutstanding(draft, n.key))}>
+        Remove
+      </button>
+    </fieldset>
+  );
+}
+
 // ---------- who is paid first ----------
 
 const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`;
@@ -479,6 +662,8 @@ function GroupCard({ draft, onDraft, errorFor }: CardProps) {
 
 function RangeCard({ draft, onDraft, errorFor }: CardProps) {
   const set = (i: 0 | 1, v: string) => onDraft({ ...draft, range: (i === 0 ? [v, draft.range[1]] : [draft.range[0], v]) as [string, string] });
+  // Only notes accrue interest up to the sale (X3), so the date is asked for once there's a note, or kept once given.
+  const dated = draft.notes.length > 0 || draft.exitDate.trim() !== "";
   return (
     <section className="card" aria-labelledby="edit-range-heading">
       <h2 id="edit-range-heading">Exit values to explore</h2>
@@ -486,6 +671,17 @@ function RangeCard({ draft, onDraft, errorFor }: CardProps) {
       <div className="edit-row edit-row--top">
         <Field id={fieldId.rangeLow} label="From" numeric value={draft.range[0]} onChange={(v) => set(0, v)} error={errorFor(fieldId.rangeLow)} hint={rangeHint(draft.range[0])} />
         <Field id={fieldId.rangeHigh} label="To" numeric value={draft.range[1]} onChange={(v) => set(1, v)} error={errorFor(fieldId.rangeHigh)} hint={rangeHint(draft.range[1])} />
+        {dated && (
+          <Field
+            id={fieldId.exitDate}
+            label="Date of the sale"
+            type="date"
+            value={draft.exitDate}
+            onChange={(v) => onDraft({ ...draft, exitDate: v })}
+            error={errorFor(fieldId.exitDate)}
+            hint="Convertible notes accrue interest up to this date."
+          />
+        )}
       </div>
     </section>
   );

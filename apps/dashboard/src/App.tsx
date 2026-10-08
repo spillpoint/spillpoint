@@ -174,7 +174,7 @@ export function App() {
   const changeRounds = (next: RoundsDraft) => {
     setSession((s) => {
       const built = buildRounds(next);
-      const result = fromRounds(built, s.draft.range);
+      const result = fromRounds(built, s.draft.range, s.draft.exitDate);
       if (!result.ok) {
         const path = (result.error as { path?: string }).path ?? "";
         return { ...s, rounds: next, roundsProblem: locate(next, path, result.message) };
