@@ -414,7 +414,6 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   return reasons;
 }
 
-/** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs and notes converting. */
 /**
  * What a SAFE or note with no cap needs room in to convert (X9, X12). With no preferred, what is left for common and
  * it; with preferred, what is left after the preferences, since participating or converted preferred shares it too
@@ -424,6 +423,7 @@ function leftFor(pc: PreparedCapTable, what: string): string {
   return pc.preferred.size > 0 ? "what is left after the preferences" : `what is left for common and ${what}`;
 }
 
+/** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs and notes converting. */
 function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
   const safes = [...pc.safes.keys(), ...pc.notes.keys()].filter((id) => d.converted.has(id));
   return pc.capTable.securities

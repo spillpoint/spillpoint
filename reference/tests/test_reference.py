@@ -555,6 +555,26 @@ class Exits(unittest.TestCase):
         self.assertEqual(p[("y", "seed")], F(2_000_000 * 1_600_000, 2_200_000))
         self.assertEqual(p[("x", "common")], 0)
 
+    def test_two_warrants_for_one_series(self):
+        # E12, fixed in 03f: each warrant takes its pro rata part of the series' whole total. 8M common; seed 2M shares
+        # at $1 (1x non-participating); warrants for 100,000 seed at $0.50 and at $0.60. At $1.5M both exercise: $1.61M
+        # of proceeds over 2.2M seed shares, $161/220 a share, above both strikes. Before the fix the second warrant
+        # got its part of what the first left, $9,855.37 net instead of $13,181.82.
+        ct = table(
+            [
+                COMMON,
+                pref("seed", "1", "1", "non_participating"),
+                {"id": "w1", "name": "w1", "kind": "warrant", "strike": "0.5", "underlying": "seed"},
+                {"id": "w2", "name": "w2", "kind": "warrant", "strike": "0.6", "underlying": "seed"},
+            ],
+            [("x", "common", 8_000_000), ("y", "seed", 2_000_000), ("l", "w1", 100_000), ("m", "w2", 100_000)],
+            [["seed"]],
+        )
+        p = payouts(ct, 1_500_000)
+        self.assertEqual(p[("y", "seed")], F(161, 220) * 2_000_000)
+        self.assertEqual(p[("l", "w1")], F(161, 220) * 100_000 - 50_000)
+        self.assertEqual(p[("m", "w2")], F(161, 220) * 100_000 - 60_000)
+
     def test_cumulative_dividends(self):
         # 1M preferred at $1 (1x non-participating), 1M common. 10% simple
         # cumulative dividend from 2024-01-01 to a 2025-01-01 exit: 366 actual

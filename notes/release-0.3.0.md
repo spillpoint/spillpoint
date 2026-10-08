@@ -14,11 +14,14 @@ The items owed before release, and the carve-out as a term of the sale. The vers
   - It takes that out of what is left after the preferences first, and the capped series stops at its cap in what remains. So payouts stay straight lines between breakpoints.
   - Before 0.3.0 this was refused, as `uncapped_safe_with_capped_participation` and `uncapped_note_with_capped_participation`.
 
-*To come:* 03f, the warrant on a curve (8b); 03g, a post-money SAFE converting beside notes or pre-money SAFEs (21b–21d) and pay-to-play conversions (17i); 03h, conversions in a round that triggers anti-dilution (16g–16j, 17j); 03i, the page.
+- **A warrant coming into the money on a curve** (03f, case 8b): with a carve-out alongside the preferences, a warrant for a series in the short tier can come into the money while payouts curve. The breakpoint finder now places that kink exactly ($20,000,000 ÷ 19 in 8b), where 0.2.0 stopped with a `NoAnswerError`. Any other decision changing on a curve still stops it.
+
+*To come:* 03g, a post-money SAFE converting beside notes or pre-money SAFEs (21b–21d) and pay-to-play conversions (17i); 03h, conversions in a round that triggers anti-dilution (16g–16j, 17j); 03i, the page.
 
 ## Changed answers
 
 Inputs that gave one answer in 0.2.0 and give another in 0.3.0:
+- **(03f, a fix)** Two or more warrants for the same series, exercised together: each now gets its pro rata part of the series' total. 0.2.0 paid the second warrant a part of what the first left, so it underpaid it and overpaid the series. A saved company with two warrants for one series gives a different, correct answer after upgrading. No worked case had two.
 - **(03h)** A SAFE or note converting below an earlier series' conversion price now adjusts that series, even when the round itself is priced above it (case 16i). A saved company like that gives a different answer after upgrading.
 
 ## Changed wording

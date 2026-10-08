@@ -306,7 +306,7 @@ Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
   - **A take is negative** when a later payment lowers a holder's running total, as when it tips a series into converting. It is reported as is, and `lowered` names the holders it falls for.
 - **Management carve-outs** *(0.2.0)*: a percentage of the exit value, in marginal tiers like tax brackets, paid to listed people under the security `"carve_out"`.
   - **Before the preferences,** the default.
-  - **Alongside them,** sharing the most senior tier pro rata by claim. While that tier isn't paid in full, payouts curve. A breakpoint on a curve is where the formula changes, and the breakpoints either side of a curved stretch say so (`curveBelow`, `curveAbove`).
+  - **Alongside them,** sharing the most senior tier pro rata by claim. While that tier isn't paid in full, payouts curve. A breakpoint on a curve is where the formula changes, and the breakpoints either side of a curved stretch say so (`curveBelow`, `curveAbove`). That includes where a warrant for a series in that tier comes into the money, a kink on the curve *(0.3.0)*; any other decision changing on a curve stops the breakpoint finder with a `NoAnswerError`.
   - **A term of the sale** *(0.3.0)*: the exit input can carry it, so a company built from its rounds can have one. It may still be on the cap table instead, but not on both.
 - **Options at any number of strikes,** exercised once they're in the money. The strike money joins the proceeds, and option payouts are reported net of strike.
 - **Warrants** *(0.2.0)*, for common or for a preferred series:
