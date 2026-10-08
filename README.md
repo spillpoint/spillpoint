@@ -17,12 +17,13 @@ Open-source exit waterfall engine and dashboard. Given a cap table and an exit v
   - the order the preferred series are paid in
   - one group of series that convert together
   - the unissued option pool
+  - SAFEs and convertible notes still outstanding at the sale, and the sale's date their interest runs to
 - Build the cap table from the company's history on the Rounds tab: shares issued, the option pool, grants, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Each event shows what it did, what it did to your share, and the cap table after it. The fictional example, Millrace Robotics, opens from its ten events.
 - Save the cap table, or the rounds that build it, to a file on your computer, and open it again.
 
 Your cap table stays in your browser. GitHub Pages serves the page, and sees the visit as it would for any site. After that, the page makes no network requests and tells the browser to block any it might try. Nothing is kept anywhere unless you save a file.
 
-The page doesn't yet show cumulative dividends, warrants, management carve-outs, escrow and earnouts, or SAFEs and notes still outstanding at a sale, though the engine pays them all. It refuses a cap table with any of them rather than show it with something left out. Nor does it build a few combinations within a round: the engine's README lists them. Anything it doesn't handle is refused with a message saying so, never quietly ignored.
+The page doesn't yet show cumulative dividends, warrants, management carve-outs, or escrow and earnouts, though the engine pays them all. It refuses a cap table with any of them rather than show it with something left out. Nor does it build a few combinations within a round: the engine's README lists them. Anything it doesn't handle is refused with a message saying so, never quietly ignored.
 
 > The charter and the signed documents govern, not this tool.
 

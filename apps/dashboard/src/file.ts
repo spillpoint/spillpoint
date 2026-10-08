@@ -1,14 +1,17 @@
 // Saving and opening a cap table as a local JSON file (M3 plan, answers 4
 // and 5): the only way anything is kept. The file is
 //
-//   {"format": "spillpoint", "version": 2, "name": ..., "cap_table": ..., "range": [...],
-//    "view": {"exit_value": ..., "you": ...}}
+//   {"format": "spillpoint", "version": 3, "name": ..., "cap_table": ..., "range": [...],
+//    "exit_date": ..., "view": {"exit_value": ..., "you": ...}}
 //
 // or, for a cap table built from the company's rounds (version 2, M4i), the
 // holders and events in place of the cap table, with the event whose cap
 // table the exit runs on:
 //
 //   {..., "holders": [...], "events": [...], "cap_table_after_event": "series_b", "range": [...], ...}
+//
+// The sale's date (version 3, M5k) is there only when it's given: notes
+// still outstanding accrue interest up to it (X3, C9).
 //
 // Both are the engine's own input format (C1–C4, C14), so a saved file is
 // also valid engine input. A field nobody edited keeps the exact value it was
@@ -29,9 +32,9 @@ import { fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
 
 export const FORMAT = "spillpoint";
-export const VERSION = 2;
+export const VERSION = 3;
 
-const FIELDS = ["format", "version", "name", "cap_table", "holders", "events", "cap_table_after_event", "range", "view"];
+const FIELDS = ["format", "version", "name", "cap_table", "holders", "events", "cap_table_after_event", "range", "exit_date", "view"];
 const VIEW_FIELDS = ["exit_value", "you"];
 
 /** Where you were looking: the exit value, exact, and the holder you are, by id. */
@@ -53,6 +56,7 @@ export function fileText(name: string, draft: Draft, view?: View, rounds?: Round
     name: name.trim() || "Untitled cap table",
     ...(rounds ? { holders: rounds.holders, events: rounds.events, cap_table_after_event: rounds.after } : { cap_table: json.cap_table }),
     range: json.range,
+    ...(json.exit_date ? { exit_date: json.exit_date } : {}),
     ...(view ? { view: { exit_value: view.exitValue, you: view.you } } : {}),
   };
   return `${JSON.stringify(file, null, 2)}\n`;
@@ -72,10 +76,12 @@ export type Opened = { ok: true; name: string; draft: Draft; view: View | null; 
 /**
  * How each older version becomes the next one, keyed by the version it
  * upgrades. Version 2 adds rounds, as an alternative to the cap table, so a
- * version 1 file is already a version 2 file without them.
+ * version 1 file is already a version 2 file without them. Version 3 adds the
+ * sale's date, which older files had no need for: they had no notes.
  */
 const MIGRATIONS: Record<number, (file: Record<string, unknown>) => Record<string, unknown>> = {
   1: (file) => ({ ...file, version: 2 }),
+  2: (file) => ({ ...file, version: 3 }),
 };
 
 /** Reads a saved file back into the editor, or says plainly why it can't. */
@@ -119,7 +125,7 @@ type Contents = { read: ExitInput; draft: Draft; rounds: Rounds | null } | { mes
 
 /** A cap table entered directly. */
 function openCapTable(file: Record<string, unknown>): Contents {
-  const exit = { cap_table: file.cap_table, range: file.range, exit_values: [] };
+  const exit = { cap_table: file.cap_table, range: file.range, exit_values: [], ...(file.exit_date != null ? { exit_date: file.exit_date } : {}) };
   let read: ExitInput;
   try {
     read = readExit(exit, undefined, "file");
@@ -154,13 +160,14 @@ function openRounds(file: Record<string, unknown>): Contents {
     return { message: "Its rounds need the holders, the events, and the event whose cap table the payouts use." };
   }
   const rounds: Rounds = { holders: holders as Rounds["holders"], events: events as Rounds["events"], after };
-  const built = fromRounds(rounds, file.range);
+  if (file.exit_date != null && typeof file.exit_date !== "string") return { message: "Its sale date isn't readable: it should be a date, like 2026-06-30." };
+  const built = fromRounds(rounds, file.range, file.exit_date ?? "");
   if (!built.ok) return { message: built.error instanceof NotShownYet ? built.message : `Its rounds can't be built. ${built.message}` };
   try {
     return { read: readExit(buildExit(built.draft).json, undefined, "file"), draft: built.draft, rounds };
   } catch (e) {
-    // The rounds are fine; what's left is the range.
-    if (e instanceof InputError) return { message: `Its range can't be used. ${withoutCodes(e.message)}` };
+    // The rounds are fine; what's left is the range, or the sale's date.
+    if (e instanceof InputError) return { message: `Its ${e.path.endsWith("exit_date") ? "sale date" : "range"} can't be used. ${withoutCodes(e.message)}` };
     throw e;
   }
 }

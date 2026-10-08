@@ -10,6 +10,8 @@ import { describe, expect, it } from "vitest";
 import {
   NotShownYet,
   addHolder,
+  addNote,
+  addSafe,
   addSecurity,
   buildExit,
   checkBuilt,
@@ -107,6 +109,35 @@ describe("what founders type", () => {
     expect(withoutSeries.group.members).toEqual([]);
     expect(Object.keys(withoutSeries.shares)).toEqual([sharesKey("k1", "k2")]);
     expect(removeRow(d, "k1").shares).toEqual({});
+  });
+});
+
+describe("where an engine error about a SAFE, a note or the sale's date lands (M5k)", () => {
+  it("finds the SAFE's or note's field, the card for a message about them all, and the date", () => {
+    const d = addNote(addSafe(scratchDraft()));
+    const [safe] = d.safes;
+    const [note] = d.notes;
+    const { fields } = buildExit(d);
+    expect(fieldForPath(fields, "exit.cap_table.unconverted_safes[0].post_money_cap")).toBe(fieldId.safeCap(safe!.key));
+    expect(fieldForPath(fields, "exit.cap_table.unconverted_safes[0].id")).toBe(fieldId.safe(safe!.key));
+    expect(fieldForPath(fields, "exit.cap_table.unconverted_notes[0].issue_date")).toBe(fieldId.noteIssued(note!.key));
+    expect(fieldForPath(fields, "exit.cap_table.unconverted_notes")).toBe(fieldId.outstanding);
+    expect(fieldForPath(fields, "exit.exit_date")).toBe(fieldId.exitDate);
+  });
+
+  it("gives new SAFEs and notes ids of their own, apart from every class's", () => {
+    let d = addNote(addSafe(addSafe(scratchDraft())));
+    d = { ...d, securities: d.securities.map((s) => ({ ...s, name: "Safe" })) };
+    const ct = buildExit(d).json.cap_table;
+    expect((ct.securities as { id: string }[]).map((s) => s.id)).toEqual(["safe"]);
+    expect((ct.unconverted_safes as { id: string }[]).map((f) => f.id)).toEqual(["safe_2", "safe_3"]);
+    expect((ct.unconverted_notes as { id: string }[]).map((n) => n.id)).toEqual(["note"]);
+  });
+
+  it("leaves SAFEs, notes and the date out of a cap table without them, so the examples build exactly as before", () => {
+    const { json } = buildExit(scratchDraft());
+    expect(Object.keys(json.cap_table)).toEqual(["holders", "securities", "seniority", "conversion_groups", "positions"]);
+    expect(Object.keys(json)).toEqual(["cap_table", "range", "exit_values"]);
   });
 });
 

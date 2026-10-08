@@ -506,7 +506,7 @@ function readCarveOut(value: unknown, holderIds: ReadonlySet<string>, path: stri
 
 // ---------- exits and cases ----------
 
-// exit_date: dividends accrue to it (X2); notes, still refused at exit, will too.
+// exit_date: dividends (X2) and notes' interest (X3) accrue to it.
 const EXIT_FIELDS = ["cap_table", "cap_table_after_event", "range", "exit_values", "exit_date", "payment_schedules"] as const;
 
 export function readExit(value: unknown, resolveCapTable?: CapTableResolver, path = "exit"): ExitInput {

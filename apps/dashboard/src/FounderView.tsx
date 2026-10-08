@@ -43,13 +43,22 @@ export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, br
       </h1>
       <p className="founder__compare">
         That's {percent(ofProceeds)} of the proceeds, for {percent(ofCompany)} of the company (fully diluted
-        {pc.capTable.unissuedPool.gt(0) ? ", including the option pool" : ""}).
+        {pc.capTable.unissuedPool.gt(0) ? ", including the option pool" : ""}).{yourOutstanding(pc, you)}
       </p>
       <p className="founder__start">
         <PayoutStartLine pc={pc} range={range} you={you} breakpoints={breakpoints} />
       </p>
     </section>
   );
+}
+
+/** A SAFE or note holds no shares until it converts (C8, C9), so your share of the company leaves it out: say so. */
+function yourOutstanding(pc: PreparedCapTable, you: string): string {
+  const safes = (pc.capTable.unconvertedSafes ?? []).filter((f) => f.holder === you).length;
+  const notes = (pc.capTable.unconvertedNotes ?? []).filter((n) => n.holder === you).length;
+  if (safes + notes === 0) return "";
+  const what = [safes > 0 ? (safes === 1 ? "SAFE" : "SAFEs") : null, notes > 0 ? (notes === 1 ? "convertible note" : "convertible notes") : null].filter(Boolean).join(" and ");
+  return ` Your ${what} ${safes + notes === 1 ? "holds" : "hold"} no shares until ${safes + notes === 1 ? "it converts, so it isn't" : "they convert, so they aren't"} counted in that share.`;
 }
 
 function PayoutStartLine({ pc, range, you, breakpoints }: Omit<Props, "answer" | "exitValue" | "onChooseYou">) {

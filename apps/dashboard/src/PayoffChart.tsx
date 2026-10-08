@@ -16,6 +16,7 @@ import { D } from "spillpoint";
 import type { PreparedCapTable } from "spillpoint";
 
 import type { CurvePoint } from "./analysis.ts";
+import { outstandingNames } from "./capTable.ts";
 import { chartRows, niceScale, seriesNodes, valueAt } from "./curves.ts";
 import type { Node, SeriesKind } from "./curves.ts";
 import { dollars, parseDollars, shortDollars } from "./format.ts";
@@ -89,14 +90,19 @@ export function PayoffChart({ pc, curve, breakpoints, yours, range, exitValue, o
   const { capTable } = pc;
   const series: Series[] = useMemo(() => {
     const yourClasses = new Set(capTable.positions.filter((p) => p.holder === you).map((p) => p.security));
+    // Each SAFE and note still outstanding is a class of its own (C8, C9).
+    for (const x of [...(capTable.unconvertedSafes ?? []), ...(capTable.unconvertedNotes ?? [])]) if (x.holder === you) yourClasses.add(x.id);
     const list =
       kind === "holder"
         ? capTable.holders.map((h) => ({ id: h.id, name: h.name, you: h.id === you }))
-        : capTable.securities.map((s) => ({ id: s.id, name: s.name, you: yourClasses.has(s.id) }));
+        : [
+            ...capTable.securities.map((s) => ({ id: s.id, name: s.name, you: yourClasses.has(s.id) })),
+            ...[...outstandingNames(pc)].map(([id, name]) => ({ id, name, you: yourClasses.has(id) })),
+          ];
     return list
       .filter((s) => (kind === "holder" ? curve[0]?.holders[s.id] : curve[0]?.classes[s.id]) !== undefined)
       .map((s, i) => ({ ...s, key: `s${i}`, nodes: seriesNodes(curve, kind, s.id) }));
-  }, [kind, curve, capTable, you]);
+  }, [kind, curve, capTable, pc, you]);
 
   const [from, to] = domain;
   const rows = useMemo(() => chartRows(new Map(series.map((s) => [s.key, s.nodes])), from, to), [series, from, to]);

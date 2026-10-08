@@ -253,6 +253,110 @@ describe("not losing edits by accident", () => {
   });
 });
 
+describe("SAFEs and notes still outstanding (M5k)", () => {
+  /** Cases 12 and 13a's company, typed in from a blank cap table: two founders, an employee's options and a pool, and Investor X. */
+  function company() {
+    render(<App />);
+    startFrom("scratch");
+    openTab("Cap table");
+    const holders = card("Holders");
+    type(within(holders).getByRole("textbox", { name: "Holder name" }), "Founder A");
+    for (const name of ["Founder B", "Employee C", "Investor X"]) {
+      fireEvent.click(within(holders).getByRole("button", { name: "Add a holder" }));
+      type(within(holders).getAllByRole("textbox", { name: "Holder name" }).at(-1)!, name);
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Add an option class" }));
+    type(screen.getByLabelText("Strike price ($ a share)"), "5");
+    type(within(card("Classes of stock")).getAllByLabelText("Class name").at(-1)!, "Options ($5 strike)");
+    type(screen.getByRole("textbox", { name: "Founder A, Common Stock" }), "6,000,000");
+    type(screen.getByRole("textbox", { name: "Founder B, Common Stock" }), "3,000,000");
+    type(screen.getByRole("textbox", { name: "Employee C, Options ($5 strike)" }), "500,000");
+    type(screen.getByLabelText("Unissued option pool (shares)"), "1,000,000");
+    type(screen.getByLabelText("To"), "40M");
+  }
+
+  /** Every holder's payout on the page, at each of the locked case's listed exit values, against its expected.json. */
+  function paysAsExpected(name: string) {
+    const expected = JSON.parse(readFileSync(resolve(import.meta.dirname, `../../../cases/${name}/expected.json`), "utf8")).exit;
+    const names: Record<string, string> = { founder_a: "Founder A", founder_b: "Founder B", employee_c: "Employee C", investor_x: "Investor X" };
+    openTab("Payouts");
+    const box = screen.getByRole("textbox", { name: "Exit value" });
+    const listed = expected.payouts.filter((p: { tags: string[] }) => p.tags.includes("listed"));
+    expect(listed.length).toBeGreaterThan(5);
+    for (const p of listed) {
+      type(box, p.exit_value);
+      fireEvent.keyDown(box, { key: "Enter" });
+      const table = screen.getByRole("table");
+      for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
+        const row = within(table).getByText(names[holder]!).closest("tr")!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+      }
+    }
+  }
+
+  it("takes case 12's SAFE, typed in, and pays what the case expects", () => {
+    company();
+    const outstanding = card("SAFEs and notes still outstanding");
+    fireEvent.click(within(outstanding).getByRole("button", { name: "Add a SAFE" }));
+    const safe = within(outstanding).getByRole("group", { name: "SAFE 1: Founder A" });
+    fireEvent.change(within(safe).getByLabelText("Holder"), { target: { value: (within(safe).getByRole("option", { name: "Investor X" }) as HTMLOptionElement).value } });
+    expect(within(outstanding).getByRole("group", { name: "SAFE 1: Investor X" })).toBe(safe);
+    // Blank amounts are the engine's to ask for, next to the field.
+    expect(status()).toBe("The payouts can't update until this is fixed: Fill this in: it can't be blank. Go to the field");
+    type(within(safe).getByLabelText("Amount ($)"), "1M");
+    expect((within(safe).getByLabelText("Cap") as HTMLSelectElement).value).toBe("post");
+    type(within(safe).getByLabelText("Valuation cap ($)"), "10M");
+    expect(status()).toMatch(/Every change updates the payouts\.$/);
+    // No sale date: a SAFE accrues nothing, so none is asked for.
+    expect(screen.queryByLabelText("Date of the sale")).toBeNull();
+    paysAsExpected("edge-12-unconverted-safe");
+    // A SAFE holds no shares, so it has none of the company; the class view names it as the reasons do.
+    fireEvent.click(screen.getByRole("button", { name: "By class" }));
+    const row = within(screen.getByRole("table")).getByRole("rowheader", { name: /^Investor X's SAFE/ }).closest("tr")!;
+    expect(row.textContent).toContain("no shares until it converts");
+    expect(screen.getByText(/SAFEs still outstanding hold no shares until they convert, so it leaves them out\./)).toBeTruthy();
+  });
+
+  it("takes case 13a's note, typed in, asks for the sale's date, and pays what the case expects", () => {
+    company();
+    const outstanding = card("SAFEs and notes still outstanding");
+    fireEvent.click(within(outstanding).getByRole("button", { name: "Add a convertible note" }));
+    const note = within(outstanding).getByRole("group", { name: "Note 1: Founder A" });
+    fireEvent.change(within(note).getByLabelText("Holder"), { target: { value: (within(note).getByRole("option", { name: "Investor X" }) as HTMLOptionElement).value } });
+    type(within(note).getByLabelText("Principal ($)"), "1,000,000");
+    type(within(note).getByLabelText("Simple interest (% a year)"), "6");
+    type(within(note).getByLabelText("Issued"), "2022-01-01");
+    type(within(note).getByLabelText("Pre-money valuation cap ($)"), "8M");
+    expect((within(note).getByLabelText("The cap divides by") as HTMLSelectElement).value).toBe("with_pool");
+    type(within(note).getByLabelText("Repaid at a sale (× principal and interest)"), "2");
+    // Interest runs to the sale, so the page asks for its date, next to the field.
+    const date = screen.getByLabelText("Date of the sale");
+    expect(status()).toBe("The payouts can't update until this is fixed: Fill this in: a convertible note accrues interest up to the date of the sale. Go to the field");
+    fireEvent.click(screen.getByRole("button", { name: "Go to the field" }));
+    expect(document.activeElement).toBe(date);
+    type(date, "2021-12-31");
+    expect(within(date.closest(".field")!).getByText(/^2021-12-31 is before note.* was issued, 2022-01-01$/)).toBeTruthy();
+    type(date, "2024-01-01");
+    expect(status()).toMatch(/Every change updates the payouts\.$/);
+    paysAsExpected("edge-13a-note-with-pool");
+  });
+
+  it("asks before removing a holder with a SAFE, and removes the SAFE with them", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    company();
+    const outstanding = card("SAFEs and notes still outstanding");
+    fireEvent.click(within(outstanding).getByRole("button", { name: "Add a SAFE" }));
+    const safe = within(outstanding).getByRole("group", { name: "SAFE 1: Founder A" });
+    fireEvent.change(within(safe).getByLabelText("Holder"), { target: { value: (within(safe).getByRole("option", { name: "Investor X" }) as HTMLOptionElement).value } });
+    const remove = within(card("Holders")).getByRole("button", { name: "Remove Investor X" });
+    fireEvent.click(remove);
+    expect(confirm).toHaveBeenCalledWith("Remove Investor X? Its SAFE goes too.");
+    expect(within(outstanding).queryAllByRole("group")).toHaveLength(1);
+    fireEvent.click(remove);
+    expect(within(outstanding).queryAllByRole("group")).toHaveLength(0);
+  });
+});
+
 describe("the tabs", () => {
   it("switch with the arrow keys", () => {
     render(<App />);

@@ -257,6 +257,7 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .rounds__table summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .rounds__table .payouts { margin-top: 8px; }
 .rounds__outstanding { margin: 8px 0 0; color: var(--muted); }
+.rounds__at-sale { margin: 8px 0 0; padding-left: 10px; border-left: 3px solid var(--accent); }
 .rounds__class-under { display: none; }
 
 @media (max-width: 640px) {

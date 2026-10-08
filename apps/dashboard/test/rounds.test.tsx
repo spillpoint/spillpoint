@@ -193,7 +193,7 @@ describe("saving and opening rounds", () => {
     render(<App />);
     click("Save");
     const file = JSON.parse(await downloads[0]!.text());
-    expect(file).toMatchObject({ version: 2, cap_table_after_event: "series_b" });
+    expect(file).toMatchObject({ version: 3, cap_table_after_event: "series_b" });
     expect(file.cap_table).toBeUndefined();
     expect(file.events).toEqual(examples[0]!.company!.events);
 

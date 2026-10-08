@@ -166,6 +166,47 @@ const SHOTS = {
     quality: 50,
   },
   "m4k-after": { width: 1100, height: 900, steps: [click("Rounds")], clip: ["section[aria-labelledby=rounds-heading]"] },
+  // M5k: SAFEs and notes still outstanding at the sale.
+  "m5k-editor": {
+    width: 1100,
+    height: 900,
+    steps: [
+      choose("Start from", "scratch"),
+      click("Cap table"),
+      click("Add a convertible note"),
+      fill("[id^=edit-note-principal-]", 0, "500,000"),
+      fill("[id^=edit-note-interest-]", 0, "6"),
+      fill("[id^=edit-note-issued-]", 0, "2025-01-01"),
+      fill("[id^=edit-note-cap-]", 0, "8M"),
+    ],
+    clip: ["section[aria-labelledby=edit-outstanding-heading]", "section[aria-labelledby=edit-range-heading]"],
+    quality: 50,
+  },
+  "m5k-at-sale": { width: 1100, height: 900, steps: [click("Rounds"), pick("#rounds-after", 0, "option_pool")], clip: [ROUND(3)], quality: 50 },
+  "m5k-payouts": {
+    width: 1100,
+    height: 900,
+    // The table's own "By class", not the chart's, which comes first on the page.
+    steps: [click("Rounds"), pick("#rounds-after", 0, "option_pool"), click("Payouts"), `document.querySelector("section[aria-labelledby=who-gets-what] .toggle button:nth-child(2)").click()`],
+    clip: ["section[aria-labelledby=who-gets-what]"],
+    quality: 50,
+  },
+  "m5k-unbuilt": {
+    width: 1100,
+    height: 900,
+    steps: [
+      choose("Start from", "scratch-rounds"),
+      click("Rounds"),
+      pick("#rounds-add-type", 0, "notes"),
+      click("Add it at the end"),
+      pick("#rounds-add-type", 0, "priced_round"),
+      click("Add it at the end"),
+      // Both forms closed, so the shot is the two cards' messages.
+      `[...document.querySelectorAll(".rounds__edit")].filter((b) => b.textContent === "Done").forEach((b) => b.click())`,
+    ],
+    clip: [ROUND(2), ROUND(3)],
+    quality: 50,
+  },
   "m4j-error": {
     width: 1100,
     height: 900,
@@ -177,7 +218,8 @@ const SHOTS = {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function connect() {
-  for (let i = 0; i < 50; i++) {
+  // A fresh profile can take several seconds to start.
+  for (let i = 0; i < 200; i++) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
       const page = targets.find((t) => t.type === "page");

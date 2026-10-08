@@ -3,13 +3,15 @@
 // straight away; when it says no, its own message appears next to the field
 // it names and at the top of the event, and the payouts stay on the last
 // rounds it accepted. Adding, removing and reordering events comes in M4k.
+// A round's SAFEs-and-notes section follows the events as typed (M5k), so it
+// stays while an earlier event has a problem the engine can't build past.
 
 import type React from "react";
 import type { CapTableAfterEvent, Participation } from "spillpoint";
 
 import { CheckField, Field, SelectField } from "./fields.tsx";
 import { amountHint } from "./format.ts";
-import { addHolder, eventFieldId, eventsNaming, holderFieldId, setEvent } from "./roundsDraft.ts";
+import { addHolder, eventFieldId, eventsNaming, holderFieldId, outstandingBefore, setEvent } from "./roundsDraft.ts";
 import type { EventDraft, RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 type Json = Record<string, unknown>;
@@ -330,7 +332,7 @@ function seniorityChoice(json: Json, series: string, before: string[][], convers
   return "written";
 }
 
-function RoundFields({ f, before, conversions, draft }: EventFormProps & { f: Fields }) {
+function RoundFields({ f, before, conversions, draft, event }: EventFormProps & { f: Fields }) {
   const json = f.json;
   const series = (json.series as Json | undefined) ?? {};
   const seriesId = String(series.id);
@@ -345,8 +347,10 @@ function RoundFields({ f, before, conversions, draft }: EventFormProps & { f: Fi
     ...(choice === "written" ? [{ value: "written", label: `As written: ${describe((json.seniority as string[][] | undefined) ?? [])}` }] : []),
   ];
   const p2p = json.pay_to_play as Json | undefined;
-  const outstandingSafes = (before?.unconvertedSafes.length ?? 0) > 0;
-  const outstandingNotes = (before?.unconvertedNotes.length ?? 0) > 0;
+  // From the events as typed, not as last built: an earlier event the engine can't build yet still creates its SAFE or note.
+  const waiting = outstandingBefore(draft, event.key);
+  const outstandingSafes = waiting.some((c) => c.kind === "safe");
+  const outstandingNotes = waiting.some((c) => c.kind === "note");
   return (
     <>
       <h4>The round</h4>
