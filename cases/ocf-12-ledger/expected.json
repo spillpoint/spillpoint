@@ -1,0 +1,238 @@
+{
+  "case": "ocf-12-ledger",
+  "worked_by": "hand (DERIVATION.md)",
+  "locked_case": "edge-25-ocf-ledger",
+  "result": {
+    "as_of": "2025-12-31",
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "employee_d",
+          "name": "Employee D"
+        },
+        {
+          "id": "employee_e",
+          "name": "Employee E"
+        },
+        {
+          "id": "angel_s",
+          "name": "Angel S"
+        },
+        {
+          "id": "seed_fund_t",
+          "name": "Seed Fund T"
+        },
+        {
+          "id": "fund_u",
+          "name": "Fund U"
+        },
+        {
+          "id": "trust_v",
+          "name": "Trust V"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.2",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "2.5",
+          "anti_dilution": "none"
+        },
+        {
+          "id": "options_0.1",
+          "name": "Options ($0.1 strike)",
+          "kind": "option",
+          "strike": "0.1"
+        },
+        {
+          "id": "options_0.25",
+          "name": "Options ($0.25 strike)",
+          "kind": "option",
+          "strike": "0.25"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "conversion_groups": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 5500000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 4000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "common",
+          "shares": 700000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_0.25",
+          "shares": 400000
+        },
+        {
+          "holder": "employee_d",
+          "security": "options_0.1",
+          "shares": 200000
+        },
+        {
+          "holder": "employee_d",
+          "security": "options_0.25",
+          "shares": 300000
+        },
+        {
+          "holder": "employee_e",
+          "security": "common",
+          "shares": 50000
+        },
+        {
+          "holder": "angel_s",
+          "security": "seed",
+          "shares": 260416
+        },
+        {
+          "holder": "seed_fund_t",
+          "security": "seed",
+          "shares": 2200000
+        },
+        {
+          "holder": "seed_fund_t",
+          "security": "series_a",
+          "shares": 500000
+        },
+        {
+          "holder": "fund_u",
+          "security": "seed",
+          "shares": 300000
+        },
+        {
+          "holder": "fund_u",
+          "security": "series_a",
+          "shares": 3000000
+        },
+        {
+          "holder": "trust_v",
+          "security": "common",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 1950000
+    },
+    "to_fill": [],
+    "report": {
+      "read": {
+        "ISSUER": 1,
+        "STAKEHOLDER": 10,
+        "STOCK_CLASS": 3,
+        "STOCK_PLAN": 1,
+        "TX_CONVERTIBLE_CONVERSION": 1,
+        "TX_CONVERTIBLE_ISSUANCE": 1,
+        "TX_EQUITY_COMPENSATION_CANCELLATION": 2,
+        "TX_EQUITY_COMPENSATION_EXERCISE": 2,
+        "TX_EQUITY_COMPENSATION_ISSUANCE": 6,
+        "TX_EQUITY_COMPENSATION_REPRICING": 1,
+        "TX_STOCK_CLASS_CONVERSION_RATIO_ADJUSTMENT": 1,
+        "TX_STOCK_CLASS_SPLIT": 1,
+        "TX_STOCK_ISSUANCE": 13,
+        "TX_STOCK_PLAN_POOL_ADJUSTMENT": 2,
+        "TX_STOCK_REPURCHASE": 1,
+        "TX_STOCK_RETRACTION": 1,
+        "TX_STOCK_TRANSFER": 2
+      },
+      "not_needed": {},
+      "notes": [
+        {
+          "code": "no_dividend_field"
+        },
+        {
+          "code": "no_conversion_group_field"
+        },
+        {
+          "code": "no_carve_out_field"
+        },
+        {
+          "code": "no_sale_date_field"
+        },
+        {
+          "code": "convertible_seniority_ignored"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "seed"
+        },
+        {
+          "code": "no_anti_dilution_field",
+          "subject": "series_a"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "seed"
+        },
+        {
+          "code": "participation_cap_includes_preference",
+          "subject": "series_a"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "seed"
+        },
+        {
+          "code": "conversion_rounding_not_modeled",
+          "subject": "series_a"
+        },
+        {
+          "code": "issued_at_other_price",
+          "subject": "ps-s1"
+        },
+        {
+          "code": "left_out_stakeholder",
+          "subject": "employee_f"
+        }
+      ]
+    }
+  }
+}

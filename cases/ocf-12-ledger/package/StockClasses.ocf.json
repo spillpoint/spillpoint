@@ -1,0 +1,90 @@
+{
+  "file_type": "OCF_STOCK_CLASSES_FILE",
+  "items": [
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "common",
+      "name": "Common Stock",
+      "class_type": "COMMON",
+      "default_id_prefix": "CS-",
+      "initial_shares_authorized": "30000000",
+      "votes_per_share": "1",
+      "seniority": "1",
+      "par_value": {
+        "amount": "0.00001",
+        "currency": "USD"
+      },
+      "board_approval_date": "2021-01-15"
+    },
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "seed",
+      "name": "Seed Preferred",
+      "class_type": "PREFERRED",
+      "default_id_prefix": "PS-",
+      "initial_shares_authorized": "4000000",
+      "votes_per_share": "1",
+      "seniority": "2",
+      "board_approval_date": "2022-08-01",
+      "price_per_share": {
+        "amount": "1.20",
+        "currency": "USD"
+      },
+      "liquidation_preference_multiple": "1",
+      "conversion_rights": [
+        {
+          "type": "STOCK_CLASS_CONVERSION_RIGHT",
+          "converts_to_stock_class_id": "common",
+          "conversion_mechanism": {
+            "type": "RATIO_CONVERSION",
+            "conversion_price": {
+              "amount": "1.20",
+              "currency": "USD"
+            },
+            "ratio": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "rounding_type": "NORMAL"
+          }
+        }
+      ],
+      "participation_cap_multiple": "1"
+    },
+    {
+      "object_type": "STOCK_CLASS",
+      "id": "series_a",
+      "name": "Series A Preferred",
+      "class_type": "PREFERRED",
+      "default_id_prefix": "PA-",
+      "initial_shares_authorized": "5000000",
+      "votes_per_share": "1",
+      "seniority": "3",
+      "board_approval_date": "2024-05-01",
+      "price_per_share": {
+        "amount": "1.00",
+        "currency": "USD"
+      },
+      "liquidation_preference_multiple": "1",
+      "conversion_rights": [
+        {
+          "type": "STOCK_CLASS_CONVERSION_RIGHT",
+          "converts_to_stock_class_id": "common",
+          "conversion_mechanism": {
+            "type": "RATIO_CONVERSION",
+            "conversion_price": {
+              "amount": "1.00",
+              "currency": "USD"
+            },
+            "ratio": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "rounding_type": "NORMAL"
+          }
+        }
+      ],
+      "participation_cap_multiple": "2.5"
+    }
+  ]
+}

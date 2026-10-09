@@ -1,0 +1,85 @@
+{
+  "file_type": "OCF_STAKEHOLDERS_FILE",
+  "items": [
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "founder_a",
+      "name": {
+        "legal_name": "Founder A"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "founder_b",
+      "name": {
+        "legal_name": "Founder B"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_c",
+      "name": {
+        "legal_name": "Employee C"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_d",
+      "name": {
+        "legal_name": "Employee D"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_e",
+      "name": {
+        "legal_name": "Employee E"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "employee_f",
+      "name": {
+        "legal_name": "Employee F"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "angel_s",
+      "name": {
+        "legal_name": "Angel S"
+      },
+      "stakeholder_type": "INDIVIDUAL"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "seed_fund_t",
+      "name": {
+        "legal_name": "Seed Fund T"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "fund_u",
+      "name": {
+        "legal_name": "Fund U"
+      },
+      "stakeholder_type": "INSTITUTION"
+    },
+    {
+      "object_type": "STAKEHOLDER",
+      "id": "trust_v",
+      "name": {
+        "legal_name": "Trust V"
+      },
+      "stakeholder_type": "INSTITUTION"
+    }
+  ]
+}

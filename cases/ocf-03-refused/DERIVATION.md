@@ -1,6 +1,6 @@
 # OCF case 03, refused: derivation
 
-One small OCF file for each thing the importer refuses: 35 in all, 22 unsupported and 13 malformed. A SAFE whose cap gives no pre- or post-money timing was here, but OCF makes the timing optional, so it's now a term to fill in, in case 04 (Jordan, 04a2 review). Each fixture is added to case 01's package, Larkspur Instruments, as a file of its own; the two manifests here replace Larkspur's. Each has exactly one problem, so each result is one refusal: its kind, a term naming it, and the object it's about.
+One small OCF file for each thing the importer refuses: 36 in all, 22 unsupported and 14 malformed. A SAFE whose cap gives no pre- or post-money timing was here, but OCF makes the timing optional, so it's now a term to fill in, in case 04 (Jordan, 04a2 review). Each fixture is added to case 01's package, Larkspur Instruments, as a file of its own; the two manifests here replace Larkspur's. Each has exactly one problem, so each result is one refusal: its kind, a term naming it, and the object it's about.
 
 **Two kinds of refusal:**
 - **Unsupported:** valid OCF that spillpoint doesn't model yet, so an import would change payouts without saying so. On the later list where the plan says.
@@ -70,5 +70,6 @@ Each adds a preferred class, with no shares issued in it, so only the class itse
 | `class-conversion-mechanism` | conversion by a fixed amount, not a ratio | unsupported |
 | `several-conversion-rights` | two conversion rights | unsupported |
 | `conversion-into-preferred` | converts into Seed Preferred | unsupported |
-| `conversion-ratio-mismatch` | price and conversion price $1.50, ratio 2 for 1. Written to 2 places, each price could be off by half a cent, so $1.50 ÷ $1.50 could be anything from 0.993 to 1.007; a ratio in whole numbers is exact, so 2 is far outside (O4) | malformed |
+| `conversion-ratio-mismatch` | price and conversion price $1.50, ratio 2 for 1. A price written to fewer than 10 places is exact, and so is a ratio in whole numbers, so $1.50 ÷ $1.50 is 1, against 2 (O4) | malformed |
+| `conversion-ratio-loose` | price and conversion price written 1.5, ratio 1.04 for 1. The prices are exact, so their quotient is 1. The ratio, written to 2 places, could be anything from 1.035 to 1.045, so it can't be 1 (O4). Allowing the prices half a unit in their last place, as 04b2 did, would have let the quotient run from 1.45 ÷ 1.55 = 0.935 to 1.55 ÷ 1.45 = 1.069, and 1.04 would have passed (Jordan, 04b2 review) | malformed |
 | `cap-below-preference` | a 2x preference with a participation cap of 1.5x | unsupported, on the later list. OCF doesn't say whether the cap includes the preference. This class only makes sense if it excludes it, and spillpoint reads caps as including it (O4, E7), so it can't be read either way without a guess. |
