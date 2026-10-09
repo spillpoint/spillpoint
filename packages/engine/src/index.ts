@@ -33,7 +33,7 @@ export { findBreakpoints } from "./breakpoints.ts";
 export { paySchedule } from "./payments.ts";
 export type { PaymentTake } from "./payments.ts";
 
-// Reading an Open Cap Format package into a cap table (M6, ASSUMPTIONS O1–O12).
+// Reading an Open Cap Format package into a cap table (M6, ASSUMPTIONS O1–O12), with its issue order (O14).
 export { readOcf } from "./ocf.ts";
 export type { OcfFile, OcfImport, OcfNote, OcfReport, OcfToFill } from "./ocf.ts";
 

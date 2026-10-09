@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { D, OcfRefusal, findBreakpoints, prepare, readCapTable, readInputs, readOcf, solve } from "../src/index.ts";
+import { D, OcfRefusal, buildCapTables, findBreakpoints, prepare, readCapTable, readInputs, readOcf, solve } from "../src/index.ts";
 import type { Breakpoint, Decisions, OcfFile, OcfImport } from "../src/index.ts";
 import { CASES_DIR, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 import { OCF_FIXTURE_CASES, OCF_PACKAGE_CASES, fixtureNames, packageFiles, withFixture } from "./support/ocf.ts";
@@ -15,8 +15,13 @@ import { OCF_FIXTURE_CASES, OCF_PACKAGE_CASES, fixtureNames, packageFiles, withF
 const CENT = new D("0.01");
 type Json = Record<string, unknown>;
 
+/**
+ * What an OCF case records (C16): the import as of 0.4.0. The issue order came in 0.5.0 (O14) and isn't in the locked
+ * files, so it's tested on its own, below, against the locked starting tables of cases 26 and 27.
+ */
+type Recorded = Omit<OcfImport, "issue_order">;
 interface PackageExpected {
-  result: OcfImport;
+  result: Recorded;
   locked_case?: string;
   renamed?: Record<string, string>;
 }
@@ -34,8 +39,10 @@ interface FixtureExpected {
 }
 const expectedOf = <T>(name: string): T => JSON.parse(readFileSync(join(CASES_DIR, name, "expected.json"), "utf8")) as T;
 
-/** C16: notes are compared as a set, in no order. */
-const asSet = (r: OcfImport) => ({ ...r, report: { ...r.report, notes: r.report.notes.map((n) => JSON.stringify(n)).sort() } });
+/** C16: notes are compared as a set, in no order, and only what the case records. */
+const asSet = ({ as_of, cap_table, to_fill, report }: Recorded) => ({
+  as_of, cap_table, to_fill, report: { ...report, notes: report.notes.map((n) => JSON.stringify(n)).sort() },
+});
 
 function refusalOf(files: OcfFile[]): { kind: string; term: string; subject: string } | null {
   try {
@@ -73,13 +80,13 @@ describe.each(OCF_FIXTURE_CASES)("OCF fixtures %s", (name) => {
     const ct = base.cap_table as Json & { unconverted_safes?: Json[]; unconverted_notes?: Json[] };
     const safes = [...(ct.unconverted_safes ?? []), ...(adds!.unconverted_safes ?? [])];
     const notes = [...(ct.unconverted_notes ?? []), ...(adds!.unconverted_notes ?? [])];
-    const want: OcfImport = {
+    const want: Recorded = {
       ...base,
       cap_table: { ...ct, ...(safes.length ? { unconverted_safes: safes } : {}), ...(notes.length ? { unconverted_notes: notes } : {}) },
       to_fill: [...base.to_fill, ...(adds!.to_fill ?? [])],
       report: { read: sum(base.report.read, adds!.read), not_needed: sum(base.report.not_needed, adds!.not_needed), notes: [...base.report.notes, ...(adds!.notes ?? [])] },
     };
-    const toFillAsSet = (r: OcfImport) => ({ ...asSet(r), to_fill: r.to_fill.map((f) => JSON.stringify(f)).sort() });
+    const toFillAsSet = (r: Recorded) => ({ ...asSet(r), to_fill: r.to_fill.map((f) => JSON.stringify(f)).sort() });
     expect(toFillAsSet(readOcf(withFixture(name, fixture)))).toEqual(toFillAsSet(want));
   });
 });
@@ -392,5 +399,60 @@ describe("rules the OCF cases don't reach", () => {
     // With no quantity, only a balance security can show what's left after part of it is cancelled.
     const cancel = { object_type: "TX_WARRANT_CANCELLATION", id: "tx-c", date: "2023-01-01", security_id: "w1", quantity: "100" };
     expect(refusalOf(pkg([common], [...stock, valuation("w1", { quantity: undefined }), cancel]))).toEqual({ kind: "unsupported", term: "warrant_mechanism", subject: "tx-w1" });
+  });
+
+  // ---------- the issue order (O14, 0.5.0) ----------
+
+  const order = (transactions: Json[], classes: Json[] = [common, seed()]) => readOcf(pkg(classes, [issue("a1", "2021-01-01", "a", "common", "1000"), ...transactions])).issue_order;
+  const stake = (id: string, date: string) => issue(id, date, "a", "seed", "100", "1.00");
+  const safeOn = (id: string, date: string) => ({ ...safe(id, { exit_multiple: "1" }), date });
+
+  it("puts a SAFE dated the day of a series after it, and one the day before ahead of it (O14)", () => {
+    expect(order([stake("p1", "2022-06-01"), safeOn("s1", "2022-06-01"), safeOn("s2", "2022-05-31")])).toEqual(["s2", "seed", "s1"]);
+  });
+
+  it("dates a series by its first issuance, not a later one, nor one retracted (O14)", () => {
+    const retraction = { object_type: "TX_STOCK_RETRACTION", id: "tx-r", date: "2021-06-02", security_id: "p1", reason_text: "Never paid for." };
+    expect(order([stake("p1", "2021-06-01"), retraction, safeOn("s1", "2022-01-01"), stake("p2", "2023-01-01"), stake("p3", "2024-01-01")])).toEqual(["s1", "seed"]);
+  });
+
+  it("dates a series with no stock issued by the first warrant for it (O14)", () => {
+    expect(order([warrant("w1", "seed", "500"), safeOn("s1", "2021-12-31")])).toEqual(["s1", "seed"]);
+    expect(order([warrant("w1", "seed", "500"), safeOn("s1", "2022-01-01")])).toEqual(["seed", "s1"]);
+  });
+});
+
+// ---------- the issue order against the locked starting tables (O14, R31) ----------
+
+describe("the issue order an import gives a round added to it (O14)", () => {
+  /** A case's starting table, built on its own: the company as it stood before its round. */
+  const startOf = (name: string) => {
+    const inputs = readCaseFile(name, "inputs.json") as { holders: Json[]; events: (Json & { cap_table: Json; issue_order: string[] })[] };
+    return { holders: inputs.holders, start: inputs.events[0]! };
+  };
+  const built = (holders: Json[], start: Json) => buildCapTables({ holders, events: [start] })[0]!.capTable;
+
+  it("Larkspur: its blanks filled as case 27 fills them, it's case 27's starting table, in case 27's issue order", () => {
+    const { holders, start } = startOf("edge-27-safes-and-note-convert-on-an-imported-table");
+    const imported = readOcf(packageFiles("ocf-01-larkspur"));
+    // The two SAFEs came from one issued on Sep 1, 2024, by a transfer on May 15, 2025, so they keep Sep 1: before
+    // the note (Oct 1, 2024) and Series A (Jan 15, 2025).
+    expect(imported.issue_order).toEqual(["cls-seed", "safe-x1", "safe-s3", "note-n1", "cls-series-a"]);
+    expect(imported.issue_order).toEqual(start.issue_order);
+
+    expect(imported.to_fill).toEqual([{ security: "cls-seed", field: "participation" }, { note: "note-n1", field: "repayment_multiple" }]);
+    const table = structuredClone(imported.cap_table) as { securities: Json[]; unconverted_notes: Json[] };
+    table.securities.find((s) => s.id === "cls-seed")!.participation = "non_participating";
+    table.unconverted_notes.find((n) => n.id === "note-n1")!.repayment_multiple = "1";
+    expect(built(holders, { ...start, cap_table: table, issue_order: imported.issue_order })).toEqual(built(holders, start));
+  });
+
+  it("Quillfern: with nothing to fill in, it's case 26's starting table, in case 26's issue order", () => {
+    const { holders, start } = startOf("edge-26-series-b-on-an-imported-table");
+    const imported = readOcf(packageFiles("ocf-12-ledger"));
+    expect(imported.issue_order).toEqual(["seed", "series_a"]);
+    expect(imported.issue_order).toEqual(start.issue_order);
+    expect(imported.to_fill).toEqual([]);
+    expect(built(holders, { ...start, cap_table: imported.cap_table, issue_order: imported.issue_order })).toEqual(built(holders, start));
   });
 });
