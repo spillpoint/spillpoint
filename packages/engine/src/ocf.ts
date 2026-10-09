@@ -19,15 +19,18 @@ import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
 import { type OcfClass, readStockClasses } from "./ocf-classes.ts";
-import { LEDGER_TYPES, type LedgerEntry, runShareLedger } from "./ocf-ledger.ts";
+import { Convertibles } from "./ocf-convertibles.ts";
+import { Grants } from "./ocf-grants.ts";
+import { ShareLedger } from "./ocf-ledger.ts";
 import { type OcfNote, Notes } from "./ocf-notes.ts";
 import { type Json, asWritten, date, isObject, malformed, text, unsupported } from "./ocf-read.ts";
+import { Warrants } from "./ocf-warrants.ts";
 
 export type { OcfNote } from "./ocf-notes.ts";
 
 /** One file of a package, its JSON already parsed. */
 export interface OcfFile {
-  /** The file's name, as the manifest lists it (Stakeholders.ocf.json, ...). */
+  /** The file's name, as the manifest lists it (Stakeholders.ocf.json, ...). A folder in front is ignored. */
   name: string;
   content: unknown;
 }
@@ -70,18 +73,24 @@ const NOT_NEEDED = new Set([
   "CE_STAKEHOLDER_RELATIONSHIP", "CE_STAKEHOLDER_STATUS",
 ]);
 
-/** Read from 04e: plans and the pool, options and RSUs, warrants, SAFEs and notes. */
-const READ_FROM_04E = new Set([
-  "STOCK_PLAN", "TX_STOCK_PLAN_POOL_ADJUSTMENT", "TX_STOCK_PLAN_RETURN_TO_POOL",
-  ...["ISSUANCE", "EXERCISE", "RELEASE", "CANCELLATION", "TRANSFER", "RETRACTION", "REPRICING"].map((t) => `TX_EQUITY_COMPENSATION_${t}`),
-  ...["ISSUANCE", "EXERCISE", "RELEASE", "CANCELLATION", "TRANSFER", "RETRACTION"].map((t) => `TX_PLAN_SECURITY_${t}`),
-  ...["ISSUANCE", "EXERCISE", "CANCELLATION", "TRANSFER", "RETRACTION"].map((t) => `TX_WARRANT_${t}`),
-  ...["ISSUANCE", "CONVERSION", "CANCELLATION", "TRANSFER", "RETRACTION"].map((t) => `TX_CONVERTIBLE_${t}`),
-]);
-
-// The fields OCF 1.2 gives each type read. Any other field gets a report line, since there's no schema validator (answer 9).
+// The fields OCF 1.2 gives each type read; the keys are the types read. Any other field gets a report line, since
+// there's no schema validator (answer 9).
 const OBJECT = ["object_type", "id", "comments"];
 const TX = [...OBJECT, "date"];
+const SECURITY_TX = [...TX, "security_id"];
+const APPROVALS = ["board_approval_date", "stockholder_approval_date"];
+const ISSUANCE = [...SECURITY_TX, "custom_id", "stakeholder_id", ...APPROVALS, "consideration_text", "security_law_exemptions"];
+const GRANT_FIELDS = {
+  ISSUANCE: [
+    ...ISSUANCE, "stock_plan_id", "stock_class_id", "vesting_terms_id", "vestings", "compensation_type", "plan_security_type", "option_grant_type",
+    "quantity", "exercise_price", "base_price", "early_exercisable", "termination_exercise_windows", "expiration_date",
+  ],
+  EXERCISE: [...SECURITY_TX, "quantity", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  RELEASE: [...SECURITY_TX, "quantity", "release_price", "settlement_date", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  CANCELLATION: [...SECURITY_TX, "quantity", "balance_security_id", "reason_text"],
+  TRANSFER: [...SECURITY_TX, "quantity", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  RETRACTION: [...SECURITY_TX, "reason_text"],
+};
 const KNOWN_FIELDS: Record<string, readonly string[]> = {
   ISSUER: [
     ...OBJECT, "legal_name", "dba", "formation_date", "country_of_formation", "country_subdivision_of_formation",
@@ -92,23 +101,44 @@ const KNOWN_FIELDS: Record<string, readonly string[]> = {
     "primary_contact", "contact_info", "addresses", "tax_ids",
   ],
   STOCK_CLASS: [
-    ...OBJECT, "name", "class_type", "default_id_prefix", "initial_shares_authorized", "board_approval_date", "stockholder_approval_date",
+    ...OBJECT, "name", "class_type", "default_id_prefix", "initial_shares_authorized", ...APPROVALS,
     "votes_per_share", "par_value", "price_per_share", "seniority", "conversion_rights", "liquidation_preference_multiple", "participation_cap_multiple",
   ],
+  STOCK_PLAN: [...OBJECT, "plan_name", ...APPROVALS, "initial_shares_reserved", "default_cancellation_behavior", "stock_class_ids", "stock_class_id"],
+
   TX_STOCK_ISSUANCE: [
-    ...TX, "security_id", "custom_id", "stakeholder_id", "board_approval_date", "stockholder_approval_date", "consideration_text",
-    "security_law_exemptions", "stock_class_id", "stock_plan_id", "share_numbers_issued", "share_price", "quantity", "vesting_terms_id",
+    ...ISSUANCE, "stock_class_id", "stock_plan_id", "share_numbers_issued", "share_price", "quantity", "vesting_terms_id",
     "vestings", "cost_basis", "stock_legend_ids", "issuance_type",
   ],
-  TX_STOCK_CANCELLATION: [...TX, "security_id", "quantity", "balance_security_id", "reason_text"],
-  TX_STOCK_REPURCHASE: [...TX, "security_id", "quantity", "price", "balance_security_id", "consideration_text"],
-  TX_STOCK_TRANSFER: [...TX, "security_id", "quantity", "resulting_security_ids", "balance_security_id", "consideration_text"],
-  TX_STOCK_CONVERSION: [...TX, "security_id", "quantity_converted", "resulting_security_ids", "balance_security_id"],
-  TX_STOCK_RETRACTION: [...TX, "security_id", "reason_text"],
-  TX_STOCK_REISSUANCE: [...TX, "security_id", "resulting_security_ids", "split_transaction_id", "reason_text"],
+  TX_STOCK_CANCELLATION: [...SECURITY_TX, "quantity", "balance_security_id", "reason_text"],
+  TX_STOCK_REPURCHASE: [...SECURITY_TX, "quantity", "price", "balance_security_id", "consideration_text"],
+  TX_STOCK_TRANSFER: [...SECURITY_TX, "quantity", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  TX_STOCK_CONVERSION: [...SECURITY_TX, "quantity_converted", "resulting_security_ids", "balance_security_id"],
+  TX_STOCK_RETRACTION: [...SECURITY_TX, "reason_text"],
+  TX_STOCK_REISSUANCE: [...SECURITY_TX, "resulting_security_ids", "split_transaction_id", "reason_text"],
   TX_STOCK_CONSOLIDATION: [...TX, "security_ids", "resulting_security_id", "reason_text"],
-  TX_STOCK_CLASS_SPLIT: [...TX, "stock_class_id", "split_ratio", "board_approval_date", "stockholder_approval_date"],
-  TX_STOCK_CLASS_CONVERSION_RATIO_ADJUSTMENT: [...TX, "stock_class_id", "new_ratio_conversion_mechanism", "board_approval_date", "stockholder_approval_date"],
+  TX_STOCK_CLASS_SPLIT: [...TX, "stock_class_id", "split_ratio", ...APPROVALS],
+  TX_STOCK_CLASS_CONVERSION_RATIO_ADJUSTMENT: [...TX, "stock_class_id", "new_ratio_conversion_mechanism", ...APPROVALS],
+
+  TX_STOCK_PLAN_POOL_ADJUSTMENT: [...TX, "stock_plan_id", "shares_reserved", ...APPROVALS],
+  TX_STOCK_PLAN_RETURN_TO_POOL: [...SECURITY_TX, "stock_plan_id", "quantity", "reason_text"],
+  ...Object.fromEntries(Object.entries(GRANT_FIELDS).flatMap(([t, f]) => [[`TX_EQUITY_COMPENSATION_${t}`, f], [`TX_PLAN_SECURITY_${t}`, f]])),
+  TX_EQUITY_COMPENSATION_REPRICING: [...SECURITY_TX, "new_exercise_price"],
+
+  TX_WARRANT_ISSUANCE: [
+    ...ISSUANCE, "quantity", "quantity_source", "exercise_price", "purchase_price", "exercise_triggers", "warrant_expiration_date",
+    "vesting_terms_id", "vestings",
+  ],
+  TX_WARRANT_EXERCISE: [...SECURITY_TX, "trigger_id", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  TX_WARRANT_CANCELLATION: [...SECURITY_TX, "quantity", "balance_security_id", "reason_text"],
+  TX_WARRANT_TRANSFER: [...SECURITY_TX, "quantity", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  TX_WARRANT_RETRACTION: [...SECURITY_TX, "reason_text"],
+
+  TX_CONVERTIBLE_ISSUANCE: [...ISSUANCE, "investment_amount", "convertible_type", "conversion_triggers", "pro_rata", "seniority"],
+  TX_CONVERTIBLE_CONVERSION: [...SECURITY_TX, "trigger_id", "resulting_security_ids", "balance_security_id", "reason_text", "quantity_converted", "capitalization_definition"],
+  TX_CONVERTIBLE_CANCELLATION: [...SECURITY_TX, "amount", "balance_security_id", "reason_text"],
+  TX_CONVERTIBLE_TRANSFER: [...SECURITY_TX, "amount", "resulting_security_ids", "balance_security_id", "consideration_text"],
+  TX_CONVERTIBLE_RETRACTION: [...SECURITY_TX, "reason_text"],
 };
 
 /** O2: OCF 1.0 to 1.2, whose 1.x names (the older TX_PLAN_SECURITY_*, too) are all read. */
@@ -131,6 +161,13 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
     }
     return { name: f.name, content: f.content };
   });
+  // Files are matched by name, ignoring folders, so two files of one name can't be told apart.
+  const byName = new Map<string, string>();
+  for (const f of typed) {
+    const other = byName.get(fileName(f.name));
+    if (other != null) throw malformed("ambiguous_file", fileName(f.name), `The package has two files named ${fileName(f.name)} (${other} and ${f.name}); it can't tell which the manifest means`);
+    byName.set(fileName(f.name), f.name);
+  }
   const manifests = typed.filter((f) => f.content.file_type === "OCF_MANIFEST_FILE");
   if (manifests.length === 0) throw malformed("no_manifest", "", "The package has no manifest (an OCF_MANIFEST_FILE)");
   if (manifests.length > 1) throw malformed("several_manifests", manifests[1]!.name, `The package has more than one manifest: ${manifests.map((m) => m.name).join(", ")}`);
@@ -141,7 +178,6 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
   const issuer = manifest.issuer;
   if (!isObject(issuer)) throw malformed("missing_field", "manifest", "The manifest has no issuer, which OCF requires");
 
-  const given = new Set(typed.map((f) => fileName(f.name)));
   const listed = new Set<string>();
   for (const [key, value] of Object.entries(manifest)) {
     if (!key.endsWith("_files")) continue;
@@ -150,7 +186,7 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
       const path = isObject(entry) && typeof entry.filepath === "string" ? entry.filepath : null;
       if (path == null) throw malformed("bad_value", "manifest", `The manifest's ${key} lists a file without a filepath`);
       // O2: every file the manifest lists must be given, matched by name.
-      if (!given.has(fileName(path))) throw malformed("missing_file", path, `The manifest lists ${path}, which isn't in the package`);
+      if (!byName.has(fileName(path))) throw malformed("missing_file", path, `The manifest lists ${path}, which isn't in the package`);
       listed.add(fileName(path));
     }
   }
@@ -180,7 +216,6 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
 
   const read: Record<string, number> = {};
   const notNeeded: Record<string, number> = {};
-  const later = new Set<string>();
   const count = (tally: Record<string, number>, type: string) => (tally[type] = (tally[type] ?? 0) + 1);
   for (const o of objects) {
     const type = o.object_type as string;
@@ -189,11 +224,9 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
       count(notNeeded, type);
       continue;
     }
-    if (!(type in KNOWN_FIELDS) && !READ_FROM_04E.has(type)) {
-      throw unsupported("unknown_object_type", id, `${id} is a ${type}, which spillpoint doesn't read; it's refused rather than skipped`);
-    }
+    const known = KNOWN_FIELDS[type];
+    if (!known) throw unsupported("unknown_object_type", id, `${id} is a ${type}, which spillpoint doesn't read; it's refused rather than skipped`);
     count(read, type);
-    if (READ_FROM_04E.has(type)) later.add(type);
     // O2: amounts in US dollars only.
     const currency = foreignCurrency(o);
     if (currency) throw unsupported("currency", id, `${id} has an amount in ${currency}; spillpoint reads US dollars only`);
@@ -201,39 +234,63 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
     if (type.startsWith("TX_") && date(o, "date", id) > asOf) {
       throw malformed("after_as_of", id, `${id} is dated ${o.date as string}, after the package's date, ${asOf}`);
     }
-    for (const field of Object.keys(o)) if (KNOWN_FIELDS[type] && !KNOWN_FIELDS[type].includes(field)) notes.add("unrecognized_field", id, field);
+    for (const field of Object.keys(o)) if (!known.includes(field)) notes.add("unrecognized_field", id, field);
   }
-  const ofType = (type: string) => objects.filter((o) => o.object_type === type);
+  const ofType = (...types: string[]) => objects.filter((o) => types.includes(o.object_type as string));
 
-  // ---------- stakeholders (O3), classes (O4), the share ledger (O5) ----------
+  // ---------- stakeholders (O3), classes (O4), and every ledger in one pass by date (O5–O9) ----------
   const stakeholders = ofType("STAKEHOLDER").map((o) => {
     const id = o.id as string;
     const name = isObject(o.name) ? o.name.legal_name : undefined;
     if (typeof name !== "string" || name === "") throw malformed("missing_field", id, `${id} has no legal name, which OCF requires`);
     return { id, name };
   });
+  const stakeholderIds = new Set(stakeholders.map((s) => s.id));
   const classes = readStockClasses(ofType("STOCK_CLASS"), notes);
-  const entries: LedgerEntry[] = objects.flatMap((tx, order) => (LEDGER_TYPES.includes(tx.object_type as string) ? [{ tx, order }] : []));
-  const stock = runShareLedger(entries, classes, new Set(stakeholders.map((s) => s.id)), notes, (what) => later.add(what));
+  const grants = new Grants(
+    ofType("STOCK_PLAN"), ofType("TX_EQUITY_COMPENSATION_ISSUANCE", "TX_PLAN_SECURITY_ISSUANCE"), objects, classes, stakeholderIds, notes,
+  );
+  const warrants = new Warrants(ofType("TX_WARRANT_ISSUANCE"), classes, stakeholderIds, notes);
+  const convertibles = new Convertibles(ofType("TX_CONVERTIBLE_ISSUANCE"), stakeholderIds, notes);
+  const stock = new ShareLedger(
+    ofType("TX_STOCK_ISSUANCE"), classes, stakeholderIds, notes,
+    // O5: a split of a class with options or warrants outstanding on it is refused.
+    (cls) => (cls.common && grants.anyOutstanding() ? "options are" : warrants.outstandingFor(cls.id) ? "warrants for it are" : null),
+    (tx, plan) => grants.stockIssuedUnderPlan(tx, plan),
+  );
+  const steps: Record<string, (tx: Json) => void> = { ...stock.steps, ...grants.steps, ...warrants.steps, ...convertibles.steps };
+  // O2: in date order; on one date, its splits first, then the rest in file order.
+  const isSplit = (o: Json) => (o.object_type === "TX_STOCK_CLASS_SPLIT" ? 0 : 1);
+  const transactions = objects
+    .map((tx, order) => ({ tx, order }))
+    .filter(({ tx }) => steps[tx.object_type as string] != null)
+    .sort((a, b) => (a.tx.date as string).localeCompare(b.tx.date as string) || isSplit(a.tx) - isSplit(b.tx) || a.order - b.order);
+  for (const { tx } of transactions) steps[tx.object_type as string]!(tx);
 
-  if (later.size > 0) {
-    // Temporary, until 04e reads them: refused after everything else, so a package's own problems are found first.
-    const what = [...later].sort().join(", ");
-    throw unsupported("not_yet_read", what, `The package has ${what}, which spillpoint reads from 04e`);
-  }
+  // ---------- the cap table, as of the package's date ----------
+  const shares = stock.positions();
+  const options = grants.finish(asOf);
+  const warranted = warrants.finish(asOf);
+  const { safes, notes: notesOutstanding } = convertibles.finish();
 
-  // ---------- the cap table ----------
-  // O4: a preferred class with nothing outstanding is left out; every common class stays.
-  const kept = [...classes.values()].filter((c) => c.common || [...stock.values()].some((byClass) => byClass.has(c.id)));
+  // O4: a preferred class with nothing outstanding, and no warrant for it, is left out; every common class stays.
+  const kept = [...classes.values()].filter((c) => c.common || warranted.underlying.has(c.id) || [...shares.values()].some((byClass) => byClass.has(c.id)));
   for (const c of classes.values()) if (!kept.includes(c)) notes.add("left_out_stock_class", c.id);
-  const holders = stakeholders.filter((s) => stock.has(s.id));
-  for (const s of stakeholders) if (!stock.has(s.id)) notes.add("left_out_stakeholder", s.id);
-
-  const securities = kept.map(securityOf);
+  const securities: Json[] = [
+    ...kept.map(securityOf),
+    ...options.classes.map((c) => ({ id: c.id, name: c.name, kind: "option", strike: asWritten(c.strike) })),
+    ...warranted.classes.map((c) => ({ id: c.id, name: c.name, kind: "warrant", strike: asWritten(c.strike), underlying: c.underlying })),
+  ];
+  const held = (holder: string, security: string): Decimal | undefined =>
+    shares.get(holder)?.get(security) ?? options.positions.get(holder)?.get(security) ?? warranted.positions.get(holder)?.get(security);
+  const convertibleHolders = new Set([...safes, ...notesOutstanding].map((c) => c.holder as string));
+  // O3: a stakeholder with nothing outstanding is left out, and listed.
+  const holders = stakeholders.filter((h) => convertibleHolders.has(h.id) || securities.some((s) => held(h.id, s.id as string)));
+  for (const s of stakeholders) if (!holders.includes(s)) notes.add("left_out_stakeholder", s.id);
   const positions = holders.flatMap((h) =>
-    kept.flatMap((c) => {
-      const shares = stock.get(h.id)?.get(c.id);
-      return shares ? [{ holder: h.id, security: c.id, shares: wholeNumber(shares, h.id) }] : [];
+    securities.flatMap((s) => {
+      const n = held(h.id, s.id as string);
+      return n ? [{ holder: h.id, security: s.id as string, shares: wholeNumber(n, h.id) }] : [];
     }),
   );
   // O4: a higher seniority ranks ahead; equal seniority shares a tier, pari passu.
@@ -244,17 +301,27 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
   // O11: terms OCF has no field for, one line each.
   for (const code of ["no_dividend_field", "no_conversion_group_field", "no_carve_out_field", "no_sale_date_field"]) notes.add(code);
 
-  const toFill: OcfToFill[] = securities.flatMap((s) =>
-    Object.entries(s)
-      // A series that isn't capped has no cap multiple: that blank isn't a term to fill in.
-      .filter(([field, value]) => value === null && field !== "cap_multiple")
-      .map(([field]) => ({ security: s.id as string, field })),
-  );
+  // A blank is a term to fill in, except a cap multiple for a series that isn't capped.
+  const blanks = (list: Json[], key: "security" | "safe" | "note"): OcfToFill[] =>
+    list.flatMap((x) =>
+      Object.entries(x)
+        .filter(([field, value]) => value === null && !(key === "security" && field === "cap_multiple"))
+        .map(([field]) => ({ [key]: x.id as string, field })),
+    );
 
   return {
     as_of: asOf,
-    cap_table: { holders, securities, seniority, conversion_groups: [], positions, unissued_pool: 0 },
-    to_fill: toFill,
+    cap_table: {
+      holders,
+      securities,
+      seniority,
+      conversion_groups: [],
+      positions,
+      unissued_pool: wholeNumber(options.pool, "the unissued pool"),
+      ...(safes.length > 0 ? { unconverted_safes: safes } : {}),
+      ...(notesOutstanding.length > 0 ? { unconverted_notes: notesOutstanding } : {}),
+    },
+    to_fill: [...blanks(securities, "security"), ...blanks(safes, "safe"), ...blanks(notesOutstanding, "note")],
     report: { read, not_needed: notNeeded, notes: notes.list() },
   };
 }
@@ -300,3 +367,4 @@ function foreignCurrency(value: unknown): string | null {
   }
   return null;
 }
+

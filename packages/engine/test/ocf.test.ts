@@ -10,9 +10,7 @@ import { describe, expect, it } from "vitest";
 import { D, OcfRefusal, findBreakpoints, prepare, readCapTable, readInputs, readOcf, solve } from "../src/index.ts";
 import type { Breakpoint, Decisions, OcfFile, OcfImport } from "../src/index.ts";
 import { CASES_DIR, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
-import {
-  OCF_FIXTURE_CASES, OCF_NOT_YET, OCF_PACKAGE_CASES, fixtureNames, packageFiles, withFixture, withoutOptionsWarrantsAndConvertibles,
-} from "./support/ocf.ts";
+import { OCF_FIXTURE_CASES, OCF_PACKAGE_CASES, fixtureNames, packageFiles, withFixture } from "./support/ocf.ts";
 
 const CENT = new D("0.01");
 type Json = Record<string, unknown>;
@@ -22,8 +20,17 @@ interface PackageExpected {
   locked_case?: string;
   renamed?: Record<string, string>;
 }
+interface Adds {
+  read?: Record<string, number>;
+  not_needed?: Record<string, number>;
+  notes?: OcfImport["report"]["notes"];
+  unconverted_safes?: Json[];
+  unconverted_notes?: Json[];
+  to_fill?: OcfImport["to_fill"];
+}
 interface FixtureExpected {
-  fixtures: Record<string, { refused?: { kind: string; term: string; subject: string } }>;
+  base: string;
+  fixtures: Record<string, { refused?: { kind: string; term: string; subject: string }; adds?: Adds }>;
 }
 const expectedOf = <T>(name: string): T => JSON.parse(readFileSync(join(CASES_DIR, name, "expected.json"), "utf8")) as T;
 
@@ -43,33 +50,6 @@ function refusalOf(files: OcfFile[]): { kind: string; term: string; subject: str
 describe.each(OCF_PACKAGE_CASES)("OCF case %s", (name) => {
   const expected = expectedOf<PackageExpected>(name);
 
-  if (OCF_NOT_YET.has(name)) {
-    it("is refused only because it holds what's read from 04e", () => {
-      expect(refusalOf(packageFiles(name))).toMatchObject({ kind: "unsupported", term: "not_yet_read" });
-    });
-    // Until 04e, its stock classes and share ledger are checked on their own: the package read without its options,
-    // plans, warrants and convertibles gives the case's classes, tiers and shares of stock.
-    it("reads its stock classes and share ledger as the case has them", () => {
-      const got = readOcf(withoutOptionsWarrantsAndConvertibles(packageFiles(name))).cap_table as Json;
-      const want = expected.result.cap_table as Json;
-      const classes = (t: Json) => (t.securities as Json[]).filter((s) => s.kind === "common" || s.kind === "preferred");
-      const classIds = new Set(classes(want).map((s) => s.id));
-      const stockOf = (t: Json) => (t.positions as { security: string }[]).filter((p) => classIds.has(p.security));
-      expect(classes(got)).toEqual(classes(want));
-      expect(got.seniority).toEqual(want.seniority);
-      expect(stockOf(got)).toEqual(stockOf(want));
-    });
-    it("notes what it reads in its classes and shares as the case does", () => {
-      const STOCK_NOTES = [
-        "no_dividend_field", "no_conversion_group_field", "no_carve_out_field", "no_sale_date_field", "common_preference_ignored", "no_anti_dilution_field",
-        "participation_cap_includes_preference", "conversion_rounding_not_modeled", "conversion_ratio_rounded", "unrecognized_field", "issued_at_other_price",
-      ];
-      const stockNotes = (r: OcfImport) => r.report.notes.filter((n) => STOCK_NOTES.includes(n.code)).map((n) => JSON.stringify(n)).sort();
-      expect(stockNotes(readOcf(withoutOptionsWarrantsAndConvertibles(packageFiles(name))))).toEqual(stockNotes(expected.result));
-    });
-    return;
-  }
-
   it("imports to its hand-worked result", () => {
     expect(asSet(readOcf(packageFiles(name)))).toEqual(asSet(expected.result));
   });
@@ -79,13 +59,28 @@ describe.each(OCF_PACKAGE_CASES)("OCF case %s", (name) => {
 
 describe.each(OCF_FIXTURE_CASES)("OCF fixtures %s", (name) => {
   const expected = expectedOf<FixtureExpected>(name);
+  const base = expectedOf<PackageExpected>(expected.base).result;
   it.each(fixtureNames(name))("%s", (fixture) => {
-    const got = refusalOf(withFixture(name, fixture));
-    if (OCF_NOT_YET.has(`${name}/${fixture}`) || OCF_NOT_YET.has(name)) {
-      expect(got).toMatchObject({ kind: "unsupported", term: "not_yet_read" });
-    } else {
-      expect(got).toEqual(expected.fixtures[fixture]!.refused);
+    const { refused, adds } = expected.fixtures[fixture]!;
+    if (refused) {
+      expect(refusalOf(withFixture(name, fixture))).toEqual(refused);
+      return;
     }
+    // C16: what a fixture adds to its base's result. SAFEs and notes come after the base's, in date order; the terms
+    // to fill in, like the notes, are compared as a set.
+    const sum = (a: Record<string, number>, b: Record<string, number> = {}) =>
+      Object.fromEntries([...new Set([...Object.keys(a), ...Object.keys(b)])].map((k) => [k, (a[k] ?? 0) + (b[k] ?? 0)]));
+    const ct = base.cap_table as Json & { unconverted_safes?: Json[]; unconverted_notes?: Json[] };
+    const safes = [...(ct.unconverted_safes ?? []), ...(adds!.unconverted_safes ?? [])];
+    const notes = [...(ct.unconverted_notes ?? []), ...(adds!.unconverted_notes ?? [])];
+    const want: OcfImport = {
+      ...base,
+      cap_table: { ...ct, ...(safes.length ? { unconverted_safes: safes } : {}), ...(notes.length ? { unconverted_notes: notes } : {}) },
+      to_fill: [...base.to_fill, ...(adds!.to_fill ?? [])],
+      report: { read: sum(base.report.read, adds!.read), not_needed: sum(base.report.not_needed, adds!.not_needed), notes: [...base.report.notes, ...(adds!.notes ?? [])] },
+    };
+    const toFillAsSet = (r: OcfImport) => ({ ...asSet(r), to_fill: r.to_fill.map((f) => JSON.stringify(f)).sort() });
+    expect(toFillAsSet(readOcf(withFixture(name, fixture)))).toEqual(toFillAsSet(want));
   });
 });
 
@@ -169,14 +164,14 @@ describe("rules the OCF cases don't reach", () => {
   const issue = (id: string, date: string, holder: string, cls: string, quantity: string, price = "0.0001") => ({
     object_type: "TX_STOCK_ISSUANCE", id: `tx-${id}`, date, security_id: id, stakeholder_id: holder, stock_class_id: cls, share_price: usd(price), quantity,
   });
-  /** A package as of Dec 31, 2025 with holders A and B and the given classes and transactions. */
-  const pkg = (classes: Json[], transactions: Json[], manifest: Json = {}): OcfFile[] => [
+  /** A package as of Dec 31, 2025 with holders A and B and the given classes, transactions and plans. */
+  const pkg = (classes: Json[], transactions: Json[], manifest: Json = {}, plans: Json[] = []): OcfFile[] => [
     {
       name: "Manifest.ocf.json",
       content: {
         file_type: "OCF_MANIFEST_FILE", ocf_version: "1.2.0", as_of: "2025-12-31", issuer: { object_type: "ISSUER", id: "issuer", legal_name: "Test Co" },
         stakeholders_files: [{ filepath: "Stakeholders.ocf.json" }], stock_classes_files: [{ filepath: "StockClasses.ocf.json" }],
-        transactions_files: [{ filepath: "Transactions.ocf.json" }], ...manifest,
+        transactions_files: [{ filepath: "Transactions.ocf.json" }], ...(plans.length ? { stock_plans_files: [{ filepath: "StockPlans.ocf.json" }] } : {}), ...manifest,
       },
     },
     {
@@ -185,6 +180,7 @@ describe("rules the OCF cases don't reach", () => {
     },
     { name: "StockClasses.ocf.json", content: { file_type: "OCF_STOCK_CLASSES_FILE", items: classes } },
     { name: "Transactions.ocf.json", content: { file_type: "OCF_TRANSACTIONS_FILE", items: transactions } },
+    ...(plans.length ? [{ name: "StockPlans.ocf.json", content: { file_type: "OCF_STOCK_PLANS_FILE", items: plans } }] : []),
   ];
   const positions = (files: OcfFile[]) => (readOcf(files).cap_table as { positions: unknown[] }).positions;
   const notesOf = (files: OcfFile[]) => readOcf(files).report.notes;
@@ -283,5 +279,84 @@ describe("rules the OCF cases don't reach", () => {
 
   it("refuses an issuance of a fraction of a share", () => {
     expect(refusalOf(pkg([common], [issue("a1", "2021-01-01", "a", "common", "100.5")]))).toEqual({ kind: "unsupported", term: "fractional_shares", subject: "tx-a1" });
+  });
+  const plan = (behavior: string | undefined, reserved = "1000") => ({
+    object_type: "STOCK_PLAN", id: "plan", plan_name: "Plan", initial_shares_reserved: reserved, stock_class_ids: ["common"],
+    ...(behavior ? { default_cancellation_behavior: behavior } : {}),
+  });
+  const grant = (id: string, date: string, quantity: string, extra: Json = {}) => ({
+    object_type: "TX_EQUITY_COMPENSATION_ISSUANCE", id: `tx-${id}`, date, security_id: id, stakeholder_id: "a", stock_plan_id: "plan",
+    compensation_type: "OPTION", quantity, exercise_price: usd("0.10"), ...extra,
+  });
+  const cancelGrant = (id: string, quantity: string) => ({ object_type: "TX_EQUITY_COMPENSATION_CANCELLATION", id: `tx-c-${id}`, date: "2023-01-01", security_id: id, quantity });
+  const poolOf = (files: OcfFile[]) => (readOcf(files).cap_table as { unissued_pool: number }).unissued_pool;
+
+  it("keeps a cancelled grant out of the pool under a plan that retires them, and returns it under one that doesn't (O6)", () => {
+    const txs = [grant("o1", "2022-01-01", "300"), cancelGrant("o1", "100")];
+    expect(poolOf(pkg([common], txs, {}, [plan("RETURN_TO_POOL")]))).toBe(800);
+    expect(poolOf(pkg([common], txs, {}, [plan("RETIRE")]))).toBe(700);
+  });
+
+  it("counts a grant past its expiration date as cancelled, and lists it (O6)", () => {
+    const files = pkg([common], [grant("o1", "2022-01-01", "300", { expiration_date: "2025-06-30" })], {}, [plan("RETIRE")]);
+    expect(poolOf(files)).toBe(700);
+    expect(notesOf(files)).toContainEqual({ code: "expired_option_left_out", subject: "o1" });
+  });
+
+  it("refuses to guess whether a cancelled grant returns when the plan doesn't say", () => {
+    expect(refusalOf(pkg([common], [grant("o1", "2022-01-01", "300"), cancelGrant("o1", "100")], {}, [plan(undefined)]))).toEqual({
+      kind: "unsupported", term: "cancellation_behavior_missing", subject: "plan",
+    });
+  });
+
+  it("refuses a grant over a preferred class", () => {
+    expect(refusalOf(pkg([common, seed()], [grant("o1", "2022-01-01", "300", { stock_class_id: "seed" })], {}, [plan("RETURN_TO_POOL")]))).toEqual({
+      kind: "unsupported", term: "grant_of_preferred", subject: "tx-o1",
+    });
+  });
+
+  it("refuses a split of common while an option is outstanding (O5)", () => {
+    const split = { object_type: "TX_STOCK_CLASS_SPLIT", id: "tx-split", date: "2023-01-01", stock_class_id: "common", split_ratio: { numerator: "2", denominator: "1" } };
+    expect(refusalOf(pkg([common], [issue("a1", "2021-01-01", "a", "common", "1000"), grant("o1", "2022-01-01", "300"), split], {}, [plan("RETURN_TO_POOL")]))).toEqual({
+      kind: "unsupported", term: "split_with_derivatives", subject: "tx-split",
+    });
+  });
+
+  const warrant = (id: string, cls: string, quantity: string, extra: Json = {}) => ({
+    object_type: "TX_WARRANT_ISSUANCE", id: `tx-${id}`, date: "2022-01-01", security_id: id, stakeholder_id: "b", quantity, exercise_price: usd("1.00"),
+    exercise_triggers: [{ type: "ELECTIVE_AT_WILL", trigger_id: `${id}-x`, conversion_right: { type: "WARRANT_CONVERSION_RIGHT", converts_to_stock_class_id: cls, conversion_mechanism: { type: "FIXED_AMOUNT_CONVERSION", converts_to_quantity: quantity } } }],
+    ...extra,
+  });
+
+  it("keeps a preferred class with no shares when a warrant for it is outstanding (Jordan, 04d review)", () => {
+    const result = readOcf(pkg([common, seed()], [issue("a1", "2021-01-01", "a", "common", "1000"), warrant("w1", "seed", "500")]));
+    expect((result.cap_table as { securities: Json[] }).securities.map((s) => s.id)).toEqual(["common", "seed", "warrants_seed_1"]);
+    expect((result.cap_table as { seniority: string[][] }).seniority).toEqual([["seed"]]);
+  });
+
+  it("leaves out a warrant past its expiration date, and its class with it, and lists both (O7)", () => {
+    const files = pkg([common, seed()], [issue("a1", "2021-01-01", "a", "common", "1000"), warrant("w1", "seed", "500", { warrant_expiration_date: "2024-01-01" })]);
+    expect((readOcf(files).cap_table as { securities: Json[] }).securities.map((s) => s.id)).toEqual(["common"]);
+    expect(notesOf(files)).toEqual(expect.arrayContaining([{ code: "expired_warrant_left_out", subject: "w1" }, { code: "left_out_stock_class", subject: "seed" }]));
+  });
+
+  const safe = (id: string, mechanism: Json) => ({
+    object_type: "TX_CONVERTIBLE_ISSUANCE", id: `tx-${id}`, date: "2022-01-01", security_id: id, stakeholder_id: "b", convertible_type: "SAFE",
+    investment_amount: usd("100000"), seniority: 1,
+    conversion_triggers: [{ type: "AUTOMATIC_ON_CONDITION", trigger_id: "t", conversion_right: { type: "CONVERTIBLE_CONVERSION_RIGHT", conversion_mechanism: { type: "SAFE_CONVERSION", ...mechanism } } }],
+  });
+
+  it("reads a convertible's terms only if it's still outstanding (O8)", () => {
+    const converted = { object_type: "TX_CONVERTIBLE_CONVERSION", id: "tx-conv", date: "2023-01-01", security_id: "s1", trigger_id: "t", resulting_security_ids: [] };
+    const base = [issue("a1", "2021-01-01", "a", "common", "1000"), safe("s1", { exit_multiple: "2" })];
+    expect(refusalOf(pkg([common], base))).toEqual({ kind: "unsupported", term: "safe_exit_multiple", subject: "tx-s1" });
+    expect(refusalOf(pkg([common], [...base, converted]))).toBeNull();
+  });
+
+  it("refuses two files of one name in different folders", () => {
+    const files = pkg([common], []);
+    expect(refusalOf([...files, { name: "copy/Transactions.ocf.json", content: files[3]!.content }])).toEqual({
+      kind: "malformed", term: "ambiguous_file", subject: "Transactions.ocf.json",
+    });
   });
 });

@@ -12,8 +12,8 @@ import * as spillpoint from "../src/index.ts";
 const readme = readFileSync(resolve(import.meta.dirname, "../README.md"), "utf8");
 const examples = [...readme.matchAll(/```js\n([\s\S]*?)```\n\nOutput:\n\n```\n([\s\S]*?)```/g)].map((m) => ({ code: m[1]!, output: m[2]! }));
 
-it("has its three worked examples", () => {
-  expect(examples).toHaveLength(3);
+it("has its four worked examples", () => {
+  expect(examples).toHaveLength(4);
 });
 
 it.each(examples.map((e, i) => [i + 1, e] as const))("example %i prints its Output block", (_, { code, output }) => {
