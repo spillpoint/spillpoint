@@ -34,18 +34,23 @@ export function answerSets(options: readonly (readonly string[])[]): { sets: str
 
 /**
  * A number's placeholder (O15): whether the engine reads a table doesn't turn on its value. A conversion price is the
- * series' issue price, given or filled.
+ * series' issue price, given or filled; anything else is a set value. The value is used, but never printed: a set line
+ * says only which placeholder it was, since the issue price is an amount from the export.
  */
-function placeholder(field: string, security: Json | undefined): string {
+function placeholder(field: string, security: Json | undefined): { value: string; printed: string } {
   switch (field) {
     case "original_issue_price":
-      return "1.00";
+      return { value: "1.00", printed: PLACEHOLDER };
     case "conversion_price":
-      return typeof security?.original_issue_price === "string" ? security.original_issue_price : "1.00";
+      return { value: typeof security?.original_issue_price === "string" ? security.original_issue_price : "1.00", printed: ISSUE_PRICE };
     default:
-      return "1";
+      return { value: "1", printed: PLACEHOLDER };
   }
 }
+
+/** How a set line names a placeholder answer: as a word, never its value. */
+export const PLACEHOLDER = "placeholder";
+export const ISSUE_PRICE = "issue price";
 
 /** An InputError's path, which names fields and positions; if any part of it is something else, such as an id, it's left out. */
 function pathOf(path: string): string | null {
@@ -80,13 +85,17 @@ function answerRuns(result: OcfImport, files: OcfFile[]): string[] {
   const asked = questions(result, new Package(files));
   if (asked.length === 0) return [`The engine, with nothing to fill in: ${run(result, {})}`];
   const securities = (result.cap_table as { securities: Json[] }).securities;
-  const options = asked.map((q) => (q.choices ? q.choices.map((c) => c.value) : [placeholder(q.blank.field, securities.find((s) => s.id === q.blank.security))]));
-  const { sets, possible } = answerSets(options);
+  // Each answer as used, and as printed: a choice is its own code; a placeholder, a word.
+  const options = asked.map((q) =>
+    q.choices ? q.choices.map((c) => ({ value: c.value, printed: c.value })) : [placeholder(q.blank.field, securities.find((s) => s.id === q.blank.security))],
+  );
+  const { sets: picks, possible } = answerSets(options.map((o) => o.map((_, i) => String(i))));
+  const sets = picks.map((set) => set.map((i, j) => options[j]![Number(i)]!));
   return [
     `Answer sets: ${sets.length} tried, of ${possible} possible${possible > MOST_SETS ? ", one blank at a time" : ""}`,
     ...sets.map((set, i) => {
-      const answers = Object.fromEntries(asked.map((q, j) => [q.key, set[j]!]));
-      const given = asked.map((q, j) => `#${j + 1} ${q.blank.field}=${set[j]!}`).join(", ");
+      const answers = Object.fromEntries(asked.map((q, j) => [q.key, set[j]!.value]));
+      const given = asked.map((q, j) => `#${j + 1} ${q.blank.field}=${set[j]!.printed}`).join(", ");
       return `set ${i + 1}: ${given}: ${run(result, answers)}`;
     }),
   ];

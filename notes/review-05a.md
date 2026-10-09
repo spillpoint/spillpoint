@@ -34,8 +34,8 @@ Notes: common_preference_ignored 1, conversion_rounding_not_modeled 2, convertib
 Unrecognized fields: board_seat 1
 Blanks: participation 1, repayment_multiple 1
 Answer sets: 2 tried, of 2 possible
-set 1: #1 participation=non_participating, #2 repayment_multiple=1: note_with_safe_or_carve_out
-set 2: #1 participation=participating, #2 repayment_multiple=1: note_with_safe_or_carve_out
+set 1: #1 participation=non_participating, #2 repayment_multiple=placeholder: note_with_safe_or_carve_out
+set 2: #1 participation=participating, #2 repayment_multiple=placeholder: note_with_safe_or_carve_out
 ```
 
 Larkspur reads, but at a sale the engine refuses its SAFEs beside a note, whichever way the Seed participates. That's 05c.
@@ -86,16 +86,35 @@ Import: refused, malformed quantities_dont_reconcile
 - **A zip error has a code** (`encrypted`, `compression_bzip2`, `too_large`, …), for the same reason.
 - **Node runs the page's TypeScript directly,** as you chose. The page's modules import the engine as a package, so `pnpm ocf-check` builds it first.
 
+## The fix from your review: placeholders as words
+
+A set line printed a placeholder's value. For a class with no conversion right, that's the class's own issue price ("conversion_price=1.37"), an amount from the export. Now:
+- **Placeholders print as words:**
+  - "conversion_price=issue price"
+  - "original_issue_price=placeholder"
+  - "preference_multiple=placeholder"
+  - "repayment_multiple=placeholder"
+- **The values are still used** to fill the blanks.
+
+**Three new guards in the tests:**
+- **A package built in the test,** Quietwater Tools, with a preferred class priced at $1.37 that has no conversion right. Its set line is pinned, and it's in the leak test.
+- **Quantities are secret in the leak test,** and so is shares reserved. A whole number under 1,000 can't be told from the counts the summary prints by design, so a quantity of 0 or 1 isn't looked for. Grouped numbers ("40,085 bytes") are now kept whole as one word.
+- **Every answer a set line prints** must be a choice's own code or a placeholder word.
+
+**Printing the value again fails** the pinned test and the leak test, on "1.37".
+
+05a2 will follow the same rule where the page shows the answers given at Use: each answer's kind, never its value.
+
 ## Decisions for you to check (O15)
 
 1. **One Objects line,** counted from the files, rather than "read" and "set aside" lines. A refused export has no report to split them, and the type names already tell them apart.
 2. **The `InputError` path.** The engine's paths for an exit are made of field names and positions, like `exit.cap_table.securities[2].cap_multiple`, so they print as they are. A path with anything else in it, such as an id, prints bare, as `InputError`. That's your answer 4, made easy by the paths already using positions.
 3. **Anything else unexpected** prints as `unexpected TypeError`: its kind, never its message.
-4. **Placeholders:** a conversion price is the series' issue price, given or filled. A price is $1.00, and a multiple is 1.
+4. **Placeholders:** a conversion price is the series' issue price, given or filled. A price is $1.00, and a multiple is 1. Each prints as a word, never its value (above).
 
 ## Checks
 
-- **Dashboard:** 414 tests pass, 71 more.
+- **Dashboard:** 416 tests pass, 73 more.
 - **Engine:** 1,789 tests pass, unchanged.
 - **Typecheck:** clean.
 
