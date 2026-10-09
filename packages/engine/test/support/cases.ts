@@ -30,6 +30,12 @@ export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("o
  */
 export const NOT_YET: readonly string[] = [];
 
+/**
+ * The timeout for a test that runs a full breakpoint search on case 27, or on anything larger. Case 27's takes about
+ * 3.8s on CI's 2-core machine, past vitest's 5s default at random (#68). Its speed is on the later list.
+ */
+export const FULL_SEARCH_TIMEOUT = 60_000;
+
 /** Round cases whose first event is a starting cap table (R31, 0.5.0): 26 and 27, written in 05b1, read from 05b2. */
 export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
   if (name.startsWith("ocf-")) return false;

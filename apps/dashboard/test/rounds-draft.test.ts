@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { buildCapTables } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import type { Rounds } from "../src/rounds.ts";
@@ -28,9 +29,25 @@ const ROUND_CASES = readdirSync(casesDir, { withFileTypes: true })
   .filter((name) => JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).events);
 
 describe("loading rounds into the editor and building them back", () => {
-  it.each(ROUND_CASES)("gives back %s exactly as written", (name) => {
+  const fromFounding = ROUND_CASES.filter((name) => roundsOf(name).events[0]!.type !== "start");
+  const fromATable = ROUND_CASES.filter((name) => !fromFounding.includes(name));
+
+  it.each(fromFounding)("gives back %s exactly as written", (name) => {
     const rounds = roundsOf(name);
     expect(buildRounds(draftFromRounds(rounds))).toEqual(rounds);
+  });
+
+  // R31: the starting table is held as the cap table editor holds one, so it's written back as that editor writes a
+  // table (shares as strings, a conversion price equal to the issue price left out): the same table to the engine.
+  it.each(fromATable)("gives back %s as written, its starting table the same to the engine", (name) => {
+    const rounds = roundsOf(name);
+    const back = buildRounds(draftFromRounds(rounds));
+    const { cap_table: table, ...start } = back.events[0]!;
+    const { cap_table: given, ...written } = rounds.events[0]!;
+    expect({ ...back, events: back.events.slice(1) }).toEqual({ ...rounds, events: rounds.events.slice(1) });
+    expect(start).toEqual(written);
+    const read = (t: unknown) => buildCapTables({ holders: rounds.holders, events: [{ ...written, cap_table: t }] })[0]!.capTable;
+    expect(read(table)).toEqual(read(given));
   });
 
   it("holds discounts and interest rates as the percentages people type", () => {
@@ -113,19 +130,14 @@ describe("where the engine's message goes", () => {
 describe("SAFEs and notes, read from the events as typed (M5k)", () => {
   /** The ids of the SAFEs and notes the page says are outstanding after each event. */
   const predicted = (d: ReturnType<typeof draftFromRounds>) => {
-    const rowId = (c: ReturnType<typeof convertibles>[number]) => {
-      const e = d.events.find((x) => x.key === c.event)!;
-      return String((e.json[c.kind === "safe" ? "safes" : "notes"] as Record<string, unknown>[])[c.row]!.id);
-    };
     const at = (key: string | null) => (key === null ? Infinity : d.events.findIndex((e) => e.key === key));
-    return d.events.map((_, k) => convertibles(d).filter((c) => at(c.event) <= k && at(c.convertedBy) > k).map(rowId).sort());
+    return d.events.map((_, k) => convertibles(d).filter((c) => at(c.event) <= k && at(c.convertedBy) > k).map((c) => c.id).sort());
   };
 
   // Against the locked case's own record of each cap table, from the reference calculator: independent of the
-  // engine, and there for the cases the engine reads only from 03g.
-  // A case that starts from a cap table (R31) waits for 05b3, where the page reads a starting table.
-  const builtFromEvents = ROUND_CASES.filter((name) => JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).events[0].type !== "start");
-  it.each(builtFromEvents)("%s: the SAFEs and notes outstanding after each event are the ones the locked case records", (name) => {
+  // engine, and there for the cases the engine reads only from 03g. A starting table's SAFEs and notes count from
+  // the start (R31, 05b3).
+  it.each(ROUND_CASES)("%s: the SAFEs and notes outstanding after each event are the ones the locked case records", (name) => {
     const rounds = roundsOf(name);
     const expected = JSON.parse(readFileSync(resolve(casesDir, name, "expected.json"), "utf8")) as {
       cap_tables: { cap_table: { unconverted_safes?: { id: string }[]; unconverted_notes?: { id: string }[] } }[];
@@ -154,7 +166,7 @@ describe("SAFEs and notes, read from the events as typed (M5k)", () => {
   });
 
   it("starts a new priced round converting the notes still outstanding, as it does the SAFEs", () => {
-    const d = addEvent(draftFromRounds(roundsOf("millrace")), "priced_round", []);
+    const d = addEvent(draftFromRounds(roundsOf("millrace")), "priced_round", null);
     expect(d.events.at(-1)!.json.convert_notes).toBe(true);
     expect(d.events.at(-1)!.json.convert_safes).toBeUndefined();
   });
@@ -175,7 +187,7 @@ describe("warrants and a round's dividends, as typed (M5k2)", () => {
   });
 
   it("adds warrants for common, for the first holder, with their amounts blank", () => {
-    const d = addEvent(draftFromRounds(roundsOf("millrace")), "issue_warrants", []);
+    const d = addEvent(draftFromRounds(roundsOf("millrace")), "issue_warrants", null);
     expect(d.events.at(-1)!.json).toEqual({ id: "warrants", date: "", type: "issue_warrants", warrants: [{ holder: d.holders[0]!.key, shares: "", strike: "", underlying: "common" }] });
   });
 });

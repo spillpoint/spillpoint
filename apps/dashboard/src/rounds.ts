@@ -53,6 +53,8 @@ export function fromRounds(rounds: Rounds, range: unknown, terms: ExitTerms = {}
     const tables = buildCapTables(company);
     // What the page can't show comes before the engine's exit checks: a founder can't give
     // the exit date a table with dividends needs, so being asked for one wouldn't help.
+    // A starting table is shown too, on the Cap table tab (R31).
+    if (rounds.events[0]?.type === "start") checkShown(rounds.events[0].cap_table);
     const after = tables.find((t) => t.event === rounds.after);
     if (after) checkShown(capTableJson(after.capTable));
     // The rounds are checked on their own. The range and the sale's date belong to the cap table, whose
@@ -119,7 +121,8 @@ export function capTableJson(ct: CapTable): Json {
       };
     }),
     seniority: ct.seniority.map((t) => [...t]),
-    conversion_groups: [],
+    // A starting table's group, carried through its rounds (R31, 05b3); no event makes one.
+    conversion_groups: ct.conversionGroups.map((g) => ({ series: [...g.series], vote_threshold_percent: text(g.voteThreshold.times(100)), vote_rule: g.voteRule })),
     positions: ct.positions.map((p) => ({ holder: p.holder, security: p.security, shares: text(p.shares) })),
     unissued_pool: text(ct.unissuedPool),
     // Written out so the page's own check (checkShown) sees SAFEs still outstanding, never drops them.
@@ -260,8 +263,8 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name)
   const items = (key: string) => (ev[key] as Json[] | undefined) ?? [];
   switch (d.kind) {
     case "start":
-      // R31: the cap table a company starts from. The page adds rounds to one in 05b3.
-      return { title: "The cap table it starts from", lines: ["The company as it stood on this date. The events after it build on it."] };
+      // R31: the cap table a company starts from, edited on the Cap table tab.
+      return { title: "The cap table it starts from", lines: ["The company as it stood. Every event after it is built on it."] };
     case "issue":
       return {
         title: `${(ev.security as Json).name as string} issued`,

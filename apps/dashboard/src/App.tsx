@@ -33,9 +33,9 @@ import type { ImportUse } from "./ImportReview.tsx";
 import { importOcf } from "./ocfImport.ts";
 import type { Imported } from "./ocfImport.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
-import { eventViews, exampleContents, fromRounds } from "./rounds.ts";
+import { dateText, eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
-import { BLANK, blankRounds, buildRounds, draftFromRounds, locate, otherBlanks } from "./roundsDraft.ts";
+import { BLANK, addEvent, blankRounds, buildRounds, draftFromRounds, draftTitle, eventFieldId, locate, otherBlanks, startingRounds, withStart } from "./roundsDraft.ts";
 import type { RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 const SCRATCH = "scratch";
@@ -43,6 +43,15 @@ const SCRATCH_ROUNDS = "scratch-rounds";
 const FILE = "file";
 /** A cap table imported from an Open Cap Format export (M6). */
 const IMPORTED = "imported";
+
+/**
+ * What an import says of where its cap table stands (O14): its date, and the order its series, SAFEs and notes were
+ * issued in. "Add a round" starts the company's rounds there (R31).
+ */
+interface Origin {
+  date: string;
+  issueOrder: string[] | null;
+}
 
 /** Where a cap table starts: an example from cases/, a blank table, or a file. */
 interface Start {
@@ -57,6 +66,8 @@ interface Start {
   you?: string;
   /** The company's rounds, when the cap table is built from them (M4i). */
   rounds: Rounds | null;
+  /** An import's date and issue order, kept for "Add a round". */
+  origin?: Origin;
 }
 
 function startFrom(id: string): Start {
@@ -107,6 +118,8 @@ interface Session {
   roundsGood: Rounds | null;
   /** The engine's objection to the rounds as typed, if it has one. */
   roundsProblem: RoundsProblem | null;
+  /** The import's date and issue order, while the cap table is still the one it gave. */
+  origin: Origin | null;
 }
 
 function newSession(start: Start, n: number): Session {
@@ -116,7 +129,10 @@ function newSession(start: Start, n: number): Session {
   const you = start.you ?? (checked.ok ? defaultHolder(checked.exit.capTable) : undefined);
   const youKey = [...built.holderIds].find(([, id]) => id === you)?.[0] ?? null;
   const rounds = start.rounds ? draftFromRounds(start.rounds) : null;
-  return { start, n, draft: start.draft, name: start.name, youKey, exitValue: new D(start.defaultExitValue), rounds, roundsGood: start.rounds, roundsProblem: null };
+  return {
+    start, n, draft: start.draft, name: start.name, youKey, exitValue: new D(start.defaultExitValue), rounds, roundsGood: start.rounds, roundsProblem: null,
+    origin: start.origin ?? null,
+  };
 }
 
 /** The holder you are, by id in this cap table: the one chosen, or else whoever holds the most common stock. */
@@ -222,12 +238,40 @@ export function App() {
   const editDirectly = () => {
     if (!rounds) return;
     const back = session.start.id === FILE ? "open the file again" : `start again from ${session.start.label}`;
+    // R31: with a starting table on this tab, the table that stays is another one, the one the payouts use.
+    const used = rounds.events.find((e) => String(e.json.id) === rounds.after);
+    const stays = rounds.start
+      ? `The cap table the payouts use, after ${used ? draftTitle(used.json) : "the last event"}, stays exactly as it is now, and you edit it here in place of the one the company starts from. `
+      : "The cap table itself stays exactly as it is now, and you can edit it. ";
     const yes = window.confirm(
       `Edit the cap table directly? This drops the ${rounds.events.length} events that build it, and what each one worked out on the Rounds tab. ` +
-        `The cap table itself stays exactly as it is now, and you can edit it. A save will keep the cap table, not the rounds. ` +
+        `${stays}A save will keep the cap table, not the rounds. ` +
         `To get the rounds back, ${back}.`,
     );
-    if (yes) change({ rounds: null, roundsGood: null });
+    // The table left is no longer the import's, so its date and issue order go with the rounds.
+    if (yes) {
+      setSession((s) => ({ ...s, origin: null }));
+      change({ rounds: null, roundsGood: null });
+    }
+  };
+  /**
+   * "Add a round" (R31; 0.5.0 plan, answer 8): the cap table as it stands becomes the one the company starts from,
+   * and a new priced round follows it, for the Rounds tab to open. Its key, or null, with the reason, if the table
+   * can't start a company yet.
+   */
+  const addRound = (): string | null => {
+    if (session.rounds) return null;
+    const first = startingRounds(session.draft, session.origin);
+    const result = fromRounds(buildRounds(first), session.draft.range);
+    if (!result.ok) {
+      setFileStatus({ kind: "problem", text: `A round can't be added yet. ${result.message}` });
+      return null;
+    }
+    const next = addEvent(first, "priced_round", result.tables.at(-1)!.capTable);
+    // Built once on its own, so the payouts have the starting table while the new round's fields are blank.
+    changeRounds(first);
+    changeRounds(next);
+    return next.events.at(-1)!.key;
   };
 
   const choose = (id: string) => {
@@ -297,6 +341,7 @@ export function App() {
       name: use.name,
       defaultExitValue: middleOf(use.draft.range),
       rounds: null,
+      origin: { date: use.asOf, issueOrder: use.issueOrder },
     };
     begin(start, { kind: "done", text: `Imported ${use.name} from ${use.source}. It isn't saved yet: Save keeps it as a spillpoint file.` });
     setUnsaved(true);
@@ -401,6 +446,7 @@ export function App() {
         tables={tables}
         events={events}
         onEditDirectly={editDirectly}
+        onAddRound={addRound}
       />}
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
       <footer className="page-footer">
@@ -450,11 +496,13 @@ interface WorkspaceProps {
   tables: ReturnType<typeof buildCapTables> | null;
   events: ReturnType<typeof eventViews> | null;
   onEditDirectly: () => void;
+  /** Starts the company's rounds on this cap table, with a new round; its key, or null if it can't. */
+  onAddRound: () => string | null;
 }
 
 function Workspace(props: WorkspaceProps) {
   const { start, draft, name, built, checked, edited, unsaved, onDraft, onName, youKey, onYouKey, chosenExitValue, onExitValue: setExitValue } = props;
-  const { rounds, onRounds, roundsProblem, tables, events, onEditDirectly } = props;
+  const { rounds, onRounds, roundsProblem, tables, events, onEditDirectly, onAddRound } = props;
   const lastGood = useRef<Good | null>(null);
   if (checked.ok && lastGood.current?.built !== built) lastGood.current = { built, checked };
   const good = lastGood.current!;
@@ -509,6 +557,12 @@ function Workspace(props: WorkspaceProps) {
   const [editing, setEditing] = useState<ReadonlySet<string>>(new Set());
   const fixRounds = () => {
     if (!roundsProblem) return;
+    // R31: a problem in the starting table is fixed where it's edited, on the Cap table tab.
+    if (roundsProblem.onTable) {
+      focusAfterSwitch.current = roundsProblem.fields[0] ?? null;
+      setTab("editor");
+      return;
+    }
     if (roundsProblem.event) setEditing((open) => new Set([...open, roundsProblem.event!]));
     setTab("rounds");
     // The field once the event's form has rendered: the one the engine named, or the nearest one above it.
@@ -517,6 +571,32 @@ function Workspace(props: WorkspaceProps) {
       (field ?? document.getElementById(`round-problem-${roundsProblem.event ?? "rounds"}`))?.focus();
     }, 0);
   };
+
+  // "Add a round": straight to the new round, open for editing at its first field.
+  const addRound = () => {
+    const key = onAddRound();
+    if (!key) return;
+    setEditing((open) => new Set([...open, key]));
+    setTab("rounds");
+    setTimeout(() => document.getElementById(eventFieldId(key, "date"))?.focus(), 0);
+  };
+  const toCapTable = (field?: string) => {
+    focusAfterSwitch.current = field ?? null;
+    setTab("editor");
+  };
+  // R31: the cap table a company starts from, edited on the Cap table tab; the rounds after it are built again on each change.
+  const startEvent = rounds?.events[0]?.json.type === "start" ? rounds.events[0] : undefined;
+  const after = rounds?.events.find((e) => String(e.json.id) === rounds.after);
+  const startTable =
+    rounds?.start && startEvent
+      ? {
+          draft: rounds.start,
+          onDraft: (table: Draft) => onRounds(withStart(rounds, table)),
+          error: roundsProblem?.onTable ? { field: roundsProblem.fields[0] ?? null, message: roundsProblem.message } : null,
+          date: typeof startEvent.json.date === "string" && startEvent.json.date ? dateText(startEvent.json.date) : null,
+          after: after && after !== startEvent ? draftTitle(after.json) : null,
+        }
+      : null;
 
   const summary = solved.ok
     ? `At ${shortDollars(exitValue)}, ${yourName} gets ${shortDollars(solved.answer.payout.holderTotals.get(you) ?? new D(0))}.`
@@ -586,7 +666,8 @@ function Workspace(props: WorkspaceProps) {
           onName={onName}
           error={draftError}
           summary={summary}
-          rounds={rounds ? { events: rounds.events.length, onEditDirectly } : null}
+          rounds={rounds ? { events: rounds.events.length, onEditDirectly, start: startTable } : null}
+          onAddRound={rounds ? null : addRound}
         />
       </div>
 
@@ -601,6 +682,8 @@ function Workspace(props: WorkspaceProps) {
           editing={editing}
           onEditing={setEditing}
           onExitTerms={toExitTerms}
+          onCapTable={toCapTable}
+          onAddRound={rounds ? null : addRound}
         />
       </div>
     </main>

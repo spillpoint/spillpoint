@@ -19,7 +19,10 @@
 // A cap table built from rounds (M4i) is shown read-only: the rounds build it,
 // so an edit here would contradict them. Its name and range stay editable.
 // "Edit the cap table directly" drops the rounds and keeps the table, after
-// asking (M4 plan, answer 9).
+// asking (M4 plan, answer 9). A company whose rounds start from a cap table
+// (R31, 0.5.0) has that one here instead, editable, and the rounds after it are
+// built again on every change (0.5.0 plan, answer 8). A cap table entered
+// directly or imported can start a company's rounds: "Add a round".
 
 import type React from "react";
 import { D } from "spillpoint";
@@ -48,17 +51,43 @@ interface Props {
   error: DraftError | null;
   /** One line on what the current cap table pays, shown while it's valid. */
   summary: string;
-  /** Set when the cap table is built from rounds: how many events build it, and how to drop them. */
-  rounds: { events: number; onEditDirectly: () => void } | null;
+  /** Set when the cap table is built from rounds: how many events build it, how to drop them, and where they start. */
+  rounds: { events: number; onEditDirectly: () => void; start: StartTable | null } | null;
+  /** Starts the company's rounds on this cap table; null when it's built from rounds already. */
+  onAddRound: (() => void) | null;
 }
 
-export function CapTableEditor({ draft, onDraft, name, onName, error, summary, rounds }: Props) {
+/** The cap table a company's rounds start from (R31), edited here. */
+export interface StartTable {
+  draft: Draft;
+  onDraft: (next: Draft) => void;
+  /** The engine's objection to it, from building the rounds. */
+  error: DraftError | null;
+  /** "Dec 31, 2025", or null with no date. */
+  date: string | null;
+  /** The event whose cap table the payouts use, if it isn't this one: "Series B Preferred, a priced round". */
+  after: string | null;
+}
+
+export function CapTableEditor({ draft, onDraft, name, onName, error, summary, rounds, onAddRound }: Props) {
   const errorFor = (field: string) => (error && error.field === field ? error.message : null);
-  const preferred = draft.securities.filter((s): s is DraftPreferred => s.kind === "preferred");
+  // The table's own cards: the starting table, if the rounds start from one; otherwise the cap table itself.
+  const start = rounds?.start ?? null;
+  const table = start ? { draft: start.draft, onDraft: start.onDraft, error: start.error } : { draft, onDraft, error };
+  const tableErrorFor = (field: string) => (table.error && table.error.field === field ? table.error.message : null);
+  const preferred = table.draft.securities.filter((s): s is DraftPreferred => s.kind === "preferred");
   return (
     <div className="editor">
-      <EditorStatus error={error} summary={summary} />
-      {rounds && (
+      <EditorStatus error={start?.error ?? error} summary={summary} />
+      {start && (
+        <div className="notice editor__built" role="note">
+          <p>{startNotice(rounds!.events - 1, start)}</p>
+          <button type="button" className="file-button" onClick={rounds!.onEditDirectly}>
+            Edit the cap table directly
+          </button>
+        </div>
+      )}
+      {rounds && !start && (
         <div className="notice editor__built" role="note">
           <p>
             <strong>This cap table is built from the {rounds.events} events on the Rounds tab, so it can't be edited here.</strong> You can still
@@ -72,19 +101,53 @@ export function CapTableEditor({ draft, onDraft, name, onName, error, summary, r
       <section className="card" aria-label="Name">
         <Field id="edit-name" label="Name of this cap table" value={name} onChange={onName} error={null} hint="A saved file is named after it." />
       </section>
+      {onAddRound && (
+        <section className="card" aria-labelledby="next-round-heading">
+          <h2 id="next-round-heading">The next round</h2>
+          <p className="card__intro">
+            Model a round on this cap table: its price, its investors, the pool top-up and the SAFEs and notes it converts. This cap table becomes the one the
+            company's rounds start from, and the round opens on the Rounds tab.
+          </p>
+          <button type="button" className="add" onClick={onAddRound}>
+            Add a round
+          </button>
+        </section>
+      )}
       {/* A disabled fieldset turns every field and button in it off, for the keyboard and screen readers too. */}
-      <fieldset className="editor__table" disabled={rounds !== null}>
-        <legend className="visually-hidden">{rounds ? "The cap table, built from the rounds" : "The cap table"}</legend>
-        <HoldersCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
-        <ClassesCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
-        <SharesCard draft={draft} onDraft={onDraft} error={error} errorFor={errorFor} />
-        <OutstandingCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
-        {preferred.length > 0 && <SeniorityCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
-        {preferred.length > 0 && <GroupCard draft={draft} onDraft={onDraft} errorFor={errorFor} />}
+      <fieldset className="editor__table" disabled={rounds !== null && !start}>
+        <legend className="visually-hidden">{start ? "The cap table the company starts from" : rounds ? "The cap table, built from the rounds" : "The cap table"}</legend>
+        <HoldersCard draft={table.draft} onDraft={table.onDraft} errorFor={tableErrorFor} />
+        <ClassesCard draft={table.draft} onDraft={table.onDraft} errorFor={tableErrorFor} />
+        <SharesCard draft={table.draft} onDraft={table.onDraft} error={table.error} errorFor={tableErrorFor} />
+        <OutstandingCard draft={table.draft} onDraft={table.onDraft} errorFor={tableErrorFor} />
+        {preferred.length > 0 && <SeniorityCard draft={table.draft} onDraft={table.onDraft} errorFor={tableErrorFor} />}
+        {preferred.length > 0 && <GroupCard draft={table.draft} onDraft={table.onDraft} errorFor={tableErrorFor} />}
       </fieldset>
       <ExitTermsCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
       <RangeCard draft={draft} onDraft={onDraft} errorFor={errorFor} />
     </div>
+  );
+}
+
+/** What the Cap table tab says of a starting table: when it stands, what's built on it, and which table the payouts use. */
+function startNotice(later: number, start: StartTable) {
+  const when = start.date ? `, on ${start.date}` : "";
+  if (later === 0) {
+    return (
+      <>
+        <strong>This is the cap table the company starts from{when}.</strong> No event follows it yet: add one on the Rounds tab.
+      </>
+    );
+  }
+  const events = later === 1 ? "The event after it on the Rounds tab is" : `The ${later} events after it on the Rounds tab are`;
+  const payouts = start.after ? `, and the payouts use the cap table after ${start.after}` : "";
+  return (
+    <>
+      <strong>
+        This is the cap table the company starts from{when}. {events} built on it{payouts}.
+      </strong>{" "}
+      Change it here and {later === 1 ? "that event is" : "they're"} built again.
+    </>
   );
 }
 

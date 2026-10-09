@@ -295,6 +295,8 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .payments__lowered { color: var(--error); font-weight: 600; }
 .payments__warning { margin: 8px 0 12px; }
 .rounds__terms { margin: 12px 0 0; color: var(--muted); }
+/* A starting table's card (R31): its cap table is the Cap table tab's. */
+.rounds__start { margin: 8px 0 0; color: var(--muted); }
 
 /* An OCF import, reviewed before its cap table is used (M6, 04f). */
 .import { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; }

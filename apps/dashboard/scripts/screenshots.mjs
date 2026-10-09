@@ -158,6 +158,30 @@ const importFiles = (paths) => {
 };
 const packageOf = (name) => readdirSync(resolve(import.meta.dirname, "../../../cases", name, "package")).map((f) => `cases/${name}/package/${f}`);
 
+/** Quillfern's export, imported and used (04f). */
+const QUILLFERN = [importFiles(["apps/dashboard/test/fixtures/quillfern-macos.zip"]), click("Use this cap table")];
+/**
+ * "Add a round" on it, and case 26's Series B typed in (05b3a). The start event is r1 and the round r2, so their
+ * fields are found by id; Fund W, added on the Rounds tab, is r3.
+ */
+const SERIES_B = [
+  click("Cap table"),
+  click("Add a round"),
+  `document.querySelector("section[aria-labelledby=rounds-holders-heading] button.add").click()`,
+  fill("#rounds-holder-r3", 0, "Fund W"),
+  fill("#ev-r2-date", 0, "2026-03-31"),
+  fill("#ev-r2-pre_money", 0, "40000000"),
+  fill("#ev-r2-pool_target_unissued_percent_post", 0, "10"),
+  pickText("#ev-r2-investments-0-holder", 0, "Fund W"),
+  fill("#ev-r2-investments-0-amount", 0, "8000000"),
+  click("Add an investor"),
+  pickText("#ev-r2-investments-1-holder", 0, "Fund U"),
+  fill("#ev-r2-investments-1-amount", 0, "1500000"),
+  `document.querySelector("#ev-r2-investments-1-pro_rata").click()`,
+  pick("#ev-r2-seniority", 0, "senior"),
+  click("Done"),
+];
+
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
   "m3a-by-class": { width: 1100, height: 900, steps: [click("By class")] },
@@ -357,6 +381,24 @@ const SHOTS = {
     steps: [importFiles([...packageOf("ocf-01-larkspur"), "cases/ocf-03-refused/fixtures/conversion-ratio-loose.ocf.json"])],
     clip: [".masthead", ".file-status"],
   },
+  // 05b3a: "Add a round" on an imported cap table, which becomes the one the company's rounds start from (R31).
+  "05b3a-next-round": { width: 1100, height: 900, steps: [...QUILLFERN, click("Cap table")], clip: ["section[aria-labelledby=next-round-heading]"], quality: 50 },
+  "05b3a-rounds": { width: 1100, height: 900, steps: [...QUILLFERN, ...SERIES_B], clip: [".example-label", ".tabs", ROUND(1), ROUND(2)], quality: 50 },
+  "05b3a-round-form": {
+    width: 1100,
+    height: 900,
+    steps: [...QUILLFERN, ...SERIES_B, editRound(1)],
+    clip: [ROUND(2)],
+    quality: 50,
+  },
+  "05b3a-starting-table": {
+    width: 1100,
+    height: 900,
+    steps: [...QUILLFERN, ...SERIES_B, click("Cap table")],
+    clip: [".editor__built", "section[aria-labelledby=edit-holders-heading]"],
+    quality: 50,
+  },
+  "05b3a-payouts": { width: 1100, height: 900, steps: [...QUILLFERN, ...SERIES_B, click("Payouts")], clip: [".example-label", ".founder"] },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
