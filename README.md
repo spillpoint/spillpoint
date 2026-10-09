@@ -48,5 +48,6 @@ Coming next: 0.5.0, from your cap table to your term sheet: adding the next roun
 - [`cases`](cases): the locked test cases, each with its inputs, expected values and a plain-English derivation.
 - [`reference`](reference): an independent calculator, using exact fractions and a different method, that produced the expected values.
 - [`docs`](docs): the rules ([`SPEC.md`](docs/SPEC.md)) and every modeling choice with its default ([`ASSUMPTIONS.md`](docs/ASSUMPTIONS.md)).
+- [`scripts/ocf-check.mjs`](scripts/ocf-check.mjs): checks an Open Cap Format export, `pnpm ocf-check export.zip`, and prints only counts and codes, never a name, an id, an amount or a date, so what it prints can be shared without the cap table. Needs Node 22.18 or later.
 
 Licensed under Apache-2.0.
