@@ -368,4 +368,29 @@ describe("rules the OCF cases don't reach", () => {
       kind: "unsupported", term: "class_conversion_mechanism", subject: "seed",
     });
   });
+  it("refuses differing seniority only among convertibles still outstanding (Jordan, 04e review)", () => {
+    const converted = { object_type: "TX_CONVERTIBLE_CONVERSION", id: "tx-conv", date: "2023-01-01", security_id: "s1", trigger_id: "t", resulting_security_ids: [] };
+    const outstanding = { ...safe("s2", { exit_multiple: "1" }), date: "2024-01-01" };
+    const files = pkg([common], [issue("a1", "2021-01-01", "a", "common", "1000"), { ...safe("s1", { exit_multiple: "1" }), seniority: 2 }, converted, outstanding]);
+    expect(notesOf(files)).toContainEqual({ code: "convertible_seniority_ignored" });
+    const third = { ...safe("s3", { exit_multiple: "1" }), date: "2024-02-01", seniority: 2 };
+    expect(refusalOf(pkg([common], [issue("a1", "2021-01-01", "a", "common", "1000"), outstanding, third]))).toEqual({
+      kind: "unsupported", term: "convertible_seniority", subject: "tx-s3",
+    });
+  });
+
+  it("checks a warrant's mechanism only if it's still outstanding (Jordan, 04e review)", () => {
+    const valuation = (id: string, extra: Json = {}) => ({
+      ...warrant(id, "common", "500"),
+      exercise_triggers: [{ type: "ELECTIVE_AT_WILL", trigger_id: `${id}-x`, conversion_right: { type: "WARRANT_CONVERSION_RIGHT", converts_to_stock_class_id: "common", conversion_mechanism: { type: "VALUATION_BASED_CONVERSION" } } }],
+      ...extra,
+    });
+    const exercise = { object_type: "TX_WARRANT_EXERCISE", id: "tx-x", date: "2023-01-01", security_id: "w1", trigger_id: "w1-x", resulting_security_ids: [] };
+    const stock = [issue("a1", "2021-01-01", "a", "common", "1000")];
+    expect(refusalOf(pkg([common], [...stock, valuation("w1"), exercise]))).toBeNull();
+    expect(refusalOf(pkg([common], [...stock, valuation("w1")]))).toEqual({ kind: "unsupported", term: "warrant_mechanism", subject: "tx-w1" });
+    // With no quantity, only a balance security can show what's left after part of it is cancelled.
+    const cancel = { object_type: "TX_WARRANT_CANCELLATION", id: "tx-c", date: "2023-01-01", security_id: "w1", quantity: "100" };
+    expect(refusalOf(pkg([common], [...stock, valuation("w1", { quantity: undefined }), cancel]))).toEqual({ kind: "unsupported", term: "warrant_mechanism", subject: "tx-w1" });
+  });
 });
