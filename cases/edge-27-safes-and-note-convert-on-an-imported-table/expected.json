@@ -1,0 +1,3618 @@
+{
+  "case": "edge-27-safes-and-note-convert-on-an-imported-table",
+  "generated_by": "reference/generate.py",
+  "cap_tables": [
+    {
+      "after_event": "start",
+      "date": "2025-06-30",
+      "details": {},
+      "cap_table": {
+        "holders": [
+          {
+            "id": "sh-founder-a",
+            "name": "Founder A"
+          },
+          {
+            "id": "sh-founder-b",
+            "name": "Founder B"
+          },
+          {
+            "id": "sh-employee-c",
+            "name": "Employee C"
+          },
+          {
+            "id": "sh-employee-d",
+            "name": "Employee D"
+          },
+          {
+            "id": "sh-d-trust",
+            "name": "D Family Trust"
+          },
+          {
+            "id": "sh-investor-x",
+            "name": "Investor X"
+          },
+          {
+            "id": "sh-investor-y",
+            "name": "Investor Y"
+          },
+          {
+            "id": "sh-investor-s",
+            "name": "Investor S"
+          },
+          {
+            "id": "sh-investor-n",
+            "name": "Investor N"
+          },
+          {
+            "id": "sh-lender-l",
+            "name": "Lender L"
+          },
+          {
+            "id": "sh-investor-z",
+            "name": "Investor Z"
+          }
+        ],
+        "securities": [
+          {
+            "id": "cls-common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "cls-seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "0.8",
+            "conversion_ratio": "1.25",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "1.0000000000",
+              "conversion_price": "0.8000000000",
+              "conversion_ratio": "1.2500000000"
+            }
+          },
+          {
+            "id": "cls-series-a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "2",
+            "conversion_price": "2",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "3",
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "2.0000000000",
+              "conversion_price": "2.0000000000",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.08",
+            "name": "Options ($0.08 strike)",
+            "kind": "option",
+            "strike": "0.08"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "rsus",
+            "name": "RSUs (no strike)",
+            "kind": "option",
+            "strike": "0"
+          },
+          {
+            "id": "warrants_cls-seed_1",
+            "name": "Warrants for Seed Preferred ($1 strike)",
+            "kind": "warrant",
+            "strike": "1",
+            "underlying": "cls-seed"
+          }
+        ],
+        "seniority": [
+          [
+            "cls-series-a"
+          ],
+          [
+            "cls-seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "sh-founder-a",
+            "security": "cls-common",
+            "shares": 5400000
+          },
+          {
+            "holder": "sh-founder-b",
+            "security": "cls-common",
+            "shares": 3400000
+          },
+          {
+            "holder": "sh-employee-c",
+            "security": "cls-common",
+            "shares": 50000
+          },
+          {
+            "holder": "sh-employee-c",
+            "security": "options_0.08",
+            "shares": 150000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "cls-common",
+            "shares": 10000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "options_0.1",
+            "shares": 80000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "rsus",
+            "shares": 30000
+          },
+          {
+            "holder": "sh-d-trust",
+            "security": "options_0.1",
+            "shares": 20000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "cls-seed",
+            "shares": 2000000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "cls-series-a",
+            "shares": 500000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "warrants_cls-seed_1",
+            "shares": 25000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-common",
+            "shares": 250000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-seed",
+            "shares": 800000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-series-a",
+            "shares": 1500000
+          },
+          {
+            "holder": "sh-investor-s",
+            "security": "cls-seed",
+            "shares": 125000
+          },
+          {
+            "holder": "sh-lender-l",
+            "security": "cls-common",
+            "shares": 20000
+          },
+          {
+            "holder": "sh-lender-l",
+            "security": "warrants_cls-seed_1",
+            "shares": 75000
+          }
+        ],
+        "unissued_pool": 1260000,
+        "unconverted_safes": [
+          {
+            "id": "safe-x1",
+            "holder": "sh-investor-x",
+            "purchase_amount": "250000",
+            "post_money_cap": "12000000",
+            "discount": "0.2"
+          },
+          {
+            "id": "safe-s3",
+            "holder": "sh-investor-s",
+            "purchase_amount": "250000",
+            "post_money_cap": "12000000",
+            "discount": "0.2"
+          }
+        ],
+        "unconverted_notes": [
+          {
+            "id": "note-n1",
+            "holder": "sh-investor-n",
+            "principal": "250000",
+            "interest_rate": "0.06",
+            "interest_method": "simple",
+            "issue_date": "2024-10-01",
+            "valuation_cap": "10000000",
+            "cap_type": "pre_money",
+            "conversion_base": "with_pool",
+            "discount": "0.2",
+            "repayment_multiple": "1"
+          }
+        ],
+        "totals": {
+          "shares_by_security": {
+            "cls-common": 9130000,
+            "cls-seed": 2925000,
+            "cls-series-a": 2000000,
+            "options_0.08": 150000,
+            "options_0.1": 100000,
+            "rsus": 30000,
+            "warrants_cls-seed_1": 100000
+          },
+          "as_converted_by_security": {
+            "cls-common": "9130000",
+            "cls-seed": "3656250",
+            "cls-series-a": "2000000",
+            "options_0.08": "150000",
+            "options_0.1": "100000",
+            "rsus": "30000",
+            "warrants_cls-seed_1": "125000"
+          },
+          "fully_diluted": "16451250",
+          "fully_diluted_percent_by_holder": {
+            "sh-founder-a": "32.8243",
+            "sh-founder-b": "20.6671",
+            "sh-employee-c": "1.2157",
+            "sh-employee-d": "0.7294",
+            "sh-d-trust": "0.1216",
+            "sh-investor-x": "18.4257",
+            "sh-investor-y": "16.7161",
+            "sh-investor-s": "0.9498",
+            "sh-lender-l": "0.6914"
+          },
+          "unissued_pool_percent": "7.6590"
+        }
+      }
+    },
+    {
+      "after_event": "series_b",
+      "date": "2025-12-01",
+      "details": {
+        "price_per_share": "9276475000/3434759253",
+        "price_per_share_approx": "2.7007642506",
+        "post_money_valuation": "58000000",
+        "post_money_fully_diluted_solved": "7968641466960/371059",
+        "post_money_fully_diluted_solved_approx": "21475402.7445",
+        "pre_round_fully_diluted": "16451250",
+        "company_capitalization": "29593614024/1679",
+        "company_capitalization_approx": "17625737.9535",
+        "safe_conversions": [
+          {
+            "safe": "safe-x1",
+            "holder": "sh-investor-x",
+            "method": "cap",
+            "conversion_price": "839500000/1233067251",
+            "conversion_price_approx": "0.6808225580",
+            "shares": 367202,
+            "series": "series_b_shadow"
+          },
+          {
+            "safe": "safe-s3",
+            "holder": "sh-investor-s",
+            "method": "cap",
+            "conversion_price": "839500000/1233067251",
+            "conversion_price_approx": "0.6808225580",
+            "shares": 367202,
+            "series": "series_b_shadow"
+          }
+        ],
+        "note_conversions": [
+          {
+            "note": "note-n1",
+            "holder": "sh-investor-n",
+            "principal": "250000",
+            "interest": "1278000/73",
+            "amount_converting": "19528000/73",
+            "conversion_base": "with_pool",
+            "base_shares": "16451250",
+            "method": "cap",
+            "conversion_price": "8000/13161",
+            "conversion_price_approx": "0.6078565459",
+            "shares": 440082,
+            "series": "series_b_notes"
+          }
+        ],
+        "new_shares": [
+          {
+            "holder": "sh-investor-z",
+            "shares": 2962124
+          }
+        ],
+        "pool_top_up": 887540,
+        "post_money_fully_diluted_actual": "21475400"
+      },
+      "cap_table": {
+        "holders": [
+          {
+            "id": "sh-founder-a",
+            "name": "Founder A"
+          },
+          {
+            "id": "sh-founder-b",
+            "name": "Founder B"
+          },
+          {
+            "id": "sh-employee-c",
+            "name": "Employee C"
+          },
+          {
+            "id": "sh-employee-d",
+            "name": "Employee D"
+          },
+          {
+            "id": "sh-d-trust",
+            "name": "D Family Trust"
+          },
+          {
+            "id": "sh-investor-x",
+            "name": "Investor X"
+          },
+          {
+            "id": "sh-investor-y",
+            "name": "Investor Y"
+          },
+          {
+            "id": "sh-investor-s",
+            "name": "Investor S"
+          },
+          {
+            "id": "sh-investor-n",
+            "name": "Investor N"
+          },
+          {
+            "id": "sh-lender-l",
+            "name": "Lender L"
+          },
+          {
+            "id": "sh-investor-z",
+            "name": "Investor Z"
+          }
+        ],
+        "securities": [
+          {
+            "id": "cls-common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "cls-seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "0.8",
+            "conversion_ratio": "1.25",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "1.0000000000",
+              "conversion_price": "0.8000000000",
+              "conversion_ratio": "1.2500000000"
+            }
+          },
+          {
+            "id": "cls-series-a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "2",
+            "conversion_price": "2",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "3",
+            "anti_dilution": "none",
+            "approx": {
+              "original_issue_price": "2.0000000000",
+              "conversion_price": "2.0000000000",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "options_0.08",
+            "name": "Options ($0.08 strike)",
+            "kind": "option",
+            "strike": "0.08"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "rsus",
+            "name": "RSUs (no strike)",
+            "kind": "option",
+            "strike": "0"
+          },
+          {
+            "id": "warrants_cls-seed_1",
+            "name": "Warrants for Seed Preferred ($1 strike)",
+            "kind": "warrant",
+            "strike": "1",
+            "underlying": "cls-seed"
+          },
+          {
+            "id": "series_b_shadow",
+            "name": "Series B Preferred (from SAFEs)",
+            "kind": "preferred",
+            "original_issue_price": "839500000/1233067251",
+            "conversion_price": "839500000/1233067251",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "broad_based",
+            "approx": {
+              "original_issue_price": "0.6808225580",
+              "conversion_price": "0.6808225580",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "series_b_notes",
+            "name": "Series B Preferred (from notes)",
+            "kind": "preferred",
+            "original_issue_price": "8000/13161",
+            "conversion_price": "8000/13161",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "broad_based",
+            "approx": {
+              "original_issue_price": "0.6078565459",
+              "conversion_price": "0.6078565459",
+              "conversion_ratio": "1.0000000000"
+            }
+          },
+          {
+            "id": "series_b",
+            "name": "Series B Preferred",
+            "kind": "preferred",
+            "original_issue_price": "9276475000/3434759253",
+            "conversion_price": "9276475000/3434759253",
+            "conversion_ratio": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "broad_based",
+            "approx": {
+              "original_issue_price": "2.7007642506",
+              "conversion_price": "2.7007642506",
+              "conversion_ratio": "1.0000000000"
+            }
+          }
+        ],
+        "seniority": [
+          [
+            "series_b",
+            "series_b_shadow",
+            "series_b_notes"
+          ],
+          [
+            "cls-series-a"
+          ],
+          [
+            "cls-seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "sh-founder-a",
+            "security": "cls-common",
+            "shares": 5400000
+          },
+          {
+            "holder": "sh-founder-b",
+            "security": "cls-common",
+            "shares": 3400000
+          },
+          {
+            "holder": "sh-employee-c",
+            "security": "cls-common",
+            "shares": 50000
+          },
+          {
+            "holder": "sh-employee-c",
+            "security": "options_0.08",
+            "shares": 150000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "cls-common",
+            "shares": 10000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "options_0.1",
+            "shares": 80000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "rsus",
+            "shares": 30000
+          },
+          {
+            "holder": "sh-d-trust",
+            "security": "options_0.1",
+            "shares": 20000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "cls-seed",
+            "shares": 2000000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "cls-series-a",
+            "shares": 500000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "warrants_cls-seed_1",
+            "shares": 25000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-common",
+            "shares": 250000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-seed",
+            "shares": 800000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-series-a",
+            "shares": 1500000
+          },
+          {
+            "holder": "sh-investor-s",
+            "security": "cls-seed",
+            "shares": 125000
+          },
+          {
+            "holder": "sh-lender-l",
+            "security": "cls-common",
+            "shares": 20000
+          },
+          {
+            "holder": "sh-lender-l",
+            "security": "warrants_cls-seed_1",
+            "shares": 75000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "series_b_shadow",
+            "shares": 367202
+          },
+          {
+            "holder": "sh-investor-s",
+            "security": "series_b_shadow",
+            "shares": 367202
+          },
+          {
+            "holder": "sh-investor-n",
+            "security": "series_b_notes",
+            "shares": 440082
+          },
+          {
+            "holder": "sh-investor-z",
+            "security": "series_b",
+            "shares": 2962124
+          }
+        ],
+        "unissued_pool": 2147540,
+        "unconverted_safes": [],
+        "totals": {
+          "shares_by_security": {
+            "cls-common": 9130000,
+            "cls-seed": 2925000,
+            "cls-series-a": 2000000,
+            "options_0.08": 150000,
+            "options_0.1": 100000,
+            "rsus": 30000,
+            "warrants_cls-seed_1": 100000,
+            "series_b_shadow": 734404,
+            "series_b_notes": 440082,
+            "series_b": 2962124
+          },
+          "as_converted_by_security": {
+            "cls-common": "9130000",
+            "cls-seed": "3656250",
+            "cls-series-a": "2000000",
+            "options_0.08": "150000",
+            "options_0.1": "100000",
+            "rsus": "30000",
+            "warrants_cls-seed_1": "125000",
+            "series_b_shadow": "734404",
+            "series_b_notes": "440082",
+            "series_b": "2962124"
+          },
+          "fully_diluted": "21475400",
+          "fully_diluted_percent_by_holder": {
+            "sh-founder-a": "25.1450",
+            "sh-founder-b": "15.8321",
+            "sh-employee-c": "0.9313",
+            "sh-employee-d": "0.5588",
+            "sh-d-trust": "0.0931",
+            "sh-investor-x": "15.8249",
+            "sh-investor-y": "12.8053",
+            "sh-investor-s": "2.4374",
+            "sh-lender-l": "0.5297",
+            "sh-investor-n": "2.0492",
+            "sh-investor-z": "13.7931"
+          },
+          "unissued_pool_percent": "10.0000"
+        }
+      }
+    }
+  ],
+  "exit": {
+    "breakpoints": [
+      {
+        "exit_value": "8767504.14",
+        "exact": "12377638384568571354596000/1411763049981174501",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 1,
+            "securities": [
+              "series_b",
+              "series_b_shadow",
+              "series_b_notes"
+            ],
+            "text": "The preference tier Series B Preferred, Series B Preferred (from SAFEs) and Series B Preferred (from notes) is fully paid ($8,767,504.14). Above this exit value, the next dollar goes to the next tier's preference (Series A Preferred)."
+          }
+        ]
+      },
+      {
+        "exit_value": "12767504.14",
+        "exact": "18024690584493269358596000/1411763049981174501",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 2,
+            "securities": [
+              "cls-series-a"
+            ],
+            "text": "The preference tier Series A Preferred is fully paid ($4,000,000.00). Above this exit value, the next dollar goes to the next tier's preference (Seed Preferred)."
+          }
+        ]
+      },
+      {
+        "exit_value": "15692504.14",
+        "exact": "22154097505688204774021000/1411763049981174501",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "rsus",
+            "strike": "0",
+            "text": "Common reaches $0.00 per share, the strike on the 30,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          },
+          {
+            "code": "tier_fully_paid",
+            "tier": 3,
+            "securities": [
+              "cls-seed"
+            ],
+            "text": "The preference tier Seed Preferred is fully paid ($2,925,000.00). Above this exit value, the next dollar goes to the residual, shared as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "16585304.14",
+        "exact": "23414519556711397368513800/1411763049981174501",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.08",
+            "strike": "0.08",
+            "text": "Common reaches $0.08 per share, the strike on the 150,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "16811504.14",
+        "exact": "23733860358617139040640000/1411763049981174501",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.1",
+            "strike": "0.1",
+            "text": "Common reaches $0.10 per share, the strike on the 100,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "22606147.33",
+        "exact": "31914523499553713414999000/1411763049981174501",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_b_notes",
+            "converts": true,
+            "text": "Series B Preferred (from notes) converts to common. At this exit value its as-converted share (440,082 common shares at $0.6079 each = $267,506.72) equals its 1x preference of $267,506.72. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "23470800.55",
+        "exact": "33135208976500858246703000/1411763049981174501",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_b_shadow",
+            "converts": true,
+            "text": "Series B Preferred (from SAFEs) converts to common. At this exit value its as-converted share (734,404 common shares at $0.6808 each = $499,998.81) equals its 1x preference of $499,998.81. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "24970587.41",
+        "exact": "428839780712790832/17173796265",
+        "reasons": [
+          {
+            "code": "warrant_in_the_money",
+            "security": "warrants_cls-seed_1",
+            "strike": "1",
+            "text": "Each Seed Preferred share is now worth $1.00, the strike on the warrant for 100,000 Seed Preferred shares. Above this exit value the warrant is in the money and exercised: its holder pays the strike, which is added to the proceeds, and the new shares join Seed Preferred, with its preference and conversion rights."
+          },
+          {
+            "code": "series_converts",
+            "security": "cls-seed",
+            "converts": true,
+            "text": "Seed Preferred converts to common. At this exit value its as-converted share (3,781,250 common shares at $0.8000 each = $3,025,000.00) equals its 1x preference of $3,025,000.00. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "56077993.33",
+        "exact": "21401600719626000/381639917",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_b",
+            "converts": true,
+            "text": "Series B Preferred converts to common. At this exit value its as-converted share (2,962,124 common shares at $2.7008 each = $7,999,998.61) equals its 1x preference of $7,999,998.61. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "81189440.00",
+        "exact": "81189440",
+        "reasons": [
+          {
+            "code": "cap_reached",
+            "security": "cls-series-a",
+            "text": "Series A Preferred reaches its cap: preference plus participation totals 3x its original issue price ($12,000,000.00). Above this exit value its payout stays flat until converting to common pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "115845160.00",
+        "exact": "115845160",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "cls-series-a",
+            "converts": true,
+            "text": "Series A Preferred converts to common. At this exit value its as-converted share (2,000,000 common shares at $6.0000 each = $12,000,000.00) equals its capped payout of $12,000,000.00 (3x its original issue price). Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "8767504.14",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "not_exercised",
+              "options_0.1": "not_exercised",
+              "rsus": "not_exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "0.00",
+              "sh-founder-b": "0.00",
+              "sh-employee-c": "0.00",
+              "sh-employee-d": "0.00",
+              "sh-d-trust": "0.00",
+              "sh-investor-x": "249999.40",
+              "sh-investor-y": "0.00",
+              "sh-investor-s": "249999.40",
+              "sh-lender-l": "0.00",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "0.00",
+              "options_0.08": "0.00",
+              "options_0.1": "0.00",
+              "rsus": "0.00",
+              "cls-seed": "0.00",
+              "cls-series-a": "0.00",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "10000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "not_exercised",
+              "options_0.1": "not_exercised",
+              "rsus": "not_exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "308123.97"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "924371.90"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "0.00",
+              "sh-founder-b": "0.00",
+              "sh-employee-c": "0.00",
+              "sh-employee-d": "0.00",
+              "sh-d-trust": "0.00",
+              "sh-investor-x": "558123.37",
+              "sh-investor-y": "924371.90",
+              "sh-investor-s": "249999.40",
+              "sh-lender-l": "0.00",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "0.00",
+              "options_0.08": "0.00",
+              "options_0.1": "0.00",
+              "rsus": "0.00",
+              "cls-seed": "0.00",
+              "cls-series-a": "1232495.86",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "12767504.14",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "not_exercised",
+              "options_0.1": "not_exercised",
+              "rsus": "not_exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "0.00",
+              "sh-founder-b": "0.00",
+              "sh-employee-c": "0.00",
+              "sh-employee-d": "0.00",
+              "sh-d-trust": "0.00",
+              "sh-investor-x": "1249999.40",
+              "sh-investor-y": "3000000.00",
+              "sh-investor-s": "249999.40",
+              "sh-lender-l": "0.00",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "0.00",
+              "options_0.08": "0.00",
+              "options_0.1": "0.00",
+              "rsus": "0.00",
+              "cls-seed": "0.00",
+              "cls-series-a": "4000000.00",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "15692504.14",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "not_exercised",
+              "options_0.1": "not_exercised",
+              "rsus": "not_exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "800000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "0.00",
+              "sh-founder-b": "0.00",
+              "sh-employee-c": "0.00",
+              "sh-employee-d": "0.00",
+              "sh-d-trust": "0.00",
+              "sh-investor-x": "3249999.40",
+              "sh-investor-y": "3800000.00",
+              "sh-investor-s": "374999.40",
+              "sh-lender-l": "0.00",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "0.00",
+              "options_0.08": "0.00",
+              "options_0.1": "0.00",
+              "rsus": "0.00",
+              "cls-seed": "2925000.00",
+              "cls-series-a": "4000000.00",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "16585304.14",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "not_exercised",
+              "options_0.1": "not_exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.080000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "432000.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "272000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "4000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "800.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "2400.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1040000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "20000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "800000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "3120000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "1600.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "432000.00",
+              "sh-founder-b": "272000.00",
+              "sh-employee-c": "4000.00",
+              "sh-employee-d": "3200.00",
+              "sh-d-trust": "0.00",
+              "sh-investor-x": "3289999.40",
+              "sh-investor-y": "3940000.00",
+              "sh-investor-s": "374999.40",
+              "sh-lender-l": "1600.00",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "730400.00",
+              "options_0.08": "0.00",
+              "options_0.1": "0.00",
+              "rsus": "2400.00",
+              "cls-seed": "2925000.00",
+              "cls-series-a": "4160000.00",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "16811504.14",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "not_exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.100000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "540000.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "340000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "5000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "3000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "1000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "3000.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1050000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "25000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "800000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "3150000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "2000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "540000.00",
+              "sh-founder-b": "340000.00",
+              "sh-employee-c": "8000.00",
+              "sh-employee-d": "4000.00",
+              "sh-d-trust": "0.00",
+              "sh-investor-x": "3299999.40",
+              "sh-investor-y": "3975000.00",
+              "sh-investor-s": "374999.40",
+              "sh-lender-l": "2000.00",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "913000.00",
+              "options_0.08": "3000.00",
+              "options_0.1": "0.00",
+              "rsus": "3000.00",
+              "cls-seed": "2925000.00",
+              "cls-series-a": "4200000.00",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "22606147.33",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "keeps_preference",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.607857",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "3282425.35"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "2066712.26"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "30392.83"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "79178.48"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "6078.57"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "40628.52"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "18235.70"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "10157.13"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1303928.27"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "151964.14"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "800000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "3911784.82"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "12157.13"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "267506.72"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "3282425.35",
+              "sh-founder-b": "2066712.26",
+              "sh-employee-c": "109571.31",
+              "sh-employee-d": "64942.79",
+              "sh-d-trust": "10157.13",
+              "sh-investor-x": "3553927.68",
+              "sh-investor-y": "4863748.96",
+              "sh-investor-s": "374999.40",
+              "sh-lender-l": "12157.13",
+              "sh-investor-n": "267506.72",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "5549730.26",
+              "options_0.08": "79178.48",
+              "options_0.1": "50785.65",
+              "rsus": "18235.70",
+              "cls-seed": "2925000.00",
+              "cls-series-a": "5215713.09",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "267506.72",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "23470800.55",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "keeps_preference",
+              "series_b_notes": "converts",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.680823",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "3676441.81"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "2314796.70"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "34041.13"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "90123.38"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "6808.23"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "46465.80"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "20424.68"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "11616.45"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1340411.28"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "170205.64"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "800000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "4021233.84"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "13616.45"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "249999.40"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "299617.75"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "3676441.81",
+              "sh-founder-b": "2314796.70",
+              "sh-employee-c": "124164.51",
+              "sh-employee-d": "73698.71",
+              "sh-d-trust": "11616.45",
+              "sh-investor-x": "3590410.68",
+              "sh-investor-y": "4991439.48",
+              "sh-investor-s": "374999.40",
+              "sh-lender-l": "13616.45",
+              "sh-investor-n": "299617.75",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "6215909.95",
+              "options_0.08": "90123.38",
+              "options_0.1": "58082.26",
+              "rsus": "20424.68",
+              "cls-seed": "2925000.00",
+              "cls-series-a": "5361645.12",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "499998.81",
+              "series_b_notes": "299617.75",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "24970587.41",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "keeps_preference",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "not_exercised"
+            },
+            "common_price_per_share": "0.800000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "4320000.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "2720000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "40000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "108000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "8000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "56000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "24000.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "14000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1400000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "200000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "800000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "4200000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "16000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "293761.60"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "293761.60"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "352065.60"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "4320000.00",
+              "sh-founder-b": "2720000.00",
+              "sh-employee-c": "148000.00",
+              "sh-employee-d": "88000.00",
+              "sh-d-trust": "14000.00",
+              "sh-investor-x": "3693761.60",
+              "sh-investor-y": "5200000.00",
+              "sh-investor-s": "418761.60",
+              "sh-lender-l": "16000.00",
+              "sh-investor-n": "352065.60",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "7304000.00",
+              "options_0.08": "108000.00",
+              "options_0.1": "70000.00",
+              "rsus": "24000.00",
+              "cls-seed": "2925000.00",
+              "cls-series-a": "5600000.00",
+              "warrants_cls-seed_1": "0.00",
+              "series_b_shadow": "587523.20",
+              "series_b_notes": "352065.60",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "25000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "0.801797",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "4329704.91"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "2726110.50"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "40089.86"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "108269.58"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "8017.97"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "56143.78"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "24053.92"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "14035.94"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "2004493.01"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1400898.60"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "56.16"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "200449.30"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "801797.21"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "4202695.81"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "125280.81"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "16035.94"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "168.49"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "294421.54"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "294421.54"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "352856.52"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "4329704.91",
+              "sh-founder-b": "2726110.50",
+              "sh-employee-c": "148359.44",
+              "sh-employee-d": "88215.66",
+              "sh-d-trust": "14035.94",
+              "sh-investor-x": "3699869.32",
+              "sh-investor-y": "5204942.32",
+              "sh-investor-s": "419702.35",
+              "sh-lender-l": "16204.43",
+              "sh-investor-n": "352856.52",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "7320408.49",
+              "options_0.08": "108269.58",
+              "options_0.1": "70179.72",
+              "rsus": "24053.92",
+              "cls-seed": "2931571.03",
+              "cls-series-a": "5603594.41",
+              "warrants_cls-seed_1": "224.65",
+              "series_b_shadow": "588843.08",
+              "series_b_notes": "352856.52",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "1.718346",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "9279069.85"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "5842377.31"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "85917.31"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "245751.94"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "17183.46"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "129467.70"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "51550.39"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "32366.93"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "4295865.67"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "1859173.13"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "28698.32"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "429586.57"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "1718346.27"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "5577519.40"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "268491.60"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "34366.93"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "86094.96"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "630980.19"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "630980.19"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "756213.26"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "9279069.85",
+              "sh-founder-b": "5842377.31",
+              "sh-employee-c": "331669.25",
+              "sh-employee-d": "198201.55",
+              "sh-d-trust": "32366.93",
+              "sh-investor-x": "6814717.31",
+              "sh-investor-y": "7725452.24",
+              "sh-investor-s": "899471.79",
+              "sh-lender-l": "120461.89",
+              "sh-investor-n": "756213.26",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "15688501.44",
+              "options_0.08": "245751.94",
+              "options_0.1": "161834.63",
+              "rsus": "51550.39",
+              "cls-seed": "6282703.55",
+              "cls-series-a": "7436692.54",
+              "warrants_cls-seed_1": "114793.28",
+              "series_b_shadow": "1261960.37",
+              "series_b_notes": "756213.26",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "56077993.33",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "keeps_preference",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "2.700764",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "14584126.95"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "9182598.45"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "135038.21"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "393114.64"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "27007.64"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "208061.14"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "81022.93"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "52015.29"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "6751910.63"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "2350382.13"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "59398.88"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "675191.06"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "2700764.25"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "7051146.38"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "421994.41"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "54015.29"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "178196.65"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "991726.03"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "991726.03"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "1188557.73"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "7999998.61"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "14584126.95",
+              "sh-founder-b": "9182598.45",
+              "sh-employee-c": "528152.85",
+              "sh-employee-d": "316091.71",
+              "sh-d-trust": "52015.29",
+              "sh-investor-x": "10153417.67",
+              "sh-investor-y": "10427101.69",
+              "sh-investor-s": "1413720.45",
+              "sh-lender-l": "232211.93",
+              "sh-investor-n": "1188557.73",
+              "sh-investor-z": "7999998.61"
+            },
+            "class_totals": {
+              "cls-common": "24657977.61",
+              "options_0.08": "393114.64",
+              "options_0.1": "260076.43",
+              "rsus": "81022.93",
+              "cls-seed": "9874669.29",
+              "cls-series-a": "9401528.50",
+              "warrants_cls-seed_1": "237595.53",
+              "series_b_shadow": "1983452.07",
+              "series_b_notes": "1188557.73",
+              "series_b": "7999998.61"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "60000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "converts",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "2.903684",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "15679894.20"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "9872525.98"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "145184.21"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "423552.62"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "29036.84"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "224294.73"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "87110.52"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "56073.68"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "7259210.28"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "2451842.06"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "65740.13"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "725921.03"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "2903684.11"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "7355526.17"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "453700.64"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "58073.68"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "197220.39"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "1066238.61"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "1066238.61"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "1277859.11"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "8601072.40"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "15679894.20",
+              "sh-founder-b": "9872525.98",
+              "sh-employee-c": "568736.82",
+              "sh-employee-d": "340442.09",
+              "sh-d-trust": "56073.68",
+              "sh-investor-x": "10843031.08",
+              "sh-investor-y": "10985131.31",
+              "sh-investor-s": "1519939.26",
+              "sh-lender-l": "255294.07",
+              "sh-investor-n": "1277859.11",
+              "sh-investor-z": "8601072.40"
+            },
+            "class_totals": {
+              "cls-common": "26510635.94",
+              "options_0.08": "423552.62",
+              "options_0.1": "280368.41",
+              "rsus": "87110.52",
+              "cls-seed": "10616595.03",
+              "cls-series-a": "9807368.22",
+              "warrants_cls-seed_1": "262960.51",
+              "series_b_shadow": "2132477.23",
+              "series_b_notes": "1277859.11",
+              "series_b": "8601072.40"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "80000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "converts",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "3.938460",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "21267683.02"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "13390763.39"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "196922.99"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "578768.97"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "39384.60"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "307076.79"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "118153.79"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "76769.20"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "9846149.55"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "2969229.91"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "98076.87"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "984614.95"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "3938459.82"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "8907689.73"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "615384.35"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "78769.20"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "294230.61"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "1446210.32"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "1446210.32"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "1733245.27"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "11666206.35"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "21267683.02",
+              "sh-founder-b": "13390763.39",
+              "sh-employee-c": "775691.96",
+              "sh-employee-d": "464615.18",
+              "sh-d-trust": "76769.20",
+              "sh-investor-x": "14359666.65",
+              "sh-investor-y": "13830764.50",
+              "sh-investor-s": "2061594.67",
+              "sh-lender-l": "372999.80",
+              "sh-investor-n": "1733245.27",
+              "sh-investor-z": "11666206.35"
+            },
+            "class_totals": {
+              "cls-common": "35958138.15",
+              "options_0.08": "578768.97",
+              "options_0.1": "383845.98",
+              "rsus": "118153.79",
+              "cls-seed": "14399993.71",
+              "cls-series-a": "11876919.64",
+              "warrants_cls-seed_1": "392307.48",
+              "series_b_shadow": "2892420.65",
+              "series_b_notes": "1733245.27",
+              "series_b": "11666206.35"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "81189440.00",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "converts",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "4.000000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "21600000.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "13600000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "200000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "588000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "40000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "312000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "120000.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "78000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "10000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "100000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "4000000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "9000000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "625000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "80000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "300000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "1468808.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "1468808.00"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "1760328.00"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "11848496.00"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "21600000.00",
+              "sh-founder-b": "13600000.00",
+              "sh-employee-c": "788000.00",
+              "sh-employee-d": "472000.00",
+              "sh-d-trust": "78000.00",
+              "sh-investor-x": "14568808.00",
+              "sh-investor-y": "14000000.00",
+              "sh-investor-s": "2093808.00",
+              "sh-lender-l": "380000.00",
+              "sh-investor-n": "1760328.00",
+              "sh-investor-z": "11848496.00"
+            },
+            "class_totals": {
+              "cls-common": "36520000.00",
+              "options_0.08": "588000.00",
+              "options_0.1": "390000.00",
+              "rsus": "120000.00",
+              "cls-seed": "14625000.00",
+              "cls-series-a": "12000000.00",
+              "warrants_cls-seed_1": "400000.00",
+              "series_b_shadow": "2937616.00",
+              "series_b_notes": "1760328.00",
+              "series_b": "11848496.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "115845160.00",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "keeps_preference",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "converts",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "6.000000",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "32400000.00"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "20400000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "300000.00"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "888000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "60000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "472000.00"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "180000.00"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "118000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "15000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "162500.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "1500000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "6000000.00"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "9000000.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "937500.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "120000.00"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "487500.00"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "2203212.00"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "2203212.00"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "2640492.00"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "17772744.00"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "32400000.00",
+              "sh-founder-b": "20400000.00",
+              "sh-employee-c": "1188000.00",
+              "sh-employee-d": "712000.00",
+              "sh-d-trust": "118000.00",
+              "sh-investor-x": "20365712.00",
+              "sh-investor-y": "16500000.00",
+              "sh-investor-s": "3140712.00",
+              "sh-lender-l": "607500.00",
+              "sh-investor-n": "2640492.00",
+              "sh-investor-z": "17772744.00"
+            },
+            "class_totals": {
+              "cls-common": "54780000.00",
+              "options_0.08": "888000.00",
+              "options_0.1": "590000.00",
+              "rsus": "180000.00",
+              "cls-seed": "21937500.00",
+              "cls-series-a": "12000000.00",
+              "warrants_cls-seed_1": "650000.00",
+              "series_b_shadow": "4406424.00",
+              "series_b_notes": "2640492.00",
+              "series_b": "17772744.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "120000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "converts",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "converts",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "6.214966",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "33560818.42"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "21130885.67"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "310748.32"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "920244.96"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "62149.66"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "489197.31"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "186448.99"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "122299.33"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "15537415.94"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "3107483.19"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "169217.70"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "1553741.59"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "6214966.37"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "9322449.56"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "971088.50"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "124299.33"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "507653.10"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "2282148.08"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "2282148.08"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "2735094.83"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "18409501.06"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "33560818.42",
+              "sh-founder-b": "21130885.67",
+              "sh-employee-c": "1230993.27",
+              "sh-employee-d": "737795.96",
+              "sh-d-trust": "122299.33",
+              "sh-investor-x": "21096264.91",
+              "sh-investor-y": "17091157.53",
+              "sh-investor-s": "3253236.58",
+              "sh-lender-l": "631952.43",
+              "sh-investor-n": "2735094.83",
+              "sh-investor-z": "18409501.06"
+            },
+            "class_totals": {
+              "cls-common": "56742643.00",
+              "options_0.08": "920244.96",
+              "options_0.1": "611496.64",
+              "rsus": "186448.99",
+              "cls-seed": "22723470.81",
+              "cls-series-a": "12429932.75",
+              "warrants_cls-seed_1": "676870.80",
+              "series_b_shadow": "4564296.17",
+              "series_b_notes": "2735094.83",
+              "series_b": "18409501.06"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "200000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "cls-seed": "converts",
+              "cls-series-a": "converts",
+              "series_b_shadow": "converts",
+              "series_b_notes": "converts",
+              "series_b": "converts",
+              "options_0.08": "exercised",
+              "options_0.1": "exercised",
+              "rsus": "exercised",
+              "warrants_cls-seed_1": "exercised"
+            },
+            "common_price_per_share": "10.354069",
+            "lines": [
+              {
+                "holder": "sh-founder-a",
+                "security": "cls-common",
+                "amount": "55911973.70"
+              },
+              {
+                "holder": "sh-founder-b",
+                "security": "cls-common",
+                "amount": "35203835.29"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "cls-common",
+                "amount": "517703.46"
+              },
+              {
+                "holder": "sh-employee-c",
+                "security": "options_0.08",
+                "amount": "1541110.38"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "cls-common",
+                "amount": "103540.69"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "options_0.1",
+                "amount": "820325.54"
+              },
+              {
+                "holder": "sh-employee-d",
+                "security": "rsus",
+                "amount": "310622.08"
+              },
+              {
+                "holder": "sh-d-trust",
+                "security": "options_0.1",
+                "amount": "205081.38"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-seed",
+                "amount": "25885173.01"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "cls-series-a",
+                "amount": "5177034.60"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "warrants_cls-seed_1",
+                "amount": "298564.66"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-common",
+                "amount": "2588517.30"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-seed",
+                "amount": "10354069.20"
+              },
+              {
+                "holder": "sh-investor-y",
+                "security": "cls-series-a",
+                "amount": "15531103.81"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "cls-seed",
+                "amount": "1617823.31"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "cls-common",
+                "amount": "207081.38"
+              },
+              {
+                "holder": "sh-lender-l",
+                "security": "warrants_cls-seed_1",
+                "amount": "895693.99"
+              },
+              {
+                "holder": "sh-investor-x",
+                "security": "series_b_shadow",
+                "amount": "3802034.92"
+              },
+              {
+                "holder": "sh-investor-s",
+                "security": "series_b_shadow",
+                "amount": "3802034.92"
+              },
+              {
+                "holder": "sh-investor-n",
+                "security": "series_b_notes",
+                "amount": "4556639.48"
+              },
+              {
+                "holder": "sh-investor-z",
+                "security": "series_b",
+                "amount": "30670036.89"
+              }
+            ],
+            "holder_totals": {
+              "sh-founder-a": "55911973.70",
+              "sh-founder-b": "35203835.29",
+              "sh-employee-c": "2058813.84",
+              "sh-employee-d": "1234488.30",
+              "sh-d-trust": "205081.38",
+              "sh-investor-x": "35162807.19",
+              "sh-investor-y": "28473690.31",
+              "sh-investor-s": "5419858.23",
+              "sh-lender-l": "1102775.37",
+              "sh-investor-n": "4556639.48",
+              "sh-investor-z": "30670036.89"
+            },
+            "class_totals": {
+              "cls-common": "94532651.83",
+              "options_0.08": "1541110.38",
+              "options_0.1": "1025406.92",
+              "rsus": "310622.08",
+              "cls-seed": "37857065.53",
+              "cls-series-a": "20708138.41",
+              "warrants_cls-seed_1": "1194258.65",
+              "series_b_shadow": "7604069.84",
+              "series_b_notes": "4556639.48",
+              "series_b": "30670036.89"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

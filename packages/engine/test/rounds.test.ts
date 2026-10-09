@@ -8,7 +8,7 @@ import { InputError, UnsupportedTermError, buildCapTables, parseExact } from "..
 import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
 import { roundDownShares, roundHalfUp } from "../src/rounds.ts";
 import { D } from "../src/decimal.ts";
-import { ALL_CASES, OCF_CASES, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, FROM_A_STARTING_TABLE, OCF_CASES, readCaseFile } from "./support/cases.ts";
 
 interface Inputs {
   holders: unknown[];
@@ -29,7 +29,10 @@ interface ExpectedTable {
   };
 }
 
-const ROUND_CASES = ALL_CASES.filter((name) => !OCF_CASES.includes(name) && (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
+// Cases that start from a cap table (R31) wait for 05b2, which reads a starting table.
+const ROUND_CASES = ALL_CASES.filter(
+  (name) => !OCF_CASES.includes(name) && !FROM_A_STARTING_TABLE.includes(name) && (readCaseFile(name, "inputs.json") as Partial<Inputs>).events,
+);
 
 /**
  * The 39 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
