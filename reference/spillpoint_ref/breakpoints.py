@@ -322,7 +322,14 @@ def reasons(wf, x, sa, sb, jumps=False):
         if da[sid] != db[sid]:
             strike = ct.securities[sid]["strike"]
             n = wf.shares[sid]
-            if db[sid]:
+            if db[sid] and strike == 0:
+                # RSUs and other awards with no strike are worth a common share from common's first dollar (Jordan,
+                # 05b1 review): there is no strike to reach, so the reason says so.
+                text = (
+                    f"Common starts to be paid here, so the {n:,} options with no strike, such as RSUs, start paying: "
+                    f"above this exit value each gets what a common share does."
+                )
+            elif db[sid]:
                 text = (
                     f"Common reaches {usd_price(strike, 2)} per share, the strike on the {n:,} options at that price. "
                     f"Above this exit value they are in the money and exercised: their holders pay the strike, "

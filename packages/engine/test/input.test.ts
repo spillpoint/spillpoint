@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { InputError, UnsupportedTermError, findBreakpoints, prepare, readCapTable, readExit } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, EXIT_CASES, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
   exit?: { cap_table?: { holders: unknown[]; positions: unknown[] }; exit_values: string[] };
@@ -117,7 +117,15 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES, FROM_A_STARTING_TABLE).sort()).toEqual(ALL_CASES);
+  });
+
+  // 05b1's cases start from a cap table (R31), which the engine reads from 05b2: refused until then, never skipped.
+  it("names the cases that start from a cap table", () => {
+    expect(FROM_A_STARTING_TABLE).toEqual(["edge-26-series-b-on-an-imported-table", "edge-27-safes-and-note-convert-on-an-imported-table"]);
+  });
+  it.each(FROM_A_STARTING_TABLE)("%s starts from a cap table, which the engine refuses until 05b2", (name) => {
+    expect(() => readInputs(readCaseFile(name, "inputs.json"))).toThrow(InputError);
   });
 
   it("leaves the OCF cases to the importer, from 04d", () => {

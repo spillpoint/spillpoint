@@ -1,0 +1,268 @@
+{
+  "case": "edge-26-series-b-on-an-imported-table",
+  "description": "Quillfern Labs (edge case 25, as OCF case 12 imports it) starts from its cap table on Dec 31, 2025, then raises a Series B: a new lead, Fund U's pro-rata, and a pool top-up. Then a sale on the table after it.",
+  "holders": [
+    {
+      "id": "founder_a",
+      "name": "Founder A"
+    },
+    {
+      "id": "founder_b",
+      "name": "Founder B"
+    },
+    {
+      "id": "employee_c",
+      "name": "Employee C"
+    },
+    {
+      "id": "employee_d",
+      "name": "Employee D"
+    },
+    {
+      "id": "employee_e",
+      "name": "Employee E"
+    },
+    {
+      "id": "angel_s",
+      "name": "Angel S"
+    },
+    {
+      "id": "seed_fund_t",
+      "name": "Seed Fund T"
+    },
+    {
+      "id": "fund_u",
+      "name": "Fund U"
+    },
+    {
+      "id": "trust_v",
+      "name": "Trust V"
+    },
+    {
+      "id": "fund_w",
+      "name": "Fund W"
+    }
+  ],
+  "events": [
+    {
+      "id": "start",
+      "date": "2025-12-31",
+      "type": "start",
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "fund_u",
+            "name": "Fund U"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "2.5",
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 700000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.25",
+            "shares": 400000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2200000
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "series_a",
+            "shares": 500000
+          },
+          {
+            "holder": "fund_u",
+            "security": "seed",
+            "shares": 300000
+          },
+          {
+            "holder": "fund_u",
+            "security": "series_a",
+            "shares": 3000000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1950000
+      },
+      "issue_order": [
+        "seed",
+        "series_a"
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2026-03-31",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based"
+      },
+      "pre_money": "40000000",
+      "investments": [
+        {
+          "holder": "fund_w",
+          "amount": "8000000"
+        },
+        {
+          "holder": "fund_u",
+          "amount": "1500000",
+          "pro_rata": true
+        }
+      ],
+      "pool_target_unissued_percent_post": "10",
+      "seniority": [
+        [
+          "series_b"
+        ],
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ]
+    }
+  ],
+  "exit": {
+    "cap_table_after_event": "series_b",
+    "range": [
+      "0",
+      "150000000"
+    ],
+    "exit_values": [
+      "10000000",
+      "20000000",
+      "30000000",
+      "50000000",
+      "75000000",
+      "100000000",
+      "150000000"
+    ]
+  }
+}

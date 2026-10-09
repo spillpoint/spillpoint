@@ -1,0 +1,342 @@
+{
+  "case": "edge-27-safes-and-note-convert-on-an-imported-table",
+  "description": "Larkspur Instruments (OCF case 01's import, its two blanks filled) starts from its cap table on Jun 30, 2025, then raises a Series B that converts its two post-money SAFEs and its note, with a pool top-up. Then a sale on the table after it.",
+  "holders": [
+    {
+      "id": "sh-founder-a",
+      "name": "Founder A"
+    },
+    {
+      "id": "sh-founder-b",
+      "name": "Founder B"
+    },
+    {
+      "id": "sh-employee-c",
+      "name": "Employee C"
+    },
+    {
+      "id": "sh-employee-d",
+      "name": "Employee D"
+    },
+    {
+      "id": "sh-d-trust",
+      "name": "D Family Trust"
+    },
+    {
+      "id": "sh-investor-x",
+      "name": "Investor X"
+    },
+    {
+      "id": "sh-investor-y",
+      "name": "Investor Y"
+    },
+    {
+      "id": "sh-investor-s",
+      "name": "Investor S"
+    },
+    {
+      "id": "sh-investor-n",
+      "name": "Investor N"
+    },
+    {
+      "id": "sh-lender-l",
+      "name": "Lender L"
+    },
+    {
+      "id": "sh-investor-z",
+      "name": "Investor Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "start",
+      "date": "2025-06-30",
+      "type": "start",
+      "cap_table": {
+        "holders": [
+          {
+            "id": "sh-founder-a",
+            "name": "Founder A"
+          },
+          {
+            "id": "sh-founder-b",
+            "name": "Founder B"
+          },
+          {
+            "id": "sh-employee-c",
+            "name": "Employee C"
+          },
+          {
+            "id": "sh-employee-d",
+            "name": "Employee D"
+          },
+          {
+            "id": "sh-d-trust",
+            "name": "D Family Trust"
+          },
+          {
+            "id": "sh-investor-x",
+            "name": "Investor X"
+          },
+          {
+            "id": "sh-investor-y",
+            "name": "Investor Y"
+          },
+          {
+            "id": "sh-investor-s",
+            "name": "Investor S"
+          },
+          {
+            "id": "sh-investor-n",
+            "name": "Investor N"
+          },
+          {
+            "id": "sh-lender-l",
+            "name": "Lender L"
+          }
+        ],
+        "securities": [
+          {
+            "id": "cls-common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "cls-seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "0.8",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "cls-series-a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "2",
+            "conversion_price": "2",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "3",
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.08",
+            "name": "Options ($0.08 strike)",
+            "kind": "option",
+            "strike": "0.08"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.1 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "rsus",
+            "name": "RSUs (no strike)",
+            "kind": "option",
+            "strike": "0"
+          },
+          {
+            "id": "warrants_cls-seed_1",
+            "name": "Warrants for Seed Preferred ($1 strike)",
+            "kind": "warrant",
+            "strike": "1",
+            "underlying": "cls-seed"
+          }
+        ],
+        "seniority": [
+          [
+            "cls-series-a"
+          ],
+          [
+            "cls-seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "sh-founder-a",
+            "security": "cls-common",
+            "shares": 5400000
+          },
+          {
+            "holder": "sh-founder-b",
+            "security": "cls-common",
+            "shares": 3400000
+          },
+          {
+            "holder": "sh-employee-c",
+            "security": "cls-common",
+            "shares": 50000
+          },
+          {
+            "holder": "sh-employee-c",
+            "security": "options_0.08",
+            "shares": 150000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "cls-common",
+            "shares": 10000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "options_0.1",
+            "shares": 80000
+          },
+          {
+            "holder": "sh-employee-d",
+            "security": "rsus",
+            "shares": 30000
+          },
+          {
+            "holder": "sh-d-trust",
+            "security": "options_0.1",
+            "shares": 20000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "cls-seed",
+            "shares": 2000000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "cls-series-a",
+            "shares": 500000
+          },
+          {
+            "holder": "sh-investor-x",
+            "security": "warrants_cls-seed_1",
+            "shares": 25000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-common",
+            "shares": 250000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-seed",
+            "shares": 800000
+          },
+          {
+            "holder": "sh-investor-y",
+            "security": "cls-series-a",
+            "shares": 1500000
+          },
+          {
+            "holder": "sh-investor-s",
+            "security": "cls-seed",
+            "shares": 125000
+          },
+          {
+            "holder": "sh-lender-l",
+            "security": "cls-common",
+            "shares": 20000
+          },
+          {
+            "holder": "sh-lender-l",
+            "security": "warrants_cls-seed_1",
+            "shares": 75000
+          }
+        ],
+        "unissued_pool": 1260000,
+        "unconverted_safes": [
+          {
+            "id": "safe-x1",
+            "holder": "sh-investor-x",
+            "purchase_amount": "250000",
+            "post_money_cap": "12000000",
+            "discount": "0.2"
+          },
+          {
+            "id": "safe-s3",
+            "holder": "sh-investor-s",
+            "purchase_amount": "250000",
+            "post_money_cap": "12000000",
+            "discount": "0.2"
+          }
+        ],
+        "unconverted_notes": [
+          {
+            "id": "note-n1",
+            "holder": "sh-investor-n",
+            "principal": "250000",
+            "interest_rate": "0.06",
+            "interest_method": "simple",
+            "issue_date": "2024-10-01",
+            "valuation_cap": "10000000",
+            "cap_type": "pre_money",
+            "conversion_base": "with_pool",
+            "discount": "0.2",
+            "repayment_multiple": "1"
+          }
+        ]
+      },
+      "issue_order": [
+        "cls-seed",
+        "safe-x1",
+        "safe-s3",
+        "note-n1",
+        "cls-series-a"
+      ]
+    },
+    {
+      "id": "series_b",
+      "date": "2025-12-01",
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based"
+      },
+      "pre_money": "50000000",
+      "investments": [
+        {
+          "holder": "sh-investor-z",
+          "amount": "8000000"
+        }
+      ],
+      "convert_safes": true,
+      "convert_notes": true,
+      "pool_target_unissued_percent_post": "10",
+      "seniority": [
+        [
+          "series_b",
+          "series_b_shadow",
+          "series_b_notes"
+        ],
+        [
+          "cls-series-a"
+        ],
+        [
+          "cls-seed"
+        ]
+      ]
+    }
+  ],
+  "exit": {
+    "cap_table_after_event": "series_b",
+    "range": [
+      "0",
+      "200000000"
+    ],
+    "exit_values": [
+      "10000000",
+      "25000000",
+      "40000000",
+      "60000000",
+      "80000000",
+      "120000000",
+      "200000000"
+    ]
+  }
+}

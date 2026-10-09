@@ -123,7 +123,9 @@ describe("SAFEs and notes, read from the events as typed (M5k)", () => {
 
   // Against the locked case's own record of each cap table, from the reference calculator: independent of the
   // engine, and there for the cases the engine reads only from 03g.
-  it.each(ROUND_CASES)("%s: the SAFEs and notes outstanding after each event are the ones the locked case records", (name) => {
+  // A case that starts from a cap table (R31) waits for 05b3, where the page reads a starting table.
+  const builtFromEvents = ROUND_CASES.filter((name) => JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).events[0].type !== "start");
+  it.each(builtFromEvents)("%s: the SAFEs and notes outstanding after each event are the ones the locked case records", (name) => {
     const rounds = roundsOf(name);
     const expected = JSON.parse(readFileSync(resolve(casesDir, name, "expected.json"), "utf8")) as {
       cap_tables: { cap_table: { unconverted_safes?: { id: string }[]; unconverted_notes?: { id: string }[] } }[];

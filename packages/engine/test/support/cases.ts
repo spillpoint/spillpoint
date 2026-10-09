@@ -28,6 +28,16 @@ export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("o
  * ledger leaves, since its case (04c). None is left out.
  */
 export const NOT_YET: readonly string[] = [];
+
+/**
+ * Round cases whose first event is a starting cap table (R31, 0.5.0): 26 and 27, written in 05b1. The engine reads a
+ * starting table from 05b2; until then each is refused, and the round tests leave them out.
+ */
+export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
+  if (name.startsWith("ocf-")) return false;
+  const inputs = readCaseFile(name, "inputs.json") as { events?: { type: string }[] };
+  return inputs.events?.[0]?.type === "start";
+});
 export const EXIT_CASES: string[] = ALL_CASES.filter(
   (name) =>
     (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name)) &&

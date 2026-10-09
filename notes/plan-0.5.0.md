@@ -68,7 +68,10 @@ set 3: #1 participation=participating, #2 repayment_multiple=1: note_with_safe_o
 - **The script on our own OCF cases:** Larkspur, Millrace, Quillfern, and one refused fixture. The output matches a pinned summary exactly.
 - **No leak:** a check that the output contains none of the cases' holder names, ids, amounts or dates.
 
-### 05a2: "Copy a summary to share" on the page
+### 05a2: "Copy a summary to share" on the page (on hold)
+
+**On hold (2026-10-09)** until someone can produce an OCF export. Jordan has no real one, and it couldn't be confirmed that Carta or Pulley let users download one. The check script (05a) stays as merged, ready for when one turns up.
+
 
 On the import's report, and on a refusal's message too (question 5), so a founder whose export won't read can still send what went wrong:
 - **"Copy a summary to share"** opens the summary first, in full, in a box you can read: the same counts and codes as the script's first part, from one shared module. The engine runs over the blanks stay in the script, since they'd take a while on the page.
@@ -141,7 +144,10 @@ The engine lifts `note_with_safe_or_carve_out` for SAFEs, and passes the cases. 
   - About three or four cases, and a solver like 03g's.
 - **My suggestion:** both go on the later list for now, unless your exports show them. 05d is where they'd come back.
 
-## 05d: fixes from real exports
+## 05d: fixes from real exports (on hold)
+
+**On hold (2026-10-09),** for the same reason as 05a2: there's no real OCF export to run the check on. The real-data check for 1.0 becomes a real cap table instead, entered by hand on the owner's machine and compared against a waterfall someone else built. There's nothing to build for that.
+
 
 Scoped once your 05a output is in. The 1.0c watch list is the starting guess, from the likeliest:
 - **A plan with no cancellation behavior:** the likely fix is your to-fill question, "Do cancelled grants under [plan] go back to the pool?"
@@ -241,3 +247,11 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 - **O15:** the summary to share and the check script (answers 1 to 5).
 - **X18:** SAFEs beside a note at a sale (answer 11).
 - **The later list:** the three at-a-sale refusals that stay (answers 11 and 12).
+
+## Change of plan (2026-10-09)
+
+Jordan has no real OCF export, and it couldn't be confirmed that Carta or Pulley let users download one. So:
+- **05a2,** the page's summary to share, is on hold until someone can produce an export. The check script stays as merged.
+- **05d,** fixes from real exports, is on hold too.
+- **The real-data check for 1.0** becomes a real cap table, entered by hand on the owner's machine, compared against a waterfall someone else built. There's nothing to build for it.
+- **Next is 05b1,** with the cases edit rule lifted.
