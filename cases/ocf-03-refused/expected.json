@@ -37,6 +37,7 @@
     "several-conversion-rights.ocf.json": { "refused": { "kind": "unsupported", "term": "several_conversion_rights", "subject": "cls-r-two" } },
     "conversion-into-preferred.ocf.json": { "refused": { "kind": "unsupported", "term": "conversion_into_preferred", "subject": "cls-r-into-seed" } },
     "conversion-ratio-mismatch.ocf.json": { "refused": { "kind": "malformed", "term": "conversion_ratio_mismatch", "subject": "cls-r-ratio" } },
+    "conversion-ratio-loose.ocf.json": { "refused": { "kind": "malformed", "term": "conversion_ratio_mismatch", "subject": "cls-r-loose" } },
     "cap-below-preference.ocf.json": { "refused": { "kind": "unsupported", "term": "cap_below_preference", "subject": "cls-r-cap" } }
   }
 }
