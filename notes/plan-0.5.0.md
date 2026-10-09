@@ -8,7 +8,7 @@
 
 1.0a, removing the Milestone names, and 1.0b, the naming review, move after 0.5.0.
 
-Each PR below is sized for an evening. Cases come first wherever there's new math, so you can re-derive them before any engine code. Your questions are at the end. **Nothing is built until you've answered them.**
+Each PR below is sized for an evening. Cases come first wherever there's new math, so you can re-derive them before any engine code. Your answers are at the end, after the questions, and the PRs follow them where they differ from what's written above.
 
 ## 05a: real exports (was 1.0c)
 
@@ -180,3 +180,64 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 11. **05c's four defaults:** repayment first; a converting note in the post-money SAFE's Liquidity Capitalization; a note's base without the SAFE; solved together. And the two or three cases?
 12. **The other two refusals at a sale:** on the later list for now, as I suggest, or in 0.5.0?
 13. **New API before the naming review.** 0.5.0 adds the `start` event, and maybe `readOcf`'s issue order, before 1.0b settles names. Fine to add them now and have 1.0b review them with the rest?
+
+## Your answers (2026-10-09)
+
+1. **The script's runtime:** the page's own zip reader through Node's TypeScript support, not a second copy. You check `node -v` for 22.18 or later.
+2. **The answer sets:** agreed. Every set up to 64, then one blank at a time; numbers as placeholders; the sale's date as the package's date.
+3. **Names that look like schema keys are printed:**
+   - **Unrecognized fields:** their names are printed when they're letters, digits and underscores, up to 64 characters; anything else counts as "other".
+   - **Five refusals whose term alone tells us nothing** get the same treatment, each with its value looked up in the files from the refusal's subject:
+     - the object type, for `unknown_object_type`
+     - the file type, for `unknown_file_type`
+     - the version, for `ocf_version`
+     - the currency code, for `currency`
+     - the grant kind, for `compensation_type`
+   - **The subject itself is never printed.**
+4. **`InputError`** is a fourth outcome, printed with its path where any id is replaced by its position, if that's easy; otherwise bare.
+5. **The summary on the page:**
+   - on the report
+   - on a refused import too
+   - when the engine refuses at Use: with the engine's term and the kind of each answer you gave, never a value
+6. **The start event's shape:** agreed. Two additions:
+   - **No carve-out:** a start event's cap table may not carry one, since that's a term of the sale.
+   - **The issue order:** `readOcf` returns it in the same shape the start event takes, so the page passes it straight through.
+7. **The issue order, yes to both:**
+   - **With no order given,** a starting table's SAFEs and notes count as issued after its series.
+   - **`readOcf` takes the order from the ledger:**
+     - a series from its first issuance
+     - a SAFE or note from its issue date
+     - a SAFE or note dated the same day as a series counts as after it
+   - **When a down round adjusts a starting series** and a SAFE or note converts in it, the round says how the order was read.
+8. **Editing the starting table:** agreed. If an edit breaks a later round, that round shows the engine's message, and the rounds are kept.
+9. **Two cases, both up rounds, and no down-round case.** The split test covers the anti-dilution math, and a unit test covers question 7's default order.
+   - **(a) Quillfern plus a Series B:** a pool top-up, a new lead investor, and Fund U's pro-rata.
+   - **(b) Larkspur plus a new round,** converting its two SAFEs and its note, then a sale on the table after it.
+10. **The `cases/` edit rule:** lifted for 05b1 and 05c1 only. Jordan lifts and restores it around each, and adds the cases label after re-derivation.
+11. **05c's four defaults:** agreed. The first two follow the YC post-money SAFE's liquidation priority and its Liquidity Capitalization.
+    - **Cases:** the post-money SAFE beside a capped note, and Larkspur's shape.
+    - **The discount-only SAFE beside a note** goes on the later list, unless it comes out simple.
+    - **A note whose OCF capitalization rules count other converting securities** (`include_other_converting_securities`):
+      - **with another SAFE or note outstanding beside it,** it's refused by name, where today it becomes a with-or-without-pool blank and neither answer is right
+      - **with nothing else outstanding,** the flag changes nothing, so it's read, with a report line
+12. **Both other at-a-sale refusals** go on the later list, unless the exports show them.
+13. **New API before the naming review:** yes. 1.0b reviews the start event, its name, and `readOcf`'s new field with the rest.
+
+**One more test for 05b3:** a grant at a strike an imported option class already has joins that class.
+
+### Two readings I've written in, to confirm
+
+- **Answer 9(b) says "Larkspur + Series A",** but Larkspur already has a Series A Preferred outstanding, so the new round is a Series B.
+  - **Larkspur's two blanks have to be filled in the starting table:** Seed's participation, and the note's repayment multiple.
+  - **I'd fill them** with non-participating, and a repayment multiple of 1.
+  - **The multiple changes nothing here,** since the note converts in the round.
+- **Answer 7's "a SAFE or note from its issue date":** one that came from a transfer or a balance keeps the issue date of the one it came from, not its own issuance's date. Larkspur's two outstanding SAFEs were issued on Sep 1, 2024, before its Series A, and transferred on May 15, 2025, after it. Read from their own issuances, they'd move after the Series A.
+
+### Where the answers are in ASSUMPTIONS
+
+- **R31:** the starting table (answers 6 to 8).
+- **O9:** a note's base counting other converting securities (answer 11).
+- **O14:** the issue order from the ledger (answers 6 and 7).
+- **O15:** the summary to share and the check script (answers 1 to 5).
+- **X18:** SAFEs beside a note at a sale (answer 11).
+- **The later list:** the three at-a-sale refusals that stay (answers 11 and 12).
