@@ -15,7 +15,7 @@ import { App } from "../src/App.tsx";
 import { buildExit, draftFromExit } from "../src/draft.ts";
 import { fromRounds } from "../src/rounds.ts";
 import { addEvent, buildRounds, moveEvent, removeEvent, setEvent, startingRounds } from "../src/roundsDraft.ts";
-import { ANALYSIS_TIMEOUT } from "./analysis.ts";
+import { ANALYSIS_TIMEOUT, FULL_SEARCH_TIMEOUT } from "./analysis.ts";
 import { exitOf, payoutsAtBreakpoints } from "./payouts.ts";
 
 const cases = resolve(import.meta.dirname, "../../../cases");
@@ -172,6 +172,113 @@ describe("Quillfern imported, a Series B added, saved and opened again (case 26)
     );
     expect(screen.getByLabelText("Fund W, Series B Preferred")).toBeTruthy();
     expect(JSON.parse(await save()).cap_table).toBeTruthy();
+  });
+});
+
+/** Larkspur's export, its two blanks answered as case 27 fills them, and a sale date; "Use it to add a round" (05b3b). */
+async function importLarkspurWithARound() {
+  render(<App />);
+  const files = readdirSync(resolve(cases, "ocf-01-larkspur/package")).map(
+    (f) => new File([readFileSync(resolve(cases, "ocf-01-larkspur/package", f))], f, { type: "application/json" }),
+  );
+  fireEvent.change(screen.getByLabelText(/Open an OCF export/), { target: { files } });
+  const panel = await screen.findByRole("region", { name: /^Importing / });
+  fireEvent.click(within(within(panel).getByRole("group", { name: "Does Seed Preferred participate?" })).getByLabelText(/^Non-participating/));
+  type(within(panel).getByLabelText("Investor N's note's repayment multiple at a sale"), "1");
+  type(within(panel).getByLabelText("When is the sale?"), "2026-06-30");
+  click("Use this cap table");
+  // Its SAFEs beside its note are refused at a sale (X12), so the review offers a round to convert them.
+  expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used at a sale yet\. A convertible note at a sale alongside a SAFE/);
+  click("Use it to add a round");
+  await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 8 files, with a round to convert its SAFEs and notes\./);
+}
+
+/** Case 27's Series B, typed into the round "Use it to add a round" opens: Investor Z's $8M, the pool to 10%, senior. */
+function typeCase27SeriesB() {
+  const holders = within(panel()).getByRole("region", { name: "Holders" });
+  click("Add a holder");
+  type(within(holders).getAllByLabelText("Holder name").at(-1)!, "Investor Z");
+  const round = card(/^2\. Series B Preferred, a priced round$/);
+  type(within(round).getByLabelText("Date"), "2025-12-01");
+  type(within(round).getByLabelText("Pre-money valuation ($)"), "50000000");
+  type(within(round).getByLabelText("Option pool after the round (% of the company)"), "10");
+  choose(within(round).getByLabelText("Investor"), "Investor Z");
+  type(within(round).getByLabelText("Amount ($)"), "8000000");
+  type(within(round).getByLabelText("How it ranks against the earlier series"), "senior");
+}
+
+/** Case 27's breakpoints and every holder's payout at each, to the cent, by holder name: the page names Investor Z's id itself. */
+function case27(): { breakpoints: string[]; holders: Record<string, Record<string, string>> } {
+  const names = new Map((caseJson("edge-27-safes-and-note-convert-on-an-imported-table/inputs.json").holders as { id: string; name: string }[]).map((h) => [h.id, h.name]));
+  const exit = caseJson("edge-27-safes-and-note-convert-on-an-imported-table/expected.json").exit as {
+    breakpoints: { exit_value: string }[];
+    payouts: { exit_value: string; equilibria: { holder_totals: Record<string, string> }[] }[];
+  };
+  const breakpoints = exit.breakpoints.map((b) => b.exit_value);
+  const holders = Object.fromEntries(
+    exit.payouts
+      .filter((p) => breakpoints.includes(p.exit_value))
+      .map((p) => [p.exit_value, Object.fromEntries(Object.entries(p.equilibria[0]!.holder_totals).map(([id, v]) => [names.get(id)!, v]))]),
+  );
+  return { breakpoints, holders };
+}
+/** What a saved file pays at its breakpoints over case 27's range, by holder name. */
+function paidByName(fileText: string) {
+  const names = new Map((JSON.parse(fileText).holders as { id: string; name: string }[]).map((h) => [h.id, h.name]));
+  const { breakpoints, payouts } = payoutsAtBreakpoints({ ...exitOf(fileText), range: ["0", "200000000"] });
+  return { breakpoints, holders: Object.fromEntries(Object.entries(payouts).map(([x, p]) => [x, Object.fromEntries(Object.entries(p.holders).map(([id, v]) => [names.get(id)!, v]))])) };
+}
+
+describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27; 05b3b)", () => {
+  it(
+    "pays as case 27 does, to the cent at every breakpoint, and again once the file is opened",
+    async () => {
+      await importLarkspurWithARound();
+      // Straight to the Rounds tab: the starting table, then a Series B that converts the SAFEs and the note.
+      expect(titles()).toEqual(["1. The cap table it starts from", "2. Series B Preferred, a priced round"]);
+      const round = card(/^2\./);
+      expect((within(round).getByLabelText("Converts the SAFEs still outstanding") as HTMLInputElement).checked).toBe(true);
+      expect((within(round).getByLabelText("Converts the convertible notes still outstanding") as HTMLInputElement).checked).toBe(true);
+      // Until a round converts them, the Payouts tab gives the engine's message.
+      openTab("Payouts");
+      expect(document.querySelector("#panel-payouts .notice")!.textContent).toMatch(
+        /^The payouts can't be worked out yet\. A convertible note at a sale alongside a SAFE or a carve-out\. .* Once a round on the Rounds tab converts the SAFEs and notes, the payouts use the cap table after it\.$/,
+      );
+
+      openTab("Rounds");
+      typeCase27SeriesB();
+      await vi.waitFor(() => expect(within(panel()).queryAllByRole("alert")).toEqual([]), { timeout: ANALYSIS_TIMEOUT });
+      const saved = await save();
+      const file = JSON.parse(saved);
+      expect(file.events.map((e: { id: string; type: string }) => [e.id, e.type])).toEqual([["start", "start"], ["series_b", "priced_round"]]);
+      expect(file.events[0]).toMatchObject({ date: "2025-06-30", issue_order: ["cls-seed", "safe-x1", "safe-s3", "note-n1", "cls-series-a"] });
+      expect(paidByName(saved)).toEqual(case27());
+
+      fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([saved], "larkspur.json", { type: "application/json" })] } });
+      await screen.findByText("Opened larkspur.json.");
+      expect(paidByName(await save())).toEqual(case27());
+    },
+    FULL_SEARCH_TIMEOUT,
+  );
+});
+
+describe("an imported cap table saved before a round is added (05b3b, Jordan's answer 1)", () => {
+  it("keeps the import's date and issue order, so a round added once it's reopened starts from the same table", async () => {
+    await importQuillfern();
+    const saved = JSON.parse(await save());
+    expect(saved).toMatchObject({ as_of: "2025-12-31", issue_order: ["seed", "series_a"] });
+    expect(Object.keys(saved)).toEqual(["format", "version", "name", "cap_table", "as_of", "issue_order", "range", "view"]);
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), {
+      target: { files: [new File([JSON.stringify(saved)], "quillfern.json", { type: "application/json" })] },
+    });
+    await screen.findByText("Opened quillfern.json.");
+    openTab("Cap table");
+    click("Add a round");
+    expect(within(card(/^1\./)).getByText("Dec 31, 2025")).toBeTruthy();
+    // With the round filled in, it saves, its starting table dated and ordered as the import was.
+    typeSeriesB();
+    await vi.waitFor(() => expect(within(panel()).queryAllByRole("alert")).toEqual([]), { timeout: ANALYSIS_TIMEOUT });
+    expect(JSON.parse(await save()).events[0]).toMatchObject({ id: "start", date: "2025-12-31", issue_order: ["seed", "series_a"] });
   });
 });
 

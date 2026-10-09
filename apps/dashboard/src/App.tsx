@@ -36,22 +36,13 @@ import { shortDollars, withoutCodes } from "./format.ts";
 import { dateText, eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
 import { BLANK, addEvent, blankRounds, buildRounds, draftFromRounds, draftTitle, eventFieldId, locate, otherBlanks, startingRounds, withStart } from "./roundsDraft.ts";
-import type { RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
+import type { Origin, RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 const SCRATCH = "scratch";
 const SCRATCH_ROUNDS = "scratch-rounds";
 const FILE = "file";
 /** A cap table imported from an Open Cap Format export (M6). */
 const IMPORTED = "imported";
-
-/**
- * What an import says of where its cap table stands (O14): its date, and the order its series, SAFEs and notes were
- * issued in. "Add a round" starts the company's rounds there (R31).
- */
-interface Origin {
-  date: string;
-  issueOrder: string[] | null;
-}
 
 /** Where a cap table starts: an example from cases/, a blank table, or a file. */
 interface Start {
@@ -120,6 +111,8 @@ interface Session {
   roundsProblem: RoundsProblem | null;
   /** The import's date and issue order, while the cap table is still the one it gave. */
   origin: Origin | null;
+  /** An event to open on the Rounds tab as the workspace starts, by key: the round an import was used to add. */
+  opening: string | null;
 }
 
 function newSession(start: Start, n: number): Session {
@@ -132,7 +125,20 @@ function newSession(start: Start, n: number): Session {
   return {
     start, n, draft: start.draft, name: start.name, youKey, exitValue: new D(start.defaultExitValue), rounds, roundsGood: start.rounds, roundsProblem: null,
     origin: start.origin ?? null,
+    opening: null,
   };
+}
+
+/**
+ * A company's rounds started on a cap table (R31): the table on its own, and with a new priced round after it, whose
+ * key is given. Or why the table can't start them yet.
+ */
+function roundsOn(table: Draft, origin: Origin | null): { ok: true; first: RoundsDraft; next: RoundsDraft; key: string } | { ok: false; message: string } {
+  const first = startingRounds(table, origin);
+  const result = fromRounds(buildRounds(first), table.range);
+  if (!result.ok) return { ok: false, message: result.message };
+  const next = addEvent(first, "priced_round", result.tables.at(-1)!.capTable);
+  return { ok: true, first, next, key: next.events.at(-1)!.key };
 }
 
 /** The holder you are, by id in this cap table: the one chosen, or else whoever holds the most common stock. */
@@ -261,17 +267,15 @@ export function App() {
    */
   const addRound = (): string | null => {
     if (session.rounds) return null;
-    const first = startingRounds(session.draft, session.origin);
-    const result = fromRounds(buildRounds(first), session.draft.range);
-    if (!result.ok) {
-      setFileStatus({ kind: "problem", text: `A round can't be added yet. ${result.message}` });
+    const made = roundsOn(session.draft, session.origin);
+    if (!made.ok) {
+      setFileStatus({ kind: "problem", text: `A round can't be added yet. ${made.message}` });
       return null;
     }
-    const next = addEvent(first, "priced_round", result.tables.at(-1)!.capTable);
     // Built once on its own, so the payouts have the starting table while the new round's fields are blank.
-    changeRounds(first);
-    changeRounds(next);
-    return next.events.at(-1)!.key;
+    changeRounds(made.first);
+    changeRounds(made.next);
+    return made.key;
   };
 
   const choose = (id: string) => {
@@ -290,7 +294,7 @@ export function App() {
     const name = fileName(session.name);
     // The view goes in too, so the file reopens where you were.
     const view = { exitValue: insideRange(session.exitValue, checked.exit.range).toString(), you: youIn(built, checked.exit.capTable, session.youKey) };
-    download(name, fileText(session.name, session.draft, view, session.roundsGood));
+    download(name, fileText(session.name, session.draft, view, session.roundsGood, session.origin));
     setUnsaved(false);
     setFileStatus({ kind: "done", text: `Saved as ${name}, in your downloads.` });
   };
@@ -313,6 +317,7 @@ export function App() {
       defaultExitValue: result.view?.exitValue ?? middleOf(result.draft.range),
       ...(result.view ? { you: result.view.you } : {}),
       rounds: result.rounds,
+      ...(result.origin ? { origin: result.origin } : {}),
     };
     begin(start, { kind: "done", text: `Opened ${file.name}.` });
   };
@@ -343,8 +348,26 @@ export function App() {
       rounds: null,
       origin: { date: use.asOf, issueOrder: use.issueOrder },
     };
-    begin(start, { kind: "done", text: `Imported ${use.name} from ${use.source}. It isn't saved yet: Save keeps it as a spillpoint file.` });
-    setUnsaved(true);
+    if (!use.addRound) {
+      begin(start, { kind: "done", text: `Imported ${use.name} from ${use.source}. It isn't saved yet: Save keeps it as a spillpoint file.` });
+      setUnsaved(true);
+      return;
+    }
+    // "Use it to add a round" (05b3b): the table starts the company's rounds, and the Rounds tab opens at a round that
+    // converts its SAFEs and notes. Until one does, the Payouts tab says why it can't pay out.
+    const made = roundsOn(use.draft, start.origin);
+    if (!made.ok) {
+      setFileStatus({ kind: "problem", text: `A round can't be added to it yet. ${made.message}` });
+      return;
+    }
+    begin(start, null);
+    changeRounds(made.first);
+    changeRounds(made.next);
+    setSession((s) => ({ ...s, opening: made.key }));
+    setFileStatus({
+      kind: "done",
+      text: `Imported ${use.name} from ${use.source}, with a round to convert its SAFEs and notes. It isn't saved yet: Save keeps it as a spillpoint file.`,
+    });
   };
 
   return (
@@ -447,6 +470,7 @@ export function App() {
         events={events}
         onEditDirectly={editDirectly}
         onAddRound={addRound}
+        opening={session.opening}
       />}
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
       <footer className="page-footer">
@@ -463,6 +487,30 @@ function GovernanceNote() {
       documented defaults; where your documents differ, they win. Everything runs on this computer: nothing you enter is sent
       anywhere.
     </aside>
+  );
+}
+
+/**
+ * The Payouts tab before the engine has accepted any cap table to pay out: an import used to add a round, whose SAFEs
+ * and notes no round converts yet (05b3b; Jordan's answer 2). It shows the engine's message, and what the round still
+ * needs.
+ */
+function NoPayoutsYet({ problem, rounds, onFixRounds }: { problem: DraftError | null; rounds: RoundsProblem | null; onFixRounds: () => void }) {
+  return (
+    <>
+      <div className="notice notice--problem" role="status">
+        <strong>The payouts can't be worked out yet.</strong> {problem?.message} Once a round on the Rounds tab converts the SAFEs and notes, the payouts
+        use the cap table after it.
+      </div>
+      {rounds && (
+        <div className="notice notice--problem" role="status">
+          <strong>The rounds have a problem to fix first.</strong> {rounds.message}{" "}
+          <button type="button" className="link-button" onClick={onFixRounds}>
+            Fix it
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -498,24 +546,30 @@ interface WorkspaceProps {
   onEditDirectly: () => void;
   /** Starts the company's rounds on this cap table, with a new round; its key, or null if it can't. */
   onAddRound: () => string | null;
+  /** An event to open on the Rounds tab as the workspace starts, by key. */
+  opening: string | null;
 }
 
 function Workspace(props: WorkspaceProps) {
   const { start, draft, name, built, checked, edited, unsaved, onDraft, onName, youKey, onYouKey, chosenExitValue, onExitValue: setExitValue } = props;
-  const { rounds, onRounds, roundsProblem, tables, events, onEditDirectly, onAddRound } = props;
+  const { rounds, onRounds, roundsProblem, tables, events, onEditDirectly, onAddRound, opening } = props;
   const lastGood = useRef<Good | null>(null);
   if (checked.ok && lastGood.current?.built !== built) lastGood.current = { built, checked };
-  const good = lastGood.current!;
+  // Null until the engine first accepts a cap table to pay out: an import used to add a round whose SAFEs and notes no
+  // round converts yet (05b3b). The Payouts tab then says why.
+  const good = lastGood.current;
   const draftError: DraftError | null = checked.ok ? null : { field: checked.field, message: checked.message };
 
-  const { exit, pc } = good.checked;
-  const keyOf = (id: string) => [...good.built.holderIds].find(([, v]) => v === id)?.[0] ?? "";
-  const you = youIn(good.built, exit.capTable, youKey);
-  const yourName = exit.capTable.holders.find((h) => h.id === you)?.name ?? "";
+  const exit = good?.checked.exit ?? null;
+  const pc = good?.checked.pc ?? null;
+  const keyOf = (id: string) => [...(good?.built.holderIds ?? [])].find(([, v]) => v === id)?.[0] ?? "";
+  const you = good && exit ? youIn(good.built, exit.capTable, youKey) : "";
+  const yourName = exit?.capTable.holders.find((h) => h.id === you)?.name ?? "";
 
-  const [lo, hi] = exit.range;
-  const exitValue = useMemo(() => insideRange(chosenExitValue, [lo, hi]), [lo, hi, chosenExitValue]);
+  const [lo, hi] = exit?.range ?? [null, null];
+  const exitValue = useMemo(() => (lo && hi ? insideRange(chosenExitValue, [lo, hi]) : chosenExitValue), [lo, hi, chosenExitValue]);
   const solved = useMemo(() => {
+    if (!pc) return { ok: false as const, message: "" };
     try {
       return { ok: true as const, answer: solve(pc, exitValue).answers[0]! };
     } catch (e) {
@@ -523,7 +577,7 @@ function Workspace(props: WorkspaceProps) {
     }
   }, [pc, exitValue]);
 
-  const analysis = useAnalysis(good.built.json);
+  const analysis = useAnalysis(good?.built.json ?? null);
   const ready = analysis.status === "ready" ? analysis : null;
   // How your payout bends or jumps at each breakpoint, if it does: the curves mark those breakpoints,
   // and the list says how. On a curved side the rate is the one right at the breakpoint (X17).
@@ -535,7 +589,7 @@ function Workspace(props: WorkspaceProps) {
   }, [ready, you]);
   const yours = useMemo(() => changes.map((c) => c !== null), [changes]);
 
-  const [tab, setTab] = useState<Tab>("payouts");
+  const [tab, setTab] = useState<Tab>(opening ? "rounds" : "payouts");
   // "Fix it" on the payouts tab opens the editor at the field the engine named.
   const focusAfterSwitch = useRef<string | null>(null);
   useEffect(() => {
@@ -554,7 +608,12 @@ function Workspace(props: WorkspaceProps) {
     setTab("editor");
   };
   // Which events are open for editing on the Rounds tab, by key.
-  const [editing, setEditing] = useState<ReadonlySet<string>>(new Set());
+  const [editing, setEditing] = useState<ReadonlySet<string>>(() => new Set(opening ? [opening] : []));
+  // An event opened as the workspace starts gets the keyboard at its first field.
+  useEffect(() => {
+    if (opening) setTimeout(() => document.getElementById(eventFieldId(opening, "date"))?.focus(), 0);
+    // Only as it starts: a new start remounts the workspace.
+  }, []);
   const fixRounds = () => {
     if (!roundsProblem) return;
     // R31: a problem in the starting table is fixed where it's edited, on the Cap table tab.
@@ -613,49 +672,55 @@ function Workspace(props: WorkspaceProps) {
       <Tabs tab={tab} onTab={setTab} />
 
       <div role="tabpanel" id="panel-payouts" aria-labelledby="tab-payouts" hidden={tab !== "payouts"}>
-        {roundsProblem && (
-          <div className="notice notice--problem" role="status">
-            <strong>Your last change to the rounds has a problem, so these payouts are from before it.</strong> {roundsProblem.message}{" "}
-            <button type="button" className="link-button" onClick={fixRounds}>
-              Fix it
-            </button>
-          </div>
-        )}
-        {draftError && (
-          <div className="notice notice--problem" role="status">
-            <strong>Your last change to the cap table has a problem, so these payouts are from before it.</strong> {draftError.message}{" "}
-            <button type="button" className="link-button" onClick={fixIt}>
-              Fix it
-            </button>
-          </div>
-        )}
-        {solved.ok ? (
-          <FounderView pc={pc} range={exit.range} answer={solved.answer} exitValue={exitValue} you={you} onChooseYou={(id) => onYouKey(keyOf(id))} breakpoints={analysis} />
+        {good && exit && pc ? (
+          <>
+          {roundsProblem && (
+            <div className="notice notice--problem" role="status">
+              <strong>Your last change to the rounds has a problem, so these payouts are from before it.</strong> {roundsProblem.message}{" "}
+              <button type="button" className="link-button" onClick={fixRounds}>
+                Fix it
+              </button>
+            </div>
+          )}
+          {draftError && (
+            <div className="notice notice--problem" role="status">
+              <strong>Your last change to the cap table has a problem, so these payouts are from before it.</strong> {draftError.message}{" "}
+              <button type="button" className="link-button" onClick={fixIt}>
+                Fix it
+              </button>
+            </div>
+          )}
+          {solved.ok ? (
+            <FounderView pc={pc} range={exit.range} answer={solved.answer} exitValue={exitValue} you={you} onChooseYou={(id) => onYouKey(keyOf(id))} breakpoints={analysis} />
+          ) : (
+            <p className="card card--quiet">
+              The engine couldn't settle on an answer at {shortDollars(exitValue)}: {solved.message}
+            </p>
+          )}
+          <ExitSlider range={exit.range} value={exitValue} onChange={setExitValue} breakpoints={ready ? ready.breakpoints : []} />
+          {analysis.status === "computing" && <p className="card card--quiet">Working out the curves and breakpoints…</p>}
+          {analysis.status === "error" && <p className="card card--quiet">Couldn't work out the curves and breakpoints: {withoutCodes(analysis.message)}</p>}
+          {ready && (
+            <PayoffChart
+              // A new range starts the chart over at the whole range.
+              key={`${exit.range[0].toString()}-${exit.range[1].toString()}`}
+              pc={pc}
+              curve={ready.curve}
+              breakpoints={ready.breakpoints.map((b) => new D(b.exitValue))}
+              yours={yours}
+              range={exit.range}
+              exitValue={exitValue}
+              onExitValue={setExitValue}
+              you={you}
+            />
+          )}
+          {solved.ok && <PayoutTable pc={pc} answer={solved.answer} exitValue={exitValue} you={you} />}
+          {exit.paymentSchedules && <PaymentsView pc={pc} schedules={exit.paymentSchedules} you={you} />}
+          {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
+          </>
         ) : (
-          <p className="card card--quiet">
-            The engine couldn't settle on an answer at {shortDollars(exitValue)}: {solved.message}
-          </p>
+          <NoPayoutsYet problem={draftError} rounds={roundsProblem} onFixRounds={fixRounds} />
         )}
-        <ExitSlider range={exit.range} value={exitValue} onChange={setExitValue} breakpoints={ready ? ready.breakpoints : []} />
-        {analysis.status === "computing" && <p className="card card--quiet">Working out the curves and breakpoints…</p>}
-        {analysis.status === "error" && <p className="card card--quiet">Couldn't work out the curves and breakpoints: {withoutCodes(analysis.message)}</p>}
-        {ready && (
-          <PayoffChart
-            // A new range starts the chart over at the whole range.
-            key={`${lo.toString()}-${hi.toString()}`}
-            pc={pc}
-            curve={ready.curve}
-            breakpoints={ready.breakpoints.map((b) => new D(b.exitValue))}
-            yours={yours}
-            range={exit.range}
-            exitValue={exitValue}
-            onExitValue={setExitValue}
-            you={you}
-          />
-        )}
-        {solved.ok && <PayoutTable pc={pc} answer={solved.answer} exitValue={exitValue} you={you} />}
-        {exit.paymentSchedules && <PaymentsView pc={pc} schedules={exit.paymentSchedules} you={you} />}
-        {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
       </div>
 
       <div role="tabpanel" id="panel-editor" aria-labelledby="tab-editor" hidden={tab !== "editor"}>

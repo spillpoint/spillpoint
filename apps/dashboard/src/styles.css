@@ -316,4 +316,6 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .import .field__hint { max-width: 64ch; }
 .import__question .field__hint { margin: 0 0 6px; }
 .import__actions { display: flex; gap: 12px; margin-top: 16px; }
+/* A table only the sale's limits on SAFEs and notes stop: it can start a company's rounds instead (05b3b). */
+.import__round { margin-top: 12px; }
 .file-button--primary { background: var(--accent); color: #fff; border-color: var(--accent); }

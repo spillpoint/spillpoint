@@ -118,10 +118,19 @@ export function withStart(d: RoundsDraft, table: Draft): RoundsDraft {
 }
 
 /**
+ * What an import says of where its cap table stands (O14): its date, and the order its series, SAFEs and notes were
+ * issued in. "Add a round" starts the company's rounds there (R31); a saved cap table keeps it (C13).
+ */
+export interface Origin {
+  date: string;
+  issueOrder: string[] | null;
+}
+
+/**
  * "Add a round" (R31): a cap table entered directly or imported becomes the cap table a company built from rounds
  * starts from, dated and ordered as its import gave it, if it was imported. The sale's terms stay with the sale.
  */
-export function startingRounds(table: Draft, origin: { date: string; issueOrder: string[] | null } | null): RoundsDraft {
+export function startingRounds(table: Draft, origin: Origin | null): RoundsDraft {
   const json: Json = { id: "start", date: origin?.date ?? "", type: "start", ...(origin?.issueOrder ? { issue_order: origin.issueOrder } : {}) };
   const start = { ...table, exitDate: "", carveOut: null, schedules: [] };
   return withStart({ holders: [], events: [{ key: "r1", json }], after: "start", nextKey: 2, start: null }, start);
