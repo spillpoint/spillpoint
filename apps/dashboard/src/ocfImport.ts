@@ -8,7 +8,7 @@ import { D, OcfRefusal, readOcf } from "spillpoint";
 import type { OcfFile, OcfImport, OcfToFill } from "spillpoint";
 
 import { shortDollars } from "./format.ts";
-import { ZipError, readZip } from "./zip.ts";
+import { MOST_BYTES, ZipError, readZip } from "./zip.ts";
 
 type Json = Record<string, unknown>;
 
@@ -49,6 +49,10 @@ export async function importOcf(picked: readonly Picked[]): Promise<Imported> {
     }
   } else {
     if (picked.some(isZip)) return { ok: false, message: "Open a .zip on its own, or the package's .ocf.json files together, not both." };
+    // The same limit as for a zip's contents: an OCF export is a few files of JSON.
+    if (picked.reduce((total, p) => total + p.bytes.byteLength, 0) > MOST_BYTES) {
+      return { ok: false, message: "Couldn't import them: together they're more than 100 MB, far more than an OCF export would be. Check they're the right files." };
+    }
     entries = [...picked];
     source = `${picked.length} file${picked.length === 1 ? "" : "s"}`;
   }
@@ -218,7 +222,7 @@ export function reportLines(result: OcfImport, pkg: Package): string[] {
       case "safe_exit_multiple_read_as_1":
         return `${holderOf(subject)}'s SAFE gives no exit multiple, so at a sale it's paid its purchase amount, as a SAFE's Cash-Out Amount is.`;
       case "note_cap_read_as_pre_money":
-        return `${holderOf(subject)}'s note's cap is read as pre-money, the only kind spillpoint models for a note. OCF doesn't say which.`;
+        return `The cap on ${holderOf(subject)}'s note is read as pre-money, the only kind spillpoint models for a note. OCF doesn't say which.`;
       case "left_out_stakeholder":
         return `${pkg.name(subject)} holds nothing on ${asOf}, so they're left out.`;
       case "left_out_stock_class":

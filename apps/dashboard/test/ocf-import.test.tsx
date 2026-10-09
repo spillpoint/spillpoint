@@ -82,6 +82,8 @@ describe("the terms OCF leaves open", () => {
     const fixture = new File([caseFile("ocf-04-to-fill/fixtures/safe-cap-without-timing.ocf.json")], "safe-cap-without-timing.ocf.json");
     upload([...packageOf("ocf-01-larkspur"), fixture]);
     const panel = await review();
+    // Jordan's wording (04g).
+    expect(within(panel).getByText("The cap on Investor N's note is read as pre-money, the only kind spillpoint models for a note. OCF doesn't say which.")).toBeTruthy();
     // Jordan's wording (04a2 review).
     fireEvent.click(within(within(panel).getByRole("group", { name: "Is this SAFE's cap pre-money or post-money?" })).getByLabelText("Post-money"));
     fireEvent.click(within(within(panel).getByRole("group", { name: "Does Seed Preferred participate?" })).getByLabelText(/^Non-participating/));

@@ -22,6 +22,9 @@ const METHODS: Record<number, string> = {
   12: "bzip2", 14: "LZMA", 18: "IBM TERSE", 19: "IBM LZ77", 93: "Zstandard", 94: "MP3", 95: "xz", 96: "JPEG", 97: "WavPack", 98: "PPMd", 99: "AES encryption",
 };
 
+/** The most a zip may unzip to, or loose files add up to: 100 MB, far more than an OCF export would be. */
+export const MOST_BYTES = 100_000_000;
+
 const END = 0x06054b50;
 const CENTRAL = 0x02014b50;
 const LOCAL = 0x04034b50;
@@ -47,22 +50,31 @@ export async function readZip(data: Uint8Array): Promise<ZipEntry[]> {
     throw new ZipError("It's a Zip64 file, the format for very large zips, which this page doesn't read.");
   }
 
-  const entries: ZipEntry[] = [];
+  // The whole directory is read first, so the sizes it lists can be checked before anything is inflated.
+  const listed: { name: string; flags: number; method: number; crc: number; compressed: number; length: number; local: number }[] = [];
   let at = offset;
   for (let i = 0; i < count; i++) {
     if (at + 46 > data.length || view.getUint32(at, true) !== CENTRAL) throw new ZipError("Its zip directory is damaged.");
-    const flags = view.getUint16(at + 8, true);
-    const method = view.getUint16(at + 10, true);
-    const crc = view.getUint32(at + 16, true);
-    const compressed = view.getUint32(at + 20, true);
-    const length = view.getUint32(at + 24, true);
     const nameLength = view.getUint16(at + 28, true);
-    const extraLength = view.getUint16(at + 30, true);
-    const commentLength = view.getUint16(at + 32, true);
-    const local = view.getUint32(at + 42, true);
-    // Windows writes "\" between folders in some zips; this page reads names with "/".
-    const name = new TextDecoder().decode(data.subarray(at + 46, at + 46 + nameLength)).replace(/\\/g, "/");
-    at += 46 + nameLength + extraLength + commentLength;
+    listed.push({
+      // Windows writes "\" between folders in some zips; this page reads names with "/".
+      name: new TextDecoder().decode(data.subarray(at + 46, at + 46 + nameLength)).replace(/\\/g, "/"),
+      flags: view.getUint16(at + 8, true),
+      method: view.getUint16(at + 10, true),
+      crc: view.getUint32(at + 16, true),
+      compressed: view.getUint32(at + 20, true),
+      length: view.getUint32(at + 24, true),
+      local: view.getUint32(at + 42, true),
+    });
+    at += 46 + nameLength + view.getUint16(at + 30, true) + view.getUint16(at + 32, true);
+  }
+  // An OCF export is a few files of JSON; a zip that unzips to far more isn't one, and could fill the browser's memory.
+  if (listed.reduce((total, e) => total + e.length, 0) > MOST_BYTES) {
+    throw new ZipError("It unzips to more than 100 MB, far more than an OCF export would be. Check it's the right file.");
+  }
+
+  const entries: ZipEntry[] = [];
+  for (const { name, flags, method, crc, compressed, length, local } of listed) {
     if (name.endsWith("/")) continue;
     if (flags & 1) throw new ZipError(`${name} is encrypted in the zip. Unzip it with its password, then open the files.`);
     if (method !== 0 && method !== 8) {
@@ -74,15 +86,18 @@ export async function readZip(data: Uint8Array): Promise<ZipEntry[]> {
     const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true);
     const stored = data.subarray(start, start + compressed);
     if (stored.length !== compressed) throw new ZipError(`${name} is cut short in the zip.`);
-    const bytes = method === 0 ? stored : await inflate(stored);
+    const bytes = method === 0 ? stored : await inflate(stored, name, length);
     if (bytes.length !== length || crc32(bytes) !== crc) throw new ZipError(`${name} is damaged in the zip: it doesn't match its checksum.`);
     entries.push({ name, bytes });
   }
   return entries;
 }
 
-/** Deflate without a zlib wrapper, as zips store it, using the browser's DecompressionStream. */
-async function inflate(bytes: Uint8Array): Promise<Uint8Array> {
+/**
+ * Deflate without a zlib wrapper, as zips store it, using the browser's DecompressionStream. It stops as soon as the
+ * output passes the size the zip's directory lists, so a zip that lies about its sizes can't fill the browser's memory.
+ */
+async function inflate(bytes: Uint8Array, name: string, listedLength: number): Promise<Uint8Array> {
   const source = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(bytes);
@@ -102,6 +117,10 @@ async function inflate(bytes: Uint8Array): Promise<Uint8Array> {
     if (read.done) break;
     chunks.push(read.value);
     total += read.value.length;
+    if (total > listedLength) {
+      await reader.cancel();
+      throw new ZipError(`${name} is damaged in the zip: it inflates to more than its listed size.`);
+    }
   }
   const out = new Uint8Array(total);
   let at = 0;

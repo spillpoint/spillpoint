@@ -62,6 +62,31 @@ describe("what it refuses, by name", () => {
     await expect(readZip(damaged)).rejects.toThrow("quillfern/StockClasses.ocf.json is damaged in the zip: it doesn't match its checksum.");
   });
 
+  it("an entry that inflates past the size the zip's directory lists for it, stopped as soon as it does", async () => {
+    // StockClasses.ocf.json inflates to 2,434 bytes; the directory now says 100.
+    const lying = patched(1, (v, e) => v.setUint32(e + 24, 100, true));
+    await expect(readZip(lying)).rejects.toThrow("quillfern/StockClasses.ocf.json is damaged in the zip: it inflates to more than its listed size.");
+  });
+
+  it("a zip whose listed sizes add up to more than 100 MB, before anything is inflated", async () => {
+    // A few kilobytes on disk, listing one entry at 200 MB: the sizes are only numbers in the directory.
+    const huge = patched(1, (v, e) => v.setUint32(e + 24, 200_000_000, true));
+    expect(huge.length).toBeLessThan(5000);
+    expect(await importOcf([{ name: "huge.zip", bytes: huge }])).toEqual({
+      ok: false,
+      message: "Couldn't read huge.zip. It unzips to more than 100 MB, far more than an OCF export would be. Check it's the right file.",
+    });
+  });
+
+  it("loose files that add up to more than 100 MB", async () => {
+    // Only their sizes are read, so the test needn't hold 100 MB.
+    const sized = (name: string, byteLength: number) => ({ name, bytes: { byteLength } as unknown as Uint8Array });
+    expect(await importOcf([sized("a.ocf.json", 60_000_000), sized("b.ocf.json", 40_000_001)])).toEqual({
+      ok: false,
+      message: "Couldn't import them: together they're more than 100 MB, far more than an OCF export would be. Check they're the right files.",
+    });
+  });
+
   it("a file that isn't a zip, and a .zip beside loose files", async () => {
     expect(await importOcf([{ name: "x.zip", bytes: new TextEncoder().encode('{"not": "a zip"}') }])).toEqual({
       ok: false,

@@ -474,9 +474,11 @@ Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
 
 Each round reports what it worked out: the price, each SAFE's and note's conversion, the pro-rata entitlements, each anti-dilution adjustment, and each pay-to-play holder's outcome.
 
+**An Open Cap Format export** *(0.4.0)*, read into a cap table: stakeholders, stock classes, the share ledger, plans and the unissued pool, options and RSUs, warrants, and SAFEs and notes still outstanding. See [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
+
 ## What it refuses
 
-**Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported.
+**Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported. An OCF import refuses with an `OcfRefusal` instead *(0.4.0)*: see [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
 
 **Not settled yet** (milestone `"later"`). No worked test case settles these yet, so they're refused until one does:
 - **Full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes** *(0.3.0: before, any anti-dilution there)*.
