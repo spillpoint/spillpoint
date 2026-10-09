@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { D, findBreakpoints, prepare, readCapTable, solve } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Breakpoint } from "../src/index.ts";
-import { EXIT_CASES, readCaseFile } from "./support/cases.ts";
+import { EXIT_CASES, FULL_SEARCH_TIMEOUT, readCaseFile } from "./support/cases.ts";
 
 interface ExpectedBreakpoint {
   exit_value: string;
@@ -172,14 +172,19 @@ describe("reason wording for founders (M2d review)", () => {
     expect(text).not.toMatch(/what is left for common/);
   });
 
-  it.each(EXIT_CASES)("%s: no assumption codes or jargon in the text", (name) => {
-    for (const b of reasonsFor(name)) {
-      for (const r of b.reasons) {
-        expect(r.text).not.toMatch(/\b[CERX]\d{1,2}\b/);
-        expect(r.text).not.toMatch(/original issue price|sharing what's left/);
+  // A full breakpoint search on each exit case, case 27 among them.
+  it.each(EXIT_CASES)(
+    "%s: no assumption codes or jargon in the text",
+    (name) => {
+      for (const b of reasonsFor(name)) {
+        for (const r of b.reasons) {
+          expect(r.text).not.toMatch(/\b[CERX]\d{1,2}\b/);
+          expect(r.text).not.toMatch(/original issue price|sharing what's left/);
+        }
       }
-    }
-  });
+    },
+    FULL_SEARCH_TIMEOUT,
+  );
 
   it("6b: the vote in two sentences, then what each class gains or loses", () => {
     const jump = reasonsFor("edge-06b-forced-class")[1]!;

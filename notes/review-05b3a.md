@@ -120,6 +120,22 @@ I could add a "Use it to add a round" button to the import review for a table on
 - **The screenshot script** (`apps/dashboard/scripts/screenshots.mjs`) gains five shots, `05b3a-*`.
 - **One mistake:** I ran the page's build outside the sandbox once, chained in the same command as a screenshot. Only `pnpm screenshots` should run there. Nothing else did, and the build itself only writes `apps/dashboard/dist`.
 
+## Added after your first look: CI's timeout
+
+**What failed:** `test-node-22` timed out on `start.test.ts`'s case 27 RSU test. It runs a full breakpoint search on case 27, about 3.8s on CI's 2-core machine, so it crossed vitest's 5s default at random.
+
+**The fix:**
+- **The tests:** each test that runs a full search on case 27, or anything larger, now has a 60-second timeout, `FULL_SEARCH_TIMEOUT` in `packages/engine/test/support/cases.ts`.
+- **Which tests:** case 27 is the only locked case that large. Here it takes 1.7s, against 0.35s for Millrace and 0.17s for case 26. Two tests run its search:
+  - the RSU test in `start.test.ts`
+  - the "no assumption codes or jargon" test in `breakpoints.test.ts`, over every exit case
+- **One search left as it was:** `breakpoints.test.ts` also searches case 27 for its per-case tests, but while the file is collected, outside any test, where vitest applies no timeout.
+- **No page test** searches case 27 yet. 05b3b's case 27 page test will take the same timeout.
+
+**The later list** gains the search's speed on larger tables, with your figures.
+
+**The page while it waits:** I checked that it shows it's working. Opening case 27 as a saved file in the built page, it showed "Working out the curves and breakpoints…" and "Working out where your payout starts…" from 51ms until the breakpoints appeared at 1.28s, on this machine.
+
 ## Next
 
 05b3b: what a round says about a starting table. I'm stopping here.
