@@ -31,6 +31,47 @@ def build(inputs):
     return out
 
 
+def ev_start(ct, ev):
+    """A starting cap table (R31, 0.5.0): the company as it stands, which later events build on.
+
+    It's taken as the table after any other event would be. Its cap table may not carry a carve-out, which is a term
+    of the sale. The order its series, SAFEs and notes were issued in, which the "issued before the series" rule
+    (R25) uses, is given beside the table as `issue_order`, earliest first. With none given, its SAFEs and notes
+    count as issued after its series, since they usually bridge to the next round. Every one of them ranks before
+    anything a later event issues.
+    """
+    if ct.event_no != 0:
+        raise ValueError("a starting cap table must be the first event")
+    table = ev["cap_table"]
+    if table.get("carve_out") is not None:
+        raise ValueError("a starting cap table may not carry a carve-out: that's a term of the sale")
+    start = CapTable.from_json(table)
+    for hid, name in start.holders.items():
+        if hid not in ct.holders:
+            raise ValueError(f"the starting table's holder {hid} isn't listed in holders")
+        ct.add_holder(hid, name)
+    ct.securities = start.securities
+    ct.positions = start.positions
+    ct.unissued_pool = start.unissued_pool
+    ct.safes = start.safes
+    ct.notes = start.notes
+    ct.seniority = start.seniority
+    ct.conversion_groups = start.conversion_groups
+    # Ranks inside the start event, all below 1, where the next event's number begins.
+    ranked = list(ct.preferred_ids()) + [f["id"] for f in ct.safes] + [n["id"] for n in ct.notes]
+    given = ev.get("issue_order")
+    if given is None:
+        convertible = {f["id"] for f in ct.safes} | {n["id"] for n in ct.notes}
+        rank = {i: (1 if i in convertible else 0) for i in ranked}
+    else:
+        if sorted(given) != sorted(ranked):
+            raise ValueError(f"issue_order must list each preferred series, SAFE and note in the starting table once: {sorted(ranked)}")
+        rank = {i: k for k, i in enumerate(given)}
+    top = max(rank.values(), default=0) + 1
+    ct.order = {sid: Fraction(rank.get(sid, 0), top) for sid in ct.securities}
+    ct.order.update({i: Fraction(r, top) for i, r in rank.items()})
+
+
 def _ensure_security(ct, sec_json):
     if sec_json["id"] not in ct.securities:
         ct.add_security(security_from_json(sec_json))
@@ -800,6 +841,7 @@ def ev_priced_round(ct, ev):
 
 
 HANDLERS = {
+    "start": ev_start,
     "issue": ev_issue,
     "issue_warrants": ev_issue_warrants,
     "issue_percent": ev_issue_percent,
