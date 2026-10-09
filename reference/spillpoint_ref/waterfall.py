@@ -87,14 +87,21 @@ class Waterfall:
         # Unconverted convertible notes at exit (X3, X10-X12, X15). Repayment is
         # debt, ahead of all equity. A note with a cap converts at its cap
         # price; one with no cap at the sale's common price per share less its
-        # discount; one with neither is repaid and never converts.
+        # discount; one with neither is repaid and never converts. Beside SAFEs
+        # (X18, 0.5.0): the repayment still comes first, and a converting note
+        # counts in a post-money SAFE's Liquidity Capitalization. Only a note
+        # with a cap beside SAFEs with post-money caps is supported; a note
+        # beside a carve-out is still refused.
         self.notes = list(ct.notes)
         if len(self.notes) > 1 and any(self.priced(n) for n in self.notes):
             raise ValueError("more than one unconverted note at exit is supported only when each has a valuation cap")
         for n in self.notes:
-            if self.safes or ct.carve_out:
+            if ct.carve_out:
+                raise ValueError(f"{n['id']}: an unconverted note alongside a carve-out is not supported by the reference yet")
+            if self.safes and (self.priced(n) or any(f.get("post_money_cap") is None for f in self.safes)):
                 raise ValueError(
-                    f"{n['id']}: an unconverted note alongside a SAFE or a carve-out is not supported by the reference yet"
+                    f"{n['id']}: an unconverted note alongside a SAFE is supported only when the note has a valuation cap "
+                    "and every SAFE a post-money cap"
                 )
         self.note_ids = [n["id"] for n in self.notes if self.note_can_convert(n)]
         self.note_interest = {n["id"]: note_interest(n, exit_date) for n in self.notes}
@@ -221,7 +228,7 @@ class Waterfall:
         """
         return self.ct.securities[sid]["participation"] == "non_participating" and not converted.get(sid, False)
 
-    def liquidity_capitalization(self, f, converted=None, safes_converting=None):
+    def liquidity_capitalization(self, f, converted=None, safes_converting=None, notes_converting=()):
         """A SAFE's Liquidity Capitalization when it takes its Conversion Amount.
 
         Post-money SAFE (YC): counted just before the Liquidity Event, all
@@ -231,8 +238,12 @@ class Waterfall:
         SAFE (X13). The unissued pool is left out, and so is anything taking a
         cash-out or a liquidation preference in lieu of converting: a SAFE
         taking its Cash-Out Amount, or a non-participating series that keeps
-        its preference. Each converting SAFE's shares are purchase amount ÷
-        (its cap ÷ LC), so LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
+        its preference. A note converting beside it is one of its "Converting
+        Securities", counted at its conversion shares; a note being repaid
+        takes a payment in lieu of converting, and isn't counted (X18). The
+        note's own shares don't depend on the SAFE: its base counts no SAFE.
+        Each converting SAFE's shares are purchase amount ÷ (its cap ÷ LC),
+        so LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
 
         Pre-money SAFE (YC, X14): "shares of Capital Stock (on an as-converted
         basis) outstanding, assuming exercise or conversion of all outstanding
@@ -249,6 +260,7 @@ class Waterfall:
         others = ct.outstanding_as_converted() - sum(
             (ct.as_converted(s) for s in ct.preferred_ids() if self.keeps_preference_in_lieu(s, converted)), ZERO
         )
+        others += sum((self.note_conversion_shares(n) for n in notes_converting), ZERO)
         own = sum((g["purchase_amount"] / g["post_money_cap"] for g in safes_converting), ZERO)
         return others / (1 - own)
 
@@ -256,16 +268,20 @@ class Waterfall:
         """The SAFEs taking their Conversion Amount under decisions d, counting f as converting."""
         return [g for g in self.safes if g is f or d.get(g["id"], False)]
 
+    def notes_converting(self, d):
+        """The notes converting under decisions d: a post-money SAFE's Liquidity Capitalization counts them (X18)."""
+        return [n for n in self.notes if d.get(n["id"], False)]
+
     def safe_cap(self, f):
         return f["pre_money_cap"] if f.get("pre_money_cap") is not None else f["post_money_cap"]
 
-    def liquidity_price(self, f, converted=None, safes_converting=None):
+    def liquidity_price(self, f, converted=None, safes_converting=None, notes_converting=()):
         """Liquidity Price = valuation cap ÷ Liquidity Capitalization."""
-        return self.safe_cap(f) / self.liquidity_capitalization(f, converted, safes_converting)
+        return self.safe_cap(f) / self.liquidity_capitalization(f, converted, safes_converting, notes_converting)
 
-    def safe_conversion_shares(self, f, converted=None, safes_converting=None):
+    def safe_conversion_shares(self, f, converted=None, safes_converting=None, notes_converting=()):
         """Purchase amount ÷ Liquidity Price, exact: at exit, as-converted shares aren't rounded (SPEC)."""
-        return f["purchase_amount"] / self.liquidity_price(f, converted, safes_converting)
+        return f["purchase_amount"] / self.liquidity_price(f, converted, safes_converting, notes_converting)
 
     def converting_amount(self, x):
         """What a SAFE or note converts: the purchase amount, or principal plus accrued interest."""
@@ -455,7 +471,7 @@ class Waterfall:
                 if self.priced(f):
                     priced.append(f)
                 else:
-                    part[f["id"]] = self.safe_conversion_shares(f, converted, self.safes_converting(f, d))
+                    part[f["id"]] = self.safe_conversion_shares(f, converted, self.safes_converting(f, d), self.notes_converting(d))
         for n in self.notes:
             if d.get(n["id"], False):
                 if self.priced(n):

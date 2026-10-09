@@ -469,8 +469,8 @@ def reasons(wf, x, sa, sb, jumps=False):
             out.append({"code": "safe_cash_out_paid", "security": fid, "text": text})
         if da[fid] != db[fid]:
             together = wf.safes_converting(f, db)
-            lp = wf.liquidity_price(f, converted_b, together)
-            n = wf.safe_conversion_shares(f, converted_b, together)
+            lp = wf.liquidity_price(f, converted_b, together, wf.notes_converting(db))
+            n = wf.safe_conversion_shares(f, converted_b, together, wf.notes_converting(db))
             # Its shares are valued at the common price once it converts, which differs from below at a jump.
             price_b = wf.run(x, wf.settled(x, bits_b))[1]
             if db[fid]:
@@ -540,14 +540,26 @@ def reasons(wf, x, sa, sb, jumps=False):
         elif da[nid] != db[nid]:
             cp = wf.note_conversion_price(n)
             shares = wf.note_conversion_shares(n)
+            # Its shares are valued at the common price once it converts, which differs from below at a jump (X18).
+            price_b = wf.run(x, wf.settled(x, bits_b))[1]
             if db[nid]:
                 text = (
                     f"{holder}'s convertible note switches from repayment to conversion. Its principal plus interest, "
                     f"{usd(n['principal'] + wf.note_interest[nid])}, converts at {usd_price(cp, 6)} a share (the "
                     f"{usd(n['valuation_cap'])} cap ÷ {count(wf.note_conversion_base(n))} shares) into {count(shares)} shares. "
-                    f"Here each is worth {usd_price(price, 6)}, {usd(shares * price)} in all, which equals its {usd(repay)} repayment. "
+                    f"Here each is worth {usd_price(price_b, 6)}, {usd(shares * price_b)} in all, which equals its {usd(repay)} repayment. "
                     f"Below this exit value repayment pays more; above it, converting does."
                 )
+                converting = [f for f in wf.safes if db.get(f["id"], False)]
+                if converting and jumps:
+                    # X18: a converting note is one of a post-money SAFE's Converting Securities.
+                    names = _join(f"{ct.holders[f['holder']]}'s SAFE" for f in converting)
+                    one = len(converting) == 1
+                    text += (
+                        f" Converting adds its shares to the Liquidity Capitalization {names} "
+                        f"{'converts' if one else 'convert'} on, so {'its' if one else 'their'} conversion shares grow with it: "
+                        f"just above this exit value {'its payout jumps' if one else 'their payouts jump'} up and common's jumps down."
+                    )
             else:
                 text = f"{holder}'s convertible note switches back to repayment: above this exit value it pays more."
             out.append({"code": "note_switches", "security": nid, "converts": db[nid], "text": text})
