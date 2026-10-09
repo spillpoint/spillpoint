@@ -491,8 +491,8 @@ async function shoot(send, name, shot) {
   const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
   const settled = async () => {
     for (let i = 0; i < 100; i++) {
-      // An OCF import's report stands in for the payouts until it's used (04f).
-      if (await evaluate(`document.readyState === "complete" && !!document.querySelector("h1, .import") && !document.body.innerText.includes("Working out")`)) return;
+      // An OCF import's report stands in for the payouts until it's used (04f), and a notice until a round makes a cap table to pay out (05b3b).
+      if (await evaluate(`document.readyState === "complete" && !!document.querySelector("h1, .import, #panel-payouts > .notice") && !document.body.innerText.includes("Working out")`)) return;
       await sleep(100);
     }
     throw new Error(`${name}: the page didn't finish computing`);

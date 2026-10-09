@@ -92,7 +92,9 @@ describe("the terms OCF leaves open", () => {
     click("Use this cap table");
     // Larkspur's SAFEs sit beside a note, which the engine refuses at a sale (X12): the panel stays, says why, and
     // offers a round to convert them (05b3b).
-    expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used at a sale yet\. A convertible note at a sale alongside a SAFE/);
+    expect(screen.getByRole("alert").textContent).toBe(
+      "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding.",
+    );
     expect(screen.getByRole("region", { name: /^Importing Larkspur/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Use it to add a round" })).toBeTruthy();
   });

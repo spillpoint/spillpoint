@@ -15,6 +15,7 @@ import type { Draft } from "./draft.ts";
 import { Field } from "./fields.tsx";
 import { amountHint, parseDollars, withoutCodes } from "./format.ts";
 import { Package, defaultTop, exactAmount, filled, longDate, questions, reportLines, summary, typeName } from "./ocfImport.ts";
+import { saleLimitText } from "./saleLimits.ts";
 
 export interface ImportUse {
   name: string;
@@ -26,12 +27,6 @@ export interface ImportUse {
   /** Start the company's rounds on it at once, with a priced round that converts its SAFEs and notes. */
   addRound?: boolean;
 }
-
-/**
- * The limits a sale puts on SAFEs and notes still outstanding (X12–X15). A round that converts them lifts them, so a
- * table refused for one of these can still start a company's rounds. Any other refusal can't be.
- */
-const SALE_LIMITS = new Set(["note_with_safe_or_carve_out", "pre_money_safe_with_preferred", "several_safes", "several_notes"]);
 
 interface Props {
   result: OcfImport;
@@ -84,12 +79,13 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
       readExit(exit, undefined, "import");
       onUse(chosen(draftFromExit(exit)));
     } catch (e) {
-      if (e instanceof UnsupportedTermError && SALE_LIMITS.has(e.term)) {
+      // The limits a sale puts on SAFEs and notes still outstanding (X12–X15), in plain words: a round that converts
+      // them lifts them, so the table can still start a company's rounds. Any other refusal can't.
+      const limit = saleLimitText(e, exit.cap_table);
+      if (limit) {
         try {
           setOffer(chosen(draftFromExit(exit)));
-          // The engine's words, without its path: the offer below says what can be done about it.
-          const words = e.message.startsWith(`${e.path}: `) ? e.message.slice(e.path.length + 2) : e.message;
-          setProblem(`This cap table can't be used at a sale yet. ${withoutCodes(words)}`);
+          setProblem(`This cap table can't be used at a sale yet: ${limit}`);
           return;
         } catch (shown) {
           if (!(shown instanceof NotShownYet)) throw shown;

@@ -188,7 +188,9 @@ async function importLarkspurWithARound() {
   type(within(panel).getByLabelText("When is the sale?"), "2026-06-30");
   click("Use this cap table");
   // Its SAFEs beside its note are refused at a sale (X12), so the review offers a round to convert them.
-  expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used at a sale yet\. A convertible note at a sale alongside a SAFE/);
+  expect(screen.getByRole("alert").textContent).toBe(
+    "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding.",
+  );
   click("Use it to add a round");
   await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 8 files, with a round to convert its SAFEs and notes\./);
 }
@@ -241,8 +243,9 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
       expect((within(round).getByLabelText("Converts the convertible notes still outstanding") as HTMLInputElement).checked).toBe(true);
       // Until a round converts them, the Payouts tab gives the engine's message.
       openTab("Payouts");
-      expect(document.querySelector("#panel-payouts .notice")!.textContent).toMatch(
-        /^The payouts can't be worked out yet\. A convertible note at a sale alongside a SAFE or a carve-out\. .* Once a round on the Rounds tab converts the SAFEs and notes, the payouts use the cap table after it\.$/,
+      expect(document.querySelector("#panel-payouts .notice")!.textContent).toBe(
+        "The payouts can't be worked out yet. spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding. " +
+          "Once a round on the Rounds tab converts the SAFEs and notes, the payouts use the cap table after it.",
       );
 
       openTab("Rounds");

@@ -221,12 +221,21 @@ const RULES = { broad_based: "broad-based weighted average", narrow_based: "narr
 
 /**
  * What a round needs to know of the cap table the company starts from (R31), if it starts from one: its series, its
- * SAFEs and notes, and whether it gave the order they were issued in.
+ * SAFEs and notes, and the order they were issued in, if it gives one.
  */
 interface Starting {
   series: Set<string>;
   convertibles: Set<string>;
-  ordered: boolean;
+  order: string[] | null;
+}
+
+/**
+ * R25, R31: whether a SAFE or note was issued after a starting series. One from an event after the starting table
+ * was; one from the table follows the order it gives, or, with none, counts as after its series.
+ */
+function issuedAfter(starting: Starting, convertible: string, series: string): boolean {
+  if (!starting.convertibles.has(convertible) || !starting.order) return true;
+  return starting.order.indexOf(convertible) > starting.order.indexOf(series);
 }
 
 /** What the Rounds tab shows for each event: what it did, and the cap table after it. */
@@ -237,7 +246,7 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
     ? {
         series: new Set(startTable.securities.filter((s) => s.kind === "preferred").map((s) => s.id)),
         convertibles: new Set([...(startTable.unconvertedSafes ?? []), ...(startTable.unconvertedNotes ?? [])].map((x) => x.id)),
-        ordered: Array.isArray(first!.issue_order),
+        order: Array.isArray(first!.issue_order) ? (first!.issue_order as string[]) : null,
       }
     : null;
   return tables.map((t, i) => {
@@ -335,7 +344,7 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name,
     case "priced_round":
       return {
         title: `${security((ev.series as Json).id)}, a priced round`,
-        lines: [...roundLines(ev, d, holder, security, starting), ...dividendLines(ev, t), ...startingLines(String((ev.series as Json).id), d, t, before, starting)],
+        lines: [...roundLines(ev, d, holder, security, starting), ...dividendLines(ev, t), ...startingLines(ev, d, t, before, starting)],
       };
   }
 }
@@ -430,25 +439,45 @@ function orderLines(a: AntiDilutionAdjustment, d: RoundDetails, security: Name, 
   if (!converting.some((id) => starting.convertibles.has(id))) return [];
   const series = security(a.series);
   return [
-    starting.ordered
-      ? `Which SAFEs and notes were issued before ${series} follows the order the starting cap table gives.`
+    starting.order
+      ? `Whether each SAFE and note was issued before or after ${series} comes from the starting cap table.`
       : `The starting cap table doesn't give the order things were issued in, so its SAFEs and notes count as issued after ${series}: they usually bridge to the next round.`,
   ];
 }
 
+/** A conversion price as a founder reads it: to the cent when that's exact, otherwise to six places. */
+const conversionPrice = (cp: Decimal) => (cp.eq(cp.toFixed(2)) ? `$${cp.toFixed(2)}` : price(cp));
+
 /**
  * What a round says about the cap table the company starts from (R31; 0.5.0 plan, 05b3; Jordan's wording):
- * - a starting series with no anti-dilution, in a round priced below its conversion price: nothing adjusts it, as an
- *   imported series has none (O11), so the round says so, and where to give it some;
+ * - a starting series with no anti-dilution, which an imported series has (O11), in a round that would adjust it if it
+ *   had broad-based anti-dilution (Jordan, 05b3b answers): priced below its conversion price, or converting a SAFE or
+ *   note below it that counts against it under R25, issued after it and not exempt. Nothing adjusts it, so the round
+ *   says so, and where to give it some;
  * - a conversion group the starting table gives: the round's new series, and those its SAFEs and notes convert into,
  *   aren't in it, and each decides on its own at a sale. Joining it is on the later list.
  */
-function startingLines(seriesId: string, d: RoundDetails, t: CapTableAfterEvent, before: CapTableAfterEvent | null, starting: Starting | null): string[] {
+function startingLines(ev: Json, d: RoundDetails, t: CapTableAfterEvent, before: CapTableAfterEvent | null, starting: Starting | null): string[] {
   if (!starting || !before) return [];
+  const seriesId = String((ev.series as Json).id);
+  const exempt = ev.anti_dilution_exempts_conversions === true;
+  const pieces = [...d.safeConversions.map((c) => ({ kind: "safe", id: c.safe, price: c.conversionPrice })), ...d.noteConversions.map((c) => ({ kind: "note", id: c.note, price: c.conversionPrice }))];
+  const fix = "If its charter gives it some, add it in the starting cap table.";
   const lines: string[] = [];
   for (const s of before.capTable.securities) {
-    if (s.kind !== "preferred" || !starting.series.has(s.id) || s.antiDilution !== "none" || !d.price.lt(s.conversionPrice)) continue;
-    lines.push(`${s.name} has no anti-dilution, so this down round doesn't adjust it. If its charter gives it some, add it in the starting cap table.`);
+    if (s.kind !== "preferred" || !starting.series.has(s.id) || s.antiDilution !== "none") continue;
+    if (d.price.lt(s.conversionPrice)) {
+      lines.push(`${s.name} has no anti-dilution, so this down round doesn't adjust it. ${fix}`);
+      continue;
+    }
+    const counted = exempt ? [] : pieces.filter((p) => p.price.lt(s.conversionPrice) && issuedAfter(starting, p.id, s.id));
+    if (counted.length === 0) continue;
+    const safes = counted.filter((p) => p.kind === "safe").length;
+    const notes = counted.length - safes;
+    const what = [safes ? (safes === 1 ? "the SAFE" : "the SAFEs") : "", notes ? (notes === 1 ? "the note" : "the notes") : ""].filter(Boolean).join(" and ");
+    lines.push(
+      `${s.name} has no anti-dilution, so ${what} converting below its ${conversionPrice(s.conversionPrice)} conversion price ${counted.length === 1 ? "doesn't" : "don't"} adjust it. ${fix}`,
+    );
   }
   const name = (id: string) => before.capTable.securities.find((s) => s.id === id)?.name ?? id;
   // The round's own series first, then those its SAFEs and notes convert into.

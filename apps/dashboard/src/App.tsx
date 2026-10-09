@@ -33,6 +33,7 @@ import type { ImportUse } from "./ImportReview.tsx";
 import { importOcf } from "./ocfImport.ts";
 import type { Imported } from "./ocfImport.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
+import { saleLimitText } from "./saleLimits.ts";
 import { dateText, eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
 import { BLANK, addEvent, blankRounds, buildRounds, draftFromRounds, draftTitle, eventFieldId, locate, otherBlanks, startingRounds, withStart } from "./roundsDraft.ts";
@@ -492,15 +493,15 @@ function GovernanceNote() {
 
 /**
  * The Payouts tab before the engine has accepted any cap table to pay out: an import used to add a round, whose SAFEs
- * and notes no round converts yet (05b3b; Jordan's answer 2). It shows the engine's message, and what the round still
- * needs.
+ * and notes no round converts yet (05b3b; Jordan's answer 2). It says why, in plain words for the limits a sale puts on
+ * SAFEs and notes, or else in the engine's, and what the round still needs.
  */
-function NoPayoutsYet({ problem, rounds, onFixRounds }: { problem: DraftError | null; rounds: RoundsProblem | null; onFixRounds: () => void }) {
+function NoPayoutsYet({ problem, rounds, onFixRounds }: { problem: string; rounds: RoundsProblem | null; onFixRounds: () => void }) {
   return (
     <>
       <div className="notice notice--problem" role="status">
-        <strong>The payouts can't be worked out yet.</strong> {problem?.message} Once a round on the Rounds tab converts the SAFEs and notes, the payouts
-        use the cap table after it.
+        <strong>The payouts can't be worked out yet.</strong> {problem} Once a round on the Rounds tab converts the SAFEs and notes, the payouts use the
+        cap table after it.
       </div>
       {rounds && (
         <div className="notice notice--problem" role="status">
@@ -719,7 +720,7 @@ function Workspace(props: WorkspaceProps) {
           {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
           </>
         ) : (
-          <NoPayoutsYet problem={draftError} rounds={roundsProblem} onFixRounds={fixRounds} />
+          <NoPayoutsYet problem={(!checked.ok && saleLimitText(checked.error, built.json.cap_table)) || (draftError?.message ?? "")} rounds={roundsProblem} onFixRounds={fixRounds} />
         )}
       </div>
 

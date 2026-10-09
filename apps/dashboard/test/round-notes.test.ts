@@ -76,6 +76,44 @@ describe("a starting series with no anti-dilution, in a down round (O11)", () =>
   });
 });
 
+describe("a starting series with no anti-dilution, and SAFEs or notes converting below it (Jordan, 05b3b answers)", () => {
+  // Case 27: an up round at $2.70, but its note and SAFEs convert at $0.61 and $0.68, below the Seed's $0.80. Issued
+  // after the Seed, they'd count against it under R25 if it had broad-based anti-dilution; issued before Series A, they
+  // wouldn't count against it.
+  const inputs = caseJson("edge-27-safes-and-note-convert-on-an-imported-table/inputs.json") as { holders: Json[]; events: (Json & { issue_order?: string[] })[] };
+  const case27 = (change: (events: (Json & { issue_order?: string[] })[]) => void = () => {}) => {
+    const events = structuredClone(inputs.events);
+    change(events);
+    return lastLines({ holders: inputs.holders, events, after: "series_b" }).map(text).filter((l) => /has no anti-dilution/.test(l));
+  };
+  const seed = "Seed Preferred has no anti-dilution, so the SAFEs and the note converting below its $0.80 conversion price don't adjust it. If its charter gives it some, add it in the starting cap table.";
+
+  it("says so for the Seed, and not for Series A, in the order the starting table gives", () => {
+    expect(case27()).toEqual([seed]);
+  });
+
+  it("with no order given, says so for Series A too: its SAFEs and notes count as issued after both", () => {
+    expect(case27((events) => delete events[0]!.issue_order)).toEqual([
+      seed,
+      "Series A Preferred has no anti-dilution, so the SAFEs and the note converting below its $2.00 conversion price don't adjust it. If its charter gives it some, add it in the starting cap table.",
+    ]);
+  });
+
+  it("names what converts: only the note, when the SAFEs don't convert", () => {
+    const noSafes = (events: Json[]) => {
+      events[1]!.convert_safes = false;
+      events[1]!.seniority = [["series_b", "series_b_notes"], ["cls-series-a"], ["cls-seed"]];
+    };
+    expect(case27(noSafes)).toEqual([
+      "Seed Preferred has no anti-dilution, so the note converting below its $0.80 conversion price doesn't adjust it. If its charter gives it some, add it in the starting cap table.",
+    ]);
+  });
+
+  it("says nothing when the round exempts its conversions", () => {
+    expect(case27((events) => (events[1]!.anti_dilution_exempts_conversions = true))).toEqual([]);
+  });
+});
+
 describe("a conversion group in the starting table (Jordan's wording, 05b3)", () => {
   const sixB = () => structuredClone(caseJson("edge-06b-forced-class/inputs.json").exit.cap_table) as Json & { holders: Json[] };
   const seriesA = (more: Json = {}): Json => ({
@@ -128,7 +166,7 @@ describe("how the issue order was read, when a down round adjusts a starting ser
 
   it("as the starting table gives it: the note and the SAFE came before the Seed, so they count in its starting share count", () => {
     const details = seedDetails(company(["note_n", "safe_s", "seed"]));
-    expect(details.at(-1)).toBe("Which SAFEs and notes were issued before Seed Preferred follows the order the starting cap table gives.");
+    expect(details.at(-1)).toBe("Whether each SAFE and note was issued before or after Seed Preferred comes from the starting cap table.");
     expect(details.filter((d) => /was issued before Seed Preferred, so it counts in the starting share count instead/.test(d))).toHaveLength(2);
   });
 
