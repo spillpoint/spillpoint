@@ -1,0 +1,34 @@
+{
+  "file_type": "OCF_MANIFEST_FILE",
+  "ocf_version": "1.2.0",
+  "as_of": "2025-12-31",
+  "generated_at": "2026-01-05T09:00:00Z",
+  "issuer": {
+    "object_type": "ISSUER",
+    "id": "issuer-quillfern",
+    "legal_name": "Quillfern Labs, Inc.",
+    "formation_date": "2021-01-15",
+    "country_of_formation": "US",
+    "country_subdivision_of_formation": "DE"
+  },
+  "stakeholders_files": [
+    {
+      "filepath": "Stakeholders.ocf.json"
+    }
+  ],
+  "stock_classes_files": [
+    {
+      "filepath": "StockClasses.ocf.json"
+    }
+  ],
+  "stock_plans_files": [
+    {
+      "filepath": "StockPlans.ocf.json"
+    }
+  ],
+  "transactions_files": [
+    {
+      "filepath": "Transactions.ocf.json"
+    }
+  ]
+}

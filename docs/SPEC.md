@@ -111,6 +111,7 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 22. Warrants issued, counted like options in a priced round's price, its pool top-up and a converting SAFE's Company Capitalization.
 23. Cumulative dividends on a priced round's series, carried by its series from SAFEs on its own issue price, followed by a sale.
 24. A management carve-out given as a term of the sale, on the exit, for a company built from its rounds.
+25. A cap table read from an OCF ledger (OCF case 12), at a sale: a senior Series A, participating with a 2.5x cap, over a non-participating Seed whose conversion price fell in a down round, with options at two strikes.
 
 Cases 14–24 are round cases, so their expected outputs are cap tables; 23 and 24 also run an exit on their last one, as Millrace and 12g do. The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
 
@@ -124,4 +125,5 @@ An import reads an Open Cap Format package into a cap table, as `docs/ASSUMPTION
 4. **To fill in** (`ocf-04-to-fill`): valid OCF that leaves a term open, each added to Larkspur's package: a SAFE whose cap gives no pre- or post-money timing, and a note whose capitalization rules don't say what its cap divides by.
 5. **Locked cases in OCF** (`ocf-05` to `ocf-10`): edge cases 4, 5a, 7, 8, 12b and 13a, each written by hand as an OCF package whose import is the locked case's cap table, so the locked payouts and breakpoints are its own. Case 08 names its warrant class as the engine does, where edge case 8 named it by hand.
 6. **Millrace in OCF** (`ocf-11-millrace`): Millrace's cap table after its Series B, as an OCF package. OCF writes numbers to at most 10 places, so each price is written to 10, rounded to nearest, as an export would. The import is the locked table with those prices, and Millrace's locked payouts and breakpoints are its own to within a cent. Series A's ratio, as written, agrees with its conversion price only within that rounding, so it is read with a report line.
+7. **A ledger** (`ocf-12-ledger`): a fictional company's five years of transactions, a split, a SAFE converting, a down round adjusting the Seed's conversion price, exercises, cancellations back to the pool, a repricing, a retraction, a repurchase and two transfers, worked by hand into a cap table that settles every term. That table is edge case 25, so its payouts and breakpoints come from the reference.
 

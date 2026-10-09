@@ -24,12 +24,13 @@ export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("o
  * carve-outs since M5f, case 12's SAFEs at a sale since M5g, case 13's notes at a sale since M5h, and case 11's
  * earnout since M5i, and case 11b's earnout with a negative take since its case (0.3.0 work, 03a). Cases 12i and 13h,
  * a SAFE and a note with no cap beside capped participating preferred, and case 24, a carve-out given on the sale,
- * since 03e, and case 8b, a warrant coming into the money on a curve, since 03f. None is left out.
+ * since 03e, case 8b, a warrant coming into the money on a curve, since 03f, and case 25, the cap table OCF case 12's
+ * ledger leaves, since its case (04c). None is left out.
  */
 export const NOT_YET: readonly string[] = [];
 export const EXIT_CASES: string[] = ALL_CASES.filter(
   (name) =>
-    (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "millrace"].includes(name)) &&
+    (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name)) &&
     !NOT_YET.includes(name),
 );
 

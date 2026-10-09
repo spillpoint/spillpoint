@@ -1,0 +1,1642 @@
+{
+  "case": "edge-25-ocf-ledger",
+  "generated_by": "reference/generate.py",
+  "exit": {
+    "breakpoints": [
+      {
+        "exit_value": "3500000.00",
+        "exact": "3500000",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 1,
+            "securities": [
+              "series_a"
+            ],
+            "text": "The preference tier Series A Preferred is fully paid ($3,500,000.00). Above this exit value, the next dollar goes to the next tier's preference (Seed Preferred)."
+          }
+        ]
+      },
+      {
+        "exit_value": "6812499.20",
+        "exact": "6812499.2",
+        "reasons": [
+          {
+            "code": "tier_fully_paid",
+            "tier": 2,
+            "securities": [
+              "seed"
+            ],
+            "text": "The preference tier Seed Preferred is fully paid ($3,312,499.20). Above this exit value, the next dollar goes to the residual, shared as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "8237499.20",
+        "exact": "8237499.2",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.1",
+            "strike": "0.1",
+            "text": "Common reaches $0.10 per share, the strike on the 200,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "10404999.20",
+        "exact": "10404999.2",
+        "reasons": [
+          {
+            "code": "option_in_the_money",
+            "security": "options_0.25",
+            "strike": "0.25",
+            "text": "Common reaches $0.25 per share, the strike on the 700,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+          }
+        ]
+      },
+      {
+        "exit_value": "21767499.20",
+        "exact": "21767499.2",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "seed",
+            "converts": true,
+            "text": "Seed Preferred converts to common. At this exit value its as-converted share (3,312,499.20 common shares at $1.0000 each = $3,312,499.20) equals its 1x preference of $3,312,499.20. Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "30998748.80",
+        "exact": "30998748.8",
+        "reasons": [
+          {
+            "code": "cap_reached",
+            "security": "series_a",
+            "text": "Series A Preferred reaches its cap: preference plus participation totals 2.5x its original issue price ($8,750,000.00). Above this exit value its payout stays flat until converting to common pays more."
+          }
+        ]
+      },
+      {
+        "exit_value": "45961248.00",
+        "exact": "45961248",
+        "reasons": [
+          {
+            "code": "series_converts",
+            "security": "series_a",
+            "converts": true,
+            "text": "Series A Preferred converts to common. At this exit value its as-converted share (3,500,000 common shares at $2.5000 each = $8,750,000.00) equals its capped payout of $8,750,000.00 (2.5x its original issue price). Below it, staying preferred pays more; above it, converting pays more."
+          }
+        ]
+      }
+    ],
+    "payouts": [
+      {
+        "exit_value": "2000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "not_exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "285714.29"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "1714285.71"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "0.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "employee_c": "0.00",
+              "employee_d": "0.00",
+              "employee_e": "0.00",
+              "angel_s": "0.00",
+              "seed_fund_t": "285714.29",
+              "fund_u": "1714285.71",
+              "trust_v": "0.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.25": "0.00",
+              "options_0.1": "0.00",
+              "seed": "0.00",
+              "series_a": "2000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "3500000.00",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "not_exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "500000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "0.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "0.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "employee_c": "0.00",
+              "employee_d": "0.00",
+              "employee_e": "0.00",
+              "angel_s": "0.00",
+              "seed_fund_t": "500000.00",
+              "fund_u": "3000000.00",
+              "trust_v": "0.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.25": "0.00",
+              "options_0.1": "0.00",
+              "seed": "0.00",
+              "series_a": "3500000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "5000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "not_exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "141509.11"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "1195471.99"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "500000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "163018.91"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "0.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "employee_c": "0.00",
+              "employee_d": "0.00",
+              "employee_e": "0.00",
+              "angel_s": "141509.11",
+              "seed_fund_t": "1695471.99",
+              "fund_u": "3163018.91",
+              "trust_v": "0.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.25": "0.00",
+              "options_0.1": "0.00",
+              "seed": "1500000.00",
+              "series_a": "3500000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "6812499.20",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "not_exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "0.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "500000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3000000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "0.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "0.00",
+              "founder_b": "0.00",
+              "employee_c": "0.00",
+              "employee_d": "0.00",
+              "employee_e": "0.00",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3140000.00",
+              "fund_u": "3360000.00",
+              "trust_v": "0.00"
+            },
+            "class_totals": {
+              "common": "0.00",
+              "options_0.25": "0.00",
+              "options_0.1": "0.00",
+              "seed": "3312499.20",
+              "series_a": "3500000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "8000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "not_exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.083333",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "458333.64"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "333333.56"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "58333.37"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "4166.67"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "541666.69"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3250000.17"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "41666.69"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "458333.64",
+              "founder_b": "333333.56",
+              "employee_c": "58333.37",
+              "employee_d": "0.00",
+              "employee_e": "4166.67",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3181666.69",
+              "fund_u": "3610000.17",
+              "trust_v": "41666.69"
+            },
+            "class_totals": {
+              "common": "895833.94",
+              "options_0.25": "0.00",
+              "options_0.1": "0.00",
+              "seed": "3312499.20",
+              "series_a": "3791666.86"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "8237499.20",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "not_exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.100000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "550000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "400000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "70000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "5000.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "550000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3300000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "50000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "550000.00",
+              "founder_b": "400000.00",
+              "employee_c": "70000.00",
+              "employee_d": "0.00",
+              "employee_e": "5000.00",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3190000.00",
+              "fund_u": "3660000.00",
+              "trust_v": "50000.00"
+            },
+            "class_totals": {
+              "common": "1075000.00",
+              "options_0.25": "0.00",
+              "options_0.1": "0.00",
+              "seed": "3312499.20",
+              "series_a": "3850000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "10000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.221972",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "1220848.06"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "887889.49"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "155380.66"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "24394.47"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "11098.62"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "610986.19"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3665917.12"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "110986.19"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "1220848.06",
+              "founder_b": "887889.49",
+              "employee_c": "155380.66",
+              "employee_d": "24394.47",
+              "employee_e": "11098.62",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3250986.19",
+              "fund_u": "4025917.12",
+              "trust_v": "110986.19"
+            },
+            "class_totals": {
+              "common": "2386203.02",
+              "options_0.25": "0.00",
+              "options_0.1": "24394.47",
+              "seed": "3312499.20",
+              "series_a": "4276903.31"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "10404999.20",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "not_exercised"
+            },
+            "common_price_per_share": "0.250000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "1375000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "175000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "30000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "0.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "12500.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "625000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "3750000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "125000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "1375000.00",
+              "founder_b": "1000000.00",
+              "employee_c": "175000.00",
+              "employee_d": "30000.00",
+              "employee_e": "12500.00",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3265000.00",
+              "fund_u": "4110000.00",
+              "trust_v": "125000.00"
+            },
+            "class_totals": {
+              "common": "2687500.00",
+              "options_0.25": "0.00",
+              "options_0.1": "30000.00",
+              "seed": "3312499.20",
+              "series_a": "4375000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "15000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "0.553300",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "3043152.11"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "2213201.53"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "387310.27"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "121320.15"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "90660.08"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "90990.11"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "27665.02"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "776650.19"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "4659901.15"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "276650.19"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "3043152.11",
+              "founder_b": "2213201.53",
+              "employee_c": "508630.42",
+              "employee_d": "181650.19",
+              "employee_e": "27665.02",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3416650.19",
+              "fund_u": "5019901.15",
+              "trust_v": "276650.19"
+            },
+            "class_totals": {
+              "common": "5947979.12",
+              "options_0.25": "212310.27",
+              "options_0.1": "90660.08",
+              "seed": "3312499.20",
+              "series_a": "5436551.34"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "21767499.20",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "keeps_preference",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "1.000000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "5500000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "4000000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "700000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "300000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "180000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "225000.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "50000.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "312499.20"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "2640000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "1000000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "360000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "6000000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "500000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "5500000.00",
+              "founder_b": "4000000.00",
+              "employee_c": "1000000.00",
+              "employee_d": "405000.00",
+              "employee_e": "50000.00",
+              "angel_s": "312499.20",
+              "seed_fund_t": "3640000.00",
+              "fund_u": "6360000.00",
+              "trust_v": "500000.00"
+            },
+            "class_totals": {
+              "common": "10750000.00",
+              "options_0.25": "525000.00",
+              "options_0.1": "180000.00",
+              "seed": "3312499.20",
+              "series_a": "7000000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "25000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "1.175085",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "6462965.75"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "4700338.73"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "822559.28"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "370033.87"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "215016.94"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "277525.40"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "58754.23"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "367213.02"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "3102223.56"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "1087542.34"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "423030.49"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "6525254.05"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "587542.34"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "6462965.75",
+              "founder_b": "4700338.73",
+              "employee_c": "1192593.15",
+              "employee_d": "492542.34",
+              "employee_e": "58754.23",
+              "angel_s": "367213.02",
+              "seed_fund_t": "4189765.90",
+              "fund_u": "6948284.53",
+              "trust_v": "587542.34"
+            },
+            "class_totals": {
+              "common": "12632160.33",
+              "options_0.25": "647559.28",
+              "options_0.1": "215016.94",
+              "seed": "3892467.07",
+              "series_a": "7612796.39"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "30998748.80",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "1.500000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "8250000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "6000000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "1050000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "500000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "280000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "375000.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "75000.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "468748.80"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "3960000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "1250000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "540000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "7500000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "750000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "8250000.00",
+              "founder_b": "6000000.00",
+              "employee_c": "1550000.00",
+              "employee_d": "655000.00",
+              "employee_e": "75000.00",
+              "angel_s": "468748.80",
+              "seed_fund_t": "5210000.00",
+              "fund_u": "8040000.00",
+              "trust_v": "750000.00"
+            },
+            "class_totals": {
+              "common": "16125000.00",
+              "options_0.25": "875000.00",
+              "options_0.1": "280000.00",
+              "seed": "4968748.80",
+              "series_a": "8750000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "40000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "2.101587",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "11558730.78"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "8406349.66"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "1471111.19"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "740634.97"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "400317.48"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "555476.22"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "105079.37"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "656744.39"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "5548190.77"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "1250000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "756571.47"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "7500000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "1050793.71"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "11558730.78",
+              "founder_b": "8406349.66",
+              "employee_c": "2211746.16",
+              "employee_d": "955793.71",
+              "employee_e": "105079.37",
+              "angel_s": "656744.39",
+              "seed_fund_t": "6798190.77",
+              "fund_u": "8256571.47",
+              "trust_v": "1050793.71"
+            },
+            "class_totals": {
+              "common": "22592064.70",
+              "options_0.25": "1296111.19",
+              "options_0.1": "400317.48",
+              "seed": "6961506.63",
+              "series_a": "8750000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "45961248.00",
+        "tags": [
+          "breakpoint"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "series_a": "keeps_preference",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "2.500000",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "13750000.00"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "10000000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "1750000.00"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "900000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "480000.00"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "675000.00"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "125000.00"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "781248.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "6600000.00"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "1250000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "900000.00"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "7500000.00"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "1250000.00"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "13750000.00",
+              "founder_b": "10000000.00",
+              "employee_c": "2650000.00",
+              "employee_d": "1155000.00",
+              "employee_e": "125000.00",
+              "angel_s": "781248.00",
+              "seed_fund_t": "7850000.00",
+              "fund_u": "8400000.00",
+              "trust_v": "1250000.00"
+            },
+            "class_totals": {
+              "common": "26875000.00",
+              "options_0.25": "1575000.00",
+              "options_0.1": "480000.00",
+              "seed": "8281248.00",
+              "series_a": "8750000.00"
+            }
+          }
+        ]
+      },
+      {
+        "exit_value": "60000000.00",
+        "tags": [
+          "listed"
+        ],
+        "multiple_equilibria": false,
+        "equilibria": [
+          {
+            "decisions": {
+              "seed": "converts",
+              "series_a": "converts",
+              "options_0.1": "exercised",
+              "options_0.25": "exercised"
+            },
+            "common_price_per_share": "3.260393",
+            "lines": [
+              {
+                "holder": "founder_a",
+                "security": "common",
+                "amount": "17932160.56"
+              },
+              {
+                "holder": "founder_b",
+                "security": "common",
+                "amount": "13041571.32"
+              },
+              {
+                "holder": "employee_c",
+                "security": "common",
+                "amount": "2282274.98"
+              },
+              {
+                "holder": "employee_c",
+                "security": "options_0.25",
+                "amount": "1204157.13"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.1",
+                "amount": "632078.57"
+              },
+              {
+                "holder": "employee_d",
+                "security": "options_0.25",
+                "amount": "903117.85"
+              },
+              {
+                "holder": "employee_e",
+                "security": "common",
+                "amount": "163019.64"
+              },
+              {
+                "holder": "angel_s",
+                "security": "seed",
+                "amount": "1018870.15"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "seed",
+                "amount": "8607437.07"
+              },
+              {
+                "holder": "seed_fund_t",
+                "security": "series_a",
+                "amount": "1630196.41"
+              },
+              {
+                "holder": "fund_u",
+                "security": "seed",
+                "amount": "1173741.42"
+              },
+              {
+                "holder": "fund_u",
+                "security": "series_a",
+                "amount": "9781178.49"
+              },
+              {
+                "holder": "trust_v",
+                "security": "common",
+                "amount": "1630196.41"
+              }
+            ],
+            "holder_totals": {
+              "founder_a": "17932160.56",
+              "founder_b": "13041571.32",
+              "employee_c": "3486432.11",
+              "employee_d": "1535196.41",
+              "employee_e": "163019.64",
+              "angel_s": "1018870.15",
+              "seed_fund_t": "10237633.48",
+              "fund_u": "10954919.91",
+              "trust_v": "1630196.41"
+            },
+            "class_totals": {
+              "common": "35049222.91",
+              "options_0.25": "2107274.98",
+              "options_0.1": "632078.57",
+              "seed": "10800048.64",
+              "series_a": "11411374.90"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
