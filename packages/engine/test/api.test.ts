@@ -9,6 +9,7 @@ it("exports exactly the public API", () => {
     "D",
     "InputError",
     "NoAnswerError",
+    "OcfRefusal",
     "UnsupportedTermError",
     "buildCapTables",
     "findBreakpoints",
@@ -19,6 +20,7 @@ it("exports exactly the public API", () => {
     "readCapTable",
     "readExit",
     "readInputs",
+    "readOcf",
     "solve",
     "toCents",
   ]);

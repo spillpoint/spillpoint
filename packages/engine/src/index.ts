@@ -14,7 +14,7 @@
 export { D, parseExact, toCents } from "./decimal.ts";
 
 // What the engine refuses, and why.
-export { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
+export { InputError, NoAnswerError, OcfRefusal, UnsupportedTermError } from "./errors.ts";
 export type { Milestone } from "./errors.ts";
 
 // Reading an exit input in the case-file format (ASSUMPTIONS C1–C4, C12).
@@ -32,6 +32,10 @@ export type { Answer, Solution, SolveOptions } from "./decisions.ts";
 export { findBreakpoints } from "./breakpoints.ts";
 export { paySchedule } from "./payments.ts";
 export type { PaymentTake } from "./payments.ts";
+
+// Reading an Open Cap Format package into a cap table (M6, ASSUMPTIONS O1–O12).
+export { readOcf } from "./ocf.ts";
+export type { OcfFile, OcfImport, OcfNote, OcfReport, OcfToFill } from "./ocf.ts";
 
 // Building cap tables from a company's rounds (M4).
 export { buildCapTables } from "./rounds.ts";
