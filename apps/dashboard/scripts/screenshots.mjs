@@ -182,6 +182,50 @@ const SERIES_B = [
   click("Done"),
 ];
 
+/** Larkspur's export, its blanks answered as case 27 fills them, and "Use this cap table", which a sale refuses (05b3b). */
+const LARKSPUR = [
+  importFiles(packageOf("ocf-01-larkspur")),
+  `[...document.querySelectorAll(".import__question")].find((f) => f.textContent.includes("Does Seed Preferred participate?")).querySelector("input[value=non_participating]").click()`,
+  fill("input[id^=import-][id*=repayment]", 0, "1"),
+  fill("#import-sale-date", 0, "2026-06-30"),
+  click("Use this cap table"),
+];
+/** "Use it to add a round", and case 27's Series B typed in: Investor Z, added on the Rounds tab, is r3. */
+const LARKSPUR_SERIES_B = [
+  click("Use it to add a round"),
+  `document.querySelector("section[aria-labelledby=rounds-holders-heading] button.add").click()`,
+  fill("#rounds-holder-r3", 0, "Investor Z"),
+  fill("#ev-r2-date", 0, "2025-12-01"),
+  fill("#ev-r2-pre_money", 0, "50000000"),
+  fill("#ev-r2-pool_target_unissued_percent_post", 0, "10"),
+  pickText("#ev-r2-investments-0-holder", 0, "Investor Z"),
+  fill("#ev-r2-investments-0-amount", 0, "8000000"),
+  pick("#ev-r2-seniority", 0, "senior"),
+  click("Done"),
+];
+/** A down round on Quillfern's import: $5M pre-money, below its series' $1.00, which have no anti-dilution (05b3b). */
+const QUILLFERN_DOWN = [
+  click("Cap table"),
+  click("Add a round"),
+  `document.querySelector("section[aria-labelledby=rounds-holders-heading] button.add").click()`,
+  fill("#rounds-holder-r3", 0, "Fund W"),
+  fill("#ev-r2-date", 0, "2026-03-31"),
+  fill("#ev-r2-pre_money", 0, "5000000"),
+  pickText("#ev-r2-investments-0-holder", 0, "Fund W"),
+  fill("#ev-r2-investments-0-amount", 0, "1000000"),
+  pick("#ev-r2-seniority", 0, "senior"),
+  click("Done"),
+];
+/** Case 6b typed in, whose two Seed series convert together, and a Series A added on it (05b3b). */
+const SIX_B_ROUND = [
+  ...BUILD_6B,
+  click("Add a round"),
+  fill("#ev-r2-date", 0, "2024-01-01"),
+  fill("#ev-r2-pre_money", 0, "40000000"),
+  fill("#ev-r2-investments-0-amount", 0, "5000000"),
+  click("Done"),
+];
+
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
   "m3a-by-class": { width: 1100, height: 900, steps: [click("By class")] },
@@ -399,6 +443,13 @@ const SHOTS = {
     quality: 50,
   },
   "05b3a-payouts": { width: 1100, height: 900, steps: [...QUILLFERN, ...SERIES_B, click("Payouts")], clip: [".example-label", ".founder"] },
+  // 05b3b: an import a sale refuses for its SAFEs and notes starts a company's rounds instead; and what a round says of a starting table.
+  "05b3b-offer": { width: 1100, height: 900, steps: LARKSPUR, clip: [".file-status--problem", ".import__round"], quality: 50 },
+  "05b3b-no-payouts": { width: 1100, height: 900, steps: [...LARKSPUR, click("Use it to add a round"), click("Payouts")], clip: [".file-status", "#panel-payouts"], quality: 50 },
+  "05b3b-larkspur": { width: 1100, height: 900, steps: [...LARKSPUR, ...LARKSPUR_SERIES_B], clip: [ROUND(2)], quality: 50 },
+  "05b3b-larkspur-payouts": { width: 1100, height: 900, steps: [...LARKSPUR, ...LARKSPUR_SERIES_B, click("Payouts")], clip: [".example-label", ".founder"] },
+  "05b3b-no-anti-dilution": { width: 1100, height: 900, steps: [...QUILLFERN, ...QUILLFERN_DOWN], clip: [ROUND(2)], quality: 50 },
+  "05b3b-group": { width: 1100, height: 900, steps: SIX_B_ROUND, clip: [ROUND(2)], quality: 50 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
