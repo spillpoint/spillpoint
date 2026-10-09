@@ -10,7 +10,7 @@ Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open
 
 It gives:
 - **`as_of`:** the package's date. The cap table is as of it, and a transaction dated after it is refused.
-- **`cap_table`:** in the case-file format, ready for `readCapTable`, with `null` wherever OCF doesn't settle a term. Nothing is guessed: never 1x, never $1.
+- **`cap_table`:** in the case-file format, ready for `readCapTable`, with `null` wherever OCF doesn't settle a term. Nothing is guessed: a term OCF doesn't settle is left blank for you to fill in, or read a set way with a report line saying so.
 - **`to_fill`:** each blank:
   - a series' participation when it gives no cap, since OCF has no participation flag
   - a series' price, preference multiple or conversion price when OCF gives none

@@ -39,7 +39,7 @@ The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entir
 
 Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open-cap-table-coalition.github.io/Open-Cap-Format-OCF/. spillpoint reads files in that format.
 
-Coming next: 1.0, with the API's names reviewed once and settled.
+Coming next: 0.5.0, from your cap table to your term sheet: adding the next round to an imported cap table, and SAFEs beside a note at a sale. Then 1.0, with the API's names reviewed once and settled.
 
 ## In this repository
 
