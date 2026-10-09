@@ -18,17 +18,29 @@ export interface Picked {
   bytes: Uint8Array;
 }
 
-export type Imported =
-  | {
-      ok: true;
-      result: OcfImport;
-      files: OcfFile[];
-      /** What was picked, for the page to name: a zip's name, or how many files. */
-      source: string;
-      /** Files in the zip or the picked set that aren't JSON, so aren't part of an OCF package. */
-      skipped: string[];
-    }
-  | { ok: false; message: string };
+/** What was read from what was picked. */
+export interface Read {
+  /** What was picked, for the page to name: a zip's name, or how many files. */
+  source: string;
+  files: OcfFile[];
+  /** Files in the zip or the picked set that aren't JSON, so aren't part of an OCF package. */
+  skipped: string[];
+  /** How many JSON files there were, and their total size in bytes, whether or not they parsed. */
+  jsonCount: number;
+  jsonBytes: number;
+}
+
+/**
+ * Why an import didn't happen, as codes a summary can share (O15). The message is for the page, and can name an
+ * entry, a holder or an amount.
+ */
+export type Failure =
+  | { stage: "picked"; code: "none_chosen" | "zip_beside_files" | "too_large" }
+  | { stage: "zip"; code: string }
+  | { stage: "json"; code: "not_json" | "no_json" }
+  | { stage: "import"; refusal: OcfRefusal };
+
+export type Imported = ({ ok: true; result: OcfImport } & Read) | { ok: false; message: string; failure: Failure; read: Read | null };
 
 /** What a zip made on a Mac carries besides the files themselves: resource forks and folder settings. */
 const clutter = (name: string) => name.startsWith("__MACOSX/") || /(^|\/)\._/.test(name) || /(^|\/)\.DS_Store$/.test(name);
@@ -36,7 +48,8 @@ const isZip = (p: Picked) => p.name.toLowerCase().endsWith(".zip") || (p.bytes[0
 
 /** Reads what was picked into the engine's import, or says plainly why it can't. */
 export async function importOcf(picked: readonly Picked[]): Promise<Imported> {
-  if (picked.length === 0) return { ok: false, message: "No files were chosen." };
+  const fail = (message: string, failure: Failure, read: Read | null = null): Imported => ({ ok: false, message, failure, read });
+  if (picked.length === 0) return fail("No files were chosen.", { stage: "picked", code: "none_chosen" });
   let entries: Picked[];
   let source: string;
   if (picked.length === 1 && isZip(picked[0]!)) {
@@ -44,45 +57,50 @@ export async function importOcf(picked: readonly Picked[]): Promise<Imported> {
     try {
       entries = (await readZip(picked[0]!.bytes)).filter((e) => !clutter(e.name)).map((e) => ({ name: e.name, bytes: e.bytes }));
     } catch (e) {
-      if (e instanceof ZipError) return { ok: false, message: `Couldn't read ${source}. ${e.message}` };
+      if (e instanceof ZipError) return fail(`Couldn't read ${source}. ${e.message}`, { stage: "zip", code: e.code });
       throw e;
     }
   } else {
-    if (picked.some(isZip)) return { ok: false, message: "Open a .zip on its own, or the package's .ocf.json files together, not both." };
+    if (picked.some(isZip)) return fail("Open a .zip on its own, or the package's .ocf.json files together, not both.", { stage: "picked", code: "zip_beside_files" });
     // The same limit as for a zip's contents: an OCF export is a few files of JSON.
     if (picked.reduce((total, p) => total + p.bytes.byteLength, 0) > MOST_BYTES) {
-      return { ok: false, message: "Couldn't import them: together they're more than 100 MB, far more than an OCF export would be. Check they're the right files." };
+      return fail(
+        "Couldn't import them: together they're more than 100 MB, far more than an OCF export would be. Check they're the right files.",
+        { stage: "picked", code: "too_large" },
+      );
     }
     entries = [...picked];
     source = `${picked.length} file${picked.length === 1 ? "" : "s"}`;
   }
 
-  const skipped: string[] = [];
-  const files: OcfFile[] = [];
-  for (const e of entries) {
-    if (!e.name.toLowerCase().endsWith(".json")) {
-      skipped.push(e.name);
-      continue;
-    }
+  const json = entries.filter((e) => e.name.toLowerCase().endsWith(".json"));
+  const read: Read = {
+    source,
+    files: [],
+    skipped: entries.filter((e) => !json.includes(e)).map((e) => e.name),
+    jsonCount: json.length,
+    jsonBytes: json.reduce((total, e) => total + e.bytes.byteLength, 0),
+  };
+  for (const e of json) {
     try {
-      files.push({ name: e.name, content: JSON.parse(new TextDecoder().decode(e.bytes)) as unknown });
+      read.files.push({ name: e.name, content: JSON.parse(new TextDecoder().decode(e.bytes)) as unknown });
     } catch {
-      return { ok: false, message: `Couldn't import it: ${e.name} isn't valid JSON.` };
+      return fail(`Couldn't import it: ${e.name} isn't valid JSON.`, { stage: "json", code: "not_json" }, read);
     }
   }
-  if (files.length === 0) return { ok: false, message: `Couldn't import it: ${source} holds no .json files, so no OCF package.` };
+  if (read.files.length === 0) return fail(`Couldn't import it: ${source} holds no .json files, so no OCF package.`, { stage: "json", code: "no_json" }, read);
   try {
-    return { ok: true, result: readOcf(files), files, source, skipped };
+    return { ok: true, result: readOcf(read.files), ...read };
   } catch (e) {
     if (!(e instanceof OcfRefusal)) throw e;
     const message = e.message.endsWith(".") ? e.message : `${e.message}.`;
-    return {
-      ok: false,
-      message:
-        e.kind === "unsupported"
-          ? `Couldn't import it: it uses something spillpoint doesn't model yet, and it refuses rather than leave it out. ${message}`
-          : `Couldn't import it: its files disagree with each other or with OCF, so there's no one cap table to build. ${message}`,
-    };
+    return fail(
+      e.kind === "unsupported"
+        ? `Couldn't import it: it uses something spillpoint doesn't model yet, and it refuses rather than leave it out. ${message}`
+        : `Couldn't import it: its files disagree with each other or with OCF, so there's no one cap table to build. ${message}`,
+      { stage: "import", refusal: e },
+      read,
+    );
   }
 }
 

@@ -401,7 +401,7 @@ Nothing is skipped. The rules, each with its default, are O1 to O12 in [`docs/AS
 
 ## What it covers
 
-Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)* or *(0.4.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.

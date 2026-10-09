@@ -72,29 +72,33 @@ describe("what it refuses, by name", () => {
     // A few kilobytes on disk, listing one entry at 200 MB: the sizes are only numbers in the directory.
     const huge = patched(1, (v, e) => v.setUint32(e + 24, 200_000_000, true));
     expect(huge.length).toBeLessThan(5000);
-    expect(await importOcf([{ name: "huge.zip", bytes: huge }])).toEqual({
+    expect(await importOcf([{ name: "huge.zip", bytes: huge }])).toMatchObject({
       ok: false,
       message: "Couldn't read huge.zip. It unzips to more than 100 MB, far more than an OCF export would be. Check it's the right file.",
+      failure: { stage: "zip", code: "too_large" },
     });
   });
 
   it("loose files that add up to more than 100 MB", async () => {
     // Only their sizes are read, so the test needn't hold 100 MB.
     const sized = (name: string, byteLength: number) => ({ name, bytes: { byteLength } as unknown as Uint8Array });
-    expect(await importOcf([sized("a.ocf.json", 60_000_000), sized("b.ocf.json", 40_000_001)])).toEqual({
+    expect(await importOcf([sized("a.ocf.json", 60_000_000), sized("b.ocf.json", 40_000_001)])).toMatchObject({
       ok: false,
       message: "Couldn't import them: together they're more than 100 MB, far more than an OCF export would be. Check they're the right files.",
+      failure: { stage: "picked", code: "too_large" },
     });
   });
 
   it("a file that isn't a zip, and a .zip beside loose files", async () => {
-    expect(await importOcf([{ name: "x.zip", bytes: new TextEncoder().encode('{"not": "a zip"}') }])).toEqual({
+    expect(await importOcf([{ name: "x.zip", bytes: new TextEncoder().encode('{"not": "a zip"}') }])).toMatchObject({
       ok: false,
       message: "Couldn't read x.zip. It isn't a zip file this page can read: it has no zip directory.",
+      failure: { stage: "zip", code: "not_a_zip" },
     });
-    expect(await importOcf([{ name: "a.zip", bytes: fixture("quillfern-zip.zip") }, { name: "Manifest.ocf.json", bytes: new Uint8Array() }])).toEqual({
+    expect(await importOcf([{ name: "a.zip", bytes: fixture("quillfern-zip.zip") }, { name: "Manifest.ocf.json", bytes: new Uint8Array() }])).toMatchObject({
       ok: false,
       message: "Open a .zip on its own, or the package's .ocf.json files together, not both.",
+      failure: { stage: "picked", code: "zip_beside_files" },
     });
   });
 });

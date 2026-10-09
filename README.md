@@ -39,7 +39,7 @@ The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entir
 
 Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open-cap-table-coalition.github.io/Open-Cap-Format-OCF/. spillpoint reads files in that format.
 
-Coming next: 1.0, with the API's names reviewed once and settled.
+Coming next: 0.5.0, from your cap table to your term sheet: adding the next round to an imported cap table, and SAFEs beside a note at a sale. Then 1.0, with the API's names reviewed once and settled.
 
 ## In this repository
 
@@ -48,5 +48,6 @@ Coming next: 1.0, with the API's names reviewed once and settled.
 - [`cases`](cases): the locked test cases, each with its inputs, expected values and a plain-English derivation.
 - [`reference`](reference): an independent calculator, using exact fractions and a different method, that produced the expected values.
 - [`docs`](docs): the rules ([`SPEC.md`](docs/SPEC.md)) and every modeling choice with its default ([`ASSUMPTIONS.md`](docs/ASSUMPTIONS.md)).
+- [`scripts/ocf-check.mjs`](scripts/ocf-check.mjs): checks an Open Cap Format export, `pnpm ocf-check export.zip`, and prints only counts and codes, never a name, an id, an amount or a date, so what it prints can be shared without the cap table. Needs Node 22.18 or later.
 
 Licensed under Apache-2.0.

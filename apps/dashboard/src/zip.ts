@@ -14,6 +14,13 @@ export interface ZipEntry {
 
 export class ZipError extends Error {
   override name = "ZipError";
+  /** What's wrong, as a code a summary can share: the message names entries, which can name the company (O15). */
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
 }
 
 /** Compression methods by number, for naming one this page doesn't read (the zip format's own list). */
@@ -39,22 +46,22 @@ export async function readZip(data: Uint8Array): Promise<ZipEntry[]> {
       break;
     }
   }
-  if (end < 0) throw new ZipError("It isn't a zip file this page can read: it has no zip directory.");
+  if (end < 0) throw new ZipError("not_a_zip", "It isn't a zip file this page can read: it has no zip directory.");
   if (view.getUint16(end + 4, true) !== 0 || view.getUint16(end + 6, true) !== 0) {
-    throw new ZipError("It's a zip split across several files. Put it back into one zip first.");
+    throw new ZipError("split_zip", "It's a zip split across several files. Put it back into one zip first.");
   }
   const count = view.getUint16(end + 10, true);
   const size = view.getUint32(end + 12, true);
   const offset = view.getUint32(end + 16, true);
   if (count === 0xffff || size === 0xffffffff || offset === 0xffffffff) {
-    throw new ZipError("It's a Zip64 file, the format for very large zips, which this page doesn't read.");
+    throw new ZipError("zip64", "It's a Zip64 file, the format for very large zips, which this page doesn't read.");
   }
 
   // The whole directory is read first, so the sizes it lists can be checked before anything is inflated.
   const listed: { name: string; flags: number; method: number; crc: number; compressed: number; length: number; local: number }[] = [];
   let at = offset;
   for (let i = 0; i < count; i++) {
-    if (at + 46 > data.length || view.getUint32(at, true) !== CENTRAL) throw new ZipError("Its zip directory is damaged.");
+    if (at + 46 > data.length || view.getUint32(at, true) !== CENTRAL) throw new ZipError("damaged", "Its zip directory is damaged.");
     const nameLength = view.getUint16(at + 28, true);
     listed.push({
       // Windows writes "\" between folders in some zips; this page reads names with "/".
@@ -70,24 +77,24 @@ export async function readZip(data: Uint8Array): Promise<ZipEntry[]> {
   }
   // An OCF export is a few files of JSON; a zip that unzips to far more isn't one, and could fill the browser's memory.
   if (listed.reduce((total, e) => total + e.length, 0) > MOST_BYTES) {
-    throw new ZipError("It unzips to more than 100 MB, far more than an OCF export would be. Check it's the right file.");
+    throw new ZipError("too_large", "It unzips to more than 100 MB, far more than an OCF export would be. Check it's the right file.");
   }
 
   const entries: ZipEntry[] = [];
   for (const { name, flags, method, crc, compressed, length, local } of listed) {
     if (name.endsWith("/")) continue;
-    if (flags & 1) throw new ZipError(`${name} is encrypted in the zip. Unzip it with its password, then open the files.`);
+    if (flags & 1) throw new ZipError("encrypted", `${name} is encrypted in the zip. Unzip it with its password, then open the files.`);
     if (method !== 0 && method !== 8) {
-      throw new ZipError(`${name} is compressed with ${METHODS[method] ?? `method ${method}`}, which this page doesn't read. Zips made by macOS, Windows or the zip command use methods it reads.`);
+      throw new ZipError(`compression_${(METHODS[method] ?? `method_${method}`).replace(/\W+/g, "_")}`, `${name} is compressed with ${METHODS[method] ?? `method ${method}`}, which this page doesn't read. Zips made by macOS, Windows or the zip command use methods it reads.`);
     }
-    if (local + 30 > data.length || view.getUint32(local, true) !== LOCAL) throw new ZipError(`${name}'s place in the zip is damaged.`);
+    if (local + 30 > data.length || view.getUint32(local, true) !== LOCAL) throw new ZipError("damaged", `${name}'s place in the zip is damaged.`);
     // The local header repeats the name and has its own extra field; the sizes come from the directory, which a
     // streaming zip (macOS's, for one) fills in only there.
     const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true);
     const stored = data.subarray(start, start + compressed);
-    if (stored.length !== compressed) throw new ZipError(`${name} is cut short in the zip.`);
+    if (stored.length !== compressed) throw new ZipError("damaged", `${name} is cut short in the zip.`);
     const bytes = method === 0 ? stored : await inflate(stored, name, length);
-    if (bytes.length !== length || crc32(bytes) !== crc) throw new ZipError(`${name} is damaged in the zip: it doesn't match its checksum.`);
+    if (bytes.length !== length || crc32(bytes) !== crc) throw new ZipError("damaged", `${name} is damaged in the zip: it doesn't match its checksum.`);
     entries.push({ name, bytes });
   }
   return entries;
@@ -112,14 +119,14 @@ async function inflate(bytes: Uint8Array, name: string, listedLength: number): P
     try {
       read = await reader.read();
     } catch {
-      throw new ZipError("An entry in the zip is damaged: it doesn't inflate.");
+      throw new ZipError("damaged", "An entry in the zip is damaged: it doesn't inflate.");
     }
     if (read.done) break;
     chunks.push(read.value);
     total += read.value.length;
     if (total > listedLength) {
       await reader.cancel();
-      throw new ZipError(`${name} is damaged in the zip: it inflates to more than its listed size.`);
+      throw new ZipError("inflates_past_size", `${name} is damaged in the zip: it inflates to more than its listed size.`);
     }
   }
   const out = new Uint8Array(total);
