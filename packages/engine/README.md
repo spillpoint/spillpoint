@@ -2,7 +2,7 @@
 
 Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options, warrants, management carve-outs, and SAFEs and convertible notes still outstanding at the sale. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
-It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play.
+It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Or it can read one from an Open Cap Format export *(0.4.0)*.
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
@@ -280,6 +280,125 @@ earnout: $10000000.00, $20000000.00 so far (converts: seed)
 - **The earnout** brings the total to $20M, past the $15M where the fund does better converting. At $20M the fund's 20% as common is worth $4M, so the earnout adds $1M for the fund and $9M for the founder.
 - **A take can be negative.** If a later payment tips a series into converting and that takes from someone what an earlier payment gave them, their take is negative. It is reported as is, and `lowered` names them.
 
+## Reading an Open Cap Format export *(0.4.0)*
+
+Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open-cap-table-coalition.github.io/Open-Cap-Format-OCF/. spillpoint reads files in that format.
+
+`readOcf(files)` reads an OCF package, versions 1.0 to 1.2, and gives the cap table as of its date. OCF records a ledger of what was issued and what happened to it, not how a round was priced, so an import builds no rounds. You pass the package's files, each already parsed from JSON; opening a .zip is up to you.
+
+```js
+import { D, prepare, readCapTable, readOcf, solve, toCents } from "spillpoint";
+
+const usd = (amount) => ({ amount, currency: "USD" });
+const ratio = { numerator: "1", denominator: "1" };
+const files = [
+  {
+    name: "Manifest.ocf.json",
+    content: {
+      file_type: "OCF_MANIFEST_FILE",
+      ocf_version: "1.2.0",
+      as_of: "2025-06-30",
+      issuer: { object_type: "ISSUER", id: "example", legal_name: "Example, Inc." },
+      stakeholders_files: [{ filepath: "Stakeholders.ocf.json" }],
+      stock_classes_files: [{ filepath: "StockClasses.ocf.json" }],
+      transactions_files: [{ filepath: "Transactions.ocf.json" }],
+    },
+  },
+  {
+    name: "Stakeholders.ocf.json",
+    content: {
+      file_type: "OCF_STAKEHOLDERS_FILE",
+      items: [
+        { object_type: "STAKEHOLDER", id: "ana", name: { legal_name: "Ana (founder)" }, stakeholder_type: "INDIVIDUAL" },
+        { object_type: "STAKEHOLDER", id: "fund", name: { legal_name: "Seed Fund" }, stakeholder_type: "INSTITUTION" },
+      ],
+    },
+  },
+  {
+    name: "StockClasses.ocf.json",
+    content: {
+      file_type: "OCF_STOCK_CLASSES_FILE",
+      items: [
+        {
+          object_type: "STOCK_CLASS", id: "common", name: "Common Stock", class_type: "COMMON",
+          default_id_prefix: "CS-", initial_shares_authorized: "20000000", votes_per_share: "1", seniority: "1",
+        },
+        {
+          object_type: "STOCK_CLASS", id: "seed", name: "Seed Preferred", class_type: "PREFERRED",
+          default_id_prefix: "PS-", initial_shares_authorized: "2000000", votes_per_share: "1", seniority: "2",
+          price_per_share: usd("1.50"), liquidation_preference_multiple: "1",
+          conversion_rights: [
+            {
+              type: "STOCK_CLASS_CONVERSION_RIGHT",
+              converts_to_stock_class_id: "common",
+              conversion_mechanism: { type: "RATIO_CONVERSION", conversion_price: usd("1.50"), ratio, rounding_type: "NORMAL" },
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    name: "Transactions.ocf.json",
+    content: {
+      file_type: "OCF_TRANSACTIONS_FILE",
+      items: [
+        {
+          object_type: "TX_STOCK_ISSUANCE", id: "tx-1", date: "2022-01-10", security_id: "cs-1", custom_id: "CS-1",
+          stakeholder_id: "ana", stock_class_id: "common", share_price: usd("0.0001"), quantity: "8000000", security_law_exemptions: [],
+        },
+        {
+          object_type: "TX_STOCK_ISSUANCE", id: "tx-2", date: "2023-05-01", security_id: "ps-1", custom_id: "PS-1",
+          stakeholder_id: "fund", stock_class_id: "seed", share_price: usd("1.50"), quantity: "2000000", security_law_exemptions: [],
+        },
+      ],
+    },
+  },
+];
+
+const imported = readOcf(files);
+console.log(`as of ${imported.as_of}`);
+for (const note of imported.report.notes) console.log(`report: ${note.code}${note.subject ? ` (${note.subject})` : ""}`);
+for (const blank of imported.to_fill) console.log(`to fill in: ${blank.security}'s ${blank.field}`);
+
+// OCF has no participation flag, and Seed gives no cap, so you say which it is.
+imported.cap_table.securities.find((s) => s.id === "seed").participation = "non_participating";
+const { answers } = solve(prepare(readCapTable(imported.cap_table)), new D("20000000"));
+for (const line of answers[0].payout.lines) console.log(`${line.holder} on ${line.security}: $${toCents(line.amount)}`);
+```
+
+Output:
+
+```
+as of 2025-06-30
+report: conversion_rounding_not_modeled (seed)
+report: no_anti_dilution_field (seed)
+report: no_dividend_field
+report: no_conversion_group_field
+report: no_carve_out_field
+report: no_sale_date_field
+to fill in: seed's participation
+ana on common: $16000000.00
+fund on seed: $4000000.00
+```
+
+- **The report** says what OCF couldn't carry, so the import read it a set way: the engine converts without rounding, and Seed has no anti-dilution. And OCF has no field at all for dividends, series that must convert together, a carve-out or the sale's date.
+- **Seed's participation is blank.** OCF gives Seed no participation cap, which could mean non-participating or participating without a cap. Once you say which, the cap table reads like any other.
+- **At $20M the fund converts:** its 20% as common is $4M, more than its $3M preference.
+
+**What an import gives:**
+- `as_of`: the package's date.
+- `cap_table`: the cap table in the input format below, with `null` wherever OCF doesn't settle a term. OCF has no participation flag, no anti-dilution, no cumulative dividends and no conversion groups, so those are left blank or noted.
+- `to_fill`: each blank, for you to fill in before `readCapTable`.
+- `report`: what was read, by object type; what was read and set aside, because it doesn't change payouts (`not_needed`), such as vesting, valuations and legends; and a `notes` line, by code, for each choice the import made.
+
+**Anything it won't read is refused** with an `OcfRefusal`, carrying:
+- its `kind`: `"unsupported"` for valid OCF that spillpoint doesn't model, or `"malformed"` for files that disagree with each other or with OCF
+- a `term` naming the problem
+- the `subject` it's about
+
+Nothing is skipped. The rules, each with its default, are O1 to O12 in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+
 ## What it covers
 
 Items marked *(0.2.0)* or *(0.3.0)* are new in that version.
@@ -424,6 +543,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `readExit(json)`, `readCapTable(json)` | Read and check an input. |
 | `buildCapTables(company)` | Build the cap table after each event. Each comes with the SAFEs and notes still outstanding and what the event worked out. |
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
+| `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
 | `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps, and each note's interest, repayment and conversion. `exitDate` is needed only for dividends and notes. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
@@ -435,6 +555,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 - `InputError`: the input is malformed.
 - `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"later"`, for a term that waits until a case settles it. *(0.2.0: nothing is refused as `"M5"` any more, though the type keeps the value. Milestone names are deprecated and will be removed at 1.0, where a refusal will describe what's unsupported instead.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable.
+- `OcfRefusal` *(0.4.0)*: `readOcf` won't read a package. It carries the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`.
 
 ## License
 

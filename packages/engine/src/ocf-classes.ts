@@ -83,7 +83,8 @@ export function readStockClasses(objects: readonly Json[], notes: Notes): Map<st
       if (!kinds.has(into)) throw malformed("unknown_stock_class", id, `${name} converts into ${into}, which isn't a stock class in the package`);
       if (!kinds.get(into)) throw unsupported("conversion_into_preferred", id, `${name} converts into another preferred class, ${into}; spillpoint converts preferred into common only`);
       const mechanism = required(right, "conversion_mechanism", id);
-      if (right.type !== "STOCK_CLASS_CONVERSION_RIGHT" || !isObject(mechanism) || mechanism.type !== "RATIO_CONVERSION") {
+      // A right that doesn't give its type is read as a stock class's, since it sits on one (OCF's own samples leave it out).
+      if ((right.type != null && right.type !== "STOCK_CLASS_CONVERSION_RIGHT") || !isObject(mechanism) || mechanism.type !== "RATIO_CONVERSION") {
         throw unsupported("class_conversion_mechanism", id, `${name} converts by a mechanism other than a ratio; spillpoint reads ratio conversions only`);
       }
       conversion = { into, price: ratioConversionPrice(mechanism, { id, name, issuePrice }, id, notes) };
