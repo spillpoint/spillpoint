@@ -105,7 +105,7 @@ describe("the breakpoint list", () => {
     const list = await breakpointList();
     const items = within(list).getAllByRole("listitem");
     expect(items).toHaveLength(10);
-    expect(items[0]!.textContent).toContain("$20,000,000");
+    expect(items[0]!.textContent).toContain("$19,999,999.79");
     expect(items[0]!.textContent).toContain("Series B Preferred's preference is paid in full here");
     // Ana holds only common: nothing reaches her until Seed's preference is paid at breakpoint 3.
     const yours = items.map((item) => within(item).queryByText("Changes your payout") !== null);
@@ -140,7 +140,7 @@ describe("the breakpoint list", () => {
     render(<App />);
     const list = await breakpointList();
     fireEvent.click(within(list).getByRole("button", { name: /\$136,069,894/ }));
-    expect(exitBox().value).toBe("$136,069,894");
+    expect(exitBox().value).toBe("$136,069,894.04");
     expect(headline()).toMatch(/^At \$136M you get /);
     expect(within(within(list).getAllByRole("listitem")[8]!).getByText("The exit value is here")).toBeTruthy();
   });
@@ -157,16 +157,16 @@ describe("the slider's marks", () => {
     await breakpointList();
     const marks = screen.getAllByRole("button", { name: /^Breakpoint \d+, at / });
     expect(marks).toHaveLength(10);
-    expect(marks[2]!.getAttribute("aria-label")).toBe("Breakpoint 3, at $39,424,995");
+    expect(marks[2]!.getAttribute("aria-label")).toBe("Breakpoint 3, at $39,424,995.32");
   });
 
   it("shows a mark's exit value and reason when you focus it or point at it", async () => {
     render(<App />);
     await breakpointList();
-    const mark = screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995" });
+    const mark = screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995.32" });
     fireEvent.focus(mark);
     const tip = screen.getByRole("tooltip");
-    expect(tip.textContent).toContain("Breakpoint 3: $39,424,995");
+    expect(tip.textContent).toContain("Breakpoint 3: $39,424,995.32");
     expect(tip.textContent).toContain("are paid in full here");
     expect(mark.getAttribute("aria-describedby")).toBe(tip.id);
     fireEvent.blur(mark);
@@ -178,7 +178,7 @@ describe("the slider's marks", () => {
   it("closes a mark's box with Escape, without moving focus", async () => {
     render(<App />);
     await breakpointList();
-    const mark = screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995" });
+    const mark = screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995.32" });
     act(() => mark.focus());
     expect(screen.getByRole("tooltip")).toBeTruthy();
     fireEvent.keyDown(mark, { key: "Escape" });
@@ -189,8 +189,8 @@ describe("the slider's marks", () => {
   it("moves the exit value to a mark you choose", async () => {
     render(<App />);
     await breakpointList();
-    fireEvent.click(screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995" }));
-    expect(exitBox().value).toBe("$39,424,995");
+    fireEvent.click(screen.getByRole("button", { name: "Breakpoint 3, at $39,424,995.32" }));
+    expect(exitBox().value).toBe("$39,424,995.32");
     // Exactly at breakpoint 3, Seed's preference has taken every dollar: common's share starts just above.
     expect(headline()).toBe("At $39.4M you get $0");
   });
@@ -250,7 +250,7 @@ describe("a warrant coming into the money on a curve (X17), on case 8b (0.3.0 wo
     await screen.findByText("Opened 8b.json.");
     const list = await breakpointList();
     const kink = list.querySelector("ol.breakpoints > li")!;
-    expect(kink.querySelector(".breakpoints__head")!.textContent).toBe("1$1,052,632 ($1.05M)Changes your payout");
+    expect(kink.querySelector(".breakpoints__head")!.textContent).toBe("1$1,052,631.58 ($1.05M)Changes your payout");
     expect(kink.textContent).toContain("The warrant for 200,000 Seed Preferred shares at a $0.50 strike comes into the money here");
     // Investor X gets x × $2,000,000 ÷ ($2,000,000 + 0.1x) below, so $902,500 per $1M at x = $20,000,000 ÷ 19, and
     // 2,000,000 × (x + $100,000) ÷ ($2,200,000 + 0.1x) above, so $824,201 per $1M there.

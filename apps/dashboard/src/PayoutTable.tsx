@@ -10,7 +10,7 @@ import { D } from "spillpoint";
 import type { Answer, PreparedCapTable } from "spillpoint";
 
 import { CARVE_OUT, CARVE_OUT_NAME, classShares, fractionOf, fullyDiluted, holderShares, outstandingNames } from "./capTable.ts";
-import { dollars, dollarsAndCents, percent, shortDollars } from "./format.ts";
+import { dollarsAndCents, percent, shortDollars } from "./format.ts";
 import { dateText } from "./rounds.ts";
 
 type Decimal = D;
@@ -108,7 +108,7 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
                     <span>{percent(proceeds(r.amount))} of the proceeds,</span> <span>{company(r.key, r.shares)}</span>
                   </span>
                 </th>
-                <td className="num">{dollars(r.amount)}</td>
+                <td className="num">{dollarsAndCents(r.amount)}</td>
                 <td className="num share">{percent(proceeds(r.amount))}</td>
                 <td className="num share">{r.shares === null ? <span aria-label={company(r.key, null)}>—</span> : percent(fractionOf(r.shares, fd))}</td>
               </tr>
@@ -117,13 +117,14 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
           <tfoot>
             <tr>
               <th scope="row">Total</th>
-              <td className="num">{dollars(exitValue)}</td>
+              <td className="num">{dollarsAndCents(exitValue)}</td>
               <td className="num share">{percent(new D(1))}</td>
               <td className="num share">{percent(new D(1))}</td>
             </tr>
           </tfoot>
         </table>
       </div>
+      <RoundingNote amounts={rows.map((r) => r.amount)} total={exitValue} />
       <p className="footnote">
         Share of the company is fully diluted: every share, option{pc.warrants.size > 0 ? ", warrant" : ""} and preferred share as converted
         {capTable.unissuedPool.gt(0) ? ", and the unissued option pool" : ""}.
@@ -216,4 +217,20 @@ function classOrder(pc: PreparedCapTable) {
   const common = securities.filter((s) => s.kind === "common");
   const preferred = securities.filter((s) => s.kind === "preferred").sort((a, b) => rank.get(b.id)! - rank.get(a.id)!);
   return [...common, ...byStrike("option"), ...byStrike("warrant"), ...preferred];
+}
+
+/**
+ * Each payout is rounded half-up to the cent, as the engine's toCents and the locked cases are, and the total row is
+ * the exit value. When the rounded payouts don't add up to it, a quiet line says by how much.
+ */
+function RoundingNote({ amounts, total }: { amounts: Decimal[]; total: Decimal }) {
+  const cent = (v: Decimal) => v.toDecimalPlaces(2, D.ROUND_HALF_UP);
+  const sum = amounts.reduce((t, a) => t.plus(cent(a)), new D(0));
+  const off = sum.minus(cent(total)).abs().times(100).toNumber();
+  if (off === 0) return null;
+  return (
+    <p className="footnote">
+      Each payout is rounded to the cent, so together they come to {dollarsAndCents(sum)}, {off === 1 ? "1 cent" : `${off} cents`} from the total.
+    </p>
+  );
 }

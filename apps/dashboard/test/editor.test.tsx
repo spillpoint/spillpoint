@@ -10,7 +10,7 @@ import { D } from "spillpoint";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
-import { dollars } from "../src/format.ts";
+import { dollarsAndCents } from "../src/format.ts";
 import { analysed } from "./analysis.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
@@ -86,7 +86,7 @@ describe("building case 6b from scratch", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
       }
     }
   });
@@ -97,13 +97,13 @@ describe("building case 6b from scratch", () => {
     const list = await analysed();
     const items = within(list).getAllByRole("listitem");
     expect(items.map((i) => i.querySelector(".breakpoints__value")!.textContent!.split(" ")[0])).toEqual(
-      expected.breakpoints.map((b: { exact: string }) => dollars(new D(b.exact))),
+      expected.breakpoints.map((b: { exact: string }) => dollarsAndCents(new D(b.exact))),
     );
     const jump = items[1]!;
     expect(within(jump).getByText("Payouts jump")).toBeTruthy();
     // Below $30M the group keeps its preferences and common shares $26M: Founder A has 6 of 8 million common.
     // Above it everyone is common: 6 of 10 million shares of $30M.
-    expect(jump.querySelector(".breakpoints__yours")!.textContent).toBe("For you: your payout drops $1,500,000 here, from $19,500,000 to $18,000,000.");
+    expect(jump.querySelector(".breakpoints__yours")!.textContent).toBe("For you: your payout drops $1,500,000.00 here, from $19,500,000.00 to $18,000,000.00.");
   });
 });
 
@@ -289,7 +289,7 @@ describe("SAFEs and notes still outstanding (M5k)", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
       }
     }
   }
@@ -388,7 +388,7 @@ describe("warrants and cumulative dividends (M5k2)", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
       }
     }
   }
@@ -482,7 +482,7 @@ describe("a management carve-out (M5k3)", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollars(new D(amount)))]);
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
       }
     }
   });
