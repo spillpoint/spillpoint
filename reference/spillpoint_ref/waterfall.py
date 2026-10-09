@@ -10,9 +10,13 @@ off flipping its own decision.
 
 Option exercise is not a free choice: it follows the common price (E16).
 Under each set of the other decisions, the option classes settle on the
-exercise set where no class gains by switching. A conversion group decides
-first (E17): for each of its two choices everyone else settles, and the
-group votes on the two settled outcomes.
+exercise set where no class gains by switching. A SAFE's greater-of comes
+last (E20): under each set of the series', warrants' and notes' decisions, the
+SAFEs take the greater of their two amounts, as their text pays them given
+those decisions, and the series, warrants and notes are stable among
+themselves with the SAFEs re-settled under each choice. A conversion group
+decides first (E17): for each of its two choices everyone else settles, and
+the group votes on the two settled outcomes.
 
 This is deliberately a different method from the engine, which solves for
 the stable decisions directly.
@@ -561,6 +565,10 @@ class Waterfall:
         """These decisions with option exercise settled for them (E16)."""
         return _AtExit(self, exit_value).settle(bits)
 
+    def followed(self, exit_value, bits):
+        """These decisions with the SAFEs' greater-of and option exercise settled after them (E20, E16)."""
+        return _AtExit(self, exit_value).follow(bits)
+
     def split_to_lines(self, total):
         """Per holder × security amounts. A security's total splits pro rata by shares."""
         out = {}
@@ -621,14 +629,16 @@ def _flip(bits, i):
 
 
 class _AtExit:
-    """Every combination of decisions at one exit value, under E16 and E17.
+    """Every combination of decisions at one exit value, under E16, E17 and E20.
 
     Option classes follow the common price: they are settled, not chosen. The
-    free decision-makers (series outside a group, warrants, SAFEs, notes) are
-    stable when none gains by switching, with the options re-settled under
-    each choice. A conversion group decides first: for each of its two
-    choices the free decision-makers settle, and the group votes (E11) on the
-    two settled outcomes.
+    SAFEs' greater-of comes last (E20): under each set of the other decisions,
+    each SAFE takes the greater of its Cash-Out and Conversion Amounts, as its
+    text pays it given those decisions. The free decision-makers (series
+    outside a group, warrants, notes) are stable when none gains by switching,
+    with the SAFEs and options re-settled under each choice. A conversion group
+    decides first: for each of its two choices the free decision-makers settle,
+    and the group votes (E11) on the two settled outcomes.
     """
 
     def __init__(self, wf, exit_value):
@@ -636,8 +646,10 @@ class _AtExit:
         self.x = Fraction(exit_value)
         self.results = {}
         self.settled_cache = {}
+        self.followed_cache = {}
         self.options = [i for i, p in enumerate(wf.players) if p in wf.options]
-        deciders = [i for i in range(len(wf.players)) if i not in self.options]
+        self.safes = [i for i, p in enumerate(wf.players) if p in wf.safe_ids]
+        deciders = [i for i in range(len(wf.players)) if i not in self.options and i not in self.safes]
         self.group = [i for i in deciders if wf.players[i] in wf.vote]
         self.free = [i for i in deciders if i not in self.group]
         self.instruments = set(wf.safe_ids) | set(wf.note_ids)
@@ -670,19 +682,51 @@ class _AtExit:
             self.settled_cache[key] = min(fits, key=lambda b: (sum(b), b))
         return self.settled_cache[key]
 
-    def stable_free(self, bits):
-        """No free decision-maker gains by switching.
+    def safe_settled(self, bits, i):
+        """A SAFE takes its Conversion Amount only when that strictly pays more (E5, X16), with the options re-settled."""
+        here, there = self.value(bits, i), self.value(self.settle(_flip(bits, i)), i)
+        return there < here or (there == here and not bits[i])
 
-        A SAFE takes its Conversion Amount, and a note converts, only when that
-        strictly pays more (E5, X16): where it is indifferent but its choice
-        changes what others get, as when one SAFE's conversion enlarges the
-        Liquidity Capitalization another SAFE's shares are counted on, it takes
-        its Cash-Out Amount or repayment, so the outcome from below holds at
-        exactly that exit value, as in E13.
+    def follow(self, bits):
+        """The SAFEs' greater-of, last (E20), with the options settled under each.
+
+        Given every other decision, each SAFE takes the greater of its two
+        amounts as its text pays it; with several, none gains by switching
+        (X13). Where one is indifferent but its choice changes what another
+        gets, it takes its Cash-Out Amount (X16). Several SAFEs can settle more
+        than one way, each converting only because the others do: then they
+        take the fewest conversions (E5), the outcome from below, since none
+        gains by converting alone.
+        """
+        key = tuple(v for i, v in enumerate(bits) if i not in self.options and i not in self.safes)
+        if key not in self.followed_cache:
+            fits = []
+            for sbits in itertools.product((False, True), repeat=len(self.safes)):
+                b = list(bits)
+                for i, v in zip(self.safes, sbits):
+                    b[i] = v
+                b = self.settle(tuple(b))
+                if all(self.safe_settled(b, i) for i in self.safes):
+                    fits.append(b)
+            if not fits:
+                raise ValueError(f"the SAFEs' greater-of doesn't settle at exit {self.x}")
+            self.followed_cache[key] = min(fits, key=lambda b: (sum(b), b))
+        return self.followed_cache[key]
+
+    def stable_free(self, bits):
+        """No free decision-maker gains by switching, with the SAFEs and options re-settled after it (E20, E16).
+
+        A note or a series converts only when that strictly pays more (E5,
+        X16, E20): where it is indifferent but its choice changes what others
+        get, as when its conversion enlarges the Liquidity Capitalization a
+        SAFE's shares are counted on (X1, X18), it takes its repayment or keeps
+        its preference, so the outcome from below holds at exactly that exit
+        value, as in E13.
         """
         for i in self.free:
-            here, there = self.value(bits, i), self.value(self.settle(_flip(bits, i)), i)
-            if there > here or (there == here and bits[i] and self.wf.players[i] in self.instruments):
+            here, there = self.value(bits, i), self.value(self.follow(_flip(bits, i)), i)
+            player = self.wf.players[i]
+            if there > here or (there == here and bits[i] and (player in self.instruments or player in self.wf.converters)):
                 return False
         return True
 
@@ -694,7 +738,7 @@ class _AtExit:
                 b[i] = v
             for i, v in zip(self.free, fbits):
                 b[i] = v
-            b = self.settle(tuple(b))
+            b = self.follow(tuple(b))
             if self.stable_free(b):
                 out.append(b)
         return out

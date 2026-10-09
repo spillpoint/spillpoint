@@ -73,9 +73,12 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
     (bits_r, _), = sides[1]
     lo, hi = bracket
     xs = set()
-    for i, (u, v) in enumerate(zip(bits_l, bits_r)):
-        if u == v:
-            continue
+    changed = [i for i, (u, v) in enumerate(zip(bits_l, bits_r)) if u != v]
+    # E20: the SAFEs' greater-of comes last, so where a series, warrant or note switches, the SAFEs that switch with it
+    # follow it, and the jump is where that decision-maker is indifferent, with the SAFEs re-settled under each choice.
+    leading = [i for i in changed if wf.players[i] not in wf.safe_ids]
+    for i in leading or changed:
+        u, v = bits_l[i], bits_r[i]
         player = wf.players[i]
         flipped = bits_l[:i] + (not u,) + bits_l[i + 1 :]
         instrument = next((y for y in wf.safes + wf.notes if y["id"] == player), None)
@@ -92,9 +95,12 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
                 (lambda bits, e, h=h, i=i: wf.holder_group_payout(wf.group_choice_totals(e)[bits[i]], player, h))
                 for h in wf.voters[player]
             ]
-        else:
+        elif player in wf.safe_ids:
             # E16: options re-settle under each choice.
             values = [lambda bits, e: wf.player_value(wf.run(e, wf.settled(e, bits))[0], player)]
+        else:
+            # E20, E16: the SAFEs' greater-of and the options re-settle under each choice.
+            values = [lambda bits, e: wf.player_value(wf.run(e, wf.followed(e, bits))[0], player)]
         for value in values:
             for x0, x1 in (pts_left, pts_right):
                 m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
@@ -358,11 +364,36 @@ def reasons(wf, x, sa, sb, jumps=False):
                 text = f"{what} falls to the {usd_price(strike, 2)} strike; the warrant for {n:,} {what} shares stops being exercised."
             out.append({"code": "warrant_in_the_money", "security": wid, "strike": exact(strike), "text": text})
 
+    # E20: the SAFEs' greater-of comes last. Where a series or note switches and SAFEs switch with it, the SAFEs follow
+    # it: a series converting, or a note converting, joins their Liquidity Capitalization (X1, X18), so they're paid as
+    # their terms then pay them. Warrants are counted whether or not they're exercised (R29), so they change nothing there.
+    leaders_changed = [p for p in wf.converters + wf.note_ids if da[p] != db[p]]
+    safes_following = [f for f in wf.safes if da[f["id"]] != db[f["id"]]] if leaders_changed else []
+    price_after = wf.run(x, wf.settled(x, bits_b))[1]
+
     for pid in wf.converters:
         if da[pid] != db[pid]:
             members = wf.members[pid]
             n_conv = sum(units_b[s] * wf.ratio[s] for s in members)
             as_conv = n_conv * price
+            if len(members) == 1 and db[pid] and safes_following and jumps:
+                sec = ct.securities[pid]
+                keep = (
+                    f"its {exact(sec['preference_multiple'])}x preference of {usd(pref_b(pid))}"
+                    if sec["participation"] == "non_participating"
+                    else f"its capped payout of {usd(cap_b(pid))} ({exact(sec['cap_multiple'])}x its original issue price)"
+                )
+                names = _join(f"{ct.holders[f['holder']]}'s SAFE" for f in safes_following)
+                one = len(safes_following) == 1
+                text = (
+                    f"{sec['name']} converts to common: with the SAFEs paid as their terms then pay them, converting pays it more "
+                    f"above this exit value. Converting puts it in the SAFEs' Liquidity Capitalization, so {names} then "
+                    f"{'takes its' if one else 'take their'} Conversion Amount{'' if one else 's'}. At this exit value its as-converted share that way "
+                    f"({count(n_conv)} common shares at {usd_price(price_after)} each = {usd(n_conv * price_after)}) equals {keep}; "
+                    f"below it, staying preferred pays more."
+                )
+                out.append({"code": "series_converts", "security": pid, "converts": True, "text": text})
+                continue
             if len(members) == 1:
                 sec = ct.securities[pid]
                 if db[pid]:
@@ -473,6 +504,17 @@ def reasons(wf, x, sa, sb, jumps=False):
             n = wf.safe_conversion_shares(f, converted_b, together, wf.notes_converting(db))
             # Its shares are valued at the common price once it converts, which differs from below at a jump.
             price_b = wf.run(x, wf.settled(x, bits_b))[1]
+            if db[fid] and f in safes_following:
+                # E20: it follows the series, warrant or note that switched here, which changed its count.
+                who = _join(_name(ct, p) if p in ct.securities else f"{ct.holders[next(n['holder'] for n in wf.notes if n['id'] == p)]}'s note" for p in leaders_changed)
+                text = (
+                    f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount, following {who}: its "
+                    f"Liquidity Capitalization now counts {'it' if len(leaders_changed) == 1 else 'them'}, so its {count(n)} conversion shares "
+                    f"({usd(f['purchase_amount'])} ÷ the Liquidity Price of {usd_price(lp, 6)}) are worth {usd_price(price_b, 6)} each just "
+                    f"above this exit value, {usd(n * price_b)} in all, more than its {usd(f['purchase_amount'])} purchase amount."
+                )
+                out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})
+                continue
             if db[fid]:
                 text = (
                     f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount. Its "
