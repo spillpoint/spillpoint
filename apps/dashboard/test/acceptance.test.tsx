@@ -107,7 +107,7 @@ it("builds the README's rounds example by hand, from a blank company, and gets t
   // The breakpoints are worked out in the background once the last edit settles: wait for them, not a fixed second.
   const items = [...(await analysed()).querySelectorAll("ol.breakpoints > li")];
   expect(items).toHaveLength(3);
-  expect(items.map((li) => li.querySelector(".breakpoints__value")!.textContent!.split(" ")[0])).toEqual(["$5,999,998", "$14,099,998", "$22,499,998"]);
+  expect(items.map((li) => li.querySelector(".breakpoints__value")!.textContent!.split(" ")[0])).toEqual(["$5,999,998.36", "$14,099,998.36", "$22,499,998.27"]);
   expect(items.map((li) => li.querySelector(".breakpoints__reason")!.textContent)).toEqual(README.reasons);
 
   // And to the cent, from the saved file: the breakpoints, and the payouts at $20M and $60M.

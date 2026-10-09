@@ -8,7 +8,7 @@ import type React from "react";
 import { D } from "spillpoint";
 
 import type { BreakpointView } from "./analysis.ts";
-import { dollars, parseDollars, shortDollars } from "./format.ts";
+import { dollarsAndCents, exitValueText, parseDollars, shortDollars } from "./format.ts";
 import { STEPS, logScale, positionOf, valueAt } from "./scale.ts";
 
 type Decimal = D;
@@ -23,11 +23,11 @@ interface Props {
 
 export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
   const scale = logScale(range);
-  const [typed, setTyped] = useState(dollars(value));
+  const [typed, setTyped] = useState(exitValueText(value));
   const [typedError, setTypedError] = useState<string | null>(null);
 
   // Keep the box in step when the slider moves it.
-  useEffect(() => setTyped(dollars(value)), [value]);
+  useEffect(() => setTyped(exitValueText(value)), [value]);
 
   const commitTyped = () => {
     const parsed = parseDollars(typed);
@@ -95,7 +95,7 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
               type="button"
               className="exit-value__tick"
               style={{ left: `${(positionOf(scale, x) / STEPS) * 100}%` }}
-              aria-label={`Breakpoint ${n}, at ${dollars(x)}`}
+              aria-label={`Breakpoint ${n}, at ${dollarsAndCents(x)}`}
               aria-describedby={shown === n ? "tick-tip" : undefined}
               onMouseEnter={() => setShown(n)}
               onMouseLeave={() => setShown(null)}
@@ -109,7 +109,7 @@ export function ExitSlider({ range, value, onChange, breakpoints }: Props) {
             .map(({ b, n, x }) => (
               <div key="tip" id="tick-tip" role="tooltip" className="tick-tip" style={tipPlace((positionOf(scale, x) / STEPS) * 100)}>
                 <strong>
-                  Breakpoint {n}: {dollars(x)}
+                  Breakpoint {n}: {dollarsAndCents(x)}
                 </strong>
                 {b.reasons.map((r) => (
                   <span key={r.code + r.subject.join("+")}>{r.text}</span>

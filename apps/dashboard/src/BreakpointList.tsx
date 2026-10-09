@@ -43,7 +43,7 @@ export function BreakpointList({ breakpoints, changes, yourName, exitValue, onEx
                     {i + 1}
                   </span>
                   <span className="breakpoints__value">
-                    {dollars(x)} <span className="muted">({shortDollars(x)})</span>
+                    {dollarsAndCents(x)} <span className="muted">({shortDollars(x)})</span>
                   </span>
                   {change && <span className="tag">Changes your payout</span>}
                   {b.jumps && <span className="tag tag--quiet">Payouts jump</span>}
@@ -70,19 +70,18 @@ const CURVE_WHY = "because the carve-out's claim grows with the exit value";
 /**
  * One line on how a breakpoint changes your payout. A bend compares what each
  * extra $1M adds just above the breakpoint with just below it; a jump gives
- * its size. Whole dollars, unless they would round two different amounts to
- * the same figure, then cents. On a curved side the rate is the one right at
+ * its size, to the cent, as the payouts are. A rate is approximate: whole
+ * dollars, unless they would round two different rates to the same figure,
+ * then cents. On a curved side the rate is the one right at
  * the breakpoint, so it's "about" that, and the line says why it keeps
  * changing, in the wording approved in the M5d review (X17).
  */
 function forYou(change: Change): string {
   if (change.kind === "jump") {
-    // The size is the difference of the two amounts as shown, so the line adds up as written.
-    const cents = dollars(change.from) === dollars(change.to);
-    const shown = (v: D) => v.toDecimalPlaces(cents ? 2 : 0, D.ROUND_HALF_UP);
-    const money = cents ? dollarsAndCents : dollars;
+    // The size is the difference of the two amounts as shown, to the cent, so the line adds up as written.
+    const shown = (v: D) => v.toDecimalPlaces(2, D.ROUND_HALF_UP);
     const by = shown(change.to).minus(shown(change.from));
-    return `For you: your payout ${by.isNegative() ? "drops" : "jumps"} ${money(by.abs())} here, from ${money(change.from)} to ${money(change.to)}.`;
+    return `For you: your payout ${by.isNegative() ? "drops" : "jumps"} ${dollarsAndCents(by.abs())} here, from ${dollarsAndCents(change.from)} to ${dollarsAndCents(change.to)}.`;
   }
   const money = dollars(change.after) === dollars(change.before) ? dollarsAndCents : dollars;
   const direction = change.after.gt(change.before) ? "up" : "down";
