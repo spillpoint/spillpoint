@@ -3,41 +3,264 @@
   "worked_by": "hand (DERIVATION.md)",
   "base": "ocf-01-larkspur",
   "fixtures": {
-    "version-2.ocf.json": { "refused": { "kind": "unsupported", "term": "ocf_version", "subject": "2.0.0" } },
-    "missing-file.ocf.json": { "refused": { "kind": "malformed", "term": "missing_file", "subject": "Financings.ocf.json" } },
-    "currency.ocf.json": { "refused": { "kind": "unsupported", "term": "currency", "subject": "tx-r-currency" } },
-    "after-as-of.ocf.json": { "refused": { "kind": "malformed", "term": "after_as_of", "subject": "tx-r-late" } },
-    "unknown-object-type.ocf.json": { "refused": { "kind": "unsupported", "term": "unknown_object_type", "subject": "tx-r-gift" } },
-    "duplicate-id.ocf.json": { "refused": { "kind": "malformed", "term": "duplicate_id", "subject": "tx-01" } },
-    "unknown-stakeholder.ocf.json": { "refused": { "kind": "malformed", "term": "unknown_stakeholder", "subject": "tx-r-who" } },
-    "unknown-stock-class.ocf.json": { "refused": { "kind": "malformed", "term": "unknown_stock_class", "subject": "tx-r-class" } },
-    "unknown-stock-plan.ocf.json": { "refused": { "kind": "malformed", "term": "unknown_stock_plan", "subject": "tx-r-plan" } },
-    "unknown-security.ocf.json": { "refused": { "kind": "malformed", "term": "unknown_security", "subject": "tx-r-cancel-unknown" } },
-    "closed-security.ocf.json": { "refused": { "kind": "malformed", "term": "closed_security", "subject": "tx-r-cancel-closed" } },
-    "quantities-dont-reconcile.ocf.json": { "refused": { "kind": "malformed", "term": "quantities_dont_reconcile", "subject": "tx-r-transfer" } },
-    "split-of-preferred.ocf.json": { "refused": { "kind": "unsupported", "term": "split_of_preferred", "subject": "tx-r-split-preferred" } },
-    "split-with-derivatives.ocf.json": { "refused": { "kind": "unsupported", "term": "split_with_derivatives", "subject": "tx-r-split-common" } },
-    "stock-appreciation-right.ocf.json": { "refused": { "kind": "unsupported", "term": "stock_appreciation_right", "subject": "tx-r-sar" } },
-    "return-to-pool-conflict.ocf.json": { "refused": { "kind": "unsupported", "term": "return_to_pool_conflict", "subject": "tx-r-return" } },
-    "pool-overdrawn.ocf.json": { "refused": { "kind": "malformed", "term": "pool_overdrawn", "subject": "plan-2023" } },
-    "safe-exit-multiple.ocf.json": { "refused": { "kind": "unsupported", "term": "safe_exit_multiple", "subject": "tx-r-safe-multiple" } },
-    "convertible-seniority.ocf.json": { "refused": { "kind": "unsupported", "term": "convertible_seniority", "subject": "tx-r-seniority" } },
-    "convertible-mechanism-mismatch.ocf.json": { "refused": { "kind": "malformed", "term": "convertible_mechanism_mismatch", "subject": "tx-r-mismatch" } },
-    "convertible-security.ocf.json": { "refused": { "kind": "unsupported", "term": "convertible_security", "subject": "tx-r-general" } },
-    "convertible-triggers-differ.ocf.json": { "refused": { "kind": "unsupported", "term": "convertible_triggers_differ", "subject": "tx-r-triggers" } },
-    "note-rate-periods.ocf.json": { "refused": { "kind": "unsupported", "term": "note_rate_periods", "subject": "tx-r-note-rate-periods" } },
-    "note-day-count.ocf.json": { "refused": { "kind": "unsupported", "term": "note_day_count", "subject": "tx-r-note-day-count" } },
-    "note-compounding.ocf.json": { "refused": { "kind": "unsupported", "term": "note_compounding", "subject": "tx-r-note-compounding" } },
-    "note-cash-interest.ocf.json": { "refused": { "kind": "unsupported", "term": "note_cash_interest", "subject": "tx-r-note-cash-interest" } },
-    "note-accrual-period.ocf.json": { "refused": { "kind": "unsupported", "term": "note_accrual_period", "subject": "tx-r-note-accrual-period" } },
-    "note-mfn.ocf.json": { "refused": { "kind": "unsupported", "term": "note_mfn", "subject": "tx-r-note-mfn" } },
-    "warrant-mechanism.ocf.json": { "refused": { "kind": "unsupported", "term": "warrant_mechanism", "subject": "tx-r-warrant-valuation" } },
-    "warrant-quantity.ocf.json": { "refused": { "kind": "malformed", "term": "warrant_quantity", "subject": "tx-r-warrant-quantity" } },
-    "class-conversion-mechanism.ocf.json": { "refused": { "kind": "unsupported", "term": "class_conversion_mechanism", "subject": "cls-r-fixed" } },
-    "several-conversion-rights.ocf.json": { "refused": { "kind": "unsupported", "term": "several_conversion_rights", "subject": "cls-r-two" } },
-    "conversion-into-preferred.ocf.json": { "refused": { "kind": "unsupported", "term": "conversion_into_preferred", "subject": "cls-r-into-seed" } },
-    "conversion-ratio-mismatch.ocf.json": { "refused": { "kind": "malformed", "term": "conversion_ratio_mismatch", "subject": "cls-r-ratio" } },
-    "conversion-ratio-loose.ocf.json": { "refused": { "kind": "malformed", "term": "conversion_ratio_mismatch", "subject": "cls-r-loose" } },
-    "cap-below-preference.ocf.json": { "refused": { "kind": "unsupported", "term": "cap_below_preference", "subject": "cls-r-cap" } }
+    "version-2.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "ocf_version",
+        "subject": "2.0.0"
+      }
+    },
+    "missing-file.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "missing_file",
+        "subject": "Financings.ocf.json"
+      }
+    },
+    "currency.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "currency",
+        "subject": "tx-r-currency"
+      }
+    },
+    "after-as-of.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "after_as_of",
+        "subject": "tx-r-late"
+      }
+    },
+    "unknown-object-type.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "unknown_object_type",
+        "subject": "tx-r-gift"
+      }
+    },
+    "duplicate-id.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "duplicate_id",
+        "subject": "tx-01"
+      }
+    },
+    "unknown-stakeholder.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "unknown_stakeholder",
+        "subject": "tx-r-who"
+      }
+    },
+    "unknown-stock-class.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "unknown_stock_class",
+        "subject": "tx-r-class"
+      }
+    },
+    "unknown-stock-plan.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "unknown_stock_plan",
+        "subject": "tx-r-plan"
+      }
+    },
+    "unknown-security.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "unknown_security",
+        "subject": "tx-r-cancel-unknown"
+      }
+    },
+    "closed-security.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "closed_security",
+        "subject": "tx-r-cancel-closed"
+      }
+    },
+    "quantities-dont-reconcile.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "quantities_dont_reconcile",
+        "subject": "tx-r-transfer"
+      }
+    },
+    "split-of-preferred.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "split_of_preferred",
+        "subject": "tx-r-split-preferred"
+      }
+    },
+    "split-with-derivatives.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "split_with_derivatives",
+        "subject": "tx-r-split-common"
+      }
+    },
+    "stock-appreciation-right.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "stock_appreciation_right",
+        "subject": "tx-r-sar"
+      }
+    },
+    "return-to-pool-conflict.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "return_to_pool_conflict",
+        "subject": "tx-r-return"
+      }
+    },
+    "pool-overdrawn.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "pool_overdrawn",
+        "subject": "plan-2023"
+      }
+    },
+    "safe-exit-multiple.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "safe_exit_multiple",
+        "subject": "tx-r-safe-multiple"
+      }
+    },
+    "convertible-seniority.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "convertible_seniority",
+        "subject": "tx-r-seniority"
+      }
+    },
+    "convertible-mechanism-mismatch.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "convertible_mechanism_mismatch",
+        "subject": "tx-r-mismatch"
+      }
+    },
+    "convertible-security.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "convertible_security",
+        "subject": "tx-r-general"
+      }
+    },
+    "convertible-triggers-differ.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "convertible_triggers_differ",
+        "subject": "tx-r-triggers"
+      }
+    },
+    "note-rate-periods.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_rate_periods",
+        "subject": "tx-r-note-rate-periods"
+      }
+    },
+    "note-day-count.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_day_count",
+        "subject": "tx-r-note-day-count"
+      }
+    },
+    "note-compounding.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_compounding",
+        "subject": "tx-r-note-compounding"
+      }
+    },
+    "note-cash-interest.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_cash_interest",
+        "subject": "tx-r-note-cash-interest"
+      }
+    },
+    "note-accrual-period.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_accrual_period",
+        "subject": "tx-r-note-accrual-period"
+      }
+    },
+    "note-mfn.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_mfn",
+        "subject": "tx-r-note-mfn"
+      }
+    },
+    "warrant-mechanism.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "warrant_mechanism",
+        "subject": "tx-r-warrant-valuation"
+      }
+    },
+    "warrant-quantity.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "warrant_quantity",
+        "subject": "tx-r-warrant-quantity"
+      }
+    },
+    "class-conversion-mechanism.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "class_conversion_mechanism",
+        "subject": "cls-r-fixed"
+      }
+    },
+    "several-conversion-rights.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "several_conversion_rights",
+        "subject": "cls-r-two"
+      }
+    },
+    "conversion-into-preferred.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "conversion_into_preferred",
+        "subject": "cls-r-into-seed"
+      }
+    },
+    "conversion-ratio-mismatch.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "conversion_ratio_mismatch",
+        "subject": "cls-r-ratio"
+      }
+    },
+    "conversion-ratio-loose.ocf.json": {
+      "refused": {
+        "kind": "malformed",
+        "term": "conversion_ratio_mismatch",
+        "subject": "cls-r-loose"
+      }
+    },
+    "cap-below-preference.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "cap_below_preference",
+        "subject": "cls-r-cap"
+      }
+    },
+    "note-base-counts-other-convertibles.ocf.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "note_base_counts_other_convertibles",
+        "subject": "tx-f-note-others"
+      }
+    }
   }
 }

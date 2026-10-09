@@ -1,0 +1,43 @@
+{
+  "case": "ocf-13-note-base",
+  "worked_by": "hand (DERIVATION.md)",
+  "base": "ocf-12-ledger",
+  "fixtures": {
+    "note-alone-counts-other-convertibles.ocf.json": {
+      "adds": {
+        "read": {
+          "TX_CONVERTIBLE_ISSUANCE": 1
+        },
+        "unconverted_notes": [
+          {
+            "id": "note-f-alone",
+            "holder": "fund_u",
+            "principal": "500000",
+            "interest_rate": "0.08",
+            "interest_method": "simple",
+            "issue_date": "2025-09-30",
+            "valuation_cap": "30000000",
+            "cap_type": "pre_money",
+            "conversion_base": "with_pool",
+            "discount": "0.2",
+            "repayment_multiple": "1"
+          }
+        ],
+        "notes": [
+          {
+            "code": "not_in_manifest",
+            "subject": "note-alone-counts-other-convertibles.ocf.json"
+          },
+          {
+            "code": "note_cap_read_as_pre_money",
+            "subject": "note-f-alone"
+          },
+          {
+            "code": "note_base_other_convertibles_ignored",
+            "subject": "note-f-alone"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -114,8 +114,9 @@ describe("the exit cases the engine runs", () => {
 });
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
-  // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too. Kept for the next case refused.
-  const refused: [string, string, Milestone][] = [];
+  // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too. 13i, a SAFE beside a note (X18),
+  // is refused from 05c1 until the engine reads it in 05c2.
+  const refused: [string, string, Milestone][] = [["edge-13i-note-beside-a-safe", "note_with_safe_or_carve_out", "later"]];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
@@ -131,7 +132,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     expect(OCF_CASES).toEqual([
       "ocf-01-larkspur", "ocf-02-not-needed", "ocf-03-refused", "ocf-04-to-fill",
       "ocf-05-edge-04", "ocf-06-edge-05a", "ocf-07-edge-07", "ocf-08-edge-08", "ocf-09-edge-12b", "ocf-10-edge-13a",
-      "ocf-11-millrace", "ocf-12-ledger",
+      "ocf-11-millrace", "ocf-12-ledger", "ocf-13-note-base",
     ]);
   });
 

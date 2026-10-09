@@ -1,6 +1,6 @@
 # OCF case 03, refused: derivation
 
-One small OCF file for each thing the importer refuses: 36 in all, 22 unsupported and 14 malformed. A SAFE whose cap gives no pre- or post-money timing was here, but OCF makes the timing optional, so it's now a term to fill in, in case 04 (Jordan, 04a2 review). Each fixture is added to case 01's package, Larkspur Instruments, as a file of its own; the two manifests here replace Larkspur's. Each has exactly one problem, so each result is one refusal: its kind, a term naming it, and the object it's about.
+One small OCF file for each thing the importer refuses: 37 in all, 23 unsupported and 14 malformed. A SAFE whose cap gives no pre- or post-money timing was here, but OCF makes the timing optional, so it's now a term to fill in, in case 04 (Jordan, 04a2 review). Each fixture is added to case 01's package, Larkspur Instruments, as a file of its own; the two manifests here replace Larkspur's. Each has exactly one problem, so each result is one refusal: its kind, a term naming it, and the object it's about.
 
 **Two kinds of refusal:**
 - **Unsupported:** valid OCF that spillpoint doesn't model yet, so an import would change payouts without saying so. On the later list where the plan says.
@@ -53,6 +53,7 @@ One small OCF file for each thing the importer refuses: 36 in all, 22 unsupporte
 | `note-cash-interest` | a note paying interest in cash | unsupported, on the later list |
 | `note-accrual-period` | a note accruing monthly | unsupported, on the later list |
 | `note-mfn` | an MFN note | unsupported, on the later list |
+| `note-base-counts-other-convertibles` | a note whose capitalization rules count other converting securities, beside Larkspur's two SAFEs and its note | unsupported: neither base spillpoint models counts them, so neither would be right (O9; Jordan's 0.5.0 answer 11). With nothing else outstanding the flag changes nothing, and the note is read: case 13. The engine refuses it from 05c2 |
 
 ## Warrants (O7)
 

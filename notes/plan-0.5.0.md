@@ -190,6 +190,10 @@ Each fix that changes what's read comes with a fixture or a case, as in 04a.
 
 Version bump, release notes, both READMEs, and the packed build checked as 03j and 04g did. You pack it and run the README examples before publishing.
 
+**Polish (Jordan, after #69):**
+- **A round's price shows six places even when exact** ("$4.000000 a share"): use the conversion prices' rule, to the cent when exact.
+- **"Fill this in: it can't be blank" should name the field,** for example "Series B's pre-money valuation can't be blank."
+
 **Changed behavior, for the release notes** (Jordan, 05b2 review): a sale on a table built from rounds now applies the same at-a-sale limits as a cap table entered directly (X12–X15), so some inputs 0.4.0 paid are now refused. `readInputs` didn't apply them to a table built from rounds before.
 
 ## Questions
