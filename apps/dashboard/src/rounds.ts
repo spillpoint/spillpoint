@@ -57,7 +57,13 @@ export function fromRounds(rounds: Rounds, range: unknown, terms: ExitTerms = {}
     if (after) checkShown(capTableJson(after.capTable));
     // The rounds are checked on their own. The range and the sale's date belong to the cap table, whose
     // editor checks them next to their fields, so here they're stand-ins that pass: a date after any event.
-    readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [], exit_date: "9999-12-31" } });
+    try {
+      readInputs({ ...company, exit: { cap_table_after_event: rounds.after, range: ["0", "1"], exit_values: [], exit_date: "9999-12-31" } });
+    } catch (e) {
+      // The limits a sale puts on the SAFEs and notes still outstanding (X12–X15) belong to the sale, not the rounds:
+      // reading the draft checks them next to the cap table, as for one entered directly.
+      if (!(e instanceof UnsupportedTermError && e.path.startsWith("exit.cap_table_after_event.unconverted_"))) throw e;
+    }
     const r = range as unknown[];
     const exit = {
       cap_table: capTableJson(after!.capTable),
@@ -253,6 +259,9 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name)
   const d = t.details;
   const items = (key: string) => (ev[key] as Json[] | undefined) ?? [];
   switch (d.kind) {
+    case "start":
+      // R31: the cap table a company starts from. The page adds rounds to one in 05b3.
+      return { title: "The cap table it starts from", lines: ["The company as it stood on this date. The events after it build on it."] };
     case "issue":
       return {
         title: `${(ev.security as Json).name as string} issued`,

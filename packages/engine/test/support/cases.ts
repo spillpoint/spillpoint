@@ -25,14 +25,12 @@ export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("o
  * earnout since M5i, and case 11b's earnout with a negative take since its case (0.3.0 work, 03a). Cases 12i and 13h,
  * a SAFE and a note with no cap beside capped participating preferred, and case 24, a carve-out given on the sale,
  * since 03e, case 8b, a warrant coming into the money on a curve, since 03f, and case 25, the cap table OCF case 12's
- * ledger leaves, since its case (04c). None is left out.
+ * ledger leaves, since its case (04c), and cases 26 and 27, sales after a round on a starting cap table (R31), since
+ * 05b2. None is left out.
  */
 export const NOT_YET: readonly string[] = [];
 
-/**
- * Round cases whose first event is a starting cap table (R31, 0.5.0): 26 and 27, written in 05b1. The engine reads a
- * starting table from 05b2; until then each is refused, and the round tests leave them out.
- */
+/** Round cases whose first event is a starting cap table (R31, 0.5.0): 26 and 27, written in 05b1, read from 05b2. */
 export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
   if (name.startsWith("ocf-")) return false;
   const inputs = readCaseFile(name, "inputs.json") as { events?: { type: string }[] };
@@ -40,7 +38,8 @@ export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
 });
 export const EXIT_CASES: string[] = ALL_CASES.filter(
   (name) =>
-    (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name)) &&
+    (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name) ||
+      FROM_A_STARTING_TABLE.includes(name)) &&
     !NOT_YET.includes(name),
 );
 

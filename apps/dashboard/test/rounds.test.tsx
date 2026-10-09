@@ -7,11 +7,14 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import examples from "virtual:examples";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { App } from "../src/App.tsx";
 import { buildExit } from "../src/draft.ts";
-import { buildCapTables } from "spillpoint";
+import { buildCapTables, readExit } from "spillpoint";
 
-import { eventViews, exampleContents } from "../src/rounds.ts";
+import { eventViews, exampleContents, fromRounds } from "../src/rounds.ts";
 import { lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
@@ -245,5 +248,16 @@ describe("a warrant for preferred on the Rounds tab (M5k2)", () => {
       return sum.plus(s.kind === "preferred" ? p.shares.times(s.conversionRatio) : s.kind === "warrant" && s.underlying !== "common" ? p.shares.times(ratio!) : p.shares);
     }, ct.unissuedPool);
     expect(row.fullyDiluted.minus(ratio!.times(100000).div(all)).abs().lt("1e-30")).toBe(true);
+  });
+});
+
+describe("a sale the engine refuses on a table built from rounds (05b2)", () => {
+  it("still builds the rounds, and leaves the refusal to the cap table's reading, as before", () => {
+    // 16j's table after its Seed keeps a pre-money SAFE beside preferred, which a sale refuses (X14). Since 05b2 the
+    // engine's readInputs says so too; the page still builds the rounds, and reading the cap table refuses it.
+    const inputs = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../cases/edge-16j-note-and-safe-from-before-the-seed/inputs.json"), "utf8"));
+    const built = fromRounds({ holders: inputs.holders, events: inputs.events, after: "seed" }, ["0", "100000000"], { exit_date: "2023-01-01" });
+    expect(built.ok).toBe(true);
+    expect(() => readExit(buildExit(built.ok ? built.draft : null!).json)).toThrow(/A pre-money SAFE at a sale alongside preferred stock/);
   });
 });

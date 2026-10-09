@@ -1,4 +1,5 @@
-// Reading an Open Cap Format package into a cap table (M6; ASSUMPTIONS O1–O12).
+// Reading an Open Cap Format package into a cap table (M6; ASSUMPTIONS O1–O12), and
+// since 0.5.0 the order its series, SAFEs and notes were issued in (O14).
 //
 // Open Cap Format (OCF) is developed by the Open Cap Table Coalition:
 // https://open-cap-table-coalition.github.io/Open-Cap-Format-OCF/. spillpoint
@@ -55,6 +56,11 @@ export interface OcfReport {
 export interface OcfImport {
   as_of: string;
   cap_table: Record<string, unknown>;
+  /**
+   * The order its preferred series, SAFEs and notes were issued in, earliest first (O14), in the shape a starting cap
+   * table takes it (R31, C17), so a round added to the import reads R25's "issued before the series" as the ledger has it.
+   */
+  issue_order: string[];
   to_fill: OcfToFill[];
   report: OcfReport;
 }
@@ -301,6 +307,22 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
   // O11: terms OCF has no field for, one line each.
   for (const code of ["no_dividend_field", "no_conversion_group_field", "no_carve_out_field", "no_sale_date_field"]) notes.add(code);
 
+  // O14: the issue order. A series takes the date of its first issuance not retracted, or, if none, of the first warrant
+  // for it (a class kept only for a warrant); a SAFE or note its own, from convertibles.issuedOn. On one date, series
+  // come before SAFEs and notes, so one dated the day of a series counts as issued after it; the rest keep the cap
+  // table's order, which can't change R25: it only asks whether a SAFE or note came before a series.
+  const retracted = new Set(ofType("TX_STOCK_RETRACTION", "TX_WARRANT_RETRACTION").map((tx) => tx.security_id));
+  const firstDate = (held: { id: string; issuance: Json }[]) =>
+    held.filter((h) => !retracted.has(h.id)).map((h) => h.issuance.date as string).sort()[0];
+  const seriesDate = (cls: string) =>
+    firstDate(stock.book.all().filter((h) => h.terms === cls)) ?? firstDate(warrants.book.all().filter((h) => h.terms.cls === cls))!;
+  const issueOrder = [
+    ...preferred.map((c) => ({ id: c.id, date: seriesDate(c.id), convertible: 0 })),
+    ...[...safes, ...notesOutstanding].map((c) => ({ id: c.id as string, date: convertibles.issuedOn(c.id as string), convertible: 1 })),
+  ]
+    .sort((a, b) => a.date.localeCompare(b.date) || a.convertible - b.convertible)
+    .map((x) => x.id);
+
   // A blank is a term to fill in, except a cap multiple for a series that isn't capped.
   const blanks = (list: Json[], key: "security" | "safe" | "note"): OcfToFill[] =>
     list.flatMap((x) =>
@@ -321,6 +343,7 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
       ...(safes.length > 0 ? { unconverted_safes: safes } : {}),
       ...(notesOutstanding.length > 0 ? { unconverted_notes: notesOutstanding } : {}),
     },
+    issue_order: issueOrder,
     to_fill: [...blanks(securities, "security"), ...blanks(safes, "safe"), ...blanks(notesOutstanding, "note")],
     report: { read, not_needed: notNeeded, notes: notes.list() },
   };

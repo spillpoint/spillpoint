@@ -117,9 +117,13 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       code: "option_in_the_money",
       subject: [o.id],
       starts: is,
-      text: is
-        ? `${which} come into the money here. Above this, exercising pays, and the strike money joins the proceeds.`
-        : `${which} fall out of the money here. Above this, exercising no longer pays.`,
+      // With no strike there's none to reach: RSUs and the like are worth a common share from common's first dollar
+      // (Jordan's wording, 05b1 review, as the reference gives it).
+      text: is && o.strike.isZero()
+        ? `Common starts to be paid here, so the ${shares(pc.shares.get(o.id)!)} options with no strike, such as RSUs, start paying: above this exit value each gets what a common share does.`
+        : is
+          ? `${which} come into the money here. Above this, exercising pays, and the strike money joins the proceeds.`
+          : `${which} fall out of the money here. Above this, exercising no longer pays.`,
     });
   }
 

@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 13h, 23, 24 and Millrace: every exit case", () => {
+  it("are edge cases 1 through 13h, 23 to 27 and Millrace: every exit case", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -56,6 +56,8 @@ describe("the exit cases the engine runs", () => {
       "edge-23-dividends-from-a-round",
       "edge-24-carve-out-on-the-sale",
       "edge-25-ocf-ledger",
+      "edge-26-series-b-on-an-imported-table",
+      "edge-27-safes-and-note-convert-on-an-imported-table",
       "millrace",
     ]);
   });
@@ -117,15 +119,12 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES, FROM_A_STARTING_TABLE).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES).sort()).toEqual(ALL_CASES);
   });
 
-  // 05b1's cases start from a cap table (R31), which the engine reads from 05b2: refused until then, never skipped.
+  // 05b1's cases start from a cap table (R31); the engine reads them since 05b2, as exit cases.
   it("names the cases that start from a cap table", () => {
     expect(FROM_A_STARTING_TABLE).toEqual(["edge-26-series-b-on-an-imported-table", "edge-27-safes-and-note-convert-on-an-imported-table"]);
-  });
-  it.each(FROM_A_STARTING_TABLE)("%s starts from a cap table, which the engine refuses until 05b2", (name) => {
-    expect(() => readInputs(readCaseFile(name, "inputs.json"))).toThrow(InputError);
   });
 
   it("leaves the OCF cases to the importer, from 04d", () => {

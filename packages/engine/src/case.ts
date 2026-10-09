@@ -6,7 +6,7 @@
 // outstanding there are paid at the sale.
 
 import { InputError } from "./errors.ts";
-import { object, readExit, readExitOn } from "./input.ts";
+import { checkSaleLimits, object, readExit, readExitOn } from "./input.ts";
 import type { ExitInput } from "./model.ts";
 import { buildCapTables } from "./rounds.ts";
 
@@ -24,7 +24,9 @@ export function readInputs(value: unknown): ExitInput {
     (eventId, at) => {
       const after = built.find((t) => t.event === eventId);
       if (!after) throw new InputError(at, `no event ${eventId} in inputs.events`);
-      // SAFEs and notes still outstanding come with the table and are paid at the sale (C8, C9).
+      // SAFEs and notes still outstanding come with the table and are paid at the sale (C8, C9), within the limits a
+      // sale puts on them (X12–X15), as on a table given in full.
+      checkSaleLimits(after.capTable, at);
       return after.capTable;
     },
     "exit",

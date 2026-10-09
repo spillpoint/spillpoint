@@ -8,7 +8,7 @@ import { InputError, UnsupportedTermError, buildCapTables, parseExact } from "..
 import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
 import { roundDownShares, roundHalfUp } from "../src/rounds.ts";
 import { D } from "../src/decimal.ts";
-import { ALL_CASES, FROM_A_STARTING_TABLE, OCF_CASES, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, OCF_CASES, readCaseFile } from "./support/cases.ts";
 
 interface Inputs {
   holders: unknown[];
@@ -29,17 +29,15 @@ interface ExpectedTable {
   };
 }
 
-// Cases that start from a cap table (R31) wait for 05b2, which reads a starting table.
-const ROUND_CASES = ALL_CASES.filter(
-  (name) => !OCF_CASES.includes(name) && !FROM_A_STARTING_TABLE.includes(name) && (readCaseFile(name, "inputs.json") as Partial<Inputs>).events,
-);
+const ROUND_CASES = ALL_CASES.filter((name) => !OCF_CASES.includes(name) && (readCaseFile(name, "inputs.json") as Partial<Inputs>).events);
 
 /**
- * The 39 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
+ * The 41 cases with events: 26 since M4g, 12g (M5b), 22's warrants (M5d), 23's dividends (R30, M5e3), 24, whose
  * sale carries a carve-out (0.3.0 work, 03a), 21b, 21c, 17i (03c) and 21d (03c2), which the engine builds since 03g,
- * and 16g, 16h, 16i (03d), 16j and 17j (03d2), since 03h. Every one is built.
+ * 16g, 16h, 16i (03d), 16j and 17j (03d2), since 03h, and 26 and 27, which start from a cap table (R31), since 05b2.
+ * Every one is built.
  */
-const EXPECTED_ROUND_CASES = 39;
+const EXPECTED_ROUND_CASES = 41;
 
 /** A value the engine holds to 40 digits against the case's exact one: within one part in 10^30. */
 function expectClose(actual: Decimal, exact: unknown, what: string): void {

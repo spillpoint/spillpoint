@@ -1,6 +1,7 @@
 // Building a company's cap tables from its rounds (M4): shares issued, a
 // percentage issue, the option pool, grants, warrants (M5d), SAFEs and notes
-// as they're issued, and priced rounds. Each event yields the cap table after it, in the
+// as they're issued, and priced rounds, from founding or from a starting cap
+// table (R31, 0.5.0). Each event yields the cap table after it, in the
 // same model an exit runs on.
 //
 // A priced round works out its price, new shares and pool top-up (M4c), the
@@ -19,8 +20,8 @@ import type { Decimal } from "decimal.js";
 import { D, ONE, ZERO } from "./decimal.ts";
 import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
-import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, text, wholeShares } from "./input.ts";
-import type { CapTable, Holder, Note, Position, PreferredSeries, Safe, Security } from "./model.ts";
+import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
+import type { CapTable, ConversionGroup, Holder, Note, Position, PreferredSeries, Safe, Security } from "./model.ts";
 
 type Json = Record<string, unknown>;
 
@@ -167,7 +168,7 @@ export interface RoundDetails {
 }
 
 export type EventDetails =
-  | { kind: "issue" | "grant_options" | "issue_warrants" | "safes" | "notes" }
+  | { kind: "start" | "issue" | "grant_options" | "issue_warrants" | "safes" | "notes" }
   | { kind: "issue_percent"; sharesIssued: Decimal; basisShares: Decimal }
   | { kind: "create_pool"; poolCreated: Decimal; basisShares: Decimal }
   | ({ kind: "priced_round" } & RoundDetails);
@@ -203,10 +204,15 @@ class Company {
   readonly securities: Security[] = [];
   readonly positions: Position[] = [];
   seniority: string[][] = [];
+  /** Only a starting table brings any (R31): no event creates one. */
+  conversionGroups: ConversionGroup[] = [];
   unissuedPool: Decimal = ZERO;
   safes: Safe[] = [];
   notes: Note[] = [];
-  /** Which event first issued each series, SAFE and note, by index (the 0.3.0 plan's answer 3d). */
+  /**
+   * Which event first issued each series, SAFE and note, by index (the 0.3.0 plan's answer 3d). A starting table's
+   * are ranked below 0, in the order it gives (R31).
+   */
   order = new Map<string, number>();
 
   constructor(holders: Holder[]) {
@@ -223,6 +229,7 @@ class Company {
     copy.securities.push(...this.securities);
     copy.positions.push(...this.positions.map((p) => ({ ...p })));
     copy.seniority = this.seniority.map((t) => [...t]);
+    copy.conversionGroups = this.conversionGroups;
     copy.unissuedPool = this.unissuedPool;
     copy.safes = [...this.safes];
     copy.notes = [...this.notes];
@@ -263,7 +270,7 @@ class Company {
       holders: this.holders.map((h) => ({ ...h })),
       securities: this.securities.map((s) => ({ ...s })),
       seniority: this.seniority.map((t) => [...t]),
-      conversionGroups: [],
+      conversionGroups: this.conversionGroups.map((g) => ({ ...g, series: [...g.series] })),
       positions: this.positions.filter((p) => !p.shares.isZero()).map((p) => ({ ...p })),
       unissuedPool: this.unissuedPool,
       // SAFEs not yet converted, which an exit on this table pays (C2, C8). Left out when there are none.
@@ -278,6 +285,7 @@ class Company {
 const INPUT_FIELDS = ["case", "description", "holders", "events", "exit"] as const;
 const COMMON_EVENT_FIELDS = ["id", "date", "type"];
 const EVENT_FIELDS: Record<string, readonly string[]> = {
+  start: ["cap_table", "issue_order"],
   issue: ["security", "issues"],
   issue_percent: ["security", "holder", "percent"],
   safes: ["safes"],
@@ -378,6 +386,51 @@ function readSeniority(company: Company, value: unknown, path: string, round?: {
 }
 
 // ---------- the events ----------
+
+/**
+ * R31, C17: a starting cap table, the company as it stands, which later events build on as on the table after any
+ * other event. A carve-out is a term of the sale, so the table may not carry one (C6). Its SAFEs and notes may still
+ * convert in a later round, so the setups only a sale refuses are left to the round. The order its series, SAFEs and
+ * notes were issued in, which R25's "issued before the series" rule uses, is given beside it, earliest first. With none
+ * given, its SAFEs and notes count as issued after its series, since they usually bridge to the next round.
+ */
+function startEvent(company: Company, ev: Json, path: string): EventDetails {
+  const at = `${path}.cap_table`;
+  if (object(ev.cap_table, at).carve_out != null) {
+    throw new InputError(`${at}.carve_out`, "a starting cap table may not carry a carve-out: that's a term of the sale, given on the exit (C6)");
+  }
+  const table = readStartingTable(ev.cap_table, at);
+  table.holders.forEach((h, i) => {
+    const listed = company.holders.find((x) => x.id === h.id);
+    if (!listed) throw new InputError(`${at}.holders[${i}].id`, `${h.id} isn't listed in the company's holders`);
+    if (listed.name !== h.name) throw new InputError(`${at}.holders[${i}].name`, `${h.id} is ${listed.name} in the company's holders`);
+  });
+  company.securities.push(...table.securities);
+  company.positions.push(...table.positions.map((p) => ({ ...p })));
+  company.seniority = table.seniority.map((t) => [...t]);
+  company.conversionGroups = table.conversionGroups;
+  company.unissuedPool = table.unissuedPool;
+  company.safes = [...(table.unconvertedSafes ?? [])];
+  company.notes = [...(table.unconvertedNotes ?? [])];
+
+  const convertibles = [...company.safes.map((f) => f.id), ...company.notes.map((n) => n.id)];
+  const ranked = [...table.securities.filter((s) => s.kind === "preferred").map((s) => s.id), ...convertibles];
+  let rank: Map<string, number>;
+  if (ev.issue_order == null) {
+    rank = new Map(ranked.map((id) => [id, convertibles.includes(id) ? 1 : 0]));
+  } else {
+    const given = array(ev.issue_order, `${path}.issue_order`).map((v, i) => text(v, `${path}.issue_order[${i}]`));
+    const same = given.length === ranked.length && [...given].sort().every((id, i) => id === [...ranked].sort()[i]);
+    if (!same) {
+      throw new InputError(`${path}.issue_order`, `must list each preferred series, SAFE and note in the starting table once: ${[...ranked].sort().join(", ")}`);
+    }
+    rank = new Map(given.map((id, k) => [id, k]));
+  }
+  // Ranks within this first event, all below 0: the events after it number from 1.
+  const top = Math.max(0, ...rank.values()) + 1;
+  for (const [id, r] of rank) company.order.set(id, r - top);
+  return { kind: "start" };
+}
 
 function issueEvent(company: Company, ev: Json, path: string): EventDetails {
   const s = ensureSecurity(company, ev.security, `${path}.security`);
@@ -1146,6 +1199,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
 }
 
 const HANDLERS: Record<string, (company: Company, ev: Json, path: string) => EventDetails> = {
+  start: startEvent,
   issue: issueEvent,
   issue_percent: issuePercentEvent,
   create_pool: createPoolEvent,
@@ -1164,9 +1218,10 @@ const HANDLERS: Record<string, (company: Company, ev: Json, path: string) => Eve
 
 /**
  * Builds a company's cap tables from its events, in the case-file format
- * (C1–C4, C11, C14): the cap table after each event, with what that event
- * worked out. A term the engine doesn't build yet is refused with an error
- * naming it, never skipped.
+ * (C1–C4, C11, C14, C17): the cap table after each event, with what that event
+ * worked out. The first event may be the cap table the company starts from
+ * (R31). A term the engine doesn't build yet is refused with an error naming
+ * it, never skipped.
  */
 export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEvent[] {
   const inputs = object(value, path);
@@ -1189,6 +1244,7 @@ export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEv
     if (seen.has(id)) throw new InputError(`${at}.id`, `event ${id} is listed twice`);
     seen.add(id);
     const type = text(ev.type, `${at}.type`);
+    if (type === "start" && i !== 0) throw new InputError(`${at}.type`, "a starting cap table must be the first event");
     const handler = HANDLERS[type];
     if (!handler) throw new InputError(`${at}.type`, `unknown event type ${JSON.stringify(type)}; the engine reads ${Object.keys(HANDLERS).join(", ")}`);
     onlyKnownFields(ev, [...COMMON_EVENT_FIELDS, ...EVENT_FIELDS[type]!], at);

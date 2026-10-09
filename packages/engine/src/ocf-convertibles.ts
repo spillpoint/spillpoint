@@ -24,6 +24,11 @@ export class Convertibles {
   readonly book: Book<ConvertibleTerms>;
   private readonly stakeholders: ReadonlySet<string>;
   private readonly notes: Notes;
+  /**
+   * When each was first issued, for the issue order (O14): one from a transfer, or the balance one leaves, keeps the
+   * date of the one it came from. A SAFE sold on to a new holder was still bought in on its first date.
+   */
+  private readonly since = new Map<string, string>();
 
   constructor(issuances: readonly Json[], stakeholders: ReadonlySet<string>, notes: Notes) {
     this.stakeholders = stakeholders;
@@ -48,9 +53,16 @@ export class Convertibles {
       }
       const seniority = tx.seniority == null ? null : numericText(tx.seniority, "seniority", id);
       this.book.issue(tx, holder, { kind, mechanisms: mechanisms as Json[], seniority });
+      const sec = tx.security_id as string;
+      if (!this.since.has(sec)) this.since.set(sec, date(tx, "date", id));
     },
     // A conversion closes the convertible entirely; its shares are their own issuance.
-    TX_CONVERTIBLE_CONVERSION: (tx) => this.book.close(this.book.outstanding(tx, text(tx, "security_id", tx.id as string))),
+    TX_CONVERTIBLE_CONVERSION: (tx) => {
+      const s = this.book.outstanding(tx, text(tx, "security_id", tx.id as string));
+      // Its results are shares; only a balance left as a convertible keeps the date.
+      this.carryDate(tx, s.id, false);
+      this.book.close(s);
+    },
     TX_CONVERTIBLE_CANCELLATION: (tx) => this.taken(tx),
     TX_CONVERTIBLE_TRANSFER: (tx) => this.taken(tx),
     TX_CONVERTIBLE_RETRACTION: (tx) => this.book.void(this.book.outstanding(tx, text(tx, "security_id", tx.id as string))),
@@ -138,9 +150,22 @@ export class Convertibles {
     };
   }
 
+  /** The date a SAFE or note still outstanding was first issued on, following transfers and balances back (O14). */
+  issuedOn(sec: string): string {
+    return this.since.get(sec)!;
+  }
+
   private taken(tx: Json): void {
     const id = tx.id as string;
-    this.book.take(tx, this.book.outstanding(tx, text(tx, "security_id", id)), amount(tx, "amount"));
+    const s = this.book.outstanding(tx, text(tx, "security_id", id));
+    this.carryDate(tx, s.id);
+    this.book.take(tx, s, amount(tx, "amount"));
+  }
+
+  /** O14: what a transaction leaves of a SAFE or note, its result or its balance, keeps the date the original was first issued. */
+  private carryDate(tx: Json, from: string, withResults = true): void {
+    const results: unknown[] = withResults && Array.isArray(tx.resulting_security_ids) ? tx.resulting_security_ids : [];
+    for (const r of [...results, tx.balance_security_id]) if (typeof r === "string") this.since.set(r, this.since.get(from)!);
   }
 }
 
