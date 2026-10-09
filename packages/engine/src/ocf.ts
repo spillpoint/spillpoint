@@ -141,8 +141,8 @@ const KNOWN_FIELDS: Record<string, readonly string[]> = {
   TX_CONVERTIBLE_RETRACTION: [...SECURITY_TX, "reason_text"],
 };
 
-/** O2: OCF 1.0 to 1.2, whose 1.x names (the older TX_PLAN_SECURITY_*, too) are all read. */
-const READ_VERSIONS = /^1\.[0-2]\.\d+$/;
+/** O2: OCF 1.0 to 1.2, whose 1.x names (the older TX_PLAN_SECURITY_*, too) are all read, with any pre-release or build suffix. */
+const READ_VERSIONS = /^1\.[0-2]\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
 
 /** The last part of a path: a manifest lists files by name, and a .zip may keep them in a folder. */
 const fileName = (path: string) => path.slice(path.lastIndexOf("/") + 1);

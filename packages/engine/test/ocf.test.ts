@@ -267,6 +267,7 @@ describe("rules the OCF cases don't reach", () => {
   it("reads OCF 1.0 to 1.2 and nothing later; needs one manifest; notes a file it doesn't list (O2)", () => {
     expect(refusalOf(pkg([common], [], { ocf_version: "1.0.0" }))).toBeNull();
     expect(refusalOf(pkg([common], [], { ocf_version: "1.3.0" }))).toEqual({ kind: "unsupported", term: "ocf_version", subject: "1.3.0" });
+    expect(refusalOf(pkg([common], [], { ocf_version: "1.2.1-alpha+main" }))).toBeNull();
     expect(refusalOf(pkg([common], []).slice(1))).toEqual({ kind: "malformed", term: "no_manifest", subject: "" });
     const extra: OcfFile = { name: "More.ocf.json", content: { file_type: "OCF_VALUATIONS_FILE", items: [] } };
     expect(notesOf([...pkg([common], []), extra])).toContainEqual({ code: "not_in_manifest", subject: "More.ocf.json" });
@@ -357,6 +358,14 @@ describe("rules the OCF cases don't reach", () => {
     const files = pkg([common], []);
     expect(refusalOf([...files, { name: "copy/Transactions.ocf.json", content: files[3]!.content }])).toEqual({
       kind: "malformed", term: "ambiguous_file", subject: "Transactions.ocf.json",
+    });
+  });
+  it("reads a conversion right that doesn't give its type, as OCF's own samples write one", () => {
+    const right = ratio("1.00")[0]!;
+    const { type: _type, ...untyped } = right;
+    expect(refusalOf(pkg([common, seed({ conversion_rights: [untyped] })], [issue("s1", "2022-01-01", "a", "seed", "100", "1.00")]))).toBeNull();
+    expect(refusalOf(pkg([common, seed({ conversion_rights: [{ ...right, type: "CONVERTIBLE_CONVERSION_RIGHT" }] })], []))).toEqual({
+      kind: "unsupported", term: "class_conversion_mechanism", subject: "seed",
     });
   });
 });
