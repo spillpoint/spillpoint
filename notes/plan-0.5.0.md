@@ -108,6 +108,22 @@ The start event would give that order beside the table, not as new cap table fie
   - Quillfern imported, a Series B added, saved and opened again, pays as the 05b1 case does.
   - A version 5 file opens.
 
+**Added after 05b2 (Jordan, 2026-10-09):**
+- **A starting table's conversion groups** are carried through. The page used to write a built table back with none.
+- **A round after a starting table with a conversion group** says, with its own series' names, and those of the series its SAFEs and notes convert into when it creates them: "Series B Preferred isn't in the group of series that must convert together (Seed Preferred and Series A Preferred), so at a sale it decides on its own whether to convert. If its charter puts it in that group, spillpoint can't model that yet." A round's new series joining the group stays on the later list.
+
+**Split in two,** to fit an evening each:
+- **05b3a:**
+  - "Add a round"
+  - the starting table on the Cap table tab
+  - saved files version 6
+  - conversion groups carried through
+  - the tests above, and the one from your answers: a grant at an imported option class's strike joins that class
+- **05b3b:** what a round says about a starting table:
+  - an imported series with no anti-dilution in a down round
+  - the conversion group
+  - how the issue order was read, when a down round adjusts a starting series and a SAFE or note converts in it (R31)
+
 ## 05c: SAFEs beside a note at a sale
 
 Larkspur imports, but its SAFEs sit beside a note, which the engine refuses at a sale (X12, `note_with_safe_or_carve_out`). New math, so cases first.
@@ -165,6 +181,8 @@ Each fix that changes what's read comes with a fixture or a case, as in 04a.
 ## 05e: release 0.5.0
 
 Version bump, release notes, both READMEs, and the packed build checked as 03j and 04g did. You pack it and run the README examples before publishing.
+
+**Changed behavior, for the release notes** (Jordan, 05b2 review): a sale on a table built from rounds now applies the same at-a-sale limits as a cap table entered directly (X12–X15), so some inputs 0.4.0 paid are now refused. `readInputs` didn't apply them to a table built from rounds before.
 
 ## Questions
 
