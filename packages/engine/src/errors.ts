@@ -35,6 +35,27 @@ export class NoAnswerError extends Error {
   override name = "NoAnswerError";
 }
 
+/**
+ * An Open Cap Format package the importer won't read (O1–O12). "unsupported":
+ * valid OCF that spillpoint doesn't model, so reading it would change payouts
+ * without saying so. "malformed": the files disagree with each other or with
+ * OCF, so there's no single cap table to build. The term names the problem;
+ * the subject is the object id, file name or version it's about.
+ */
+export class OcfRefusal extends Error {
+  override name = "OcfRefusal";
+  readonly kind: "unsupported" | "malformed";
+  readonly term: string;
+  readonly subject: string;
+
+  constructor(kind: "unsupported" | "malformed", term: string, subject: string, message: string) {
+    super(message);
+    this.kind = kind;
+    this.term = term;
+    this.subject = subject;
+  }
+}
+
 export class UnsupportedTermError extends Error {
   override name = "UnsupportedTermError";
   readonly term: string;
