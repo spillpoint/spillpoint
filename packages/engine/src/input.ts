@@ -230,7 +230,32 @@ const CAP_TABLE_FIELDS = [
   "unconverted_safes", "unconverted_notes", "carve_out", "totals",
 ] as const;
 
+/** A cap table a sale runs on, in the case-file format (C1–C4, C6, C8, C9). */
 export function readCapTable(value: unknown, path = "cap_table"): CapTable {
+  return readTable(value, path, true);
+}
+
+/**
+ * The limits a sale puts on the SAFEs and notes still outstanding (X12–X15), on a cap table built from rounds, which
+ * readCapTable never saw. A table read for a sale has had them already.
+ */
+export function checkSaleLimits(ct: CapTable, path: string): void {
+  const holderIds = new Set(ct.holders.map((h) => h.id));
+  const byId = new Map(ct.securities.map((s) => [s.id, s]));
+  const safes = ct.unconvertedSafes ?? [];
+  checkSafes(safes, holderIds, byId, ct.seniority, true, `${path}.unconverted_safes`);
+  checkNotes(ct.unconvertedNotes ?? [], holderIds, byId, new Set(safes.map((f) => f.id)), safes.length > 0 || ct.carveOut != null, true, `${path}.unconverted_notes`);
+}
+
+/**
+ * A company's starting table (R31, C17): read as a sale's, except that the SAFE and note setups no sale case settles
+ * yet aren't refused. They may still convert in a later round, which checks them itself.
+ */
+export function readStartingTable(value: unknown, path: string): CapTable {
+  return readTable(value, path, false);
+}
+
+function readTable(value: unknown, path: string, atASale: boolean): CapTable {
   const ct = object(value, path);
 
   // Terms that arrive later are refused before anything else is checked.
@@ -323,11 +348,11 @@ export function readCapTable(value: unknown, path = "cap_table"): CapTable {
   const safes = (ct.unconverted_safes == null ? [] : array(ct.unconverted_safes, `${path}.unconverted_safes`)).map((v, i) =>
     readSafe(v, `${path}.unconverted_safes[${i}]`),
   );
-  checkSafesAtASale(safes, holderIds, byId, seniority, `${path}.unconverted_safes`);
+  checkSafes(safes, holderIds, byId, seniority, atASale, `${path}.unconverted_safes`);
   const notes = (ct.unconverted_notes == null ? [] : array(ct.unconverted_notes, `${path}.unconverted_notes`)).map((v, i) =>
     readNote(v, `${path}.unconverted_notes[${i}]`),
   );
-  checkNotesAtASale(notes, holderIds, byId, new Set(safes.map((f) => f.id)), safes.length > 0 || ct.carve_out != null, `${path}.unconverted_notes`);
+  checkNotes(notes, holderIds, byId, new Set(safes.map((f) => f.id)), safes.length > 0 || ct.carve_out != null, atASale, `${path}.unconverted_notes`);
 
   return {
     holders,
@@ -364,12 +389,12 @@ export function readSafe(value: unknown, path: string): Safe {
 }
 
 /**
- * SAFEs still outstanding at a sale (X9, X13, X14). Their holders must be
- * listed, their ids new, and a named ranking a preferred series in the
- * tiers. Setups no case settles yet are refused, never skipped.
+ * SAFEs still outstanding (X9, X13, X14). Their holders must be listed, their
+ * ids new, and a named ranking a preferred series in the tiers. At a sale,
+ * setups no case settles yet are refused, never skipped.
  */
-function checkSafesAtASale(
-  safes: Safe[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, seniority: string[][], path: string,
+function checkSafes(
+  safes: Safe[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, seniority: string[][], atASale: boolean, path: string,
 ): void {
   const ids = new Set<string>();
   safes.forEach((f, i) => {
@@ -381,6 +406,7 @@ function checkSafesAtASale(
       throw new InputError(`${at}.cash_out_ranks_with`, `${f.cashOutRanksWith} is not a preferred series in the seniority tiers`);
     }
   });
+  if (!atASale) return;
   const preferred = [...byId.values()].filter((s): s is PreferredSeries => s.kind === "preferred");
   const preMoney = safes.find((f) => f.preMoneyCap);
   if (preMoney && preferred.length > 0) {
@@ -433,11 +459,12 @@ export function readNote(value: unknown, path: string): Note {
 }
 
 /**
- * Notes still outstanding at a sale (X12, X15). Their holders must be listed
- * and their ids new. Setups no case settles yet are refused, never skipped.
+ * Notes still outstanding (X12, X15). Their holders must be listed and their
+ * ids new. At a sale, setups no case settles yet are refused, never skipped.
  */
-function checkNotesAtASale(
-  notes: Note[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, safeIds: ReadonlySet<string>, withSafeOrCarveOut: boolean, path: string,
+function checkNotes(
+  notes: Note[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, safeIds: ReadonlySet<string>, withSafeOrCarveOut: boolean,
+  atASale: boolean, path: string,
 ): void {
   const ids = new Set<string>();
   notes.forEach((n, i) => {
@@ -446,7 +473,7 @@ function checkNotesAtASale(
     if (ids.has(n.id) || byId.has(n.id) || safeIds.has(n.id)) throw new InputError(`${at}.id`, `${n.id} is already used`);
     ids.add(n.id);
   });
-  if (notes.length === 0) return;
+  if (notes.length === 0 || !atASale) return;
   if (withSafeOrCarveOut) {
     throw new UnsupportedTermError("note_with_safe_or_carve_out", "later", path, "A convertible note at a sale alongside a SAFE or a carve-out (X12)");
   }
