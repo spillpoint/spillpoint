@@ -1,0 +1,118 @@
+// Opening an OCF export, clicked through in a simulated browser (M6, 04f): the report shows before the cap table is
+// used (answer 9), each term OCF leaves open is asked, and the cap table then opens as a saved file would.
+
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { App } from "../src/App.tsx";
+import { exitOf, payoutsAtBreakpoints } from "./payouts.ts";
+
+const cases = resolve(import.meta.dirname, "../../../cases");
+const caseFile = (path: string) => readFileSync(resolve(cases, path));
+const packageOf = (name: string) => readdirSync(resolve(cases, name, "package")).map((f) => new File([caseFile(`${name}/package/${f}`)], f, { type: "application/json" }));
+const zip = (name: string) => new File([readFileSync(resolve(import.meta.dirname, "fixtures", name))], name, { type: "application/zip" });
+const upload = (files: File[]) => fireEvent.change(screen.getByLabelText(/Open an OCF export/), { target: { files } });
+const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+const review = () => screen.findByRole("region", { name: /^Importing / });
+
+let downloads: Blob[];
+beforeEach(() => {
+  downloads = [];
+  let made: Blob | null = null;
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: (blob: Blob) => ((made = blob), "blob:saved") });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: () => {} });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => void downloads.push(made!));
+});
+afterEach(() => vi.restoreAllMocks());
+
+describe("Quillfern Labs, from a zip", () => {
+  it.each(["quillfern-macos.zip", "quillfern-zip.zip", "quillfern-windows.zip"])(
+    "%s: shows the report first, then pays as edge case 25 does, to the cent",
+    async (name) => {
+      render(<App />);
+      upload([zip(name)]);
+      const panel = await review();
+      expect(within(panel).getByRole("heading", { level: 2 }).textContent).toBe("Importing Quillfern Labs, Inc.");
+      // Nothing is used yet: the payouts aren't on the page until you say so.
+      expect(screen.queryByRole("tab", { name: "Payouts" })).toBeNull();
+      // The line for shares issued at another price, in Jordan's words (04a review).
+      expect(
+        within(panel).getByText(
+          "Angel S's 260,416 Seed Preferred were issued at $0.96 but carry Seed Preferred's $1.20 preference. " +
+            "If they should be a separate series with a lower preference (as a SAFE's shares often are), set that up in the editor.",
+        ),
+      ).toBeTruthy();
+      expect(within(panel).getByText("Employee F holds nothing on December 31, 2025, so they're left out.")).toBeTruthy();
+
+      click("Use this cap table");
+      expect(await screen.findByText(`Imported Quillfern Labs, Inc. from ${name}. It isn't saved yet: Save keeps it as a spillpoint file.`)).toBeTruthy();
+      // Not saved yet: leaving the page asks first.
+      const leaving = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(leaving);
+      expect(leaving.defaultPrevented).toBe(true);
+      click("Save");
+      const saved = await downloads[0]!.text();
+      const edge25 = JSON.parse(caseFile("edge-25-ocf-ledger/inputs.json").toString()).exit;
+      expect(payoutsAtBreakpoints({ ...exitOf(saved), range: edge25.range })).toEqual(payoutsAtBreakpoints({ ...edge25, exit_values: [] }));
+    },
+  );
+});
+
+describe("the terms OCF leaves open", () => {
+  it("asks whether Millrace's Series B participates, and uses the answer", async () => {
+    render(<App />);
+    upload(packageOf("ocf-11-millrace"));
+    const panel = await review();
+    const question = within(panel).getByRole("group", { name: "Does Series B Preferred participate?" });
+    click("Use this cap table");
+    expect(screen.getByRole("alert").textContent).toBe("Answer each question above first: every one changes who gets what.");
+    fireEvent.click(within(question).getByLabelText(/Participating, without a cap/));
+    click("Use this cap table");
+    expect(await screen.findByText(/^Imported Millrace Robotics, Inc\. from 8 files\./)).toBeTruthy();
+    click("Save");
+    const seriesB = JSON.parse(await downloads[0]!.text()).cap_table.securities.find((s: { id: string }) => s.id === "series_b");
+    expect(seriesB).toMatchObject({ participation: "participating", cap_multiple: null });
+  });
+
+  it("asks whether a SAFE's cap is pre-money or post-money, and says plainly when the engine can't use the table", async () => {
+    render(<App />);
+    const fixture = new File([caseFile("ocf-04-to-fill/fixtures/safe-cap-without-timing.ocf.json")], "safe-cap-without-timing.ocf.json");
+    upload([...packageOf("ocf-01-larkspur"), fixture]);
+    const panel = await review();
+    // Jordan's wording (04a2 review).
+    fireEvent.click(within(within(panel).getByRole("group", { name: "Is this SAFE's cap pre-money or post-money?" })).getByLabelText("Post-money"));
+    fireEvent.click(within(within(panel).getByRole("group", { name: "Does Seed Preferred participate?" })).getByLabelText(/^Non-participating/));
+    fireEvent.change(within(panel).getByLabelText("Investor N's note's repayment multiple at a sale"), { target: { value: "1.5" } });
+    fireEvent.change(within(panel).getByLabelText("When is the sale?"), { target: { value: "2026-06-30" } });
+    click("Use this cap table");
+    // Larkspur's SAFEs sit beside a note, which the engine refuses at a sale (X12): the panel stays, and says why.
+    expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used yet\. /);
+    expect(screen.getByRole("region", { name: /^Importing Larkspur/ })).toBeTruthy();
+  });
+});
+
+describe("what it won't import", () => {
+  it("says why, in the engine's words, and leaves the cap table you had", async () => {
+    render(<App />);
+    const fixture = new File([caseFile("ocf-03-refused/fixtures/conversion-ratio-loose.ocf.json")], "conversion-ratio-loose.ocf.json");
+    upload([...packageOf("ocf-01-larkspur"), fixture]);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe(
+      "Couldn't import it: its files disagree with each other or with OCF, so there's no one cap table to build. " +
+        "Class cls-r-loose's conversion ratio (1.04 for 1) doesn't agree with its issue price ÷ conversion price ($1.5 ÷ $1.5), even allowing for how the numbers are written.",
+    );
+    expect(screen.getByRole("tab", { name: "Payouts" })).toBeTruthy();
+  });
+
+  it("goes back to the cap table you had on Cancel", async () => {
+    render(<App />);
+    upload([zip("quillfern-zip.zip")]);
+    await review();
+    click("Cancel");
+    expect(screen.queryByRole("region", { name: /^Importing / })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Payouts" })).toBeTruthy();
+  });
+});

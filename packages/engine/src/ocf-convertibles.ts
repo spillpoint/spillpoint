@@ -61,12 +61,13 @@ export class Convertibles {
    * blank, in date order.
    */
   finish(): { safes: Json[]; notes: Json[] } {
-    // O8: convertible seniority ranks convertibles among themselves, the reverse of stock classes. One level for all is ignored.
-    const ranked = this.book.all().filter((s) => s.terms.seniority != null);
+    // O8: convertible seniority ranks convertibles among themselves, the reverse of stock classes. It's ignored, with one
+    // line, and refused only when the convertibles still outstanding differ: a converted SAFE's no longer changes anything.
+    const ranked = this.book.open().filter((s) => s.terms.seniority != null);
     const first = ranked[0];
     const differs = ranked.find((s) => !new D(s.terms.seniority!).eq(first!.terms.seniority!));
     if (differs) {
-      throw unsupported("convertible_seniority", differs.issuance.id as string, `${differs.id} ranks at seniority ${differs.terms.seniority} among the convertibles, where ${first!.id} ranks at ${first!.terms.seniority}; spillpoint ranks convertibles together`);
+      throw unsupported("convertible_seniority", differs.issuance.id as string, `${differs.id} ranks at seniority ${differs.terms.seniority} among the convertibles, where ${first!.id} ranks at ${first!.terms.seniority}; spillpoint ranks outstanding convertibles together`);
     }
     if (this.book.all().length > 0) this.notes.add("convertible_seniority_ignored");
 

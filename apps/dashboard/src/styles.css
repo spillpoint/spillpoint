@@ -295,3 +295,23 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .payments__lowered { color: var(--error); font-weight: 600; }
 .payments__warning { margin: 8px 0 12px; }
 .rounds__terms { margin: 12px 0 0; color: var(--muted); }
+
+/* An OCF import, reviewed before its cap table is used (M6, 04f). */
+.import { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; }
+.import h2 { margin-top: 0; }
+.import h3 { margin: 24px 0 8px; }
+.import__lines { padding-left: 20px; }
+.import__lines li { margin-bottom: 6px; }
+.import__counts { margin-top: 12px; }
+.import__counts summary { cursor: pointer; color: var(--accent); }
+.import__tallies { display: flex; flex-wrap: wrap; gap: 8px 48px; }
+.import__tallies h4 { margin: 12px 0 4px; font-size: 0.9375rem; }
+.import__tallies ul { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+.import__question { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; margin: 0 0 12px; }
+.import__question[aria-invalid] { border-left: 4px solid var(--error); }
+.import__question legend { font-weight: 600; padding: 0 4px; }
+.import__choice { display: block; margin: 4px 0; }
+.import .field__hint { max-width: 64ch; }
+.import__question .field__hint { margin: 0 0 6px; }
+.import__actions { display: flex; gap: 12px; margin-top: 16px; }
+.file-button--primary { background: var(--accent); color: #fff; border-color: var(--accent); }

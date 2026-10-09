@@ -10,7 +10,7 @@
 // by `pnpm --filter @spillpoint/dashboard preview` at http://localhost:4173/.
 
 import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -142,6 +142,21 @@ const openCase = (name) => {
     wait();
   })`;
 };
+
+/** Opens an OCF export through the page's import button, from files on disk, and waits for its report or its refusal. */
+const importFiles = (paths) => {
+  const files = paths.map((p) => ({ name: p.split("/").pop(), base64: readFileSync(resolve(import.meta.dirname, "../../..", p)).toString("base64") }));
+  return `new Promise((done) => {
+    const input = document.querySelector("input[aria-label^='Open an OCF export']");
+    const files = new DataTransfer();
+    for (const f of ${JSON.stringify(files)}) files.items.add(new File([Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0))], f.name));
+    input.files = files.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    const wait = () => (document.querySelector(".import, .file-status--problem") ? done() : setTimeout(wait, 50));
+    wait();
+  })`;
+};
+const packageOf = (name) => readdirSync(resolve(import.meta.dirname, "../../../cases", name, "package")).map((f) => `cases/${name}/package/${f}`);
 
 const SHOTS = {
   "m3a-overview": { width: 1100, height: 900, steps: [] },
@@ -320,6 +335,28 @@ const SHOTS = {
     steps: [click("Rounds"), editRound(5), fill("[id$='-investments-0-amount']", 0, "a lot")],
     clip: [`${ROUND(6)} .rounds__heading`, `${ROUND(6)} .rounds__problem`, `${ROUND(6)} fieldset.series`],
   },
+  // 04f: opening an OCF export. The report comes first, then a question for each term OCF leaves open.
+  "04f-report": { width: 1100, height: 900, steps: [importFiles(["apps/dashboard/test/fixtures/quillfern-macos.zip"])], clip: [".import"], quality: 50 },
+  "04f-millrace": { width: 1100, height: 900, steps: [importFiles(packageOf("ocf-11-millrace"))], clip: [".import__open"], quality: 50 },
+  "04f-safe-question": {
+    width: 1100,
+    height: 900,
+    steps: [importFiles([...packageOf("ocf-01-larkspur"), "cases/ocf-04-to-fill/fixtures/safe-cap-without-timing.ocf.json"])],
+    clip: [".import__open"],
+    quality: 50,
+  },
+  "04f-imported": {
+    width: 1100,
+    height: 900,
+    steps: [importFiles(["apps/dashboard/test/fixtures/quillfern-zip.zip"]), click("Use this cap table")],
+    clip: [".masthead", ".file-status", ".founder"],
+  },
+  "04f-refused": {
+    width: 1100,
+    height: 900,
+    steps: [importFiles([...packageOf("ocf-01-larkspur"), "cases/ocf-03-refused/fixtures/conversion-ratio-loose.ocf.json"])],
+    clip: [".masthead", ".file-status"],
+  },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -361,7 +398,8 @@ async function shoot(send, name, shot) {
   const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
   const settled = async () => {
     for (let i = 0; i < 100; i++) {
-      if (await evaluate(`document.readyState === "complete" && !!document.querySelector("h1") && !document.body.innerText.includes("Working out")`)) return;
+      // An OCF import's report stands in for the payouts until it's used (04f).
+      if (await evaluate(`document.readyState === "complete" && !!document.querySelector("h1, .import") && !document.body.innerText.includes("Working out")`)) return;
       await sleep(100);
     }
     throw new Error(`${name}: the page didn't finish computing`);

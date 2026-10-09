@@ -28,6 +28,10 @@ import { changeAt, nodeAt, seriesNodes } from "./curves.ts";
 import { buildExit, carryExitTerms, checkBuilt, fieldId, scratchDraft } from "./draft.ts";
 import type { Built, Checked, Draft } from "./draft.ts";
 import { fileName, fileText, readFile } from "./file.ts";
+import { ImportReview } from "./ImportReview.tsx";
+import type { ImportUse } from "./ImportReview.tsx";
+import { importOcf } from "./ocfImport.ts";
+import type { Imported } from "./ocfImport.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
@@ -37,6 +41,8 @@ import type { RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 const SCRATCH = "scratch";
 const SCRATCH_ROUNDS = "scratch-rounds";
 const FILE = "file";
+/** A cap table imported from an Open Cap Format export (M6). */
+const IMPORTED = "imported";
 
 /** Where a cap table starts: an example from cases/, a blank table, or a file. */
 interface Start {
@@ -153,6 +159,8 @@ export function App() {
   const [edited, setEdited] = useState(false);
   const [unsaved, setUnsaved] = useState(false);
   const [fileStatus, setFileStatus] = useState<FileStatus>(null);
+  // An OCF import being reviewed: its report and questions come before its cap table is used (M6 plan, answer 9).
+  const [importing, setImporting] = useState<Extract<Imported, { ok: true }> | null>(null);
   useUnsavedWarning(unsaved);
 
   const built = useMemo(() => buildExit(session.draft), [session.draft]);
@@ -197,6 +205,7 @@ export function App() {
     edit();
   };
   const begin = (start: Start, status: FileStatus) => {
+    setImporting(null);
     setSession((s) => newSession(start, s.n + 1));
     setEdited(false);
     setUnsaved(false);
@@ -264,6 +273,35 @@ export function App() {
     begin(start, { kind: "done", text: `Opened ${file.name}.` });
   };
 
+  const importPicker = useRef<HTMLInputElement>(null);
+  const openImport = () => {
+    if (okToLose("Open an OCF export")) importPicker.current?.click();
+  };
+  const imported = async (chosen: File[]) => {
+    const picked = await Promise.all(chosen.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })));
+    const result = await importOcf(picked);
+    if (!result.ok) {
+      setFileStatus({ kind: "problem", text: result.message });
+      return;
+    }
+    setFileStatus(null);
+    setImporting(result);
+  };
+  /** An import's cap table, once its questions are answered, opens as a saved file would; it isn't saved until you save it. */
+  const applyImport = (use: ImportUse) => {
+    const start = {
+      id: IMPORTED,
+      label: `${use.name}, imported from ${use.source}`,
+      fictional: false,
+      draft: use.draft,
+      name: use.name,
+      defaultExitValue: middleOf(use.draft.range),
+      rounds: null,
+    };
+    begin(start, { kind: "done", text: `Imported ${use.name} from ${use.source}. It isn't saved yet: Save keeps it as a spillpoint file.` });
+    setUnsaved(true);
+  };
+
   return (
     <div className="page">
       <header className="masthead">
@@ -284,6 +322,7 @@ export function App() {
               <option value={SCRATCH}>A blank cap table</option>
               <option value={SCRATCH_ROUNDS}>A blank company, built from its rounds</option>
               {session.start.id === FILE && <option value={FILE}>{session.start.name} (from a file)</option>}
+              {session.start.id === IMPORTED && <option value={IMPORTED}>{session.start.name} (imported)</option>}
             </select>
           </label>
           <button type="button" className="file-button" onClick={save}>
@@ -305,6 +344,23 @@ export function App() {
               if (file) void opened(file);
             }}
           />
+          <button type="button" className="file-button" onClick={openImport}>
+            Open an OCF export
+          </button>
+          <input
+            ref={importPicker}
+            type="file"
+            multiple
+            accept=".zip,.json,application/zip,application/json"
+            className="visually-hidden"
+            tabIndex={-1}
+            aria-label="Open an OCF export: a .zip, or the package's .ocf.json files"
+            onChange={(e) => {
+              const chosen = [...(e.target.files ?? [])];
+              e.target.value = "";
+              if (chosen.length > 0) void imported(chosen);
+            }}
+          />
         </div>
       </header>
       {fileStatus && (
@@ -313,8 +369,18 @@ export function App() {
         </p>
       )}
       <GovernanceNote />
+      {importing && (
+        <ImportReview
+          result={importing.result}
+          files={importing.files}
+          source={importing.source}
+          skipped={importing.skipped}
+          onUse={applyImport}
+          onCancel={() => setImporting(null)}
+        />
+      )}
       {/* A new start begins fresh: its own holder, exit value and breakpoints. */}
-      <Workspace
+      {!importing && <Workspace
         key={session.n}
         start={session.start}
         draft={session.draft}
@@ -335,7 +401,7 @@ export function App() {
         tables={tables}
         events={events}
         onEditDirectly={editDirectly}
-      />
+      />}
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
       <footer className="page-footer">
         spillpoint {build.engineVersion} ({build.commit})
