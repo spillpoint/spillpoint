@@ -7,6 +7,7 @@ Open-source exit waterfall engine and dashboard. Given a cap table and an exit v
 **[spillpoint.github.io/spillpoint](https://spillpoint.github.io/spillpoint/)** runs in your browser. You can:
 
 - Start from a fictional example, a blank cap table, a blank company to build from its rounds, or a file you saved.
+- Open an export from your cap table software in Open Cap Format, as a .zip or its files. The page shows what it read, and asks about anything the format doesn't say, before the cap table is used.
 - See what you get at any exit value, against your share of the company, and where your payout starts.
 - Follow the payoff curves by holder or by class. Every breakpoint is marked and explained, including how it changes your payout. Where a carve-out alongside the preferences makes payouts curve, the curves follow it.
 - Edit the cap table:
@@ -34,10 +35,11 @@ The page doesn't build a few combinations within a round: the engine's README li
 
 ## The engine
 
-The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. From 0.2.0 it also pays warrants, cumulative dividends, management carve-outs, escrow and earnouts, and SAFEs and notes still outstanding at a sale. From 0.3.0 it also converts SAFEs and notes in a round that triggers anti-dilution or has pay-to-play, and a post-money SAFE beside notes or other SAFEs; and it takes a carve-out as a term of the sale. Its README lists what it still refuses.
+The engine is on npm as [`spillpoint`](packages/engine/README.md). It runs entirely on your machine, with no network access, so your cap table never leaves it. From version 0.1.0 it also builds a cap table from a company's rounds: SAFEs and notes converting, priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. From 0.2.0 it also pays warrants, cumulative dividends, management carve-outs, escrow and earnouts, and SAFEs and notes still outstanding at a sale. From 0.3.0 it also converts SAFEs and notes in a round that triggers anti-dilution or has pay-to-play, and a post-money SAFE beside notes or other SAFEs; and it takes a carve-out as a term of the sale. From 0.4.0 it also reads an Open Cap Format export into a cap table, with a report of what it read and the terms the format leaves open. Its README lists what it still refuses.
 
-Coming next:
-- **Open Cap Format import,** so you can load a cap table exported from your cap table software.
+Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open-cap-table-coalition.github.io/Open-Cap-Format-OCF/. spillpoint reads files in that format.
+
+Coming next: 1.0, with the API's names reviewed once and settled.
 
 ## In this repository
 
