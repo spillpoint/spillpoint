@@ -2,7 +2,7 @@
 
 Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options, warrants, management carve-outs, and SAFEs and convertible notes still outstanding at the sale. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
-It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Or it can read one from an Open Cap Format export *(0.4.0)*.
+It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Or it can read one from an Open Cap Format export *(0.4.0)*, and build the next round on a cap table you already have *(0.5.0)*.
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
@@ -389,6 +389,7 @@ fund on seed: $4000000.00
 **What an import gives:**
 - `as_of`: the package's date.
 - `cap_table`: the cap table in the input format below, with `null` wherever OCF doesn't settle a term. OCF has no participation flag, no anti-dilution, no cumulative dividends and no conversion groups, so those are left blank or noted.
+- `issue_order` *(0.5.0)*: its preferred series, SAFEs and notes, earliest issued first, ready to pass as a `start` event's `issue_order` when you build a round on the import. A series is dated by its first issuance, and a SAFE or note by its own, or by the one it came from by a transfer. One dated the same day as a series counts as issued after it.
 - `to_fill`: each blank, for you to fill in before `readCapTable`.
 - `report`: what was read, by object type; what was read and set aside, because it doesn't change payouts (`not_needed`), such as vesting, valuations and legends; and a `notes` line, by code, for each choice the import made.
 
@@ -397,11 +398,11 @@ fund on seed: $4000000.00
 - a `term` naming the problem
 - the `subject` it's about
 
-Nothing is skipped. The rules, each with its default, are O1 to O12 in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+Nothing is skipped. The rules, each with its default, are O1 to O14 in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
 
 ## What it covers
 
-Items marked *(0.2.0)*, *(0.3.0)* or *(0.4.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -443,6 +444,7 @@ Items marked *(0.2.0)*, *(0.3.0)* or *(0.4.0)* are new in that version.
   - payouts jumping when a group's vote flips
 
 **Building a cap table from a company's events,** each event giving the cap table after it:
+- **A starting cap table** *(0.5.0)*: the first event may be the cap table the company stands at, entered or imported, and the events after it build on it. Beside it goes the order its series, SAFEs and notes were issued in, which decides whether a SAFE or note converting in a down round counts against a series. With none given, its SAFEs and notes count as issued after its series.
 - **Shares issued,** including a percentage of the company after the issue.
 - **The option pool:** created at a percentage of fully diluted shares. Grants come out of it, one option class per strike.
 - **Cumulative dividends on a priced round's series** *(0.2.0)*: they accrue from the round's date. The series its SAFEs and notes convert into carry the same terms, on their own issue price.
@@ -486,7 +488,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
-- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; more than one note unless each has a cap; and a note alongside a SAFE or a carve-out.
+- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; more than one note unless each has a cap; and a note alongside a SAFE or a carve-out. Since 0.5.0 `readInputs` refuses these on a cap table built from rounds too; before, it didn't check one.
 - Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
 **Refused by design,** with an `InputError`:
@@ -517,6 +519,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 
 | `type` | Fields |
 |---|---|
+| `start` *(0.5.0)* | The first event only. `cap_table`, in the exit input's format above, with no `carve_out`, since a carve-out is a term of the sale. Its holders must be in `holders`, by the same names. The at-a-sale limits on SAFEs and notes don't apply to it, since a round after it may convert them. Optional: `issue_order`, each preferred series, SAFE and note in it once, earliest issued first |
 | `issue` | `security`, and `issues`: `holder` and `shares` |
 | `issue_percent` | `security`, `holder`, and `percent` of the company after the issue |
 | `create_pool` | `percent` of fully diluted shares after it |
