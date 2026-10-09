@@ -16,8 +16,10 @@
 // have a carve-out, a term of the sale (M5 plan, item 13). Version 5 (0.3.0)
 // keeps every carve-out with the sale's other terms, whichever kind of cap
 // table, as the engine's exit input does (C6); a version 4 file with one in
-// its cap table opens with it moved there. The sale's terms come after the
-// range:
+// its cap table opens with it moved there. Version 6 (0.5.0) lets a company's
+// first event be the cap table it starts from (R31, C17), so a page that
+// can't build one says the file is newer instead. The sale's terms come after
+// the range:
 //
 //   {..., "range": [...], "exit_date": ..., "carve_out": {...}, "payment_schedules": [...], "view": {...}}
 //
@@ -40,7 +42,7 @@ import { fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
 
 export const FORMAT = "spillpoint";
-export const VERSION = 5;
+export const VERSION = 6;
 
 const FIELDS = [
   "format", "version", "name", "cap_table", "holders", "events", "cap_table_after_event", "carve_out", "range", "exit_date", "payment_schedules", "view",
@@ -92,7 +94,9 @@ export type Opened = { ok: true; name: string; draft: Draft; view: View | null; 
  * sale's date, which older files had no need for: they had no notes. Version
  * 4 adds payment schedules, and a carve-out beside the rounds; older files had
  * neither. Version 5 keeps a carve-out with the sale's terms: one in a cap
- * table moves there (C6; Jordan's answer 1 to the 0.3.0 plan).
+ * table moves there (C6; Jordan's answer 1 to the 0.3.0 plan). Version 6 adds
+ * a starting cap table as a company's first event, which older files didn't
+ * have (0.5.0 plan, 05b3).
  */
 const MIGRATIONS: Record<number, (file: Record<string, unknown>) => Record<string, unknown>> = {
   1: (file) => ({ ...file, version: 2 }),
@@ -105,6 +109,7 @@ const MIGRATIONS: Record<number, (file: Record<string, unknown>) => Record<strin
     const { carve_out, ...rest } = ct;
     return { ...file, version: 5, cap_table: rest, carve_out };
   },
+  5: (file) => ({ ...file, version: 6 }),
 };
 
 /** Reads a saved file back into the editor, or says plainly why it can't. */

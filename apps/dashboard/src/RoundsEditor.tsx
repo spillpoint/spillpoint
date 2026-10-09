@@ -27,6 +27,17 @@ export function RoundsHolders({ draft, onDraft, problem }: { draft: RoundsDraft;
         {draft.holders.map((h) => {
           const named = eventsNaming(draft, h.key);
           const id = holderFieldId(h.key);
+          // R31: the starting table's holders are its own, named and removed on the Cap table tab.
+          if (h.fromStart) {
+            return (
+              <li key={h.key} className="edit-row">
+                <span id={id} className="edit-row__name">
+                  {h.name || "Unnamed holder"}
+                </span>
+                <span className="field__hint">In the cap table the company starts from: rename or remove them on the Cap table tab.</span>
+              </li>
+            );
+          }
           return (
             <li key={h.key} className="edit-row">
               <Field id={id} label="Holder name" hiddenLabel value={h.name} onChange={(v) => rename(h.key, v)} error={problem?.fields.includes(id) ? problem.message : null} />

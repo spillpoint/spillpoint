@@ -66,7 +66,7 @@ describe("saving Millrace and opening it again", () => {
     const second = await saved(1);
     expect(second).toBe(first);
     // The file keeps the rounds, and they build what Millrace's locked cap table pays.
-    expect(JSON.parse(first)).toMatchObject({ version: 5, cap_table_after_event: "series_b" });
+    expect(JSON.parse(first)).toMatchObject({ version: 6, cap_table_after_event: "series_b" });
     expect(payoutsAtBreakpoints(exitOf(second))).toEqual(payoutsAtBreakpoints(lockedMillraceExit()));
   });
 

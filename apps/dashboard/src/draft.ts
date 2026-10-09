@@ -743,9 +743,11 @@ function slug(name: string, fallback: string): string {
   return s || fallback;
 }
 
-/** Ids for every row: loaded ids as they were, new ones from the name, each unique. */
-export function assignIds<T extends { key: string; fileId: string | null; name: string }>(rows: readonly T[], fallback: string): Map<string, string> {
-  const taken = new Set(rows.flatMap((r) => (r.fileId ? [r.fileId] : [])));
+/** Ids for every row: loaded ids as they were, new ones from the name, each unique, and none of those `reserved`. */
+export function assignIds<T extends { key: string; fileId: string | null; name: string }>(
+  rows: readonly T[], fallback: string, reserved: ReadonlySet<string> = new Set(),
+): Map<string, string> {
+  const taken = new Set([...reserved, ...rows.flatMap((r) => (r.fileId ? [r.fileId] : []))]);
   const ids = new Map<string, string>();
   for (const r of rows) {
     if (r.fileId) {

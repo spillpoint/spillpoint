@@ -12,6 +12,9 @@
 // what each round cost them. A SAFE or note that will still be outstanding at
 // the sale says so on the event that creates it (M5k), and an event the engine
 // can't build yet names the event whose problem it's waiting on, and links to it.
+// A company whose rounds start from a cap table (R31, 0.5.0) has that table as
+// its first event, which stays first; its cap table is edited on the Cap table
+// tab. A cap table entered directly can start a company's rounds from here.
 
 import { useState } from "react";
 import { D } from "spillpoint";
@@ -40,19 +43,31 @@ interface Props {
   onEditing: (update: (open: ReadonlySet<string>) => ReadonlySet<string>) => void;
   /** Opens the Cap table tab at its Exit terms card. */
   onExitTerms: () => void;
+  /** Opens the Cap table tab, at a field if one is named. */
+  onCapTable: (field?: string) => void;
+  /** Starts the company's rounds on a cap table entered directly; null when there are rounds. */
+  onAddRound: (() => void) | null;
 }
 
 const count = (n: D) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const ZERO = new D(0);
 const ADD_TYPE = "rounds-add-type";
 
-export function RoundsView({ events, you, rounds, onRounds, problem, tables, editing, onEditing, onExitTerms }: Props) {
+export function RoundsView({ events, you, rounds, onRounds, problem, tables, editing, onEditing, onExitTerms, onCapTable, onAddRound }: Props) {
   const [adding, setAdding] = useState<EventType>("priced_round");
   if (!events || !rounds) {
     return (
       <section className="card" aria-labelledby="rounds-heading">
         <h2 id="rounds-heading">Rounds</h2>
         <p>This cap table was entered directly, not built from the company's rounds, so there are no rounds to show.</p>
+        {onAddRound && (
+          <>
+            <p>To model the company's next round on it, add one: this cap table becomes the one its rounds start from.</p>
+            <button type="button" className="add" onClick={onAddRound}>
+              Add a round
+            </button>
+          </>
+        )}
       </section>
     );
   }
@@ -65,7 +80,7 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
 
   const add = () => {
     const last = rounds.events.at(-1);
-    const next = addEvent(rounds, adding, (last && built.get(idOf(last))?.capTable.seniority) ?? []);
+    const next = addEvent(rounds, adding, (last && built.get(idOf(last))?.capTable) ?? null);
     const key = next.events.at(-1)!.key;
     onRounds(next);
     onEditing((open) => new Set([...open, key]));
@@ -166,6 +181,7 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
           const series = String((event.json.series as { id?: string } | undefined)?.id ?? "");
           const made = (built.get(id)?.capTable.securities ?? []).map((s) => s.id).filter((s) => s !== series && !before?.capTable.securities.some((b) => b.id === s));
           const title = draftTitle(event.json);
+          const start = event.json.type === "start";
           const open = editing.has(event.key);
           const formId = `round-form-${event.key}`;
           const date = typeof event.json.date === "string" && event.json.date ? dateText(event.json.date) : null;
@@ -190,13 +206,37 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
               {problem?.event === event.key && (
                 <p className="rounds__problem" role="alert" id={`round-problem-${event.key}`} tabIndex={-1}>
                   <strong>This event has a problem, so the payouts can't update:</strong> {problem.message}
+                  {problem.onTable && (
+                    <>
+                      {" "}
+                      <button type="button" className="link-button" onClick={() => onCapTable(problem.fields[0])}>
+                        Fix it on the Cap table tab
+                      </button>
+                    </>
+                  )}
+                </p>
+              )}
+              {start && (
+                <p className="rounds__start">
+                  Its cap table is edited on the{" "}
+                  <button type="button" className="link-button" onClick={() => onCapTable()}>
+                    Cap table tab
+                  </button>
+                  . It stays the first event.
                 </p>
               )}
               {open && (
                 <div id={formId}>
                   <EventForm event={event} draft={rounds} onDraft={onRounds} problem={problem} before={before} conversions={made} />
                   <div className="event-form__actions">
-                    <button type="button" className="add" id={`move-earlier-${event.key}`} aria-label={`Move ${title} earlier`} disabled={i === 0} onClick={() => move(event, -1)}>
+                    <button
+                      type="button"
+                      className="add"
+                      id={`move-earlier-${event.key}`}
+                      aria-label={`Move ${title} earlier`}
+                      disabled={i === 0 || start || previous?.json.type === "start"}
+                      onClick={() => move(event, -1)}
+                    >
                       Move earlier
                     </button>
                     <button
@@ -204,12 +244,12 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
                       className="add"
                       id={`move-later-${event.key}`}
                       aria-label={`Move ${title} later`}
-                      disabled={i === rounds.events.length - 1}
+                      disabled={i === rounds.events.length - 1 || start}
                       onClick={() => move(event, 1)}
                     >
                       Move later
                     </button>
-                    <button type="button" className="remove" aria-label={`Remove ${title}`} disabled={rounds.events.length === 1} onClick={() => remove(event, i + 1)}>
+                    <button type="button" className="remove" aria-label={`Remove ${title}`} disabled={rounds.events.length === 1 || start} onClick={() => remove(event, i + 1)}>
                       Remove this event
                     </button>
                   </div>
@@ -217,7 +257,7 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
               )}
               {id === rounds.after && <p className="tag rounds__used">The payouts use the cap table after this event.</p>}
               {view ? (
-                <Built view={view} previous={previous ? views.get(idOf(previous)) : undefined} you={you} atSale={atSaleLines(event)} />
+                <Built view={view} previous={previous ? views.get(idOf(previous)) : undefined} you={start ? null : you} atSale={atSaleLines(event)} />
               ) : (
                 <>
                   <p className="rounds__unbuilt">{waitingOn(event)}</p>
@@ -263,11 +303,14 @@ function AtSale({ lines }: { lines: string[] }) {
   ));
 }
 
-/** What an event did, as last built: the "For you" line, the sentences, what's still outstanding at the sale, and the cap table after it. */
-function Built({ view: e, previous, you, atSale }: { view: EventView; previous: EventView | undefined; you: string; atSale: string[] }) {
+/**
+ * What an event did, as last built: the "For you" line, the sentences, what's still outstanding at the sale, and the
+ * cap table after it. A starting table has no before, so no "For you" line (`you` null).
+ */
+function Built({ view: e, previous, you, atSale }: { view: EventView; previous: EventView | undefined; you: string | null; atSale: string[] }) {
   return (
     <>
-      {forYou(previous?.stakes.get(you) ?? ZERO, e.stakes.get(you) ?? ZERO)}
+      {you !== null && forYou(previous?.stakes.get(you) ?? ZERO, e.stakes.get(you) ?? ZERO)}
       <ul className="rounds__lines">
         {e.lines.map((line, j) =>
           typeof line === "string" ? (

@@ -17,6 +17,9 @@ export interface ImportUse {
   name: string;
   source: string;
   draft: Draft;
+  /** The package's date, and the order its series, SAFEs and notes were issued in (O14), for "Add a round" (R31). */
+  asOf: string;
+  issueOrder: string[];
 }
 
 interface Props {
@@ -64,7 +67,7 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
     };
     try {
       readExit(exit, undefined, "import");
-      onUse({ name: pkg.issuer, source, draft: draftFromExit(exit) });
+      onUse({ name: pkg.issuer, source, draft: draftFromExit(exit), asOf: result.as_of, issueOrder: result.issue_order });
     } catch (e) {
       if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) {
         setProblem(`This cap table can't be used yet. ${withoutCodes(e.message)}`);

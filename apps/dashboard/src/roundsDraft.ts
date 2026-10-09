@@ -13,11 +13,18 @@
 // last event unless someone chooses an earlier one. Which SAFEs and notes are
 // still outstanding, and where each converts, is read from the events as
 // typed (M5k), so the page can say it even while the engine can't build them.
+//
+// A company can start from a cap table (R31, 0.5.0): its first event is then
+// the cap table it stands at, entered directly or imported, which "Add a
+// round" turns into the start of its rounds. That table is held as the cap
+// table editor holds one, and edited on the Cap table tab; its holders lead
+// the list the events name, under the editor's own keys.
 
 import { parseExact } from "spillpoint";
+import type { CapTable } from "spillpoint";
 
-import { assignIds, moneyText, multipleText, percentText, percentToFraction, shareText } from "./draft.ts";
-import type { DraftHolder } from "./draft.ts";
+import { assignIds, buildExit, draftFromExit, fieldForPath, moneyText, multipleText, percentText, percentToFraction, shareText } from "./draft.ts";
+import type { Draft, DraftHolder } from "./draft.ts";
 import type { Rounds } from "./rounds.ts";
 
 type Json = Record<string, unknown>;
@@ -28,12 +35,23 @@ export interface EventDraft {
   json: Json;
 }
 
+/** A holder the events can name. One from the starting table is that table's own: named, and removed, on the Cap table tab. */
+export interface RoundsHolder extends DraftHolder {
+  fromStart?: boolean;
+}
+
 export interface RoundsDraft {
-  holders: DraftHolder[];
+  /** The starting table's holders first, if there is one, then the ones added here. */
+  holders: RoundsHolder[];
   events: EventDraft[];
   /** The event whose cap table the payouts use, by id (C2). */
   after: string;
   nextKey: number;
+  /**
+   * The cap table the company starts from (R31), as typed on the Cap table tab, when its first event is one; null when
+   * the events build it from founding. The start event keeps its id, date and issue order; its cap table is this.
+   */
+  start: Draft | null;
 }
 
 /** The list of lines each event type has, and which of their fields name a holder or are percentages. */
@@ -72,14 +90,55 @@ function asPercent(v: unknown): unknown {
 /** "6.5" or "6.5%" → "0.065", exactly, as the cap table editor reads its rates. */
 export const asFraction = percentToFraction;
 
-/** The rounds as the editor holds them. */
+/** The rounds as the editor holds them. A starting table the page can't show in full throws NotShownYet, as any cap table does. */
 export function draftFromRounds(rounds: Rounds): RoundsDraft {
   let n = 0;
   const key = () => `r${++n}`;
-  const holders = rounds.holders.map((h) => ({ key: key(), fileId: String(h.id), name: String(h.name) }));
+  const first = rounds.events[0];
+  // The range is the sale's, not the starting table's: a stand-in, never used.
+  const start = first?.type === "start" ? draftFromExit({ cap_table: first.cap_table, range: ["0", "1"] }) : null;
+  const fromStart = new Set((start?.holders ?? []).map((h) => h.fileId));
+  const holders: RoundsHolder[] = [
+    ...(start?.holders ?? []).map((h) => ({ ...h, fromStart: true })),
+    ...rounds.holders.filter((h) => !fromStart.has(String(h.id))).map((h) => ({ key: key(), fileId: String(h.id), name: String(h.name) })),
+  ];
   const keyOf = (id: unknown) => holders.find((h) => h.fileId === id)?.key ?? id;
-  const events = rounds.events.map((ev) => ({ key: key(), json: mapEvent(ev, keyOf, asPercent) }));
-  return { holders, events, after: rounds.after, nextKey: n + 1 };
+  const events = rounds.events.map((ev) => {
+    if (ev.type !== "start") return { key: key(), json: mapEvent(ev, keyOf, asPercent) };
+    const { cap_table: _table, ...json } = ev;
+    return { key: key(), json };
+  });
+  return { holders, events, after: rounds.after, nextKey: n + 1, start };
+}
+
+/** The rounds with their starting table as typed: its holders lead the ones the events can name, as it names them. */
+export function withStart(d: RoundsDraft, table: Draft): RoundsDraft {
+  const own = d.holders.filter((h) => !h.fromStart);
+  return { ...d, start: table, holders: [...table.holders.map((h) => ({ ...h, fromStart: true })), ...own] };
+}
+
+/**
+ * "Add a round" (R31): a cap table entered directly or imported becomes the cap table a company built from rounds
+ * starts from, dated and ordered as its import gave it, if it was imported. The sale's terms stay with the sale.
+ */
+export function startingRounds(table: Draft, origin: { date: string; issueOrder: string[] | null } | null): RoundsDraft {
+  const json: Json = { id: "start", date: origin?.date ?? "", type: "start", ...(origin?.issueOrder ? { issue_order: origin.issueOrder } : {}) };
+  const start = { ...table, exitDate: "", carveOut: null, schedules: [] };
+  return withStart({ holders: [], events: [{ key: "r1", json }], after: "start", nextKey: 2, start: null }, start);
+}
+
+/**
+ * R31: the order a starting table's series, SAFEs and notes were issued in, as its import gave it, kept to what the
+ * table holds now. One taken out drops out. A series added counts as issued before every SAFE and note, and a SAFE or
+ * note added after everything: what the engine reads with no order given. Without one given, there's none to keep.
+ */
+export function issueOrder(given: unknown, table: Json): string[] | undefined {
+  if (!Array.isArray(given)) return undefined;
+  const series = ((table.securities as Json[] | undefined) ?? []).filter((s) => s.kind === "preferred").map((s) => String(s.id));
+  const convertibles = [...((table.unconverted_safes as Json[] | undefined) ?? []), ...((table.unconverted_notes as Json[] | undefined) ?? [])].map((x) => String(x.id));
+  const now = new Set([...series, ...convertibles]);
+  const kept = given.map(String).filter((id) => now.has(id));
+  return [...series.filter((id) => !kept.includes(id)), ...kept, ...convertibles.filter((id) => !kept.includes(id))];
 }
 
 // ---------- building ----------
@@ -110,11 +169,27 @@ function normaliseAll(value: unknown, path: string): unknown {
   return normalise(path, value);
 }
 
-/** The rounds as the engine reads them, and as a save writes them. */
+/**
+ * The rounds as the engine reads them, and as a save writes them. A starting table's holders keep the ids its own
+ * cap table gives them, and the holders added here get ids none of them has.
+ */
 export function buildRounds(d: RoundsDraft): Rounds {
-  const ids = assignIds(d.holders, "holder");
-  const holders = d.holders.map((h) => ({ id: ids.get(h.key)!, name: h.name.trim() }));
+  const start = d.start ? buildExit(d.start) : null;
+  const startIds = start?.holderIds ?? new Map<string, string>();
+  const own = d.holders.filter((h) => !h.fromStart);
+  const ownIds = assignIds(own, "holder", new Set(startIds.values()));
+  const ids = new Map([...startIds, ...ownIds]);
+  const holders = [
+    ...(d.start?.holders ?? []).map((h) => ({ id: startIds.get(h.key)!, name: h.name.trim() })),
+    ...own.map((h) => ({ id: ownIds.get(h.key)!, name: h.name.trim() })),
+  ];
   const events = d.events.map((e) => {
+    if (e.json.type === "start") {
+      const { issue_order: given, ...rest } = e.json;
+      const table = start?.json.cap_table ?? null;
+      const order = table ? issueOrder(given, table) : undefined;
+      return { ...(normaliseAll(rest, "") as Json), cap_table: table, ...(order ? { issue_order: order } : {}) };
+    }
     const withIds = mapEvent(e.json, (k) => ids.get(String(k)) ?? k, asFraction);
     return normaliseAll(withIds, "") as Json;
   });
@@ -131,7 +206,7 @@ export function addHolder(d: RoundsDraft): RoundsDraft {
   return { ...d, holders: [...d.holders, { key: `r${d.nextKey}`, fileId: null, name: "New holder" }], nextKey: d.nextKey + 1 };
 }
 
-/** How many events name this holder: a holder still in an event can't be removed (M4j plan, answer 5). */
+/** How many events name this holder: a holder still in an event can't be removed (M4j plan, answer 5). A starting table's holders are its own. */
 export function eventsNaming(d: RoundsDraft, key: string): number {
   return d.events.filter((e) => {
     const list = LISTS[String(e.json.type)];
@@ -175,22 +250,32 @@ function freshId(taken: Set<string>, base: string): string {
  * name until they're filled. A priced round's series is the next letter
  * ("Series A Preferred", then B), with the most common terms: a 1x
  * non-participating preference and broad-based weighted-average
- * anti-dilution, SPEC's default. It ranks alongside the most senior earlier
- * series (M4j plan, answer 2), and its series from SAFEs and notes with it
- * (R28). `seniority` is the seniority before it, as last built.
+ * anti-dilution, SPEC's default. After a starting table it's the letter after
+ * the last "Series" it has: Series B, after a Series A (R31). It ranks
+ * alongside the most senior earlier series (M4j plan, answer 2), and its
+ * series from SAFEs and notes with it (R28). `before` is the cap table after
+ * the last event, as last built: its seniority, its classes, and its common
+ * stock, which a new issue of common adds to.
  */
-export function addEvent(d: RoundsDraft, type: EventType, seniority: string[][]): RoundsDraft {
+export function addEvent(d: RoundsDraft, type: EventType, before: CapTable | null): RoundsDraft {
   const key = `r${d.nextKey}`;
   const ids = new Set(d.events.map((e) => String(e.json.id)));
+  const seniority = before?.seniority ?? [];
   const holder = d.holders[0]?.key ?? "";
-  const common = d.events.map((e) => e.json.security as Json | undefined).find((s) => s?.kind === "common") ?? { id: "common", name: "Common Stock", kind: "common" };
+  const builtCommon = before?.securities.find((s) => s.kind === "common");
+  const common =
+    d.events.map((e) => e.json.security as Json | undefined).find((s) => s?.kind === "common") ??
+    (builtCommon ? { id: builtCommon.id, name: builtCommon.name, kind: "common" } : { id: "common", name: "Common Stock", kind: "common" });
   const rows = (id: string) => ({ id, holder });
   let json: Json;
   if (type === "priced_round") {
-    const seriesIds = new Set(d.events.flatMap((e) => ((e.json.series as Json | undefined)?.id ? [String((e.json.series as Json).id)] : [])));
-    const rounds = d.events.filter((e) => e.json.type === "priced_round").length;
+    const typed = d.events.flatMap((e) => ((e.json.series as Json | undefined)?.id ? [e.json.series as Json] : []));
+    const classes = new Set([...typed.map((x) => String(x.id)), ...(before?.securities ?? []).map((x) => x.id)]);
+    const named = [...typed.map((x) => String(x.name ?? "")), ...(before?.securities ?? []).filter((x) => x.kind === "preferred").map((x) => x.name)];
+    const lettered = named.map((n) => /^Series ([A-Z])\b/.exec(n)?.[1]).filter((l): l is string => l != null).map((l) => l.charCodeAt(0) - 65);
+    const rounds = Math.max(d.events.filter((e) => e.json.type === "priced_round").length, ...lettered.map((i) => i + 1));
     const letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[rounds] ?? String(rounds + 1);
-    const series = freshId(new Set([...seriesIds, ...ids]), `series_${letter.toLowerCase()}`);
+    const series = freshId(new Set([...classes, ...ids]), `series_${letter.toLowerCase()}`);
     json = {
       id: series,
       date: "",
@@ -231,15 +316,19 @@ export function addEvent(d: RoundsDraft, type: EventType, seniority: string[][])
   return keepingAfter(d, { ...d, events: [...d.events, { key, json }], nextKey: d.nextKey + 1 });
 }
 
+/** A starting table stays first, and stays: dropping it is "Edit the cap table directly", which drops every event. */
+const isStart = (e: EventDraft | undefined) => e?.json.type === "start";
+
 export function removeEvent(d: RoundsDraft, key: string): RoundsDraft {
+  if (isStart(d.events.find((e) => e.key === key))) return d;
   return keepingAfter(d, { ...d, events: d.events.filter((e) => e.key !== key) });
 }
 
-/** Moves an event one place earlier (-1) or later (+1). */
+/** Moves an event one place earlier (-1) or later (+1), never past a starting table. */
 export function moveEvent(d: RoundsDraft, key: string, by: -1 | 1): RoundsDraft {
   const at = d.events.findIndex((e) => e.key === key);
   const to = at + by;
-  if (at < 0 || to < 0 || to >= d.events.length) return d;
+  if (at < 0 || to < 0 || to >= d.events.length || isStart(d.events[at]) || isStart(d.events[to])) return d;
   const events = [...d.events];
   [events[at], events[to]] = [events[to]!, events[at]!];
   return keepingAfter(d, { ...d, events });
@@ -247,10 +336,12 @@ export function moveEvent(d: RoundsDraft, key: string, by: -1 | 1): RoundsDraft 
 
 // ---------- SAFEs and notes, as typed ----------
 
-/** A SAFE or note one event creates, and the priced round that converts it, as the events are typed. */
+/** A SAFE or note one event creates, or a starting table holds, and the priced round that converts it, as the events are typed. */
 export interface Convertible {
   kind: "safe" | "note";
-  /** The event that creates it, by key, and its line there. */
+  /** Its id, as typed or loaded. */
+  id: string;
+  /** The event that creates it, by key, and its line there: for a starting table, its line among the table's SAFEs or notes. */
   event: string;
   row: number;
   /** Its holder, by editor key. */
@@ -271,9 +362,16 @@ export function convertibles(d: RoundsDraft): Convertible[] {
   const found: Convertible[] = [];
   for (const e of d.events) {
     const type = e.json.type;
+    // R31: a starting table's SAFEs and notes are outstanding from the start.
+    if (type === "start" && d.start) {
+      d.start.safes.forEach((f, i) => found.push({ kind: "safe", id: f.fileId ?? f.key, event: e.key, row: i, holder: f.holder, convertedBy: null }));
+      d.start.notes.forEach((n, i) => found.push({ kind: "note", id: n.fileId ?? n.key, event: e.key, row: i, holder: n.holder, convertedBy: null }));
+    }
     if (type === "safes" || type === "notes") {
       const rows = (e.json[type] as Json[] | undefined) ?? [];
-      rows.forEach((row, i) => found.push({ kind: type === "safes" ? "safe" : "note", event: e.key, row: i, holder: String(row.holder ?? ""), convertedBy: null }));
+      rows.forEach((row, i) =>
+        found.push({ kind: type === "safes" ? "safe" : "note", id: String(row.id ?? ""), event: e.key, row: i, holder: String(row.holder ?? ""), convertedBy: null }),
+      );
     }
     if (type === "priced_round") {
       const converts = { safe: e.json.convert_safes !== false, note: e.json.convert_notes === true };
@@ -299,6 +397,8 @@ export function antiDilutionBefore(d: RoundsDraft, eventKey: string): Set<string
   const rules = new Set<string>();
   for (const e of d.events) {
     if (e.key === eventKey) break;
+    // R31: a starting table's series, as typed on the Cap table tab.
+    if (e.json.type === "start") for (const s of d.start?.securities ?? []) if (s.kind === "preferred" && s.antiDilution && s.antiDilution !== "none") rules.add(s.antiDilution);
     const s = (e.json.series ?? e.json.security) as Json | undefined;
     if (s?.kind === "preferred" && typeof s.anti_dilution === "string" && s.anti_dilution !== "none") rules.add(s.anti_dilution);
   }
@@ -331,6 +431,8 @@ export function blankRounds(): Rounds {
 export function draftTitle(json: Json): string {
   const items = (key: string) => ((json[key] as unknown[] | undefined) ?? []).length;
   switch (json.type) {
+    case "start":
+      return "The cap table it starts from";
     case "issue":
     case "issue_percent":
       return `${String((json.security as Json | undefined)?.name ?? "Stock")} issued`;
@@ -429,6 +531,8 @@ export interface RoundsProblem {
   fields: string[];
   /** When it's a blank field: the event's other fields the engine also needs filled, each nearest first. */
   blanks?: string[][];
+  /** In the starting table (R31): its fields are the Cap table tab's, where it's edited. */
+  onTable?: boolean;
 }
 
 /** Where an engine error about the rounds belongs. */
@@ -439,6 +543,13 @@ export function locate(d: RoundsDraft, path: string, message: string): RoundsPro
   const text = blank ? BLANK : detail.charAt(0).toUpperCase() + detail.slice(1);
   const holder = /^inputs\.holders\[(\d+)\]/.exec(path);
   if (holder) return { message: text, event: null, fields: [holderFieldId(d.holders[Number(holder[1])]?.key ?? "")] };
+  // R31: the starting table's fields are the Cap table tab's, found as that tab finds its own.
+  const table = /^inputs\.events\[(\d+)\]\.cap_table(.*)$/.exec(path);
+  const start = table ? d.events[Number(table[1])] : undefined;
+  if (table && start && d.start) {
+    const field = fieldForPath(buildExit(d.start).fields, `exit.cap_table${table[2]}`);
+    return { message: text, event: start.key, fields: field ? [field] : [], onTable: true };
+  }
   const m = /^inputs\.events\[(\d+)\]\.?(.*)$/.exec(path);
   const event = m ? d.events[Number(m[1])] : undefined;
   if (!m || !event) return { message: withPath(path, text), event: null, fields: [] };
