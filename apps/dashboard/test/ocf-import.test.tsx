@@ -90,9 +90,24 @@ describe("the terms OCF leaves open", () => {
     fireEvent.change(within(panel).getByLabelText("Investor N's note's repayment multiple at a sale"), { target: { value: "1.5" } });
     fireEvent.change(within(panel).getByLabelText("When is the sale?"), { target: { value: "2026-06-30" } });
     click("Use this cap table");
-    // Larkspur's SAFEs sit beside a note, which the engine refuses at a sale (X12): the panel stays, and says why.
-    expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used yet\. /);
+    // Larkspur's SAFEs sit beside a note, which the engine refuses at a sale (X12): the panel stays, says why, and
+    // offers a round to convert them (05b3b).
+    expect(screen.getByRole("alert").textContent).toBe(
+      "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding.",
+    );
     expect(screen.getByRole("region", { name: /^Importing Larkspur/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Use it to add a round" })).toBeTruthy();
+  });
+
+  it("offers a round only for the sale's limits on SAFEs and notes, not for any other refusal (05b3b)", async () => {
+    render(<App />);
+    upload(packageOf("ocf-10-edge-13a"));
+    const panel = await review();
+    // A sale before the note was issued: refused, but not for the note being outstanding at a sale.
+    fireEvent.change(within(panel).getByLabelText("When is the sale?"), { target: { value: "2000-01-01" } });
+    click("Use this cap table");
+    expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used yet\. /);
+    expect(screen.queryByRole("button", { name: "Use it to add a round" })).toBeNull();
   });
 });
 

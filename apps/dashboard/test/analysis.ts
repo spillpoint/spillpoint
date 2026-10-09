@@ -18,6 +18,13 @@ import { expect } from "vitest";
  */
 export const ANALYSIS_TIMEOUT = 15_000;
 
+/**
+ * The timeout for a test that runs a full breakpoint search on case 27, or on anything larger: about 3.8s on CI's
+ * 2-core machine for each search, and a page test runs several (#68). As the engine's tests set it. The search's speed
+ * is on the later list.
+ */
+export const FULL_SEARCH_TIMEOUT = 60_000;
+
 /** The breakpoint list's section, once the page has finished working it out. */
 export function analysed(): Promise<HTMLElement> {
   return waitFor(

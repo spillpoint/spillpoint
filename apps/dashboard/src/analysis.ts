@@ -145,7 +145,8 @@ const SETTLE_MS = 250;
 /**
  * The analysis of an exit input, recomputed whenever it changes. The first
  * one starts at once; after an edit it waits until typing pauses, so the
- * background thread isn't restarted on every keystroke.
+ * background thread isn't restarted on every keystroke. Null, before there's
+ * a cap table to pay out (05b3b), waits for one.
  */
 export function useAnalysis(exit: unknown): AnalysisState {
   const [state, setState] = useState<AnalysisState>({ status: "computing" });
@@ -153,6 +154,7 @@ export function useAnalysis(exit: unknown): AnalysisState {
   useEffect(() => {
     let current = true;
     setState({ status: "computing" });
+    if (exit === null) return;
     const run = () =>
       compute(exit).then(
         (analysis) => current && setState({ status: "ready", ...analysis }),

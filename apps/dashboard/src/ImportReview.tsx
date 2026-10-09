@@ -1,7 +1,10 @@
 // What an OCF import read, shown before its cap table is used (M6 plan,
 // answer 9): what to check, what was read and set aside, and a question for
 // each term OCF leaves open. "Use this cap table" opens it as a saved file
-// would be; until then nothing changes.
+// would be; until then nothing changes. A table the engine refuses at a sale
+// only for its SAFEs or notes still outstanding can start a company's rounds
+// instead (R31; 0.5.0 plan, 05b3b answers): "Use it to add a round" opens a
+// priced round that converts them.
 
 import { useMemo, useState } from "react";
 import { InputError, UnsupportedTermError, readExit } from "spillpoint";
@@ -12,6 +15,7 @@ import type { Draft } from "./draft.ts";
 import { Field } from "./fields.tsx";
 import { amountHint, parseDollars, withoutCodes } from "./format.ts";
 import { Package, defaultTop, exactAmount, filled, longDate, questions, reportLines, summary, typeName } from "./ocfImport.ts";
+import { saleLimitText } from "./saleLimits.ts";
 
 export interface ImportUse {
   name: string;
@@ -20,6 +24,8 @@ export interface ImportUse {
   /** The package's date, and the order its series, SAFEs and notes were issued in (O14), for "Add a round" (R31). */
   asOf: string;
   issueOrder: string[];
+  /** Start the company's rounds on it at once, with a priced round that converts its SAFEs and notes. */
+  addRound?: boolean;
 }
 
 interface Props {
@@ -41,11 +47,14 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
   const [top, setTop] = useState(() => defaultTop(result.cap_table));
   const [missing, setMissing] = useState<ReadonlySet<string>>(new Set());
   const [problem, setProblem] = useState<string | null>(null);
+  // What a round would start from, when only the sale's limits on SAFEs and notes stop the table being used.
+  const [offer, setOffer] = useState<ImportUse | null>(null);
 
   const answer = (key: string, value: string) => {
     setAnswers((a) => ({ ...a, [key]: value }));
     setMissing((m) => new Set([...m].filter((k) => k !== key)));
     setProblem(null);
+    setOffer(null);
   };
 
   const use = () => {
@@ -65,10 +74,25 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
       exit_values: [],
       ...(hasNotes ? { exit_date: saleDate } : {}),
     };
+    const chosen = (draft: Draft): ImportUse => ({ name: pkg.issuer, source, draft, asOf: result.as_of, issueOrder: result.issue_order });
     try {
       readExit(exit, undefined, "import");
-      onUse({ name: pkg.issuer, source, draft: draftFromExit(exit), asOf: result.as_of, issueOrder: result.issue_order });
+      onUse(chosen(draftFromExit(exit)));
     } catch (e) {
+      // The limits a sale puts on SAFEs and notes still outstanding (X12–X15), in plain words: a round that converts
+      // them lifts them, so the table can still start a company's rounds. Any other refusal can't.
+      const limit = saleLimitText(e, exit.cap_table);
+      if (limit) {
+        try {
+          setOffer(chosen(draftFromExit(exit)));
+          setProblem(`This cap table can't be used at a sale yet: ${limit}`);
+          return;
+        } catch (shown) {
+          if (!(shown instanceof NotShownYet)) throw shown;
+          setProblem(`This cap table can't be used yet. ${withoutCodes(shown.message)}`);
+          return;
+        }
+      }
       if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) {
         setProblem(`This cap table can't be used yet. ${withoutCodes(e.message)}`);
         return;
@@ -156,6 +180,7 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
           value={saleDate}
           onChange={(v) => {
             setSaleDate(v);
+            setOffer(null);
             setMissing((m) => new Set([...m].filter((k) => k !== "sale-date")));
           }}
           hint="Notes accrue interest up to it. OCF has no field for it."
@@ -168,6 +193,7 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
         value={top}
         onChange={(v) => {
           setTop(v);
+          setOffer(null);
           setMissing((m) => new Set([...m].filter((k) => k !== "top")));
         }}
         numeric
@@ -179,6 +205,17 @@ export function ImportReview({ result, files, source, skipped, onUse, onCancel }
         <p className="file-status file-status--problem" role="alert">
           {problem}
         </p>
+      )}
+      {offer && (
+        <div className="import__round">
+          <p>
+            Its SAFEs and notes can convert in a priced round, though. Use it to add one: it becomes the cap table the company's rounds start from, and the
+            payouts are worked out on the cap table after the round.
+          </p>
+          <button type="button" className="file-button file-button--primary" onClick={() => onUse({ ...offer, addRound: true })}>
+            Use it to add a round
+          </button>
+        </div>
       )}
       <div className="import__actions">
         <button type="button" className="file-button file-button--primary" onClick={use}>

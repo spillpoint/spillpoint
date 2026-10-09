@@ -219,8 +219,36 @@ const list = (items: string[]) => (items.length <= 1 ? (items[0] ?? "") : `${ite
 
 const RULES = { broad_based: "broad-based weighted average", narrow_based: "narrow-based weighted average", full_ratchet: "full ratchet" } as const;
 
+/**
+ * What a round needs to know of the cap table the company starts from (R31), if it starts from one: its series, its
+ * SAFEs and notes, and the order they were issued in, if it gives one.
+ */
+interface Starting {
+  series: Set<string>;
+  convertibles: Set<string>;
+  order: string[] | null;
+}
+
+/**
+ * R25, R31: whether a SAFE or note was issued after a starting series. One from an event after the starting table
+ * was; one from the table follows the order it gives, or, with none, counts as after its series.
+ */
+function issuedAfter(starting: Starting, convertible: string, series: string): boolean {
+  if (!starting.convertibles.has(convertible) || !starting.order) return true;
+  return starting.order.indexOf(convertible) > starting.order.indexOf(series);
+}
+
 /** What the Rounds tab shows for each event: what it did, and the cap table after it. */
 export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventView[] {
+  const first = rounds.events[0];
+  const startTable = first?.type === "start" ? tables[0]?.capTable : undefined;
+  const starting: Starting | null = startTable
+    ? {
+        series: new Set(startTable.securities.filter((s) => s.kind === "preferred").map((s) => s.id)),
+        convertibles: new Set([...(startTable.unconvertedSafes ?? []), ...(startTable.unconvertedNotes ?? [])].map((x) => x.id)),
+        order: Array.isArray(first!.issue_order) ? (first!.issue_order as string[]) : null,
+      }
+    : null;
   return tables.map((t, i) => {
     const ev = rounds.events[i]!;
     const ct = t.capTable;
@@ -234,7 +262,7 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
     };
     const total = ct.positions.reduce((sum, p) => sum.plus(asConverted(p.security, p.shares)), ct.unissuedPool);
     const share = (n: Decimal) => (total.isZero() ? ZERO : n.div(total));
-    const { title, lines } = describe(ev, t, holder, security);
+    const { title, lines } = describe(ev, t, holder, security, i > 0 ? tables[i - 1]! : null, starting);
     const stakes = new Map<string, Decimal>();
     for (const p of ct.positions) stakes.set(p.holder, (stakes.get(p.holder) ?? ZERO).plus(share(asConverted(p.security, p.shares))));
     return {
@@ -258,7 +286,7 @@ type Name = (id: unknown) => string;
 /** ", with a 20% discount", or nothing without one. */
 const discountText = (discount: unknown) => (discount != null && !new D(String(discount)).isZero() ? `, with a ${pct(new D(String(discount)))} discount` : "");
 
-function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name): { title: string; lines: Line[] } {
+function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name, before: CapTableAfterEvent | null, starting: Starting | null): { title: string; lines: Line[] } {
   const d = t.details;
   const items = (key: string) => (ev[key] as Json[] | undefined) ?? [];
   switch (d.kind) {
@@ -314,7 +342,10 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name)
     case "create_pool":
       return { title: "Option pool created", lines: [`${count(d.poolCreated)} shares set aside for options: ${pct(new D(String(ev.percent)).div(100))} of the fully diluted shares after it.`] };
     case "priced_round":
-      return { title: `${security((ev.series as Json).id)}, a priced round`, lines: [...roundLines(ev, d, holder, security), ...dividendLines(ev, t)] };
+      return {
+        title: `${security((ev.series as Json).id)}, a priced round`,
+        lines: [...roundLines(ev, d, holder, security, starting), ...dividendLines(ev, t), ...startingLines(ev, d, t, before, starting)],
+      };
   }
 }
 
@@ -335,7 +366,7 @@ function dividendLines(ev: Json, t: CapTableAfterEvent): string[] {
   });
 }
 
-function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): Line[] {
+function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name, starting: Starting | null): Line[] {
   const seriesName = security((ev.series as Json).id);
   const investments = (ev.investments as Json[]).map((inv) => ({ holder: String(inv.holder), amount: new D(String(inv.amount)) }));
   const byHolder = new Map<string, Decimal>();
@@ -389,9 +420,79 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name): Li
     const text =
       `${security(a.series)}'s anti-dilution (${RULES[a.rule]}) lowers its conversion price from ${price(a.cp1)} to ${price(a.cp2)}, ` +
       `so each share converts into ${a.newConversionRatio.toFixed(6, D.ROUND_HALF_UP)} common. Its preference doesn't change.`;
-    // With conversions, each piece's line goes under it, as its explanation.
-    const details = pieceLines(a, ev, d, holder, security);
+    // With conversions, each piece's line goes under it, as its explanation; and for a starting series, how the
+    // order its SAFEs and notes were issued in was read (R31).
+    const details = [...pieceLines(a, ev, d, holder, security), ...orderLines(a, d, security, starting)];
     lines.push(details.length > 0 ? { text, details } : text);
+  }
+  return lines;
+}
+
+/**
+ * R31: when a round adjusts a series from the starting cap table and a SAFE or note from that table converts in it,
+ * whether each came before the series depends on the order the table gives. The round says how it was read: as given,
+ * or, with none given, its SAFEs and notes after its series.
+ */
+function orderLines(a: AntiDilutionAdjustment, d: RoundDetails, security: Name, starting: Starting | null): string[] {
+  if (!starting || !starting.series.has(a.series)) return [];
+  const converting = [...d.safeConversions.map((c) => c.safe), ...d.noteConversions.map((c) => c.note)];
+  if (!converting.some((id) => starting.convertibles.has(id))) return [];
+  const series = security(a.series);
+  return [
+    starting.order
+      ? `Whether each SAFE and note was issued before or after ${series} comes from the starting cap table.`
+      : `The starting cap table doesn't give the order things were issued in, so its SAFEs and notes count as issued after ${series}: they usually bridge to the next round.`,
+  ];
+}
+
+/** A conversion price as a founder reads it: to the cent when that's exact, otherwise to six places. */
+const conversionPrice = (cp: Decimal) => (cp.eq(cp.toFixed(2)) ? `$${cp.toFixed(2)}` : price(cp));
+
+/**
+ * What a round says about the cap table the company starts from (R31; 0.5.0 plan, 05b3; Jordan's wording):
+ * - a starting series with no anti-dilution, which an imported series has (O11), in a round that would adjust it if it
+ *   had broad-based anti-dilution (Jordan, 05b3b answers): priced below its conversion price, or converting a SAFE or
+ *   note below it that counts against it under R25, issued after it and not exempt. Nothing adjusts it, so the round
+ *   says so, and where to give it some;
+ * - a conversion group the starting table gives: the round's new series, and those its SAFEs and notes convert into,
+ *   aren't in it, and each decides on its own at a sale. Joining it is on the later list.
+ */
+function startingLines(ev: Json, d: RoundDetails, t: CapTableAfterEvent, before: CapTableAfterEvent | null, starting: Starting | null): string[] {
+  if (!starting || !before) return [];
+  const seriesId = String((ev.series as Json).id);
+  const exempt = ev.anti_dilution_exempts_conversions === true;
+  const pieces = [...d.safeConversions.map((c) => ({ kind: "safe", id: c.safe, price: c.conversionPrice })), ...d.noteConversions.map((c) => ({ kind: "note", id: c.note, price: c.conversionPrice }))];
+  const fix = "If its charter gives it some, add it in the starting cap table.";
+  const lines: string[] = [];
+  for (const s of before.capTable.securities) {
+    if (s.kind !== "preferred" || !starting.series.has(s.id) || s.antiDilution !== "none") continue;
+    if (d.price.lt(s.conversionPrice)) {
+      lines.push(`${s.name} has no anti-dilution, so this down round doesn't adjust it. ${fix}`);
+      continue;
+    }
+    const counted = exempt ? [] : pieces.filter((p) => p.price.lt(s.conversionPrice) && issuedAfter(starting, p.id, s.id));
+    if (counted.length === 0) continue;
+    const safes = counted.filter((p) => p.kind === "safe").length;
+    const notes = counted.length - safes;
+    const what = [safes ? (safes === 1 ? "the SAFE" : "the SAFEs") : "", notes ? (notes === 1 ? "the note" : "the notes") : ""].filter(Boolean).join(" and ");
+    lines.push(
+      `${s.name} has no anti-dilution, so ${what} converting below its ${conversionPrice(s.conversionPrice)} conversion price ${counted.length === 1 ? "doesn't" : "don't"} adjust it. ${fix}`,
+    );
+  }
+  const name = (id: string) => before.capTable.securities.find((s) => s.id === id)?.name ?? id;
+  // The round's own series first, then those its SAFEs and notes convert into.
+  const made = t.capTable.securities
+    .filter((s) => s.kind === "preferred" && !before.capTable.securities.some((b) => b.id === s.id))
+    .sort((a, b) => Number(b.id === seriesId) - Number(a.id === seriesId))
+    .map((s) => s.name);
+  for (const g of before.capTable.conversionGroups) {
+    if (made.length === 0) continue;
+    const group = `the group of series that must convert together (${list(g.series.map(name))})`;
+    lines.push(
+      made.length === 1
+        ? `${made[0]} isn't in ${group}, so at a sale it decides on its own whether to convert. If its charter puts it in that group, spillpoint can't model that yet.`
+        : `${list(made)} aren't in ${group}, so at a sale each decides on its own whether to convert. If the charter puts them in that group, spillpoint can't model that yet.`,
+    );
   }
   return lines;
 }

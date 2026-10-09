@@ -23,6 +23,13 @@
 //
 //   {..., "range": [...], "exit_date": ..., "carve_out": {...}, "payment_schedules": [...], "view": {...}}
 //
+// A cap table imported from an Open Cap Format export keeps, beside it, the
+// date it stands at and the order its series, SAFEs and notes were issued in
+// (O14), so "Add a round" starts from the same place once it's reopened
+// (version 6, 05b3b); each is written only when present:
+//
+//   {..., "cap_table": {...}, "as_of": "2025-12-31", "issue_order": ["seed", "series_a"], "range": [...], ...}
+//
 // Both are the engine's own input format (C1–C4, C14), so a saved file is
 // also valid engine input. A field nobody edited keeps the exact value it was
 // loaded with, never the six-place display (M3d review), and events are kept
@@ -40,12 +47,14 @@ import type { Draft } from "./draft.ts";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
+import type { Origin } from "./roundsDraft.ts";
 
 export const FORMAT = "spillpoint";
 export const VERSION = 6;
 
 const FIELDS = [
-  "format", "version", "name", "cap_table", "holders", "events", "cap_table_after_event", "carve_out", "range", "exit_date", "payment_schedules", "view",
+  "format", "version", "name", "cap_table", "as_of", "issue_order", "holders", "events", "cap_table_after_event", "carve_out", "range", "exit_date",
+  "payment_schedules", "view",
 ];
 const VIEW_FIELDS = ["exit_value", "you"];
 
@@ -58,15 +67,18 @@ export interface View {
 /**
  * The file a cap table saves as, ready to download. Only a table the engine
  * accepts is saved, so the file always opens. A cap table built from rounds
- * saves its rounds, not the table they build.
+ * saves its rounds, not the table they build. An imported cap table keeps the
+ * import's date and issue order beside it; with rounds they're in the first
+ * event (R31).
  */
-export function fileText(name: string, draft: Draft, view?: View, rounds?: Rounds | null): string {
+export function fileText(name: string, draft: Draft, view?: View, rounds?: Rounds | null, origin?: Origin | null): string {
   const { json } = buildExit(draft);
+  const kept = !rounds && origin ? { ...(origin.date ? { as_of: origin.date } : {}), ...(origin.issueOrder ? { issue_order: origin.issueOrder } : {}) } : {};
   const file = {
     format: FORMAT,
     version: VERSION,
     name: name.trim() || "Untitled cap table",
-    ...(rounds ? { holders: rounds.holders, events: rounds.events, cap_table_after_event: rounds.after } : { cap_table: json.cap_table }),
+    ...(rounds ? { holders: rounds.holders, events: rounds.events, cap_table_after_event: rounds.after } : { cap_table: json.cap_table, ...kept }),
     range: json.range,
     ...(json.exit_date ? { exit_date: json.exit_date } : {}),
     ...(json.carve_out ? { carve_out: json.carve_out } : {}),
@@ -85,7 +97,9 @@ export function fileName(name: string): string {
   return `${slug || "cap-table"}.json`;
 }
 
-export type Opened = { ok: true; name: string; draft: Draft; view: View | null; rounds: Rounds | null } | { ok: false; message: string };
+export type Opened =
+  | { ok: true; name: string; draft: Draft; view: View | null; rounds: Rounds | null; origin: Origin | null }
+  | { ok: false; message: string };
 
 /**
  * How each older version becomes the next one, keyed by the version it
@@ -144,9 +158,26 @@ export function readFile(text: string): Opened {
   const name = typeof file.name === "string" && file.name.trim() ? file.name.trim() : "Untitled cap table";
   const opened = file.holders != null || file.events != null || file.cap_table_after_event != null ? openRounds(file) : openCapTable(file);
   if ("message" in opened) return { ok: false, message: opened.message };
+  const origin = readOrigin(file, opened.rounds != null);
+  if (typeof origin === "string") return { ok: false, message: origin };
   const view = file.view == null ? null : readView(file.view, opened.read);
   if (typeof view === "string") return { ok: false, message: view };
-  return { ok: true, name, draft: opened.draft, view, rounds: opened.rounds };
+  return { ok: true, name, draft: opened.draft, view, rounds: opened.rounds, origin };
+}
+
+/**
+ * An imported cap table's date and issue order (O14), kept beside it (version 6, 05b3b); or why they can't be used.
+ * A company built from rounds keeps them in its first event instead (R31).
+ */
+function readOrigin(file: Record<string, unknown>, rounds: boolean): Origin | null | string {
+  const { as_of: date, issue_order: order } = file;
+  if (date == null && order == null) return null;
+  if (rounds) return "Its rounds keep the import's date and issue order in their first event, so they can't be beside them too.";
+  if (date != null && (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date))) return "Its import's date isn't readable: it should be a date, like 2025-12-31.";
+  if (order != null && (!Array.isArray(order) || !order.every((id) => typeof id === "string"))) {
+    return "Its issue order isn't readable: it should be a list of its series', SAFEs' and notes' ids.";
+  }
+  return { date: (date as string | undefined) ?? "", issueOrder: (order as string[] | undefined) ?? null };
 }
 
 type Contents = { read: ExitInput; draft: Draft; rounds: Rounds | null } | { message: string };

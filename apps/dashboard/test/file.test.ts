@@ -100,6 +100,31 @@ describe("saving and opening again", () => {
     }
   });
 
+  it("keeps an import's date and issue order beside a cap table entered directly, only when given (05b3b)", () => {
+    const origin = { date: "2025-12-31", issueOrder: ["seed", "series_a", "series_b"] };
+    const saved = JSON.parse(fileText("Millrace", millraceTable, undefined, null, origin));
+    expect(Object.keys(saved)).toEqual(["format", "version", "name", "cap_table", "as_of", "issue_order", "range"]);
+    const opened = readFile(JSON.stringify(saved));
+    expect(opened.ok && opened.origin).toEqual(origin);
+    // Only the date, or nothing: each is written only when present.
+    expect(Object.keys(JSON.parse(fileText("Millrace", millraceTable, undefined, null, { date: "2025-12-31", issueOrder: null })))).toContain("as_of");
+    expect(Object.keys(JSON.parse(fileText("Millrace", millraceTable)))).not.toContain("as_of");
+    // With rounds, they're in the first event, never beside it.
+    expect(Object.keys(JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds, origin)))).not.toContain("issue_order");
+  });
+
+  it("refuses an import's date or issue order it can't read, or beside rounds (05b3b)", () => {
+    const refusal = (file: unknown) => {
+      const opened = readFile(JSON.stringify(file));
+      return opened.ok ? null : opened.message;
+    };
+    const table = JSON.parse(fileText("Millrace", millraceTable));
+    expect(refusal({ ...table, as_of: "Dec 31" })).toBe("Its import's date isn't readable: it should be a date, like 2025-12-31.");
+    expect(refusal({ ...table, issue_order: "seed" })).toBe("Its issue order isn't readable: it should be a list of its series', SAFEs' and notes' ids.");
+    const rounds = JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds));
+    expect(refusal({ ...rounds, as_of: "2025-12-31" })).toBe("Its rounds keep the import's date and issue order in their first event, so they can't be beside them too.");
+  });
+
   it("opens a version 1 file, saved before rounds, as it was", () => {
     const v1 = { ...JSON.parse(fileText("Millrace", millraceTable)), version: 1 };
     const opened = readFile(JSON.stringify(v1));

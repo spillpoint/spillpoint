@@ -124,6 +124,14 @@ The start event would give that order beside the table, not as new cap table fie
   - the conversion group
   - how the issue order was read, when a down round adjusts a starting series and a SAFE or note converts in it (R31)
 
+**Your answers for 05b3b (after #68):**
+1. **A saved cap table keeps the import's date and issue order:** two optional fields in version 6, written only when present, so an import saved before adding a round starts from the same table when it's reopened.
+2. **"Use it to add a round"** at the import review, offered when the engine refuses the table at Use only because of SAFEs or notes still outstanding at a sale (`note_with_safe_or_carve_out`, `pre_money_safe_with_preferred`, `several_safes`, `several_notes`), never for any other refusal.
+   - **It makes the table a starting table,** and opens a priced round with converting the SAFEs and notes ticked.
+   - **Until a round converts them,** the Payouts tab shows the engine's message.
+   - **The main test:** Larkspur imported, case 27's Series B entered through the page, saved and opened again, matching case 27's locked file at every breakpoint.
+3. **05b3a's other decisions:** agreed.
+
 ## 05c: SAFEs beside a note at a sale
 
 Larkspur imports, but its SAFEs sit beside a note, which the engine refuses at a sale (X12, `note_with_safe_or_carve_out`). New math, so cases first.
