@@ -708,7 +708,7 @@
             "code": "option_in_the_money",
             "security": "rsus",
             "strike": "0",
-            "text": "Common reaches $0.00 per share, the strike on the 30,000 options at that price. Above this exit value they are in the money and exercised: their holders pay the strike, which is added to the proceeds, and share in the residual as common."
+            "text": "Common starts to be paid here, so the 30,000 options with no strike, such as RSUs, start paying: above this exit value each gets what a common share does."
           },
           {
             "code": "tier_fully_paid",

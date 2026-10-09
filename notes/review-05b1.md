@@ -121,9 +121,18 @@ A company built from rounds may now have a cap table as its first event (R31, C1
 
 ## Open questions
 
-1. **The RSUs' breakpoint wording.** At $15,692,504.14 the reason reads "Common reaches $0.00 per share, the strike on the 30,000 options at that price…". It's accurate, but odd for RSUs. Something like "Common's first dollar: the 30,000 RSUs, with no strike, share in it from here" would read better.
+None left. The RSUs' breakpoint wording is settled (your re-derivation review), below.
 
-   The engine has to match the reference's text, so a new wording changes both. Should it be done in 05b2, or left for the 1.0a wording pass?
+## The fix from your review: the RSUs' reason
+
+At $15,692,504.14 the RSUs' reason read "Common reaches $0.00 per share, the strike on the 30,000 options at that price…". That was accurate, but odd for awards with no strike. For an option class with no strike, the reference now says:
+
+> Common starts to be paid here, so the 30,000 options with no strike, such as RSUs, start paying: above this exit value each gets what a common share does.
+
+- **What changed:** only that reason's text, in `reference/spillpoint_ref/breakpoints.py` and in case 27's `expected.json`. Regenerating case 27 changed that one line and nothing else: no number moved.
+- **Every other case** still matches the reference unchanged. No other case runs a sale with an option class that has no strike. OCF case 01 imports the same RSUs, but has no sale.
+- **Unchanged:** an option class with a strike keeps its wording, and so does the reverse reason, where options stop being exercised. No case has the reverse for a class with no strike.
+- **The engine** matches it in 05b2.
 
 ## Checks
 
