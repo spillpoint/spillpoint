@@ -69,6 +69,18 @@ The plan's 13, and its 14 for the real export.
   - the reference workbooks: a size check, then the download into `local/ocx-reference/` with your OK
 - **Nothing ran outside the sandbox.**
 
+## After your review (Jordan, 06b review)
+
+Your 13 answers are in the plan, under "Your answers", and the plan above them follows them where they differ from what I first wrote:
+- **Versions:** layouts are told apart by their headers, and the label is only reported. 0.3 is refused unless Carta writes it, so its blank is gone from "What it leaves to fill".
+- **Seniority:** the question starts with no order set, with two one-click choices, "all pari passu" and "stacked, latest round senior", plus arranging by hand. One is required before Use.
+- **06c:**
+  - It waits for a real export's headers, and for the choice between OCX and the securities ledger report, or both.
+  - The cell-kinds script comes first.
+  - The reference test covers pre-money SAFEs too.
+- **06e:** adds "Copy a summary to share" for .xlsx.
+- **The API:** left to 07a's naming review.
+
 ## Next
 
-06c, the OCX cases, once you've answered and your export's tab names and header rows are in. I'm stopping here.
+06c, the OCX cases, once a real export's headers are in. Meanwhile 07a, the naming review's plan, on its own branch. I'm stopping here.

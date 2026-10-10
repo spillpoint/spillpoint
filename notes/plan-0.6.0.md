@@ -13,7 +13,9 @@
 
 So an OCX import reads much less than an OCF import, and leaves more to fill in. The questions at the end are about how much to ask for, and how much to refuse.
 
-Each step below is sized for an evening. Cases come first, as for OCF, and they wait for your export's tab names and header rows (question 1).
+Each step below is sized for an evening. Cases come first, as for OCF, and they wait for your export's tab names and header rows (question 1). You're also asking founders for the headers of Carta's Cap table report with "Securities ledger by type and class", which may carry the strikes and SAFE holders OCX lacks. Once both are in, we pick the source, or use both.
+
+Your answers are after the questions, and the plan above them follows your answers where they differ from what I first wrote.
 
 ## What I read, and the licenses
 
@@ -124,7 +126,7 @@ So the reader can tell them apart:
 | **Convertibles** | `Security Type`, `Amount`, `Discount`, `Valuation Cap` | adds `# of Securities`; `Amount` becomes `Outstanding Amount` | as 0.4 |
 | **Context's title** | "Context" | "Context" | "Context Tab" |
 
-**0.4 and 0.5 have the same tables and headers.** Only the version label and Context's title differ. So the reader treats them as one layout, and tells them apart by the label.
+**0.4 and 0.5 have the same tables and headers.** Only the version label and Context's title differ. So the reader treats them as one layout. **It tells layouts apart by their headers, not by the label** (your answer 4): a workbook with 0.4/0.5's headers is read as that layout whatever its label says, and the label goes in the report as written.
 
 **0.3 lacks a preference's terms.** It also lacks outstanding preferred per holder.
 
@@ -202,7 +204,6 @@ As O1: nothing is guessed, never 1x and never $1. Each blank goes in `to_fill` f
 - **seniority:** always, since OCX has none (question 7)
 - **each option class's, warrant's and non-plan award's strike**
 - **for each note:** interest rate, issue date, what its cap divides by, and repayment multiple (question 11)
-- **from a 0.3 workbook,** if it's read at all: each series' multiple and participation (question 4)
 - **the sale's date,** where a note is outstanding, as the page asks today (O13)
 
 ## What it refuses
@@ -210,7 +211,7 @@ As O1: nothing is guessed, never 1x and never $1. Each blank goes in `to_fill` f
 Each by name, with a kind, `unsupported` or `malformed`, and a term, as `readOcf` does:
 
 **Unsupported:**
-- a version other than those read (question 4)
+- headers that match no layout the reader reads, including 0.3's, unless Carta writes it (your answer 4). The label never decides this.
 - `Warrants for future series of Preferred Stock` with any outstanding: there's no series to model it on
 - RSUs outstanding that the Stakeholder Snapshot doesn't separate from options (question 8)
 - a convertibles row the reader can't map (question 10)
@@ -233,7 +234,7 @@ Each by name, with a kind, `unsupported` or `malformed`, and a term, as `readOcf
 ## The report
 
 As O10:
-- **Read:** counts of what sets the cap table.
+- **Read:** counts of what sets the cap table, and the version label as written, if there is one.
 - **Set aside:** counts of what doesn't (voting, 409A valuations, plan history, shareholder groups, splits).
 - **One note per choice an import makes,** by code:
   - each field OCX lacks: seniority, strikes, anti-dilution, dividends, conversion groups, a carve-out
@@ -250,7 +251,7 @@ As O10:
 **The page:**
 - **"Open an OCF export" becomes "Open a cap table export",** taking an .xlsx beside OCF's .zip and .json files, with O13's 100 MB limit.
 - **The flow is O13's:** the report first, then the questions, then "Use this cap table".
-- **A new kind of question: the seniority order.** It lists the series latest round first, the usual stack, and asks you to confirm or rearrange it, with ties for pari passu. It has to be answered before Use (question 7).
+- **A new kind of question: the seniority order** (your answer 7). It starts with no order set, and offers two one-click choices, "all pari passu" and "stacked, latest round senior", plus arranging by hand, with ties for pari passu. One of them is required before Use. Nothing is guessed (O1).
 
 **`pnpm ocf-check`** also takes an .xlsx, under O15's rule: counts and codes only.
 - **What it prints:** the version label, the tabs found, the columns by kind (class, option, warrant) with counts, the blanks by field, and a refusal's term.
@@ -258,14 +259,15 @@ As O10:
 
 ## The steps
 
-- **06c, cases** (the `cases/` edit rule lifted). After your export's headers are in (question 1):
+- **06c, cases** (the `cases/` edit rule lifted). After a real export's headers are in, and the choice between OCX and the securities ledger report, or both (your answer 1):
+  - **First, the cell-kinds script** (your answer 2a), kept small: for each known column, the kinds of cell with counts ("Original Issue Price: 4 numbers"), never a value, under O15's rule. Whoever has the export runs it and pastes the output.
   - **ocx-01:** a fictional company's workbook, written by hand, using every table the reader reads.
   - **ocx-02:** one-change fixtures for each refusal and each blank, as 04a2's were.
   - **ocx-03 on:** locked cases written as OCX: edge cases 4, 5a, 7, 8 and 12b, and Millrace. Each imports, with its blanks answered, to the locked cap table, with prices to 15 significant digits, compared within a cent as 04b2 did for OCF's 10 places.
 
   The workbooks are our own, written as JSON in `readOcx`'s input shape (tabs and cells), with expected results worked by hand.
 
-  Also a reference unit test: a row of identical post-money SAFEs pays the same as the SAFEs one by one (question 10).
+  Also a reference unit test: a row of identical SAFEs pays the same as the SAFEs one by one, post-money and pre-money both (your answer 10). Combining a row is what lets several pre-money SAFEs past `several_safes`, so the test shows that it's exact.
 
   ASSUMPTIONS gets an "OCX import" section, as 04a added O1–O12.
 - **06d, the engine:**
@@ -278,8 +280,9 @@ As O10:
   - "Open a cap table export"
   - the seniority question
   - `ocf-check` on .xlsx
+  - **"Copy a summary to share"** (05a2) for .xlsx, on the report, on a refused import and on a refusal at Use (your answer 2). For most founders the page is how we'll learn why a file didn't read.
 
-  Its test workbooks are .xlsx files our tests write from the JSON cases, plus one saved from a spreadsheet app (question 13).
+  Its test workbooks are .xlsx files our tests write from the JSON cases, plus one you save from a spreadsheet app (your answer 13).
 - **06f, release 0.6.0,** with 06a's breaking changes in its notes (below).
 
 ## Questions for you
@@ -324,6 +327,30 @@ As O10:
 12. **The API:** `readOcx(workbook)` returns `OcfImport`'s shape: `as_of`, `cap_table`, `issue_order`, `to_fill`, `report`. It throws a new `OcxRefusal` with `OcfRefusal`'s fields. 0.7.0's naming review then decides whether the two imports share one refusal class and one result type. Or one class now?
 13. **A workbook saved by a spreadsheet app,** for 06e's parser test: could you save one of our own fictional workbooks from Excel, or Numbers, so the test has a real app's output? 04f's Windows zip was the same kind of request.
 
+## Your answers (2026-10-10)
+
+Your reading check: no strikes or seniority anywhere, and a warrant for a preferred series headed by its common class, counted as converted, as the converter's code has it.
+
+1. **06c waits for a real export's headers.** You're also asking founders for the headers of Carta's Cap table report with "Securities ledger by type and class", which may carry strikes and SAFE holders. Once both are in, we pick the source, or use both.
+2. **(a), the cell-kinds script,** kept small. 05a2's "Copy a summary to share" comes to .xlsx in 06e: for most founders, the page is how we'll learn why a file didn't read.
+3. **The numbers rule:** agreed.
+4. **Layouts are told apart by their headers, not the label.**
+   - **0.4/0.5's layout** is read whatever the label says, and the label is reported.
+   - **Refused:** only headers that match no layout read.
+   - **0.3** is refused unless Carta writes it.
+5. **Matching a round to its class:** agreed.
+6. **A class named preferred under `Common Stock`:** read as common, with the report line.
+7. **Seniority starts with no order set.**
+   - **Two one-click choices:** "all pari passu" and "stacked, latest round senior".
+   - **Or arranging by hand.**
+   - **One is required before Use.** Nothing is guessed (O1).
+8. **Options:** agreed. Blank strikes, the report line, and RSUs refused.
+9. **Warrants:** agreed, both.
+10. **SAFEs:** agreed, with pre-money SAFEs in the reference test too. Combining a row is what lets several of them past `several_safes`, so the test shows that it's exact.
+11. **Notes:** agreed. Whether `Outstanding Amount` includes interest stays open for the export.
+12. **The API:** left to the naming review, 07a's `notes/plan-0.7.0.md`, so `readOcx` is built once, to settled names.
+13. **A workbook saved by a spreadsheet app:** yes, when 06e gets there.
+
 ## Open questions only a real Carta export can settle
 
 1. **Which OCX version Carta writes:** its version label, and whether its per-holder tab is `Stakeholder Snapshot` or 0.3's `Detailed Snapshot`.
@@ -348,6 +375,8 @@ As O10:
 12. **Seniority, cumulative dividends, anti-dilution:** whether any appear anywhere.
 13. **Totals:** whether the holders add up to each column's total, and the Summary Snapshot's counts match.
 14. **The file itself:** .xlsx, not .xls, .xlsb or .xlsm; hidden tabs; protection.
+
+**Beside these:** the headers of Carta's Cap table report with "Securities ledger by type and class" (your answer 1), and whether it carries what OCX lacks: strikes, SAFE and note holders, a note's terms, seniority.
 
 ## For 0.6.0's release notes: 06a's changes that can break 0.5.0 code
 
