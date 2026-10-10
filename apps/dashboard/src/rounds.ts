@@ -210,8 +210,11 @@ export function dateText(date: string | null): string | null {
 }
 
 const count = (n: Decimal) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-/** A per-share price to six places, as the editor shows them: "$0.384930". */
-const price = (p: Decimal) => `$${p.toFixed(6, D.ROUND_HALF_UP)}`;
+/**
+ * A per-share price as a founder reads it: to the cent when that's exact ("$4.00"), otherwise to six places, as the
+ * editor shows them ("$0.384930") (0.5.0 plan, 05e; Jordan, after #69).
+ */
+const price = (p: Decimal) => (p.eq(p.toFixed(2)) ? `$${p.toFixed(2)}` : `$${p.toFixed(6, D.ROUND_HALF_UP)}`);
 /** A percentage as written in the input: "6%", "12.5%". */
 const pct = (fraction: Decimal) => `${fraction.times(100).toDecimalPlaces(4, D.ROUND_HALF_UP).toFixed()}%`;
 const money = (v: unknown) => dollars(new D(String(v)));
@@ -445,9 +448,6 @@ function orderLines(a: AntiDilutionAdjustment, d: RoundDetails, security: Name, 
   ];
 }
 
-/** A conversion price as a founder reads it: to the cent when that's exact, otherwise to six places. */
-const conversionPrice = (cp: Decimal) => (cp.eq(cp.toFixed(2)) ? `$${cp.toFixed(2)}` : price(cp));
-
 /**
  * What a round says about the cap table the company starts from (R31; 0.5.0 plan, 05b3; Jordan's wording):
  * - a starting series with no anti-dilution, which an imported series has (O11), in a round that would adjust it if it
@@ -476,7 +476,7 @@ function startingLines(ev: Json, d: RoundDetails, t: CapTableAfterEvent, before:
     const notes = counted.length - safes;
     const what = [safes ? (safes === 1 ? "the SAFE" : "the SAFEs") : "", notes ? (notes === 1 ? "the note" : "the notes") : ""].filter(Boolean).join(" and ");
     lines.push(
-      `${s.name} has no anti-dilution, so ${what} converting below its ${conversionPrice(s.conversionPrice)} conversion price ${counted.length === 1 ? "doesn't" : "don't"} adjust it. ${fix}`,
+      `${s.name} has no anti-dilution, so ${what} converting below its ${price(s.conversionPrice)} conversion price ${counted.length === 1 ? "doesn't" : "don't"} adjust it. ${fix}`,
     );
   }
   const name = (id: string) => before.capTable.securities.find((s) => s.id === id)?.name ?? id;

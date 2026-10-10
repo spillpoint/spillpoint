@@ -23,6 +23,7 @@
 import { parseExact } from "spillpoint";
 import type { CapTable } from "spillpoint";
 
+import { blankMessage, eventFieldName, exitFieldName } from "./blankNames.ts";
 import { assignIds, buildExit, draftFromExit, fieldForPath, moneyText, multipleText, percentText, percentToFraction, shareText } from "./draft.ts";
 import type { Draft, DraftHolder } from "./draft.ts";
 import type { Rounds } from "./rounds.ts";
@@ -490,9 +491,6 @@ export function setIn(json: Json, path: string, value: unknown): Json {
   return set(json, 0) as Json;
 }
 
-/** What the page says for a field left blank. */
-export const BLANK = "Fill this in: it can't be blank.";
-
 /**
  * When the engine names a blank field, every other field in the same event it
  * also needs filled, so a new event's blanks are all marked at once (M4
@@ -517,7 +515,7 @@ export function otherBlanks(
     const next = ask({ ...rounds, events });
     if (!next || next.path === at) break;
     const problem = locate(d, next.path, next.message);
-    if (problem.message !== BLANK || problem.event !== first.event) break;
+    if (!problem.blank || problem.event !== first.event) break;
     found.push(problem.fields);
     at = next.path;
   }
@@ -542,6 +540,8 @@ export interface RoundsProblem {
   blanks?: string[][];
   /** In the starting table (R31): its fields are the Cap table tab's, where it's edited. */
   onTable?: boolean;
+  /** A field left blank: the message names it (05e). */
+  blank?: boolean;
 }
 
 /** Where an engine error about the rounds belongs. */
@@ -549,25 +549,31 @@ export function locate(d: RoundsDraft, path: string, message: string): RoundsPro
   const detail = message.startsWith(`${path}: `) ? message.slice(path.length + 2) : message;
   // A field left blank reaches the engine as nothing at all; say so plainly.
   const blank = /^expected an exact number as a string, got null$|^expected a non-empty string$/.test(detail);
-  const text = blank ? BLANK : detail.charAt(0).toUpperCase() + detail.slice(1);
+  // A blank field is named, wherever the message shows (05e).
+  const text = (name: () => string | null) => (blank ? blankMessage(name()) : detail.charAt(0).toUpperCase() + detail.slice(1));
   const holder = /^inputs\.holders\[(\d+)\]/.exec(path);
-  if (holder) return { message: text, event: null, fields: [holderFieldId(d.holders[Number(holder[1])]?.key ?? "")] };
+  if (holder) {
+    const message = text(() => `holder ${Number(holder[1]) + 1}'s name`);
+    return { message, event: null, fields: [holderFieldId(d.holders[Number(holder[1])]?.key ?? "")], ...(blank ? { blank } : {}) };
+  }
   // R31: the starting table's fields are the Cap table tab's, found as that tab finds its own.
   const table = /^inputs\.events\[(\d+)\]\.cap_table(.*)$/.exec(path);
   const start = table ? d.events[Number(table[1])] : undefined;
   if (table && start && d.start) {
-    const field = fieldForPath(buildExit(d.start).fields, `exit.cap_table${table[2]}`);
-    return { message: text, event: start.key, fields: field ? [field] : [], onTable: true };
+    const built = buildExit(d.start);
+    const field = fieldForPath(built.fields, `exit.cap_table${table[2]}`);
+    const message = text(() => exitFieldName(built.json, `exit.cap_table${table[2]}`));
+    return { message, event: start.key, fields: field ? [field] : [], onTable: true, ...(blank ? { blank } : {}) };
   }
   const m = /^inputs\.events\[(\d+)\]\.?(.*)$/.exec(path);
   const event = m ? d.events[Number(m[1])] : undefined;
-  if (!m || !event) return { message: withPath(path, text), event: null, fields: [] };
+  if (!m || !event) return { message: withPath(path, text(() => null)), event: null, fields: [], ...(blank ? { blank } : {}) };
   const fields: string[] = [];
   for (let p = m[2]!; p; p = p.replace(/(\.[^.[\]]+|\[\d+\])$/, "")) {
     fields.push(eventFieldId(event.key, p));
     if (!/(\.[^.[\]]+|\[\d+\])$/.test(p)) break;
   }
-  return { message: text, event: event.key, fields };
+  return { message: text(() => eventFieldName(d.holders, event.json, m[2]!)), event: event.key, fields, ...(blank ? { blank } : {}) };
 }
 
 /** A message that names no field keeps its path, so it can still be found. */

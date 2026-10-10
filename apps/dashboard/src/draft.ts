@@ -21,6 +21,7 @@
 import { D, InputError, UnsupportedTermError, parseExact, prepare, readExit } from "spillpoint";
 import type { ExitInput, Participation, PreparedCapTable } from "spillpoint";
 
+import { blankMessage, exitFieldName } from "./blankNames.ts";
 import { parseDollars, priceText, withoutCodes } from "./format.ts";
 
 export interface DraftHolder {
@@ -1063,8 +1064,8 @@ export function checkBuilt(b: Built): Checked {
       const field = fieldForPath(b.fields, e.path);
       if (!field) return { ok: false, field: null, message: withoutCodes(e.message), error };
       const detail = withoutCodes(e.message.startsWith(`${e.path}: `) ? e.message.slice(e.path.length + 2) : e.message);
-      // A field left blank, said plainly, as the rounds editor says it.
-      if (/^"" is not an exact number|^expected a non-empty string$/.test(detail)) return { ok: false, field, message: "Fill this in: it can't be blank.", error };
+      // A field left blank, named, as the rounds editor names it (05e).
+      if (/^"" is not an exact number|^expected a non-empty string$/.test(detail)) return { ok: false, field, message: blankMessage(exitFieldName(b.json, e.path)), error };
       return { ok: false, field, message: detail.charAt(0).toUpperCase() + detail.slice(1), error };
     }
     return { ok: false, field: null, message: withoutCodes(error.message), error };

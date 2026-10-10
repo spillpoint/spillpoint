@@ -271,7 +271,7 @@ describe("adding, moving and removing events (M4k)", () => {
     addEvent("An option pool");
     const pool = card(/Option pool created/);
     await vi.waitFor(() => expect(document.activeElement).toBe(within(pool).getByLabelText("Date")), { timeout: ANALYSIS_TIMEOUT });
-    expect(within(pool).getByRole("alert").textContent).toBe("This event has a problem, so the payouts can't update: Fill this in: it can't be blank.");
+    expect(within(pool).getByRole("alert").textContent).toBe("This event has a problem, so the payouts can't update: The option pool's percentage can't be blank.");
     expect(within(pool).getByText((_, el) => el?.textContent === "Not built yet: the engine builds it once this event's problem is fixed.")).toBeTruthy();
     type(within(pool).getByLabelText("Percent of the fully diluted shares after it"), "10");
     expect(within(pool).queryByRole("alert")).toBeNull();

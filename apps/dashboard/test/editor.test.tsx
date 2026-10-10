@@ -301,8 +301,8 @@ describe("SAFEs and notes still outstanding (M5k)", () => {
     const safe = within(outstanding).getByRole("group", { name: "SAFE 1: Founder A" });
     fireEvent.change(within(safe).getByLabelText("Holder"), { target: { value: (within(safe).getByRole("option", { name: "Investor X" }) as HTMLOptionElement).value } });
     expect(within(outstanding).getByRole("group", { name: "SAFE 1: Investor X" })).toBe(safe);
-    // Blank amounts are the engine's to ask for, next to the field.
-    expect(status()).toBe("The payouts can't update until this is fixed: Fill this in: it can't be blank. Go to the field");
+    // Blank amounts are the engine's to ask for, next to the field, by name (05e).
+    expect(status()).toBe("The payouts can't update until this is fixed: Investor X's SAFE valuation cap can't be blank. Go to the field");
     type(within(safe).getByLabelText("Amount ($)"), "1M");
     expect((within(safe).getByLabelText("Cap") as HTMLSelectElement).value).toBe("post");
     type(within(safe).getByLabelText("Valuation cap ($)"), "10M");

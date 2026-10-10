@@ -36,7 +36,7 @@ import { shortDollars, withoutCodes } from "./format.ts";
 import { saleLimitText } from "./saleLimits.ts";
 import { dateText, eventViews, exampleContents, fromRounds } from "./rounds.ts";
 import type { Rounds } from "./rounds.ts";
-import { BLANK, addEvent, blankRounds, buildRounds, draftFromRounds, draftTitle, eventFieldId, locate, otherBlanks, startingRounds, withStart } from "./roundsDraft.ts";
+import { addEvent, blankRounds, buildRounds, draftFromRounds, draftTitle, eventFieldId, locate, otherBlanks, startingRounds, withStart } from "./roundsDraft.ts";
 import type { Origin, RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 const SCRATCH = "scratch";
@@ -212,7 +212,7 @@ export function App() {
         const path = (result.error as { path?: string }).path ?? "";
         const problem = locate(next, path, result.message);
         // A blank field: the event's other blanks too, all at once.
-        if (problem.message !== BLANK || !problem.event) return { ...s, rounds: next, roundsProblem: problem };
+        if (!problem.blank || !problem.event) return { ...s, rounds: next, roundsProblem: problem };
         const ask = (r: typeof built) => {
           const again = fromRounds(r, s.draft.range);
           return again.ok ? null : { path: (again.error as { path?: string }).path ?? "", message: again.message };
