@@ -174,6 +174,15 @@ None: no modeling choice changed.
 - **No changes** to `.github/workflows/` or `.claude/`.
 - **Nothing ran outside the sandbox.**
 
+## After your check (Jordan, 05e review)
+
+Your four decisions are agreed. Three text fixes, none in the engine package, so the tarball is the same:
+1. **The release notes' speed** drops the 2-core machine's stale 13 seconds. The M1 Pro and CI figures stay. Your packed-build figure, 8.65s, and CI's since 05c5 are on the later list's speed entry.
+2. **A name ending in "s" takes a bare apostrophe** in every blank message that adds one to a name: "Harbor Lane Partners' investment in Series B", "Atlas Ventures' SAFE amount", "The new series' pre-money valuation". The test is in `names-and-prices.test.ts`.
+3. **A warrant's class:** "What Seed Warrant buys can't be blank."
+
+**For 1.0b:** `solve`'s `complete`, now always true, is on the later list as a field to drop or keep.
+
 ## Next
 
-0.5.0 is ready for you to check, publish and tag. After it, the 1.0 pass starts with 1.0a, removing the Milestone names. I'm stopping here.
+0.5.0 is ready for you to publish and tag. After it, the 1.0 pass starts with 1.0a, removing the Milestone names. I'm stopping here.

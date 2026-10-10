@@ -35,7 +35,7 @@ Larkspur's table, a Seed, a Series A, two post-money SAFEs and a capped note, no
 
 **A faster breakpoint search** (05c4). With the decisions fixed, every amount moves in a straight line until a formula changes, so the search reuses its work from one exit value to the next. A table with many SAFEs no longer takes minutes.
 - **The table:** Larkspur with its note and 10 post-money SAFEs: the whole search from $0 to $150M, and the answer at each breakpoint.
-- **0.5.0:** about 2 seconds on an M1 Pro laptop, and 4 to 9 seconds on GitHub's 2-core CI runners. On another 2-core machine it took 13 seconds, measured before 05c5's two-answer check, which adds about a third.
+- **0.5.0:** about 2 seconds on an M1 Pro laptop, and 4 to 9 seconds on GitHub's 2-core CI runners.
 - **Before the speed work:** 204 seconds on the same laptop. 0.4.0 refused this table at a sale.
 - **It depends on the machine.**
 

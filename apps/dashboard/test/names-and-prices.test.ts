@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { exitFieldName } from "../src/blankNames.ts";
+import { blankMessage, exitFieldName } from "../src/blankNames.ts";
 import { eventViews, fromRounds } from "../src/rounds.ts";
 import type { Line, Rounds } from "../src/rounds.ts";
 import { draftFromRounds, locate } from "../src/roundsDraft.ts";
@@ -65,6 +65,35 @@ describe("a blank field, named", () => {
     expect(named("inputs.events[0].issues[0].shares")).toBe("Ana's shares can't be blank.");
     expect(named("inputs.events[1].date")).toBe("The SAFE's date can't be blank.");
     expect(named("inputs.events[2].series.preference_multiple")).toBe("Series B's preference can't be blank.");
+  });
+
+  it("gives a name ending in s a bare apostrophe (Jordan, 05e review)", () => {
+    const partners = company();
+    partners.holders = partners.holders.map((h) => (h.id === "b" ? { ...h, name: "Harbor Lane Partners" } : h));
+    (partners.events[2] as Json).series = series("series_b", "Seed Units");
+    const p = draftFromRounds(partners);
+    const named = (path: string) => locate(p, path, blankNumber(path)).message;
+    expect(named("inputs.events[2].investments[0].amount")).toBe("Harbor Lane Partners' investment in Seed Units can't be blank.");
+    expect(named("inputs.events[2].pre_money")).toBe("Seed Units' pre-money valuation can't be blank.");
+    const unnamed = company();
+    (unnamed.events[2] as Json).series = series("series_b", "");
+    const u = draftFromRounds(unnamed);
+    expect(locate(u, "inputs.events[2].pre_money", blankNumber("inputs.events[2].pre_money")).message).toBe("The new series' pre-money valuation can't be blank.");
+    const table: Json = {
+      cap_table: {
+        holders: [{ id: "a", name: "Atlas Ventures" }],
+        securities: [{ id: "w", name: "Seed Warrant", kind: "warrant" }, { id: "s", name: "Founders Shares", kind: "preferred" }],
+        unconverted_safes: [{ id: "safe", holder: "a", purchase_amount: null }],
+      },
+    };
+    expect(exitFieldName(table, "exit.cap_table.unconverted_safes[0].purchase_amount")).toBe("Atlas Ventures' SAFE amount");
+    expect(exitFieldName(table, "exit.cap_table.securities[1].original_issue_price")).toBe("Founders Shares' original issue price");
+    expect(exitFieldName(table, "exit.cap_table.securities[0].strike")).toBe("Seed Warrant's strike price");
+  });
+
+  it("asks what a warrant buys", () => {
+    const table: Json = { cap_table: { securities: [{ id: "w", name: "Seed Warrant", kind: "warrant" }] } };
+    expect(blankMessage(exitFieldName(table, "exit.cap_table.securities[0].underlying"))).toBe("What Seed Warrant buys can't be blank.");
   });
 
   it("says what it said before where it can't name the field, and isn't a blank for any other message", () => {

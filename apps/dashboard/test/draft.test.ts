@@ -169,7 +169,7 @@ describe("warrants and cumulative dividends (M5k2)", () => {
     expect(removed.securities.find((s) => s.kind === "warrant")).toMatchObject({ underlying: "" });
     const checked = checkBuilt(buildExit({ ...removed }));
     const w = removed.securities.find((s) => s.kind === "warrant")!;
-    expect(checked).toMatchObject({ ok: false, field: fieldId.underlying(w.key), message: "The class Warrant for Seed buys can't be blank." });
+    expect(checked).toMatchObject({ ok: false, field: fieldId.underlying(w.key), message: "What Warrant for Seed buys can't be blank." });
   });
 
   it("puts a dividend's messages next to its fields, and asks for the sale's date by the series' name", () => {

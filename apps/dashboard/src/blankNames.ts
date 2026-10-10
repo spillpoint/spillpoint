@@ -38,6 +38,8 @@ const FIELD: Record<string, string> = {
 const DIVIDEND: Record<string, string> = { rate: "cumulative dividend rate", accrual_start: "dividend accrual date" };
 
 const named = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+/** A name's possessive: one ending in "s" takes a bare apostrophe, "Harbor Lane Partners' investment" (Jordan, 05e review). */
+const possessive = (name: string) => (name.endsWith("s") ? `${name}'` : `${name}'s`);
 const rows = (v: unknown) => (Array.isArray(v) ? (v as Json[]) : []);
 
 /** A field in a cap table, by its path inside the table ("securities[2].cap_multiple"). */
@@ -49,27 +51,27 @@ export function capTableFieldName(table: Json, path: string): string | null {
   if ((m = /^securities\[(\d+)\](?:\.name)?$/.exec(path))) return `class ${Number(m[1]) + 1}'s name`;
   if ((m = /^securities\[(\d+)\]\.cumulative_dividend\.(\w+)$/.exec(path))) {
     const name = named(rows(table.securities)[Number(m[1])]?.name);
-    return name && DIVIDEND[m[2]!] ? `${name}'s ${DIVIDEND[m[2]!]}` : null;
+    return name && DIVIDEND[m[2]!] ? `${possessive(name)} ${DIVIDEND[m[2]!]}` : null;
   }
   if ((m = /^securities\[(\d+)\]\.(\w+)$/.exec(path))) {
     const name = named(rows(table.securities)[Number(m[1])]?.name);
     if (!name) return null;
     // C4: what a warrant buys, common or a series.
-    if (m[2] === "underlying") return `the class ${name} buys`;
-    return FIELD[m[2]!] ? `${name}'s ${FIELD[m[2]!]}` : null;
+    if (m[2] === "underlying") return `what ${name} buys`;
+    return FIELD[m[2]!] ? `${possessive(name)} ${FIELD[m[2]!]}` : null;
   }
   if ((m = /^positions\[(\d+)\](?:\.shares)?$/.exec(path))) {
     const p = rows(table.positions)[Number(m[1])];
     const h = holder(p?.holder);
     const s = security(p?.security);
-    return h && s ? `${h}'s ${s} shares` : null;
+    return h && s ? `${possessive(h)} ${s} shares` : null;
   }
   if (path === "unissued_pool") return "the unissued option pool";
   if ((m = /^unconverted_(safes|notes)\[(\d+)\]\.(\w+)$/.exec(path))) {
     const noun = m[1] === "safes" ? "SAFE" : "note";
     if (m[3] === "holder") return `${noun} ${Number(m[2]) + 1}'s holder`;
     const h = holder(rows(table[`unconverted_${m[1]}`])[Number(m[2])]?.holder);
-    return h && FIELD[m[3]!] ? `${h}'s ${noun} ${FIELD[m[3]!]}` : null;
+    return h && FIELD[m[3]!] ? `${possessive(h)} ${noun} ${FIELD[m[3]!]}` : null;
   }
   if (path === "conversion_groups[0].vote_threshold_percent") return "the conversion group's vote threshold";
   if (path.startsWith("carve_out.")) return carveOutFieldName(table.carve_out as Json | undefined, holder, path.slice("carve_out.".length));
@@ -89,7 +91,7 @@ function carveOutFieldName(carve: Json | undefined, holder: (id: unknown) => str
     const n = Number(m[1]) + 1;
     if (m[2] === "holder") return `carve-out recipient ${n}`;
     const h = holder(rows(carve?.allocation)[n - 1]?.holder);
-    return h ? `${h}'s share of the carve-out` : `carve-out recipient ${n}'s share`;
+    return h ? `${possessive(h)} share of the carve-out` : `carve-out recipient ${n}'s share`;
   }
   return null;
 }
@@ -134,14 +136,14 @@ export function eventFieldName(holders: readonly { key: string; name: string }[]
     // A round is named by its new series: "Series B's pre-money valuation".
     const series = named((ev.series as Json | undefined)?.name) ?? "the new series";
     if (path === "series.name") return "the new series' name";
-    if ((m = /^series\.cumulative_dividend\.(\w+)$/.exec(path))) return DIVIDEND[m[1]!] ? `${series}'s ${DIVIDEND[m[1]!]}` : null;
+    if ((m = /^series\.cumulative_dividend\.(\w+)$/.exec(path))) return DIVIDEND[m[1]!] ? `${possessive(series)} ${DIVIDEND[m[1]!]}` : null;
     if ((m = /^investments\[(\d+)\]\.amount$/.exec(path))) {
       const h = holder(rows(ev.investments)[Number(m[1])]?.holder);
-      return h ? `${h}'s investment in ${series}` : null;
+      return h ? `${possessive(h)} investment in ${series}` : null;
     }
-    if (path === "pay_to_play.offered_amount") return `${series}'s pay-to-play amount`;
+    if (path === "pay_to_play.offered_amount") return `${possessive(series)} pay-to-play amount`;
     const key = path.replace(/^series\./, "");
-    return /^[a-z_]+$/.test(key) && FIELD[key] ? `${series}'s ${FIELD[key]}` : null;
+    return /^[a-z_]+$/.test(key) && FIELD[key] ? `${possessive(series)} ${FIELD[key]}` : null;
   }
   if ((m = /^(issues|grants|warrants|safes|notes)\[(\d+)\]\.(\w+)$/.exec(path))) {
     const h = holder(rows(ev[m[1]!])[Number(m[2])]?.holder);
@@ -154,7 +156,7 @@ export function eventFieldName(holders: readonly { key: string; name: string }[]
       notes: Object.fromEntries(Object.entries(FIELD).map(([k, v]) => [k, `note ${v}`])),
     };
     const field = what[m[1]!]![m[3]!];
-    return field ? `${h}'s ${field}` : null;
+    return field ? `${possessive(h)} ${field}` : null;
   }
   if (path === "security.name") return "the issued class's name";
   const owner = EVENT[String(ev.type)]?.(ev);
