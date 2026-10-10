@@ -64,8 +64,8 @@ Deferred by Jordan's decisions since the 0.3.0 plan, each until a case settles i
 - **The breakpoint search's speed on larger tables.** Much faster for SAFEs since 05c4 (E15), but not yet under Jordan's 5-second target on a 2-core machine. Larkspur at a sale with its note:
   - **On a laptop:** 204s before 05c4, 1.4s after; with 05c5's check of every combination for a second answer, 2.0s.
   - **On CI's 2-core machine, 05c4's timing test:** 4.6s and 4.1s, on the two Node versions.
-  - **On Jordan's 2-core machine, after 05c4:** 1.1s with 2 SAFEs and 13.3s with 10; without the note, 0.4s and 6.7s. (Jordan, after #73.)
-  - **0.5.0:** on CI, 4.0s and 4.9s on Node 24, and 8.1s and 8.5s on Node 22, where 05c5's check costs more than on the laptop. The packed build on Jordan's 2-core machine, 8.65s with 10 SAFEs. (05e; Jordan, 05e review.)
+  - **On a 2-core test machine, after 05c4:** 1.1s with 2 SAFEs and 13.3s with 10; without the note, 0.4s and 6.7s. (Jordan, after #73.)
+  - **0.5.0:** on CI, 4.0s and 4.9s on Node 24, and 8.1s and 8.5s on Node 22, where 05c5's check costs more than on the laptop. The packed build on a 2-core test machine, 8.65s with 10 SAFEs. (05e; Jordan, 05e review.)
 
   No test needs the 60-second timeout #68 gave the largest searches any more. Other large shapes, as case 26 with 12 option strikes, haven't been timed since. The page runs the search in a worker, so it doesn't freeze, and says "Working out the curves and breakpoints…" while it waits. (Jordan, 05b3a review; Jordan, after #71.)
 - **A round's new series joining a starting table's conversion group (R31).** Not refused: by default the group stays as the starting table gives it, and the round says its new series decides on its own (05b3). A possible toggle, for a charter whose mandatory conversion is voted by all preferred together. (Jordan, 05b2 review.)
