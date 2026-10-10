@@ -26,8 +26,13 @@ import itertools
 from fractions import Fraction
 
 from .model import accrued_dividend_per_share, carve_out_pool, note_interest
+from .num import usd
 
-CARVE_OUT = "carve_out"  # the security column carve-out payouts are reported under
+CARVE_OUT = "carve_out"
+
+
+class SeveralAnswers(ValueError):
+    """More than one stable outcome at an exit value, paying holders differently: the reference stops (E8)."""  # the security column carve-out payouts are reported under
 
 ZERO = Fraction(0)
 
@@ -598,13 +603,19 @@ class Waterfall:
         return out
 
     def evaluate(self, exit_value):
-        """Distinct equilibrium outcomes at one exit value.
+        """The equilibrium outcome at one exit value.
 
         Stable decision sets that pay every holder exactly the same are one
         outcome. Its canonical decisions are the ones with the fewest
         conversions and exercises: a series converts, or an option or warrant
         is exercised, only when that strictly pays more. The tie-break never
         changes a payout.
+
+        Where more than one outcome is stable, paying holders differently, it
+        stops with a plain message naming the series, warrants and notes whose
+        choices differ, rather than pick one (E8; Jordan, after #73). Two
+        non-participating series at the same price beside post-money SAFEs are
+        the usual cause.
         """
         exit_value = Fraction(exit_value)
         groups = {}
@@ -626,7 +637,40 @@ class Waterfall:
                 }
             )
         outcomes.sort(key=lambda o: o["decisions"])
+        if len(outcomes) > 1:
+            raise SeveralAnswers(self.several_answers_message(exit_value, outcomes))
         return outcomes
+
+    def several_answers_message(self, exit_value, outcomes):
+        """The plain message for more than one stable outcome: what could go either way, and that nothing picks one."""
+        leaders = [i for i, p in enumerate(self.players) if p in self.converters or p in self.warrants or p in self.note_ids]
+        differ = [i for i in leaders if len({o["decisions"][i] for o in outcomes}) > 1]
+        sec = self.ct.securities
+
+        def name(player):
+            if player in self.members:
+                return " and ".join(sec[s]["name"] for s in self.members[player])
+            if player in sec:
+                return sec[player]["name"]
+            holder = next(n["holder"] for n in self.notes if n["id"] == player)
+            return f"{self.ct.holders[holder]}'s convertible note"
+
+        names = [name(self.players[i]) for i in differ]
+        named = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+        safes = bool(self.safes)
+        series = [self.players[i] for i in differ]
+        if len(series) > 1 and all(p in self.converters and len(self.members[p]) == 1 for p in series):
+            either = "either" if len(series) == 2 else "any of them"
+            prices = {sec[p]["original_issue_price"] for p in series}
+            body = (
+                f"{named} are at the same price, so{' with the SAFEs outstanding' if safes else ''} {either} could convert here"
+                if len(prices) == 1
+                else f"{named} could each be the one that converts here{', with the SAFEs outstanding' if safes else ''}"
+            )
+        else:
+            body = f"{named or 'The series, warrants and notes'} could settle more than one way here{', with the SAFEs outstanding' if safes else ''}"
+        avoid = " Adding a round that converts the SAFEs avoids this." if safes else ""
+        return f"At {usd(exit_value)}: {body}, and the documents don't say which. spillpoint doesn't pick one.{avoid}"
 
     def signature(self, exit_value):
         """Everything that fixes the slope of every payout: decisions, tiers filled, caps binding."""
