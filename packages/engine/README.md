@@ -418,10 +418,12 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that versio
   - **The Conversion Amount:** a post-money SAFE converts at its cap ÷ one Liquidity Capitalization for the company, which counts every SAFE that converts and leaves out series keeping their preference. A pre-money SAFE's count leaves out the pool, the SAFEs and the notes. A discount applies only with no cap, at the sale's common price less the discount, where that price exists.
   - **With no cap, converting is worth exactly** its purchase amount ÷ (1 − discount), taken out of what is left after the preferences first. That holds beside capped participating preferred too, which stops at its cap in what remains *(0.3.0)*.
   - **Several SAFEs** share a shortfall pro rata. A SAFE takes its Conversion Amount only when that strictly pays more.
+  - **The SAFEs decide last** *(0.5.0)*: the series, warrants and notes decide first, each weighing its choice with the SAFEs then paid as their terms pay them, and the SAFEs take the greater of their two amounts after. Where several SAFEs could each convert only because the others do, they take their cash until one gains by converting on its own. Before 0.5.0, a non-participating series near its conversion beside post-money SAFEs could stop the breakpoint search with "went round in a circle", and two equal SAFEs could have two answers over a range of exit values.
 - **Convertible notes still outstanding at the sale** *(0.2.0)*, each taking the greater of repayment and conversion:
   - **Repayment,** a multiple of principal plus simple interest to the exit date, is debt, paid ahead of all equity. Several notes share a shortfall pro rata.
   - **Conversion:** principal plus interest converts at the pre-money cap ÷ the share count just before the sale (with the pool, without it, or common only), leaving out the notes. With no cap it converts at the sale's common price less its discount, where that price exists, worth exactly principal plus interest ÷ (1 − discount), beside capped participating preferred too *(0.3.0)*. A note with neither is only repaid.
   - **A note converts only when that strictly pays more.**
+  - **Beside SAFEs** *(0.5.0)*: a note with a cap beside SAFEs with post-money caps. Its repayment is paid first, and once it converts, its shares count in the SAFEs' Liquidity Capitalization; its own base counts no SAFE.
 - **Escrow and earnouts** *(0.2.0)*: proceeds paid over time. `paySchedule` pays each payment's take on cumulative proceeds, as if everything so far had been paid at closing, with every decision re-made at each step.
   - **A take is negative** when a later payment lowers a holder's running total, as when it tips a series into converting. It is reported as is, and `lowered` names the holders it falls for.
 - **Management carve-outs** *(0.2.0)*: a percentage of the exit value, in marginal tiers like tax brackets, paid to listed people under the security `"carve_out"`.
@@ -441,7 +443,7 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that versio
   - a SAFE's Cash-Out Amount paid in full, or the SAFE switching to its Conversion Amount *(0.2.0)*
   - a note repaid in full, or switching to conversion *(0.2.0)*
   - a series or a group converting
-  - payouts jumping when a group's vote flips
+  - payouts jumping when a group's vote flips, or when a series or note converting moves the SAFEs *(0.5.0)*
 
 **Building a cap table from a company's events,** each event giving the cap table after it:
 - **A starting cap table** *(0.5.0)*: the first event may be the cap table the company stands at, entered or imported, and the events after it build on it. Beside it goes the order its series, SAFEs and notes were issued in, which decides whether a SAFE or note converting in a down round counts against a series. With none given, its SAFEs and notes count as issued after its series.
@@ -488,7 +490,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - More than one group of series that must convert together.
 - Notes with compound interest, or with a post-money cap.
 - Cumulative dividends added to what converts, rather than paid in cash on conversion.
-- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; more than one note unless each has a cap; and a note alongside a SAFE or a carve-out. Since 0.5.0 `readInputs` refuses these on a cap table built from rounds too; before, it didn't check one.
+- At a sale *(0.2.0)*: more than one SAFE unless each has a post-money cap; a pre-money SAFE alongside preferred stock; more than one note unless each has a cap; a note alongside a carve-out; and a note alongside a SAFE, unless the note has a cap and every SAFE a post-money cap *(0.5.0: before, any note alongside a SAFE)*. Since 0.5.0 `readInputs` refuses these on a cap table built from rounds too; before, it didn't check one.
 - Cumulative dividends on a series issued by an `issue` event, rather than a priced round.
 
 **Refused by design,** with an `InputError`:

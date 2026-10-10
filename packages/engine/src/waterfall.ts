@@ -300,9 +300,12 @@ function noteTerms(n: Note, exitDate: string, counts: { outstanding: Decimal; un
  * included: one count for the company. It leaves out the unissued pool and
  * anything taking a cash-out or a liquidation preference "in lieu of"
  * converting: a SAFE taking its Cash-Out Amount, or a non-participating
- * series that keeps its preference. Each converting SAFE's shares are its
- * purchase amount ÷ (its cap ÷ LC), so LC = everything else ÷ (1 − Σ purchase
- * amount ÷ cap).
+ * series that keeps its preference. A note converting beside it is one of its
+ * "Converting Securities", counted at its conversion shares; a note being
+ * repaid takes payment in lieu of converting, and isn't counted (X18). The
+ * note's own shares don't depend on the SAFE: its base counts no SAFE. Each
+ * converting SAFE's shares are its purchase amount ÷ (its cap ÷ LC), so
+ * LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
  *
  * Pre-money SAFE (YC, X14): "shares of Capital Stock (on an as-converted
  * basis) outstanding, assuming exercise or conversion of all outstanding
@@ -316,6 +319,8 @@ export function liquidityCapitalization(pc: PreparedCapTable, f: Safe, converted
   for (const [sid, s] of pc.preferred) {
     if (s.participation === "non_participating" && !converted.has(sid)) others = others.minus(pc.asConverted.get(sid)!);
   }
+  // X18: only a note with a cap is read beside a SAFE, so a converting one always has its shares.
+  for (const t of pc.notes.values()) if (converted.has(t.note.id) && t.shares) others = others.plus(t.shares);
   let own = ZERO;
   for (const g of pc.safes.values()) {
     if (g.postMoneyCap && (g.id === f.id || converted.has(g.id))) own = own.plus(g.purchaseAmount.div(g.postMoneyCap));
@@ -493,8 +498,9 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   // is left is no more than the amount, no such price exists, and the
   // greater-of has only the Cash-Out Amount or repayment to take (X9, X12,
   // reading (a)): it is paid as if it took that, a tie, which X16 settles
-  // that way. One such instrument at most: notes and SAFEs aren't modeled
-  // together, and several of either need caps (X13, X15).
+  // that way. One such instrument at most: a note beside a SAFE needs a cap,
+  // and the SAFE a post-money cap (X18), and several of either need caps
+  // (X13, X15).
   const uncappedSafe = convertingSafes.find((f) => !f.postMoneyCap && !f.preMoneyCap);
   const uncappedNote = convertingNotes.find((t) => !t.shares);
   const uncapped = uncappedSafe

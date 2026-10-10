@@ -244,7 +244,7 @@ export function checkSaleLimits(ct: CapTable, path: string): void {
   const byId = new Map(ct.securities.map((s) => [s.id, s]));
   const safes = ct.unconvertedSafes ?? [];
   checkSafes(safes, holderIds, byId, ct.seniority, true, `${path}.unconverted_safes`);
-  checkNotes(ct.unconvertedNotes ?? [], holderIds, byId, new Set(safes.map((f) => f.id)), safes.length > 0 || ct.carveOut != null, true, `${path}.unconverted_notes`);
+  checkNotes(ct.unconvertedNotes ?? [], holderIds, byId, safes, ct.carveOut != null, true, `${path}.unconverted_notes`);
 }
 
 /**
@@ -352,7 +352,7 @@ function readTable(value: unknown, path: string, atASale: boolean): CapTable {
   const notes = (ct.unconverted_notes == null ? [] : array(ct.unconverted_notes, `${path}.unconverted_notes`)).map((v, i) =>
     readNote(v, `${path}.unconverted_notes[${i}]`),
   );
-  checkNotes(notes, holderIds, byId, new Set(safes.map((f) => f.id)), safes.length > 0 || ct.carve_out != null, atASale, `${path}.unconverted_notes`);
+  checkNotes(notes, holderIds, byId, safes, ct.carve_out != null, atASale, `${path}.unconverted_notes`);
 
   return {
     holders,
@@ -458,15 +458,29 @@ export function readNote(value: unknown, path: string): Note {
   };
 }
 
+/** A note at a sale beside a carve-out, or beside a SAFE in a setup no case settles yet (X12, X18). */
+function noteBesideRefused(path: string): UnsupportedTermError {
+  return new UnsupportedTermError(
+    "note_with_safe_or_carve_out", "later", path,
+    "A convertible note at a sale alongside a carve-out, or alongside a SAFE unless the note has a valuation cap and every SAFE a post-money cap (X12, X18)",
+  );
+}
+
 /**
  * Notes still outstanding (X12, X15). Their holders must be listed and their
  * ids new. At a sale, setups no case settles yet are refused, never skipped.
+ * Beside SAFEs (X18): a note with a cap beside SAFEs with post-money caps. Its
+ * conversion shares then don't depend on the SAFEs, since its base counts none,
+ * and the SAFEs' Liquidity Capitalization counts it once it converts. A note
+ * with no cap converts at a price the SAFEs help set, and a SAFE with no
+ * post-money cap counts differently, so both stay refused there.
  */
 function checkNotes(
-  notes: Note[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, safeIds: ReadonlySet<string>, withSafeOrCarveOut: boolean,
+  notes: Note[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, safes: readonly Safe[], withCarveOut: boolean,
   atASale: boolean, path: string,
 ): void {
   const ids = new Set<string>();
+  const safeIds = new Set(safes.map((f) => f.id));
   notes.forEach((n, i) => {
     const at = `${path}[${i}]`;
     if (!holderIds.has(n.holder)) throw new InputError(`${at}.holder`, `unknown holder ${n.holder}`);
@@ -474,9 +488,8 @@ function checkNotes(
     ids.add(n.id);
   });
   if (notes.length === 0 || !atASale) return;
-  if (withSafeOrCarveOut) {
-    throw new UnsupportedTermError("note_with_safe_or_carve_out", "later", path, "A convertible note at a sale alongside a SAFE or a carve-out (X12)");
-  }
+  if (withCarveOut) throw noteBesideRefused(path);
+  if (safes.length > 0 && (notes.some((n) => !n.valuationCap) || safes.some((f) => !f.postMoneyCap))) throw noteBesideRefused(path);
   if (notes.length > 1 && notes.some((n) => !n.valuationCap)) {
     throw new UnsupportedTermError("several_notes", "later", path, "More than one convertible note at a sale, unless each has a cap (X15)");
   }
@@ -594,9 +607,7 @@ export function readExitOn(value: unknown, tableAfter: (eventId: string, path: s
 function withSaleCarveOut(capTable: CapTable, value: unknown, path: string): CapTable {
   if (capTable.carveOut) throw new InputError(path, "the carve-out is on both the cap table and the exit; give it once (C6)");
   const carveOut = readCarveOut(value, new Set(capTable.holders.map((h) => h.id)), path);
-  if ((capTable.unconvertedNotes ?? []).length > 0) {
-    throw new UnsupportedTermError("note_with_safe_or_carve_out", "later", path, "A convertible note at a sale alongside a SAFE or a carve-out (X12)");
-  }
+  if ((capTable.unconvertedNotes ?? []).length > 0) throw noteBesideRefused(path);
   return { ...capTable, carveOut };
 }
 

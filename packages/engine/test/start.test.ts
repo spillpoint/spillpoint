@@ -107,13 +107,22 @@ describe("the issue order (R25, R31)", () => {
   });
 });
 
+/** Case 27's starting table, its note without its cap: beside SAFEs, a setup a sale refuses (X18). */
+function withUncappedNote(capTable: Json): Json {
+  const notes = capTable.unconverted_notes as Json[];
+  return { ...capTable, unconverted_notes: notes.map((n) => ({ ...n, valuation_cap: null })) };
+}
+
 describe("a starting table", () => {
   const inputs = inputsOf("edge-27-safes-and-note-convert-on-an-imported-table");
   const start = inputs.events[0] as Json & { cap_table: Json };
   const company = (events: Json[], holders = inputs.holders) => () => buildCapTables({ holders, events });
 
-  it("may hold SAFEs beside a note, which a sale refuses, since a later round converts them", () => {
-    expect(() => readCapTable(start.cap_table)).toThrow(UnsupportedTermError);
+  it("may hold SAFEs and notes a sale refuses, since a later round converts them", () => {
+    // A note with no cap beside SAFEs (X18): a sale refuses it, a starting table doesn't.
+    const uncapped = withUncappedNote(start.cap_table);
+    expect(() => readCapTable(uncapped)).toThrow(UnsupportedTermError);
+    expect(company([{ ...start, cap_table: uncapped }])).not.toThrow();
     const [t] = buildCapTables({ holders: inputs.holders, events: [start] });
     expect(t!.unconvertedSafes.map((f) => f.id)).toEqual(["safe-x1", "safe-s3"]);
     expect(t!.unconvertedNotes.map((n) => n.id)).toEqual(["note-n1"]);
@@ -161,9 +170,9 @@ it("case 27's RSUs, with no strike, come in where common starts to be paid, in y
   // A full breakpoint search on case 27.
 }, FULL_SEARCH_TIMEOUT);
 
-describe("a sale on a table built from rounds is held to the limits a sale puts on SAFEs and notes (X12–X15)", () => {
-  const refusal = (name: string, after: string, exitDate: string) => {
-    const inputs = inputsOf(name);
+describe("a sale on a table built from rounds is held to the limits a sale puts on SAFEs and notes (X12–X15, X18)", () => {
+  const refusal = (name: string, after: string, exitDate: string, change: (inputs: Inputs) => Inputs = (i) => i) => {
+    const inputs = change(inputsOf(name));
     try {
       readInputs({ ...inputs, exit: { cap_table_after_event: after, range: ["0", "100000000"], exit_values: [], exit_date: exitDate } });
       return null;
@@ -179,9 +188,17 @@ describe("a sale on a table built from rounds is held to the limits a sale puts 
     ]);
   });
 
-  it("and on a starting table: 27's SAFEs beside its note, sold before its Series B converts them", () => {
-    expect(refusal("edge-27-safes-and-note-convert-on-an-imported-table", "start", "2025-06-30")).toEqual([
+  it("and on a starting table: 27's SAFEs beside its note with no cap, sold before its Series B converts them", () => {
+    const uncapped = (inputs: Inputs): Inputs => {
+      const [first, ...rest] = inputs.events as [Json & { cap_table: Json }, ...Json[]];
+      return { ...inputs, events: [{ ...first, cap_table: withUncappedNote(first.cap_table) }, ...rest] };
+    };
+    expect(refusal("edge-27-safes-and-note-convert-on-an-imported-table", "start", "2025-06-30", uncapped)).toEqual([
       "note_with_safe_or_carve_out", "exit.cap_table_after_event.unconverted_notes",
     ]);
+  });
+
+  it("but not 27's SAFEs beside its note as they are, a note with a cap beside post-money SAFEs (X18; 05c2)", () => {
+    expect(refusal("edge-27-safes-and-note-convert-on-an-imported-table", "start", "2025-06-30")).toBeNull();
   });
 });
