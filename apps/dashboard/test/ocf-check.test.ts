@@ -8,7 +8,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ISSUE_PRICE, PLACEHOLDER, answerSets, checkExport } from "../src/ocfCheck.ts";
+import type { EngineRuns } from "../src/ocfCheck.ts";
 import type { Picked } from "../src/ocfImport.ts";
+
+import { FULL_SEARCH_TIMEOUT } from "./analysis.ts";
 
 const cases = resolve(import.meta.dirname, "../../../cases");
 const filesIn = (dir: string): Picked[] => readdirSync(dir).sort().map((name) => ({ name, bytes: new Uint8Array(readFileSync(resolve(dir, name))) }));
@@ -59,7 +62,8 @@ function noConversionRight(): Picked[] {
 const check = async (picked: Picked[]) => (await checkExport(picked, "0.4.0")).filter((line) => !line.startsWith("Objects: "));
 
 describe("what it prints", () => {
-  it("Larkspur: read, its blanks tried, and stopped at a sale by its SAFEs beside a note", async () => {
+  // Since 0.5.0 (05c2) the engine reads Larkspur at a sale, its SAFEs beside its note: a full breakpoint search on each set.
+  it("Larkspur: read, its blanks tried, and the engine reads it either way the Seed participates", async () => {
     expect(await check(packageOf("ocf-01-larkspur"))).toEqual([
       "spillpoint 0.4.0: an OCF import, in counts and codes",
       "OCF version: 1.2.0",
@@ -72,10 +76,10 @@ describe("what it prints", () => {
       "Unrecognized fields: board_seat 1",
       "Blanks: participation 1, repayment_multiple 1",
       "Answer sets: 2 tried, of 2 possible",
-      "set 1: #1 participation=non_participating, #2 repayment_multiple=placeholder: note_with_safe_or_carve_out",
-      "set 2: #1 participation=participating, #2 repayment_multiple=placeholder: note_with_safe_or_carve_out",
+      "set 1: #1 participation=non_participating, #2 repayment_multiple=placeholder: reads",
+      "set 2: #1 participation=participating, #2 repayment_multiple=placeholder: reads",
     ]);
-  });
+  }, FULL_SEARCH_TIMEOUT);
 
   it("Millrace: read either way Series B participates", async () => {
     expect((await check(packageOf("ocf-11-millrace"))).slice(-3)).toEqual([
@@ -160,8 +164,12 @@ describe("what it never prints", () => {
   /** Every answer a set line may print: a choice's own code, or a placeholder's word. */
   const PRINTABLE = new Set(["non_participating", "participating", "participating_capped", "pre_money", "post_money", "with_pool", "without_pool", PLACEHOLDER, ISSUE_PRICE]);
 
+  // Most fixtures fill to Larkspur's table, whose every set is a full breakpoint search (05c2): they share the engine's
+  // runs, so it searches each table once. A test run alone still searches it, so each has the full search's timeout.
+  const engineRuns: EngineRuns = new Map();
+
   it.each(runs)("%s: no name, id, amount or date", async (_, picked) => {
-    const printed = (await checkExport(picked, "0.4.0")).join("\n");
+    const printed = (await checkExport(picked, "0.4.0", engineRuns)).join("\n");
     const { words, phrases } = secrets(picked);
     expect(printed).not.toMatch(/\d{4}-\d{2}-\d{2}/);
     for (const phrase of phrases) expect(printed.includes(phrase), phrase).toBe(false);
@@ -170,5 +178,5 @@ describe("what it never prints", () => {
     const tokens = new Set(printed.split(/[^A-Za-z0-9_.,+-]+/).map((t) => t.replace(/[.,]+$/, "")));
     for (const word of words) if (!/^\d{1,3}$/.test(word)) expect(tokens.has(word), word).toBe(false);
     for (const [, answer] of printed.matchAll(/#\d+ [a-z_]+=([^,:]+)/g)) expect(PRINTABLE.has(answer!), answer).toBe(true);
-  });
+  }, FULL_SEARCH_TIMEOUT);
 });

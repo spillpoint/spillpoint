@@ -279,36 +279,30 @@ function opensExactly(name: string) {
 
 describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
   // 12i and 13h (0.3.0 work, 03a), a SAFE and a note with no cap beside capped participating preferred, since 03e.
-  // 13i and 13j, SAFEs beside a note (X18), wait for the engine in 05c2: their files are refused until then. 12j opens,
-  // but its curves wait for the SAFEs' greater-of last (E20), also in 05c2. Never skipped.
-  const refused = ["edge-13i-note-beside-a-safe", "edge-13j-larkspur-at-a-sale"];
-  const circling = ["edge-12j-larkspur-safes-at-a-sale"];
-  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name) && !refused.includes(name) && !circling.includes(name));
+  // 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2.
+  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name));
   const fileOf = (name: string) => {
     const exit = JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).exit;
     return JSON.stringify({ format: "spillpoint", version: 6, name, cap_table: exit.cap_table, range: exit.range, ...(exit.exit_date ? { exit_date: exit.exit_date } : {}) });
   };
 
-  it("covers every case with a SAFE or a note at a sale: 12 to 12i, and 13a to 13h", () => {
-    expect(cases).toHaveLength(17);
+  it("covers every case with a SAFE or a note at a sale: 12 to 12j, and 13a to 13j", () => {
+    expect(cases).toHaveLength(20);
   });
 
-  it.each(refused)("%s is refused as a file until the engine reads a SAFE beside a note (05c2)", (name) => {
-    const opened = readFile(fileOf(name));
-    expect(opened.ok ? "opened" : opened.message).toMatch(/^Its cap table can't be used\. .*A convertible note at a sale alongside a SAFE or a carve-out/);
+  it("refuses a file with a note beside a SAFE with no post-money cap, in plain words (X18)", () => {
+    const file = JSON.parse(fileOf("edge-13i-note-beside-a-safe"));
+    const safe = file.cap_table.unconverted_safes[0];
+    file.cap_table.unconverted_safes[0] = { ...safe, post_money_cap: null, pre_money_cap: safe.post_money_cap };
+    const opened = readFile(JSON.stringify(file));
+    expect(opened.ok ? "opened" : opened.message).toMatch(/^Its cap table can't be used\. .*A convertible note at a sale alongside a carve-out, or alongside a SAFE unless/);
   });
 
-  it.each(circling)("%s opens, but its breakpoints wait for the SAFEs' greater-of last (E20, 05c2)", (name) => {
-    const opened = readFile(fileOf(name));
-    if (!opened.ok) throw new Error(opened.message);
-    const exit = readExit(buildExit(opened.draft).json);
-    expect(() => findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range)).toThrow(/went round in a circle/);
-  }, FULL_SEARCH_TIMEOUT);
-
+  // Larkspur's two (12j and 13j) are each a full breakpoint search the size of case 27's.
   it.each(cases)("%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts", (name) => {
     const draft = opensExactly(name);
     expect(draft.safes.length + draft.notes.length).toBeGreaterThan(0);
-  });
+  }, FULL_SEARCH_TIMEOUT);
 
   it("keeps a SAFE's ranking on a cap table built from rounds: its cash is paid with Series A, not the Seed", () => {
     const series = (id: string, name: string) => ({ id, name, kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" });

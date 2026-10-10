@@ -241,6 +241,9 @@ export function reportLines(result: OcfImport, pkg: Package): string[] {
         return `${holderOf(subject)}'s SAFE gives no exit multiple, so at a sale it's paid its purchase amount, as a SAFE's Cash-Out Amount is.`;
       case "note_cap_read_as_pre_money":
         return `The cap on ${holderOf(subject)}'s note is read as pre-money, the only kind spillpoint models for a note. OCF doesn't say which.`;
+      // O9 (0.5.0 plan, answer 11): with another SAFE or note outstanding, the import refuses instead.
+      case "note_base_other_convertibles_ignored":
+        return `${holderOf(subject)}'s note counts other SAFEs and notes in the shares its cap divides by. None is outstanding beside it, so that changes nothing.`;
       case "left_out_stakeholder":
         return `${pkg.name(subject)} holds nothing on ${asOf}, so they're left out.`;
       case "left_out_stock_class":

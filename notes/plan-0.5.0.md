@@ -153,6 +153,8 @@ Each case is worked by the reference and re-derived by you. The defaults I'd pro
 
 The engine lifts `note_with_safe_or_carve_out` for SAFEs, and passes the cases. A note beside a carve-out stays refused unless you want it in too.
 
+**Done in 05c2 (Jordan, after #70):** the engine reads a capped note beside post-money SAFEs (X18), applies E20 wherever SAFEs are outstanding at a sale, reads the note-base rule (O9), and passes 12j, 13i, 13j and OCF case 13. A note beside a carve-out stays refused.
+
 ### What it would take to lift the other two refusals at a sale (question 12)
 
 - **A pre-money SAFE beside preferred** (X14, `pre_money_safe_with_preferred`):
@@ -195,6 +197,12 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 - **"Fill this in: it can't be blank" should name the field,** for example "Series B's pre-money valuation can't be blank."
 
 **Changed behavior, for the release notes** (Jordan, 05b2 review): a sale on a table built from rounds now applies the same at-a-sale limits as a cap table entered directly (X12–X15), so some inputs 0.4.0 paid are now refused. `readInputs` didn't apply them to a table built from rounds before.
+
+**Changed behavior, for the release notes** (05c2, for you to check): two equal post-money SAFEs can each take cash or both convert over a range of exit values. 0.4.0's `solve` reported both answers there (E8); it now reports the cash until one gains by converting alone (E20's tie), and payouts jump there.
+
+**A fix, for the release notes** (Jordan, after #70): 0.4.0's breakpoint search stopped on Larkspur's table at a sale (edge case 12j), with "went round in a circle (E15)" from $16,531,000, where the non-participating Seed and the post-money SAFEs went round in a circle. Under E20 the SAFEs' greater-of comes last, so it's one breakpoint where payouts jump, at $16,559,391.30.
+
+**New, for the release notes:** SAFEs beside a capped note at a sale (X18); the note-base rule in the OCF import (O9).
 
 ## Questions
 

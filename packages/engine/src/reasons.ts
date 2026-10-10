@@ -107,6 +107,20 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   const atAfter = payout(pc, x, after);
   const reasons: Reason[] = [];
 
+  // E20: the SAFEs' greater-of comes last. Where a series or a note switches and SAFEs switch with it, the SAFEs
+  // follow it: a non-participating series converting, or a note converting, joins their Liquidity Capitalization
+  // (X1, X18), and they're paid as their terms then pay them. Warrants are counted whether or not they're exercised
+  // (R29), so they change nothing there.
+  const switched = (id: string) => before.converted.has(id) !== after.converted.has(id);
+  const leadersChanged = [...pc.preferred.keys(), ...pc.notes.keys()].filter(switched);
+  const safesFollowing = leadersChanged.length > 0 ? [...pc.safes.keys()].filter(switched) : [];
+  const joinsTheCount = (id: string) => pc.notes.has(id) || pc.preferred.get(id)?.participation === "non_participating";
+  // Other post-money SAFEs converting from here too, where no series or note switched: they convert together (E20's tie).
+  const together = (fid: string) =>
+    leadersChanged.length > 0
+      ? []
+      : [...pc.safes.values()].filter((g) => g.id !== fid && g.postMoneyCap && !before.converted.has(g.id) && after.converted.has(g.id)).map((g) => g.id);
+
   // Options coming into (or falling out of) the money.
   for (const o of pc.options.values()) {
     const was = before.exercised.has(o.id);
@@ -175,7 +189,24 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
     if (members.has(s.id) || before.converted.has(s.id) === after.converted.has(s.id)) continue;
     const converts = after.converted.has(s.id);
     let text: string;
-    if (converts) {
+    if (converts && safesFollowing.length > 0 && jumps) {
+      // E20: it weighs converting with the SAFEs re-settled after it. Where its conversion moves them into their
+      // Conversion Amounts, payouts jump, and at this exit value it is indifferent, so it keeps its preference here.
+      const here = atAfter.series.get(s.id)!;
+      const keep =
+        s.participation === "participating_capped"
+          ? `its capped total of ${money(here.capTotal!)} (${multiple(s.capMultiple!)} its investment)`
+          : `its ${multiple(s.preferenceMultiple)} preference of ${money(here.preference)}`;
+      const names = list(safesFollowing.map((id) => name.get(id)!));
+      const one = safesFollowing.length === 1;
+      const then = `${names} then ${one ? "takes its Conversion Amount" : "take their Conversion Amounts"}`;
+      text =
+        `${s.name} converts to common here: with the SAFEs paid as their terms then pay them, converting pays it more above this exit value. ` +
+        (joinsTheCount(s.id) ? `Converting puts it in the SAFEs' Liquidity Capitalization, so ${then}. ` : `With it converted, ${then}. `) +
+        `At this exit value its ${shares(here.asConverted)} as-converted shares that way are worth ` +
+        `${money(here.asConverted.times(atAfter.commonPrice))} at ${perShare(atAfter.commonPrice)} each, the same as ${keep}. ` +
+        "Below it, keeping its preference pays more.";
+    } else if (converts) {
       // E12: the series here counts the shares of any exercised warrant for it.
       const here = atAfter.series.get(s.id)!;
       // X4, X5: accrued dividends are part of the preference. Converting gives them up, unless they are paid on conversion.
@@ -273,6 +304,30 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
         `${who} has no valuation cap, so it converts at ${priced}. That is worth exactly ${money(worth)} wherever it is possible, ` +
         `which is where ${leftFor(pc, "the SAFE")} is more than that, and this is the first exit value where it is. ` +
         `Below it the SAFE takes its ${money(f.purchaseAmount)} Cash-Out Amount; above it, ${money(worth)}.`;
+    } else if (safesFollowing.includes(f.id)) {
+      // E20: it follows the series or note that switched here. Its shares are valued at the common price just above,
+      // which differs from below at a jump.
+      const here = atAfter.safes.get(f.id)!;
+      const leaders = list(leadersChanged.map((id) => name.get(id)!));
+      const counts = leadersChanged.every(joinsTheCount) ? `: its Liquidity Capitalization now counts ${leadersChanged.length === 1 ? "it" : "them"}, so` : ", and";
+      text =
+        `${who} switches from its Cash-Out Amount to its Conversion Amount here, following ${leaders}${counts} its ${shares(here.shares!)} conversion shares ` +
+        `(${money(f.purchaseAmount)} ÷ the Liquidity Price of ${perShare(here.liquidityPrice!)}) are worth ${perShare(atAfter.commonPrice)} each just above this exit value, ` +
+        `${money(here.shares!.times(atAfter.commonPrice))} in all, more than its ${money(f.purchaseAmount)} purchase amount.`;
+    } else if (jumps && together(f.id).length > 0 && f.postMoneyCap) {
+      // E20's tie: SAFEs that convert only because the others do take their Cash-Out Amounts until one gains by
+      // converting on its own (E5). Here one does, so they all convert, and the count grows with each: payouts jump.
+      const alone = payout(pc, x, { converted: new Set([...before.converted, f.id]), exercised: before.exercised });
+      const own = alone.safes.get(f.id)!;
+      const here = atAfter.safes.get(f.id)!;
+      const others = together(f.id);
+      const one = others.length === 1;
+      text =
+        `${who} switches from its Cash-Out Amount to its Conversion Amount here, with ${list(others.map((id) => name.get(id)!))}. ` +
+        `Converting on its own, its ${shares(own.shares!)} conversion shares (${money(f.purchaseAmount)} ÷ the Liquidity Price of ${perShare(own.liquidityPrice!)}) ` +
+        `would be worth ${perShare(alone.commonPrice)} each, ${money(own.shares!.times(alone.commonPrice))} in all, the same as its purchase amount; above this exit value, ` +
+        `converting pays more. With ${one ? "the other SAFE" : "the others"} converting too, the Liquidity Capitalization counts ${one ? "its" : "their"} shares, so its ` +
+        `${shares(here.shares!)} shares are worth ${perShare(atAfter.commonPrice)} each just above this exit value, ${money(here.shares!.times(atAfter.commonPrice))} in all.`;
     } else {
       const here = atAfter.safes.get(f.id)!;
       text =
@@ -337,6 +392,14 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
         `${perShare(t.price!)} a share (the ${money(t.note.valuationCap)} cap ÷ ${shares(t.baseShares!)} shares) into ${shares(t.shares!)} shares, ` +
         `worth ${perShare(atAfter.commonPrice)} each here, ${money(t.shares!.times(atAfter.commonPrice))} in all, the same as its ${money(t.repayment)} repayment. ` +
         "Below this exit value repayment pays more; above it, converting does.";
+      // X18: a converting note is one of a post-money SAFE's Converting Securities, so its shares join their count.
+      const counting = [...pc.safes.values()].filter((f) => f.postMoneyCap && after.converted.has(f.id) && before.converted.has(f.id));
+      if (counting.length > 0 && jumps) {
+        const one = counting.length === 1;
+        text +=
+          ` Converting adds its shares to the Liquidity Capitalization ${list(counting.map((f) => name.get(f.id)!))} ${one ? "converts" : "convert"} on, ` +
+          `so ${one ? "its" : "their"} conversion shares grow with it: just above this exit value ${one ? "its payout jumps" : "their payouts jump"} up and common's down.`;
+      }
     }
     reasons.push({ code: "note_switches", subject: [id], starts: converts, text });
   }

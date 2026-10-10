@@ -175,27 +175,23 @@ describe("Quillfern imported, a Series B added, saved and opened again (case 26)
   });
 });
 
-/** Larkspur's export, its two blanks answered as case 27 fills them, and a sale date; "Use it to add a round" (05b3b). */
-async function importLarkspurWithARound() {
+/** Larkspur's export, with `extra` files, its blanks answered as case 27 fills them, and a sale date; the cap table used. */
+async function importLarkspur(extra: { file: string; safeCap: "Pre-money" | "Post-money" } | null = null) {
   render(<App />);
   const files = readdirSync(resolve(cases, "ocf-01-larkspur/package")).map(
     (f) => new File([readFileSync(resolve(cases, "ocf-01-larkspur/package", f))], f, { type: "application/json" }),
   );
+  if (extra) files.push(new File([readFileSync(resolve(cases, extra.file))], extra.file.split("/").at(-1)!, { type: "application/json" }));
   fireEvent.change(screen.getByLabelText(/Open an OCF export/), { target: { files } });
   const panel = await screen.findByRole("region", { name: /^Importing / });
   fireEvent.click(within(within(panel).getByRole("group", { name: "Does Seed Preferred participate?" })).getByLabelText(/^Non-participating/));
+  if (extra) fireEvent.click(within(within(panel).getByRole("group", { name: "Is this SAFE's cap pre-money or post-money?" })).getByLabelText(extra.safeCap));
   type(within(panel).getByLabelText("Investor N's note's repayment multiple at a sale"), "1");
   type(within(panel).getByLabelText("When is the sale?"), "2026-06-30");
   click("Use this cap table");
-  // Its SAFEs beside its note are refused at a sale (X12), so the review offers a round to convert them.
-  expect(screen.getByRole("alert").textContent).toBe(
-    "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding.",
-  );
-  click("Use it to add a round");
-  await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 8 files, with a round to convert its SAFEs and notes\./);
 }
 
-/** Case 27's Series B, typed into the round "Use it to add a round" opens: Investor Z's $8M, the pool to 10%, senior. */
+/** Case 27's Series B, typed into the round "Add a round" opens: Investor Z's $8M, the pool to 10%, senior. */
 function typeCase27SeriesB() {
   const holders = within(panel()).getByRole("region", { name: "Holders" });
   click("Add a holder");
@@ -235,20 +231,17 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
   it(
     "pays as case 27 does, to the cent at every breakpoint, and again once the file is opened",
     async () => {
-      await importLarkspurWithARound();
-      // Straight to the Rounds tab: the starting table, then a Series B that converts the SAFEs and the note.
+      // Since 05c2 the engine reads Larkspur at a sale, its SAFEs beside its note (X18, E20): it opens with payouts.
+      await importLarkspur();
+      await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 8 files\./);
+      await screen.findByRole("heading", { name: "Breakpoints" }, { timeout: FULL_SEARCH_TIMEOUT });
+      openTab("Cap table");
+      click("Add a round");
       expect(titles()).toEqual(["1. The cap table it starts from", "2. Series B Preferred, a priced round"]);
       const round = card(/^2\./);
+      // A new round converts the SAFEs and notes still outstanding, as case 27's Series B does.
       expect((within(round).getByLabelText("Converts the SAFEs still outstanding") as HTMLInputElement).checked).toBe(true);
       expect((within(round).getByLabelText("Converts the convertible notes still outstanding") as HTMLInputElement).checked).toBe(true);
-      // Until a round converts them, the Payouts tab gives the engine's message.
-      openTab("Payouts");
-      expect(document.querySelector("#panel-payouts .notice")!.textContent).toBe(
-        "The payouts can't be worked out yet. spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding. " +
-          "Once a round on the Rounds tab converts the SAFEs and notes, the payouts use the cap table after it.",
-      );
-
-      openTab("Rounds");
       typeCase27SeriesB();
       await vi.waitFor(() => expect(within(panel()).queryAllByRole("alert")).toEqual([]), { timeout: ANALYSIS_TIMEOUT });
       const saved = await save();
@@ -263,6 +256,27 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
     },
     FULL_SEARCH_TIMEOUT,
   );
+});
+
+describe("a cap table the engine can't use at a sale (05b3b)", () => {
+  it("opens the Rounds tab at a round that converts its SAFEs and notes, and the Payouts tab says why until one does", async () => {
+    // Larkspur with a third SAFE answered as pre-money: a pre-money SAFE beside preferred stock, a sale's limit (X14).
+    await importLarkspur({ file: "ocf-04-to-fill/fixtures/safe-cap-without-timing.ocf.json", safeCap: "Pre-money" });
+    expect(screen.getByRole("alert").textContent).toBe(
+      "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while a pre-money SAFE is outstanding beside preferred stock.",
+    );
+    click("Use it to add a round");
+    await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 9 files, with a round to convert its SAFEs and notes\./);
+    expect(titles()).toEqual(["1. The cap table it starts from", "2. Series B Preferred, a priced round"]);
+    const round = card(/^2\./);
+    expect((within(round).getByLabelText("Converts the SAFEs still outstanding") as HTMLInputElement).checked).toBe(true);
+    expect((within(round).getByLabelText("Converts the convertible notes still outstanding") as HTMLInputElement).checked).toBe(true);
+    openTab("Payouts");
+    expect(document.querySelector("#panel-payouts .notice")!.textContent).toBe(
+      "The payouts can't be worked out yet. spillpoint can't yet work out a sale while a pre-money SAFE is outstanding beside preferred stock. " +
+        "Once a round on the Rounds tab converts the SAFEs and notes, the payouts use the cap table after it.",
+    );
+  });
 });
 
 describe("an imported cap table saved before a round is added (05b3b, Jordan's answer 1)", () => {

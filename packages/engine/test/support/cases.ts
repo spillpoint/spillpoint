@@ -19,25 +19,6 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
 export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("ocf-"));
 
 /**
- * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,
- * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, case 10's
- * carve-outs since M5f, case 12's SAFEs at a sale since M5g, case 13's notes at a sale since M5h, and case 11's
- * earnout since M5i, and case 11b's earnout with a negative take since its case (0.3.0 work, 03a). Cases 12i and 13h,
- * a SAFE and a note with no cap beside capped participating preferred, and case 24, a carve-out given on the sale,
- * since 03e, case 8b, a warrant coming into the money on a curve, since 03f, and case 25, the cap table OCF case 12's
- * ledger leaves, since its case (04c), and cases 26 and 27, sales after a round on a starting cap table (R31), since
- * 05b2. None is left out.
- */
-export const NOT_YET: readonly string[] = [
-  // SAFEs beside a note at a sale (X18): the cases in 05c1, the engine in 05c2.
-  "edge-13i-note-beside-a-safe",
-  "edge-13j-larkspur-at-a-sale",
-  // The SAFEs' greater-of last (E20): the case in 05c1, the engine in 05c2. 0.4.0's engine reads it, but its breakpoint
-  // search stops where the Seed and the SAFEs went round in a circle.
-  "edge-12j-larkspur-safes-at-a-sale",
-];
-
-/**
  * The timeout for a test that runs a full breakpoint search on case 27, or on anything larger. Case 27's takes about
  * 3.8s on CI's 2-core machine, past vitest's 5s default at random (#68). Its speed is on the later list.
  */
@@ -49,11 +30,22 @@ export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
   const inputs = readCaseFile(name, "inputs.json") as { events?: { type: string }[] };
   return inputs.events?.[0]?.type === "start";
 });
+
+/**
+ * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,
+ * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, case 10's
+ * carve-outs since M5f, case 12's SAFEs at a sale since M5g, case 13's notes at a sale since M5h, and case 11's
+ * earnout since M5i, and case 11b's earnout with a negative take since its case (0.3.0 work, 03a). Cases 12i and 13h,
+ * a SAFE and a note with no cap beside capped participating preferred, and case 24, a carve-out given on the sale,
+ * since 03e, case 8b, a warrant coming into the money on a curve, since 03f, and case 25, the cap table OCF case 12's
+ * ledger leaves, since its case (04c), and cases 26 and 27, sales after a round on a starting cap table (R31), since
+ * 05b2. Cases 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2. None is
+ * left out.
+ */
 export const EXIT_CASES: string[] = ALL_CASES.filter(
   (name) =>
-    (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name) ||
-      FROM_A_STARTING_TABLE.includes(name)) &&
-    !NOT_YET.includes(name),
+    /^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name) ||
+    FROM_A_STARTING_TABLE.includes(name),
 );
 
 export function readCaseFile(name: string, file: "inputs.json" | "expected.json"): unknown {

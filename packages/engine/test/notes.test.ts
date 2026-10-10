@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, UnsupportedTermError, prepare, readCapTable, readExit, solve } from "../src/index.ts";
+import { D, UnsupportedTermError, payout, prepare, readCapTable, readExit, solve } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import { readCaseFile } from "./support/cases.ts";
 
@@ -101,11 +101,33 @@ describe("the exit date (X3)", () => {
   });
 });
 
+const postMoneySafe = { id: "s", holder: "m", purchase_amount: "100000", post_money_cap: "1000000" };
+
+describe("a note with a cap beside a SAFE with a post-money cap (X18; 05c2)", () => {
+  it("is read at a sale", () => {
+    expect(readCapTable(table({}, { safes: [postMoneySafe] })).unconvertedNotes!.map((n) => n.id)).toEqual(["note"]);
+  });
+
+  // The SAFE buys 10% of its Liquidity Capitalization ($100,000 ÷ its $1,000,000 cap). The note's $100,000 converts at
+  // its $800,000 cap ÷ 800,000 shares, $1.00, into 100,000 shares. So the count is 800,000 ÷ 0.9 with the note repaid,
+  // and 900,000 ÷ 0.9 with it converting.
+  it("counts in the SAFE's Liquidity Capitalization only when it converts", () => {
+    const exit = exitOn(table({}, { safes: [postMoneySafe] }));
+    const pc = prepare(exit.capTable, exit.exitDate);
+    const lc = (converted: string[]) => payout(pc, new D(5000000), { converted: new Set(converted), exercised: new Set() }).safes.get("s")!.liquidityCapitalization!;
+    expect(same(lc(["s"]), "8000000/9")).toBe(true);
+    expect(same(lc(["s", "note"]), "1000000")).toBe(true);
+  });
+});
+
 describe("what is refused, never skipped", () => {
   const second = { id: "note_m", holder: "m", principal: "50000", interest_rate: "0", issue_date: "2023-01-01", conversion_base: "with_pool", discount: "0.2", repayment_multiple: "1" };
   it.each([
     ["two notes where one has no cap (X15)", table({}, { notes: [{ ...second, valuation_cap: null }] }), "several_notes"],
-    ["a note alongside a SAFE (X12)", table({}, { safes: [{ id: "s", holder: "m", purchase_amount: "100000", post_money_cap: "1000000" }] }), "note_with_safe_or_carve_out"],
+    // X18 (05c2): beside SAFEs, only a note with a cap, and SAFEs with post-money caps.
+    ["a note with no cap beside a SAFE (X18)", table({ valuation_cap: null, discount: "0.2" }, { safes: [postMoneySafe] }), "note_with_safe_or_carve_out"],
+    ["a SAFE with no post-money cap beside a note (X18)", table({}, { safes: [{ ...postMoneySafe, post_money_cap: null, pre_money_cap: "1000000" }] }), "note_with_safe_or_carve_out"],
+    ["a SAFE with no cap beside a note (X18)", table({}, { safes: [{ ...postMoneySafe, post_money_cap: null, discount: "0.2" }] }), "note_with_safe_or_carve_out"],
   ])("refuses %s, until a case settles it", (_, ct, term) => {
     let error: unknown;
     try {

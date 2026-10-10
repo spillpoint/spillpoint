@@ -77,7 +77,8 @@ describe("the terms OCF leaves open", () => {
     expect(seriesB).toMatchObject({ participation: "participating", cap_multiple: null });
   });
 
-  it("asks whether a SAFE's cap is pre-money or post-money, and says plainly when the engine can't use the table", async () => {
+  /** Larkspur with a third SAFE whose cap's kind OCF leaves open, answered, and the rest as case 27 fills them. */
+  async function larkspurWithASafeAsked(kind: "Pre-money" | "Post-money") {
     render(<App />);
     const fixture = new File([caseFile("ocf-04-to-fill/fixtures/safe-cap-without-timing.ocf.json")], "safe-cap-without-timing.ocf.json");
     upload([...packageOf("ocf-01-larkspur"), fixture]);
@@ -85,15 +86,23 @@ describe("the terms OCF leaves open", () => {
     // Jordan's wording (04g).
     expect(within(panel).getByText("The cap on Investor N's note is read as pre-money, the only kind spillpoint models for a note. OCF doesn't say which.")).toBeTruthy();
     // Jordan's wording (04a2 review).
-    fireEvent.click(within(within(panel).getByRole("group", { name: "Is this SAFE's cap pre-money or post-money?" })).getByLabelText("Post-money"));
+    fireEvent.click(within(within(panel).getByRole("group", { name: "Is this SAFE's cap pre-money or post-money?" })).getByLabelText(kind));
     fireEvent.click(within(within(panel).getByRole("group", { name: "Does Seed Preferred participate?" })).getByLabelText(/^Non-participating/));
     fireEvent.change(within(panel).getByLabelText("Investor N's note's repayment multiple at a sale"), { target: { value: "1.5" } });
     fireEvent.change(within(panel).getByLabelText("When is the sale?"), { target: { value: "2026-06-30" } });
     click("Use this cap table");
-    // Larkspur's SAFEs sit beside a note, which the engine refuses at a sale (X12): the panel stays, says why, and
-    // offers a round to convert them (05b3b).
+  }
+
+  it("asks whether a SAFE's cap is pre-money or post-money: post-money, the engine uses the table, SAFEs beside a note (05c2)", async () => {
+    await larkspurWithASafeAsked("Post-money");
+    expect(await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 9 files\./)).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("pre-money, says plainly why the engine can't use the table at a sale, and offers a round to convert the SAFEs (05b3b)", async () => {
+    await larkspurWithASafeAsked("Pre-money");
     expect(screen.getByRole("alert").textContent).toBe(
-      "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while SAFEs and a convertible note are both outstanding.",
+      "This cap table can't be used at a sale yet: spillpoint can't yet work out a sale while a pre-money SAFE is outstanding beside preferred stock.",
     );
     expect(screen.getByRole("region", { name: /^Importing Larkspur/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Use it to add a round" })).toBeTruthy();
@@ -108,6 +117,25 @@ describe("the terms OCF leaves open", () => {
     click("Use this cap table");
     expect(screen.getByRole("alert").textContent).toMatch(/^This cap table can't be used yet\. /);
     expect(screen.queryByRole("button", { name: "Use it to add a round" })).toBeNull();
+  });
+});
+
+describe("a note whose cap counts other SAFEs and notes (O9; 05c2)", () => {
+  it("is read when none is outstanding beside it, and the report says so", async () => {
+    render(<App />);
+    const fixture = new File([caseFile("ocf-13-note-base/fixtures/note-alone-counts-other-convertibles.ocf.json")], "note-alone-counts-other-convertibles.ocf.json");
+    upload([...packageOf("ocf-12-ledger"), fixture]);
+    const panel = await review();
+    expect(within(panel).getByText("Fund U's note counts other SAFEs and notes in the shares its cap divides by. None is outstanding beside it, so that changes nothing.")).toBeTruthy();
+  });
+
+  it("is refused beside Larkspur's SAFEs and note, by name", async () => {
+    render(<App />);
+    const fixture = new File([caseFile("ocf-03-refused/fixtures/note-base-counts-other-convertibles.ocf.json")], "note-base-counts-other-convertibles.ocf.json");
+    upload([...packageOf("ocf-01-larkspur"), fixture]);
+    expect((await screen.findByRole("alert")).textContent).toMatch(
+      /^Couldn't import it: it uses something spillpoint doesn't model yet, and it refuses rather than leave it out\. .*other converting securities/,
+    );
   });
 });
 

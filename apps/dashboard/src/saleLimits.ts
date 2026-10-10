@@ -11,20 +11,30 @@ export const SALE_LIMITS = new Set(["note_with_safe_or_carve_out", "pre_money_sa
 
 const some = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
+const blank = (v: unknown) => v == null || v === "";
+
 /**
  * What a sale-limit refusal means for this cap table (C8, C9 fields), in a sentence; null for any other refusal. A
- * carve-out beside a note is the same limit as a SAFE beside one, and says so when there's no SAFE.
+ * carve-out beside a note is the same limit as a SAFE beside one in a setup not modeled yet (X18): a note with no
+ * valuation cap, or a SAFE with no post-money cap. Where the SAFEs and notes are all set up as modeled, it's the
+ * carve-out, which may be on the sale rather than the cap table.
  */
 export function saleLimitText(error: unknown, capTable: Json): string | null {
   if (!(error instanceof UnsupportedTermError) || !SALE_LIMITS.has(error.term)) return null;
-  const safes = ((capTable.unconverted_safes as unknown[] | undefined) ?? []).length;
-  const notes = ((capTable.unconverted_notes as unknown[] | undefined) ?? []).length;
+  const safeList = (capTable.unconverted_safes as Json[] | undefined) ?? [];
+  const noteList = (capTable.unconverted_notes as Json[] | undefined) ?? [];
+  const safes = safeList.length;
+  const notes = noteList.length;
   const note = some(notes, "a convertible note", "convertible notes");
   switch (error.term) {
     case "note_with_safe_or_carve_out":
-      return safes > 0
-        ? `spillpoint can't yet work out a sale while ${some(safes, "a SAFE", "SAFEs")} and ${note} are both outstanding.`
-        : `spillpoint can't yet work out a sale with a management carve-out while ${note} ${some(notes, "is", "are")} outstanding.`;
+      if (safes > 0 && noteList.some((n) => blank(n.valuation_cap))) {
+        return `spillpoint can't yet work out a sale while ${some(safes, "a SAFE is", "SAFEs are")} outstanding beside a convertible note with no valuation cap.`;
+      }
+      if (safes > 0 && safeList.some((f) => blank(f.post_money_cap))) {
+        return `spillpoint can't yet work out a sale while ${note} ${some(notes, "is", "are")} outstanding beside a SAFE with no post-money valuation cap.`;
+      }
+      return `spillpoint can't yet work out a sale with a management carve-out while ${note} ${some(notes, "is", "are")} outstanding.`;
     case "pre_money_safe_with_preferred":
       return "spillpoint can't yet work out a sale while a pre-money SAFE is outstanding beside preferred stock.";
     case "several_safes":

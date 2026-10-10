@@ -57,33 +57,57 @@ function pathOf(path: string): string | null {
   return path.split(".").every((part) => /^[a-z_]+(\[\d+\])*$/.test(part)) ? path : null;
 }
 
+/**
+ * The engine's runs, by the filled cap table and the sale's date: what run() printed for each. A check over many exports
+ * that fill to the same table, as our own fixtures do, can share one and run the engine once for it.
+ */
+export type EngineRuns = Map<string, string>;
+
 /** Fills the blanks with one set of answers and runs the engine over the default range: it reads, pays at every breakpoint, or stops. */
-function run(result: OcfImport, answers: Record<string, string>): string {
-  const notes = ((result.cap_table as { unconverted_notes?: unknown[] }).unconverted_notes ?? []).length > 0;
+function run(result: OcfImport, answers: Record<string, string>, runs: EngineRuns): string {
+  let capTable: Json;
   try {
-    const capTable = filled(result, answers);
+    capTable = filled(result, answers);
+  } catch (e) {
+    return stopped(e);
+  }
+  const key = JSON.stringify([capTable, result.as_of]);
+  let line = runs.get(key);
+  if (line === undefined) runs.set(key, (line = runEngine(capTable, result.as_of)));
+  return line;
+}
+
+/** Runs the engine over the default range on a filled table: it reads, pays at every breakpoint, or stops. */
+function runEngine(capTable: Json, asOf: string): string {
+  const notes = ((capTable as { unconverted_notes?: unknown[] }).unconverted_notes ?? []).length > 0;
+  try {
     // The sale's date, which notes accrue interest up to, as the package's own (O15).
-    const exit = readExit({ cap_table: capTable, range: ["0", defaultTop(capTable)], exit_values: [], ...(notes ? { exit_date: result.as_of } : {}) }, undefined, "exit");
+    const exit = readExit({ cap_table: capTable, range: ["0", defaultTop(capTable)], exit_values: [], ...(notes ? { exit_date: asOf } : {}) }, undefined, "exit");
     const pc = prepare(exit.capTable, exit.exitDate);
     for (const b of findBreakpoints(pc, exit.range)) solve(pc, b.exitValue);
     solve(pc, exit.range[1]);
     return "reads";
   } catch (e) {
-    if (e instanceof UnsupportedTermError) return e.term;
-    if (e instanceof NoAnswerError) return "NoAnswerError";
-    if (e instanceof InputError) {
-      const path = pathOf(e.path);
-      return path ? `InputError at ${path}` : "InputError";
-    }
-    // Something unexpected: its kind only, since its message could carry what's in the files.
-    return `unexpected ${(e as Error).name}`;
+    return stopped(e);
   }
 }
 
+/** How the engine stopped, in codes: never its message, which could carry what's in the files. */
+function stopped(e: unknown): string {
+  if (e instanceof UnsupportedTermError) return e.term;
+  if (e instanceof NoAnswerError) return "NoAnswerError";
+  if (e instanceof InputError) {
+    const path = pathOf(e.path);
+    return path ? `InputError at ${path}` : "InputError";
+  }
+  // Something unexpected: its kind only.
+  return `unexpected ${(e as Error).name}`;
+}
+
 /** The lines of the engine's runs over the blanks' answers. */
-function answerRuns(result: OcfImport, files: OcfFile[]): string[] {
+function answerRuns(result: OcfImport, files: OcfFile[], runs: EngineRuns): string[] {
   const asked = questions(result, new Package(files));
-  if (asked.length === 0) return [`The engine, with nothing to fill in: ${run(result, {})}`];
+  if (asked.length === 0) return [`The engine, with nothing to fill in: ${run(result, {}, runs)}`];
   const securities = (result.cap_table as { securities: Json[] }).securities;
   // Each answer as used, and as printed: a choice is its own code; a placeholder, a word.
   const options = asked.map((q) =>
@@ -96,14 +120,14 @@ function answerRuns(result: OcfImport, files: OcfFile[]): string[] {
     ...sets.map((set, i) => {
       const answers = Object.fromEntries(asked.map((q, j) => [q.key, set[j]!.value]));
       const given = asked.map((q, j) => `#${j + 1} ${q.blank.field}=${set[j]!.printed}`).join(", ");
-      return `set ${i + 1}: ${given}: ${run(result, answers)}`;
+      return `set ${i + 1}: ${given}: ${run(result, answers, runs)}`;
     }),
   ];
 }
 
 /** What the check script prints for an export: the summary, then the engine's runs over the blanks' answers. */
-export async function checkExport(picked: readonly Picked[], engineVersion: string): Promise<string[]> {
+export async function checkExport(picked: readonly Picked[], engineVersion: string, runs: EngineRuns = new Map()): Promise<string[]> {
   const imported = await importOcf(picked);
   const lines = summaryLines(imported, engineVersion);
-  return imported.ok ? [...lines, ...answerRuns(imported.result, imported.files)] : lines;
+  return imported.ok ? [...lines, ...answerRuns(imported.result, imported.files, runs)] : lines;
 }

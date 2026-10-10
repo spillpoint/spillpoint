@@ -8,10 +8,16 @@
 //   means no).
 // - Each warrant decides for itself (E4), alongside the series: it is one of
 //   the free decision-makers below, and "switching" means exercising or not.
-//   So does each SAFE still outstanding: "switching" means taking its
-//   Conversion Amount or its Cash-Out Amount; and each note that can convert:
-//   converting or being repaid. Either converts only when that strictly pays
-//   more (X16), so where it is indifferent but its choice changes what others
+//   So does each note that can convert: converting or being repaid.
+// - The SAFEs' greater-of comes last (E20). Under each set of the series',
+//   warrants' and notes' decisions, each SAFE still outstanding takes the
+//   greater of its Cash-Out and Conversion Amounts, as its text pays it given
+//   those decisions, with the options settled under each choice. So a series
+//   or note weighing a switch weighs it with the SAFEs re-settled after it.
+//   Where several SAFEs could settle more than one way, each converting only
+//   because the others do, they take the fewest conversions (E5).
+// - A SAFE, a note or a series converts only when that strictly pays more
+//   (X16, E20), so where it is indifferent but its choice changes what others
 //   get, the outcome from below holds (E13).
 // - A conversion group decides first (E17). For each of its two choices the
 //   other series settle; the group then votes (E11) on the two outcomes.
@@ -205,9 +211,12 @@ class AtExit {
   /** Option classes in the order they come into the money: lowest strike first. */
   private readonly optionClasses: OptionClass[];
   private readonly group: ConversionGroup | null;
-  /** Convertible series outside a group, warrants and SAFEs: each decides for itself (E4, E15). */
+  /** Convertible series outside a group, warrants and notes that can convert: each decides for itself (E4, E15). */
   private readonly free: string[];
   private readonly warrants: Set<string>;
+  /** SAFEs still outstanding: they follow everyone else's decisions (E20). */
+  private readonly safes: string[];
+  private readonly followedCache = new Map<string, Answer>();
 
   constructor(pc: PreparedCapTable, x: Decimal, options: SolveOptions) {
     this.pc = pc;
@@ -222,7 +231,8 @@ class AtExit {
     this.free = [...pc.preferred.values()]
       .filter((s) => s.participation !== "participating" && !grouped.has(s.id) && pc.shares.get(s.id)!.gt(0))
       .map((s) => s.id)
-      .concat([...this.warrants], [...pc.safes.keys()], [...pc.notes.values()].filter((t) => t.canConvert).map((t) => t.note.id));
+      .concat([...this.warrants], [...pc.notes.values()].filter((t) => t.canConvert).map((t) => t.note.id));
+    this.safes = [...pc.safes.keys()];
   }
 
   private get where(): string {
@@ -290,26 +300,69 @@ class AtExit {
     return group.voteRule === "at_least" ? atThreshold || share.gt(group.voteThreshold) : !atThreshold && share.gt(group.voteThreshold);
   }
 
-  /** The free decision-makers' choices in an answer: the series converted and the warrants exercised. */
+  /** The choices in an answer that lead (E20): the series and notes converted and the warrants exercised. */
   private chosen(a: Answer): Set<string> {
+    return new Set([...[...a.decisions.converted].filter((id) => !this.pc.safes.has(id)), ...[...a.decisions.exercised].filter((id) => this.warrants.has(id))]);
+  }
+
+  /** Every choice in an answer, the SAFEs' with the others': the series, notes and SAFEs converted and the warrants exercised. */
+  private chosenWithSafes(a: Answer): Set<string> {
     return new Set([...a.decisions.converted, ...[...a.decisions.exercised].filter((id) => this.warrants.has(id))]);
   }
 
-  /** The series outside the group and the warrants, settling around fixed group conversions (E15). */
+  /**
+   * The series outside the group, the warrants and the notes, settling around
+   * fixed group conversions (E15), each weighing its choices with the SAFEs
+   * following (E20). A series or note converts only when that strictly pays
+   * more: where it is indifferent but its choice moves the SAFEs, as when its
+   * conversion joins their Liquidity Capitalization (X1, X18), it keeps its
+   * preference or is repaid, so the outcome from below holds, as for X16 and E13.
+   */
   private settleFree(fixed: ReadonlySet<string>): { answers: Answer[]; complete: boolean } {
-    const all = (set: ReadonlySet<string>) => this.withOptions(new Set([...fixed, ...set]));
+    const all = (set: ReadonlySet<string>) => this.followed(new Set([...fixed, ...set]));
     const { sets, complete } = settleChoice(
       {
         players: this.free,
         value: (set, p) => all(set).payout.bySecurity.get(p)!,
         samePayouts: (a, b) => samePayouts(all(a).payout, all(b).payout),
         size: (set) => all(set).decisions.converted.size + all(set).decisions.exercised.size,
-        strict: (p) => this.pc.safes.has(p) || this.pc.notes.has(p),
+        strict: (p) => this.pc.notes.has(p) || this.pc.preferred.has(p),
         where: this.where,
       },
       this.options.checkEveryCombination,
     );
     return { answers: sets.map(all), complete };
+  }
+
+  /**
+   * E20: the SAFEs' greater-of, last. Given every other decision, each SAFE
+   * takes the greater of its Cash-Out and Conversion Amounts as its text pays
+   * it, with the options settled under each choice (E16); with several, none
+   * gains by switching (X13). One that is indifferent takes its Cash-Out Amount
+   * (X16). Several that could settle more than one way, each converting only
+   * because the others do, take the fewest conversions (E5): none gains by
+   * converting alone, so it's the outcome from below.
+   */
+  private followed(choices: ReadonlySet<string>): Answer {
+    if (this.safes.length === 0) return this.withOptions(choices);
+    const k = key(choices);
+    const cached = this.followedCache.get(k);
+    if (cached) return cached;
+    const all = (set: ReadonlySet<string>) => this.withOptions(new Set([...choices, ...set]));
+    const { sets, complete } = settleChoice({
+      players: this.safes,
+      value: (set, p) => all(set).payout.bySecurity.get(p)!,
+      samePayouts: (a, b) => samePayouts(all(a).payout, all(b).payout),
+      size: (set) => all(set).decisions.converted.size + all(set).decisions.exercised.size,
+      strict: () => true,
+      where: this.where,
+    });
+    if (!complete) {
+      throw new NoAnswerError(`${this.where} more than ${MAX_CHECKED} SAFEs could settle more than one way, so the fewest conversions can't be confirmed (E20).`);
+    }
+    const answer = all(sets[0]!);
+    this.followedCache.set(k, answer);
+    return answer;
   }
 
   /**
@@ -325,17 +378,23 @@ class AtExit {
     const cached = this.settled.get(k);
     if (cached) return cached;
     const converted = new Set([...choices].filter((id) => !this.warrants.has(id)));
+    // Each exercise set is paid out once: the check below reuses the trials made on the way up.
+    const runs = new Map<string, Payout>();
+    const run = (exercised: ReadonlySet<string>): Payout => {
+      const k2 = key(exercised);
+      let r = runs.get(k2);
+      if (!r) runs.set(k2, (r = payout(this.pc, this.x, { converted, exercised })));
+      return r;
+    };
     let exercised = new Set([...choices].filter((id) => this.warrants.has(id)));
-    let result = payout(this.pc, this.x, { converted, exercised });
     for (const o of this.optionClasses) {
       const trial = new Set([...exercised, o.id]);
-      const r = payout(this.pc, this.x, { converted, exercised: trial });
-      if (!moreThan(r.bySecurity.get(o.id)!, ZERO)) break;
+      if (!moreThan(run(trial).bySecurity.get(o.id)!, ZERO)) break;
       exercised = trial;
-      result = r;
     }
+    const result = run(exercised);
     for (const o of this.optionClasses) {
-      const switched = payout(this.pc, this.x, { converted, exercised: toggled(exercised, o.id) });
+      const switched = run(toggled(exercised, o.id));
       if (moreThan(switched.bySecurity.get(o.id)!, result.bySecurity.get(o.id)!)) {
         throw new NoAnswerError(`${this.where} option exercise doesn't settle: ${o.id} would gain by switching.`);
       }
@@ -372,14 +431,29 @@ class AtExit {
     return answers[0]!;
   }
 
-  /** A settled answer's own margins, and those of each single switch a free series weighs against it. */
+  /**
+   * A settled answer's own margins, and those of each single switch a free
+   * series, warrant or note weighs against it, with the SAFEs re-settled after
+   * it (E20). Each SAFE's gain from switching is a margin in both, since where
+   * it reaches zero the SAFEs settle differently.
+   */
   private addSettled(margins: Map<string, Decimal>, label: string, answer: Answer, fixed: ReadonlySet<string>): void {
     const tag = (a: Answer) => `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
-    this.addStructure(margins, tag(answer), answer);
+    this.addFollowed(margins, tag, tag(answer), answer);
     for (const sid of this.free) {
-      const alternative = this.withOptions(toggled(new Set([...fixed, ...this.chosen(answer)]), sid));
-      this.addStructure(margins, `${tag(answer)}>${tag(alternative)}`, alternative);
+      const alternative = this.followed(toggled(new Set([...fixed, ...this.chosen(answer)]), sid));
+      this.addFollowed(margins, tag, `${tag(answer)}>${tag(alternative)}`, alternative);
       margins.set(`${tag(answer)}|gain:${sid}`, alternative.payout.bySecurity.get(sid)!.minus(answer.payout.bySecurity.get(sid)!));
+    }
+  }
+
+  /** An answer's structure, and each SAFE's gain from switching there, with the structure of that switch (X13, E20). */
+  private addFollowed(margins: Map<string, Decimal>, tag: (a: Answer) => string, prefix: string, a: Answer): void {
+    this.addStructure(margins, prefix, a);
+    for (const fid of this.safes) {
+      const switched = this.withOptions(toggled(this.chosenWithSafes(a), fid));
+      this.addStructure(margins, `${prefix}>${tag(switched)}`, switched);
+      margins.set(`${prefix}|gain:${fid}`, switched.payout.bySecurity.get(fid)!.minus(a.payout.bySecurity.get(fid)!));
     }
   }
 
