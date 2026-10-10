@@ -33,7 +33,7 @@ It's written now, while 06c waits for an export's headers, so 06d builds `readOc
 - the "for 0.1.0" optional fields kept, with honest comments
 - `_shadow` ids made `_safes`, to match `_notes`
 
-**What I checked on the cases:** at all 356 exit points the cases list, `solve` gave exactly one answer with `complete` true, and `bySecurity` equalled `classTotals`.
+**What I checked on the cases:** at all 356 exit points the cases list, `solve` gave exactly one answer with `complete` true. I also wrote that `bySecurity` equalled `classTotals`, which was wrong: see below.
 
 **What the renames touch in `cases/`:** items 1 and 15 change names and ids only.
 - **Generated names:** 34 `expected.json` files, 27 edge and Millrace and 7 OCF.
@@ -68,6 +68,24 @@ The plan's 17.
 - **No changes** to `.github/workflows/` or `.claude/`.
 - **Nothing ran outside the sandbox,** and nothing used the network. I built the engine to read its declarations, and ran one script over the cases, inside the sandbox.
 
+## After your review (Jordan, 07a review)
+
+**A correction.** `bySecurity` and `classTotals` agree to the cent, not exactly. My check compared them within 10⁻²⁰, which hid it. Compared exactly, at the exit values and breakpoints together, 126 of the 519 points I took differ, by at most 2 × 10⁻³², from summing in a different order. Your count is 105 of 470; which points are counted explains the gap. The plan's line is corrected, and dropping `bySecurity` stands.
+
+**Your answers are in the plan,** under "Your answers", and the plan follows them:
+- **Items 1 to 15** as I'd do them, `_safes` included.
+- **Two new items:**
+  - **17:** refusal terms and report-note codes listed as stable from 1.0. I added `ReasonCode` to the list, which code matches on the same way.
+  - **18:** a major decimal.js upgrade would be a major spillpoint one.
+- **07b carries items 1 and 15 everywhere at once:** naming code in the engine and the reference, the tests that pin names, and the cases. Your check of it is `generate.py --check` plus a byte comparison after the substitutions, which 07b's note gives as a script.
+- **The order:** none of 07b to 07e starts until 0.6.0 ships. Item 7's additions come in 0.6.0's 06c.
+
+**Two fields added to item 7's OCX input types,** which 06c's reader needs:
+- **`OcxWorkbook.dateSystem`,** 1900 or 1904.
+- **`OcxCell.formula`.**
+
+The plan says why.
+
 ## Next
 
-0.6.0 continues with 06c, once an export's headers are in, and 06d builds to these names once you've answered. I'm stopping here.
+0.6.0's 06c, the part of OCX that doesn't wait for headers, on its own branch. I'm stopping here.

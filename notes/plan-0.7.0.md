@@ -2,7 +2,7 @@
 
 0.7.0 is the last release that breaks anything. 1.0 has the same API, at its own domain. So every name in the public API is reviewed once, here, and settled.
 
-**Written now, while 06c waits for an export's headers.** It settles the names `readOcx` will use, so 06d builds to them. The renames and removals themselves ship in 0.7.0, after 0.6.0's OCX import.
+**Written now, while 0.6.0 waits for an export's headers.** It settles the names `readOcx` will use, so 0.6.0 builds to them. The renames and removals themselves ship in 0.7.0, after 0.6.0's OCX import. Your answers are after the questions, and the plan follows them where they differ from what I first wrote.
 
 **Each item says:**
 - what it is today
@@ -11,7 +11,7 @@
   - code using the npm package
   - the page and its saved files
   - the locked cases
-- what it means for 06d, where it touches `readOcx`
+- what it means for `readOcx`, where it touches it
 
 Your seven items come first, then eight more of mine. The questions are at the end.
 
@@ -28,9 +28,9 @@ Your seven items come first, then eight more of mine. The questions are at the e
 
 **Out of scope: the case-file input format,** the snake_case JSON that `readExit`, `readInputs` and `buildCapTables` read. Every locked case is written in it, so renaming a field would edit every case's inputs. It stays as it is. The one exception I raise is the `_shadow` id (item 15).
 
-**Two claims checked on every case first.** At all 356 exit points the cases list:
-- `solve` returned exactly one answer, with `complete` true
-- `payout.bySecurity` equalled `payout.classTotals`
+**Two claims checked on every case first:**
+- **`solve` returned exactly one answer, with `complete` true,** at all 356 exit points the cases list, and at their breakpoints too (your count, 470 points).
+- **`payout.bySecurity` and `payout.classTotals` agree to the cent, but not exactly** (corrected after your check). My first check compared them within 10⁻²⁰, which hid the difference. Compared exactly, at the exit values and breakpoints together, 126 of the 519 points I took differ, by at most 2 × 10⁻³², from summing in a different order (your count, 105 of 470).
 
 ## Your list
 
@@ -46,9 +46,9 @@ Your seven items come first, then eight more of mine. The questions are at the e
 **What it breaks:**
 - **npm code:** anything matching a generated name's text.
 - **The page:** nothing to migrate. A company built from rounds gets its names from the engine on every load, and a cap table entered directly keeps the names it was saved with.
-- **The locked cases:** 34 `expected.json` files record generated names, from round cases and OCF imports. That's a cases PR of names only: no amount, share count or breakpoint changes (07b). 21 `inputs.json` files write names in the same form themselves. They're inputs, so the engine never compares them, but the same PR can bring them into line. Your call (question 1).
+- **The locked cases:** 34 `expected.json` files record generated names, from round cases and OCF imports, and 21 `inputs.json` files write names in the same form themselves, which are brought into line too (your answer 1). Names only: no amount, share count or breakpoint changes. It goes in 07b, with the engine's and the reference's naming code and the tests that pin names, all at once (your answer 17).
 
-**For 06d:** OCX has no strikes, so `readOcx` can't name an option class by its strike. Each option column becomes a class named by its own heading, as the export wrote it (the plan's name, or "Class A Common Stock Options"), with an id by position, `options_1`, `options_2`. Warrants likewise: "Warrants for Seed Preferred", with no strike in the name.
+**For `readOcx`:** OCX has no strikes, so `readOcx` can't name an option class by its strike. Each option column becomes a class named by its own heading, as the export wrote it (the plan's name, or "Class A Common Stock Options"), with an id by position, `options_1`, `options_2`. Warrants likewise: "Warrants for Seed Preferred", with no strike in the name.
 
 ### 2. `readOcf`'s snake_case outer names
 
@@ -71,7 +71,7 @@ So its names are the fields it feeds. The rule, in the README: functions that re
 
 **What it breaks:** nothing, kept.
 
-**For 06d:** `readOcx` returns the same shape, snake_case.
+**For `readOcx`:** `readOcx` returns the same shape, snake_case.
 
 ### 3. `solve`'s `complete`
 
@@ -141,20 +141,24 @@ Both are in the page's saved files (version 6), so a rename would also need a fi
 **Why one:** the page and the check script handle a refused or read import the same way, whichever format it came from. One class means one `catch` and one report. A term is specific to its format already (`unknown_object_type` is OCF's), and `format` says which.
 
 **The order it goes in:**
-- **0.6.0 (06d):** `readOcx` is built with the new names. `ImportRefusal` and `CapTableImport` are new exports. `OcfRefusal` becomes a subclass of `ImportRefusal`, and `OcfImport` and its parts become aliases of the new types. **Nothing breaks in 0.6.0,** and code can move early.
+- **0.6.0:** `ImportRefusal` and `CapTableImport` are new exports from 06c, the step that doesn't wait for headers, and `readOcx` is built with them after. `OcfRefusal` becomes a subclass of `ImportRefusal`, and `OcfImport` and its parts become aliases of the new types. **Nothing breaks in 0.6.0,** and code can move early.
 - **0.7.0:** the old names go. `readOcf` throws `ImportRefusal` itself.
 
 **What it breaks, in 0.7.0:** `instanceof OcfRefusal` and the four type names. The page has 3 uses, and the README 3.
 
-**For 06d:**
+**For `readOcx`:**
 - **A blank:** keeps today's shape, `{ security?, safe?, note?, field }`. OCX's seniority blank, which belongs to no one security, is `{ field: "seniority" }`.
 - **`subject`** for an OCX refusal names the tab and the header or row it's about. It's never printed by the summary or the check script (O15).
 - **The input types:**
-  - **`OcxWorkbook`:** `{ sheets: OcxSheet[] }`.
+  - **`OcxWorkbook`:** `{ dateSystem, sheets: OcxSheet[] }`.
   - **`OcxSheet`:** `{ name, cells: OcxCell[] }`.
-  - **`OcxCell`:** `{ address, kind, text }`.
+  - **`OcxCell`:** `{ address, kind, text, formula }`.
 
   A cell's `kind` is `"number"`, `"text"`, `"boolean"`, `"error"` or `"date"` (a number formatted as a date), and its `text` is as stored.
+
+  **Two fields added since I first wrote this,** because 06c's reader needs them:
+  - **`dateSystem`,** `1900` or `1904`: a date-formatted number is a day count from one or the other, and only the workbook says which.
+  - **`formula`:** whether the cell holds a formula. Its `text` is then the value Excel saved with it, or empty if none was saved. That's how the cell-kinds script answers whether Carta writes values or formulas, and how `readOcx` refuses a formula with no value.
 
 ## More I'd flag
 
@@ -168,7 +172,7 @@ Both are in the page's saved files (version 6), so a rename would also need a fi
 
 ### 9. `payout.bySecurity` is `payout.classTotals`
 
-**Today:** both map each security to its total, options net of strike, and they were equal at every one of the 356 points. E9's classes are the securities.
+**Today:** both map each security to its total, options net of strike. E9's classes are the securities. They agree to the cent, and differ only in the last of their 40 digits, at 126 of 519 points, because they add up in a different order.
 
 **What I'd do:** drop `bySecurity` from the public type. Keep `classTotals` beside `holderTotals` and `lines`, the three names `PaymentTake` already uses. The engine keeps its own total inside, worked out early for the solver.
 
@@ -220,16 +224,14 @@ Both are in the page's saved files (version 6), so a rename would also need a fi
 
 **Today:** a series a round's SAFEs convert into has the id `<series>_shadow` (`_shadow_2` for a second price). One from notes has `<series>_notes`. "Shadow" is the jargon R5 took out of the names in M4a. The ids kept it because cases' inputs use them.
 
-**What I'd do:** `<series>_safes`, matching `_notes`.
+**Settled (your answer 15): `<series>_safes`,** matching `_notes`.
 - **It's the last chance.** After 1.0 the asymmetry would be permanent.
 - **It's never shown on the page.**
 
 **What it breaks:**
 - **npm code** naming such a series by id, in seniority or positions, including the README's example.
 - **The page:** its saved files don't name these ids, since its seniority leaves them out (R28).
-- **The locked cases:** 40 files, 18 of them `inputs.json`, whose seniority lists the series. Ids only, in the same cases PR as item 1.
-
-**The other way:** keep `_shadow` and document it. Your call (question 15).
+- **The locked cases:** 40 files, 18 of them `inputs.json`, whose seniority lists the series. Ids only, in 07b with item 1.
 
 ### 16. Small things, no break
 
@@ -237,12 +239,56 @@ Both are in the page's saved files (version 6), so a rename would also need a fi
 - **`Solution.answers`'s doc comment,** item 3.
 - **`ReasonCode`'s `"other"`,** the fallback "Payout slopes change here." where no specific reason is found. Kept as a safety net and documented. No case produces it.
 
+### 17. Refusal terms and report-note codes, stable from 1.0
+
+**Your answer 16(a).** Code matches on them: the page's sale-limit wording turns on `note_with_safe_or_carve_out` and its three neighbours, and the check script prints them.
+
+**What I'd do:** the README lists every one, each with what it means, under "Stable from 1.0":
+- **`UnsupportedTermError`'s terms**
+- **`ImportRefusal`'s terms, for OCF and OCX**
+- **an import's report-note codes**
+- **`ReasonCode`,** which code can match on the same way (my addition)
+
+After 1.0 a term is never renamed or reused for something else. A new one can be added, and one stops being raised when its term becomes supported.
+
+**What it breaks:** nothing. It's a promise about the names as they are after 0.7.0.
+
+### 18. `D` is decimal.js's `Decimal`
+
+**Your answer 16(b).** Every amount the API takes or returns is a decimal.js `Decimal`, at 40 significant digits (E14). So a major decimal.js release that changes `Decimal` would be a major spillpoint release.
+
+**What I'd do:**
+- **The README says so,** under "Numbers".
+- **The dependency stays on decimal.js 10** (`^10.6.0` today).
+- **A move to a new major** comes only with a new spillpoint major.
+
+**What it breaks:** nothing.
+
 ## The steps
 
-- **0.6.0 first, with item 7's additions in 06d:** `ImportRefusal`, `CapTableImport` and its parts, and the OCX input types, all new. `OcfRefusal` becomes a subclass and `OcfImport` an alias. Nothing breaks.
-- **07b, cases** (the `cases/` edit rule lifted), if you take items 1 and 15: generated names to the cent, and `_shadow` to `_safes`. Names and ids only, in `expected.json`, `inputs.json` and the DERIVATIONs. The diff should show no amount, share count or breakpoint changing, so a check of the diff rather than a re-derivation (question 17).
-- **07c, the engine:** items 1, 3, 4 and 7 to 15, with both READMEs.
-- **07d, the page:** item 6, and the page following 07c's changes.
+**The order (your answer):** 0.7.0's code can't land before 0.6.0 ships, and 0.6.0 waits on real headers. So none of 07b to 07e starts yet.
+- **0.6.0 first.** Its 06c doesn't wait for headers. It adds:
+  - item 7's `ImportRefusal` and `CapTableImport` beside the old names, nothing breaking
+  - the OCX input types
+  - the .xlsx reader
+  - the cell-kinds script
+
+  `readOcx` follows, after the headers, built to these names.
+- **07b, items 1 and 15 everywhere at once** (the `cases/` edit rule lifted): generated names to the cent and `_shadow` to `_safes`, in:
+  - the engine's naming code
+  - the reference's naming code
+  - the tests that pin names
+  - the cases: `expected.json`, `inputs.json` and the DERIVATIONs
+
+  **Why at once:** `rounds.test.ts` compares names with `expected.json`, and `generate.py --check` rebuilds them, so a cases-only PR would leave main red.
+
+  **Your check, instead of a re-derivation** (your answer 17):
+  - `generate.py --check` passes
+  - main's case files, with only the name and id substitutions applied, are byte-identical to 07b's
+
+  07b's review note lists the substitutions exactly, as a script you can run on main.
+- **07c, the engine:** items 3, 4 and 7 to 14, items 17 and 18's README sections, and both READMEs.
+- **07d, the page:** item 6, and the page following 07b's and 07c's changes.
 - **07e, release 0.7.0:** "Changes that can break 0.6.0 code", item by item.
 
 **Then 1.0:** the domain and the release, with no API changes.
@@ -266,3 +312,25 @@ Both are in the page's saved files (version 6), so a rename would also need a fi
 15. **`_shadow` to `_safes`,** or keep it?
 16. **Anything else** in the API you'd want reviewed while it can still change?
 17. **The names-and-ids cases PR (07b):** a check of the diff, names and ids only, rather than an independent re-derivation?
+
+## Your answers (2026-10-10)
+
+**Your check:**
+- **`complete`** is true with one answer at every case point: 470 by your count, breakpoints included.
+- **The file counts** for items 1 and 15 are right: 34 and 21; 40 and 18.
+- **`bySecurity` and `classTotals`** agree to the cent but not exactly. Corrected above, and dropping `bySecurity` still stands.
+
+**The answers:**
+1. **Items 1 to 14:** as I'd do them, including the 21 inputs brought into line.
+2. **Item 15:** `_safes`.
+3. **Item 16, two more,** now items 17 and 18:
+   - **(a)** refusal terms and report-note codes: code matches on them, so the README lists them as stable from 1.0.
+   - **(b)** `D` is decimal.js's `Decimal` at 40 digits, so a major decimal.js upgrade would be a major spillpoint one. The README says so.
+4. **Item 17, a check instead of a re-derivation,** on two conditions:
+   - **07b carries items 1 and 15 everywhere at once:** the engine's and the reference's naming code, the tests that pin names, and the cases. `rounds.test.ts` compares names with `expected.json`, and `generate.py --check` rebuilds them, so a cases-only PR would leave main red.
+   - **Your check:** `generate.py --check` passes, and main's case files, with only the name and id substitutions applied, are byte-identical to 07b's.
+5. **The order:** 0.7.0's code can't land before 0.6.0 ships, and 0.6.0 waits on real headers. So no 07b to 07e yet. Meanwhile 0.6.0's 06c does the part of OCX that doesn't depend on Carta's headers:
+   - the .xlsx reader
+   - `pnpm ocx-structure`
+   - item 7's `ImportRefusal` and `CapTableImport` beside the old names
+
