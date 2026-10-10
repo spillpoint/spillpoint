@@ -67,6 +67,14 @@ export function signHolds(line: Line, x: Decimal): Interval | null {
   return line.b.times(s).isPositive() ? { lo: edge, hi: null } : { lo: null, hi: edge };
 }
 
+/** Where a straight line moving toward zero has passed it, and is EPS beyond; null if it isn't moving toward zero. */
+export function pastZero(line: Line, x: Decimal): Decimal | null {
+  if (line.b.abs().lt(FLAT)) return null;
+  const v = at(line, x);
+  if (v.isZero() || v.isNegative() === line.b.isNegative()) return null;
+  return line.a.neg().plus(EPS.times(v.isNegative() ? 2 : -2)).div(line.b);
+}
+
 /** The line through (x0, v0) and (x1, v1), given 1 ÷ (x1 − x0). */
 function lineThrough(x0: Decimal, v0: Decimal, v1: Decimal, perDollar: Decimal): Line {
   if (v0.eq(v1)) return { a: v0, b: ZERO_D };
@@ -294,10 +302,9 @@ class LazyAmounts extends Map<string, Decimal> {
   }
 }
 
-/** One set of decisions' lines, once known, and its latest exact reading. */
+/** One set of decisions' lines, once known. */
 interface Readings {
   lines: PayoutLines | null;
-  last: Payout | null;
 }
 
 const READINGS = new WeakMap<PreparedCapTable, Map<string, Readings>>();
@@ -315,15 +322,20 @@ export function payoutWithLines(pc: PreparedCapTable, x: Decimal, decisions: Dec
   if (!byKey) READINGS.set(pc, (byKey = new Map()));
   const k = decisionsKey(decisions);
   let r = byKey.get(k);
-  if (!r) byKey.set(k, (r = { lines: null, last: null }));
+  if (!r) byKey.set(k, (r = { lines: null }));
   if (r.lines && inside(r.lines.interval, x)) return { payout: r.lines.at(x), lines: r.lines };
   const exact = payout(pc, x, decisions);
-  // The last exact reading and this one give the lines, if they share a shape.
-  if (r.last && !r.last.exitValue.eq(x)) {
-    const lines = PayoutLines.through(r.last, exact);
-    if (lines && inside(lines.interval, x)) r.lines = lines;
+  // A second reading just beside this one gives its lines at once, unless this exit value is next to a change.
+  for (const beside of [x.plus(BESIDE), x.minus(BESIDE)]) {
+    const lines = PayoutLines.through(exact, payout(pc, beside, decisions));
+    if (lines && inside(lines.interval, x)) {
+      r.lines = lines;
+      return { payout: exact, lines };
+    }
   }
-  r.last = exact;
-  return { payout: exact, lines: r.lines && inside(r.lines.interval, x) ? r.lines : null };
+  return { payout: exact, lines: null };
 }
+
+/** How far beside an exact reading the second one is taken, in dollars. */
+const BESIDE = new D("1e-5");
 

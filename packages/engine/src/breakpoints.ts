@@ -27,7 +27,7 @@ import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
-import { snapshotAt } from "./decisions.ts";
+import { StabilityWatch, snapshotAt } from "./decisions.ts";
 import type { Snapshot } from "./decisions.ts";
 import { describeChange } from "./reasons.ts";
 import type { Reason } from "./reasons.ts";
@@ -249,16 +249,29 @@ function checkStretch(pc: PreparedCapTable, s: Stretch, end: Decimal): void {
   }
 }
 
+/**
+ * No second stable answer may appear inside a stretch unseen (05c5; Jordan, after #73). Which sets of choices are
+ * stable is followed from the stretch's second reading to its end, compared again wherever it could next change
+ * (StabilityWatch). A second stable answer stops the finder with its plain message.
+ */
+function walkStability(watch: StabilityWatch, s: Stretch, end: Decimal): void {
+  let y: Decimal | null = s.b;
+  for (let i = 0; i < MAX_STEPS && y !== null && y.lt(end); i++) y = watch.at(y);
+  if (y !== null && y.lt(end)) throw new NoAnswerError(`The breakpoint finder took more than ${MAX_STEPS} steps; it stops rather than loop.`);
+}
+
 /** Every breakpoint strictly inside the range, lowest first. */
 export function findBreakpoints(pc: PreparedCapTable, range: readonly [Decimal, Decimal]): Breakpoint[] {
   const [lo, hi] = range;
   const found: Breakpoint[] = [];
+  const watch = new StabilityWatch(pc);
   let stretch = stretchAbove(pc, lo);
   for (let i = 0; i < MAX_STEPS; i++) {
     const straight = nextChange(stretch, hi);
     // On a curve one decision may change before the next straight margin does (03f).
     const onCurve = stretch.curved ? checkCurve(pc, stretch, straight ?? hi) : null;
     if (!stretch.curved) checkStretch(pc, stretch, straight ?? hi);
+    if (!stretch.curved) walkStability(watch, stretch, onCurve ?? straight ?? hi);
     const x = onCurve ?? straight;
     if (x === null) return found;
     const after = stretchAbove(pc, x);

@@ -12,7 +12,7 @@ These are the defaults. Wherever a charter or an instrument could reasonably dif
   - **Participating, capped.** The series takes its preference and shares pro rata until its total reaches the cap. The cap is a multiple of the original issue price, and the preference counts toward it. Past the cap, the series converts if converting pays more.
 - **Conversion decisions.** Each series that can convert decides on its own, using the charter's greater-of test: whichever pays more, its preference (plus any capped participation) or its payout as converted to common.
   - One series' choice changes everyone else's payout, so solve until no series wants to switch.
-  - If more than one stable answer exists, report all of them and flag it. Never pick one silently.
+  - If more than one stable answer exists and they pay holders differently, stop with a plain message naming what could go either way. Never pick one (Jordan, after #73; reporting both is on the later list).
   - Toggle: a group of series that must convert together, as when a class vote forces conversion.
 - **Options and warrants.**
   - Full vesting is assumed.

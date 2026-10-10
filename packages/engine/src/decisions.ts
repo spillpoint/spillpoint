@@ -23,12 +23,16 @@
 //   its choice changes what others get, the outcome from below holds (E13).
 // - A conversion group decides first (E17). For each of its two choices the
 //   other series settle; the group then votes (E11) on the two outcomes.
-// - The series outside a group, and the warrants, are solved from both ends:
-//   from "nobody converts" and from "everyone converts", one at a time makes
-//   the switch that gains it the most, until no one wants to switch. If the two
-//   ends agree, that is the answer. If not, every combination is checked when
-//   there are 12 or fewer of them; above 12 the answers found are reported and
-//   flagged as possibly incomplete. Going round in a circle is an error.
+// - The series outside a group, the warrants and the notes are solved by
+//   checking every combination when there are 12 or fewer of them (05c5).
+//   Where more than one is stable and they pay holders differently, the
+//   engine stops with a plain message, naming what could go either way, and
+//   doesn't pick one (E8; Jordan, after #73). Above 12 they're solved from
+//   both ends: from "nobody converts" and from "everyone converts", one at a
+//   time makes the switch that gains it the most, until no one wants to
+//   switch. If the two ends agree, that is the answer; if not, the answers
+//   found are reported and flagged as possibly incomplete. Going round in a
+//   circle is an error.
 // - Where several decision sets pay everyone the same, the reported one has
 //   the fewest conversions and exercises (E5).
 // - Work is reused from one exit value to the next (05c4). With the decisions
@@ -43,7 +47,8 @@ import type { Decimal } from "decimal.js";
 
 import { D, TIE, ZERO, moreThan, sameAmount } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
-import { EVERYWHERE, inside, meet, payoutWithLines, signHolds } from "./lines.ts";
+import { money } from "./reasons.ts";
+import { EVERYWHERE, inside, meet, pastZero, payoutWithLines, signHolds } from "./lines.ts";
 import type { Interval, Line, PayoutLines } from "./lines.ts";
 import type { ConversionGroup, OptionClass } from "./model.ts";
 import { payout } from "./waterfall.ts";
@@ -302,6 +307,80 @@ export interface Snapshot {
   margins: Map<string, Decimal>;
 }
 
+/** One comparison a stability watch keeps: player p at a set of choices, and how it came out until when. */
+interface Watched {
+  set: Set<string>;
+  p: string;
+  gains: boolean;
+  keeps: boolean;
+  until: Decimal | null;
+}
+
+/**
+ * Which sets of the series', warrants' and notes' choices are stable, followed
+ * along a stretch of exit values (05c5; Jordan, after #73). Each set's
+ * stability turns on comparisons of what a player gets switching and staying,
+ * with the SAFEs re-settled. Each is kept with how it came out and the exit
+ * value until which that holds, and only those that have run out are compared
+ * again. Where more than one set is stable, every combination is checked, and
+ * the plain message stops the finder. Internal: the breakpoint finder's.
+ */
+export class StabilityWatch {
+  private readonly pc: PreparedCapTable;
+  private watched: Watched[] | null = null;
+  /** False where it can't follow: past 12 decision-makers (E15), fewer than two, or payouts that curve (X17). */
+  following = true;
+
+  constructor(pc: PreparedCapTable) {
+    this.pc = pc;
+  }
+
+  /**
+   * Compares again what has run out by y, checks that one set is stable for
+   * each group decision, and returns the next exit value to look again; null
+   * if nothing changes before the end of the range, or if it isn't following.
+   */
+  at(y: Decimal): Decimal | null {
+    if (!this.following) return null;
+    const ex = new AtExit(this.pc, y, {});
+    const { free, fixed, strict } = ex.watchedPlayers();
+    if (free.length < 2 || free.length > MAX_CHECKED) {
+      this.following = false;
+      return null;
+    }
+    if (this.watched === null) {
+      this.watched = [];
+      for (const f of fixed) {
+        for (let mask = 0; mask < 2 ** free.length; mask++) {
+          const set = new Set([...f, ...free.filter((_, i) => mask & (1 << i))]);
+          for (const p of free) this.watched.push({ set, p, gains: false, keeps: false, until: y });
+        }
+      }
+    }
+    let next: Decimal | null = null;
+    for (const w of this.watched) {
+      if (w.until !== null && !w.until.gt(y)) {
+        const c = ex.watchOne(w.set, w.p);
+        if (c === null) {
+          this.following = false;
+          return null;
+        }
+        Object.assign(w, c);
+      }
+      if (w.until !== null && (next === null || w.until.lt(next))) next = w.until;
+    }
+    // A set is stable when no one gains by switching, and a strict player that's on does strictly better on (X16).
+    const unstable = new Set<string>();
+    for (const w of this.watched) if (w.gains || (strict(w.p) && w.set.has(w.p) && !w.keeps)) unstable.add(key(w.set));
+    const sets = new Set(this.watched.map((w) => key(w.set)));
+    if (sets.size - unstable.size !== fixed.length) ex.answerHere();
+    return next;
+  }
+}
+
+/** How far beside a reading whose lines aren't known yet the next one is taken, in dollars. */
+const UNCERTAIN_STEP = new D("1e-6");
+
 /** The answer at one exit value with its margins, for the breakpoint finder. Internal. */
 export function snapshotAt(pc: PreparedCapTable, exitValue: Decimal): Snapshot {
   return new AtExit(pc, exitValue, {}).snapshot();
@@ -366,6 +445,7 @@ class AtExit {
     const choice = (converts: boolean): Weighed => {
       const { answers, complete } = this.settleFree(converts ? new Set(this.group!.series) : new Set());
       if (answers.length !== 1 || !complete) {
+        // More than one stable answer is stopped in settleFree; this is the list that may be incomplete, past 12.
         throw new NoAnswerError(
           `${this.where} the other series settle ${answers.length} ways when the group ` +
             `(${this.group!.series.join(", ")}) ${converts ? "converts" : "stays"}, so its vote has no single comparison (E17).`,
@@ -444,9 +524,45 @@ class AtExit {
         strict: (p) => this.pc.notes.has(p) || this.pc.preferred.has(p) || this.warrants.has(p),
         where: this.where,
       },
-      this.options.checkEveryCombination,
+      // Every combination, so a second stable answer is never missed where the two ends agree (05c5).
+      this.options.checkEveryCombination || this.free.length <= MAX_CHECKED,
     );
-    return { answers: sets.map(all), complete };
+    const answers = sets.map(all);
+    if (answers.length > 1) throw this.severalAnswers(answers);
+    return { answers, complete };
+  }
+
+  /**
+   * More than one stable answer that pays holders differently (E8; Jordan,
+   * after #73): stop with a plain message, naming the series, warrants and
+   * notes whose choices differ, rather than pick one. Two non-participating
+   * series at the same price beside post-money SAFEs are the usual cause: each
+   * one's conversion joins the SAFEs' count, so the SAFEs convert and dilute
+   * it, and the other then keeps its preference.
+   */
+  private severalAnswers(answers: Answer[]): NoAnswerError {
+    const choices = answers.map((a) => this.chosen(a));
+    const ids = this.free.filter((id) => choices.some((c) => c.has(id) !== choices[0]!.has(id)));
+    const holderName = (h: string) => this.pc.capTable.holders.find((x) => x.id === h)?.name ?? h;
+    const name = (id: string) =>
+      this.pc.preferred.get(id)?.name ?? this.pc.warrants.get(id)?.name ?? `${holderName(this.pc.notes.get(id)!.note.holder)}'s convertible note`;
+    const names = ids.map(name);
+    const named = names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+    const safes = this.safes.length > 0;
+    const series = ids.map((id) => this.pc.preferred.get(id));
+    const either = ids.length === 2 ? "either" : "any of them";
+    let body: string;
+    if (ids.length > 1 && series.every((s) => s !== undefined)) {
+      const samePrice = series.every((s) => s!.originalIssuePrice.eq(series[0]!.originalIssuePrice));
+      body = samePrice
+        ? `${named} are at the same price, so${safes ? " with the SAFEs outstanding" : ""} ${either} could convert here`
+        : `${named} could each be the one that converts here${safes ? ", with the SAFEs outstanding" : ""}`;
+    } else {
+      body = `${named || "The series, warrants and notes"} could settle more than one way here${safes ? ", with the SAFEs outstanding" : ""}`;
+    }
+    return new NoAnswerError(
+      `At ${money(this.x)}: ${body}, and the documents don't say which. spillpoint doesn't pick one.${safes ? " Adding a round that converts the SAFEs avoids this." : ""}`,
+    );
   }
 
   /**
@@ -637,6 +753,59 @@ class AtExit {
     this.addSettled(margins, "stays", staying, new Set());
     for (const [holder, m] of this.voterMargins(converting, staying)) margins.set(`vote:${holder}`, m);
     return { answer: this.exact(this.groupVotes(converting, staying) ? converting : staying), margins };
+  }
+
+  /**
+   * One comparison that decides whether a set of choices is stable (05c5):
+   * whether p does strictly better switching, and strictly better staying,
+   * with the SAFEs re-settled (E20, X16). It comes out the same way until a
+   * tie threshold is crossed, or either side's lines or results stop holding:
+   * `until`, the next exit value to compare again. Null where nothing can be
+   * certified, where payouts curve (X17).
+   */
+  watchOne(set: ReadonlySet<string>, p: string): { gains: boolean; keeps: boolean; until: Decimal | null } | null {
+    const hereW = this.followed(set);
+    const thereW = this.followed(toggled(set, p));
+    if (hereW.payout.curved || thereW.payout.curved) return null;
+    const here = side(hereW, p);
+    const there = side(thereW, p);
+    const gains = moreThan(there.value, here.value);
+    const keeps = moreThan(here.value, there.value);
+    // Without lines yet, or results that hold here alone: compare again just beside.
+    if (!here.line || !there.line || !here.holds || !there.holds) return { gains, keeps, until: this.x.plus(UNCERTAIN_STEP) };
+    let until: Decimal | null = null;
+    const soonest = (y: Decimal | null | undefined) => {
+      if (y && y.gt(this.x) && (until === null || y.lt(until))) until = y;
+    };
+    // Just past where either side stops holding: at its very end it's too close to the change to be certain.
+    soonest(here.holds.hi?.plus(UNCERTAIN_STEP));
+    soonest(there.holds.hi?.plus(UNCERTAIN_STEP));
+    const diff = { a: there.line.a.minus(here.line.a), b: there.line.b.minus(here.line.b) };
+    soonest(pastZero({ a: diff.a.minus(TIE), b: diff.b }, this.x));
+    soonest(pastZero({ a: diff.a.plus(TIE), b: diff.b }, this.x));
+    return { gains, keeps, until };
+  }
+
+  /** The free decision-makers, the fixed choices each group decision leaves them, and who is strict (X16, E20). */
+  watchedPlayers(): { free: string[]; fixed: Set<string>[]; strict: (p: string) => boolean } {
+    return {
+      free: this.free,
+      fixed: this.group ? [new Set(this.group.series), new Set<string>()] : [new Set<string>()],
+      strict: (p) => this.pc.notes.has(p) || this.pc.preferred.has(p) || this.warrants.has(p),
+    };
+  }
+
+  /** Every stable answer here, by checking every combination: stops with the plain message where there's more than one. */
+  answerHere(): Answer {
+    if (this.group) return this.solveGroup();
+    const { answers, complete } = this.settleFree(new Set());
+    return this.single(answers, complete);
+  }
+
+  /** The group's answer (E17), as solve gives it. */
+  private solveGroup(): Weighed {
+    const { converting, staying } = this.groupChoices();
+    return this.groupVotes(converting, staying) ? converting : staying;
   }
 
   private single<T extends Answer>(answers: T[], complete: boolean): T {

@@ -132,7 +132,8 @@ describe("a warrant exercised into a series keeping its preference is left out o
 describe("Larkspur at a sale with its note and 10 post-money SAFEs (05c4; Jordan, after #71)", () => {
   // Jordan's target: under 5 seconds on CI's 2-core machine for the breakpoint search and the answer at each
   // breakpoint, as the page works them out. The time is printed for each run to show; a limit at the target would fail
-  // at random on a slow runner, so the test has 20 seconds. On a laptop it takes about 1.4s; before 05c4, 204s.
+  // at random on a slow runner, so the test has 20 seconds. On a laptop it takes about 1.9s; before 05c4, 204s. On CI, after
+  // 05c4, 4.6s and 4.1s on the two Node versions; 05c5's check of every combination for a second answer added about a third.
   it("works out every breakpoint, and the answer at each, and prints how long that took", () => {
     const exit = readExit(larkspurWithSafes(10, true));
     const pc = prepare(exit.capTable, exit.exitDate);

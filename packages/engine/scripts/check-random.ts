@@ -39,6 +39,8 @@ let compared = 0;
 let byPoints = 0;
 let probed = 0;
 let waiting = 0;
+/** Tables where the reference stops with more than one stable answer (05c5), and the engine's search stops too. */
+let bothStop = 0;
 const problems: string[] = [];
 /** Tables where the reference finds two stable answers at some exit value it was asked about (E8). */
 const twoAnswers = new Set<string>();
@@ -91,6 +93,17 @@ for (const name of readdirSync(directory).sort()) {
     const exit = readExit({ ...spec, exit_values: [] });
     const pc = prepare(exit.capTable, exit.exitDate);
     if (!existsSync(file("expected.json"))) {
+      // The reference stops where more than one answer is stable (05c5): so must the engine, with its plain message.
+      if (readFileSync(file("refused.txt"), "utf8").includes("spillpoint doesn't pick one")) {
+        try {
+          findBreakpoints(pc, exit.range);
+          problem("the reference stops with more than one stable answer; the engine's search doesn't");
+        } catch (e) {
+          if ((e as Error).message.includes("spillpoint doesn't pick one")) bothStop++;
+          else problem(`the reference stops with more than one stable answer; the engine stops otherwise: ${(e as Error).message}`);
+        }
+        continue;
+      }
       // The reference's search couldn't finish: its payouts at the listed exit values, and a cent either side of each
       // of the engine's breakpoints.
       if (!existsSync(file("points.json"))) continue;
@@ -136,6 +149,7 @@ for (const name of readdirSync(directory).sort()) {
 }
 
 console.log(`${compared} tables compared in full; ${byPoints} by their listed exit values, ${probed} of those a cent either side of each breakpoint too.`);
+if (bothStop > 0) console.log(`${bothStop} tables have more than one stable answer somewhere; the reference and the engine both stop on them.`);
 if (twoAnswers.size > 0) console.log(`The reference finds two stable answers somewhere in ${twoAnswers.size}: ${[...twoAnswers].join(", ")}.`);
 if (waiting > 0) console.log(`${waiting} tables wait for the reference at their breakpoints: run random_safes.py probe, then this again.`);
 console.log(problems.length === 0 ? "The engine agrees with the reference on every one." : problems.join("\n"));

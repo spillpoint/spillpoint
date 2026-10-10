@@ -3,7 +3,8 @@
 //
 //   pnpm safes-timing [2 4 6 8 10]
 //
-// Before 05c4 the 10-SAFE table with its note took 204s on an M1 Pro laptop; it takes about 1.4s.
+// Before 05c4 the 10-SAFE table with its note took 204s on an M1 Pro laptop; after 05c4 1.4s, and with 05c5's check
+// of every combination for a second answer about 1.9s.
 
 import { findBreakpoints, prepare, readExit, solve } from "../src/index.ts";
 import { larkspurWithSafes } from "../test/support/larkspur.ts";
