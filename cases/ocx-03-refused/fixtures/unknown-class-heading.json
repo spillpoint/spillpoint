@@ -1,0 +1,7 @@
+{
+  "base": "ocx-02-ferncliff-preferred",
+  "about": "Series Seed Preferred's column is headed in no way the reader knows.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "D2", "kind": "text", "text": "Series Seed Preferred (shares)", "formula": false}}
+  ]
+}

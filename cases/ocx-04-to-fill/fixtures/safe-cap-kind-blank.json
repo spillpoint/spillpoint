@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2's cap gives no pre- or post-money kind.",
+  "change": [
+    {"op": "clear", "tab": "SAFEs Ledger", "address": "G4"}
+  ]
+}

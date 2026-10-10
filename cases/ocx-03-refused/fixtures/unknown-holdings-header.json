@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "A holdings column on the Stakeholder View has a header no layout has.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "G2", "kind": "text", "text": "Restricted Stock Units", "formula": false}}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Neither the summary tab nor the per-holder tab has a name OCX gives one.",
+  "change": [
+    {"op": "rename_tab", "tab": "Summary View", "to": "Summary"},
+    {"op": "rename_tab", "tab": "Stakeholder View", "to": "Holders"}
+  ]
+}

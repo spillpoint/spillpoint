@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The ledger whose tab name is cut short has a title naming no class.",
+  "change": [
+    {"op": "set", "tab": "Common Seed (SAFE conversion...", "cell": {"address": "B1", "kind": "text", "text": "Alder Gate Labs Seed Conversion Ledger", "formula": false}}
+  ]
+}

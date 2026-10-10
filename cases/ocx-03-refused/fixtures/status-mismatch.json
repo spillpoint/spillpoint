@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "EP-1 still has 200,000 outstanding but says it's exercised.",
+  "change": [
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "P3", "kind": "text", "text": "Exercised", "formula": false}}
+  ]
+}

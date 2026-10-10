@@ -7,6 +7,9 @@ import { join, resolve } from "node:path";
 import { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
+import { applyOcxChange, cellPlace, readOcxFixture, readOcxWorkbook } from "./support/ocx.ts";
+import type { OcxWorkbookJson } from "./support/ocx.ts";
+
 const CASES = resolve(import.meta.dirname, "../../../cases");
 const CENT = new Decimal("0.01");
 // A locked price can be a long exact fraction; dividing it out at 40 digits rounds it to 10 places correctly.
@@ -392,12 +395,6 @@ describe.each(ocfFixtureDirs)("OCF fixtures %s", (dir) => {
 // OCX cases (0.6.0, C18): an OCX workbook of our own, in the engine's OcxWorkbook shape, and its import worked by hand.
 // readOcx comes in 06f; until then these check the files themselves: the workbook's shape, and that the result agrees
 // with itself and with the workbook where that needs no reading of it.
-interface OcxCellJson {
-  address: string;
-  kind: string;
-  text: string;
-  formula: boolean;
-}
 interface OcxResult {
   as_of: string;
   cap_table: {
@@ -412,55 +409,53 @@ interface OcxResult {
   to_fill: { security?: string; note?: string; safe?: string; field: string }[];
   report: { read: Record<string, number>; not_needed: Record<string, number>; notes: { code: string; subject?: string; field?: string }[] };
 }
+interface OcxRefusal {
+  kind: string;
+  term: string;
+  subject: string;
+}
 const ocxDirs = readdirSync(CASES, { withFileTypes: true })
   .filter((d) => d.isDirectory() && d.name.startsWith("ocx-"))
   .map((d) => d.name);
+const ocxWorkbookDirs = ocxDirs.filter((d) => existsSync(join(CASES, d, "workbook.json")));
+const ocxFixtureDirs = ocxDirs.filter((d) => existsSync(join(CASES, d, "fixtures")));
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const ASSUMPTIONS = readFileSync(resolve(CASES, "../docs/ASSUMPTIONS.md"), "utf8");
 
-describe.each(ocxDirs)("OCX case %s", (dir) => {
-  it("has workbook.json, expected.json and DERIVATION.md", () => {
-    for (const f of ["workbook.json", "expected.json", "DERIVATION.md"]) expect(existsSync(join(CASES, dir, f)), f).toBe(true);
-  });
-  const workbook = readJson<{ dateSystem: number; sheets: { name: string; cells: OcxCellJson[] }[] }>(dir, "workbook.json");
-  const expected = readJson<{ case: string; layout: string; result: OcxResult }>(dir, "expected.json");
-  const result = expected.result;
+/** OX1's shape: a date system, and tabs of cells, each placed once, in row order, of a known kind. */
+function expectOcxWorkbook(workbook: OcxWorkbookJson) {
+  expect([1900, 1904]).toContain(workbook.dateSystem);
+  const names = workbook.sheets.map((s) => s.name);
+  expect(new Set(names).size).toBe(names.length);
+  for (const sheet of workbook.sheets) {
+    expect(sheet.name.length, sheet.name).toBeLessThanOrEqual(31);
+    for (const c of sheet.cells) expect(c.address, `${sheet.name}!${c.address}`).toMatch(/^[A-Z]{1,3}[1-9]\d*$/);
+    const places = sheet.cells.map((c) => cellPlace(c.address));
+    expect(places, sheet.name).toEqual([...places].sort((a, b) => a - b));
+    expect(new Set(places).size, sheet.name).toBe(places.length);
+    for (const c of sheet.cells) {
+      const at = `${sheet.name}!${c.address}`;
+      expect(["number", "text", "boolean", "error", "date"], at).toContain(c.kind);
+      expect(typeof c.formula, at).toBe("boolean");
+      if (!c.formula) expect(c.text, at).not.toBe("");
+      if (c.text !== "" && (c.kind === "number" || (c.kind === "date" && !c.text.includes("-")))) {
+        expect(c.text, at).toMatch(/^-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/);
+      }
+    }
+  }
+}
+
+// A holder made for a convertibles row, which names no holder (OX11): its type, its terms and its count.
+const MADE_HOLDER = /^(?:Post-money SAFEs|Pre-money SAFEs|Convertible notes)(?:, .+)? \(\d+\)$/;
+
+/** The checks an import's result must pass against its workbook: a case's, or a fixture's that isn't refused. */
+function ocxResultChecks(workbook: OcxWorkbookJson, layout: string, result: OcxResult) {
   const cells = workbook.sheets.flatMap((s) => s.cells);
   const texts = new Set(cells.filter((c) => c.kind === "text").map((c) => c.text));
 
-  it("names itself and its layout", () => {
-    expect(expected.case).toBe(dir);
-    expect(["0.4/0.5", "0.7"]).toContain(expected.layout);
-  });
-
-  it("is an OcxWorkbook: a date system, and tabs of cells, each placed once, in row order, of a known kind", () => {
-    expect([1900, 1904]).toContain(workbook.dateSystem);
-    const names = workbook.sheets.map((s) => s.name);
-    expect(new Set(names).size).toBe(names.length);
-    for (const sheet of workbook.sheets) {
-      expect(sheet.name.length, sheet.name).toBeLessThanOrEqual(31);
-      const place = (c: OcxCellJson) => {
-        const m = /^([A-Z]{1,3})([1-9]\d*)$/.exec(c.address);
-        expect(m, `${sheet.name}!${c.address}`).not.toBeNull();
-        return Number(m![2]) * 100000 + [...m![1]!].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
-      };
-      const places = sheet.cells.map(place);
-      expect(places, sheet.name).toEqual([...places].sort((a, b) => a - b));
-      expect(new Set(places).size, sheet.name).toBe(places.length);
-      for (const c of sheet.cells) {
-        const at = `${sheet.name}!${c.address}`;
-        expect(["number", "text", "boolean", "error", "date"], at).toContain(c.kind);
-        expect(typeof c.formula, at).toBe("boolean");
-        if (!c.formula) expect(c.text, at).not.toBe("");
-        if (c.text !== "" && (c.kind === "number" || (c.kind === "date" && !c.text.includes("-")))) {
-          expect(c.text, at).toMatch(/^-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/);
-        }
-      }
-    }
-  });
-
   it("gives its as-of date on every tab, in 0.7's form", () => {
-    if (expected.layout !== "0.7") return;
+    if (layout !== "0.7") return;
     const [y, m, d] = result.as_of.split("-").map(Number);
     const day = new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay();
     const label = `As of ${DAYS[day]}, ${String(d).padStart(2, "0")} ${MONTHS[m! - 1]} ${y}`;
@@ -473,11 +468,11 @@ describe.each(ocxDirs)("OCX case %s", (dir) => {
     expect(note?.field).toBe(label?.[1]);
   });
 
-  it("holds positions only in its own holders and securities, each holder named in the workbook and holding something", () => {
+  it("holds positions only in its own holders and securities, each holder named in the workbook or made for a row, and holding something", () => {
     const ct = result.cap_table;
     const holders = new Set(ct.holders.map((h) => h.id));
     const securities = new Set(ct.securities.map((s) => s.id as string));
-    for (const h of ct.holders) expect(texts.has(h.name), h.name).toBe(true);
+    for (const h of ct.holders) expect(texts.has(h.name) || MADE_HOLDER.test(h.name), h.name).toBe(true);
     for (const p of ct.positions) expect(holders.has(p.holder) && securities.has(p.security) && p.shares > 0, `${p.holder} ${p.security}`).toBe(true);
     const holding = new Set([...ct.positions, ...(ct.unconverted_safes ?? []), ...(ct.unconverted_notes ?? [])].map((x) => x.holder as string));
     expect([...holders].filter((h) => !holding.has(h))).toEqual([]);
@@ -511,12 +506,98 @@ describe.each(ocxDirs)("OCX case %s", (dir) => {
     expect(skipped).toBe(cells.some((c) => c.formula && c.text === ""));
   });
 
-  it("names, in each note, a holder or security of its own, or something the workbook holds", () => {
-    const ids = new Set([...result.cap_table.holders.map((h) => h.id), ...result.cap_table.securities.map((s) => s.id as string)]);
+  it("names, in each note, something of its own or something the workbook holds", () => {
+    const ct = result.cap_table;
+    const ids = new Set([
+      ...ct.holders.map((h) => h.id),
+      ...ct.securities.map((s) => s.id as string),
+      ...[...(ct.unconverted_safes ?? []), ...(ct.unconverted_notes ?? [])].map((x) => x.id as string),
+    ]);
     for (const n of result.report.notes) {
       if (!n.subject) continue;
       const leftOut = n.code === "left_out_stakeholder";
       expect(ids.has(n.subject) || leftOut || texts.has(n.subject), `${n.code} ${n.subject}`).toBe(true);
     }
   });
+
+  it("uses only note codes ASSUMPTIONS names", () => {
+    for (const n of result.report.notes) expect(ASSUMPTIONS, n.code).toContain(`\`${n.code}\``);
+  });
+}
+
+describe("OCX cases", () => {
+  it("are each a workbook or a set of fixtures", () => {
+    expect([...ocxWorkbookDirs, ...ocxFixtureDirs].sort()).toEqual(ocxDirs);
+  });
+});
+
+describe.each(ocxWorkbookDirs)("OCX case %s", (dir) => {
+  it("has workbook.json, expected.json and DERIVATION.md", () => {
+    for (const f of ["workbook.json", "expected.json", "DERIVATION.md"]) expect(existsSync(join(CASES, dir, f)), f).toBe(true);
+  });
+  const workbook = readOcxWorkbook(dir);
+  const expected = readJson<{ case: string; layout: string; result: OcxResult }>(dir, "expected.json");
+
+  it("names itself and its layout", () => {
+    expect(expected.case).toBe(dir);
+    expect(["0.4/0.5", "0.7"]).toContain(expected.layout);
+  });
+
+  it("is an OcxWorkbook: a date system, and tabs of cells, each placed once, in row order, of a known kind", () => {
+    expectOcxWorkbook(workbook);
+  });
+
+  ocxResultChecks(workbook, expected.layout, expected.result);
+});
+
+// Fixture cases (C18, 06e2): each a base case's workbook with one small change, refused or read with blanks.
+describe.each(ocxFixtureDirs)("OCX fixtures %s", (dir) => {
+  const expected = readJson<{ case: string; fixtures: Record<string, { refused?: OcxRefusal; result?: OcxResult }> }>(dir, "expected.json");
+  const names = readdirSync(join(CASES, dir, "fixtures")).sort();
+  const fixtures = new Map(names.map((name) => [name, readOcxFixture(dir, name)]));
+  const fixture = (name: string) => fixtures.get(name)!;
+
+  it("has fixtures, expected.json and DERIVATION.md", () => {
+    expect(expected.case).toBe(dir);
+    expect(existsSync(join(CASES, dir, "DERIVATION.md"))).toBe(true);
+  });
+
+  it("gives one result for each fixture file, and only for those, each refused or read", () => {
+    expect(Object.keys(expected.fixtures).sort()).toEqual(names);
+    for (const [name, r] of Object.entries(expected.fixtures)) expect(("result" in r) !== ("refused" in r), name).toBe(true);
+  });
+
+  it.each(names)("%s changes an OCX case's workbook, each step changing something, and leaves an OcxWorkbook", (name) => {
+    const f = fixture(name);
+    expect(ocxWorkbookDirs, name).toContain(f.base);
+    expect(f.about.length, name).toBeGreaterThan(0);
+    expect(f.change.length, name).toBeGreaterThan(0);
+    expectOcxWorkbook(applyOcxChange(readOcxWorkbook(f.base), f.change));
+  });
+
+  it("names, in each refusal, a known kind and a term ASSUMPTIONS names, and a subject its base or its change holds", () => {
+    for (const [name, r] of Object.entries(expected.fixtures)) {
+      if (!r.refused) continue;
+      expect(["unsupported", "malformed"], name).toContain(r.refused.kind);
+      expect(ASSUMPTIONS, `${name}: ${r.refused.term}`).toContain(`\`${r.refused.term}\``);
+      // OX13: a column is its tab and header, "Common Stock Ledger: No. Shares Outstanding"; each part is in the files.
+      const files = readFileSync(join(CASES, fixture(name).base, "workbook.json"), "utf8") + readFileSync(join(CASES, dir, "fixtures", name), "utf8");
+      for (const part of r.refused.subject.split(": ")) expect(files, `${name}: ${part}`).toContain(JSON.stringify(part).slice(1, -1));
+    }
+  });
+
+  const read = names.filter((name) => expected.fixtures[name]?.result);
+  if (read.length > 0) {
+    describe.each(read)("%s", (name) => {
+      const f = fixture(name);
+      const base = readJson<{ layout: string; result: OcxResult }>(f.base, "expected.json");
+      const result = expected.fixtures[name]!.result!;
+
+      it("reads differently from its base", () => {
+        expect(result).not.toEqual(base.result);
+      });
+
+      ocxResultChecks(applyOcxChange(readOcxWorkbook(f.base), f.change), base.layout, result);
+    });
+  }
 });

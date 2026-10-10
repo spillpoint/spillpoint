@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Common Stock's ledger is gone.",
+  "change": [
+    {"op": "remove_tab", "tab": "Common Stock Ledger"}
+  ]
+}

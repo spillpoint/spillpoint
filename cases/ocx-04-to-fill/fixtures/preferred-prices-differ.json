@@ -1,0 +1,8 @@
+{
+  "base": "ocx-02-ferncliff-preferred",
+  "about": "PS-2 was issued at $0.90, PS-1 at $1, so Series Seed Preferred has no one price.",
+  "change": [
+    {"op": "set", "tab": "Series Seed Preferred Ledger", "cell": {"address": "H4", "kind": "number", "text": "0.9", "formula": false}},
+    {"op": "set", "tab": "Series Seed Preferred Ledger", "cell": {"address": "I4", "kind": "number", "text": "450000", "formula": false}}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "A Common Stock certificate names a holder the Stakeholder View hasn't.",
+  "change": [
+    {"op": "set", "tab": "Common Stock Ledger", "cell": {"address": "A8", "kind": "text", "text": "Employee G", "formula": false}}
+  ]
+}

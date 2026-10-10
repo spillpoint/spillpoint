@@ -306,6 +306,8 @@ As O1: nothing is guessed, never 1x and never $1. **From 0.7 with its ledgers,**
 
 ## What it refuses
 
+**ASSUMPTIONS OX13 is now the live list** (06e2): each term, its kind and subject, and the order of checks. One change from the list below: a holdings header the reader doesn't know is unsupported, not malformed. The list stays as the plan had it.
+
 Each by name, with a kind, `unsupported` or `malformed`, and a term, as `readOcf` does:
 
 **Unsupported:**
@@ -372,9 +374,13 @@ As O10:
     - ASSUMPTIONS OX3 to OX12, the import's rules, and C18, the OCX case folder
     - **ocx-01-alder-gate:** a fictional company's 0.7 workbook using every 0.7 tab and ledger the reader reads: common classes, one of them a SAFE's conversion shares with its ledger's tab name cut to 31 characters; options, an RSU, a cancelled and an expired grant; a warrant; a SAFE converted and one outstanding
     - **ocx-02-ferncliff-preferred:** the one 0.7 case with preferred stock, read with blanks (your answer 06d-3); ASSUMPTIONS says plainly it rests on no real export
-  - **06e2: the 0.7 fixtures,** one small change to ocx-01 for each refusal and each blank, as 04a2's were.
-  - **06e3: 0.4/0.5:** a fictional workbook in the reference's layout, using every table the reader reads there, and its fixtures.
-  - **06e4: the locked cases written as OCX:** edge cases 4, 5a, 7, 8 and 12b, and Millrace, in 0.4/0.5's layout, each importing, with its blanks answered, to the locked cap table, with prices to 15 significant digits, compared within a cent as 04b2 did for OCF's 10 places. With it, the reference unit test for a row of identical SAFEs, post-money and pre-money both (your answer 10).
+  - **06e2: the 0.7 fixtures** (done), one small change to a 0.7 case for each refusal and each blank, as 04a2's were:
+    - **ASSUMPTIONS OX13,** the refusals: each term's kind and subject, and the order of checks that decides which refusal comes when a change could trip two; small additions to OX4 to OX12; and C18's fixture form
+    - **cases/ocx-03-refused:** 30 refusals, 28 on ocx-01 and two on ocx-02, where preferred stock is needed (`non_plan_awards` added after your review)
+    - **cases/ocx-04-to-fill:** three blanks, a SAFE's cap's kind, a note in a convertibles row and a preferred series' issue price, each result the whole import
+  - **06e3: the reads** (your 06e2 review): `cases/ocx-05-reads`, one small change to a 0.7 case for each reading rule no case or fixture reaches yet, each changing the cap table, so each is in a case you re-derive, not only in 06f's tests: a pre-money SAFE, a SAFE's discount and MFN, split-adjusted counts and strikes, an expired warrant, a class named preferred under `Common Stock`, "Unknown" as an issue date, a date as a day count and the 1904 date system, a 17-digit stored number, an unknown header outside the holdings, a total with a saved value that agrees, two plans, and an id that comes out the same twice.
+  - **06e4: 0.4/0.5:** a fictional workbook in the reference's layout, using every table the reader reads there, and its fixtures.
+  - **06e5: the locked cases written as OCX:** edge cases 4, 5a, 7, 8 and 12b, and Millrace, in 0.4/0.5's layout, each importing, with its blanks answered, to the locked cap table, with prices to 15 significant digits, compared within a cent as 04b2 did for OCF's 10 places. With it, the reference unit test for a row of identical SAFEs, post-money and pre-money both (your answer 10).
 
   The workbooks are our own, written as JSON in `OcxWorkbook`'s shape (tabs and cells), each expected result worked by hand in its DERIVATION, from the workbook, so it can be re-derived independently before the label goes on. None is made from the Mantle export: 0.7's tab names and headers are used, as the format's interface; titles, footnotes, the company, its holders and numbers are our own, with no footnote or title wording from the export (your 06d review). The one exception is a ledger title's ending, "… <class> Ledger", which the reader matches to find a class whose ledger's tab name is cut short (OX8).
 - **06f, the engine:**

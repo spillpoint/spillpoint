@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Context's plan details give 600,000 available, where the Stakeholder View's pool row gives 610,000.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "H12", "kind": "number", "text": "600000", "formula": false}}
+  ]
+}

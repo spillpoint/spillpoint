@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Stakeholder View gives Founder B 25,000 non-plan awards, which no ledger the reader knows holds.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "G8", "kind": "number", "text": "25000", "formula": false}}
+  ]
+}

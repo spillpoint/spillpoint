@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The summary tab has 0.4/0.5's name, beside 0.7's Stakeholder View.",
+  "change": [
+    {"op": "rename_tab", "tab": "Summary View", "to": "Summary Snapshot"}
+  ]
+}

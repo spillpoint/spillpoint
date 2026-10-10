@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Summary View counts two post-money SAFEs, where the ledger has one outstanding.",
+  "change": [
+    {"op": "set", "tab": "Summary View", "cell": {"address": "M3", "kind": "number", "text": "2", "formula": false}}
+  ]
+}
