@@ -53,5 +53,6 @@ Coming next:
 - [`reference`](reference): an independent calculator, using exact fractions and a different method, that produced the expected values.
 - [`docs`](docs): the rules ([`SPEC.md`](docs/SPEC.md)) and every modeling choice with its default ([`ASSUMPTIONS.md`](docs/ASSUMPTIONS.md)).
 - [`scripts/ocf-check.mjs`](scripts/ocf-check.mjs): checks an Open Cap Format export, `pnpm ocf-check export.zip`, and prints only counts and codes, never a name, an id, an amount or a date, so what it prints can be shared without the cap table. Needs Node 22.18 or later.
+- [`scripts/ocx-structure.mjs`](scripts/ocx-structure.mjs): what kinds of cell an OCX workbook's columns hold, `pnpm ocx-structure export.xlsx`, as counts and kinds only, never a value, so it can be shared without the cap table. Needs Node 22.18 or later.
 
 Licensed under Apache-2.0.
