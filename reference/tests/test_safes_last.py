@@ -1,6 +1,7 @@
 """The SAFEs' greater-of comes last (E20; 0.5.0, 05c1): the series, warrants and notes find their stable answer among
 themselves, each weighing its outcomes with the SAFEs paid as their text pays them given those decisions, and the
-SAFEs then take the greater of their two amounts.
+SAFEs then take the greater of their two amounts. Where they could settle more than one way, the most conversions
+(Jordan, after #71).
 
 Under the old rule, where every decision was weighed at once, Larkspur's non-participating Seed and its two
 post-money SAFEs went round in a circle near the Seed's conversion: no decision set was stable.
@@ -46,22 +47,23 @@ class SafesLast(unittest.TestCase):
         self.assertEqual([wf.players[i] for i in at.safes if converted[i]], ["safe-x1", "safe-s3"])
         self.assertEqual(round(float(at.value(converted, seed)), 2), 2921654.22)
 
-    def test_safes_that_convert_only_because_the_others_do_take_cash(self):
+    def test_safes_that_convert_only_because_the_others_do_convert(self):
         """With the Seed and Series A both converted at $12M, the two equal SAFEs could both take cash, $250,000 each,
-        or both convert, $252,449 each: converting alone pays less. They take the fewest conversions (E5), the
-        outcome from below, since none gains by converting alone."""
+        or both convert, $252,449 each: converting alone pays less. They take the most conversions (Jordan, after #71,
+        reversing 05c1's fewest): a post-money SAFE promises a fixed share once all the SAFEs convert."""
         wf = larkspur_safes_only()
         at = _AtExit(wf, F(12000000))
         bits = [False] * len(wf.players)
         for p in ("cls-seed", "cls-series-a"):
             bits[wf.players.index(p)] = True
         settled = at.follow(tuple(bits))
-        self.assertEqual([wf.players[i] for i in at.safes if settled[i]], [])
-        both = list(settled)
+        self.assertEqual([wf.players[i] for i in at.safes if settled[i]], ["safe-x1", "safe-s3"])
+        self.assertEqual(round(float(at.value(settled, wf.players.index("safe-x1"))), 0), 252449)
+        none = list(settled)
         for i in at.safes:
-            both[i] = True
-        both = at.settle(tuple(both))
-        self.assertTrue(all(at.safe_settled(both, i) for i in at.safes), "both converting is stable too")
+            none[i] = False
+        none = at.settle(tuple(none))
+        self.assertTrue(all(at.safe_settled(none, i) for i in at.safes), "both taking cash is stable too")
 
     def test_every_sale_value_has_an_answer_where_the_old_rule_had_none(self):
         """The old cycle ran from about $16,531,250 to $16,556,250 without the note, and $16,887,500 to $16,925,000

@@ -79,6 +79,7 @@ describe("a note beside a SAFE (X18; 13i)", () => {
   });
 });
 
+// Until 05c4: Jordan reversed this tie to the most conversions after #71 (E20), and edge case 12k is its case.
 describe("several SAFEs that could settle more than one way take the fewest conversions (E20, E5)", () => {
   // Two equal SAFEs, $250,000 each at a $2,000,000 post-money cap, beside 1,000,000 common. Both converting, each gets
   // an eighth of the sale; one converting on its own, an eighth of what's left after the other's cash. So from

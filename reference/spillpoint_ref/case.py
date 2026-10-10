@@ -148,9 +148,10 @@ def _safe_json(wf, f, top):
     converted = {s: d[p] for p in wf.converters for s in wf.members[p]}
     together = wf.safes_converting(f, d)
     notes = wf.notes_converting(d)
-    lc = wf.liquidity_capitalization(f, converted, together, notes)
-    lp = wf.liquidity_price(f, converted, together, notes)
-    n = wf.safe_conversion_shares(f, converted, together, notes)
+    exercised = wf.warrants_exercised(d)
+    lc = wf.liquidity_capitalization(f, converted, together, notes, exercised)
+    lp = wf.liquidity_price(f, converted, together, notes, exercised)
+    n = wf.safe_conversion_shares(f, converted, together, notes, exercised)
     if ct.preferred_ids():
         out["liquidity_capitalization_counts_preferred"] = [s for s in ct.preferred_ids() if not wf.keeps_preference_in_lieu(s, converted)]
     if len(wf.safes) > 1:

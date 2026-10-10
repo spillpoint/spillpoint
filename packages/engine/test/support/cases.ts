@@ -32,6 +32,17 @@ export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
 });
 
 /**
+ * Exit cases whose rules the engine takes later (Jordan, after #71): the cases in 05c3, the engine in 05c4. Until then
+ * input.test.ts pins what today's engine does on each, where it differs.
+ */
+export const NOT_YET: readonly string[] = [
+  // Several SAFEs that could settle more than one way take the most conversions (E20); the engine takes the fewest.
+  "edge-12k-two-equal-safes",
+  // A warrant exercised into a series keeping its preference is left out of a SAFE's count (X1); the engine counts it.
+  "edge-12l-warrant-below-preference-beside-a-safe",
+];
+
+/**
  * The exit cases the engine runs: edge cases 1 through 7 and Millrace's exit since M2, case 8's warrant since M5d,
  * case 9's dividends since M5e, case 23's sale after a round with dividends (R30) since M5e3, case 10's
  * carve-outs since M5f, case 12's SAFEs at a sale since M5g, case 13's notes at a sale since M5h, and case 11's
@@ -39,13 +50,14 @@ export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
  * a SAFE and a note with no cap beside capped participating preferred, and case 24, a carve-out given on the sale,
  * since 03e, case 8b, a warrant coming into the money on a curve, since 03f, and case 25, the cap table OCF case 12's
  * ledger leaves, since its case (04c), and cases 26 and 27, sales after a round on a starting cap table (R31), since
- * 05b2. Cases 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2. None is
- * left out.
+ * 05b2. Cases 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2. Only
+ * NOT_YET's are left out.
  */
 export const EXIT_CASES: string[] = ALL_CASES.filter(
   (name) =>
-    /^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name) ||
-    FROM_A_STARTING_TABLE.includes(name),
+    (/^edge-(0[1-9]|1[0-3])/.test(name) || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name) ||
+      FROM_A_STARTING_TABLE.includes(name)) &&
+    !NOT_YET.includes(name),
 );
 
 export function readCaseFile(name: string, file: "inputs.json" | "expected.json"): unknown {

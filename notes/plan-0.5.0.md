@@ -155,6 +155,22 @@ The engine lifts `note_with_safe_or_carve_out` for SAFEs, and passes the cases. 
 
 **Done in 05c2 (Jordan, after #70):** the engine reads a capped note beside post-money SAFEs (X18), applies E20 wherever SAFEs are outstanding at a sale, reads the note-base rule (O9), and passes 12j, 13i, 13j and OCF case 13. A note beside a carve-out stays refused.
 
+### After #71 (Jordan's three items)
+
+1. **Speed is a release blocker.** Larkspur at a sale, on a 2-core machine: 2 SAFEs 2.3s, 4 SAFEs 15s, 6 SAFEs 61s without the note; 6.4s, 38s and 155s with it. It roughly doubles per SAFE, and pre-seed tables often have 5 to 10. **Target:** Larkspur and its note with 10 post-money SAFEs under 5 seconds on CI's machine, checked against the reference's brute force on randomized tables. If it can't be met, the page gets a limit with a plain message.
+2. **Several SAFEs that could settle more than one way take the most conversions,** not the fewest (E20). Series, warrants and notes keep E5 and X16.
+3. **Warrant shares exercised into a series that keeps its preference** are left out of the SAFEs' Liquidity Capitalization, like the series' other shares (X1).
+
+### 05c3: cases (the edit rule lifted)
+
+- **12k:** two equal post-money SAFEs beside common only, under rule 2.
+- **12l:** a warrant for a non-participating series at a strike below its preference, beside a post-money SAFE, under rule 3.
+- **The reference takes both rules,** with DERIVATIONs for re-derivation.
+
+### 05c4: the engine
+
+Both rules, and the speed work.
+
 ### What it would take to lift the other two refusals at a sale (question 12)
 
 - **A pre-money SAFE beside preferred** (X14, `pre_money_safe_with_preferred`):
@@ -198,7 +214,9 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 
 **Changed behavior, for the release notes** (Jordan, 05b2 review): a sale on a table built from rounds now applies the same at-a-sale limits as a cap table entered directly (X12–X15), so some inputs 0.4.0 paid are now refused. `readInputs` didn't apply them to a table built from rounds before.
 
-**Changed behavior, for the release notes** (05c2, for you to check): two equal post-money SAFEs can each take cash or both convert over a range of exit values. 0.4.0's `solve` reported both answers there (E8); it now reports the cash until one gains by converting alone (E20's tie), and payouts jump there.
+**Changed behavior, for the release notes** (Jordan, after #71): two equal post-money SAFEs can each take cash or both convert over a range of exit values. 0.4.0's `solve` reported both answers there (E8); 0.5.0 takes the most conversions, so they convert where converting together first pays, and payouts bend there (edge case 12k).
+
+**Changed behavior, for the release notes** (Jordan, after #71): a warrant exercised into a series that keeps its preference is left out of a post-money SAFE's Liquidity Capitalization, like the series' own shares (X1, edge case 12l). 0.4.0 counted it, which mattered only where the strike is below the series' preference per share.
 
 **A fix, for the release notes** (Jordan, after #70): 0.4.0's breakpoint search stopped on Larkspur's table at a sale (edge case 12j), with "went round in a circle (E15)" from $16,531,000, where the non-participating Seed and the post-money SAFEs went round in a circle. Under E20 the SAFEs' greater-of comes last, so it's one breakpoint where payouts jump, at $16,559,391.30.
 

@@ -4,10 +4,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import { InputError, UnsupportedTermError, readCapTable, readExit } from "../src/index.ts";
+import { D, InputError, UnsupportedTermError, prepare, readCapTable, readExit, solve } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, NOT_YET, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
   exit?: { cap_table?: { holders: unknown[]; positions: unknown[] }; exit_values: string[] };
@@ -122,7 +122,21 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES, NOT_YET).sort()).toEqual(ALL_CASES);
+  });
+
+  // 12k and 12l (05c3) are read, and the engine pays them by today's rules until 05c4. Where those differ from the
+  // cases, it says so here, by name.
+  const at = (name: string, x: string) => {
+    const exit = readInputs(readCaseFile(name, "inputs.json"));
+    const [answer] = solve(prepare(exit.capTable, exit.exitDate), new D(x)).answers;
+    return [...answer!.decisions.converted].sort();
+  };
+  it("edge-12k-two-equal-safes: at $5,250,000 today's engine takes the fewest conversions, cash, until 05c4 (E20)", () => {
+    expect(at("edge-12k-two-equal-safes", "5250000")).toEqual([]);
+  });
+  it("edge-12l-warrant-below-preference-beside-a-safe: at $7,000,000 today's engine counts the warrant's shares, so the SAFE converts, until 05c4 (X1)", () => {
+    expect(at("edge-12l-warrant-below-preference-beside-a-safe", "7000000")).toEqual(["safe_s"]);
   });
 
   // 05b1's cases start from a cap table (R31); the engine reads them since 05b2, as exit cases.

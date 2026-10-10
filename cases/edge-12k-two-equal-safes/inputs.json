@@ -1,0 +1,75 @@
+{
+  "case": "edge-12k-two-equal-safes",
+  "description": "Two equal post-money SAFEs at a sale, beside common only: Investor X's and Investor Y's $500,000 each at a $5M cap. From $5M to $5.5M both taking cash and both converting are each stable, since each converts only if the other does. They take the most conversions (ASSUMPTIONS E20; Jordan, after #71), so they convert from $5M, where payouts bend.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "investor_y",
+          "name": "Investor Y"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 4000000
+        }
+      ],
+      "unissued_pool": 0,
+      "unconverted_safes": [
+        {
+          "id": "safe_x",
+          "holder": "investor_x",
+          "purchase_amount": "500000",
+          "post_money_cap": "5000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_y",
+          "holder": "investor_y",
+          "purchase_amount": "500000",
+          "post_money_cap": "5000000",
+          "discount": "0"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "20000000"
+    ],
+    "exit_values": [
+      "500000",
+      "2000000",
+      "5250000",
+      "5500000",
+      "10000000",
+      "20000000"
+    ]
+  }
+}
