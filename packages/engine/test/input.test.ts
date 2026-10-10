@@ -1,12 +1,12 @@
 // Reading exit inputs: every case in M2's scope reads cleanly, every case
-// outside it is refused with the term and the milestone that adds it, and
+// outside it is refused with the term, saying what isn't modeled, and
 // malformed inputs fail with a clear error.
 
 import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, readCapTable, readExit } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
-import type { Milestone, PreferredSeries } from "../src/index.ts";
+import type { PreferredSeries } from "../src/index.ts";
 import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
@@ -120,7 +120,7 @@ describe("the exit cases the engine runs", () => {
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
   // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too; since 05c2, 12j, 13i and 13j.
-  const refused: [string, string, Milestone][] = [];
+  const refused: [string, string][] = [];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
@@ -146,7 +146,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
 
   // it.each takes no empty table, so the per-case check runs only while some case is refused.
   if (refused.length > 0) {
-    it.each(refused)("%s is refused for %s (%s)", (name, term, milestone) => {
+    it.each(refused)("%s is refused for %s", (name, term) => {
       let error: unknown;
       try {
         readInputs(readCaseFile(name, "inputs.json"));
@@ -154,8 +154,8 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
         error = e;
       }
       expect(error).toBeInstanceOf(UnsupportedTermError);
-      expect(error).toMatchObject({ term, milestone });
-      expect((error as Error).message).toMatch(milestone === "later" ? /supports this once a case needs it/ : new RegExp(`supports this from ${milestone}`));
+      expect(error).toMatchObject({ term });
+      expect((error as Error).message).toMatch(/The engine doesn't model this, so it refuses the input rather than ignoring the term\.$/);
     });
   }
 });

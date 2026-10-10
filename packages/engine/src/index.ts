@@ -15,7 +15,6 @@ export { D, parseExact, toCents } from "./decimal.ts";
 
 // What the engine refuses, and why.
 export { InputError, NoAnswerError, OcfRefusal, UnsupportedTermError } from "./errors.ts";
-export type { Milestone } from "./errors.ts";
 
 // Reading an exit input in the case-file format (ASSUMPTIONS C1–C4, C12).
 export { readCapTable, readExit } from "./input.ts";

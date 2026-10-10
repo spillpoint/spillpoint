@@ -87,7 +87,7 @@ describe("a carve-out given on the exit, as a term of the sale (C6, 03e)", () =>
       error = e;
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term: "note_with_safe_or_carve_out", milestone: "later" });
+    expect(error).toMatchObject({ term: "note_with_safe_or_carve_out" });
   });
 });
 

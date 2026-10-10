@@ -94,7 +94,7 @@ describe("options follow the price, and a group decides first (E16, E17)", () =>
 
   it("refuses more than one conversion group", () => {
     expect(() => table([["a"], ["b"]])).toThrow(UnsupportedTermError);
-    expect(() => table([["a"], ["b"]])).toThrow(/once a case needs it/);
+    expect(() => table([["a"], ["b"]])).toThrow(/More than one conversion group .*The engine doesn't model this/);
   });
 });
 

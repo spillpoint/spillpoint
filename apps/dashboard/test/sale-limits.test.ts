@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { saleLimitText } from "../src/saleLimits.ts";
 
-const refusal = (term: string) => new UnsupportedTermError(term, "later", "exit.cap_table.unconverted_notes", "A term");
+const refusal = (term: string) => new UnsupportedTermError(term, "exit.cap_table.unconverted_notes", "A term");
 const POST_MONEY = { post_money_cap: "10000000" };
 const PRE_MONEY = { post_money_cap: null, pre_money_cap: "10000000" };
 const CAPPED = { valuation_cap: "5000000" };

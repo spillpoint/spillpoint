@@ -114,7 +114,7 @@ function readDividend(value: unknown, path: string): CumulativeDividend {
   // X5's other reading: (original issue price + accrued) ÷ conversion price converts. Refused until a case settles it.
   if (onConversion === "added_to_conversion") {
     throw new UnsupportedTermError(
-      "dividends_added_to_conversion", "later", `${path}.on_conversion`, "Accrued dividends added to what converts, the other reading (X5)",
+      "dividends_added_to_conversion", `${path}.on_conversion`, "Accrued dividends added to what converts, the other reading (X5)",
     );
   }
   if (onConversion !== "forfeited" && onConversion !== "paid") throw new InputError(`${path}.on_conversion`, "must be forfeited or paid");
@@ -309,7 +309,7 @@ function readTable(value: unknown, path: string, atASale: boolean): CapTable {
   );
   if (conversionGroups.length > 1) {
     throw new UnsupportedTermError(
-      "conversion_groups", "later", `${path}.conversion_groups`,
+      "conversion_groups", `${path}.conversion_groups`,
       "More than one conversion group (E17: the order in which groups decide isn't settled)",
     );
   }
@@ -411,12 +411,12 @@ function checkSafes(
   const preMoney = safes.find((f) => f.preMoneyCap);
   if (preMoney && preferred.length > 0) {
     throw new UnsupportedTermError(
-      "pre_money_safe_with_preferred", "later", path, "A pre-money SAFE at a sale alongside preferred stock: its text ranks its cash only against other SAFEs (X14)",
+      "pre_money_safe_with_preferred", path, "A pre-money SAFE at a sale alongside preferred stock: its text ranks its cash only against other SAFEs (X14)",
     );
   }
   if (safes.length > 1 && safes.some((f) => !f.postMoneyCap)) {
     throw new UnsupportedTermError(
-      "several_safes", "later", path, "More than one SAFE at a sale, unless each has a post-money cap (X13, X14)",
+      "several_safes", path, "More than one SAFE at a sale, unless each has a post-money cap (X13, X14)",
     );
   }
 }
@@ -432,10 +432,10 @@ export function readNote(value: unknown, path: string): Note {
   onlyKnownFields(n, NOTE_FIELDS, path);
   // R23: refused until a case covers them, never skipped.
   if ((n.interest_method ?? "simple") !== "simple") {
-    throw new UnsupportedTermError("note_compounding_interest", "later", `${path}.interest_method`, "Notes with interest other than simple (R23)");
+    throw new UnsupportedTermError("note_compounding_interest", `${path}.interest_method`, "Notes with interest other than simple (R23)");
   }
   if ((n.cap_type ?? "pre_money") !== "pre_money") {
-    throw new UnsupportedTermError("note_post_money_cap", "later", `${path}.cap_type`, "Notes with a post-money cap (R23)");
+    throw new UnsupportedTermError("note_post_money_cap", `${path}.cap_type`, "Notes with a post-money cap (R23)");
   }
   const base = (n.conversion_base ?? "with_pool") as Note["conversionBase"];
   if (!CONVERSION_BASES.includes(base)) throw new InputError(`${path}.conversion_base`, `must be one of ${CONVERSION_BASES.join(", ")}`);
@@ -461,7 +461,7 @@ export function readNote(value: unknown, path: string): Note {
 /** A note at a sale beside a carve-out, or beside a SAFE in a setup no case settles yet (X12, X18). */
 function noteBesideRefused(path: string): UnsupportedTermError {
   return new UnsupportedTermError(
-    "note_with_safe_or_carve_out", "later", path,
+    "note_with_safe_or_carve_out", path,
     "A convertible note at a sale alongside a carve-out, or alongside a SAFE unless the note has a valuation cap and every SAFE a post-money cap (X12, X18)",
   );
 }
@@ -491,7 +491,7 @@ function checkNotes(
   if (withCarveOut) throw noteBesideRefused(path);
   if (safes.length > 0 && (notes.some((n) => !n.valuationCap) || safes.some((f) => !f.postMoneyCap))) throw noteBesideRefused(path);
   if (notes.length > 1 && notes.some((n) => !n.valuationCap)) {
-    throw new UnsupportedTermError("several_notes", "later", path, "More than one convertible note at a sale, unless each has a cap (X15)");
+    throw new UnsupportedTermError("several_notes", path, "More than one convertible note at a sale, unless each has a cap (X15)");
   }
 }
 

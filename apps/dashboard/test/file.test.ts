@@ -186,7 +186,7 @@ describe("a file that can't be opened", () => {
     const file = good();
     file.cap_table.conversion_groups = [["seed", "series_a"], ["series_b"]];
     expect(refusal(file)).toMatch(
-      /^Its cap table can't be used\. file\.cap_table\.conversion_groups: More than one conversion group .*The engine supports this once a case needs it; until then it refuses the input rather than ignoring the term\.$/,
+      /^Its cap table can't be used\. file\.cap_table\.conversion_groups: More than one conversion group .*The engine doesn't model this, so it refuses the input rather than ignoring the term\.$/,
     );
   });
 

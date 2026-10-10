@@ -64,8 +64,8 @@ describe("engine messages on the page", () => {
       "the cap (1x) is below the preference (1.25x); a cap counts the preference, so it can't be lower",
     );
     expect(withoutCodes("1.5 is not a whole number; write exact non-integers as strings (C1)")).toBe("1.5 is not a whole number; write exact non-integers as strings");
-    expect(withoutCodes("Convertible notes still outstanding at exit (X3, X10–X12). The engine supports this from M5")).toBe(
-      "Convertible notes still outstanding at exit. The engine supports this from M5",
+    expect(withoutCodes("Notes with a post-money cap (R23). The engine doesn't model this, so it refuses the input rather than ignoring the term.")).toBe(
+      "Notes with a post-money cap. The engine doesn't model this, so it refuses the input rather than ignoring the term.",
     );
     expect(withoutCodes("More than one conversion group (E17: the order in which groups decide isn't settled)")).toBe(
       "More than one conversion group (the order in which groups decide isn't settled)",

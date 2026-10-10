@@ -136,7 +136,7 @@ describe("what is refused, never skipped", () => {
       error = e;
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term, milestone: "later" });
+    expect(error).toMatchObject({ term });
   });
 
   it.each([
