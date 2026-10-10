@@ -182,17 +182,26 @@ const SERIES_B = [
   click("Done"),
 ];
 
-/** Larkspur's export, its blanks answered as case 27 fills them, and "Use this cap table", which a sale refuses (05b3b). */
-const LARKSPUR = [
-  importFiles(packageOf("ocf-01-larkspur")),
-  `[...document.querySelectorAll(".import__question")].find((f) => f.textContent.includes("Does Seed Preferred participate?")).querySelector("input[value=non_participating]").click()`,
+/** Answers one of the import's questions. */
+const answer = (question, value) =>
+  `[...document.querySelectorAll(".import__question")].find((f) => f.textContent.includes(${JSON.stringify(question)})).querySelector("input[value=${value}]").click()`;
+/**
+ * Larkspur's export, its blanks answered as case 27 fills them, and "Use this cap table". A sale refused it until 05c2
+ * (X18, E20); with `preMoneySafe`, a third SAFE answered as pre-money, which a sale still refuses (05b3b's offer).
+ */
+const larkspur = (preMoneySafe = false) => [
+  importFiles([...packageOf("ocf-01-larkspur"), ...(preMoneySafe ? ["cases/ocf-04-to-fill/fixtures/safe-cap-without-timing.ocf.json"] : [])]),
+  answer("Does Seed Preferred participate?", "non_participating"),
+  ...(preMoneySafe ? [answer("Is this SAFE's cap pre-money or post-money?", "pre_money")] : []),
   fill("input[id^=import-][id*=repayment]", 0, "1"),
   fill("#import-sale-date", 0, "2026-06-30"),
   click("Use this cap table"),
 ];
-/** "Use it to add a round", and case 27's Series B typed in: Investor Z, added on the Rounds tab, is r3. */
+const LARKSPUR = larkspur();
+/** "Add a round", and case 27's Series B typed in: Investor Z, added on the Rounds tab, is r3. */
 const LARKSPUR_SERIES_B = [
-  click("Use it to add a round"),
+  click("Cap table"),
+  click("Add a round"),
   `document.querySelector("section[aria-labelledby=rounds-holders-heading] button.add").click()`,
   fill("#rounds-holder-r3", 0, "Investor Z"),
   fill("#ev-r2-date", 0, "2025-12-01"),
@@ -444,12 +453,16 @@ const SHOTS = {
   },
   "05b3a-payouts": { width: 1100, height: 900, steps: [...QUILLFERN, ...SERIES_B, click("Payouts")], clip: [".example-label", ".founder"] },
   // 05b3b: an import a sale refuses for its SAFEs and notes starts a company's rounds instead; and what a round says of a starting table.
-  "05b3b-offer": { width: 1100, height: 900, steps: LARKSPUR, clip: [".file-status--problem", ".import__round"], quality: 50 },
-  "05b3b-no-payouts": { width: 1100, height: 900, steps: [...LARKSPUR, click("Use it to add a round"), click("Payouts")], clip: [".file-status", "#panel-payouts"], quality: 50 },
+  // Since 05c2 Larkspur itself opens, so the offer is shown with a third SAFE answered as pre-money.
+  "05b3b-offer": { width: 1100, height: 900, steps: larkspur(true), clip: [".file-status--problem", ".import__round"], quality: 50 },
+  "05b3b-no-payouts": { width: 1100, height: 900, steps: [...larkspur(true), click("Use it to add a round"), click("Payouts")], clip: [".file-status", "#panel-payouts"], quality: 50 },
   "05b3b-larkspur": { width: 1100, height: 900, steps: [...LARKSPUR, ...LARKSPUR_SERIES_B], clip: [ROUND(2)], quality: 50 },
   "05b3b-larkspur-payouts": { width: 1100, height: 900, steps: [...LARKSPUR, ...LARKSPUR_SERIES_B, click("Payouts")], clip: [".example-label", ".founder"] },
   "05b3b-no-anti-dilution": { width: 1100, height: 900, steps: [...QUILLFERN, ...QUILLFERN_DOWN], clip: [ROUND(2)], quality: 50 },
   "05b3b-group": { width: 1100, height: 900, steps: SIX_B_ROUND, clip: [ROUND(2)], quality: 50 },
+  // 05c2: Larkspur at a sale, its SAFEs beside its note (X18), and the jump where the Seed converts and the SAFEs follow (E20).
+  "05c2-larkspur": { width: 1100, height: 900, steps: LARKSPUR, clip: [".file-status", ".founder"], quality: 50 },
+  "05c2-jump": { width: 1100, height: 1400, steps: LARKSPUR, clip: ["ol.breakpoints > li:nth-child(6)", "ol.breakpoints > li:nth-child(7)"], quality: 50 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
