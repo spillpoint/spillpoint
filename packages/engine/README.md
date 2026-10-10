@@ -499,6 +499,14 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 - a pro-rata investment in a round where a SAFE or note stays outstanding
 - a pro-rata investment in a pay-to-play round, where the pay-to-play requirement takes the place of pro-rata (enter it as an ordinary investment)
 
+**Stopped rather than guessed,** with a `NoAnswerError` *(0.5.0)*:
+- **More than one stable answer** that pays holders differently, such as two non-participating series at the same price beside post-money SAFEs. spillpoint doesn't pick one. Reporting both is planned.
+- **More than 12 SAFEs at a sale** whose answer doesn't settle from "every SAFE converts": there are too many to weigh every combination.
+
+**Where a second answer could go unseen** *(0.5.0)*:
+- **With more than 12 series, warrants and notes deciding,** not every combination is checked. Where solving from both ends reaches the same answer, that one is given.
+- **Where payouts curve,** with a carve-out alongside the preferences, the breakpoint search checks for a second answer only at the exit values it reads.
+
 ## Inputs
 
 **An exit input** is plain JSON:
