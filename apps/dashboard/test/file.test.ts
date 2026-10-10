@@ -15,7 +15,6 @@ import { describe, expect, it } from "vitest";
 import { buildExit, setPrice } from "../src/draft.ts";
 import { fileName, fileText, readFile } from "../src/file.ts";
 import { exampleContents } from "../src/rounds.ts";
-import { FULL_SEARCH_TIMEOUT } from "./analysis.ts";
 import { exitOf, lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 
 const millrace = examples[0]!;
@@ -279,17 +278,16 @@ function opensExactly(name: string) {
 
 describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
   // 12i and 13h (0.3.0 work, 03a), a SAFE and a note with no cap beside capped participating preferred, since 03e.
-  // 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2. 12k and 12l wait for
-  // the engine to take their rules in 05c4 (Jordan, after #71); the engine's tests name them.
-  const waiting = ["edge-12k-two-equal-safes", "edge-12l-warrant-below-preference-beside-a-safe"];
-  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name) && !waiting.includes(name));
+  // 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2; 12k and 12l, the
+  // SAFEs' most conversions (E20) and warrant shares keeping a preference (X1), since 05c4.
+  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name));
   const fileOf = (name: string) => {
     const exit = JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).exit;
     return JSON.stringify({ format: "spillpoint", version: 6, name, cap_table: exit.cap_table, range: exit.range, ...(exit.exit_date ? { exit_date: exit.exit_date } : {}) });
   };
 
-  it("covers every case with a SAFE or a note at a sale: 12 to 12j, and 13a to 13j", () => {
-    expect(cases).toHaveLength(20);
+  it("covers every case with a SAFE or a note at a sale: 12 to 12l, and 13a to 13j", () => {
+    expect(cases).toHaveLength(22);
   });
 
   it("refuses a file with a note beside a SAFE with no post-money cap, in plain words (X18)", () => {
@@ -300,11 +298,10 @@ describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
     expect(opened.ok ? "opened" : opened.message).toMatch(/^Its cap table can't be used\. .*A convertible note at a sale alongside a carve-out, or alongside a SAFE unless/);
   });
 
-  // Larkspur's two (12j and 13j) are each a full breakpoint search the size of case 27's.
   it.each(cases)("%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts", (name) => {
     const draft = opensExactly(name);
     expect(draft.safes.length + draft.notes.length).toBeGreaterThan(0);
-  }, FULL_SEARCH_TIMEOUT);
+  });
 
   it("keeps a SAFE's ranking on a cap table built from rounds: its cash is paid with Series A, not the Seed", () => {
     const series = (id: string, name: string) => ({ id, name, kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" });
