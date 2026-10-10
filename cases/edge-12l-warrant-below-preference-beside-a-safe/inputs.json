@@ -1,0 +1,105 @@
+{
+  "case": "edge-12l-warrant-below-preference-beside-a-safe",
+  "description": "Edge case 8's table, a warrant for 200,000 Seed Preferred at $0.50 below the Seed's $1.00 preference per share, with Investor S's post-money SAFE, $500,000 at a $5M cap, outstanding at the sale. Shares from the warrant exercised into a Seed that keeps its preference take that preference in lieu of converting, so the SAFE's Liquidity Capitalization leaves them out, with the Seed's own (ASSUMPTIONS X1; Jordan, after #71).",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_x",
+          "name": "Investor X"
+        },
+        {
+          "id": "lender_l",
+          "name": "Lender L"
+        },
+        {
+          "id": "investor_s",
+          "name": "Investor S"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "warrant_seed",
+          "name": "Warrant for Seed Preferred ($0.50 strike)",
+          "kind": "warrant",
+          "strike": "0.5",
+          "underlying": "seed"
+        }
+      ],
+      "seniority": [
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000
+        },
+        {
+          "holder": "investor_x",
+          "security": "seed",
+          "shares": 2000000
+        },
+        {
+          "holder": "lender_l",
+          "security": "warrant_seed",
+          "shares": 200000
+        }
+      ],
+      "unissued_pool": 0,
+      "unconverted_safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "500000",
+          "post_money_cap": "5000000",
+          "discount": "0"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "20000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "2000000",
+      "5000000",
+      "7000000",
+      "10000000",
+      "15000000",
+      "20000000"
+    ]
+  }
+}
