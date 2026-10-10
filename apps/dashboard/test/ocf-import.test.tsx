@@ -8,6 +8,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
+import { FULL_SEARCH_TIMEOUT } from "./analysis.ts";
 import { exitOf, payoutsAtBreakpoints } from "./payouts.ts";
 
 const cases = resolve(import.meta.dirname, "../../../cases");
@@ -93,11 +94,13 @@ describe("the terms OCF leaves open", () => {
     click("Use this cap table");
   }
 
+  // A sale with three SAFEs beside a note: about 17s on CI's 2-core machine with 05c2's solver (#72), so it has the full
+  // search's timeout until 05c4's speed work.
   it("asks whether a SAFE's cap is pre-money or post-money: post-money, the engine uses the table, SAFEs beside a note (05c2)", async () => {
     await larkspurWithASafeAsked("Post-money");
     expect(await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 9 files\./)).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
-  });
+  }, FULL_SEARCH_TIMEOUT);
 
   it("pre-money, says plainly why the engine can't use the table at a sale, and offers a round to convert the SAFEs (05b3b)", async () => {
     await larkspurWithASafeAsked("Pre-money");
