@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, buildCapTables, findBreakpoints, prepare, readCapTable, readInputs } from "../src/index.ts";
 import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, FROM_A_STARTING_TABLE, OCF_CASES, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, FROM_A_STARTING_TABLE, OCF_CASES, OCX_CASES, readCaseFile } from "./support/cases.ts";
 import { capTableJson } from "./support/write.ts";
 
 type Json = Record<string, unknown>;
@@ -18,7 +18,7 @@ interface Inputs {
 
 /** The round cases that start from founding: each one's events build every table. */
 const FROM_FOUNDING = ALL_CASES.filter(
-  (name) => !OCF_CASES.includes(name) && !FROM_A_STARTING_TABLE.includes(name) && (readCaseFile(name, "inputs.json") as Partial<Inputs>).events,
+  (name) => !OCF_CASES.includes(name) && !OCX_CASES.includes(name) && !FROM_A_STARTING_TABLE.includes(name) && (readCaseFile(name, "inputs.json") as Partial<Inputs>).events,
 );
 const inputsOf = (name: string) => readCaseFile(name, "inputs.json") as Inputs;
 

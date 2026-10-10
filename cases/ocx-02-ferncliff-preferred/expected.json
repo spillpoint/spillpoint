@@ -1,0 +1,62 @@
+{
+  "case": "ocx-02-ferncliff-preferred",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.7",
+  "result": {
+    "as_of": "2025-06-30",
+    "cap_table": {
+      "holders": [
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "investor_x", "name": "Investor X" },
+        { "id": "investor_y", "name": "Investor Y" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        {
+          "id": "series_seed_preferred",
+          "name": "Series Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": null,
+          "preference_multiple": null,
+          "participation": null,
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": null,
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "founder_a", "security": "common_stock", "shares": 4000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+        { "holder": "investor_x", "security": "series_seed_preferred", "shares": 1000000 },
+        { "holder": "investor_y", "security": "series_seed_preferred", "shares": 500000 }
+      ],
+      "unissued_pool": 0
+    },
+    "issue_order": ["series_seed_preferred"],
+    "to_fill": [
+      { "security": "series_seed_preferred", "field": "conversion_price" },
+      { "security": "series_seed_preferred", "field": "preference_multiple" },
+      { "security": "series_seed_preferred", "field": "participation" },
+      { "field": "seniority" }
+    ],
+    "report": {
+      "read": { "stakeholders": 4, "pool_rows": 1, "share_classes": 2, "certificates": 4 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.7" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_seniority_field" },
+        { "code": "formula_totals_skipped" },
+        { "code": "no_financing_history" },
+        { "code": "issue_price_from_ledger", "subject": "series_seed_preferred" },
+        { "code": "no_anti_dilution_field", "subject": "series_seed_preferred" }
+      ]
+    }
+  }
+}

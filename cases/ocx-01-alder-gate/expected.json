@@ -1,0 +1,64 @@
+{
+  "case": "ocx-01-alder-gate",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.7",
+  "result": {
+    "as_of": "2025-10-31",
+    "cap_table": {
+      "holders": [
+        { "id": "employee_c", "name": "Employee C" },
+        { "id": "employee_d", "name": "Employee D" },
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "investor_s", "name": "Investor S" },
+        { "id": "investor_t", "name": "Investor T" },
+        { "id": "lender_l", "name": "Lender L" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+        { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+        { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+        { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+        { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+      ],
+      "seniority": [],
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+        { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+        { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+        { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+        { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+        { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+        { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+        { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+        { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+      ],
+      "unissued_pool": 610000,
+      "unconverted_safes": [
+        { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+      ]
+    },
+    "issue_order": ["safe_investor_s"],
+    "to_fill": [],
+    "report": {
+      "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+      "not_needed": { "stock_plan_history": 2 },
+      "notes": [
+        { "code": "version_label", "field": "0.7" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "formula_totals_skipped" },
+        { "code": "rsu_as_option", "subject": "EP-6" },
+        { "code": "expired_option_left_out", "subject": "EP-4" },
+        { "code": "warrant_counts_are_maximums" },
+        { "code": "left_out_stakeholder", "subject": "employee_e" },
+        { "code": "left_out_stakeholder", "subject": "employee_f" }
+      ]
+    }
+  }
+}

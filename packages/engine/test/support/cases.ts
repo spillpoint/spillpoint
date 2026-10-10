@@ -17,10 +17,12 @@ export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true 
   .sort();
 /** OCF cases (M6, C16): an OCF package and its import, with no inputs.json. The engine reads them from 04d. */
 export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("ocf-"));
+/** OCX cases (0.6.0, C18): an OCX workbook and its import, with no inputs.json. The engine reads them from 06f. */
+export const OCX_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("ocx-"));
 
 /** Round cases whose first event is a starting cap table (R31, 0.5.0): 26 and 27, written in 05b1, read from 05b2. */
 export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
-  if (name.startsWith("ocf-")) return false;
+  if (name.startsWith("ocf-") || name.startsWith("ocx-")) return false;
   const inputs = readCaseFile(name, "inputs.json") as { events?: { type: string }[] };
   return inputs.events?.[0]?.type === "start";
 });
