@@ -1,0 +1,226 @@
+{
+  "case": "edge-12j-larkspur-safes-at-a-sale",
+  "description": "Larkspur Instruments' cap table as OCF case 01 imports it on Jun 30, 2025, its Seed filled in as non-participating, without its note: two post-money SAFEs, $250,000 each with a $12M cap, beside a senior Series A, participating with a 3x cap, and a non-participating Seed converting at $0.80, with options at $0.08 and $0.10, RSUs, and warrants for the Seed at $1 (X1, X13). The SAFEs' Cash-Out Amounts rank with the Seed, the most junior tier. Near the Seed's conversion, its choice and the SAFEs' go round in a circle under X1, which 0.4.0's engine can't settle; the SAFEs' greater-of comes last (E19), and payouts jump where the Seed converts.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "sh-founder-a",
+          "name": "Founder A"
+        },
+        {
+          "id": "sh-founder-b",
+          "name": "Founder B"
+        },
+        {
+          "id": "sh-employee-c",
+          "name": "Employee C"
+        },
+        {
+          "id": "sh-employee-d",
+          "name": "Employee D"
+        },
+        {
+          "id": "sh-d-trust",
+          "name": "D Family Trust"
+        },
+        {
+          "id": "sh-investor-x",
+          "name": "Investor X"
+        },
+        {
+          "id": "sh-investor-y",
+          "name": "Investor Y"
+        },
+        {
+          "id": "sh-investor-s",
+          "name": "Investor S"
+        },
+        {
+          "id": "sh-lender-l",
+          "name": "Lender L"
+        }
+      ],
+      "securities": [
+        {
+          "id": "cls-common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "cls-seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "0.8",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "cls-series-a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "conversion_price": "2",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "3",
+          "anti_dilution": "none"
+        },
+        {
+          "id": "options_0.08",
+          "name": "Options ($0.08 strike)",
+          "kind": "option",
+          "strike": "0.08"
+        },
+        {
+          "id": "options_0.1",
+          "name": "Options ($0.1 strike)",
+          "kind": "option",
+          "strike": "0.1"
+        },
+        {
+          "id": "rsus",
+          "name": "RSUs (no strike)",
+          "kind": "option",
+          "strike": "0"
+        },
+        {
+          "id": "warrants_cls-seed_1",
+          "name": "Warrants for Seed Preferred ($1 strike)",
+          "kind": "warrant",
+          "strike": "1",
+          "underlying": "cls-seed"
+        }
+      ],
+      "seniority": [
+        [
+          "cls-series-a"
+        ],
+        [
+          "cls-seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "sh-founder-a",
+          "security": "cls-common",
+          "shares": 5400000
+        },
+        {
+          "holder": "sh-founder-b",
+          "security": "cls-common",
+          "shares": 3400000
+        },
+        {
+          "holder": "sh-employee-c",
+          "security": "cls-common",
+          "shares": 50000
+        },
+        {
+          "holder": "sh-employee-c",
+          "security": "options_0.08",
+          "shares": 150000
+        },
+        {
+          "holder": "sh-employee-d",
+          "security": "cls-common",
+          "shares": 10000
+        },
+        {
+          "holder": "sh-employee-d",
+          "security": "options_0.1",
+          "shares": 80000
+        },
+        {
+          "holder": "sh-employee-d",
+          "security": "rsus",
+          "shares": 30000
+        },
+        {
+          "holder": "sh-d-trust",
+          "security": "options_0.1",
+          "shares": 20000
+        },
+        {
+          "holder": "sh-investor-x",
+          "security": "cls-seed",
+          "shares": 2000000
+        },
+        {
+          "holder": "sh-investor-x",
+          "security": "cls-series-a",
+          "shares": 500000
+        },
+        {
+          "holder": "sh-investor-x",
+          "security": "warrants_cls-seed_1",
+          "shares": 25000
+        },
+        {
+          "holder": "sh-investor-y",
+          "security": "cls-common",
+          "shares": 250000
+        },
+        {
+          "holder": "sh-investor-y",
+          "security": "cls-seed",
+          "shares": 800000
+        },
+        {
+          "holder": "sh-investor-y",
+          "security": "cls-series-a",
+          "shares": 1500000
+        },
+        {
+          "holder": "sh-investor-s",
+          "security": "cls-seed",
+          "shares": 125000
+        },
+        {
+          "holder": "sh-lender-l",
+          "security": "cls-common",
+          "shares": 20000
+        },
+        {
+          "holder": "sh-lender-l",
+          "security": "warrants_cls-seed_1",
+          "shares": 75000
+        }
+      ],
+      "unissued_pool": 1260000,
+      "unconverted_safes": [
+        {
+          "id": "safe-x1",
+          "holder": "sh-investor-x",
+          "purchase_amount": "250000",
+          "post_money_cap": "12000000",
+          "discount": "0.2"
+        },
+        {
+          "id": "safe-s3",
+          "holder": "sh-investor-s",
+          "purchase_amount": "250000",
+          "post_money_cap": "12000000",
+          "discount": "0.2"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "150000000"
+    ],
+    "exit_values": [
+      "5000000",
+      "10000000",
+      "16545000",
+      "20000000",
+      "40000000",
+      "60000000",
+      "100000000",
+      "150000000"
+    ]
+  }
+}

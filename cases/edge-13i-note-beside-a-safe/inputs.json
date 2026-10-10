@@ -1,0 +1,85 @@
+{
+  "case": "edge-13i-note-beside-a-safe",
+  "description": "A post-money SAFE beside a capped note at a sale, with common stock only (X18). Founders A and B hold 6,000,000 and 4,000,000 common. Investor S's $1M SAFE has a $10M post-money cap. Investor N's $1M note runs at 5% simple interest for a year, with a $5M pre-money cap and 2x repayment. The note's repayment is debt, paid first; the SAFE's Cash-Out Amount next, ahead of common. Converting, the note counts in the SAFE's Liquidity Capitalization; repaid, it doesn't. The note's base counts no SAFE.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_s",
+          "name": "Investor S"
+        },
+        {
+          "id": "investor_n",
+          "name": "Investor N"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        }
+      ],
+      "seniority": [],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 4000000
+        }
+      ],
+      "unissued_pool": 0,
+      "unconverted_safes": [
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        }
+      ],
+      "unconverted_notes": [
+        {
+          "id": "note_n",
+          "holder": "investor_n",
+          "principal": "1000000",
+          "interest_rate": "0.05",
+          "interest_method": "simple",
+          "issue_date": "2023-01-01",
+          "valuation_cap": "5000000",
+          "cap_type": "pre_money",
+          "conversion_base": "with_pool",
+          "discount": "0",
+          "repayment_multiple": "2"
+        }
+      ]
+    },
+    "exit_date": "2024-01-01",
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "1000000",
+      "2500000",
+      "8000000",
+      "12500000",
+      "13000000",
+      "20000000",
+      "40000000"
+    ]
+  }
+}

@@ -147,13 +147,17 @@ def _safe_json(wf, f, top):
     d = dict(zip(wf.players, top))
     converted = {s: d[p] for p in wf.converters for s in wf.members[p]}
     together = wf.safes_converting(f, d)
-    lc = wf.liquidity_capitalization(f, converted, together)
-    lp = wf.liquidity_price(f, converted, together)
-    n = wf.safe_conversion_shares(f, converted, together)
+    notes = wf.notes_converting(d)
+    lc = wf.liquidity_capitalization(f, converted, together, notes)
+    lp = wf.liquidity_price(f, converted, together, notes)
+    n = wf.safe_conversion_shares(f, converted, together, notes)
     if ct.preferred_ids():
         out["liquidity_capitalization_counts_preferred"] = [s for s in ct.preferred_ids() if not wf.keeps_preference_in_lieu(s, converted)]
     if len(wf.safes) > 1:
         out["liquidity_capitalization_counts_safes"] = [g["id"] for g in together]
+    # X18: a converting note is one of the SAFE's Converting Securities.
+    if wf.notes:
+        out["liquidity_capitalization_counts_notes"] = [m["id"] for m in notes]
     out.update(
         {
             "liquidity_capitalization": exact(lc),

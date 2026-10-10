@@ -64,10 +64,26 @@ describe.each(OCF_PACKAGE_CASES)("OCF case %s", (name) => {
   if (expected.locked_case) payLikeLockedCase(name, expected);
 });
 
+/**
+ * A note's base that counts other converting securities (O9; Jordan's 0.5.0 answer 11): the cases come in 05c1 and the
+ * engine reads the rule in 05c2. Until then the engine leaves the base blank to fill in, as for any rules it can't read,
+ * and these fixtures say so here, by name, rather than being skipped.
+ */
+const WAITING_FOR_05C2: Record<string, string> = {
+  "ocf-03-refused/note-base-counts-other-convertibles.ocf.json": "note-f-others",
+  "ocf-13-note-base/note-alone-counts-other-convertibles.ocf.json": "note-f-alone",
+};
+
 describe.each(OCF_FIXTURE_CASES)("OCF fixtures %s", (name) => {
   const expected = expectedOf<FixtureExpected>(name);
   const base = expectedOf<PackageExpected>(expected.base).result;
   it.each(fixtureNames(name))("%s", (fixture) => {
+    const waiting = WAITING_FOR_05C2[`${name}/${fixture}`];
+    if (waiting) {
+      const result = readOcf(withFixture(name, fixture));
+      expect(result.to_fill).toContainEqual({ note: waiting, field: "conversion_base" });
+      return;
+    }
     const { refused, adds } = expected.fixtures[fixture]!;
     if (refused) {
       expect(refusalOf(withFixture(name, fixture))).toEqual(refused);

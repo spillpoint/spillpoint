@@ -8,13 +8,14 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import examples from "virtual:examples";
-import { D, prepare, readExit, readInputs, solve } from "spillpoint";
+import { D, findBreakpoints, prepare, readExit, readInputs, solve } from "spillpoint";
 import type { CapTable } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import { buildExit, setPrice } from "../src/draft.ts";
 import { fileName, fileText, readFile } from "../src/file.ts";
 import { exampleContents } from "../src/rounds.ts";
+import { FULL_SEARCH_TIMEOUT } from "./analysis.ts";
 import { exitOf, lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 
 const millrace = examples[0]!;
@@ -278,11 +279,31 @@ function opensExactly(name: string) {
 
 describe("SAFEs and notes still outstanding at the sale (M5k)", () => {
   // 12i and 13h (0.3.0 work, 03a), a SAFE and a note with no cap beside capped participating preferred, since 03e.
-  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name));
+  // 13i and 13j, SAFEs beside a note (X18), wait for the engine in 05c2: their files are refused until then. 12j opens,
+  // but its curves wait for the SAFEs' greater-of last (E20), also in 05c2. Never skipped.
+  const refused = ["edge-13i-note-beside-a-safe", "edge-13j-larkspur-at-a-sale"];
+  const circling = ["edge-12j-larkspur-safes-at-a-sale"];
+  const cases = readdirSync(casesDir).filter((name) => /^edge-1[23]/.test(name) && !refused.includes(name) && !circling.includes(name));
+  const fileOf = (name: string) => {
+    const exit = JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).exit;
+    return JSON.stringify({ format: "spillpoint", version: 6, name, cap_table: exit.cap_table, range: exit.range, ...(exit.exit_date ? { exit_date: exit.exit_date } : {}) });
+  };
 
   it("covers every case with a SAFE or a note at a sale: 12 to 12i, and 13a to 13h", () => {
     expect(cases).toHaveLength(17);
   });
+
+  it.each(refused)("%s is refused as a file until the engine reads a SAFE beside a note (05c2)", (name) => {
+    const opened = readFile(fileOf(name));
+    expect(opened.ok ? "opened" : opened.message).toMatch(/^Its cap table can't be used\. .*A convertible note at a sale alongside a SAFE or a carve-out/);
+  });
+
+  it.each(circling)("%s opens, but its breakpoints wait for the SAFEs' greater-of last (E20, 05c2)", (name) => {
+    const opened = readFile(fileOf(name));
+    if (!opened.ok) throw new Error(opened.message);
+    const exit = readExit(buildExit(opened.draft).json);
+    expect(() => findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range)).toThrow(/went round in a circle/);
+  }, FULL_SEARCH_TIMEOUT);
 
   it.each(cases)("%s opens as a file, and gives the engine exactly the case's cap table, sale date and payouts", (name) => {
     const draft = opensExactly(name);

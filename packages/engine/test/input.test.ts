@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { InputError, UnsupportedTermError, findBreakpoints, prepare, readCapTable, readExit } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { Milestone, PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, FULL_SEARCH_TIMEOUT, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
   exit?: { cap_table?: { holders: unknown[]; positions: unknown[] }; exit_values: string[] };
@@ -114,13 +114,24 @@ describe("the exit cases the engine runs", () => {
 });
 
 describe("cases outside the engine's scope are refused, never skipped", () => {
-  // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too. Kept for the next case refused.
-  const refused: [string, string, Milestone][] = [];
+  // Since M5i every exit case runs; since 03e, the 0.3.0 work's 12i, 13h and 24 too. 13i and 13j, SAFEs beside a note
+  // (X18), are refused from 05c1 until the engine reads them in 05c2.
+  const refused: [string, string, Milestone][] = [
+    ["edge-13i-note-beside-a-safe", "note_with_safe_or_carve_out", "later"],
+    ["edge-13j-larkspur-at-a-sale", "note_with_safe_or_carve_out", "later"],
+  ];
+  // 12j is read, but the breakpoint search stops in the circle E20 settles, until 05c2.
+  const circling = ["edge-12j-larkspur-safes-at-a-sale"];
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES, circling).sort()).toEqual(ALL_CASES);
   });
+
+  it.each(circling)("%s: 0.4.0's breakpoint search stops where the Seed and the SAFEs go round in a circle, until 05c2 (E20)", (name) => {
+    const exit = readInputs(readCaseFile(name, "inputs.json"));
+    expect(() => findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range)).toThrow(/went round in a circle \(E15\)/);
+  }, FULL_SEARCH_TIMEOUT);
 
   // 05b1's cases start from a cap table (R31); the engine reads them since 05b2, as exit cases.
   it("names the cases that start from a cap table", () => {
@@ -131,7 +142,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     expect(OCF_CASES).toEqual([
       "ocf-01-larkspur", "ocf-02-not-needed", "ocf-03-refused", "ocf-04-to-fill",
       "ocf-05-edge-04", "ocf-06-edge-05a", "ocf-07-edge-07", "ocf-08-edge-08", "ocf-09-edge-12b", "ocf-10-edge-13a",
-      "ocf-11-millrace", "ocf-12-ledger",
+      "ocf-11-millrace", "ocf-12-ledger", "ocf-13-note-base",
     ]);
   });
 

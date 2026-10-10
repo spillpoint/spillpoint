@@ -28,7 +28,14 @@ export const OCF_CASES: string[] = ALL_CASES.filter((name) => name.startsWith("o
  * ledger leaves, since its case (04c), and cases 26 and 27, sales after a round on a starting cap table (R31), since
  * 05b2. None is left out.
  */
-export const NOT_YET: readonly string[] = [];
+export const NOT_YET: readonly string[] = [
+  // SAFEs beside a note at a sale (X18): the cases in 05c1, the engine in 05c2.
+  "edge-13i-note-beside-a-safe",
+  "edge-13j-larkspur-at-a-sale",
+  // The SAFEs' greater-of last (E20): the case in 05c1, the engine in 05c2. 0.4.0's engine reads it, but its breakpoint
+  // search stops where the Seed and the SAFEs went round in a circle.
+  "edge-12j-larkspur-safes-at-a-sale",
+];
 
 /**
  * The timeout for a test that runs a full breakpoint search on case 27, or on anything larger. Case 27's takes about
