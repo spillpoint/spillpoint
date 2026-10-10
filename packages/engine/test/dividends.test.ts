@@ -130,7 +130,7 @@ describe("refusals, and what a round now takes", () => {
       error = e;
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term: "dividends_added_to_conversion", milestone: "later" });
+    expect(error).toMatchObject({ term: "dividends_added_to_conversion" });
   });
 
   it("refuses a method or a conversion rule it doesn't know", () => {

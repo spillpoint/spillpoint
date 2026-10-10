@@ -523,7 +523,7 @@ describe("anti-dilution beyond the cases (M4e)", () => {
       error = e;
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term: "anti_dilution_with_conversions", milestone: "later" });
+    expect(error).toMatchObject({ term: "anti_dilution_with_conversions" });
     expect((error as Error).message).toMatch(message);
   });
 
@@ -550,7 +550,7 @@ describe("anti-dilution beyond the cases (M4e)", () => {
     const inputs = readCaseFile("edge-16h-safe-conversion-exempt", "inputs.json") as { events: Record<string, unknown>[] };
     ((inputs.events[2]!.safes as Record<string, unknown>[])[0]!).post_money_cap = null;
     ((inputs.events[2]!.safes as Record<string, unknown>[])[0]!).discount = "0.2";
-    expect(refusedAs(inputs)).toMatchObject({ term: "discounted_conversion_in_anti_dilution_a", milestone: "later" });
+    expect(refusedAs(inputs)).toMatchObject({ term: "discounted_conversion_in_anti_dilution_a" });
     // $3,000,000 at a $12,000,000 pre-money valuation: x = 10,000,000 ÷ (0.8 − 1/12), $1.075 a share. The SAFE
     // converts at $0.86, below $1.00, but exempt, so nothing adjusts the Seed.
     lastRound(inputs, "12000000", "3000000");
@@ -563,7 +563,7 @@ describe("anti-dilution beyond the cases (M4e)", () => {
   it("refuses 16j's note from before the Seed at its discount where the Seed is adjusted, and counts it in A otherwise (3d)", () => {
     const inputs = readCaseFile("edge-16j-note-and-safe-from-before-the-seed", "inputs.json") as { events: Record<string, unknown>[] };
     ((inputs.events[1]!.notes as Record<string, unknown>[])[0]!).valuation_cap = null;
-    expect(refusedAs(inputs)).toMatchObject({ term: "discounted_conversion_in_anti_dilution_a", milestone: "later" });
+    expect(refusedAs(inputs)).toMatchObject({ term: "discounted_conversion_in_anti_dilution_a" });
     // $3,000,000 at a $13,500,000 pre-money valuation: x = 11,500,000 ÷ (1 − 2/11 − 1/30), $259/230 a share. The note
     // converts at 0.8 × that, $518/575, below $1.00, but it was issued before the Seed, so it isn't a piece.
     lastRound(inputs, "13500000", "3000000");

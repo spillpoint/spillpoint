@@ -104,7 +104,7 @@ describe("what is refused, never skipped", () => {
       error = e;
     }
     expect(error).toBeInstanceOf(UnsupportedTermError);
-    expect(error).toMatchObject({ term, milestone: "later" });
+    expect(error).toMatchObject({ term });
   });
 
   it("pays a SAFE with no cap beside capped participating preferred: its worth comes out first, then the cap applies (X9, 12i)", () => {

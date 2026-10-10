@@ -402,7 +402,7 @@ Nothing is skipped. The rules, each with its default, are O1 to O14 in [`docs/AS
 
 ## What it covers
 
-Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)* or *(0.6.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -485,7 +485,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 
 **Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported. An OCF import refuses with an `OcfRefusal` instead *(0.4.0)*: see [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
 
-**Not settled yet** (milestone `"later"`). No worked test case settles these yet, so they're refused until one does:
+**Not settled yet.** No worked test case settles these, so they're refused:
 - **Full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes** *(0.3.0: before, any anti-dilution there)*.
 - **A SAFE or note converting at its discount and counted in a series' anti-dilution A,** because the round exempts conversions or it was issued before the series, in a round that adjusts that series with the adjustment shares in its price. The price would be the root of a quadratic, not exact. Where nothing adjusts the series, it builds.
 - More than one group of series that must convert together.
@@ -569,7 +569,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 
 **Errors:**
 - `InputError`: the input is malformed.
-- `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"later"`, for a term that waits until a case settles it. *(0.2.0: nothing is refused as `"M5"` any more, though the type keeps the value. Milestone names are deprecated and will be removed at 1.0, where a refusal will describe what's unsupported instead.)*
+- `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term` and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
 - `OcfRefusal` *(0.4.0)*: `readOcf` won't read a package. It carries the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`.
 
