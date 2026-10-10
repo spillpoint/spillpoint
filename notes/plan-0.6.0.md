@@ -367,18 +367,16 @@ As O10:
   - **`pnpm ocx-structure`** (OX2)
   - **the naming review's item 7,** beside the old names: `ImportRefusal` and `CapTableImport`
 - **06d, this revision for OCX 0.7,** from a real Mantle export. No engine code and no cases; the cell-kinds script learns 0.7's tabs and headers.
-- **06e, cases** (the `cases/` edit rule lifted), now that a real export's headers are in (question 06d-3):
-  - **0.7, as Mantle writes it:**
-    - a fictional company's workbook, written by hand, using every 0.7 tab and ledger the reader reads, with common classes, options, a warrant and SAFEs outstanding and converted
-    - fixtures for each refusal and each blank
-    - a 0.7 workbook with preferred stock, read with blanks where the workbook gives nothing (question 06d-4)
-  - **0.4/0.5, from the reference** (if kept, question 06d-2): the cases planned before, a fictional workbook, the fixtures, and locked cases 4, 5a, 7, 8, 12b and Millrace written as OCX.
+- **06e, cases** (the `cases/` edit rule lifted, on your machine, for the 06e steps), now that a real export's headers are in (your answer 06d-3). **Split under the one-evening rule** (06e), as 04a's cases were split into 04a to 04c:
+  - **06e: the rules and the first two cases** (done):
+    - ASSUMPTIONS OX3 to OX12, the import's rules, and C18, the OCX case folder
+    - **ocx-01-alder-gate:** a fictional company's 0.7 workbook using every 0.7 tab and ledger the reader reads: common classes, one of them a SAFE's conversion shares with its ledger's tab name cut to 31 characters; options, an RSU, a cancelled and an expired grant; a warrant; a SAFE converted and one outstanding
+    - **ocx-02-ferncliff-preferred:** the one 0.7 case with preferred stock, read with blanks (your answer 06d-3); ASSUMPTIONS says plainly it rests on no real export
+  - **06e2: the 0.7 fixtures,** one small change to ocx-01 for each refusal and each blank, as 04a2's were.
+  - **06e3: 0.4/0.5:** a fictional workbook in the reference's layout, using every table the reader reads there, and its fixtures.
+  - **06e4: the locked cases written as OCX:** edge cases 4, 5a, 7, 8 and 12b, and Millrace, in 0.4/0.5's layout, each importing, with its blanks answered, to the locked cap table, with prices to 15 significant digits, compared within a cent as 04b2 did for OCF's 10 places. With it, the reference unit test for a row of identical SAFEs, post-money and pre-money both (your answer 10).
 
-  The workbooks are our own, written as JSON in `OcxWorkbook`'s shape (tabs and cells), with expected results worked by hand. None is made from the Mantle export: its tab names and headers are used, as the format's interface, and nothing else.
-
-  Also a reference unit test: a row of identical SAFEs pays the same as the SAFEs one by one, post-money and pre-money both (your answer 10). It matters for 0.4/0.5, where a row combines them; 0.7 gives each SAFE.
-
-  ASSUMPTIONS' "OCX import" section gets the import's rules.
+  The workbooks are our own, written as JSON in `OcxWorkbook`'s shape (tabs and cells), each expected result worked by hand in its DERIVATION, from the workbook, so it can be re-derived independently before the label goes on. None is made from the Mantle export: 0.7's tab names and headers are used, as the format's interface; titles, footnotes, the company, its holders and numbers are our own, with no footnote or title wording from the export (your 06d review). The one exception is a ledger title's ending, "… <class> Ledger", which the reader matches to find a class whose ledger's tab name is cut short (OX8).
 - **06f, the engine:**
   - `readOcx`, to the naming review's names (07a)
   - both layouts, told apart by their headers
@@ -387,6 +385,7 @@ As O10:
 - **06g, the page:**
   - "Open a cap table export", on 06c's reader
   - the seniority question, and the questions for a preferred series' terms
+  - **one-click answers for a preferred series' terms** (your 06d review), as for seniority: "conversion price = issue price" and "1x, non-participating". The founder must click one; neither is ever preset, and nothing is used until each blank is answered (O1).
   - `ocf-check` on .xlsx
   - **"Copy a summary to share"** (05a2) for .xlsx, on the report, on a refused import and on a refusal at Use (your answer 2)
 
@@ -479,6 +478,18 @@ With 0.7's ledgers there:
 3. **Cases now?** 06e can start from the Mantle export's headers, for 0.7 as Mantle writes it, and from the reference for 0.4/0.5, without waiting for Carta's. Agreed? Carta's headers, when they come, are then checked against both layouts.
 4. **Preferred in 0.7, before an export shows it:** read a preferred class from its ledger and the Summary View, with its issue price from the ledger's `Price` and every other term blank to fill, unless Financing History is there? Or refuse preferred in 0.7 until an export with preferred stock settles where its terms are? I'd read it with blanks: nothing is guessed either way, and a founder gets an import.
 5. **The issue price from the ledger's `Price`:** only when every certificate first issued in the class has the one price, with a report line, and blank otherwise. Agreed?
+
+## Your answers to 06d's questions (2026-10-10)
+
+1. **The Coalition only.** You're opening an issue on its OCX repository asking whether 0.6 to 0.8 reference workbooks exist. **Not Mantle:** spillpoint competes with it, so there's no outreach there. Mantle's export stays a reference we read, nothing more.
+2. **Keep 0.4/0.5.** Carta's OCX dates from 2023, when they were current.
+3. **Cases now:** 0.7 from the Mantle export's headers, 0.4/0.5 from the reference. **Preferred stock in 0.7 gets one case only,** and ASSUMPTIONS says plainly that it rests on no real export yet (OX7; ocx-02).
+4. **Read preferred in 0.7 with blanks.** A preferred class whose headers match no known pattern is still refused.
+5. **The issue price from the ledger's `Price`:** agreed.
+
+**The test workbook:** 0.7's tab names and headers may be used. Titles, notes, the company, holders and numbers are our own, with no footnote or title wording from the export.
+
+**For 06g:** one-click answers for preferred terms, "conversion price = issue price" and "1x, non-participating", which the founder must click and which are never preset (in the steps above).
 
 ## Open questions only a real Carta export can settle
 
