@@ -176,6 +176,38 @@ The 06e checks on a case's result are now one function. It runs for each case an
 - **Reference:** 71 unit tests pass, and every `expected.json` matches.
 - **Typecheck:** clean.
 
+## After your review (Jordan, 06e2 review)
+
+**Your check:** you extended your own reader to apply each fixture's change and run OX13's eight steps in order. All 34 matched `expected.json` exactly: the two cases, the 29 refusals (each the first the order reaches) and the three blanks as whole imports.
+
+**Agreed,** by this note's numbers:
+- decision 2, the order of checks
+- decision 3, an unknown holdings column as unsupported
+- decision 4, plans checked together
+- decision 10, a blank cap kind never filled from the `Post-$ SAFEs` row
+
+**One commit:**
+1. **`non_plan_awards`, a refusal of its own,** for decision 5. By decision 3's reasoning, an amount under `Non-Plan Awards` is most likely a security spillpoint doesn't read yet, so it's unsupported, naming the holder, not `holdings_mismatch`.
+   - **Where it's checked:** first in step 8, as the per-holder tab's holdings are read, holder by holder, before the checks between tabs. No earlier step reads that column.
+   - **Its fixture,** `non-plan-awards`, gives Founder B 25,000 (G8) and is refused naming "Founder B". Employees C to F and Founder A have none, so Founder B is the first the order reaches.
+   - **In ASSUMPTIONS:** OX9 and OX13.
+2. **`unknown_share_class` is now `grant_for_unknown_class`,** beside `warrant_for_unknown_class` and `grant_of_preferred`. Its fixture is renamed to match, `grant-for-unknown-class`, with the same change and subject. **Its kind stays malformed,** while `warrant_for_unknown_class` is unsupported: a warrant can be for a series not issued yet, while a plan grants over a class the company has. OX13 and the DERIVATION now say so. Tell me if you'd rather the two share a kind.
+3. **The steps** (your answer to open question 1):
+   - **06e3** is now `ocx-05-reads`, one change each for the reading rules no fixture reaches yet
+   - **06e4** is 0.4/0.5's workbook and fixtures
+   - **06e5** is the locked cases written as OCX, with the reference test for a row of identical SAFEs
+
+   The plan lists the reads, and OX13 now points at 06e4 for 0.4/0.5's own refusals.
+4. **ASSUMPTIONS' statuses** now say what you agreed, in OX9, OX11 and OX13.
+
+The other 31 fixtures are unchanged, byte for byte: they're written by the same script, rerun.
+
+**Checks:**
+- **Engine:** 2,355 tests pass, one more, for the new fixture.
+- **Page:** unchanged.
+- **Reference:** every `expected.json` still matches.
+- **Typecheck:** clean.
+
 ## Next
 
-06e3, 0.4/0.5's workbook and its fixtures, with the cases lock still lifted. I'm stopping here.
+06e3, `ocx-05-reads`, with the cases lock still lifted. I'm stopping here.

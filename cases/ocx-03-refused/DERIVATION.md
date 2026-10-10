@@ -1,6 +1,6 @@
 # OCX case 03, refused: derivation
 
-One small change to an OCX 0.7 workbook for each thing the import refuses: 29 fixtures, 11 unsupported and 18 malformed. 27 change case 01's workbook, Alder Gate Labs, and two change case 02's, Ferncliff Labs, where preferred stock is needed. Each fixture file names its base and lists its change, cell by cell (C18). Each change leaves one problem, so each result is one refusal: its kind, its term, and its subject, the workbook's own text for what it's about (OX13).
+One small change to an OCX 0.7 workbook for each thing the import refuses: 30 fixtures, 12 unsupported and 18 malformed. 28 change case 01's workbook, Alder Gate Labs, and two change case 02's, Ferncliff Labs, where preferred stock is needed. Each fixture file names its base and lists its change, cell by cell (C18). Each change leaves one problem, so each result is one refusal: its kind, its term, and its subject, the workbook's own text for what it's about (OX13).
 
 **Two kinds of refusal:**
 - **Unsupported:** the workbook may well be right, and spillpoint doesn't read what it says.
@@ -14,7 +14,7 @@ One small change to an OCX 0.7 workbook for each thing the import refuses: 29 fi
 5. the holders
 6. the ledgers
 7. the rows, tab by tab in the workbook's order
-8. the checks between tabs
+8. the per-holder tab's holdings, and the checks between tabs
 
 Where a fixture changes more than one cell, the extra cells keep the rest of the workbook agreeing, so the one problem is the only one. Where an earlier step might have caught something, the row says why it doesn't.
 
@@ -112,12 +112,12 @@ For each, the subject is the row's `Security Type`, the only name a convertibles
 |---|---|---|---|
 | `status-mismatch` | Alder Gate | EP-1's `Display Status` (P3) is "Exercised" | malformed, `status_mismatch`, "EP-1" |
 | `stock-appreciation-right` | Alder Gate | EP-5's `Type` (E7) is "SAR" | unsupported, `stock_appreciation_right`, "EP-5" |
-| `unknown-share-class` | Alder Gate | EP-5's `Share Class` (O7) is "Common Stock B" | malformed, `unknown_share_class`, "EP-5" |
+| `grant-for-unknown-class` | Alder Gate | EP-5's `Share Class` (O7) is "Common Stock B" | malformed, `grant_for_unknown_class`, "EP-5" |
 | `grant-of-preferred` | Ferncliff | a plan: its ledger, with EP-1, 10,000 options for Founder B over Series Seed Preferred, and its column, "Ferncliff Stock Plan Options", in place of `Non-Plan Awards`, giving Founder B 10,000 | unsupported, `grant_of_preferred`, "EP-1" |
 
 - **`status-mismatch`:** EP-1 still has 200,000 outstanding, so its status must be "Outstanding". "Exercised" and 200,000 outstanding can't both be right.
 - **`stock-appreciation-right`:** EP-5 is outstanding (50,000, "Outstanding"), so its cells are read, and `Type` comes before `Share Class`. A SAR pays cash, which spillpoint doesn't model (O6).
-- **`unknown-share-class`:** the Summary lists Common Stock and Common Seed (SAFE conversion), not "Common Stock B". EP-5's type, strike and expiration date before it are fine.
+- **`grant-for-unknown-class`:** the Summary lists Common Stock and Common Seed (SAFE conversion), not "Common Stock B". EP-5's type, strike and expiration date before it are fine. Malformed, unlike the unsupported `warrant_for_unknown_class` below: a warrant can be for a series not issued yet, while a plan grants over a class the company has.
 - **`grant-of-preferred`:** spillpoint's options are over common (O6). Ferncliff is the base because it has a preferred class, so the grant names one the workbook has. The new plan ledger has 0.7's plan ledger headers, all 17, so step 6 passes. Its column and Founder B's 10,000 make the holdings agree, so the class is the only problem. Ferncliff has no `Stock Plan Details`, so there's no pool to check.
 
 ### The Warrants Ledger (OX10)
@@ -143,16 +143,18 @@ W-1 is outstanding (30,000, "Outstanding"). Alder Gate has no Series A Preferred
 - **`bad-number`:** the cap is needed, and a number is read only from a number cell (OX5).
 - **`currency`:** spillpoint pays in US dollars only, as for OCF (O2).
 
-## 8. The checks between tabs
+## 8. The per-holder tab's holdings, and the checks between tabs
 
 | Fixture | The change | Refused |
 |---|---|---|
+| `non-plan-awards` | the Stakeholder View gives Founder B 25,000 `Non-Plan Awards` (G8) | unsupported, `non_plan_awards`, "Founder B" |
 | `total-mismatch` | the Summary View gives Common Stock 8,040,100 outstanding shares (C5) | malformed, `total_mismatch`, "Common Stock" |
 | `holdings-mismatch` | the Stakeholder View gives Founder A 5,000,100 Common Stock (C7) | malformed, `holdings_mismatch`, "Founder A" |
 | `pool-mismatch` | Context's plan details give 600,000 shares available for grant (H12) | malformed, `pool_mismatch`, "Alder Gate 2023 Equity Plan" |
 | `convertibles-mismatch` | the Summary View counts two post-money SAFEs (M3) | malformed, `convertibles_mismatch`, "Post-$ SAFEs" |
 
-- **`total-mismatch`:** Common Stock's outstanding certificates, the "Y" ones, are CS-1 5,000,000, CS-4 2,500,000, CS-5 500,000 and CS-6 40,000: 8,040,000, not 8,040,100. The Summary's `Outstanding Shares` has a saved value, so it's checked (OX5). Totals come first in step 8.
+- **`non-plan-awards`:** no ledger the reader knows holds non-plan awards (OX9), so an amount there is most likely a security spillpoint doesn't read yet. The per-holder tab's holdings are read first in step 8, holder by holder: Employees C to F and Founder A have none, so Founder B is the first. Nothing earlier reads the column: step 4 knows its header, and the rows of step 7 are the ledgers'.
+- **`total-mismatch`:** Common Stock's outstanding certificates, the "Y" ones, are CS-1 5,000,000, CS-4 2,500,000, CS-5 500,000 and CS-6 40,000: 8,040,000, not 8,040,100. The Summary's `Outstanding Shares` has a saved value, so it's checked (OX5). Totals come first among the checks between tabs.
 - **`holdings-mismatch`:** Founder A's one certificate, CS-1, holds 5,000,000. The total checks pass first: the Summary still says 8,040,000, and the Stakeholder View's `Total` row is a formula with no saved value, so it's skipped. Holders are checked in the Stakeholder View's order, and Employees C to F agree, so Founder A is the first that doesn't.
 - **`pool-mismatch`:** the pool row's value under "Alder Gate 2023 Equity Plan Options" is 610,000. Context's row for that plan says 600,000. Every holder's holdings agree, so the pool's is the first check to fail. The subject is the plan.
 - **`convertibles-mismatch`:** the SAFEs Ledger has one outstanding post-money SAFE, SAFE-2, for $200,000. The `Post-$ SAFEs` row now counts 2 for the same $200,000.
