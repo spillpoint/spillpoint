@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { InputError, UnsupportedTermError, readCapTable, readExit } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import type { PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, OCF_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, EXIT_CASES, FROM_A_STARTING_TABLE, OCF_CASES, OCX_CASES, capTablesOf, readCaseFile } from "./support/cases.ts";
 
 interface CaseExit {
   exit?: { cap_table?: { holders: unknown[]; positions: unknown[] }; exit_values: string[] };
@@ -124,7 +124,7 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
   const roundCases = ALL_CASES.filter((n) => /^edge-(1[4-8]|19|2[0-2])/.test(n));
 
   it("covers every case outside the scope", () => {
-    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES).sort()).toEqual(ALL_CASES);
+    expect(refused.map(([n]) => n).concat(roundCases, EXIT_CASES, OCF_CASES, OCX_CASES).sort()).toEqual(ALL_CASES);
   });
 
   // 05b1's cases start from a cap table (R31); the engine reads them since 05b2, as exit cases.
@@ -138,6 +138,11 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
       "ocf-05-edge-04", "ocf-06-edge-05a", "ocf-07-edge-07", "ocf-08-edge-08", "ocf-09-edge-12b", "ocf-10-edge-13a",
       "ocf-11-millrace", "ocf-12-ledger", "ocf-13-note-base",
     ]);
+  });
+
+  // 06e's OCX cases wait for readOcx, which 06f builds; until then they're checked as case files only (cases.test).
+  it("leaves the OCX cases to readOcx, from 06f", () => {
+    expect(OCX_CASES).toEqual(["ocx-01-alder-gate", "ocx-02-ferncliff-preferred"]);
   });
 
   it.each(roundCases)("%s has no exit: buildCapTables builds its cap tables", (name) => {

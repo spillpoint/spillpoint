@@ -54,7 +54,7 @@ interface Inputs {
 }
 
 const caseDirs = readdirSync(CASES, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && !d.name.startsWith("ocf-"))
+  .filter((d) => d.isDirectory() && !d.name.startsWith("ocf-") && !d.name.startsWith("ocx-"))
   .map((d) => d.name);
 // OCF cases (M6, C16) hold an OCF package of our own and a result worked by hand; checked below.
 const ocfDirs = readdirSync(CASES, { withFileTypes: true })
@@ -385,6 +385,138 @@ describe.each(ocfFixtureDirs)("OCF fixtures %s", (dir) => {
       const ids = Array.isArray(f.items) ? (f.items as Json[]).map((o) => o.id as string) : [];
       const reused = ids.filter((id) => baseIds.has(id));
       expect(reused, name).toEqual(r.refused?.term === "duplicate_id" ? [r.refused.subject] : []);
+    }
+  });
+});
+
+// OCX cases (0.6.0, C18): an OCX workbook of our own, in the engine's OcxWorkbook shape, and its import worked by hand.
+// readOcx comes in 06f; until then these check the files themselves: the workbook's shape, and that the result agrees
+// with itself and with the workbook where that needs no reading of it.
+interface OcxCellJson {
+  address: string;
+  kind: string;
+  text: string;
+  formula: boolean;
+}
+interface OcxResult {
+  as_of: string;
+  cap_table: {
+    holders: { id: string; name: string }[];
+    securities: Json[];
+    seniority: string[][] | null;
+    positions: { holder: string; security: string; shares: number }[];
+    unconverted_safes?: Json[];
+    unconverted_notes?: Json[];
+  };
+  issue_order: string[];
+  to_fill: { security?: string; note?: string; safe?: string; field: string }[];
+  report: { read: Record<string, number>; not_needed: Record<string, number>; notes: { code: string; subject?: string; field?: string }[] };
+}
+const ocxDirs = readdirSync(CASES, { withFileTypes: true })
+  .filter((d) => d.isDirectory() && d.name.startsWith("ocx-"))
+  .map((d) => d.name);
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+describe.each(ocxDirs)("OCX case %s", (dir) => {
+  it("has workbook.json, expected.json and DERIVATION.md", () => {
+    for (const f of ["workbook.json", "expected.json", "DERIVATION.md"]) expect(existsSync(join(CASES, dir, f)), f).toBe(true);
+  });
+  const workbook = readJson<{ dateSystem: number; sheets: { name: string; cells: OcxCellJson[] }[] }>(dir, "workbook.json");
+  const expected = readJson<{ case: string; layout: string; result: OcxResult }>(dir, "expected.json");
+  const result = expected.result;
+  const cells = workbook.sheets.flatMap((s) => s.cells);
+  const texts = new Set(cells.filter((c) => c.kind === "text").map((c) => c.text));
+
+  it("names itself and its layout", () => {
+    expect(expected.case).toBe(dir);
+    expect(["0.4/0.5", "0.7"]).toContain(expected.layout);
+  });
+
+  it("is an OcxWorkbook: a date system, and tabs of cells, each placed once, in row order, of a known kind", () => {
+    expect([1900, 1904]).toContain(workbook.dateSystem);
+    const names = workbook.sheets.map((s) => s.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const sheet of workbook.sheets) {
+      expect(sheet.name.length, sheet.name).toBeLessThanOrEqual(31);
+      const place = (c: OcxCellJson) => {
+        const m = /^([A-Z]{1,3})([1-9]\d*)$/.exec(c.address);
+        expect(m, `${sheet.name}!${c.address}`).not.toBeNull();
+        return Number(m![2]) * 100000 + [...m![1]!].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
+      };
+      const places = sheet.cells.map(place);
+      expect(places, sheet.name).toEqual([...places].sort((a, b) => a - b));
+      expect(new Set(places).size, sheet.name).toBe(places.length);
+      for (const c of sheet.cells) {
+        const at = `${sheet.name}!${c.address}`;
+        expect(["number", "text", "boolean", "error", "date"], at).toContain(c.kind);
+        expect(typeof c.formula, at).toBe("boolean");
+        if (!c.formula) expect(c.text, at).not.toBe("");
+        if (c.text !== "" && (c.kind === "number" || (c.kind === "date" && !c.text.includes("-")))) {
+          expect(c.text, at).toMatch(/^-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/);
+        }
+      }
+    }
+  });
+
+  it("gives its as-of date on every tab, in 0.7's form", () => {
+    if (expected.layout !== "0.7") return;
+    const [y, m, d] = result.as_of.split("-").map(Number);
+    const day = new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay();
+    const label = `As of ${DAYS[day]}, ${String(d).padStart(2, "0")} ${MONTHS[m! - 1]} ${y}`;
+    for (const sheet of workbook.sheets) expect(sheet.cells.some((c) => c.text === label), `${sheet.name}: ${label}`).toBe(true);
+  });
+
+  it("reports the version label the workbook gives", () => {
+    const label = cells.map((c) => /^OCX Version\s+(\S+)$/.exec(c.text)).find((m) => m != null);
+    const note = result.report.notes.find((n) => n.code === "version_label") as { field?: string } | undefined;
+    expect(note?.field).toBe(label?.[1]);
+  });
+
+  it("holds positions only in its own holders and securities, each holder named in the workbook and holding something", () => {
+    const ct = result.cap_table;
+    const holders = new Set(ct.holders.map((h) => h.id));
+    const securities = new Set(ct.securities.map((s) => s.id as string));
+    for (const h of ct.holders) expect(texts.has(h.name), h.name).toBe(true);
+    for (const p of ct.positions) expect(holders.has(p.holder) && securities.has(p.security) && p.shares > 0, `${p.holder} ${p.security}`).toBe(true);
+    const holding = new Set([...ct.positions, ...(ct.unconverted_safes ?? []), ...(ct.unconverted_notes ?? [])].map((x) => x.holder as string));
+    expect([...holders].filter((h) => !holding.has(h))).toEqual([]);
+  });
+
+  it("leaves blank exactly the terms it lists to fill in, seniority last", () => {
+    const ct = result.cap_table;
+    const blanks = [
+      ...ct.securities.flatMap((s) => Object.entries(s).filter(([, v]) => v === null).map(([k]) => ({ security: s.id as string, field: k }))),
+      ...(ct.unconverted_safes ?? []).flatMap((f) => Object.entries(f).filter(([, v]) => v === null).map(([k]) => ({ safe: f.id as string, field: k }))),
+      ...(ct.unconverted_notes ?? []).flatMap((n) => Object.entries(n).filter(([, v]) => v === null).map(([k]) => ({ note: n.id as string, field: k }))),
+    ].filter((b) => b.field !== "cap_multiple");
+    const preferred = ct.securities.some((s) => s.kind === "preferred");
+    // OX3: with preferred stock, seniority is always blank; with none, it's an empty list.
+    expect(ct.seniority).toEqual(preferred ? null : []);
+    expect(result.to_fill).toEqual([...blanks, ...(preferred ? [{ field: "seniority" }] : [])]);
+  });
+
+  it("orders every preferred series, SAFE and note once (O14)", () => {
+    const ct = result.cap_table;
+    const ranked = [
+      ...ct.securities.filter((s) => s.kind === "preferred").map((s) => s.id as string),
+      ...(ct.unconverted_safes ?? []).map((f) => f.id as string),
+      ...(ct.unconverted_notes ?? []).map((n) => n.id as string),
+    ];
+    expect([...result.issue_order].sort()).toEqual(ranked.sort());
+  });
+
+  it("notes skipped formula totals exactly when the workbook has a formula with no saved value (OX5)", () => {
+    const skipped = result.report.notes.some((n) => n.code === "formula_totals_skipped");
+    expect(skipped).toBe(cells.some((c) => c.formula && c.text === ""));
+  });
+
+  it("names, in each note, a holder or security of its own, or something the workbook holds", () => {
+    const ids = new Set([...result.cap_table.holders.map((h) => h.id), ...result.cap_table.securities.map((s) => s.id as string)]);
+    for (const n of result.report.notes) {
+      if (!n.subject) continue;
+      const leftOut = n.code === "left_out_stakeholder";
+      expect(ids.has(n.subject) || leftOut || texts.has(n.subject), `${n.code} ${n.subject}`).toBe(true);
     }
   });
 });
