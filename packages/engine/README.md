@@ -415,10 +415,10 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that versio
   - **The exit needs an `exit_date`,** the day they accrue to.
 - **SAFEs still outstanding at the sale** *(0.2.0)*, each taking the greater of its Cash-Out Amount and its Conversion Amount (YC):
   - **The Cash-Out Amount,** its purchase amount, is paid ahead of common. Alongside preferred it ranks with the most junior tier, or with the series it names (`cash_out_ranks_with`).
-  - **The Conversion Amount:** a post-money SAFE converts at its cap ÷ one Liquidity Capitalization for the company, which counts every SAFE that converts and leaves out series keeping their preference. A pre-money SAFE's count leaves out the pool, the SAFEs and the notes. A discount applies only with no cap, at the sale's common price less the discount, where that price exists.
+  - **The Conversion Amount:** a post-money SAFE converts at its cap ÷ one Liquidity Capitalization for the company, which counts every SAFE that converts and leaves out series keeping their preference, with any warrant shares exercised into one *(0.5.0)*. A pre-money SAFE's count leaves out the pool, the SAFEs and the notes. A discount applies only with no cap, at the sale's common price less the discount, where that price exists.
   - **With no cap, converting is worth exactly** its purchase amount ÷ (1 − discount), taken out of what is left after the preferences first. That holds beside capped participating preferred too, which stops at its cap in what remains *(0.3.0)*.
   - **Several SAFEs** share a shortfall pro rata. A SAFE takes its Conversion Amount only when that strictly pays more.
-  - **The SAFEs decide last** *(0.5.0)*: the series, warrants and notes decide first, each weighing its choice with the SAFEs then paid as their terms pay them, and the SAFEs take the greater of their two amounts after. Where several SAFEs could each convert only because the others do, they take their cash until one gains by converting on its own. Before 0.5.0, a non-participating series near its conversion beside post-money SAFEs could stop the breakpoint search with "went round in a circle", and two equal SAFEs could have two answers over a range of exit values.
+  - **The SAFEs decide last** *(0.5.0)*: the series, warrants and notes decide first, each weighing its choice with the SAFEs then paid as their terms pay them, and the SAFEs take the greater of their two amounts after. Where several SAFEs could each convert only because the others do, they convert: a post-money SAFE is promised a fixed share once they all do. Before 0.5.0, a non-participating series near its conversion beside post-money SAFEs could stop the breakpoint search with "went round in a circle", and two equal SAFEs could have two answers over a range of exit values.
 - **Convertible notes still outstanding at the sale** *(0.2.0)*, each taking the greater of repayment and conversion:
   - **Repayment,** a multiple of principal plus simple interest to the exit date, is debt, paid ahead of all equity. Several notes share a shortfall pro rata.
   - **Conversion:** principal plus interest converts at the pre-money cap ÷ the share count just before the sale (with the pool, without it, or common only), leaving out the notes. With no cap it converts at the sale's common price less its discount, where that price exists, worth exactly principal plus interest ÷ (1 − discount), beside capped participating preferred too *(0.3.0)*. A note with neither is only repaid.
@@ -432,7 +432,7 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that versio
   - **A term of the sale** *(0.3.0)*: the exit input can carry it, so a company built from its rounds can have one. It may still be on the cap table instead, but not on both.
 - **Options at any number of strikes,** exercised once they're in the money. The strike money joins the proceeds, and option payouts are reported net of strike.
 - **Warrants** *(0.2.0)*, for common or for a preferred series:
-  - **Each warrant decides for itself** whether to exercise: once what it buys is worth more than the strike.
+  - **Each warrant decides for itself** whether to exercise: once what it buys is worth more than the strike. Where exercising pays it nothing more, it isn't exercised, even where that changes what the SAFEs get *(0.5.0)*.
   - **A warrant for a series** adds its shares to the series, with the series' preference per share, participation, cap and conversion.
   - **The strike money joins the proceeds,** and warrant payouts are reported net of strike.
 - **Breakpoints with plain-English reasons:**
@@ -444,6 +444,7 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)* or *(0.5.0)* are new in that versio
   - a note repaid in full, or switching to conversion *(0.2.0)*
   - a series or a group converting
   - payouts jumping when a group's vote flips, or when a series or note converting moves the SAFEs *(0.5.0)*
+- **A faster breakpoint search** *(0.5.0)*: with the decisions fixed, every amount moves in a straight line until the formula changes, so the search reuses its work from one exit value to the next. A table with many SAFEs no longer takes minutes.
 
 **Building a cap table from a company's events,** each event giving the cap table after it:
 - **A starting cap table** *(0.5.0)*: the first event may be the cap table the company stands at, entered or imported, and the events after it build on it. Beside it goes the order its series, SAFEs and notes were issued in, which decides whether a SAFE or note converting in a down round counts against a series. With none given, its SAFEs and notes count as issued after its series.
