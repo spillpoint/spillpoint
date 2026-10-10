@@ -386,14 +386,15 @@ fund on seed: $4000000.00
 - **Seed's participation is blank.** OCF gives Seed no participation cap, which could mean non-participating or participating without a cap. Once you say which, the cap table reads like any other.
 - **At $20M the fund converts:** its 20% as common is $4M, more than its $3M preference.
 
-**What an import gives:**
+**What an import gives,** a `CapTableImport` *(0.6.0: the name both imports share; `OcfImport`, its old name, stays until 0.7.0)*:
 - `as_of`: the package's date.
 - `cap_table`: the cap table in the input format below, with `null` wherever OCF doesn't settle a term. OCF has no participation flag, no anti-dilution, no cumulative dividends and no conversion groups, so those are left blank or noted.
 - `issue_order` *(0.5.0)*: its preferred series, SAFEs and notes, earliest issued first, ready to pass as a `start` event's `issue_order` when you build a round on the import. A series is dated by its first issuance, and a SAFE or note by its own, or by the one it came from by a transfer. One dated the same day as a series counts as issued after it.
 - `to_fill`: each blank, for you to fill in before `readCapTable`.
 - `report`: what was read, by object type; what was read and set aside, because it doesn't change payouts (`not_needed`), such as vesting, valuations and legends; and a `notes` line, by code, for each choice the import made.
 
-**Anything it won't read is refused** with an `OcfRefusal`, carrying:
+**Anything it won't read is refused** with an `ImportRefusal` *(0.6.0)*, carrying:
+- its `format`: `"ocf"`
 - its `kind`: `"unsupported"` for valid OCF that spillpoint doesn't model, or `"malformed"` for files that disagree with each other or with OCF
 - a `term` naming the problem
 - the `subject` it's about
@@ -483,7 +484,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 
 ## What it refuses
 
-**Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported. An OCF import refuses with an `OcfRefusal` instead *(0.4.0)*: see [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
+**Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported. An OCF import refuses with an `ImportRefusal` instead *(0.4.0; the name since 0.6.0)*: see [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
 
 **Not settled yet.** No worked test case settles these, so they're refused:
 - **Full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes** *(0.3.0: before, any anti-dilution there)*.
@@ -571,7 +572,9 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 - `InputError`: the input is malformed.
 - `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term` and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
-- `OcfRefusal` *(0.4.0)*: `readOcf` won't read a package. It carries the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`.
+- `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`. `readOcf` throws it as an `OcfRefusal`, a subclass, so code that catches `OcfRefusal`, as 0.4.0 and 0.5.0 code does, still works. From 0.7.0 `readOcf` throws `ImportRefusal` itself and `OcfRefusal` goes, as do the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`, which are now aliases of `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`.
+
+**Types for the OCX import** *(0.6.0)*: `OcxWorkbook`, `OcxSheet` and `OcxCell`, an OCX workbook as the page reads it from an .xlsx: the date system, and each tab's cells with their kind, their text as stored and whether each holds a formula. The import that reads them comes later in 0.6.0.
 
 ## License
 

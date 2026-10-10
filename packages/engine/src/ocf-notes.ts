@@ -1,14 +1,13 @@
 // The import report's notes (O10): one line for each choice an import makes,
 // by code, about a subject (an object id or file name) and sometimes a field.
 
-export interface OcfNote {
-  code: string;
-  subject?: string;
-  field?: string;
-}
+import type { ImportNote } from "./imports.ts";
+
+/** @deprecated Use ImportNote: the OCF names go in 0.7.0. */
+export type OcfNote = ImportNote;
 
 export class Notes {
-  private readonly lines: OcfNote[] = [];
+  private readonly lines: ImportNote[] = [];
   private readonly seen = new Set<string>();
 
   /** Adds a note once: a class whose conversion is adjusted still gets one rounding line. */
@@ -19,7 +18,7 @@ export class Notes {
     this.lines.push({ code, ...(subject === undefined ? {} : { subject }), ...(field === undefined ? {} : { field }) });
   }
 
-  list(): OcfNote[] {
+  list(): ImportNote[] {
     return [...this.lines];
   }
 }
