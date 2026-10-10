@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Two holder rows are both Founder A.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "A8", "kind": "text", "text": "Founder A", "formula": false}}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Stakeholder View is gone.",
+  "change": [
+    {"op": "remove_tab", "tab": "Stakeholder View"}
+  ]
+}

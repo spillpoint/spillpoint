@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Common Stock's ledger has no No. Shares Outstanding header.",
+  "change": [
+    {"op": "clear", "tab": "Common Stock Ledger", "address": "M2"}
+  ]
+}

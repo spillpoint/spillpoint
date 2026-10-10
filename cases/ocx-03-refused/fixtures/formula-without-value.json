@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "CS-1's outstanding shares are a formula with no saved value.",
+  "change": [
+    {"op": "set", "tab": "Common Stock Ledger", "cell": {"address": "M3", "kind": "number", "text": "", "formula": true}}
+  ]
+}

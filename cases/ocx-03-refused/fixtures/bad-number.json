@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2's valuation cap is text.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "E4", "kind": "text", "text": "8M", "formula": false}}
+  ]
+}

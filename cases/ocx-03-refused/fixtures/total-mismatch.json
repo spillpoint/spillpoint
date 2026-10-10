@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Summary View gives Common Stock 100 more outstanding shares than its ledger's certificates.",
+  "change": [
+    {"op": "set", "tab": "Summary View", "cell": {"address": "C5", "kind": "number", "text": "8040100", "formula": false}}
+  ]
+}

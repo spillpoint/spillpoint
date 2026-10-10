@@ -1,0 +1,13 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Summary View's convertibles table has a row of one convertible note, and there's no notes ledger.",
+  "change": [
+    {"op": "set", "tab": "Summary View", "cell": {"address": "L4", "kind": "text", "text": "Convertible Notes", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "M4", "kind": "number", "text": "1", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "N4", "kind": "number", "text": "150000", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "P4", "kind": "number", "text": "6000000", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "L5", "kind": "text", "text": "Total", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "M5", "kind": "number", "text": "", "formula": true}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "N5", "kind": "number", "text": "", "formula": true}}
+  ]
+}

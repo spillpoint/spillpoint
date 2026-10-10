@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The summary tab's as-of date gives the wrong weekday.",
+  "change": [
+    {"op": "set", "tab": "Summary View", "cell": {"address": "A1", "kind": "text", "text": "As of Thu, 31 Oct 2025", "formula": false}}
+  ]
+}

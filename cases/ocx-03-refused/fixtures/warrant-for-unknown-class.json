@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "W-1 is for a class the workbook hasn't.",
+  "change": [
+    {"op": "set", "tab": "Warrants Ledger", "cell": {"address": "E3", "kind": "text", "text": "Series A Preferred", "formula": false}}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "EP-5 is over a class the workbook hasn't.",
+  "change": [
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "O7", "kind": "text", "text": "Common Stock B", "formula": false}}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2's issue date, needed for the issue order, is in no form the reader reads.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "C4", "kind": "text", "text": "Feb 2025", "formula": false}}
+  ]
+}

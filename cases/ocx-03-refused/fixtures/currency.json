@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2's investment is in Canadian dollars.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "O4", "kind": "text", "text": "CAD", "formula": false}}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "CS-6 holds a fraction of a share, as the Stakeholder View says too.",
+  "change": [
+    {"op": "set", "tab": "Common Stock Ledger", "cell": {"address": "M8", "kind": "number", "text": "40000.5", "formula": false}},
+    {"op": "set", "tab": "Common Stock Ledger", "cell": {"address": "F8", "kind": "number", "text": "40000.5", "formula": false}},
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "C4", "kind": "number", "text": "40000.5", "formula": false}}
+  ]
+}

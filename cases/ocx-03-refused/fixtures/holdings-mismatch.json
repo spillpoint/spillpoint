@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Stakeholder View gives Founder A 100 more Common Stock than the ledger.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "C7", "kind": "number", "text": "5000100", "formula": false}}
+  ]
+}
