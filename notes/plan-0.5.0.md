@@ -192,6 +192,15 @@ Both rules, and the speed work.
 - **Tests** from two random tables, and a page test.
 - **The cost:** Larkspur with its note and 10 SAFEs went from 1.4s to 2.0s on a laptop.
 
+### 05c6: the reference places jumps where SAFEs convert together (Jordan, after #74)
+
+**Jordan's decision after #74:** fix the reference's jump placement where only SAFEs change, flipping from the answer above as well as below, as its own small PR before 05e. Every locked case must come out unchanged, and the 200 random tables are rerun.
+
+**Done in 05c6:**
+- **The reference's fix.** All 83 cases are unchanged, and the reference now finishes 189 of the 200 random tables. The other 11 have two answers.
+- **The engine's breakpoint search now stops where a second answer begins.** The stronger random check found 3 tables where it stopped up to $136,000 later.
+- **The random check compares the two stops:** the same message, and the reference agreeing a cent either side of where the engine says the second answer begins.
+
 ### What it would take to lift the other two refusals at a sale (question 12)
 
 - **A pre-money SAFE beside preferred** (X14, `pre_money_safe_with_preferred`):
@@ -237,7 +246,7 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 
 **Changed behavior, for the release notes** (Jordan, after #71): two equal post-money SAFEs can each take cash or both convert over a range of exit values. 0.4.0's `solve` reported both answers there (E8); 0.5.0 takes the most conversions, so they convert where converting together first pays, and payouts bend there (edge case 12k).
 
-**Changed behavior, for the release notes** (Jordan, after #73): where the series, warrants and notes have more than one stable answer and they pay holders differently, `solve` and the breakpoint search stop with a plain message naming them, where 0.4.0 reported every answer (E8), and could miss one where its search from both ends agreed.
+**Changed behavior, for the release notes** (Jordan, after #73): where the series, warrants and notes have more than one stable answer and they pay holders differently, `solve` and the breakpoint search stop with a plain message naming them, where 0.4.0 reported every answer (E8), and could miss one where its search from both ends agreed. The breakpoint search's message gives the exit value where the second answer begins (05c6).
 
 **Changed behavior, for the release notes** (Jordan, after #71): a warrant exercised into a series that keeps its preference is left out of a post-money SAFE's Liquidity Capitalization, like the series' own shares (X1, edge case 12l). 0.4.0 counted it, which mattered only where the strike is below the series' preference per share.
 

@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 
 import { D, NoAnswerError, findBreakpoints, prepare, readExit, solve } from "../src/index.ts";
-import { RANDOM_1_149, RANDOM_1_185 } from "./support/two-answers.ts";
+import { RANDOM_1_121, RANDOM_1_149, RANDOM_1_185 } from "./support/two-answers.ts";
 
 type Json = Record<string, unknown>;
 
@@ -62,5 +62,20 @@ describe("a second answer between the readings the search takes (random-1-185)",
   it("stops at an exit value inside it", () => {
     const { pc } = prepared(RANDOM_1_185);
     expect(stop(() => solve(pc, new D(10125000)))).toBe(message("$10,125,000", "Series 0 Preferred and Series 1 Preferred"));
+  });
+});
+
+describe("a second answer that begins inside a stretch the search checks (random-1-121)", () => {
+  // The search checks each stretch at its middle, here $12,083,333.33, inside the second answer. It follows which sets
+  // of choices are stable first, so it says where the second answer begins, as the reference does (05c6).
+  it("stops the breakpoint search where the second answer begins", () => {
+    const { exit, pc } = prepared(RANDOM_1_121);
+    expect(stop(() => findBreakpoints(pc, exit.range))).toBe(message("$12,055,555.56", "Series 0 Preferred and Series 1 Preferred"));
+  });
+
+  it("has one answer a cent below", () => {
+    const { pc } = prepared(RANDOM_1_121);
+    expect(solve(pc, new D("12055555.55")).answers).toHaveLength(1);
+    expect(stop(() => solve(pc, new D("12055555.57")))).toBe(message("$12,055,555.57", "Series 0 Preferred and Series 1 Preferred"));
   });
 });

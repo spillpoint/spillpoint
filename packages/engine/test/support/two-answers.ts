@@ -1,5 +1,5 @@
-// Two random tables from 05c4's check (reference/tools/random_safes.py, seed 1) where the series have two stable
-// answers beside post-money SAFEs (05c5; Jordan, after #73): two non-participating series at the same price.
+// Random tables from 05c4's check (reference/tools/random_safes.py, seed 1) where the series have two stable answers
+// beside post-money SAFEs (05c5; Jordan, after #73): two non-participating series at the same price.
 
 type Json = Record<string, unknown>;
 
@@ -292,4 +292,133 @@ export const RANDOM_1_185: Json = {
   ],
   "exit_values": [],
   "exit_date": "2025-12-31"
+};
+
+/**
+ * random-1-121: Series 0 and Series 1 Preferred, both at $1.00 and pari passu, beside two SAFEs. Two answers from
+ * $12,055,555.56; the search's check inside the stretch, read at $12,083,333.33, used to find them first (05c6).
+ */
+export const RANDOM_1_121: Json = {
+  "cap_table": {
+    "holders": [
+      {
+        "id": "founder_a",
+        "name": "Founder A"
+      },
+      {
+        "id": "founder_b",
+        "name": "Founder B"
+      },
+      {
+        "id": "employee_c",
+        "name": "Employee C"
+      },
+      {
+        "id": "investor_0",
+        "name": "Investor 0"
+      },
+      {
+        "id": "investor_1",
+        "name": "Investor 1"
+      },
+      {
+        "id": "safe_holder_0",
+        "name": "SAFE Investor 0"
+      },
+      {
+        "id": "safe_holder_1",
+        "name": "SAFE Investor 1"
+      }
+    ],
+    "securities": [
+      {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      {
+        "id": "options_0",
+        "name": "Options ($0 strike)",
+        "kind": "option",
+        "strike": "0"
+      },
+      {
+        "id": "series_0",
+        "name": "Series 0 Preferred",
+        "kind": "preferred",
+        "original_issue_price": "1",
+        "conversion_price": "1",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      },
+      {
+        "id": "series_1",
+        "name": "Series 1 Preferred",
+        "kind": "preferred",
+        "original_issue_price": "1",
+        "conversion_price": "1",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none"
+      }
+    ],
+    "seniority": [
+      [
+        "series_0",
+        "series_1"
+      ]
+    ],
+    "positions": [
+      {
+        "holder": "founder_a",
+        "security": "common",
+        "shares": 4000000
+      },
+      {
+        "holder": "founder_b",
+        "security": "common",
+        "shares": 1000000
+      },
+      {
+        "holder": "employee_c",
+        "security": "options_0",
+        "shares": 500000
+      },
+      {
+        "holder": "investor_0",
+        "security": "series_0",
+        "shares": 4000000
+      },
+      {
+        "holder": "investor_1",
+        "security": "series_1",
+        "shares": 1000000
+      }
+    ],
+    "unissued_pool": 0,
+    "unconverted_safes": [
+      {
+        "id": "safe_0",
+        "holder": "safe_holder_0",
+        "purchase_amount": "500000",
+        "post_money_cap": "15000000",
+        "discount": "0"
+      },
+      {
+        "id": "safe_1",
+        "holder": "safe_holder_1",
+        "purchase_amount": "1000000",
+        "post_money_cap": "10000000",
+        "discount": "0"
+      }
+    ]
+  },
+  "range": [
+    "0",
+    "40000000"
+  ],
+  "exit_values": []
 };
