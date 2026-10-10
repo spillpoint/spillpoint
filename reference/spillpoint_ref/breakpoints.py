@@ -19,6 +19,7 @@ Method:
 from fractions import Fraction
 
 from .model import carve_out_pool
+from .waterfall import _flip
 from .num import usd, usd_price, exact, decimal, count
 
 BISECT_WIDTH = Fraction(1, 1000)  # dollars
@@ -412,11 +413,24 @@ def reasons(wf, x, sa, sb, jumps=False):
                             )
                     else:
                         keep = f"its capped payout of {usd(cap_b(pid))} ({exact(sec['cap_multiple'])}x its original issue price)"
+                    # At a jump its shares are valued at the price just above, where it converts (12l).
+                    p_conv = price_after if jumps else price
                     text = (
                         f"{sec['name']} converts to common. At this exit value its as-converted share "
-                        f"({count(n_conv)} common shares at {usd_price(price)} each = {usd(as_conv)}) equals {keep}. "
+                        f"({count(n_conv)} common shares at {usd_price(p_conv)} each = {usd(n_conv * p_conv)}) equals {keep}. "
                         f"Below it, staying preferred pays more; above it, converting pays more."
                     )
+                    # X1: a non-participating series keeping its preference is left out of a post-money SAFE's count;
+                    # converting, it's counted, so a SAFE already converting gets more shares.
+                    counting = [f for f in wf.safes if da[f["id"]] and db[f["id"]] and f.get("post_money_cap") is not None]
+                    if counting and jumps and sec["participation"] == "non_participating":
+                        names = _join(f"{ct.holders[f['holder']]}'s SAFE" for f in counting)
+                        one = len(counting) == 1
+                        text += (
+                            f" Converting puts its shares in the Liquidity Capitalization {names} "
+                            f"{'converts' if one else 'convert'} on, so {'its' if one else 'their'} conversion shares grow with it: "
+                            f"just above this exit value {'its payout jumps' if one else 'their payouts jump'} up and common's jumps down."
+                        )
                 else:
                     text = f"{sec['name']} stops converting: staying preferred pays more above this exit value."
             else:
@@ -500,8 +514,8 @@ def reasons(wf, x, sa, sb, jumps=False):
             out.append({"code": "safe_cash_out_paid", "security": fid, "text": text})
         if da[fid] != db[fid]:
             together = wf.safes_converting(f, db)
-            lp = wf.liquidity_price(f, converted_b, together, wf.notes_converting(db))
-            n = wf.safe_conversion_shares(f, converted_b, together, wf.notes_converting(db))
+            lp = wf.liquidity_price(f, converted_b, together, wf.notes_converting(db), wf.warrants_exercised(db))
+            n = wf.safe_conversion_shares(f, converted_b, together, wf.notes_converting(db), wf.warrants_exercised(db))
             # Its shares are valued at the common price once it converts, which differs from below at a jump.
             price_b = wf.run(x, wf.settled(x, bits_b))[1]
             if db[fid] and f in safes_following:
@@ -533,6 +547,19 @@ def reasons(wf, x, sa, sb, jumps=False):
                         f"just above this exit value {'its payout jumps' if len(others) == 1 else 'their payouts jump'} up "
                         f"and common's jumps down."
                     )
+                # E20's tie (Jordan, after #71): SAFEs that each convert only because the others do take the most
+                # conversions, so they switch together where converting with the others first pays (12k).
+                along = [g for g in wf.safes if g is not f and not da[g["id"]] and db[g["id"]]]
+                if along and not leaders_changed:
+                    alone = wf.run(x, wf.settled(x, _flip(bits_a, wf.players.index(fid))))[0][fid]
+                    if alone < f["purchase_amount"]:
+                        names = _join(f"{ct.holders[g['holder']]}'s SAFE" for g in along)
+                        one = len(along) == 1
+                        text += (
+                            f" It converts together with {names}. On its own, converting would pay it only {usd(alone)} here, "
+                            f"less than its cash; with {'both' if one else 'all of them'} converting, each gets its fixed share "
+                            f"of the Liquidity Capitalization, which pays more above this exit value, so they convert."
+                        )
             else:
                 text = f"{holder}'s SAFE switches back to its Cash-Out Amount: above this exit value it pays more."
             out.append({"code": "safe_switches", "security": fid, "conversion_amount": db[fid], "text": text})

@@ -232,7 +232,7 @@ class Waterfall:
         """
         return self.ct.securities[sid]["participation"] == "non_participating" and not converted.get(sid, False)
 
-    def liquidity_capitalization(self, f, converted=None, safes_converting=None, notes_converting=()):
+    def liquidity_capitalization(self, f, converted=None, safes_converting=None, notes_converting=(), exercised=()):
         """A SAFE's Liquidity Capitalization when it takes its Conversion Amount.
 
         Post-money SAFE (YC): counted just before the Liquidity Event, all
@@ -246,6 +246,13 @@ class Waterfall:
         Securities", counted at its conversion shares; a note being repaid
         takes a payment in lieu of converting, and isn't counted (X18). The
         note's own shares don't depend on the SAFE: its base counts no SAFE.
+        A warrant exercised into a series that keeps its preference becomes
+        shares of that series, which take the preference in lieu of
+        converting, so they're left out with the series' other shares; a
+        warrant not exercised is an outstanding Option, counted whether or not
+        it is in the money (X1, R29; Jordan, after #71). It matters only where
+        the strike is below the series' preference per share, the one case
+        where a warrant is exercised into a series that keeps its preference.
         Each converting SAFE's shares are purchase amount ÷ (its cap ÷ LC),
         so LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
 
@@ -264,6 +271,14 @@ class Waterfall:
         others = ct.outstanding_as_converted() - sum(
             (ct.as_converted(s) for s in ct.preferred_ids() if self.keeps_preference_in_lieu(s, converted)), ZERO
         )
+        others -= sum(
+            (
+                ct.as_converted(w)
+                for w in exercised
+                if ct.securities[w]["underlying"] != "common" and self.keeps_preference_in_lieu(ct.securities[w]["underlying"], converted)
+            ),
+            ZERO,
+        )
         others += sum((self.note_conversion_shares(n) for n in notes_converting), ZERO)
         own = sum((g["purchase_amount"] / g["post_money_cap"] for g in safes_converting), ZERO)
         return others / (1 - own)
@@ -276,16 +291,20 @@ class Waterfall:
         """The notes converting under decisions d: a post-money SAFE's Liquidity Capitalization counts them (X18)."""
         return [n for n in self.notes if d.get(n["id"], False)]
 
+    def warrants_exercised(self, d):
+        """The warrants exercised under decisions d: one exercised into a series keeping its preference isn't counted (X1)."""
+        return [w for w in self.warrants if d.get(w, False)]
+
     def safe_cap(self, f):
         return f["pre_money_cap"] if f.get("pre_money_cap") is not None else f["post_money_cap"]
 
-    def liquidity_price(self, f, converted=None, safes_converting=None, notes_converting=()):
+    def liquidity_price(self, f, converted=None, safes_converting=None, notes_converting=(), exercised=()):
         """Liquidity Price = valuation cap ÷ Liquidity Capitalization."""
-        return self.safe_cap(f) / self.liquidity_capitalization(f, converted, safes_converting, notes_converting)
+        return self.safe_cap(f) / self.liquidity_capitalization(f, converted, safes_converting, notes_converting, exercised)
 
-    def safe_conversion_shares(self, f, converted=None, safes_converting=None, notes_converting=()):
+    def safe_conversion_shares(self, f, converted=None, safes_converting=None, notes_converting=(), exercised=()):
         """Purchase amount ÷ Liquidity Price, exact: at exit, as-converted shares aren't rounded (SPEC)."""
-        return f["purchase_amount"] / self.liquidity_price(f, converted, safes_converting, notes_converting)
+        return f["purchase_amount"] / self.liquidity_price(f, converted, safes_converting, notes_converting, exercised)
 
     def converting_amount(self, x):
         """What a SAFE or note converts: the purchase amount, or principal plus accrued interest."""
@@ -475,7 +494,9 @@ class Waterfall:
                 if self.priced(f):
                     priced.append(f)
                 else:
-                    part[f["id"]] = self.safe_conversion_shares(f, converted, self.safes_converting(f, d), self.notes_converting(d))
+                    part[f["id"]] = self.safe_conversion_shares(
+                        f, converted, self.safes_converting(f, d), self.notes_converting(d), self.warrants_exercised(d)
+                    )
         for n in self.notes:
             if d.get(n["id"], False):
                 if self.priced(n):
@@ -695,8 +716,11 @@ class _AtExit:
         (X13). Where one is indifferent but its choice changes what another
         gets, it takes its Cash-Out Amount (X16). Several SAFEs can settle more
         than one way, each converting only because the others do: then they
-        take the fewest conversions (E5), the outcome from below, since none
-        gains by converting alone.
+        take the most conversions (Jordan, after #71, reversing 05c1's fewest).
+        A post-money SAFE promises its holder a fixed share once all the SAFEs
+        convert, and each SAFE's greater-of points to the outcome where it gets
+        more. Among sets with as many conversions, the fewest option exercises
+        (E5).
         """
         key = tuple(v for i, v in enumerate(bits) if i not in self.options and i not in self.safes)
         if key not in self.followed_cache:
@@ -710,7 +734,8 @@ class _AtExit:
                     fits.append(b)
             if not fits:
                 raise ValueError(f"the SAFEs' greater-of doesn't settle at exit {self.x}")
-            self.followed_cache[key] = min(fits, key=lambda b: (sum(b), b))
+            conversions = lambda b: sum(b[i] for i in self.safes)  # noqa: E731
+            self.followed_cache[key] = min(fits, key=lambda b: (-conversions(b), sum(b), b))
         return self.followed_cache[key]
 
     def stable_free(self, bits):
