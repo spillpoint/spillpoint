@@ -8,6 +8,8 @@
 
 import type { OcxCell, OcxSheet, OcxWorkbook } from "spillpoint";
 
+import { columnLetters } from "./xlsx.ts";
+
 
 /** The tabs OCX 0.3 to 0.5 have, as the Coalition's reference workbooks name them. */
 const TABS = ["Summary Snapshot", "Stakeholder Snapshot", "Detailed Snapshot", "Voting by SH Group", "Context"];
@@ -97,15 +99,19 @@ interface Kinds {
   errors: number;
   formulas: number;
   noValue: number;
+  zeros: number;
   empty: number;
 }
 
-const none = (): Kinds => ({ numbers: 0, long: 0, dayCounts: 0, isoDates: 0, text: 0, dotted: 0, dashed: 0, booleans: 0, errors: 0, formulas: 0, noValue: 0, empty: 0 });
+const none = (): Kinds => ({ numbers: 0, long: 0, dayCounts: 0, isoDates: 0, text: 0, dotted: 0, dashed: 0, booleans: 0, errors: 0, formulas: 0, noValue: 0, zeros: 0, empty: 0 });
 
 function add(k: Kinds, c: OcxCell): void {
   if (c.formula) {
     k.formulas++;
     if (c.text === "") k.noValue++;
+    // A tool that writes formulas without working them out may save 0 for each (XlsxWriter does), and that 0
+    // can't be told from a real one. The count shows how many could be (Jordan, 06c review).
+    else if (/^-?(?:0+\.?0*|\.0+)(?:[eE][-+]?\d+)?$/.test(c.text)) k.zeros++;
   }
   if (c.text === "") return;
   if (c.kind === "number") {
@@ -124,16 +130,16 @@ function add(k: Kinds, c: OcxCell): void {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-function describe(k: Kinds): string {
+function describe(k: Kinds, nothing = "nothing below it"): string {
   const parts: string[] = [];
   if (k.numbers) parts.push(`${plural(k.numbers, "number")} (${k.numbers - k.long} with 15 digits or fewer, ${k.long} with 16 or 17)`);
   if (k.dayCounts || k.isoDates) parts.push(`${plural(k.dayCounts + k.isoDates, "date")} (${k.dayCounts} as day counts, ${k.isoDates} as ISO text)`);
   if (k.text) parts.push(`${k.text} text${k.dotted || k.dashed ? ` (${k.dotted} as YYYY.MM.DD, ${k.dashed} as YYYY-MM-DD, ${k.text - k.dotted - k.dashed} other)` : ""}`);
   if (k.booleans) parts.push(plural(k.booleans, "true or false", "true or false"));
   if (k.errors) parts.push(plural(k.errors, "error"));
-  if (k.formulas) parts.push(`${plural(k.formulas, "formula")}${k.noValue ? `, ${k.noValue} with no saved value` : ""}`);
+  if (k.formulas) parts.push(`${plural(k.formulas, "formula")}${k.noValue ? `, ${k.noValue} with no saved value` : ""}${k.zeros ? `, ${k.zeros} saved as 0` : ""}`);
   if (k.empty) parts.push(`${k.empty} empty`);
-  return parts.length > 0 ? parts.join(", ") : "nothing below it";
+  return parts.length > 0 ? parts.join(", ") : nothing;
 }
 
 function merge(into: Kinds, k: Kinds): void {
@@ -215,21 +221,55 @@ function tabLines(sheet: OcxSheet): string[] {
   return lines;
 }
 
+/**
+ * A tab the format doesn't name, such as one of Carta's own or the securities ledger report's: named by its position,
+ * never its name, which can name the company, and each column by its letter, with the kinds of cell in it. Its header
+ * row is the first row with any of the format's own names in it. A column's cell there is printed as its header only
+ * when it's one of those names; any other text, headings and titles included, is counted as text. A column headed by
+ * one of the Additional Information block's names isn't read (Jordan, 06c review).
+ */
+function otherTabLines(sheet: OcxSheet, position: number): string[] {
+  const lines = [`tab ${position}:`];
+  if (sheet.cells.length === 0) return [...lines, "  no cells"];
+  const named = (c: OcxCell) => c.kind === "text" && FORMAT_NAMES.has(normalHeader(c.text));
+  const headerRow = Math.min(...sheet.cells.filter(named).map(row));
+  const rowsWithCells = [...new Set(sheet.cells.map(row))].sort((a, b) => a - b);
+  const byColumn = new Map<number, OcxCell[]>();
+  for (const c of sheet.cells) byColumn.set(column(c), [...(byColumn.get(column(c)) ?? []), c]);
+  for (const [col, cells] of [...byColumn].sort(([a], [b]) => a - b)) {
+    const header = cells.find((c) => row(c) === headerRow && named(c));
+    const name = header ? normalHeader(header.text) : null;
+    const label = `column ${columnLetters(col)}${name ? ` (${name})` : ""}`;
+    if (name != null && ADDITIONAL.includes(name)) {
+      lines.push(`  ${label}: not read`);
+      continue;
+    }
+    const k = none();
+    for (const c of cells) if (c !== header) add(k, c);
+    const rows = cells.map(row).sort((a, b) => a - b);
+    const have = new Set(rows);
+    k.empty = rowsWithCells.filter((r) => r > rows[0]! && r < rows[rows.length - 1]! && !have.has(r)).length;
+    lines.push(`  ${label}: ${describe(k, "nothing else")}`);
+  }
+  return lines;
+}
+
 /** The report, line by line: counts, kinds and the format's own names only (O15). */
 export function structureLines(book: OcxWorkbook, version: string): string[] {
   const lines = [`spillpoint ${version}: an OCX workbook's structure, in counts and kinds`];
   lines.push(`Dates: the ${book.dateSystem} system`);
   const labels = book.sheets
-    .filter((s) => TABS.includes(s.name))
     .flatMap((s) => s.cells)
     .map((c) => (c.kind === "text" ? /^OCX Version\s+(\S+)$/.exec(c.text.trim()) : null))
     .filter((m) => m != null);
   lines.push(`Version label: ${labels.length === 0 ? "none" : labels.map((m) => (/^\d+(\.\d+)*$/.test(m[1]!) ? `OCX Version ${m[1]}` : "other")).join(", ")}`);
-  const knownTabs = book.sheets.filter((s) => TABS.includes(s.name));
-  lines.push(`Tabs: ${knownTabs.length > 0 ? knownTabs.map((s) => s.name).join(", ") : "none known"}; other tabs ${book.sheets.length - knownTabs.length}`);
-  for (const sheet of knownTabs) {
+  // Every tab, in the workbook's order: the format's by name, any other by its position.
+  const named = (s: OcxSheet, i: number) => (TABS.includes(s.name) ? s.name : `tab ${i + 1}`);
+  lines.push(`Tabs: ${book.sheets.length > 0 ? book.sheets.map(named).join(", ") : "none"}`);
+  book.sheets.forEach((sheet, i) => {
     if (sheet.name === "Voting by SH Group") lines.push(`${sheet.name}: set aside`);
-    else lines.push(...tabLines(sheet));
-  }
+    else if (TABS.includes(sheet.name)) lines.push(...tabLines(sheet));
+    else lines.push(...otherTabLines(sheet, i + 1));
+  });
   return lines;
 }

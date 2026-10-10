@@ -81,7 +81,7 @@ describe("the cell-kinds report", () => {
       "spillpoint 0.6.0: an OCX workbook's structure, in counts and kinds",
       "Dates: the 1900 system",
       "Version label: OCX Version 0.5",
-      "Tabs: Summary Snapshot, Stakeholder Snapshot, Voting by SH Group, Context; other tabs 1",
+      "Tabs: Summary Snapshot, Stakeholder Snapshot, Voting by SH Group, Context, tab 5",
       "Summary Snapshot:",
       "  Share Class: 4 text",
       "  Shares Authorized/ Reserved: 3 numbers (3 with 15 digits or fewer, 0 with 16 or 17), 1 formula, 1 empty",
@@ -124,6 +124,8 @@ describe("the cell-kinds report", () => {
       "  Shares Returned to Plan: 1 number (1 with 15 digits or fewer, 0 with 16 or 17)",
       "  Shares Available for Grant: 1 number (1 with 15 digits or fewer, 0 with 16 or 17), 1 formula",
       "  not found: Valuation Date, Price Per Share (Common), Options Outstanding at Valuation, Valuation Firm, Date, Action, Stockholder Approval Date, Number of Shares, Total Shares Reserved, Classes/Series Affected, Original Shares, Resulting Shares",
+      "tab 5:",
+      "  column A: 1 text",
     ]);
   });
 
@@ -148,8 +150,49 @@ describe("the cell-kinds report", () => {
       "spillpoint 0.6.0: an OCX workbook's structure, in counts and kinds",
       "Dates: the 1904 system",
       "Version label: none",
-      "Tabs: none known; other tabs 1",
+      "Tabs: tab 1",
+      "tab 1:",
+      "  column A (Stakeholder): nothing else",
+      "  column B: 1 text",
     ]);
+  });
+
+  it("reports a tab the format doesn't name by its position, and its columns by letter, naming only the format's own headers", async () => {
+    // A layout of its own, as a securities ledger report might have: a title, a header row, three holders and a total.
+    const ledger = workbook({
+      formats: [0, 14],
+      sheets: [
+        { name: "Summary Snapshot", cells: row(2, ["Share Class"]) },
+        {
+          name: "Tamarisk securities ledger",
+          cells: [
+            ...row(1, ["Tamarisk Labs: securities ledger by type and class"]),
+            ...row(3, ["Stakeholder", "Class", "Quantity", "Original Issue Price", "Issue Date", "Email Address"]),
+            ...row(4, ["Wren Okafor", "Class A Common Stock", 4600000, 0.0001, { number: "44927", style: 1 }, "wren@tamarisk.example"]),
+            ...row(5, ["Halyard Ventures", "Series Quokka Preferred Stock", 3050000, 1.4375, { number: "45369", style: 1 }, "deals@halyard.example"]),
+            ...row(6, ["Ilse Brandt", "Class A Common Stock", 2650000, { number: "0.20000000000000001" }, { number: "45001", style: 1 }]),
+            ...row(7, ["Total", null, { number: "0", formula: "SUM(C4:C6)" }]),
+          ],
+        },
+      ],
+    });
+    const printed = structureLines(await readXlsx(ledger), "0.6.0");
+    expect(printed.slice(3)).toEqual([
+      "Tabs: Summary Snapshot, tab 2",
+      "Summary Snapshot:",
+      "  Share Class: nothing below it",
+      "  not found: Shares Authorized/ Reserved, Outstanding Shares, Fully Diluted Shares, % Fully Diluted, Liquidation Preference, Voting Multiplier, Voting Power, Voting %, Security Type, # of Securities, Outstanding Amount, Discount, Valuation Cap",
+      "tab 2:",
+      "  column A (Stakeholder): 5 text",
+      "  column B: 4 text",
+      "  column C: 4 numbers (4 with 15 digits or fewer, 0 with 16 or 17), 1 text, 1 formula, 1 saved as 0",
+      "  column D (Original Issue Price): 3 numbers (2 with 15 digits or fewer, 1 with 16 or 17)",
+      "  column E: 3 dates (3 as day counts, 0 as ISO text), 1 text",
+      "  column F (Email Address): not read",
+    ]);
+    for (const word of ["Tamarisk", "ledger", "Class A Common", "Quokka", "Quantity", "Issue Date", "Wren", "Halyard", "example", "4600000", "1.4375", "44927"]) {
+      expect(printed.join("\n")).not.toContain(word);
+    }
   });
 
   it("prints a version label that isn't a version as other", async () => {

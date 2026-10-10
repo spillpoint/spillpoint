@@ -137,7 +137,7 @@ So the reader can tell them apart:
 The engine does no I/O, as for OCF.
 - **The page parses the .xlsx:** it's a zip, which the page's own zip reader opens, of XML parts, read by a small reader of our own, with no dependency.
 - **`readOcx` takes the workbook already parsed:** each tab's name and cells, and the workbook's date system. Each cell has its address, its kind (number, text, true/false, error, or a number formatted as a date), its text exactly as stored, and whether it holds a formula. **A number reaches the engine as text, never as a JavaScript number** (hard rule 2). Built in 06c as `OcxWorkbook` (OX1).
-- **A cell with a formula** gives the value Excel saved with it. **The reader never works a formula out.** A formula saved with no value is refused, since there's nothing to read.
+- **A cell with a formula** gives the value Excel saved with it. **The reader never works a formula out.** A formula saved with no value is refused where the import needs its value. A total that's a formula is only a check, and one it can't trust is skipped (open question 15).
 
 ### Numbers
 
@@ -196,7 +196,7 @@ Excel stores every number as a binary double and writes it out to 17 significant
 - the Summary Snapshot's `Outstanding Shares` against the holders' totals
 - the pool against the plan details
 
-A mismatch is refused as malformed, naming the check.
+A mismatch is refused as malformed, naming the check, unless the total is a formula the import can't trust (open question 15).
 
 ## What it leaves to fill
 
@@ -224,7 +224,7 @@ Each by name, with a kind, `unsupported` or `malformed`, and a term, as `readOcf
 - a total that doesn't add up
 - a liquidation preference that doesn't match
 - a round with no class, or a class with no round
-- a formula with no value saved
+- a formula with no value saved, where the import needs its value (open question 15)
 - a fraction of a share
 - a date or number it can't read
 - two stakeholders of one name
@@ -379,6 +379,10 @@ Your reading check: no strikes or seniority anywhere, and a warrant for a prefer
 12. **Seniority, cumulative dividends, anti-dilution:** whether any appear anywhere.
 13. **Totals:** whether the holders add up to each column's total, and the Summary Snapshot's counts match.
 14. **The file itself:** .xlsx, not .xls, .xlsb or .xlsm; hidden tabs; protection.
+15. **Formula totals saved as 0** (Jordan, 06c review; for 06e). XlsxWriter saves 0 for any formula it didn't work out, and a server-built export may do the same. The reader can't tell that 0 from a real one.
+    - **The rule for 06e:** if the export's totals are formulas, `readOcx` reads only value cells.
+    - **A formula total it can't trust** is skipped, with a report line, rather than called malformed.
+    - **What the cell-kinds script shows:** each column's formula count says how many were saved as 0. All of a column's formula totals at 0 beside non-zero data would point to this.
 
 **Beside these:** the headers of Carta's Cap table report with "Securities ledger by type and class" (your answer 1), and whether it carries what OCX lacks: strikes, SAFE and note holders, a note's terms, seniority.
 

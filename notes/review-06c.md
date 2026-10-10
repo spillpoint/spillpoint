@@ -1,11 +1,12 @@
 # Review: 06c (the part of OCX that doesn't wait for Carta's headers)
 
-Branch `06c-xlsx-reader`, from main. The `cases/` edit rule is on, and no case file changed. No version bump. Five commits:
+Branch `06c-xlsx-reader`, from main. The `cases/` edit rule is on, and no case file changed. No version bump. Six commits:
 1. **The engine:** the naming review's item 7 beside the old names, and the OCX input types, with the engine README. Nothing breaks.
 2. **The .xlsx reader,** in a module the page and Node both run.
 3. **`pnpm ocx-structure`,** the cell-kinds script, with its line in the root README.
 4. **The docs:** ASSUMPTIONS OX1 and OX2, and plan-0.6.0's steps renumbered.
 5. **This note.**
+6. **After your review:** every tab in the cell-kinds report, and the formula-total question in the plan (below).
 
 The page itself doesn't change yet: nothing here is on screen. "Open a cap table export" is 06f.
 
@@ -62,7 +63,7 @@ pnpm ocx-structure path/to/export.xlsx
 spillpoint 0.6.0: an OCX workbook's structure, in counts and kinds
 Dates: the 1900 system
 Version label: OCX Version 0.5
-Tabs: Summary Snapshot, Stakeholder Snapshot, Voting by SH Group, Context; other tabs 1
+Tabs: Summary Snapshot, Stakeholder Snapshot, Voting by SH Group, Context, tab 5
 Stakeholder Snapshot:
   Stakeholder: 5 text
   Total Stock (outstanding): 3 numbers (3 with 15 digits or fewer, 0 with 16 or 17), 3 formulas, 2 empty
@@ -171,6 +172,48 @@ Context:
 - **No changes** to `.github/workflows/` or `.claude/`.
 - **The root `package.json`** gains the `ocx-structure` script.
 - **Nothing ran outside the sandbox, and nothing used the network.** The reference workbooks were read where they already were, in `local/`.
+
+## After your review (Jordan, 06c review)
+
+**Your checks:**
+- main and #80 compared: only additions, with `OcfRefusal`'s name, constructor and `instanceof` kept and `format` gained
+- the reader on workbooks from openpyxl, XlsxWriter and a LibreOffice re-save, and its refusals on a DOCTYPE, a 300 MB zip bomb, an .xls and a broken shared-string index
+- the script on a workbook of planted names, amounts, dates, emails and a company-named tab
+
+Decisions 1 to 7 agreed.
+
+**1. The cell-kinds report covers every tab.** Carta's tabs may not match the reference, and the securities ledger report has its own layout; either used to print only "other tabs N".
+- **The Tabs line** lists every tab in order, the format's by name and any other by position: "Tabs: Summary Snapshot, …, Context, tab 5".
+- **A tab the format doesn't name** gets its own section: each column by its letter, with the kinds of cell in it. Its tab name, which can name the company, is never printed.
+- **Its header row** is the first row with any of the format's names in it. A column's cell there is printed as its header only when it's one of those names; any other text is counted as text.
+- **A column headed by an Additional Information name** isn't read.
+
+From the new test, a layout of its own, as a securities ledger report might have:
+
+```
+tab 2:
+  column A (Stakeholder): 5 text
+  column B: 4 text
+  column C: 4 numbers (4 with 15 digits or fewer, 0 with 16 or 17), 1 text, 1 formula, 1 saved as 0
+  column D (Original Issue Price): 3 numbers (2 with 15 digits or fewer, 1 with 16 or 17)
+  column E: 3 dates (3 as day counts, 0 as ISO text), 1 text
+  column F (Email Address): not read
+```
+
+Two choices of mine within it:
+- **One header row per tab,** not every cell with a format name. Run on the Coalition's diff workbook, whose change log lists old headers as data, the first version printed a column's whole list of names, and called it not read because one was an Additional Information name. One header row per tab fixes that.
+- **The version label** is looked for on every tab, not only the five, in case an export puts it elsewhere.
+
+**2. Formula totals saved as 0,** in the plan as open question 15, for 06e: if the export's totals are formulas, `readOcx` reads only value cells, and a formula total it can't trust is skipped with a report line rather than called malformed. "The input", "Totals are checked" and the refusal list now point to it.
+
+**My addition, to help settle it:** each formula count says how many were saved as 0 ("17 formulas, 5 saved as 0"). A 0 can't be told from a real one, so it only shows how many could be. All of a column's formula totals at 0 beside non-zero data would point to an export that doesn't work its formulas out. On the reference workbooks it counts real zeros, such as the pool row.
+
+**ASSUMPTIONS OX2** says all of this.
+
+**Checks:**
+- **Page:** 537 tests pass, 1 new.
+- **Engine:** 2,265 pass, unchanged.
+- **Typecheck:** clean.
 
 ## Next
 
