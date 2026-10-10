@@ -136,7 +136,7 @@ So the reader can tell them apart:
 
 The engine does no I/O, as for OCF.
 - **The page parses the .xlsx:** it's a zip, which the page's own zip reader opens, of XML parts, read by a small reader of our own, with no dependency.
-- **`readOcx` takes the workbook already parsed:** each tab's name and cells. Each cell has its address, its kind (number, text, true/false, error, or a number formatted as a date) and its text exactly as stored. **A number reaches the engine as text, never as a JavaScript number** (hard rule 2).
+- **`readOcx` takes the workbook already parsed:** each tab's name and cells, and the workbook's date system. Each cell has its address, its kind (number, text, true/false, error, or a number formatted as a date), its text exactly as stored, and whether it holds a formula. **A number reaches the engine as text, never as a JavaScript number** (hard rule 2). Built in 06c as `OcxWorkbook` (OX1).
 - **A cell with a formula** gives the value Excel saved with it. **The reader never works a formula out.** A formula saved with no value is refused, since there's nothing to read.
 
 ### Numbers
@@ -259,31 +259,35 @@ As O10:
 
 ## The steps
 
-- **06c, cases** (the `cases/` edit rule lifted). After a real export's headers are in, and the choice between OCX and the securities ledger report, or both (your answer 1):
-  - **First, the cell-kinds script** (your answer 2a), kept small: for each known column, the kinds of cell with counts ("Original Issue Price: 4 numbers"), never a value, under O15's rule. Whoever has the export runs it and pastes the output.
+**Renumbered in 06c** (Jordan, 07a review): the part of OCX that doesn't depend on Carta's headers comes first, as 06c, while the headers are awaited. The questions and answers below keep the numbers they were written with: their 06c (cases) is now 06d, their 06d (the engine) 06e, their 06e (the page) 06f, and their 06f (the release) 06g.
+
+- **06c, what doesn't wait for headers** (done in 06c):
+  - **the .xlsx reader** into the engine's `OcxWorkbook`: zip and XML, both date systems, numbers as the text Excel stored, in a module the page and Node both run (ASSUMPTIONS OX1)
+  - **`pnpm ocx-structure`,** the cell-kinds script, on that reader (your answer 2a; OX2). Whoever has a real export runs it and pastes the output.
+  - **the naming review's item 7,** beside the old names, nothing breaking: `ImportRefusal` (with `OcfRefusal` its subclass), and `CapTableImport` with its parts (the `Ocf…` names its aliases)
+- **06d, cases** (the `cases/` edit rule lifted). After a real export's headers are in, and the choice between OCX and the securities ledger report, or both (your answer 1):
   - **ocx-01:** a fictional company's workbook, written by hand, using every table the reader reads.
   - **ocx-02:** one-change fixtures for each refusal and each blank, as 04a2's were.
   - **ocx-03 on:** locked cases written as OCX: edge cases 4, 5a, 7, 8 and 12b, and Millrace. Each imports, with its blanks answered, to the locked cap table, with prices to 15 significant digits, compared within a cent as 04b2 did for OCF's 10 places.
 
-  The workbooks are our own, written as JSON in `readOcx`'s input shape (tabs and cells), with expected results worked by hand.
+  The workbooks are our own, written as JSON in `OcxWorkbook`'s shape (tabs and cells), with expected results worked by hand.
 
   Also a reference unit test: a row of identical SAFEs pays the same as the SAFEs one by one, post-money and pre-money both (your answer 10). Combining a row is what lets several pre-money SAFEs past `several_safes`, so the test shows that it's exact.
 
-  ASSUMPTIONS gets an "OCX import" section, as 04a added O1–O12.
-- **06d, the engine:**
-  - `readOcx`
+  ASSUMPTIONS' "OCX import" section, which 06c started with OX1 and OX2, gets the import's rules.
+- **06e, the engine:**
+  - `readOcx`, to the naming review's names (07a)
   - the numbers and dates rules
   - the header matching
   - the checks, refusals and report
-- **06e, the page:**
-  - the .xlsx reader
-  - "Open a cap table export"
+- **06f, the page:**
+  - "Open a cap table export", on 06c's reader
   - the seniority question
   - `ocf-check` on .xlsx
   - **"Copy a summary to share"** (05a2) for .xlsx, on the report, on a refused import and on a refusal at Use (your answer 2). For most founders the page is how we'll learn why a file didn't read.
 
   Its test workbooks are .xlsx files our tests write from the JSON cases, plus one you save from a spreadsheet app (your answer 13).
-- **06f, release 0.6.0,** with 06a's breaking changes in its notes (below).
+- **06g, release 0.6.0,** with 06a's breaking changes in its notes (below).
 
 ## Questions for you
 
