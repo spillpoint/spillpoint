@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, buildCapTables, findBreakpoints, prepare, readCapTable, readInputs } from "../src/index.ts";
 import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
-import { ALL_CASES, FROM_A_STARTING_TABLE, FULL_SEARCH_TIMEOUT, OCF_CASES, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, FROM_A_STARTING_TABLE, OCF_CASES, readCaseFile } from "./support/cases.ts";
 import { capTableJson } from "./support/write.ts";
 
 type Json = Record<string, unknown>;
@@ -167,8 +167,7 @@ it("case 27's RSUs, with no strike, come in where common starts to be paid, in y
   expect(at.reasons.find((r) => r.code === "option_in_the_money")!.text).toBe(
     "Common starts to be paid here, so the 30,000 options with no strike, such as RSUs, start paying: above this exit value each gets what a common share does.",
   );
-  // A full breakpoint search on case 27.
-}, FULL_SEARCH_TIMEOUT);
+});
 
 describe("a sale on a table built from rounds is held to the limits a sale puts on SAFEs and notes (X12–X15, X18)", () => {
   const refusal = (name: string, after: string, exitDate: string, change: (inputs: Inputs) => Inputs = (i) => i) => {
