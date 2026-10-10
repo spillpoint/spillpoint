@@ -562,7 +562,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 **Errors:**
 - `InputError`: the input is malformed.
 - `UnsupportedTermError`: the input uses a term that isn't modeled yet. It carries the `term`, and the `milestone`: `"later"`, for a term that waits until a case settles it. *(0.2.0: nothing is refused as `"M5"` any more, though the type keeps the value. Milestone names are deprecated and will be removed at 1.0, where a refusal will describe what's unsupported instead.)*
-- `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable.
+- `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
 - `OcfRefusal` *(0.4.0)*: `readOcf` won't read a package. It carries the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`.
 
 ## License

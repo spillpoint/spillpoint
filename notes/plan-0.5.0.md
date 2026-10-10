@@ -179,6 +179,19 @@ Both rules, and the speed work.
   - **A warrant at its series' preference per share:** indifferent, but under rule 3 its choice moves the SAFEs. Its tie is now "isn't exercised", New.
   - **Two equal-priced non-participating series beside post-money SAFEs** can have two stable answers.
 
+### 05c5: more than one stable answer (Jordan, after #73)
+
+**Jordan's decisions after #73:**
+- **The warrant's tie is confirmed:** a warrant whose strike equals its series' preference per share doesn't exercise while the series keeps its preference, as an indifferent holder stays put.
+- **More than one stable answer stops the engine.** Wherever the series, warrants and notes have more than one stable answer and those answers pay holders differently, the engine stops with a plain message instead of picking one, and never reports just one of them. The reference does the same. Reporting both, with a locked case, goes on the later list.
+
+**Done in 05c5:**
+- **Every combination is checked** with 12 or fewer series, warrants and notes.
+- **The breakpoint search follows** which combinations are stable between the exit values it reads.
+- **The plain message,** in the engine and the reference.
+- **Tests** from two random tables, and a page test.
+- **The cost:** Larkspur with its note and 10 SAFEs went from 1.4s to 2.0s on a laptop.
+
 ### What it would take to lift the other two refusals at a sale (question 12)
 
 - **A pre-money SAFE beside preferred** (X14, `pre_money_safe_with_preferred`):
@@ -223,6 +236,8 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 **Changed behavior, for the release notes** (Jordan, 05b2 review): a sale on a table built from rounds now applies the same at-a-sale limits as a cap table entered directly (X12–X15), so some inputs 0.4.0 paid are now refused. `readInputs` didn't apply them to a table built from rounds before.
 
 **Changed behavior, for the release notes** (Jordan, after #71): two equal post-money SAFEs can each take cash or both convert over a range of exit values. 0.4.0's `solve` reported both answers there (E8); 0.5.0 takes the most conversions, so they convert where converting together first pays, and payouts bend there (edge case 12k).
+
+**Changed behavior, for the release notes** (Jordan, after #73): where the series, warrants and notes have more than one stable answer and they pay holders differently, `solve` and the breakpoint search stop with a plain message naming them, where 0.4.0 reported every answer (E8), and could miss one where its search from both ends agreed.
 
 **Changed behavior, for the release notes** (Jordan, after #71): a warrant exercised into a series that keeps its preference is left out of a post-money SAFE's Liquidity Capitalization, like the series' own shares (X1, edge case 12l). 0.4.0 counted it, which mattered only where the strike is below the series' preference per share.
 
