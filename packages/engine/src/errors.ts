@@ -22,23 +22,43 @@ export class NoAnswerError extends Error {
 }
 
 /**
- * An Open Cap Format package the importer won't read (O1–O12). "unsupported":
- * valid OCF that spillpoint doesn't model, so reading it would change payouts
- * without saying so. "malformed": the files disagree with each other or with
- * OCF, so there's no single cap table to build. The term names the problem;
- * the subject is the object id, file name or version it's about.
+ * A cap table export an importer won't read: an Open Cap Format package
+ * (O1–O12) or an OCX workbook (0.6.0). "unsupported": valid in its format, but
+ * spillpoint doesn't model it, so reading it would change payouts without
+ * saying so. "malformed": the files disagree with each other or with their
+ * format, so there's no single cap table to build. The term names the problem;
+ * the subject is what it's about (for OCF, the object id, file name or
+ * version), and `format` says which importer refused. One class for both
+ * imports, so a page catches one (the naming review's item 7).
  */
-export class OcfRefusal extends Error {
-  override name = "OcfRefusal";
+export class ImportRefusal extends Error {
+  override name = "ImportRefusal";
+  readonly format: "ocf" | "ocx";
   readonly kind: "unsupported" | "malformed";
   readonly term: string;
   readonly subject: string;
 
-  constructor(kind: "unsupported" | "malformed", term: string, subject: string, message: string) {
+  constructor(format: "ocf" | "ocx", kind: "unsupported" | "malformed", term: string, subject: string, message: string) {
     super(message);
+    this.format = format;
     this.kind = kind;
     this.term = term;
     this.subject = subject;
+  }
+}
+
+/**
+ * An Open Cap Format package readOcf won't read: an ImportRefusal whose format
+ * is "ocf".
+ *
+ * @deprecated Catch ImportRefusal instead. From 0.7.0 readOcf throws
+ * ImportRefusal itself, and this name goes.
+ */
+export class OcfRefusal extends ImportRefusal {
+  override name = "OcfRefusal";
+
+  constructor(kind: "unsupported" | "malformed", term: string, subject: string, message: string) {
+    super("ocf", kind, term, subject, message);
   }
 }
 

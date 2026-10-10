@@ -7,6 +7,7 @@ import * as spillpoint from "../src/index.ts";
 it("exports exactly the public API", () => {
   expect(Object.keys(spillpoint).sort()).toEqual([
     "D",
+    "ImportRefusal",
     "InputError",
     "NoAnswerError",
     "OcfRefusal",

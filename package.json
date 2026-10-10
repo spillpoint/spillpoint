@@ -12,6 +12,7 @@
     "payouts": "node packages/engine/scripts/payouts.ts",
     "breakpoints": "node packages/engine/scripts/breakpoints.ts",
     "ocf-check": "pnpm --silent --filter spillpoint build && node --no-warnings=ExperimentalWarning scripts/ocf-check.mjs",
+    "ocx-structure": "node --no-warnings=ExperimentalWarning scripts/ocx-structure.mjs",
     "rounds": "node packages/engine/scripts/rounds.ts",
     "safes-timing": "node packages/engine/scripts/safes-timing.ts",
     "check-random": "node packages/engine/scripts/check-random.ts"

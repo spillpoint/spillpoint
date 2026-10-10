@@ -19,11 +19,12 @@
 import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
+import type { CapTableImport, ImportBlank, ImportReport } from "./imports.ts";
 import { type OcfClass, readStockClasses } from "./ocf-classes.ts";
 import { Convertibles } from "./ocf-convertibles.ts";
 import { Grants } from "./ocf-grants.ts";
 import { ShareLedger } from "./ocf-ledger.ts";
-import { type OcfNote, Notes } from "./ocf-notes.ts";
+import { Notes } from "./ocf-notes.ts";
 import { type Json, asWritten, date, isObject, malformed, text, unsupported } from "./ocf-read.ts";
 import { Warrants } from "./ocf-warrants.ts";
 
@@ -36,34 +37,16 @@ export interface OcfFile {
   content: unknown;
 }
 
-/** A term an import leaves blank, for the page to ask about (O1). */
-export interface OcfToFill {
-  security?: string;
-  safe?: string;
-  note?: string;
-  field: string;
-}
+// Since 0.6.0 an import's result has names shared by both formats (imports.ts); these OCF names are aliases.
 
-export interface OcfReport {
-  /** How many of each object type set the cap table. */
-  read: Record<string, number>;
-  /** How many of each type were read and set aside, since they don't change payouts. */
-  not_needed: Record<string, number>;
-  notes: OcfNote[];
-}
+/** @deprecated Use ImportBlank: the OCF names go in 0.7.0. */
+export type OcfToFill = ImportBlank;
 
-/** An import, in the case-file format: `cap_table` reads with readCapTable once its blanks are filled in. */
-export interface OcfImport {
-  as_of: string;
-  cap_table: Record<string, unknown>;
-  /**
-   * The order its preferred series, SAFEs and notes were issued in, earliest first (O14), in the shape a starting cap
-   * table takes it (R31, C17), so a round added to the import reads R25's "issued before the series" as the ledger has it.
-   */
-  issue_order: string[];
-  to_fill: OcfToFill[];
-  report: OcfReport;
-}
+/** @deprecated Use ImportReport: the OCF names go in 0.7.0. */
+export type OcfReport = ImportReport;
+
+/** @deprecated Use CapTableImport: the OCF names go in 0.7.0. */
+export type OcfImport = CapTableImport;
 
 const FILE_TYPES = [
   "OCF_MANIFEST_FILE", "OCF_STAKEHOLDERS_FILE", "OCF_STOCK_CLASSES_FILE", "OCF_STOCK_LEGEND_TEMPLATES_FILE", "OCF_STOCK_PLANS_FILE",
@@ -153,8 +136,8 @@ const READ_VERSIONS = /^1\.[0-2]\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
 /** The last part of a path: a manifest lists files by name, and a .zip may keep them in a folder. */
 const fileName = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
-/** Reads an OCF package (O1–O12). Throws OcfRefusal for anything it won't read. */
-export function readOcf(files: readonly OcfFile[]): OcfImport {
+/** Reads an OCF package (O1–O12). Throws OcfRefusal, an ImportRefusal, for anything it won't read. */
+export function readOcf(files: readonly OcfFile[]): CapTableImport {
   const notes = new Notes();
 
   // ---------- the files and the manifest (O2) ----------
@@ -324,7 +307,7 @@ export function readOcf(files: readonly OcfFile[]): OcfImport {
     .map((x) => x.id);
 
   // A blank is a term to fill in, except a cap multiple for a series that isn't capped.
-  const blanks = (list: Json[], key: "security" | "safe" | "note"): OcfToFill[] =>
+  const blanks = (list: Json[], key: "security" | "safe" | "note"): ImportBlank[] =>
     list.flatMap((x) =>
       Object.entries(x)
         .filter(([field, value]) => value === null && !(key === "security" && field === "cap_multiple"))
