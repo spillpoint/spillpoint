@@ -69,6 +69,11 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
     the bracket is the answer. A SAFE or note with no cap jumps instead where
     converting first becomes possible (X9, X12): where its room to convert,
     measured on the side where it converts, reaches zero.
+
+    Where only SAFEs change, several unequal ones can convert together (E20,
+    rule 2: the most conversions). The jump is where the last of them becomes
+    indifferent with the others already converting, so each changed SAFE is
+    flipped from the outcome above the jump as well as from the one below.
     """
     (bits_l, _), = sides[0]
     (bits_r, _), = sides[1]
@@ -79,9 +84,8 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
     # follow it, and the jump is where that decision-maker is indifferent, with the SAFEs re-settled under each choice.
     leading = [i for i in changed if wf.players[i] not in wf.safe_ids]
     for i in leading or changed:
-        u, v = bits_l[i], bits_r[i]
+        v = bits_r[i]
         player = wf.players[i]
-        flipped = bits_l[:i] + (not u,) + bits_l[i + 1 :]
         instrument = next((y for y in wf.safes + wf.notes if y["id"] == player), None)
         if instrument is not None and wf.priced(instrument):
             conv_bits, (x0, x1) = (bits_r, pts_right) if v else (bits_l, pts_left)
@@ -102,14 +106,17 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
         else:
             # E20, E16: the SAFEs' greater-of and the options re-settle under each choice.
             values = [lambda bits, e: wf.player_value(wf.run(e, wf.followed(e, bits))[0], player)]
-        for value in values:
-            for x0, x1 in (pts_left, pts_right):
-                m_keep, c_keep = _line(value(bits_l, x0), value(bits_l, x1), x0, x1)
-                m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
-                if m_keep != m_flip:
-                    x = (c_flip - c_keep) / (m_keep - m_flip)
-                    if lo - 1 <= x <= hi + 1:
-                        xs.add(x)
+        # E20, rule 2: SAFEs converting together are each flipped from the outcome above too.
+        for kept in (bits_l,) if leading else (bits_l, bits_r):
+            flipped = kept[:i] + (not kept[i],) + kept[i + 1 :]
+            for value in values:
+                for x0, x1 in (pts_left, pts_right):
+                    m_keep, c_keep = _line(value(kept, x0), value(kept, x1), x0, x1)
+                    m_flip, c_flip = _line(value(flipped, x0), value(flipped, x1), x0, x1)
+                    if m_keep != m_flip:
+                        x = (c_flip - c_keep) / (m_keep - m_flip)
+                        if lo - 1 <= x <= hi + 1:
+                            xs.add(x)
     if len(xs) != 1:
         raise ValueError(f"cannot place the jump near {decimal(lo, 2)}: {sorted(xs)}")
     return xs.pop()
