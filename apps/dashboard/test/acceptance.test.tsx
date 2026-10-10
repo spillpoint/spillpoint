@@ -216,7 +216,7 @@ it("builds a founder, a note and a round from a blank company, with payouts afte
 
   // A year at 6% is $30,000; $530,000 at the cap price, $8M ÷ 10,000,000 shares = $0.80, is 662,500 shares.
   const said = [...round.querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
-  expect(said).toContain("Nadia's note converts $530,000.00 ($500,000.00 and $30,000.00 interest) at its cap price, $0.800000 a share, into 662,500 shares of Series A Preferred (from notes).");
+  expect(said).toContain("Nadia's note converts $530,000.00 ($500,000.00 and $30,000.00 interest) at its cap price, $0.80 a share, into 662,500 shares of Series A Preferred (from notes).");
   // The payouts moved to the round by themselves, and the note isn't outstanding at the sale any more.
   expect(after()).toBe("series_a");
   expect(within(round).getByText("The payouts use the cap table after this event.")).toBeTruthy();

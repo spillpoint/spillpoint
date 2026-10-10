@@ -9,9 +9,10 @@
 import type React from "react";
 import type { CapTableAfterEvent, Participation } from "spillpoint";
 
+import { blankMessage, eventFieldName } from "./blankNames.ts";
 import { CheckField, Field, SelectField } from "./fields.tsx";
 import { amountHint } from "./format.ts";
-import { BLANK, addHolder, antiDilutionBefore, eventFieldId, eventsNaming, getIn, holderFieldId, outstandingBefore, setEvent, setIn } from "./roundsDraft.ts";
+import { addHolder, antiDilutionBefore, eventFieldId, eventsNaming, getIn, holderFieldId, outstandingBefore, setEvent, setIn } from "./roundsDraft.ts";
 import type { EventDraft, RoundsDraft, RoundsProblem } from "./roundsDraft.ts";
 
 type Json = Record<string, unknown>;
@@ -145,8 +146,8 @@ function fieldsFor(event: EventDraft, draft: RoundsDraft, onDraft: (d: RoundsDra
   const errorFor = (path: string) => {
     if (!problem || problem.event !== event.key) return null;
     if (problem.fields.includes(id(path))) return problem.message;
-    // The other fields the engine needs filled in this event, all marked at once (M4 review's polish).
-    return problem.blanks?.some((chain) => chain.includes(id(path))) ? BLANK : null;
+    // The other fields the engine needs filled in this event, all marked at once (M4 review's polish), each named (05e).
+    return problem.blanks?.some((chain) => chain.includes(id(path))) ? blankMessage(eventFieldName(draft.holders, json, path)) : null;
   };
   const value = (path: string) => {
     const v = getIn(json, path);

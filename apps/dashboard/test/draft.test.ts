@@ -169,7 +169,7 @@ describe("warrants and cumulative dividends (M5k2)", () => {
     expect(removed.securities.find((s) => s.kind === "warrant")).toMatchObject({ underlying: "" });
     const checked = checkBuilt(buildExit({ ...removed }));
     const w = removed.securities.find((s) => s.kind === "warrant")!;
-    expect(checked).toMatchObject({ ok: false, field: fieldId.underlying(w.key), message: "Fill this in: it can't be blank." });
+    expect(checked).toMatchObject({ ok: false, field: fieldId.underlying(w.key), message: "What Warrant for Seed buys can't be blank." });
   });
 
   it("puts a dividend's messages next to its fields, and asks for the sale's date by the series' name", () => {
@@ -179,7 +179,7 @@ describe("warrants and cumulative dividends (M5k2)", () => {
     const dated = { ...d, exitDate: "2026-03-31" };
     expect(checkBuilt(buildExit(dated)).ok).toBe(true);
     const blankRate = { ...dated, securities: dated.securities.map((x) => (x.kind === "preferred" ? { ...x, dividend: { ...x.dividend!, rate: "" } } : x)) };
-    expect(checkBuilt(buildExit(blankRate))).toMatchObject({ ok: false, field: fieldId.dividendRate(s.key), message: "Fill this in: it can't be blank." });
+    expect(checkBuilt(buildExit(blankRate))).toMatchObject({ ok: false, field: fieldId.dividendRate(s.key), message: "Seed Preferred's cumulative dividend rate can't be blank." });
     expect(checkBuilt(buildExit({ ...d, exitDate: "2022-03-30" }))).toMatchObject({ field: fieldId.exitDate, message: "2022-03-30 is before Seed Preferred's dividends start to accrue, 2022-03-31" });
   });
 });
@@ -210,13 +210,13 @@ describe("the sale's terms (M5l)", () => {
     expect(carried.schedules.map((s) => s.payments.map((p) => p.label))).toEqual([["Closing", "Earnout"]]);
     // A recipient the rounds no longer have is asked for, never given to someone else.
     const checked = checkBuilt(buildExit({ ...carried, carveOut: { ...carried.carveOut!, allocation: [carried.carveOut!.allocation[1]!] } }));
-    expect(checked).toMatchObject({ ok: false, field: fieldId.carveHolder(carried.carveOut!.allocation[1]!.key), message: "Fill this in: it can't be blank." });
+    expect(checked).toMatchObject({ ok: false, field: fieldId.carveHolder(carried.carveOut!.allocation[1]!.key), message: "Carve-out recipient 1 can't be blank." });
   });
 
   it("puts a schedule's messages next to its payments", () => {
     const d = addSchedule(scratchDraft());
     const [closing] = d.schedules[0]!.payments;
-    expect(checkBuilt(buildExit(d))).toMatchObject({ ok: false, field: fieldId.paymentAmount(closing!.key), message: "Fill this in: it can't be blank." });
+    expect(checkBuilt(buildExit(d))).toMatchObject({ ok: false, field: fieldId.paymentAmount(closing!.key), message: "The Closing payment's amount can't be blank." });
   });
 });
 

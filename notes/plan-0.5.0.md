@@ -246,7 +246,7 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 
 **Changed behavior, for the release notes** (Jordan, after #71): two equal post-money SAFEs can each take cash or both convert over a range of exit values. 0.4.0's `solve` reported both answers there (E8); 0.5.0 takes the most conversions, so they convert where converting together first pays, and payouts bend there (edge case 12k).
 
-**Changed behavior, for the release notes** (Jordan, after #73): where the series, warrants and notes have more than one stable answer and they pay holders differently, `solve` and the breakpoint search stop with a plain message naming them, where 0.4.0 reported every answer (E8), and could miss one where its search from both ends agreed. The breakpoint search's message gives the exit value where the second answer begins (05c6).
+**Changed behavior, for the release notes** (Jordan, after #73): where the series, warrants and notes have more than one stable answer and they pay holders differently, `solve` and the breakpoint search stop with a plain message naming them, where 0.4.0 reported every answer (E8), and could miss one where its search from both ends agreed.
 
 **Changed behavior, for the release notes** (Jordan, after #71): a warrant exercised into a series that keeps its preference is left out of a post-money SAFE's Liquidity Capitalization, like the series' own shares (X1, edge case 12l). 0.4.0 counted it, which mattered only where the strike is below the series' preference per share.
 
@@ -256,6 +256,10 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 - SAFEs beside a capped note at a sale (X18)
 - the note-base rule in the OCF import (O9)
 - a faster breakpoint search, which takes a table with many SAFEs from minutes to seconds (05c4)
+
+**Jordan, after #75:** #75's engine fix needs no line, since it fixed 05c5's stop, which 0.4.0 never had. "Changes that can break 0.4.0 code" also lists `solve`'s answers holding one answer and the at-a-sale refusals on a table built from rounds. "Still refused" adds the new refusals and 05c5's limits, in plain words. The speed names its table, gives a range, and says it depends on the machine. The engine is packed, and not published or tagged.
+
+**Done in 05e:** the two polish items, the version (0.5.0), both READMEs, and `notes/release-0.5.0.md`.
 
 ## Questions
 

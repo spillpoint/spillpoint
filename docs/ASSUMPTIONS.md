@@ -65,6 +65,7 @@ Deferred by Jordan's decisions since the 0.3.0 plan, each until a case settles i
   - **On a laptop:** 204s before 05c4, 1.4s after; with 05c5's check of every combination for a second answer, 2.0s.
   - **On CI's 2-core machine, 05c4's timing test:** 4.6s and 4.1s, on the two Node versions.
   - **On Jordan's 2-core machine, after 05c4:** 1.1s with 2 SAFEs and 13.3s with 10; without the note, 0.4s and 6.7s. (Jordan, after #73.)
+  - **0.5.0:** on CI, 4.0s and 4.9s on Node 24, and 8.1s and 8.5s on Node 22, where 05c5's check costs more than on the laptop. The packed build on Jordan's 2-core machine, 8.65s with 10 SAFEs. (05e; Jordan, 05e review.)
 
   No test needs the 60-second timeout #68 gave the largest searches any more. Other large shapes, as case 26 with 12 option strikes, haven't been timed since. The page runs the search in a worker, so it doesn't freeze, and says "Working out the curves and breakpoints…" while it waits. (Jordan, 05b3a review; Jordan, after #71.)
 - **A round's new series joining a starting table's conversion group (R31).** Not refused: by default the group stays as the starting table gives it, and the round says its new series decides on its own (05b3). A possible toggle, for a charter whose mandatory conversion is voted by all preferred together. (Jordan, 05b2 review.)
@@ -73,6 +74,7 @@ Deferred by Jordan's decisions since the 0.3.0 plan, each until a case settles i
 - **OCF fractional shares** (O5): refused as `fractional_shares`. In the 1.0c run on real exports, count how often (Jordan, 04d review).
 - **A common class with a conversion right, as dual-class common might be** (O4): refused as `common_conversion_right`. In the 1.0c run, count how often. If it shows up, the likely fix is reading it as common, with a report line (Jordan, 04d review).
 - **readOcf's outer names** (`as_of`, `to_fill`, `not_needed`) are snake_case, where the rest of the API is camelCase. Settle it once in the 1.0b review; the cap table inside stays in the case format (Jordan, 04d review).
+- **`solve`'s `complete`** is always true since 0.5.0: the case it marked false, more than 12 decision-makers whose two ends disagree, now stops with a `NoAnswerError` (E8, E15). Drop it or keep it in the 1.0b review (Jordan, 05e review).
 - **An OCF plan that gives no cancellation behavior** (O6), which OCF allows, with a grant cancelled or expired under it: refused as `cancellation_behavior_missing` for 0.4.0. In the 1.0c run on real exports, count how often. The likely fix is a term to fill in, "Do cancelled grants under [plan] go back to the pool?", since it changes only the unissued pool (Jordan, 04e review).
 - **At a sale, a pre-money SAFE beside preferred** (X14), refused as `pre_money_safe_with_preferred`: it needs a default for where its cash ranks, since the pre-money text ranks it only against other SAFEs. Unless real exports show it (Jordan, 0.5.0 plan, answer 12).
 - **At a sale, several SAFEs not all post-money** (X13), refused as `several_safes`: each kind counts the others differently. Unless real exports show it (Jordan, 0.5.0 plan, answer 12).
