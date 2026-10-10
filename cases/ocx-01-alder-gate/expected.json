@@ -44,7 +44,7 @@
     "issue_order": ["safe_investor_s"],
     "to_fill": [],
     "report": {
-      "read": { "stakeholders": 9, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "stock_plans": 1 },
+      "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
       "not_needed": { "stock_plan_history": 2 },
       "notes": [
         { "code": "version_label", "field": "0.7" },

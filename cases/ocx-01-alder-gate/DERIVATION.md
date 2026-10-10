@@ -60,6 +60,7 @@ The Stakeholder View's holder rows, rows 3 to 11, less the pool's row (13, "Opti
 | *Options remaining for issuance* | 0 | 0 | 610,000 | 0 | 0 |
 
 - **Nine holders:** `read.stakeholders` is 9. Each one's id is its name in OX3's form (`employee_c`, `founder_a`, …).
+- **The pool's row** is read for the pool's value (below): `read.pool_rows` is 1. `read` counts every row the import uses, for a value or a check (OX12).
 - **Set aside:**
   - the voting block, as set aside throughout
   - the Additional Information block (`Primary Stakeholder Type`, `Email Address`), which is never read
@@ -162,7 +163,7 @@ No class is made for EP-4's $0.05 strike, since nothing is left at it.
   - a blank discount, which is none, written "0"
   - `Most Favored Nation` blank: not an MFN SAFE
 - **Its currencies** are "USD".
-- **The Summary View's convertibles table has one row:** `Post-$ SAFEs`, `# of Securities` 1, `Outstanding Amount` 200,000. The outstanding post-money SAFEs are one, for 200,000, so they agree.
+- **The Summary View's convertibles table has one row:** `Post-$ SAFEs`, `# of Securities` 1, `Outstanding Amount` 200,000. The outstanding post-money SAFEs are one, for 200,000, so they agree. The row is read for that check: `read.convertible_rows` is 1. Its `Total` row is a formula with no saved value, skipped.
 
 Investor S holds no stock, but holds this SAFE, so is kept.
 
@@ -179,7 +180,7 @@ O14's order holds every preferred series, SAFE and note. Here that's the one out
 
 ## The report
 
-- **`read`:** stakeholders 9, share classes 2, certificates 7, plan grants 6, warrants 1, SAFEs 2, stock plans 1.
+- **`read`:** stakeholders 9, pool rows 1, share classes 2, certificates 7, plan grants 6, warrants 1, SAFEs 2, convertible rows 1, stock plans 1.
 - **`not_needed`:** stock plan history 2.
 - **The notes:**
   - `version_label` (0.7)

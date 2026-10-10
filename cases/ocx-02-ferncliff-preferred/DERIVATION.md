@@ -54,7 +54,7 @@ The Stakeholder View heads Series Seed Preferred's column "Series Seed Preferred
 | Investor Y | 0 | 500,000 | 0 | 0 |
 | *Options remaining for issuance* | 0 | 0 | 0 | 0 |
 
-**Four holders:** `read.stakeholders` is 4. The totals' columns and row are formulas with no saved value: `formula_totals_skipped`.
+**Four holders:** `read.stakeholders` is 4. The pool's row is read for the pool's value (below): `read.pool_rows` is 1. The totals' columns and row are formulas with no saved value: `formula_totals_skipped`.
 
 **The ledgers,** each named "<class> Ledger" for a class the Summary lists:
 
@@ -83,7 +83,7 @@ Series Seed Preferred's earliest `Issue Date` is 15 November 2024, and there's n
 
 ## The report
 
-- **`read`:** stakeholders 4, share classes 2, certificates 4. `not_needed` is empty.
+- **`read`:** stakeholders 4, pool rows 1, share classes 2, certificates 4. The Summary View's convertibles table has no row, only its `Total`. `not_needed` is empty.
 - **The notes:**
   - `version_label` (0.7)
   - O11's four

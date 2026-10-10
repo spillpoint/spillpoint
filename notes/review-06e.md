@@ -154,6 +154,20 @@ Everything else is our own: titles, footnotes, the company, its holders and its 
 - **Reference:** 71 unit tests pass, and every `expected.json` matches.
 - **Typecheck:** clean.
 
+## After your review (Jordan, 06e review)
+
+**Your check:** both cases re-derived with your own OCX reader, written from OX3 to OX12 alone. Every holder, class, position, strike, the pool, the SAFE, the blanks, the issue order and the report matched `expected.json` exactly, notes order included.
+
+Decisions 1 to 5 agreed.
+
+**One commit:**
+1. **`read` counts every row the import uses, for a value or a check,** now in OX12. Alder Gate's Summary View convertibles row, read for the SAFEs' check, counts: `read.convertible_rows` is 1, beside `stock_plans`' 1 for the pool's check.
+2. **Your rule also catches the pool's row,** on the Stakeholder View, which the import reads for the pool's value. I count it as `pool_rows`, 1 in both cases: in Alder Gate for its 610,000, and in Ferncliff for its 0. That's a key and a line in each case beyond what you named. If you'd rather the pool's row not count, it's one line in each `expected.json` and in OX12. **Not counted:** a section's label, a header row, and a total skipped.
+3. **Both DERIVATIONs** say which row each count comes from.
+4. **ASSUMPTIONS' later list:** rebuilding an import's history as events, from OCF's ledger or 0.7's ledgers by issue date. An import is read as the company as it stands (R31), which is all a payout needs; a history view waits for a user who asks.
+
+**Checks:** engine 2,286 tests pass, the OCX case checks among them; the page is unchanged.
+
 ## Next
 
-06e2, the 0.7 fixtures, once the two cases are re-derived. I'm stopping here.
+06e2, the 0.7 fixtures, with the cases lock still lifted. I'm stopping here.

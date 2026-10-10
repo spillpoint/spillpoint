@@ -43,7 +43,7 @@
       { "field": "seniority" }
     ],
     "report": {
-      "read": { "stakeholders": 4, "share_classes": 2, "certificates": 4 },
+      "read": { "stakeholders": 4, "pool_rows": 1, "share_classes": 2, "certificates": 4 },
       "not_needed": {},
       "notes": [
         { "code": "version_label", "field": "0.7" },
