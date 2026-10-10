@@ -85,7 +85,8 @@ export class Convertibles {
 
     const safes: Json[] = [];
     const notes: Json[] = [];
-    for (const s of this.book.open()) {
+    const open = this.book.open();
+    for (const s of open) {
       const id = s.issuance.id as string;
       if (s.terms.kind === "CONVERTIBLE_SECURITY") throw unsupported("convertible_security", id, `${s.id} is a convertible of OCF's general kind, whose conversion spillpoint doesn't model`);
       const m = s.terms.mechanisms[0]!;
@@ -93,7 +94,7 @@ export class Convertibles {
         throw unsupported("convertible_triggers_differ", id, `${s.id} converts on different terms at different triggers; spillpoint reads one set of terms`);
       }
       if (s.terms.kind === "SAFE") safes.push(this.safe(s.id, s.holder, s.quantity, m, id));
-      else notes.push(this.note(s.id, s.holder, s.quantity, m, id));
+      else notes.push(this.note(s.id, s.holder, s.quantity, m, id, open.length - 1));
     }
     return { safes, notes };
   }
@@ -114,7 +115,8 @@ export class Convertibles {
     return { id: sec, holder, purchase_amount: asWritten(purchase), ...capFields, discount: discountOf(m, subject) };
   }
 
-  private note(sec: string, holder: string, principal: Decimal, m: Json, subject: string): Json {
+  /** `besides`: how many other SAFEs and notes are outstanding on the package's date. */
+  private note(sec: string, holder: string, principal: Decimal, m: Json, subject: string, besides: number): Json {
     // O9: one rate, simple, Actual/365, accruing daily, deferred to conversion. Anything else is refused, on the later list.
     if (m.conversion_mfn === true) throw unsupported("note_mfn", subject, `${sec} is an MFN note, whose terms spillpoint doesn't model`);
     const rates = required(m, "interest_rates", subject);
@@ -135,6 +137,20 @@ export class Convertibles {
     const cap = m.conversion_valuation_cap == null ? null : asWritten(money(m, "conversion_valuation_cap", subject).amount);
     // O9: OCF has no field for a note cap's kind; the engine models pre-money caps, so it's read as one, with a report line.
     if (cap != null) this.notes.add("note_cap_read_as_pre_money", sec);
+    // O9 (Jordan's 0.5.0 answer 11): rules that count other converting securities fit neither base spillpoint models
+    // when another SAFE or note is outstanding beside the note. With nothing else outstanding, there's nothing for them
+    // to count, so they change nothing, and the rest of the rules are read.
+    const rules = m.capitalization_definition_rules;
+    if (isObject(rules) && rules.include_other_converting_securities === true) {
+      if (besides > 0) {
+        throw unsupported(
+          "note_base_counts_other_convertibles", subject,
+          `${sec}'s cap divides by a count that includes other converting securities, and ${besides === 1 ? "another SAFE or note is" : `${besides} other SAFEs and notes are`} ` +
+            "outstanding beside it; spillpoint's bases, with or without the pool, don't count them",
+        );
+      }
+      this.notes.add("note_base_other_convertibles_ignored", sec);
+    }
     return {
       id: sec,
       holder,
@@ -143,7 +159,7 @@ export class Convertibles {
       interest_method: "simple",
       issue_date: date(rate, "accrual_start_date", subject),
       ...(cap == null ? {} : { valuation_cap: cap, cap_type: "pre_money" }),
-      conversion_base: conversionBase(m.capitalization_definition_rules),
+      conversion_base: conversionBase(rules),
       discount: discountOf(m, subject),
       // O9: the repayment multiple is the exit multiple; absent, it's left blank rather than read as 1x (answer 8).
       repayment_multiple: m.exit_multiple == null ? null : asWritten(new D(numericText(m.exit_multiple, "exit_multiple", subject))),
@@ -183,14 +199,13 @@ function discountOf(m: Json, subject: string): string {
 /**
  * O9: what a note's cap divides by, from its capitalization rules. Outstanding shares, options and the unissued pool,
  * and nothing else, is "with pool"; shares and options alone, "without pool". Anything else, or no rules, is blank.
+ * Other converting securities are settled before this: refused beside another SAFE or note, and with none outstanding,
+ * left out, since there's nothing for them to count.
  */
 function conversionBase(rules: unknown): string | null {
   if (!isObject(rules)) return null;
   const on = (field: string) => rules[field] === true;
-  const others = [
-    "include_this_security", "include_other_converting_securities", "include_option_pool_topup_for_promised_options",
-    "include_additional_option_pool_topup", "include_new_money",
-  ];
+  const others = ["include_this_security", "include_option_pool_topup_for_promised_options", "include_additional_option_pool_topup", "include_new_money"];
   if (!on("include_outstanding_shares") || !on("include_outstanding_options") || others.some(on)) return null;
   return on("include_outstanding_unissued_options") ? "with_pool" : "without_pool";
 }
