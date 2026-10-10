@@ -20,6 +20,7 @@ It deliberately differs from the engine's.
 
 ## Tools
 
+- `tools/random_safes.py` builds random cap tables with several SAFEs at a sale and works each one as a case, for the engine's check `packages/engine/scripts/check-random.ts` to compare against (05c4). Its docstring has the commands. The tables go in `local/`, which git ignores.
 - `tools/stable_answers.py` searches random cap tables for exit values with more than one stable answer, or none. It was run before M2c (`ASSUMPTIONS.md` E8, E15) and takes about four minutes:
   ```bash
   python3 reference/tools/stable_answers.py

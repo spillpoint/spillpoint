@@ -11,7 +11,6 @@ import { ISSUE_PRICE, PLACEHOLDER, answerSets, checkExport } from "../src/ocfChe
 import type { EngineRuns } from "../src/ocfCheck.ts";
 import type { Picked } from "../src/ocfImport.ts";
 
-import { FULL_SEARCH_TIMEOUT } from "./analysis.ts";
 
 const cases = resolve(import.meta.dirname, "../../../cases");
 const filesIn = (dir: string): Picked[] => readdirSync(dir).sort().map((name) => ({ name, bytes: new Uint8Array(readFileSync(resolve(dir, name))) }));
@@ -79,7 +78,7 @@ describe("what it prints", () => {
       "set 1: #1 participation=non_participating, #2 repayment_multiple=placeholder: reads",
       "set 2: #1 participation=participating, #2 repayment_multiple=placeholder: reads",
     ]);
-  }, FULL_SEARCH_TIMEOUT);
+  });
 
   it("Millrace: read either way Series B participates", async () => {
     expect((await check(packageOf("ocf-11-millrace"))).slice(-3)).toEqual([
@@ -165,7 +164,7 @@ describe("what it never prints", () => {
   const PRINTABLE = new Set(["non_participating", "participating", "participating_capped", "pre_money", "post_money", "with_pool", "without_pool", PLACEHOLDER, ISSUE_PRICE]);
 
   // Most fixtures fill to Larkspur's table, whose every set is a full breakpoint search (05c2): they share the engine's
-  // runs, so it searches each table once. A test run alone still searches it, so each has the full search's timeout.
+  // runs, so it searches each table once.
   const engineRuns: EngineRuns = new Map();
 
   it.each(runs)("%s: no name, id, amount or date", async (_, picked) => {
@@ -178,5 +177,5 @@ describe("what it never prints", () => {
     const tokens = new Set(printed.split(/[^A-Za-z0-9_.,+-]+/).map((t) => t.replace(/[.,]+$/, "")));
     for (const word of words) if (!/^\d{1,3}$/.test(word)) expect(tokens.has(word), word).toBe(false);
     for (const [, answer] of printed.matchAll(/#\d+ [a-z_]+=([^,:]+)/g)) expect(PRINTABLE.has(answer!), answer).toBe(true);
-  }, FULL_SEARCH_TIMEOUT);
+  });
 });

@@ -1,12 +1,14 @@
-// 05c2: the SAFEs' greater-of comes last (E20), and SAFEs beside a note at a sale (X18). Cases 12j, 13i and 13j run
-// through every exit test; these check what the cases don't pin: Jordan's check inside the band where 0.4.0's engine
-// went round in a circle, one answer at every point of both bands, the tie among several SAFEs, and the wording.
+// 05c2: the SAFEs' greater-of comes last (E20), and SAFEs beside a note at a sale (X18); 05c4: the SAFEs' most
+// conversions (E20) and warrant shares keeping a preference (X1). Cases 12j to 12l, 13i and 13j run through every exit
+// test; these check what the cases don't pin: Jordan's check inside the band where 0.4.0's engine went round in a
+// circle, one answer at every point of both bands, the count itself, and the wording.
 
 import { describe, expect, it } from "vitest";
 
-import { D, findBreakpoints, payout, prepare, readCapTable, solve } from "../src/index.ts";
+import { D, findBreakpoints, payout, prepare, readExit, solve } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
-import { FULL_SEARCH_TIMEOUT, readCaseFile } from "./support/cases.ts";
+import { readCaseFile } from "./support/cases.ts";
+import { larkspurWithSafes } from "./support/larkspur.ts";
 
 const caseTable = (name: string) => {
   const exit = readInputs(readCaseFile(name, "inputs.json"));
@@ -65,7 +67,7 @@ describe("Larkspur at a sale, where the Seed and the SAFEs went round in a circl
         "now counts it, so its 330,244.57 conversion shares ($250,000 ÷ the Liquidity Price of $0.757015) are worth $0.80 each just above this " +
         "exit value, $264,195.65 in all, more than its $250,000 purchase amount.",
     );
-  }, FULL_SEARCH_TIMEOUT);
+  });
 });
 
 describe("a note beside a SAFE (X18; 13i)", () => {
@@ -79,40 +81,65 @@ describe("a note beside a SAFE (X18; 13i)", () => {
   });
 });
 
-// Until 05c4: Jordan reversed this tie to the most conversions after #71 (E20), and edge case 12k is its case.
-describe("several SAFEs that could settle more than one way take the fewest conversions (E20, E5)", () => {
-  // Two equal SAFEs, $250,000 each at a $2,000,000 post-money cap, beside 1,000,000 common. Both converting, each gets
-  // an eighth of the sale; one converting on its own, an eighth of what's left after the other's cash. So from
-  // $2,000,000 to $2,250,000 both taking cash and both converting are each stable: 0.4.0's engine reported both
-  // answers there. Converting alone doesn't pay until $2,250,000, so they take cash until then, and payouts jump.
-  const ct = readCapTable({
-    holders: [{ id: "f", name: "Founder" }, { id: "a", name: "Investor A" }, { id: "b", name: "Investor B" }],
-    securities: [{ id: "common", name: "Common Stock", kind: "common" }],
-    seniority: [],
-    positions: [{ holder: "f", security: "common", shares: 1000000 }],
-    unissued_pool: 0,
-    unconverted_safes: [
-      { id: "safe_a", holder: "a", purchase_amount: "250000", post_money_cap: "2000000" },
-      { id: "safe_b", holder: "b", purchase_amount: "250000", post_money_cap: "2000000" },
-    ],
-  });
-  const pc = prepare(ct, null);
+describe("several SAFEs that could settle more than one way take the most conversions (E20; Jordan, after #71)", () => {
+  // Case 12k: two equal SAFEs, $500,000 each at a $5M post-money cap, beside 10,000,000 common. From $5M to $5.5M
+  // both taking cash and both converting are each stable. 0.4.0's engine reported both answers there, and 05c2's took
+  // the cash; they convert, from $5M, where payouts bend.
+  const { exit, pc } = caseTable("edge-12k-two-equal-safes");
 
-  it.each([["2100000"], ["2250000"]])("at $%s, both take their cash: one answer", (x) => {
-    const { answers } = solve(pc, new D(x));
+  it("at $5,250,000, both convert: one answer", () => {
+    const { answers } = solve(pc, new D(5250000));
     expect(answers).toHaveLength(1);
-    expect([...answers[0]!.decisions.converted]).toEqual([]);
-    expect(answers[0]!.payout.bySecurity.get("safe_a")!.toString()).toBe("250000");
+    expect([...answers[0]!.decisions.converted].sort()).toEqual(["safe_x", "safe_y"]);
+    expect(answers[0]!.payout.bySecurity.get("safe_x")!.toString()).toBe("525000");
   });
 
-  it("jumps at $2,250,000, where converting alone first pays, and says so", () => {
-    const found = findBreakpoints(pc, [new D(0), new D(5000000)]);
-    expect(found.map((b) => [b.exitValue.toString(), b.jumps])).toEqual([["500000", false], ["2250000", true]]);
-    expect(found[1]!.reasons.find((r) => r.subject.includes("safe_a"))!.text).toBe(
-      "Investor A's SAFE switches from its Cash-Out Amount to its Conversion Amount here, with Investor B's SAFE. Converting on its own, " +
-        "its 142,857.14 conversion shares ($250,000 ÷ the Liquidity Price of $1.75) would be worth $1.75 each, $250,000 in all, the same as its " +
-        "purchase amount; above this exit value, converting pays more. With the other SAFE converting too, the Liquidity Capitalization counts its " +
-        "shares, so its 166,666.67 shares are worth $1.6875 each just above this exit value, $281,250 in all.",
+  it("bends at $5,000,000, where converting together first pays, and says so", () => {
+    const found = findBreakpoints(pc, exit.range);
+    expect(found.map((b) => [b.exitValue.toFixed(2), b.jumps])).toEqual([["1000000.00", false], ["5000000.00", false]]);
+    expect(found[1]!.reasons.find((r) => r.subject.includes("safe_x"))!.text).toBe(
+      "Investor X's SAFE switches from its Cash-Out Amount to its Conversion Amount here. Its 1,250,000 conversion shares ($500,000 ÷ the " +
+        "Liquidity Price of $0.40) are worth $0.40 each, $500,000 in all, the same as its purchase amount. Below this exit value the Cash-Out " +
+        "Amount pays more; above it, the Conversion Amount does. It converts together with Investor Y's SAFE. On its own, converting would pay " +
+        "it only $450,000 here, less than its cash; with both converting, each gets its fixed share of the Liquidity Capitalization, which pays " +
+        "more above this exit value, so they convert.",
     );
   });
+});
+
+describe("a warrant exercised into a series keeping its preference is left out of the SAFE's count (X1; Jordan, after #71)", () => {
+  // Case 12l: case 8's warrant for 200,000 Seed at $0.50, below the Seed's $1.00 preference, beside a $500,000 SAFE at a
+  // $5M post-money cap. Counting the warrant's shares, the SAFE would convert at $6,990,243.90.
+  const { exit, pc } = caseTable("edge-12l-warrant-below-preference-beside-a-safe");
+
+  it("counts 8,000,000 besides the SAFE while the Seed keeps its preference and the warrant is exercised; 8,200,000 while it isn't", () => {
+    const lc = (exercised: string[]) =>
+      payout(pc, new D(10000000), { converted: new Set(["safe_s"]), exercised: new Set(exercised) }).safes.get("safe_s")!.liquidityCapitalization!;
+    expect(lc(["warrant_seed"]).times(9).toDecimalPlaces(20).toString()).toBe("80000000");
+    expect(lc([]).times(9).toDecimalPlaces(20).toString()).toBe("82000000");
+  });
+
+  it("takes the SAFE's cash at $7,000,000, and says why payouts jump where the Seed converts", () => {
+    const [answer] = solve(pc, new D(7000000)).answers;
+    expect([...answer!.decisions.converted]).toEqual([]);
+    const jump = findBreakpoints(pc, exit.range).find((b) => b.jumps)!;
+    expect(jump.reasons.find((r) => r.code === "series_converts")!.text).toMatch(
+      /at \$1\.00 each, the same as its 1x preference of \$2,200,000\. .* Converting puts its shares in the Liquidity Capitalization Investor S's SAFE converts on, so its conversion shares grow with it: just above this exit value its payout jumps up and common's down\.$/,
+    );
+  });
+});
+
+describe("Larkspur at a sale with its note and 10 post-money SAFEs (05c4; Jordan, after #71)", () => {
+  // Jordan's target: under 5 seconds on CI's 2-core machine for the breakpoint search and the answer at each
+  // breakpoint, as the page works them out. The time is printed for each run to show; a limit at the target would fail
+  // at random on a slow runner, so the test has 20 seconds. On a laptop it takes about 1.4s; before 05c4, 204s.
+  it("works out every breakpoint, and the answer at each, and prints how long that took", () => {
+    const exit = readExit(larkspurWithSafes(10, true));
+    const pc = prepare(exit.capTable, exit.exitDate);
+    const start = performance.now();
+    const found = findBreakpoints(pc, exit.range);
+    for (const b of found) expect(solve(pc, b.exitValue).answers).toHaveLength(1);
+    process.stdout.write(`Larkspur with its note and 10 SAFEs: ${((performance.now() - start) / 1000).toFixed(2)}s for ${found.length} breakpoints\n`);
+    expect(found.length).toBeGreaterThan(0);
+  }, 20_000);
 });

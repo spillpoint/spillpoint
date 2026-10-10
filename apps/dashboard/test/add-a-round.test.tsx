@@ -15,7 +15,7 @@ import { App } from "../src/App.tsx";
 import { buildExit, draftFromExit } from "../src/draft.ts";
 import { fromRounds } from "../src/rounds.ts";
 import { addEvent, buildRounds, moveEvent, removeEvent, setEvent, startingRounds } from "../src/roundsDraft.ts";
-import { ANALYSIS_TIMEOUT, FULL_SEARCH_TIMEOUT } from "./analysis.ts";
+import { ANALYSIS_TIMEOUT } from "./analysis.ts";
 import { exitOf, payoutsAtBreakpoints } from "./payouts.ts";
 
 const cases = resolve(import.meta.dirname, "../../../cases");
@@ -234,7 +234,7 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
       // Since 05c2 the engine reads Larkspur at a sale, its SAFEs beside its note (X18, E20): it opens with payouts.
       await importLarkspur();
       await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 8 files\./);
-      await screen.findByRole("heading", { name: "Breakpoints" }, { timeout: FULL_SEARCH_TIMEOUT });
+      await screen.findByRole("heading", { name: "Breakpoints" }, { timeout: ANALYSIS_TIMEOUT });
       openTab("Cap table");
       click("Add a round");
       expect(titles()).toEqual(["1. The cap table it starts from", "2. Series B Preferred, a priced round"]);
@@ -254,7 +254,6 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
       await screen.findByText("Opened larkspur.json.");
       expect(paidByName(await save())).toEqual(case27());
     },
-    FULL_SEARCH_TIMEOUT,
   );
 });
 

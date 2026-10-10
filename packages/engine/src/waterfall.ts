@@ -26,7 +26,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { ONE, ZERO, moreThan } from "./decimal.ts";
+import { ONE, TIE, ZERO, moreThan } from "./decimal.ts";
 import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
@@ -181,11 +181,25 @@ export interface Payout {
   /** Capped participating series held at their cap. */
   atCap: string[];
   /**
+   * Each condition that decides which formula pays out here, as a signed
+   * amount: a debt, a carve-out or a tier paid in full or not, the carve-out's
+   * band, a SAFE or note with no cap able to convert, a capped series held at
+   * its cap. While none changes sign, every amount paid moves in a straight
+   * line with the exit value (05c4).
+   */
+  structure: Slack[];
+  /**
    * For each capped series sharing the residual but not yet at its cap: how
    * far it is from the cap (room left minus what it gets from the residual).
    * It reaches zero where the cap starts to bind; the breakpoint finder uses it.
    */
   capRoom: Map<string, Decimal>;
+}
+
+/** One condition the waterfall's formula turns on, as a signed amount: its sign is the outcome, and zero is where it changes. */
+export interface Slack {
+  label: string;
+  value: Decimal;
 }
 
 /** The cap table with the quantities every waterfall run needs, worked out once. */
@@ -303,9 +317,13 @@ function noteTerms(n: Note, exitDate: string, counts: { outstanding: Decimal; un
  * series that keeps its preference. A note converting beside it is one of its
  * "Converting Securities", counted at its conversion shares; a note being
  * repaid takes payment in lieu of converting, and isn't counted (X18). The
- * note's own shares don't depend on the SAFE: its base counts no SAFE. Each
- * converting SAFE's shares are its purchase amount ÷ (its cap ÷ LC), so
- * LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
+ * note's own shares don't depend on the SAFE: its base counts no SAFE. A
+ * warrant exercised into a series that keeps its preference becomes shares of
+ * that series, which take the preference in lieu of converting, so they're
+ * left out with the series' other shares; a warrant not exercised is an
+ * outstanding Option, counted whether or not it is in the money (X1, R29;
+ * Jordan, after #71). Each converting SAFE's shares are its purchase amount ÷
+ * (its cap ÷ LC), so LC = everything else ÷ (1 − Σ purchase amount ÷ cap).
  *
  * Pre-money SAFE (YC, X14): "shares of Capital Stock (on an as-converted
  * basis) outstanding, assuming exercise or conversion of all outstanding
@@ -313,19 +331,29 @@ function noteTerms(n: Note, exitDate: string, counts: { outstanding: Decimal; un
  * leaving out the unissued pool, this SAFE, other SAFEs and notes. Its shares
  * sit on top.
  */
-export function liquidityCapitalization(pc: PreparedCapTable, f: Safe, converted: ReadonlySet<string>): Decimal {
+export function liquidityCapitalization(pc: PreparedCapTable, f: Safe, converted: ReadonlySet<string>, exercised: ReadonlySet<string> = new Set()): Decimal {
   if (f.preMoneyCap) return pc.outstanding;
   let others = pc.outstanding;
-  for (const [sid, s] of pc.preferred) {
-    if (s.participation === "non_participating" && !converted.has(sid)) others = others.minus(pc.asConverted.get(sid)!);
+  const inLieu = (sid: string) => pc.preferred.get(sid)!.participation === "non_participating" && !converted.has(sid);
+  for (const sid of pc.preferred.keys()) if (inLieu(sid)) others = others.minus(pc.asConverted.get(sid)!);
+  for (const id of exercised) {
+    const w = pc.warrants.get(id);
+    if (w && w.underlying !== "common" && inLieu(w.underlying)) others = others.minus(pc.shares.get(id)!.times(pc.preferred.get(w.underlying)!.conversionRatio));
   }
   // X18: only a note with a cap is read beside a SAFE, so a converting one always has its shares.
   for (const t of pc.notes.values()) if (converted.has(t.note.id) && t.shares) others = others.plus(t.shares);
   let own = ZERO;
-  for (const g of pc.safes.values()) {
-    if (g.postMoneyCap && (g.id === f.id || converted.has(g.id))) own = own.plus(g.purchaseAmount.div(g.postMoneyCap));
-  }
+  for (const g of pc.safes.values()) if (g.postMoneyCap && (g.id === f.id || converted.has(g.id))) own = own.plus(bought(g));
   return others.div(ONE.minus(own));
+}
+
+const BOUGHT = new WeakMap<Safe, Decimal>();
+
+/** A post-money SAFE's purchase amount ÷ its cap: the share of the Liquidity Capitalization it buys, worked out once. */
+function bought(f: Safe): Decimal {
+  let share = BOUGHT.get(f);
+  if (!share) BOUGHT.set(f, (share = f.purchaseAmount.div(f.postMoneyCap!)));
+  return share;
 }
 
 /** The tier a SAFE's Cash-Out Amount ranks in: the series it names, or the most junior (X9). */
@@ -372,14 +400,17 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   let strikeCash = ZERO;
   for (const id of decisions.exercised) strikeCash = strikeCash.plus(pc.shares.get(id)!.times(strike(id)));
   let remaining = exitValue.plus(strikeCash);
+  const structure: Slack[] = [];
 
   // X3, X12, X15: a note repaid is debt, paid ahead of all equity; notes share a shortfall pro rata by repayment.
   const repaid = [...pc.notes.values()].filter((t) => !decisions.converted.has(t.note.id));
   let noteDebt: Payout["noteDebt"] = null;
   if (repaid.length > 0) {
     const claim = repaid.reduce((sum, t) => sum.plus(t.repayment), ZERO);
+    structure.push({ label: "debt", value: remaining.minus(claim) });
     const paid = remaining.lt(claim) ? remaining : claim;
-    for (const t of repaid) add(t.note.id, paid.times(t.repayment).div(claim));
+    // Paid in full, each gets its own; short, they share pro rata.
+    for (const t of repaid) add(t.note.id, paid.eq(claim) ? t.repayment : paid.times(t.repayment).div(claim));
     noteDebt = { claim, paid, full: remaining.gte(claim), notes: repaid.map((t) => t.note.id) };
     remaining = remaining.minus(paid);
   }
@@ -389,9 +420,15 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   // of the most senior tier, pro rata with the preferences there; with no
   // preferred, that means first too.
   const carve = capTable.carveOut ? carveOutAt(capTable.carveOut, exitValue) : null;
+  // X6: the band the exit value is in, and whether it has reached the first one, decide the carve-out's formula.
+  if (capTable.carveOut) {
+    structure.push({ label: "carve-start", value: exitValue.minus(capTable.carveOut.tiers[0]!.from) });
+    capTable.carveOut.tiers.forEach((t, k) => t.to && structure.push({ label: `band:${k}`, value: exitValue.minus(t.to) }));
+  }
   const carveInTier = carve !== null && capTable.carveOut!.timing === "alongside_preferences" && capTable.seniority.length > 0;
   let carvePaid = ZERO;
   if (carve && !carveInTier) {
+    structure.push({ label: "carve", value: remaining.minus(carve.claim) });
     carvePaid = remaining.lt(carve.claim) ? remaining : carve.claim;
     remaining = remaining.minus(carvePaid);
   }
@@ -403,8 +440,9 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   let safeCash: Payout["safeCash"] = null;
   if (cashSafes.length > 0 && capTable.seniority.length === 0) {
     const claim = cashSafes.reduce((sum, f) => sum.plus(f.purchaseAmount), ZERO);
+    structure.push({ label: "safecash", value: remaining.minus(claim) });
     const paid = remaining.lt(claim) ? remaining : claim;
-    for (const f of cashSafes) add(f.id, paid.times(f.purchaseAmount).div(claim));
+    for (const f of cashSafes) add(f.id, paid.eq(claim) ? f.purchaseAmount : paid.times(f.purchaseAmount).div(claim));
     safeCash = { claim, paid, full: remaining.gte(claim), safes: cashSafes.map((f) => f.id) };
     remaining = remaining.minus(paid);
   }
@@ -436,14 +474,17 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   for (const [index, tier] of capTable.seniority.entries()) {
     // A converted series claims only dividends paid on conversion (X5), where they ranked.
     const claims = new Map(tier.filter((sid) => series.get(sid)!.claim.gt(0)).map((sid) => [sid, series.get(sid)!.claim]));
+    if (index === 0 && carveInTier) structure.push({ label: "carve-claim", value: carve!.claim });
     if (index === 0 && carveInTier && carve!.claim.gt(0)) claims.set(CARVE_OUT, carve!.claim);
     for (const f of cashSafes) if (safeTier(capTable, f) === index) claims.set(f.id, f.purchaseAmount);
     const claim = [...claims.values()].reduce((sum, c) => sum.plus(c), ZERO);
     if (claim.isZero()) continue;
+    structure.push({ label: `tier:${index}`, value: remaining.minus(claim) });
     const paid = remaining.lt(claim) ? remaining : claim;
     for (const [id, c] of claims) {
-      if (id === CARVE_OUT) carvePaid = paid.times(c).div(claim);
-      else add(id, paid.times(c).div(claim));
+      const share = paid.eq(claim) ? c : paid.times(c).div(claim);
+      if (id === CARVE_OUT) carvePaid = share;
+      else add(id, share);
     }
     tiers.push({ index, series: [...claims.keys()], claim, paid, full: remaining.gte(claim) });
     remaining = remaining.minus(paid);
@@ -469,12 +510,17 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   const safes = new Map<string, SafeHere>();
   for (const f of cashSafes) safes.set(f.id, { converts: false, liquidityCapitalization: null, liquidityPrice: null, shares: null, room: null });
   const convertingSafes = [...pc.safes.values()].filter((f) => decisions.converted.has(f.id));
+  // X13: one count for the company, the same for every converting post-money SAFE, so it's worked out once.
+  let postMoneyCount: Decimal | null = null;
   for (const f of convertingSafes) {
     const cap = f.postMoneyCap ?? f.preMoneyCap;
     if (!cap) continue;
-    const lc = liquidityCapitalization(pc, f, decisions.converted);
+    const lc = f.postMoneyCap
+      ? (postMoneyCount ??= liquidityCapitalization(pc, f, decisions.converted, decisions.exercised))
+      : liquidityCapitalization(pc, f, decisions.converted, decisions.exercised);
     const lp = cap.div(lc);
-    const n = f.purchaseAmount.div(lp);
+    // Purchase amount ÷ Liquidity Price: a post-money SAFE's fixed share of the count (X13).
+    const n = f.postMoneyCap ? bought(f).times(lc) : f.purchaseAmount.div(lp);
     sharing.set(f.id, n);
     safes.set(f.id, { converts: true, liquidityCapitalization: lc, liquidityPrice: lp, shares: n, room: null });
   }
@@ -512,11 +558,12 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   if (uncapped) {
     const others = [...sharing.values()].reduce((sum, n) => sum.plus(n), ZERO);
     const room = ONE.minus(uncapped.discount).times(remaining).minus(uncapped.amount);
+    structure.push({ label: "room", value: room });
     if (!room.gt(0) || others.isZero()) {
       const asCash = payout(pc, exitValue, { converted: new Set([...decisions.converted].filter((id) => id !== uncapped.id)), exercised: decisions.exercised });
       if (uncappedSafe) asCash.safes.set(uncapped.id, { ...asCash.safes.get(uncapped.id)!, room });
       else asCash.notes.set(uncapped.id, { ...asCash.notes.get(uncapped.id)!, room });
-      return { ...asCash, decisions };
+      return { ...asCash, decisions, structure: [...structure, ...asCash.structure.map((sl) => ({ ...sl, label: `cash:${sl.label}` }))] };
     }
     const worth = uncapped.amount.div(ONE.minus(uncapped.discount));
     add(uncapped.id, worth);
@@ -534,11 +581,13 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   }
   const atCap: string[] = [];
   let price = ZERO;
-  for (;;) {
+  for (let round = 0; ; round++) {
     const sharesSharing = [...sharing.values()].reduce((sum, n) => sum.plus(n), ZERO);
     price = sharesSharing.isZero() ? ZERO : remaining.div(sharesSharing);
     let first: string | null = null;
     for (const [sid, r] of room) {
+      // moreThan: past the cap by at least the tie threshold (E14).
+      if (sharing.has(sid)) structure.push({ label: `cap:${round}:${sid}`, value: price.times(sharing.get(sid)!).minus(r).minus(TIE) });
       if (!sharing.has(sid) || !moreThan(price.times(sharing.get(sid)!), r)) continue;
       if (first === null || r.div(sharing.get(sid)!).lt(room.get(first)!.div(sharing.get(first)!))) first = sid;
     }
@@ -571,27 +620,32 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   // 4. Option and warrant payouts net of strike, so the lines add up to the exit value.
   for (const id of decisions.exercised) add(id, pc.shares.get(id)!.times(strike(id)).neg());
 
-  // Each security's total splits among its holders in proportion to shares (E9).
-  const lines: PayoutLine[] = [];
-  const holderTotals = new Map<string, Decimal>();
-  const classTotals = new Map<string, Decimal>();
-  const addLine = (holder: string, security: string, amount: Decimal) => {
-    lines.push({ holder, security, amount });
-    holderTotals.set(holder, (holderTotals.get(holder) ?? ZERO).plus(amount));
-    classTotals.set(security, (classTotals.get(security) ?? ZERO).plus(amount));
+  // C6: the carve-out's total, which its recipients' lines split.
+  if (carve) total.set(CARVE_OUT, carvePaid);
+  // Each security's total splits among its holders in proportion to shares (E9). Worked out when first read: the
+  // solver weighs many payouts by their security totals alone.
+  let split: { lines: PayoutLine[]; holderTotals: Map<string, Decimal>; classTotals: Map<string, Decimal> } | null = null;
+  const splitLines = () => {
+    if (split) return split;
+    const lines: PayoutLine[] = [];
+    const holderTotals = new Map<string, Decimal>();
+    const classTotals = new Map<string, Decimal>();
+    const addLine = (holder: string, security: string, amount: Decimal) => {
+      lines.push({ holder, security, amount });
+      holderTotals.set(holder, (holderTotals.get(holder) ?? ZERO).plus(amount));
+      classTotals.set(security, (classTotals.get(security) ?? ZERO).plus(amount));
+    };
+    for (const p of capTable.positions) {
+      if (p.shares.isZero()) continue;
+      addLine(p.holder, p.security, total.get(p.security)!.times(p.shares).div(pc.shares.get(p.security)!));
+    }
+    // C6: each recipient gets a holder × carve-out line, its fixed share of what the carve-out is paid.
+    if (carve) for (const a of capTable.carveOut!.allocation) addLine(a.holder, CARVE_OUT, carvePaid.times(a.share));
+    // C8, C9: each SAFE and each note is its own holder × security line.
+    for (const f of pc.safes.values()) addLine(f.holder, f.id, total.get(f.id)!);
+    for (const t of pc.notes.values()) addLine(t.note.holder, t.note.id, total.get(t.note.id)!);
+    return (split = { lines, holderTotals, classTotals });
   };
-  for (const p of capTable.positions) {
-    if (p.shares.isZero()) continue;
-    addLine(p.holder, p.security, total.get(p.security)!.times(p.shares).div(pc.shares.get(p.security)!));
-  }
-  // C6: each recipient gets a holder × carve-out line, its fixed share of what the carve-out is paid.
-  if (carve) {
-    total.set(CARVE_OUT, carvePaid);
-    for (const a of capTable.carveOut!.allocation) addLine(a.holder, CARVE_OUT, carvePaid.times(a.share));
-  }
-  // C8, C9: each SAFE and each note is its own holder × security line.
-  for (const f of pc.safes.values()) addLine(f.holder, f.id, total.get(f.id)!);
-  for (const t of pc.notes.values()) addLine(t.note.holder, t.note.id, total.get(t.note.id)!);
   const firstTier = tiers.find((t) => t.index === 0);
   const curved =
     carveInTier && firstTier !== undefined && !firstTier.full && firstTier.series.includes(CARVE_OUT) && carve!.band < capTable.carveOut!.tiers.length && capTable.carveOut!.tiers[carve!.band]!.rate.gt(0);
@@ -609,11 +663,18 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     notes,
     noteDebt,
     curved,
-    lines,
-    holderTotals,
-    classTotals,
+    get lines() {
+      return splitLines().lines;
+    },
+    get holderTotals() {
+      return splitLines().holderTotals;
+    },
+    get classTotals() {
+      return splitLines().classTotals;
+    },
     tiers,
     atCap,
     capRoom,
+    structure,
   };
 }

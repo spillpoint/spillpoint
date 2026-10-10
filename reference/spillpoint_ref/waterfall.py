@@ -741,17 +741,21 @@ class _AtExit:
     def stable_free(self, bits):
         """No free decision-maker gains by switching, with the SAFEs and options re-settled after it (E20, E16).
 
-        A note or a series converts only when that strictly pays more (E5,
-        X16, E20): where it is indifferent but its choice changes what others
-        get, as when its conversion enlarges the Liquidity Capitalization a
-        SAFE's shares are counted on (X1, X18), it takes its repayment or keeps
-        its preference, so the outcome from below holds at exactly that exit
-        value, as in E13.
+        A note or a series converts, and a warrant is exercised, only when that
+        strictly pays more (E5, X16, E20): where it is indifferent but its
+        choice changes what others get, as when its conversion enlarges the
+        Liquidity Capitalization a SAFE's shares are counted on (X1, X18), it
+        takes its repayment, keeps its preference or isn't exercised, so the
+        outcome from below holds at exactly that exit value, as in E13. A
+        warrant at its series' preference per share, exercised into a series
+        keeping its preference, leaves the count (X1): exercising pays it
+        nothing more, but the SAFEs may settle differently (05c4; New, Jordan
+        to confirm).
         """
         for i in self.free:
             here, there = self.value(bits, i), self.value(self.follow(_flip(bits, i)), i)
             player = self.wf.players[i]
-            if there > here or (there == here and bits[i] and (player in self.instruments or player in self.wf.converters)):
+            if there > here or (there == here and bits[i] and (player in self.instruments or player in self.wf.converters or player in self.wf.warrants)):
                 return False
         return True
 

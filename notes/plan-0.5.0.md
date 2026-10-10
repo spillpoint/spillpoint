@@ -171,6 +171,14 @@ The engine lifts `note_with_safe_or_carve_out` for SAFEs, and passes the cases. 
 
 Both rules, and the speed work.
 
+**Done in 05c4:**
+- **The engine takes both rules,** and passes 12k and 12l.
+- **The speed:** Larkspur at a sale with its note and 10 SAFEs went from 204s to 1.4s on a laptop. The SAFEs' answer now comes from dropping SAFEs from "every SAFE converts", and the search reuses its work from one exit value to the next.
+- **The 60-second test timeouts** go back to the defaults.
+- **Two findings for you:**
+  - **A warrant at its series' preference per share:** indifferent, but under rule 3 its choice moves the SAFEs. Its tie is now "isn't exercised", New.
+  - **Two equal-priced non-participating series beside post-money SAFEs** can have two stable answers.
+
 ### What it would take to lift the other two refusals at a sale (question 12)
 
 - **A pre-money SAFE beside preferred** (X14, `pre_money_safe_with_preferred`):
@@ -220,7 +228,10 @@ Version bump, release notes, both READMEs, and the packed build checked as 03j a
 
 **A fix, for the release notes** (Jordan, after #70): 0.4.0's breakpoint search stopped on Larkspur's table at a sale (edge case 12j), with "went round in a circle (E15)" from $16,531,000, where the non-participating Seed and the post-money SAFEs went round in a circle. Under E20 the SAFEs' greater-of comes last, so it's one breakpoint where payouts jump, at $16,559,391.30.
 
-**New, for the release notes:** SAFEs beside a capped note at a sale (X18); the note-base rule in the OCF import (O9).
+**New, for the release notes:**
+- SAFEs beside a capped note at a sale (X18)
+- the note-base rule in the OCF import (O9)
+- a faster breakpoint search, which takes a table with many SAFEs from minutes to seconds (05c4)
 
 ## Questions
 
