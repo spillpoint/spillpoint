@@ -26,7 +26,10 @@ several decisions change at one jump, it still writes the payouts at the
 listed exit values (points.json). The engine's check then writes the exit
 values a cent either side of each breakpoint it finds (probes.json), and
 `probe` works out the reference's payouts there (probed.json), for the check
-to compare on its next run.
+to compare on its next run. On a table with more than one stable answer
+somewhere, where both stop, the probes are a cent either side of where the
+engine says the second answer begins, and `probe` records the reference's stop
+there too.
 """
 
 import json
@@ -44,7 +47,7 @@ import datetime  # noqa: E402
 from spillpoint_ref.case import _outcome_json, run_case  # noqa: E402
 from spillpoint_ref.model import CapTable  # noqa: E402
 from spillpoint_ref.num import exact, money  # noqa: E402
-from spillpoint_ref.waterfall import Waterfall  # noqa: E402
+from spillpoint_ref.waterfall import SeveralAnswers, Waterfall  # noqa: E402
 
 TOP = 40_000_000
 
@@ -161,7 +164,17 @@ def probe(folder):
     folder = Path(folder)
     inputs = json.loads((folder / "inputs.json").read_text())
     values = json.loads((folder / "probes.json").read_text())
-    (folder / "probed.json").write_text(json.dumps(outcomes(inputs, values), indent=2) + "\n")
+    wf = waterfall(inputs)
+    points = []
+    for v in values:
+        point = {"exit_value": v, "display": money(F(v))}
+        try:
+            point["equilibria"] = [_outcome_json(wf, o) for o in wf.evaluate(F(v))]
+        except SeveralAnswers as e:
+            # More than one stable answer here (05c5): the check compares this stop with the engine's.
+            point["stops"] = str(e)
+        points.append(point)
+    (folder / "probed.json").write_text(json.dumps(points, indent=2) + "\n")
     return folder.name, f"{len(values)} exit values"
 
 

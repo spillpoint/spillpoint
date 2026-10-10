@@ -10,6 +10,10 @@
 // Where the reference's breakpoint search couldn't finish a table, its payouts at the listed exit values are compared,
 // and the engine's breakpoints are checked by the reference's payouts a cent either side of each: the first run writes
 // those exit values, `probe` works them out, and the second run compares them.
+//
+// Where the reference stops with more than one stable answer (05c5), the engine must stop too, with the same message
+// apart from where: each says where it first saw the second answer. The engine's search says where it begins, so the
+// reference is asked about a cent either side of that: below, the payouts are compared; above, it must stop too.
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -41,6 +45,8 @@ let probed = 0;
 let waiting = 0;
 /** Tables where the reference stops with more than one stable answer (05c5), and the engine's search stops too. */
 let bothStop = 0;
+/** Of those, the ones where the reference agrees, a cent either side, where the engine says the second answer begins. */
+let bothStopProbed = 0;
 const problems: string[] = [];
 /** Tables where the reference finds two stable answers at some exit value it was asked about (E8). */
 const twoAnswers = new Set<string>();
@@ -48,6 +54,14 @@ const twoAnswers = new Set<string>();
 interface Point {
   exit_value: string;
   equilibria: Expected["exit"]["payouts"][number]["equilibria"];
+  /** The reference's stop where more than one answer is stable (probes only). */
+  stops?: string;
+}
+
+/** A two-answer stop's "At $X: " (05c5): the exit value, and the rest of the message. */
+function stopAt(message: string): { at: D; rest: string } | undefined {
+  const m = /^At \$([\d,]+(?:\.\d+)?): ([^]*)$/.exec(message.trim());
+  return m ? { at: new D(m[1]!.replaceAll(",", "")), rest: m[2]! } : undefined;
 }
 
 /** The reference's decisions in the engine's form: what converts and what is exercised. */
@@ -94,13 +108,39 @@ for (const name of readdirSync(directory).sort()) {
     const pc = prepare(exit.capTable, exit.exitDate);
     if (!existsSync(file("expected.json"))) {
       // The reference stops where more than one answer is stable (05c5): so must the engine, with its plain message.
-      if (readFileSync(file("refused.txt"), "utf8").includes("spillpoint doesn't pick one")) {
+      const refused = readFileSync(file("refused.txt"), "utf8").trim();
+      if (refused.includes("spillpoint doesn't pick one")) {
+        let stop = "";
         try {
           findBreakpoints(pc, exit.range);
           problem("the reference stops with more than one stable answer; the engine's search doesn't");
+          continue;
         } catch (e) {
-          if ((e as Error).message.includes("spillpoint doesn't pick one")) bothStop++;
-          else problem(`the reference stops with more than one stable answer; the engine stops otherwise: ${(e as Error).message}`);
+          stop = (e as Error).message;
+        }
+        const mine = stopAt(stop);
+        const theirs = stopAt(refused);
+        if (!mine?.rest.includes("spillpoint doesn't pick one") || !theirs) {
+          problem(`the reference stops with more than one stable answer; the engine stops otherwise: ${stop}`);
+          continue;
+        }
+        if (mine.rest !== theirs.rest) problem(`the engine stops with "${mine.rest}", the reference "${theirs.rest}"`);
+        // The reference reads its own grid, so it can only see the second answer at or after where it begins.
+        const at = `$${mine.at.toFixed(2)}`;
+        if (mine.at.gt(theirs.at.plus(CENT))) problem(`the engine stops at ${at}, after the reference's $${theirs.at.toFixed(2)}`);
+        bothStop++;
+        if (existsSync(file("probed.json"))) {
+          const before = problems.length;
+          const [below, above] = JSON.parse(readFileSync(file("probed.json"), "utf8")) as Point[];
+          if (below?.stops) problem(`a cent below ${at} the reference already stops`);
+          else if (below) comparePoint(name, pc, parseExact(below.exit_value, "x"), below.exit_value, below.equilibria);
+          const there = above?.stops ? stopAt(above.stops) : undefined;
+          if (!there) problem(`a cent above ${at} the reference doesn't stop`);
+          else if (there.rest !== mine.rest) problem(`a cent above ${at} the reference stops with "${there.rest}"`);
+          if (problems.length === before) bothStopProbed++;
+        } else {
+          writeFileSync(file("probes.json"), `${JSON.stringify([mine.at.minus(CENT), mine.at.plus(CENT)].map(String), null, 2)}\n`);
+          waiting++;
         }
         continue;
       }
@@ -149,8 +189,13 @@ for (const name of readdirSync(directory).sort()) {
 }
 
 console.log(`${compared} tables compared in full; ${byPoints} by their listed exit values, ${probed} of those a cent either side of each breakpoint too.`);
-if (bothStop > 0) console.log(`${bothStop} tables have more than one stable answer somewhere; the reference and the engine both stop on them.`);
+if (bothStop > 0) {
+  console.log(
+    `${bothStop} tables have more than one stable answer somewhere; the reference and the engine both stop on them, with the same message ` +
+      `apart from where. On ${bothStopProbed}, the reference agrees a cent either side of where the engine says the second answer begins.`,
+  );
+}
 if (twoAnswers.size > 0) console.log(`The reference finds two stable answers somewhere in ${twoAnswers.size}: ${[...twoAnswers].join(", ")}.`);
-if (waiting > 0) console.log(`${waiting} tables wait for the reference at their breakpoints: run random_safes.py probe, then this again.`);
+if (waiting > 0) console.log(`${waiting} tables wait for the reference a cent either side of the engine's breakpoints, or of where the second answer begins: run random_safes.py probe, then this again.`);
 console.log(problems.length === 0 ? "The engine agrees with the reference on every one." : problems.join("\n"));
 process.exitCode = problems.length === 0 ? 0 : 1;

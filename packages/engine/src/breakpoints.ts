@@ -235,9 +235,14 @@ function solve3(rows: Decimal[][]): [Decimal, Decimal, Decimal] | null {
   return [m[0]![3]!.div(m[0]![0]!), m[1]![3]!.div(m[1]![1]!), m[2]![3]!.div(m[2]![2]!)];
 }
 
+/** Where checkStretch reads: halfway from the stretch's second reading to its end. */
+function middle(s: Stretch, end: Decimal): Decimal {
+  return s.b.plus(end).div(2);
+}
+
 /** Within a straight stretch, nothing should change: the answer and its payouts at the midpoint must match the straight line. */
 function checkStretch(pc: PreparedCapTable, s: Stretch, end: Decimal): void {
-  const mid = s.b.plus(end).div(2);
+  const mid = middle(s, end);
   if (!mid.gt(s.b)) return;
   const reading = snapshotAt(pc, mid);
   const expected = payoutsAlong(s, mid).values;
@@ -270,8 +275,20 @@ export function findBreakpoints(pc: PreparedCapTable, range: readonly [Decimal, 
     const straight = nextChange(stretch, hi);
     // On a curve one decision may change before the next straight margin does (03f).
     const onCurve = stretch.curved ? checkCurve(pc, stretch, straight ?? hi) : null;
-    if (!stretch.curved) checkStretch(pc, stretch, straight ?? hi);
-    if (!stretch.curved) walkStability(watch, stretch, onCurve ?? straight ?? hi);
+    if (!stretch.curved) {
+      const end = straight ?? hi;
+      try {
+        checkStretch(pc, stretch, end);
+      } catch (e) {
+        // Its reading in the middle can be the first to see a second answer: there, not where it begins. The walk
+        // follows the stretch from its start, so it runs to the middle first, and where it stops, its stop is given
+        // instead (05c6). It runs first only here: reading back to the middle after the walk has read ahead would
+        // cost the lines kept between readings.
+        walkStability(watch, stretch, middle(stretch, end));
+        throw e;
+      }
+      walkStability(watch, stretch, end);
+    }
     const x = onCurve ?? straight;
     if (x === null) return found;
     const after = stretchAbove(pc, x);
