@@ -36,7 +36,7 @@ Work comes in steps, each named for the release it ships in: 05c4 went into 0.5.
 
 A release usually goes:
 - **The plan:** `notes/plan-<version>.md`, with the questions only Jordan can answer. Nothing is built until he answers.
-- **Cases first,** wherever there's new math, worked by the reference with a `DERIVATION.md` for Jordan to re-derive. He lifts the `cases/` edit rule for that step only, and adds the label once he has re-derived them.
+- **Cases first,** wherever there's new math, worked by the reference with a `DERIVATION.md` to re-derive from. Jordan lifts the `cases/` edit rule for that step only, and has new cases re-derived independently, not by you, before he adds the label.
 - **Then the engine, then the page.**
 - **The release step:** the version in `packages/engine/package.json`, `notes/release-<version>.md`, both READMEs, and the packed build checked as below. Jordan publishes and tags.
 
