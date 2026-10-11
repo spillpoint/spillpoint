@@ -383,7 +383,7 @@ As O10:
   - **06e5: the locked cases written as OCX** (done; ocx-07 to ocx-12, each with its blanks answered, and `reference/tests/test_safe_row.py`): edge cases 4, 5a, 7, 8 and 12b, and Millrace, in 0.4/0.5's layout, each importing, with its blanks answered, to the locked cap table, with prices to 15 significant digits, compared within a cent as 04b2 did for OCF's 10 places. With it, the reference unit test for a row of identical SAFEs, post-money and pre-money both (your answer 10).
 
   The workbooks are our own, written as JSON in `OcxWorkbook`'s shape (tabs and cells), each expected result worked by hand in its DERIVATION, from the workbook, so it can be re-derived independently before the label goes on. None is made from the Mantle export: 0.7's tab names and headers are used, as the format's interface; titles, footnotes, the company, its holders and numbers are our own, with no footnote or title wording from the export (your 06d review). The one exception is a ledger title's ending, "… <class> Ledger", which the reader matches to find a class whose ledger's tab name is cut short (OX8).
-- **06f, the engine:**
+- **06f, the engine** (done: `readOcx`, its tests reading every OCX case and fixture, and paying each answered locked case):
   - `readOcx`, to the naming review's names (07a)
   - both layouts, told apart by their headers
   - the numbers and dates rules, the header matching and row labels in any case
@@ -392,6 +392,7 @@ As O10:
   - "Open a cap table export", on 06c's reader
   - the seniority question, and the questions for a preferred series' terms
   - **one-click answers for a preferred series' terms** (your 06d review), as for seniority: "conversion price = issue price" and "1x, non-participating". The founder must click one; neither is ever preset, and nothing is used until each blank is answered (O1).
+  - **one strike per column** (your answer after #86): before a 0.4/0.5 option column's strike, the page asks whether all its options share one strike. "No" stops the import with a plain message naming the column, never a price that's wrong for some grants. 0.7 doesn't need it: its plan ledgers give each grant's strike.
   - `ocf-check` on .xlsx
   - **"Copy a summary to share"** (05a2) for .xlsx, on the report, on a refused import and on a refusal at Use (your answer 2)
 

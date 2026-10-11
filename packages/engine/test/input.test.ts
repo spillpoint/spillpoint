@@ -140,8 +140,8 @@ describe("cases outside the engine's scope are refused, never skipped", () => {
     ]);
   });
 
-  // 06e's to 06e5's OCX cases and fixtures wait for readOcx, which 06f builds; until then they're checked as case files only (cases.test).
-  it("leaves the OCX cases to readOcx, from 06f", () => {
+  // The OCX cases and fixtures are readOcx's (ocx.test, since 06f), and checked as case files (cases.test).
+  it("leaves the OCX cases to readOcx", () => {
     expect(OCX_CASES).toEqual([
       "ocx-01-alder-gate", "ocx-02-ferncliff-preferred", "ocx-03-refused", "ocx-04-to-fill", "ocx-05-reads", "ocx-06-hollis-mill",
       "ocx-07-edge-04", "ocx-08-edge-05a", "ocx-09-edge-07", "ocx-10-edge-08", "ocx-11-edge-12b", "ocx-12-millrace",
