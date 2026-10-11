@@ -1,0 +1,69 @@
+{
+  "case": "ocx-10-edge-08",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.4/0.5",
+  "locked_case": "edge-08-preferred-warrant",
+  "renamed": { "common": "common_stock", "seed": "seed_preferred", "warrant_seed": "warrants_1" },
+  "answers": [
+    { "security": "warrants_1", "field": "strike", "value": "0.5" },
+    {
+      "field": "seniority",
+      "value": [["seed_preferred"]]
+    }
+  ],
+  "result": {
+    "as_of": "2025-06-30",
+    "cap_table": {
+      "holders": [
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "investor_x", "name": "Investor X" },
+        { "id": "lender_l", "name": "Lender L" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        {
+          "id": "seed_preferred",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        { "id": "warrants_1", "name": "Warrants for Seed Preferred", "kind": "warrant", "strike": null, "underlying": "seed_preferred" }
+      ],
+      "seniority": null,
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "founder_a", "security": "common_stock", "shares": 6000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+        { "holder": "investor_x", "security": "seed_preferred", "shares": 2000000 },
+        { "holder": "lender_l", "security": "warrants_1", "shares": 200000 }
+      ],
+      "unissued_pool": 0
+    },
+    "issue_order": ["seed_preferred"],
+    "to_fill": [
+      { "security": "warrants_1", "field": "strike" },
+      { "field": "seniority" }
+    ],
+    "report": {
+      "read": { "stakeholders": 4, "pool_rows": 1, "share_classes": 2, "financing_rounds": 1 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.5" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_seniority_field" },
+        { "code": "no_anti_dilution_field", "subject": "seed_preferred" },
+        { "code": "no_strike_field", "subject": "warrants_1" },
+        { "code": "warrant_counts_are_maximums" }
+      ]
+    }
+  }
+}

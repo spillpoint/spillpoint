@@ -553,6 +553,79 @@ describe.each(ocxWorkbookDirs)("OCX case %s", (dir) => {
   });
 
   ocxResultChecks(workbook, expected.layout, expected.result);
+
+  // 06e5: a locked case written as OCX imports, with its blanks answered, to that case's cap table (C18). OCX has no
+  // ids, so `renamed` gives the import's id for each of the case's that comes out differently; it has no strikes or
+  // seniority, so `answers` fills each blank the import lists. Prices are compared at the significant digits the
+  // workbook carries them to (OX5), the locked price rounded half up. What OCX can't carry at all is compared as the
+  // import reads it: anti-dilution as none (OX7); a renamed class's name, and an option or warrant class's, which the
+  // import takes from its column's heading (OX14); and a SAFE's or note's holder's name, which the convertibles table
+  // doesn't give (OX11).
+  const lockedOcx = expected as unknown as {
+    locked_case?: string;
+    locked_after_event?: string;
+    price_digits?: number;
+    renamed: Record<string, string>;
+    answers: { security?: string; safe?: string; note?: string; field: string; value: unknown }[];
+  };
+  const lockedCase = lockedOcx.locked_case;
+  if (lockedCase) {
+    const key = (b: { security?: string; safe?: string; note?: string; field: string }) => `${b.security ?? b.safe ?? b.note ?? ""} ${b.field}`;
+
+    it("answers exactly the blanks it lists, in their order", () => {
+      expect(lockedOcx.answers.map(key)).toEqual(expected.result.to_fill.map(key));
+      for (const a of lockedOcx.answers) expect(a.value, key(a)).not.toBeNull();
+    });
+
+    it(`imports, with its blanks answered, to ${lockedCase}'s cap table`, () => {
+      type Table = Json & { holders: Json[]; securities: Json[]; positions: Json[]; seniority?: string[][] | null; unconverted_safes?: Json[]; unconverted_notes?: Json[] };
+      const ours = structuredClone(expected.result.cap_table) as unknown as Table;
+      for (const a of lockedOcx.answers) {
+        if (a.field === "seniority" && !a.security) ours.seniority = a.value as string[][];
+        else {
+          const list = a.security ? ours.securities : a.safe ? ours.unconverted_safes! : ours.unconverted_notes!;
+          list.find((x) => x.id === (a.security ?? a.safe ?? a.note))![a.field] = a.value;
+        }
+      }
+      const theirs = lockedOcx.locked_after_event
+        ? readJson<{ cap_tables: { after_event: string; cap_table: Table }[] }>(lockedCase, "expected.json").cap_tables.find((t) => t.after_event === lockedOcx.locked_after_event)!.cap_table
+        : readJson<{ exit: { cap_table: Table } }>(lockedCase, "inputs.json").exit.cap_table;
+      const renamed = lockedOcx.renamed;
+      const name = (id: string) => renamed[id] ?? id;
+      const imported = new Set(Object.values(renamed));
+      const made = new Set(ours.holders.filter((h) => MADE_HOLDER.test(h.name as string)).map((h) => h.id as string));
+      const digits = lockedOcx.price_digits;
+      const price = (v: unknown) => {
+        if (typeof v !== "string") return v;
+        const [n, d = "1"] = v.split("/");
+        const x = new Decimal40(n!).div(d);
+        return (digits === undefined ? x : x.toSignificantDigits(digits, Decimal.ROUND_HALF_UP)).toFixed();
+      };
+      const comparable = (t: Table, rename: (id: string) => string) => ({
+        holders: t.holders.map((h) => ({ id: rename(h.id as string), name: made.has(rename(h.id as string)) ? undefined : h.name })).sort(byId),
+        securities: t.securities
+          .map(({ conversion_ratio: _ratio, approx: _approx, ...s }) => {
+            const id = rename(s.id as string);
+            return Object.fromEntries(
+              Object.entries({ ...s, id, ...(s.underlying !== undefined ? { underlying: rename(s.underlying as string) } : {}) }).map(([k, v]) => [
+                k,
+                k === "name" && (imported.has(id) || s.kind === "option" || s.kind === "warrant") ? undefined : k === "anti_dilution" ? "none" : k === "original_issue_price" || k === "conversion_price" ? price(v) : v,
+              ]),
+            );
+          })
+          .sort(byId),
+        seniority: t.seniority?.map((tier) => tier.map(rename).sort()),
+        conversion_groups: t.conversion_groups ?? [],
+        positions: t.positions
+          .map((p) => ({ ...p, holder: rename(p.holder as string), security: rename(p.security as string) }))
+          .sort((a, b) => `${a.holder} ${a.security}`.localeCompare(`${b.holder} ${b.security}`)),
+        unissued_pool: t.unissued_pool,
+        unconverted_safes: (t.unconverted_safes ?? []).map((f) => ({ ...f, id: rename(f.id as string), holder: rename(f.holder as string) })).sort(byId),
+        unconverted_notes: (t.unconverted_notes ?? []).map((n) => ({ ...n, id: rename(n.id as string), holder: rename(n.holder as string) })).sort(byId),
+      });
+      expect(comparable(ours, (id) => id)).toEqual(comparable(theirs, name));
+    });
+  }
 });
 
 // Fixture cases (C18, 06e2, 06e3): each a base case's workbook with one small change, refused, read with blanks, or

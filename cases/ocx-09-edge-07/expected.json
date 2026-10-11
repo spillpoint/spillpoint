@@ -1,0 +1,61 @@
+{
+  "case": "ocx-09-edge-07",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.4/0.5",
+  "locked_case": "edge-07-option-strikes",
+  "renamed": { "common": "common_stock", "options_0.25": "options_1", "options_1": "options_2" },
+  "answers": [
+    { "security": "options_1", "field": "strike", "value": "0.25" },
+    { "security": "options_2", "field": "strike", "value": "1" },
+    { "security": "options_3", "field": "strike", "value": "3" }
+  ],
+  "result": {
+    "as_of": "2025-06-30",
+    "cap_table": {
+      "holders": [
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "employee_c", "name": "Employee C" },
+        { "id": "employee_d", "name": "Employee D" },
+        { "id": "employee_e", "name": "Employee E" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        { "id": "options_1", "name": "2019 Stock Plan Options", "kind": "option", "strike": null },
+        { "id": "options_2", "name": "2021 Stock Plan Options", "kind": "option", "strike": null },
+        { "id": "options_3", "name": "2023 Stock Plan Options", "kind": "option", "strike": null }
+      ],
+      "seniority": [],
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "founder_a", "security": "common_stock", "shares": 6000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+        { "holder": "employee_c", "security": "options_1", "shares": 400000 },
+        { "holder": "employee_c", "security": "options_3", "shares": 200000 },
+        { "holder": "employee_d", "security": "options_2", "shares": 600000 },
+        { "holder": "employee_e", "security": "options_3", "shares": 800000 }
+      ],
+      "unissued_pool": 0
+    },
+    "issue_order": [],
+    "to_fill": [
+      { "security": "options_1", "field": "strike" },
+      { "security": "options_2", "field": "strike" },
+      { "security": "options_3", "field": "strike" }
+    ],
+    "report": {
+      "read": { "stakeholders": 5, "pool_rows": 1, "share_classes": 1, "stock_plans": 3 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.5" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_strike_field", "subject": "options_1" },
+        { "code": "no_strike_field", "subject": "options_2" },
+        { "code": "no_strike_field", "subject": "options_3" }
+      ]
+    }
+  }
+}

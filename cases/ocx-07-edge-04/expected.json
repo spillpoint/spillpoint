@@ -1,0 +1,65 @@
+{
+  "case": "ocx-07-edge-04",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.4/0.5",
+  "locked_case": "edge-04-participating-capped",
+  "renamed": { "common": "common_stock", "seed": "seed_preferred" },
+  "answers": [
+    {
+      "field": "seniority",
+      "value": [["seed_preferred"]]
+    }
+  ],
+  "result": {
+    "as_of": "2025-06-30",
+    "cap_table": {
+      "holders": [
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "investor_x", "name": "Investor X" },
+        { "id": "investor_y", "name": "Investor Y" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        {
+          "id": "seed_preferred",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.5",
+          "conversion_price": "1.5",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "3",
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": null,
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "founder_a", "security": "common_stock", "shares": 6000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+        { "holder": "investor_x", "security": "seed_preferred", "shares": 1500000 },
+        { "holder": "investor_y", "security": "seed_preferred", "shares": 500000 }
+      ],
+      "unissued_pool": 0
+    },
+    "issue_order": ["seed_preferred"],
+    "to_fill": [
+      { "field": "seniority" }
+    ],
+    "report": {
+      "read": { "stakeholders": 4, "pool_rows": 1, "share_classes": 2, "financing_rounds": 1 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.5" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_seniority_field" },
+        { "code": "participation_cap_includes_preference", "subject": "seed_preferred" },
+        { "code": "no_anti_dilution_field", "subject": "seed_preferred" }
+      ]
+    }
+  }
+}
