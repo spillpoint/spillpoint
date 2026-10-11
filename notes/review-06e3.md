@@ -124,6 +124,28 @@ All in rows already there, each marked "06e3":
 - **Reference:** 71 unit tests pass, and every `expected.json` matches.
 - **Typecheck:** clean.
 
+## After your review (Jordan, 06e3 review)
+
+**Your check:** 14 of the 15 fixtures matched your reader exactly, the day counts in both systems among them.
+
+**Agreed:** decisions 1 to 3, share totals only, MFN unread, and a discount as a fraction below 1. The two open questions stand as they are.
+
+**One commit:**
+1. **`unrecognized-header` now uses "Side Letter".** You were right: "Board Approval Date" is a 0.7 SAFEs Ledger header. It's in the Mantle export and in the cell-kinds script's list, and Alder Gate's workbook just leaves it out. So by OX12 a column under it gets no line, and the fixture expected one. Section 1 above was wrong to call it our own. "Side Letter" isn't a 0.7 header, so it gets the `unrecognized_field` line, its field now "Side Letter". The DERIVATION says why, naming "Board Approval Date" as a known header the workbook leaves out.
+
+   **To be sure no other header slipped through the same way,** I checked every header row in every case and fixture workbook against the script's list. The ones it doesn't know are:
+   - the company-named per-holder headings, matched by pattern
+   - the two holdings headers refused on purpose, "Restricted Stock Units" and "Series Seed Preferred (shares)"
+   - "Side Letter"
+2. **`ledger-total-mismatch`, in ocx-03-refused:** Common Stock's ledger saves its `No. Shares Outstanding` total as 8,040,100, against its rows' 8,040,000. It's refused as `total_mismatch`, naming "Common Stock Ledger: No. Shares Outstanding". `total-mismatch` refuses the Summary's per-class total, so `total_mismatch` now has a fixture for each kind of total, and OX13 lists it with the terms that have two. ocx-03-refused has 31 refusals, 19 of them malformed.
+3. **ASSUMPTIONS' statuses** now record your agreement, in OX5 and OX11. The plan's 06e2 line counts the new refusal.
+
+**Checks:**
+- **Engine:** 2,509 tests pass, one more, for the new fixture.
+- **Page:** unchanged.
+- **Reference:** every `expected.json` still matches.
+- **Typecheck:** clean.
+
 ## Next
 
 06e4, 0.4/0.5's workbook and its fixtures, with the cases lock still lifted. I'm stopping here.

@@ -847,7 +847,7 @@
             { "code": "no_carve_out_field" },
             { "code": "no_sale_date_field" },
             { "code": "formula_totals_skipped" },
-            { "code": "unrecognized_field", "subject": "SAFEs Ledger", "field": "Board Approval Date" },
+            { "code": "unrecognized_field", "subject": "SAFEs Ledger", "field": "Side Letter" },
             { "code": "rsu_as_option", "subject": "EP-6" },
             { "code": "expired_option_left_out", "subject": "EP-4" },
             { "code": "warrant_counts_are_maximums" },

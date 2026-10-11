@@ -155,11 +155,11 @@ None is refused. Where a change could trip a check, the rows below say why it do
 
 ### `unrecognized-header`
 
-**The change:** the SAFEs Ledger has a column headed "Board Approval Date" (R2), with a date for each SAFE (R3, R4).
+**The change:** the SAFEs Ledger has a column headed "Side Letter" (R2), with "No" for SAFE-1 and "Yes" for SAFE-2 (R3, R4).
 
-**How it's read:** no 0.7 tab the reader knows has that header, and it's outside the holdings, so it gets an `unrecognized_field` line (OX12). Its subject is the tab, and its field the header, as an OCF field's line names its object and field (O10). Its cells aren't read.
+**How it's read:** the headers the reader knows are those the one 0.7 export has, as the cell-kinds script lists them (OX12). "Side Letter" isn't one of the SAFEs Ledger's, and it's outside the holdings, so it gets an `unrecognized_field` line. ("Board Approval Date", say, is a 0.7 SAFEs Ledger header that Alder Gate's workbook leaves out; a column under it would get no line.) Its subject is the tab, and its field the header, as an OCF field's line names its object and field (O10). Its cells aren't read.
 
-**What differs:** `notes`: `unrecognized_field`, subject "SAFEs Ledger", field "Board Approval Date", after `formula_totals_skipped`.
+**What differs:** `notes`: `unrecognized_field`, subject "SAFEs Ledger", field "Side Letter", after `formula_totals_skipped`.
 
 ## Two plans (OX9)
 

@@ -1,6 +1,6 @@
 # OCX case 03, refused: derivation
 
-One small change to an OCX 0.7 workbook for each thing the import refuses: 30 fixtures, 12 unsupported and 18 malformed. 28 change case 01's workbook, Alder Gate Labs, and two change case 02's, Ferncliff Labs, where preferred stock is needed. Each fixture file names its base and lists its change, cell by cell (C18). Each change leaves one problem, so each result is one refusal: its kind, its term, and its subject, the workbook's own text for what it's about (OX13).
+One small change to an OCX 0.7 workbook for each thing the import refuses: 31 fixtures, 12 unsupported and 19 malformed. 29 change case 01's workbook, Alder Gate Labs, and two change case 02's, Ferncliff Labs, where preferred stock is needed. Each fixture file names its base and lists its change, cell by cell (C18). Each change leaves one problem, so each result is one refusal: its kind, its term, and its subject, the workbook's own text for what it's about (OX13).
 
 **Two kinds of refusal:**
 - **Unsupported:** the workbook may well be right, and spillpoint doesn't read what it says.
@@ -149,12 +149,14 @@ W-1 is outstanding (30,000, "Outstanding"). Alder Gate has no Series A Preferred
 |---|---|---|
 | `non-plan-awards` | the Stakeholder View gives Founder B 25,000 `Non-Plan Awards` (G8) | unsupported, `non_plan_awards`, "Founder B" |
 | `total-mismatch` | the Summary View gives Common Stock 8,040,100 outstanding shares (C5) | malformed, `total_mismatch`, "Common Stock" |
+| `ledger-total-mismatch` | Common Stock's ledger saves its `No. Shares Outstanding` total as 8,040,100 (M10) | malformed, `total_mismatch`, "Common Stock Ledger: No. Shares Outstanding" |
 | `holdings-mismatch` | the Stakeholder View gives Founder A 5,000,100 Common Stock (C7) | malformed, `holdings_mismatch`, "Founder A" |
 | `pool-mismatch` | Context's plan details give 600,000 shares available for grant (H12) | malformed, `pool_mismatch`, "Alder Gate 2023 Equity Plan" |
 | `convertibles-mismatch` | the Summary View counts two post-money SAFEs (M3) | malformed, `convertibles_mismatch`, "Post-$ SAFEs" |
 
 - **`non-plan-awards`:** no ledger the reader knows holds non-plan awards (OX9), so an amount there is most likely a security spillpoint doesn't read yet. The per-holder tab's holdings are read first in step 8, holder by holder: Employees C to F and Founder A have none, so Founder B is the first. Nothing earlier reads the column: step 4 knows its header, and the rows of step 7 are the ledgers'.
 - **`total-mismatch`:** Common Stock's outstanding certificates, the "Y" ones, are CS-1 5,000,000, CS-4 2,500,000, CS-5 500,000 and CS-6 40,000: 8,040,000, not 8,040,100. The Summary's `Outstanding Shares` has a saved value, so it's checked (OX5). Totals come first among the checks between tabs.
+- **`ledger-total-mismatch`:** the ledger's `Total` row under `No. Shares Outstanding` is a formula, saved here with the value 8,040,100. A total with a saved value that counts shares is checked against every row above it, set aside or not (OX5): 5,000,000 + 0 + 0 + 2,500,000 + 500,000 + 40,000 = 8,040,000. The Summary's 8,040,000 agrees with the certificates, so this is the only total that doesn't. The subject is the column, as its tab and header. The ledger's other totals are still formulas with no saved value, and are skipped.
 - **`holdings-mismatch`:** Founder A's one certificate, CS-1, holds 5,000,000. The total checks pass first: the Summary still says 8,040,000, and the Stakeholder View's `Total` row is a formula with no saved value, so it's skipped. Holders are checked in the Stakeholder View's order, and Employees C to F agree, so Founder A is the first that doesn't.
 - **`pool-mismatch`:** the pool row's value under "Alder Gate 2023 Equity Plan Options" is 610,000. Context's row for that plan says 600,000. Every holder's holdings agree, so the pool's is the first check to fail. The subject is the plan.
 - **`convertibles-mismatch`:** the SAFEs Ledger has one outstanding post-money SAFE, SAFE-2, for $200,000. The `Post-$ SAFEs` row now counts 2 for the same $200,000.
