@@ -1,0 +1,922 @@
+{
+  "case": "ocx-05-reads",
+  "worked_by": "hand (DERIVATION.md)",
+  "fixtures": {
+    "cancelled-safe.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000
+        },
+        "issue_order": [],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" },
+            { "code": "left_out_stakeholder", "subject": "investor_s" }
+          ]
+        }
+      }
+    },
+    "common-named-preferred.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "seed_preferred", "name": "Seed Preferred", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "seed_preferred", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "common_named_preferred", "subject": "seed_preferred" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "date-system-1904.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "employee_f", "name": "Employee F" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.05", "name": "Options ($0.05 strike)", "kind": "option", "strike": "0.05" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "employee_f", "security": "options_0.05", "shares": 30000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" }
+          ]
+        }
+      }
+    },
+    "day-count-date.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-1" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "expired-warrant.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "expired_warrant_left_out", "subject": "W-1" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" },
+            { "code": "left_out_stakeholder", "subject": "lender_l" }
+          ]
+        }
+      }
+    },
+    "pre-money-safe.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "pre_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "safe-discount.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0.2" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "same-id-twice.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_c_2", "name": "Employee-C" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_c_2", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_c_2", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_c_2", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "saved-by-a-spreadsheet.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "seventeen-digit-strike.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.0025", "name": "Options ($0.0025 strike)", "kind": "option", "strike": "0.0025" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.0025", "shares": 50000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "split-adjusted-grant.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.05", "name": "Options ($0.05 strike)", "kind": "option", "strike": "0.05" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.05", "shares": 400000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "two-plans.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "options_0.5", "name": "Options ($0.5 strike)", "kind": "option", "strike": "0.5" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "founder_b", "security": "options_0.5", "shares": 100000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 1010000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 7, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 2 },
+          "not_needed": { "stock_plan_history": 3 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "unknown-issue-date.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "issue_order_default", "subject": "safe_investor_s" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "unrecognized-header.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 30000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "unrecognized_field", "subject": "SAFEs Ledger", "field": "Side Letter" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "warrant-without-outstanding-column.json": {
+      "result": {
+        "as_of": "2025-10-31",
+        "cap_table": {
+          "holders": [
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "lender_l", "name": "Lender L" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
+            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
+            { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+          ],
+          "seniority": [],
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_0.1", "shares": 200000 },
+            { "holder": "employee_c", "security": "rsus", "shares": 10000 },
+            { "holder": "employee_d", "security": "common_stock", "shares": 40000 },
+            { "holder": "employee_d", "security": "options_0.1", "shares": 60000 },
+            { "holder": "employee_d", "security": "options_0.25", "shares": 50000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 5000000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2500000 },
+            { "holder": "investor_t", "security": "common_seed_safe_conversion", "shares": 400000 },
+            { "holder": "lender_l", "security": "warrants_common_0.5", "shares": 25000 }
+          ],
+          "unissued_pool": 610000,
+          "unconverted_safes": [
+            { "id": "safe_investor_s", "holder": "investor_s", "purchase_amount": "200000", "post_money_cap": "8000000", "discount": "0" }
+          ]
+        },
+        "issue_order": ["safe_investor_s"],
+        "to_fill": [],
+        "report": {
+          "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 2, "certificates": 7, "plan_grants": 6, "warrants": 1, "safes": 2, "convertible_rows": 1, "stock_plans": 1 },
+          "not_needed": { "stock_plan_history": 2 },
+          "notes": [
+            { "code": "version_label", "field": "0.7" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "formula_totals_skipped" },
+            { "code": "rsu_as_option", "subject": "EP-6" },
+            { "code": "expired_option_left_out", "subject": "EP-4" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "left_out_stakeholder", "subject": "employee_e" },
+            { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    }
+  }
+}

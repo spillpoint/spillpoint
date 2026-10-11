@@ -1,0 +1,10 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Employee D is named Employee-C, which makes the same id as Employee C.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "A4", "kind": "text", "text": "Employee-C", "formula": false}},
+    {"op": "set", "tab": "Common Stock Ledger", "cell": {"address": "A8", "kind": "text", "text": "Employee-C", "formula": false}},
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "A4", "kind": "text", "text": "Employee-C", "formula": false}},
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "A7", "kind": "text", "text": "Employee-C", "formula": false}}
+  ]
+}

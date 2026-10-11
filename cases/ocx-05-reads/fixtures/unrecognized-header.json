@@ -1,0 +1,9 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The SAFEs Ledger has a column OCX doesn't have.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "R2", "kind": "text", "text": "Side Letter", "formula": false}},
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "R3", "kind": "text", "text": "No", "formula": false}},
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "R4", "kind": "text", "text": "Yes", "formula": false}}
+  ]
+}

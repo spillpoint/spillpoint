@@ -1,0 +1,9 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "EP-1 gives split-adjusted terms, 400,000 at $0.05, and the Stakeholder View counts them.",
+  "change": [
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "G3", "kind": "number", "text": "0.05", "formula": false}},
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "M3", "kind": "number", "text": "400000", "formula": false}},
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "E3", "kind": "number", "text": "410000", "formula": false}}
+  ]
+}

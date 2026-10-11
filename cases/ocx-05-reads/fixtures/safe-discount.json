@@ -1,0 +1,8 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2 has a 20% discount, and the Summary View's row says so.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "F4", "kind": "number", "text": "0.2", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "O3", "kind": "number", "text": "0.2", "formula": false}}
+  ]
+}

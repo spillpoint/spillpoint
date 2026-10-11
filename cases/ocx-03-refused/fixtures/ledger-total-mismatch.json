@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "Common Stock's ledger saves its No. Shares Outstanding total as 8,040,100, 100 more than its rows.",
+  "change": [
+    {"op": "set", "tab": "Common Stock Ledger", "cell": {"address": "M10", "kind": "number", "text": "8040100", "formula": true}}
+  ]
+}

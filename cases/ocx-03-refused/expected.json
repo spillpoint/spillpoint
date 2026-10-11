@@ -29,6 +29,7 @@
     "currency.json": { "refused": { "kind": "unsupported", "term": "currency", "subject": "SAFE-2" } },
     "non-plan-awards.json": { "refused": { "kind": "unsupported", "term": "non_plan_awards", "subject": "Founder B" } },
     "total-mismatch.json": { "refused": { "kind": "malformed", "term": "total_mismatch", "subject": "Common Stock" } },
+    "ledger-total-mismatch.json": { "refused": { "kind": "malformed", "term": "total_mismatch", "subject": "Common Stock Ledger: No. Shares Outstanding" } },
     "holdings-mismatch.json": { "refused": { "kind": "malformed", "term": "holdings_mismatch", "subject": "Founder A" } },
     "pool-mismatch.json": { "refused": { "kind": "malformed", "term": "pool_mismatch", "subject": "Alder Gate 2023 Equity Plan" } },
     "convertibles-mismatch.json": { "refused": { "kind": "malformed", "term": "convertibles_mismatch", "subject": "Post-$ SAFEs" } }

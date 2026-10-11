@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "EP-5's strike is $0.0025, stored as Excel writes it, to 17 digits.",
+  "change": [
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "F7", "kind": "number", "text": "2.5000000000000001E-3", "formula": false}}
+  ]
+}
