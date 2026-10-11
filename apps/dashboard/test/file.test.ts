@@ -56,10 +56,10 @@ describe("saving and opening again", () => {
     expect(securityA(fileText("Millrace", typed))).toMatchObject({ original_issue_price: "2.075472", conversion_price: saved.conversion_price });
   });
 
-  it("writes the agreed format: version 6, a name, the rounds or the cap table, the range, the sale's date if given, and the view if there is one", () => {
+  it("writes the agreed format: version 7, a name, the rounds or the cap table, the range, the sale's date if given, and the view if there is one", () => {
     const built = JSON.parse(fileText("  Millrace Robotics (fictional) ", millraceTable, undefined, millraceRounds));
     expect(Object.keys(built)).toEqual(["format", "version", "name", "holders", "events", "cap_table_after_event", "range"]);
-    expect(built).toMatchObject({ format: "spillpoint", version: 6, name: "Millrace Robotics (fictional)", cap_table_after_event: "series_b", range: ["0", "300000000"] });
+    expect(built).toMatchObject({ format: "spillpoint", version: 7, name: "Millrace Robotics (fictional)", cap_table_after_event: "series_b", range: ["0", "300000000"] });
     const dated = JSON.parse(fileText("Millrace", { ...millraceTable, exitDate: "2026-06-30" }, { exitValue: "39424995.32", you: "cobalt" }));
     expect(Object.keys(dated)).toEqual(["format", "version", "name", "cap_table", "range", "exit_date", "view"]);
     expect(dated.exit_date).toBe("2026-06-30");
@@ -95,8 +95,8 @@ describe("saving and opening again", () => {
       if (!opened.ok) throw new Error(opened.message);
       expect(opened.rounds).toEqual(rounds);
       expect(payoutsAtBreakpoints(buildExit(opened.draft).json)).toEqual(payoutsAtBreakpoints(lockedMillraceExit()));
-      // Saved again, it's version 6, otherwise the same.
-      expect(JSON.parse(fileText(opened.name, opened.draft, undefined, opened.rounds))).toEqual({ ...v5, version: 6 });
+      // Saved again, it's version 7, otherwise the same.
+      expect(JSON.parse(fileText(opened.name, opened.draft, undefined, opened.rounds))).toEqual({ ...v5, version: 7 });
     }
   });
 
@@ -154,8 +154,8 @@ describe("a file that can't be opened", () => {
   });
 
   it("comes from a newer version, or has no version", () => {
-    expect(refusal({ ...good(), version: 7 })).toBe(
-      "It was saved by a newer version of spillpoint (file version 7); this page reads files up to version 6. Open it with the newer version.",
+    expect(refusal({ ...good(), version: 8 })).toBe(
+      "It was saved by a newer version of spillpoint (file version 8); this page reads files up to version 7. Open it with the newer version.",
     );
     const { version: _version, ...unversioned } = good();
     expect(refusal(unversioned)).toBe("Its version number is missing or unreadable, so it's not clear how to read it.");
@@ -435,7 +435,7 @@ describe("the sale's terms in a file (M5l)", () => {
     if (!opened.ok) throw new Error(opened.message);
     expect(opened.draft.carveOut!.tiers.map((t) => t.percent)).toEqual(["5"]);
     const saved = JSON.parse(fileText(opened.name, opened.draft));
-    expect([saved.version, saved.carve_out, saved.cap_table.carve_out]).toEqual([6, carve_out, undefined]);
+    expect([saved.version, saved.carve_out, saved.cap_table.carve_out]).toEqual([7, carve_out, undefined]);
     // A version 4 rounds file already kept its carve-out beside the rounds, and opens as it was.
     const rounds = { ...JSON.parse(fileText("Millrace", millraceTable, undefined, millraceRounds)), version: 4, carve_out };
     const reopened = readFile(JSON.stringify(rounds));

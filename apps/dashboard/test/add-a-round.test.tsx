@@ -103,7 +103,7 @@ describe("Quillfern imported, a Series B added, saved and opened again (case 26)
     const saved = await save();
     const file = JSON.parse(saved);
     // The file keeps the starting table as the company's first event, in the import's issue order (O14).
-    expect(file).toMatchObject({ version: 6, cap_table_after_event: "series_b" });
+    expect(file).toMatchObject({ version: 7, cap_table_after_event: "series_b" });
     expect(file.events.map((e: { id: string; type: string }) => [e.id, e.type])).toEqual([["start", "start"], ["series_b", "priced_round"]]);
     expect(file.events[0]).toMatchObject({ date: "2025-12-31", issue_order: ["seed", "series_a"] });
     expect(file.holders).toEqual(caseJson("edge-26-series-b-on-an-imported-table/inputs.json").holders);

@@ -50,7 +50,7 @@ import type { Rounds } from "./rounds.ts";
 import type { Origin } from "./roundsDraft.ts";
 
 export const FORMAT = "spillpoint";
-export const VERSION = 6;
+export const VERSION = 7;
 
 const FIELDS = [
   "format", "version", "name", "cap_table", "as_of", "issue_order", "holders", "events", "cap_table_after_event", "carve_out", "range", "exit_date",
@@ -110,7 +110,8 @@ export type Opened =
  * neither. Version 5 keeps a carve-out with the sale's terms: one in a cap
  * table moves there (C6; Jordan's answer 1 to the 0.3.0 plan). Version 6 adds
  * a starting cap table as a company's first event, which older files didn't
- * have (0.5.0 plan, 05b3).
+ * have (0.5.0 plan, 05b3). Version 7 renames a series from SAFEs, which the
+ * engine names `<series>_safes` since 0.7.0 (07d2, below).
  */
 const MIGRATIONS: Record<number, (file: Record<string, unknown>) => Record<string, unknown>> = {
   1: (file) => ({ ...file, version: 2 }),
@@ -124,7 +125,53 @@ const MIGRATIONS: Record<number, (file: Record<string, unknown>) => Record<strin
     return { ...file, version: 5, cap_table: rest, carve_out };
   },
   5: (file) => ({ ...file, version: 6 }),
+  6: (file) => ({ ...file, version: 7, ...(Array.isArray(file.events) ? { events: renameSafeSeries(file) } : {}) }),
 };
+
+type Json = Record<string, unknown>;
+
+/**
+ * The naming review's item 15 (07b): the series a priced round's SAFEs convert into is `<series>_safes`, and
+ * `<series>_safes_2` for a second price, where until 0.7.0 it was `<series>_shadow` and `<series>_shadow_2`. A version 6
+ * file names one wherever its events refer to a series: a later round's seniority, which the page fills from the cap
+ * table before it, a pay-to-play, a warrant's underlying, a SAFE's cash-out rank. Each is renamed, so the file builds
+ * as it did (07d2). Only a name that follows a series a priced round in the file issues, from that round on, and that
+ * the file doesn't declare itself: a security someone named "Seed Shadow", with an id of their own, is left alone, and
+ * so is everything in a starting cap table, which declares its own.
+ */
+function renameSafeSeries(file: Json): unknown[] {
+  const events = file.events as unknown[];
+  const declared = new Set<string>();
+  const declare = (v: unknown) => typeof v === "string" && declared.add(v);
+  const list = (v: unknown) => (Array.isArray(v) ? (v as Json[]) : []);
+  for (const h of list(file.holders)) declare(h?.id);
+  for (const ev of list(events)) {
+    declare(ev?.id);
+    declare((ev?.security as Json | undefined)?.id);
+    declare((ev?.series as Json | undefined)?.id);
+    for (const x of [...list(ev?.safes), ...list(ev?.notes)]) declare(x?.id);
+    const start = ev?.cap_table as Json | undefined;
+    if (start) for (const key of ["holders", "securities", "unconverted_safes", "unconverted_notes"]) for (const x of list(start[key])) declare(x?.id);
+  }
+  const issued = new Set<string>();
+  const renamed = (id: string): string => {
+    const m = /^(.+)_shadow(?:_(\d+))?$/.exec(id);
+    if (!m || declared.has(id) || !issued.has(m[1]!) || (m[2] !== undefined && Number(m[2]) < 2)) return id;
+    return `${m[1]}_safes${m[2] === undefined ? "" : `_${m[2]}`}`;
+  };
+  const walk = (v: unknown): unknown => {
+    if (typeof v === "string") return renamed(v);
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [renamed(k), walk(x)]));
+    return v;
+  };
+  return events.map((ev) => {
+    const e = ev as Json | null;
+    if (e?.type === "priced_round" && typeof (e.series as Json | undefined)?.id === "string") issued.add((e.series as Json).id as string);
+    // A starting cap table declares its own securities, so nothing in it is renamed.
+    return e?.type === "start" ? ev : walk(ev);
+  });
+}
 
 /** Reads a saved file back into the editor, or says plainly why it can't. */
 export function readFile(text: string): Opened {
