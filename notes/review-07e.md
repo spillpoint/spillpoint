@@ -174,6 +174,26 @@ None: no modeling choice changed.
 - **No changes** to `.github/workflows/` or `.claude/`.
 - **Nothing ran outside the sandbox.**
 
+## After your review (Jordan, after #94)
+
+**Section 1 is settled by 07d2 (#94):** saved files are version 7, and opening an older one renames a series from SAFEs.
+
+**Your check:** you saved 19 files with the 0.6.0 page: the Millrace example, and the 18 cases at v0.6.0 whose inputs name a series from SAFEs.
+- **Main's page before #94** refused all 19.
+- **#94's page** opens all 19 with no alert, and saves each back as version 7 with no `_shadow` left.
+- **Each pays what 0.6.0 paid,** to all 40 digits with ids renamed: 418 exit values and 105 breakpoints.
+
+**Both 07d2 decisions are agreed.**
+
+**This commit:**
+1. **Main merged in,** not rebased. The branch was already pushed, and a rebase would need the force-push CLAUDE.md's hard rule 3 rules out. The merge brings 07d2. The branch's own changes are the same seven files as before.
+2. **The release notes' saved-files paragraph is one line:** "Files saved before 0.7.0 open as before, and a series from SAFEs is renamed as they open."
+   - **Item 15's "What to change"** says an input written by hand for the engine, or your code, must rename `_shadow` to `_safes` itself, since only the page's saved files are renamed for you.
+   - **"On the page"** says saved files are version 7.
+   - **"How it's tested"** adds 07d2's fixtures and your 19-file check, in your figures.
+
+**The tarball is unchanged.** Nothing under `packages/` changed since the release commit. A fresh build and `pnpm pack` give `93d801e0e9357c706768ed7c20794a71bf4b4a44`, with 73 files, and I deleted the tarball.
+
 ## Next
 
-0.7.0 is ready for you to publish and tag, once you've decided on section 1. After it, 1.0. I'm stopping here.
+0.7.0 is ready for you to publish and tag. After it, 1.0. I'm stopping here.

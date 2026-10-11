@@ -45,7 +45,7 @@ Item numbers are the review's (`notes/plan-0.7.0.md`). Each says what changed, w
 - **What changed:** its id is `<series>_safes`, matching `<series>_notes` for notes. For example, `seed_safes`, and `series_a_safes_2` for a second price. It was `<series>_shadow`.
 - **TypeScript reports:** nothing. An id is a string.
 - **JavaScript sees:** an input that names the old id, such as a later round's seniority listing `seed_shadow`, is refused with an `InputError`: "inputs.events[5].seniority: seed_shadow is not a preferred series". Code that looks the series up by its old id finds nothing.
-- **What to change:** rename `<series>_shadow` to `<series>_safes`, and `_shadow_2` to `_safes_2`, wherever an input or your code names it.
+- **What to change:** an input written by hand for the engine, or your code, must rename `<series>_shadow` to `<series>_safes`, and `_shadow_2` to `_safes_2`, itself. Only the page's saved files are renamed for you, as they open (below).
 
 ### 3. A solution has no `complete`
 
@@ -137,11 +137,7 @@ Item numbers are the review's (`notes/plan-0.7.0.md`). Each says what changed, w
 
 ### The page's saved files
 
-**Files saved before 0.7.0 open as before, unless a round names a series from SAFEs in its seniority.** Such a file doesn't open: "Its rounds can't be built. inputs.events[5].seniority: seed_shadow is not a preferred series". That's the case for:
-- **any file saved from the Millrace example**, whose rounds list `seed_shadow`
-- **any company with a priced round after one that converted SAFEs**, since the page writes a round's seniority from the cap table before it, series from SAFEs included
-
-A file with a cap table and no rounds, or rounds that convert no SAFEs, opens unchanged.
+Files saved before 0.7.0 open as before, and a series from SAFEs is renamed as they open.
 
 ## No break, and new
 
@@ -169,7 +165,7 @@ A file with a cap table and no rounds, or rounds that convert no SAFEs, opens un
   - The saved file's field name is unchanged.
 - **Strikes to the cent.** The Rounds tab writes a grant's and a warrant's strike as the class names do: "options at $0.10 a share", beside "Options ($0.10 strike)". It used to write what was typed, "$0.1". So does the OCF import's report, which rounded a strike past six places.
 - **Class names to the cent,** from the engine, wherever the page shows a class.
-- **Saved files:** as above.
+- **Saved files are version 7.** Files saved before 0.7.0 open as before, and a series from SAFEs is renamed as they open (07d2).
 
 ## How it's tested
 
@@ -182,6 +178,9 @@ A file with a cap table and no rounds, or rounds that convert no SAFEs, opens un
   - **The page's changes:** the engine's results, byte for byte.
   - **An independent calculator,** on 54 fuzzed tables: 216 payouts, 51 breakpoint lists and 3 two-answer stops.
   - **The old and new code:** new-style code typechecks under `nodenext`, and old-style code fails with the errors above.
+- **Files saved by the 0.6.0 page (07d2).**
+  - **The fixtures:** two saved with the page at v0.6.0, the Millrace example and a company with SAFEs converting at two prices, each open, pay what 0.6.0 paid to all 40 digits, and save back as version 7 with no `_shadow` left.
+  - **Checked independently on 19 files** saved with the 0.6.0 page: the Millrace example, and the 18 cases whose inputs name a series from SAFEs. Each opens with no alert, saves back as version 7, and pays what 0.6.0 paid to all 40 digits, ids renamed: 418 exit values and 105 breakpoints.
 - **Every object the API hands back has exactly its type's fields.** A test checks each against its type's list at every exit value every case lists, and each list against its type when the tests compile.
 - **The stable names:** a test holds the README's "Stable from 1.0" lists to the engine's, and checks that every refusal term and note code a case records is listed.
 
