@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Series A participates with no cap.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "I8", "kind": "text", "text": "N/A", "formula": false}}
+  ]
+}

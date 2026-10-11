@@ -1,0 +1,8 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "The plan has 10,000 RSUs outstanding, which the per-holder tab doesn't tell apart from options.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "E22", "kind": "number", "text": "240000", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "F22", "kind": "number", "text": "10000", "formula": false}}
+  ]
+}

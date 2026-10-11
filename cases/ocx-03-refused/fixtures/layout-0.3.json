@@ -1,0 +1,10 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "The per-holder tab is 0.3's, Detailed Snapshot, headed Shareholder, and there's no version label, as 0.3 has none.",
+  "change": [
+    {"op": "rename_tab", "tab": "Stakeholder Snapshot", "to": "Detailed Snapshot"},
+    {"op": "set", "tab": "Detailed Snapshot", "cell": {"address": "A2", "kind": "text", "text": "Shareholder", "formula": false}},
+    {"op": "set", "tab": "Detailed Snapshot", "cell": {"address": "B2", "kind": "text", "text": "Shareholder Group", "formula": false}},
+    {"op": "clear", "tab": "Context", "address": "C3"}
+  ]
+}

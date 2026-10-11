@@ -1,0 +1,15 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Financing History has no Series Seed round.",
+  "change": [
+    {"op": "clear", "tab": "Context", "address": "A7"},
+    {"op": "clear", "tab": "Context", "address": "B7"},
+    {"op": "clear", "tab": "Context", "address": "C7"},
+    {"op": "clear", "tab": "Context", "address": "D7"},
+    {"op": "clear", "tab": "Context", "address": "E7"},
+    {"op": "clear", "tab": "Context", "address": "F7"},
+    {"op": "clear", "tab": "Context", "address": "G7"},
+    {"op": "clear", "tab": "Context", "address": "H7"},
+    {"op": "clear", "tab": "Context", "address": "I7"}
+  ]
+}

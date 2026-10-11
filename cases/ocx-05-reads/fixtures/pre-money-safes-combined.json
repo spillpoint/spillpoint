@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "The SAFEs row is of pre-money SAFEs.",
+  "change": [
+    {"op": "set", "tab": "Summary Snapshot", "cell": {"address": "L3", "kind": "text", "text": "Pre-$ SAFEs", "formula": false}}
+  ]
+}

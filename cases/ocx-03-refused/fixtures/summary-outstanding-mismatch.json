@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "The Summary gives Series Seed Preferred 1,500,100 outstanding, where its holders hold 1,500,000.",
+  "change": [
+    {"op": "set", "tab": "Summary Snapshot", "cell": {"address": "C8", "kind": "number", "text": "1500100", "formula": false}}
+  ]
+}

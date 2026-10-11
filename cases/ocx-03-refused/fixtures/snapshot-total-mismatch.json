@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "The per-holder tab's Total row gives Common Stock 6,000,100, where its rows give 6,000,000.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder Snapshot", "cell": {"address": "C16", "kind": "number", "text": "6000100", "formula": true}}
+  ]
+}
