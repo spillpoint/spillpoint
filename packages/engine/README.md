@@ -2,7 +2,7 @@
 
 Who gets what when a company is sold. Give spillpoint a cap table and an exit value, and it pays out the waterfall: preferences, cumulative dividends, participation, caps, conversions, options, warrants, management carve-outs, and SAFEs and convertible notes still outstanding at the sale. It also finds every **breakpoint** where the payout curve bends or jumps, and explains each one in plain English.
 
-It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Or it can read one from an Open Cap Format export *(0.4.0)*, and build the next round on a cap table you already have *(0.5.0)*.
+It can also build the cap table from the company's history: shares issued, the option pool, SAFEs and convertible notes, and priced rounds with their pool top-ups, pro-rata, anti-dilution and pay-to-play. Or it can read one from an Open Cap Format export *(0.4.0)* or an OCX workbook *(0.6.0)*, and build the next round on a cap table you already have *(0.5.0)*.
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
@@ -401,6 +401,100 @@ fund on seed: $4000000.00
 
 Nothing is skipped. The rules, each with its default, are O1 to O14 in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
 
+## Reading an OCX workbook *(0.6.0)*
+
+OCX is developed by the Open Cap Table Coalition: https://github.com/Open-Cap-Table-Coalition/ocx. spillpoint reads files in that format.
+
+`readOcx(workbook)` reads an OCX workbook, the Coalition's spreadsheet layout of a cap table, and gives the cap table as of its as-of date. It reads two layouts, told apart by their tabs and headers, not by the version written in the workbook:
+- **0.4/0.5,** the Coalition's reference workbooks: `Summary Snapshot`, `Stakeholder Snapshot` and `Context`, with each series' terms in Context's Financing History.
+- **0.7,** as one real export lays it out, from a cap table app other than Carta: `Summary View`, `Stakeholder View`, a ledger for each class and plan, and a `Warrants Ledger` and `SAFEs Ledger`. That export had no preferred stock, so 0.7's preferred is read by the same rules as its common, and no real export has shown it yet.
+
+**No Carta export has been tested yet.** Carta says it exports OCX, but no Carta workbook has been through `readOcx`, so which layout Carta writes, and whether it reads, isn't known.
+
+The engine never opens a spreadsheet. You pass each tab's cells as the .xlsx stored them, as an `OcxWorkbook`: the date system, and each tab's name and cells, each with its address, its kind, its text exactly as stored and whether it holds a formula. A number is the text the spreadsheet stored, never a JavaScript number. Opening the .xlsx is up to you; the page's reader is in the repository, [`apps/dashboard/src/xlsx.ts`](https://github.com/spillpoint/spillpoint/blob/main/apps/dashboard/src/xlsx.ts), not in the package.
+
+```js
+import { D, prepare, readCapTable, readOcx, solve, toCents } from "spillpoint";
+
+// A tab as rows of cells, each cell's text as the spreadsheet stored it.
+const tab = (name, rows) => ({
+  name,
+  cells: rows.flatMap((row, r) =>
+    row.flatMap((text, c) =>
+      text === "" ? [] : [{ address: `${"ABCDEFGHI"[c]}${r + 1}`, kind: /^\d+(\.\d+)?$/.test(text) ? "number" : "text", text, formula: false }],
+    ),
+  ),
+});
+
+const workbook = {
+  dateSystem: 1900,
+  sheets: [
+    tab("Summary Snapshot", [
+      ["As of 2025.06.30"],
+      ["Share Class", "Outstanding Shares", "Liquidation Preference", "Security Type", "# of Securities", "Outstanding Amount", "Discount", "Valuation Cap"],
+      ["Common Stock"],
+      ["Common Stock", "8000000", "N/A"],
+      ["Preferred Stock"],
+      ["Seed Preferred", "2000000", "3000000"],
+    ]),
+    tab("Stakeholder Snapshot", [
+      ["As of 2025.06.30"],
+      ["Stakeholder", "Stakeholder Group", "Common Stock", "Seed Preferred (outstanding) (1.0000)", "Total Stock (outstanding)"],
+      ["Ana (founder)", "", "8000000", "0", "8000000"],
+      ["Seed Fund", "", "0", "2000000", "2000000"],
+    ]),
+    tab("Context", [
+      ["Financing History"],
+      ["Round", "Initial Closing Date", "Original Issue Price", "Adjusted Conversion Price", "Conversion Ratio", "Liquidation Multiple", "Participating (Y/N)", "Participation Cap"],
+      ["Seed", "2023.05.01", "1.5", "1.5", "1", "1", "N", "N/A"],
+      [],
+      ["Stock Plan Details"],
+      ["Plan Name", "Outstanding RSUs", "Shares Available for Grant"],
+    ]),
+  ],
+};
+
+const imported = readOcx(workbook);
+console.log(`as of ${imported.as_of}`);
+for (const note of imported.report.notes) console.log(`report: ${note.code}${note.subject ? ` (${note.subject})` : ""}`);
+for (const blank of imported.to_fill) console.log(`to fill in: ${blank.security ?? "the cap table"}'s ${blank.field}`);
+
+// OCX has no seniority, so you give the order the preferred is paid in.
+imported.cap_table.seniority = [["seed_preferred"]];
+const { answers } = solve(prepare(readCapTable(imported.cap_table)), new D("20000000"));
+for (const line of answers[0].payout.lines) console.log(`${line.holder} on ${line.security}: $${toCents(line.amount)}`);
+```
+
+Output:
+
+```
+as of 2025-06-30
+report: no_dividend_field
+report: no_conversion_group_field
+report: no_carve_out_field
+report: no_sale_date_field
+report: no_seniority_field
+report: no_anti_dilution_field (seed_preferred)
+to fill in: the cap table's seniority
+ana_founder on common_stock: $16000000.00
+seed_fund on seed_preferred: $4000000.00
+```
+
+- **The workbook** is the OCF example's company, in 0.4/0.5's layout, cut to the tabs and headers the reader needs. Seed's terms come from its Financing History row.
+- **Seniority is always blank** where there's preferred stock, since no OCX layout has it. Once you give it, the cap table reads like any other.
+- **Ids** are made from names, since OCX has none: "Ana (founder)" is `ana_founder`.
+
+**What an import gives** is a `CapTableImport`, as `readOcf` gives (above): `as_of`, `cap_table` with `null` wherever the workbook doesn't settle a term, `issue_order`, `to_fill` and `report`. Nothing is guessed. Besides seniority, what a workbook can leave blank:
+- **In either layout:** a convertible note's interest rate, issue date, base and repayment multiple, since a note comes from the summary's convertibles table, which gives only its amount, cap and discount.
+- **In 0.4/0.5:** each option, award and warrant column's strike, since the layout heads a column by plan or class, never by strike. One strike can't be right for a column whose grants have several, so the project's page asks whether they share one, and stops if they don't.
+- **In 0.7:** a SAFE's kind of cap, where its ledger doesn't say "Post Money" or "Pre Money". And without Financing History, a series' conversion price, multiple and participation, and its issue price too, unless its certificates all have the same one.
+
+**SAFEs:** in 0.7, each SAFE with its holder, from the `SAFEs Ledger`. In 0.4/0.5, each row of the summary's convertibles table is one SAFE for the row's total, held by a holder made for it and named for it ("Post-money SAFEs, $12,000,000 cap (2)"), since the table gives no holders. For a row of identical SAFEs, a reference test shows this pays the row what its SAFEs would get one by one, post-money or pre-money.
+
+**Numbers** are read to 15 significant digits, a spreadsheet's precision, from the text it stored, so 0.20000000000000001 is 0.2. **Dates** may be day counts, in the 1900 or 1904 date system, or text: `YYYY-MM-DD`, `YYYY.MM.DD`, or 0.7's "As of Fri, 31 Oct 2025". **A total that's a formula with no saved value,** as some exports write, isn't checked, and the report says so (`formula_totals_skipped`).
+
+**Anything it won't read is refused** with an `ImportRefusal`, its `format` `"ocx"`, its `kind` `"unsupported"` or `"malformed"`, and a `term`. Its `subject` is the workbook's own text, since OCX has no ids: a holder's or class's name, a row's certificate number, a tab, or a tab and header, "Common Stock Ledger: No. Shares Outstanding". The rules, each with its default, are OX1 to OX14 in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+
 ## What it covers
 
 Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)* or *(0.6.0)* are new in that version.
@@ -482,9 +576,11 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 
 **An Open Cap Format export** *(0.4.0)*, read into a cap table: stakeholders, stock classes, the share ledger, plans and the unissued pool, options and RSUs, warrants, and SAFEs and notes still outstanding. See [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
 
+**An OCX workbook** *(0.6.0)*, in its 0.4/0.5 or 0.7 layout, read into a cap table: holders, classes with their terms, holdings, options, warrants, the unissued pool, and SAFEs and notes still outstanding. See [Reading an OCX workbook](#reading-an-ocx-workbook-060).
+
 ## What it refuses
 
-**Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported. An OCF import refuses with an `ImportRefusal` instead *(0.4.0; the name since 0.6.0)*: see [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040).
+**Nothing is ever ignored.** A term the engine doesn't model is refused with an `UnsupportedTermError`, which names the term. Don't assume anything below is supported. An import refuses with an `ImportRefusal` instead *(0.4.0 for OCF, 0.6.0 for OCX; the name since 0.6.0)*: see [Reading an Open Cap Format export](#reading-an-open-cap-format-export-040) and [Reading an OCX workbook](#reading-an-ocx-workbook-060).
 
 **Not settled yet.** No worked test case settles these, so they're refused:
 - **Full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes** *(0.3.0: before, any anti-dilution there)*.
@@ -561,6 +657,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `buildCapTables(company)` | Build the cap table after each event. Each comes with the SAFEs and notes still outstanding and what the event worked out. |
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
 | `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
+| `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |
 | `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps, and each note's interest, repayment and conversion. `exitDate` is needed only for dividends and notes. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
@@ -574,7 +671,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
 - `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`. `readOcf` throws it as an `OcfRefusal`, a subclass, so code that catches `OcfRefusal`, as 0.4.0 and 0.5.0 code does, still works. From 0.7.0 `readOcf` throws `ImportRefusal` itself and `OcfRefusal` goes, as do the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`, which are now aliases of `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`.
 
-**Types for the OCX import** *(0.6.0)*: `OcxWorkbook`, `OcxSheet` and `OcxCell`, an OCX workbook as the page reads it from an .xlsx: the date system, and each tab's cells with their kind, their text as stored and whether each holds a formula. The import that reads them comes later in 0.6.0.
+**Types for the OCX import** *(0.6.0)*: `OcxWorkbook`, `OcxSheet` and `OcxCell`, what `readOcx` takes: the date system, and each tab's cells with their kind, their text as stored and whether each holds a formula. See [Reading an OCX workbook](#reading-an-ocx-workbook-060).
 
 ## License
 

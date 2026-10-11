@@ -397,7 +397,7 @@ As O10:
   - **"Copy a summary to share"** (05a2) for .xlsx, on the report, on a refused import and on a refusal at Use (your answer 2)
 
   Its test workbooks are .xlsx files our tests write from the JSON cases, plus one you save from a spreadsheet app (your answer 13).
-- **06h, release 0.6.0,** with 06a's breaking changes in its notes (below).
+- **06h, release 0.6.0** (done; `notes/release-0.6.0.md`), with 06a's breaking changes in its notes (below).
 
 ## Questions for you
 
