@@ -649,6 +649,8 @@ Every modeling choice the engine makes is written down, with its default, in the
 
 All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js) at 40 significant digits, never floating point. Amounts are reported as Decimals: use `toCents` to round half-up to the cent, or `new D("20000000")` to make one. The engine is checked against an independent calculator that uses exact fractions, and agrees with it to the cent.
 
+**`D` is decimal.js's `Decimal`,** at 40 significant digits with half-up rounding *(0.7.0: said here)*. Every amount, price and share count the API takes or returns is one, so it's part of the API: a major decimal.js release that changes `Decimal` would be a major spillpoint release. spillpoint stays on decimal.js 10 (`^10.6.0`), and moves to a new major only with a new major of its own.
+
 ## API
 
 | Function | What it does |
