@@ -277,8 +277,8 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
       pool: { shares: ct.unissuedPool, fullyDiluted: share(ct.unissuedPool) },
       stakes,
       outstanding: [
-        ...t.unconvertedSafes.map((f) => `${holder(f.holder)}'s SAFE, ${dollars(f.purchaseAmount)}`),
-        ...t.unconvertedNotes.map((n) => `${holder(n.holder)}'s convertible note, ${dollars(n.principal)} plus interest`),
+        ...(ct.unconvertedSafes ?? []).map((f) => `${holder(f.holder)}'s SAFE, ${dollars(f.purchaseAmount)}`),
+        ...(ct.unconvertedNotes ?? []).map((n) => `${holder(n.holder)}'s convertible note, ${dollars(n.principal)} plus interest`),
       ],
     };
   });

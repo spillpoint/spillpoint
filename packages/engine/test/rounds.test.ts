@@ -83,8 +83,9 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
   });
 
   const safes = exp.unconverted_safes ?? [];
-  expect(built.unconvertedSafes.map((f) => [f.id, f.holder])).toEqual(safes.map((f) => [f.id, f.holder]));
-  built.unconvertedSafes.forEach((f, i) => {
+  const builtSafes = built.capTable.unconvertedSafes ?? [];
+  expect(builtSafes.map((f) => [f.id, f.holder])).toEqual(safes.map((f) => [f.id, f.holder]));
+  builtSafes.forEach((f, i) => {
     const e = safes[i]!;
     expectSameNumber(f.purchaseAmount, e.purchase_amount, `${at} ${f.id} purchase amount`);
     expectSameNumber(f.postMoneyCap, e.post_money_cap ?? null, `${at} ${f.id} post-money cap`);
@@ -92,10 +93,11 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
     expectSameNumber(f.discount, e.discount, `${at} ${f.id} discount`);
   });
   const notes = exp.unconverted_notes ?? [];
-  expect(built.unconvertedNotes.map((n) => [n.id, n.holder, n.issueDate, n.conversionBase])).toEqual(
+  const builtNotes = built.capTable.unconvertedNotes ?? [];
+  expect(builtNotes.map((n) => [n.id, n.holder, n.issueDate, n.conversionBase])).toEqual(
     notes.map((n) => [n.id, n.holder, n.issue_date, n.conversion_base]),
   );
-  built.unconvertedNotes.forEach((n, i) => {
+  builtNotes.forEach((n, i) => {
     const e = notes[i]!;
     expectSameNumber(n.principal, e.principal, `${at} ${n.id} principal`);
     expectSameNumber(n.interestRate, e.interest_rate, `${at} ${n.id} rate`);
@@ -307,7 +309,7 @@ describe("the round cases built in full", () => {
       ["marcus", "cap", 389_681, "seed_safes"],
     ]);
     expect(built[5]!.capTable.securities.find((s) => s.id === "seed_safes")!.name).toBe("Seed Preferred (from SAFEs)");
-    expect(built[5]!.unconvertedSafes).toEqual([]);
+    expect(built[5]!.capTable.unconvertedSafes ?? []).toEqual([]);
     const seriesA = built[7]!.details;
     if (seriesA.kind !== "priced_round") throw new Error("the Series A is a priced round");
     expect(seriesA.proRata.map((p) => [p.holder, p.preRoundShare.times(100).toFixed(6), p.entitlement.toFixed(2)])).toEqual([["harbor_lane", "28.703080", "3444369.64"]]);
@@ -380,7 +382,7 @@ describe("the round cases built in full", () => {
     expect(built.capTable.securities.map((s) => s.name)).toEqual([
       "Common Stock", "Options ($0.25 strike)", "Series A Preferred (from SAFEs)", "Series A Preferred (from notes)", "Series A Preferred",
     ]);
-    expect(built.unconvertedNotes).toEqual([]);
+    expect(built.capTable.unconvertedNotes ?? []).toEqual([]);
   });
 
   it("18 counts the SAFE's 1,000,000 shares in Investor X's pro-rata base: $1,090,909.09, not $1,200,000 (R6)", () => {

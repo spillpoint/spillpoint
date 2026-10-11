@@ -177,11 +177,11 @@ export interface CapTableAfterEvent {
   /** The event's id. */
   event: string;
   date: string | null;
+  /**
+   * The cap table after the event, with the SAFEs and notes issued and not yet converted as its unconvertedSafes and
+   * unconvertedNotes, left out when there are none: where an exit on it reads them (the naming review, item 10).
+   */
   capTable: CapTable;
-  /** SAFEs issued and not yet converted. */
-  unconvertedSafes: Safe[];
-  /** Notes issued and not yet converted. */
-  unconvertedNotes: Note[];
   details: EventDetails;
 }
 
@@ -1257,8 +1257,6 @@ export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEv
       event: id,
       date,
       capTable: company.snapshot(),
-      unconvertedSafes: company.safes.map((f) => ({ ...f })),
-      unconvertedNotes: company.notes.map((n) => ({ ...n })),
       details,
     };
   });

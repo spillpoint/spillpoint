@@ -130,8 +130,10 @@ function show(t: CapTableAfterEvent): void {
   }
   if (!ct.unissuedPool.isZero()) rows.push(["Unissued pool", "", grouped(ct.unissuedPool), `${ct.unissuedPool.div(total).times(100).toFixed(2)}%`]);
   console.log(pad(rows));
-  if (t.unconvertedSafes.length) console.log(`SAFEs outstanding: ${t.unconvertedSafes.map((f) => `${f.id} $${grouped(f.purchaseAmount)}`).join(", ")}`);
-  if (t.unconvertedNotes.length) console.log(`Notes outstanding: ${t.unconvertedNotes.map((n) => `${n.id} $${grouped(n.principal)}`).join(", ")}`);
+  const safes = ct.unconvertedSafes ?? [];
+  const notes = ct.unconvertedNotes ?? [];
+  if (safes.length) console.log(`SAFEs outstanding: ${safes.map((f) => `${f.id} $${grouped(f.purchaseAmount)}`).join(", ")}`);
+  if (notes.length) console.log(`Notes outstanding: ${notes.map((n) => `${n.id} $${grouped(n.principal)}`).join(", ")}`);
   console.log(matches(t));
 }
 

@@ -5,10 +5,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, prepare, solve } from "../src/index.ts";
-import type { Answer, CarveOutHere, Decisions, NoteHere, Payout, PayoutLine, PreparedCapTable, SafeHere, SeriesHere, Solution, TierPayment } from "../src/index.ts";
+import { D, buildCapTables, prepare, solve } from "../src/index.ts";
+import type { Answer, CapTableAfterEvent, CarveOutHere, Decisions, NoteHere, Payout, PayoutLine, PreparedCapTable, SafeHere, SeriesHere, Solution, TierPayment } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
-import { EXIT_CASES, expectedPoints, readCaseFile } from "./support/cases.ts";
+import { ALL_CASES, EXIT_CASES, expectedPoints, readCaseFile } from "./support/cases.ts";
 
 /** A type's field names, listed once: the compiler checks that the list names every field of T and nothing else. */
 function fieldsOf<T>() {
@@ -37,6 +37,7 @@ const NOTE_HERE = fieldsOf<NoteHere>()(["converts", "shares"]);
 const CARVE_OUT_HERE = fieldsOf<CarveOutHere>()(["claim", "paid", "band"]);
 const TIER_PAYMENT = fieldsOf<TierPayment>()(["index", "series", "claim", "paid", "full"]);
 const PAYOUT_LINE = fieldsOf<PayoutLine>()(["holder", "security", "amount"]);
+const BUILT = fieldsOf<CapTableAfterEvent>()(["event", "date", "capTable", "details"]);
 const NOTE_DEBT = fieldsOf<NonNullable<Payout["noteDebt"]>>()(["claim", "paid", "full", "notes"]);
 const SAFE_CASH = fieldsOf<NonNullable<Payout["safeCash"]>>()(["claim", "paid", "full", "safes"]);
 
@@ -82,5 +83,17 @@ describe.each(EXIT_CASES)("%s", (name) => {
         expectPayout(answer.payout, `${point.label}: the payout`);
       }
     }
+  });
+});
+
+/** The cases built from a company's events (C2). */
+const ROUND_CASES = ALL_CASES.filter(
+  (name) => !name.startsWith("ocf-") && !name.startsWith("ocx-") && "events" in (readCaseFile(name, "inputs.json") as object),
+);
+
+describe.each(ROUND_CASES)("%s, built from its events", (name) => {
+  it("builds tables with exactly a built table's fields, each event's SAFEs and notes on its cap table", () => {
+    const { holders, events } = readCaseFile(name, "inputs.json") as { holders: unknown; events: unknown };
+    for (const t of buildCapTables({ holders, events })) expectFields(t, BUILT, `after ${t.event}`);
   });
 });

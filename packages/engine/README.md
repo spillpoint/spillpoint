@@ -138,7 +138,7 @@ const company = {
 };
 
 // The cap table after each event.
-for (const { event, capTable, unconvertedSafes, details } of buildCapTables(company)) {
+for (const { event, capTable, details } of buildCapTables(company)) {
   console.log(`After ${event}:`);
   if (details.kind === "priced_round") {
     console.log(`  priced at $${details.price.toFixed(6)}; the pool tops up by ${details.poolTopUp}`);
@@ -148,7 +148,7 @@ for (const { event, capTable, unconvertedSafes, details } of buildCapTables(comp
   }
   for (const p of capTable.positions) console.log(`  ${p.holder} on ${p.security}: ${p.shares}`);
   console.log(`  unissued pool: ${capTable.unissuedPool}`);
-  for (const f of unconvertedSafes) console.log(`  ${f.id} outstanding: $${toCents(f.purchaseAmount)}`);
+  for (const f of capTable.unconvertedSafes ?? []) console.log(`  ${f.id} outstanding: $${toCents(f.purchaseAmount)}`);
 }
 
 // An exit on the cap table after the Series A.
@@ -654,7 +654,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | Function | What it does |
 |---|---|
 | `readExit(json)`, `readCapTable(json)` | Read and check an input. |
-| `buildCapTables(company)` | Build the cap table after each event. Each comes with the SAFEs and notes still outstanding and what the event worked out. |
+| `buildCapTables(company)` | Build the cap table after each event, with what the event worked out. The SAFEs and notes still outstanding are on its `capTable` *(0.7.0: no longer also beside it)*. |
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
 | `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
 | `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |
