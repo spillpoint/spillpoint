@@ -388,7 +388,7 @@ As O10:
   - both layouts, told apart by their headers
   - the numbers and dates rules, the header matching and row labels in any case
   - the ledgers, the cross-tab checks, refusals and report
-- **06g, the page:**
+- **06g, the page** (done; ASSUMPTIONS OX15):
   - "Open a cap table export", on 06c's reader
   - the seniority question, and the questions for a preferred series' terms
   - **one-click answers for a preferred series' terms** (your 06d review), as for seniority: "conversion price = issue price" and "1x, non-participating". The founder must click one; neither is ever preset, and nothing is used until each blank is answered (O1).
