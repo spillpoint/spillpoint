@@ -1,0 +1,76 @@
+{
+  "case": "ocx-08-edge-05a",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.4/0.5",
+  "locked_case": "edge-05a-stacked",
+  "renamed": { "common": "common_stock", "series_a": "series_a_preferred", "series_b": "series_b_preferred" },
+  "answers": [
+    {
+      "field": "seniority",
+      "value": [["series_b_preferred"], ["series_a_preferred"]]
+    }
+  ],
+  "result": {
+    "as_of": "2025-06-30",
+    "cap_table": {
+      "holders": [
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "investor_x", "name": "Investor X" },
+        { "id": "investor_y", "name": "Investor Y" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        {
+          "id": "series_a_preferred",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "conversion_price": "2",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_b_preferred",
+          "name": "Series B Preferred",
+          "kind": "preferred",
+          "original_issue_price": "4",
+          "conversion_price": "4",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": null,
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "founder_a", "security": "common_stock", "shares": 6000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+        { "holder": "investor_x", "security": "series_a_preferred", "shares": 1000000 },
+        { "holder": "investor_y", "security": "series_b_preferred", "shares": 1000000 }
+      ],
+      "unissued_pool": 0
+    },
+    "issue_order": ["series_a_preferred", "series_b_preferred"],
+    "to_fill": [
+      { "field": "seniority" }
+    ],
+    "report": {
+      "read": { "stakeholders": 4, "pool_rows": 1, "share_classes": 3, "financing_rounds": 2 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.5" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_seniority_field" },
+        { "code": "no_anti_dilution_field", "subject": "series_a_preferred" },
+        { "code": "no_anti_dilution_field", "subject": "series_b_preferred" }
+      ]
+    }
+  }
+}

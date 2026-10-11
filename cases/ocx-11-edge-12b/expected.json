@@ -1,0 +1,54 @@
+{
+  "case": "ocx-11-edge-12b",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.4/0.5",
+  "locked_case": "edge-12b-safe-cap-and-discount",
+  "renamed": { "common": "common_stock", "options_5": "options_1", "investor_x": "post_money_safes_10_000_000_cap_20_discount_1", "safe_x": "safe_post_money_safes_10_000_000_cap_20_discount_1" },
+  "answers": [
+    { "security": "options_1", "field": "strike", "value": "5" }
+  ],
+  "result": {
+    "as_of": "2025-06-30",
+    "cap_table": {
+      "holders": [
+        { "id": "founder_a", "name": "Founder A" },
+        { "id": "founder_b", "name": "Founder B" },
+        { "id": "employee_c", "name": "Employee C" },
+        { "id": "post_money_safes_10_000_000_cap_20_discount_1", "name": "Post-money SAFEs, $10,000,000 cap, 20% discount (1)" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        { "id": "options_1", "name": "Common Stock Options", "kind": "option", "strike": null }
+      ],
+      "seniority": [],
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "founder_a", "security": "common_stock", "shares": 6000000 },
+        { "holder": "founder_b", "security": "common_stock", "shares": 3000000 },
+        { "holder": "employee_c", "security": "options_1", "shares": 500000 }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_safes": [
+        { "id": "safe_post_money_safes_10_000_000_cap_20_discount_1", "holder": "post_money_safes_10_000_000_cap_20_discount_1", "purchase_amount": "1000000", "post_money_cap": "10000000", "discount": "0.2" }
+      ]
+    },
+    "issue_order": ["safe_post_money_safes_10_000_000_cap_20_discount_1"],
+    "to_fill": [
+      { "security": "options_1", "field": "strike" }
+    ],
+    "report": {
+      "read": { "stakeholders": 3, "pool_rows": 1, "share_classes": 1, "convertible_rows": 1, "stock_plans": 1 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.5" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_strike_field", "subject": "options_1" },
+        { "code": "safes_combined", "subject": "safe_post_money_safes_10_000_000_cap_20_discount_1" },
+        { "code": "issue_order_default", "subject": "safe_post_money_safes_10_000_000_cap_20_discount_1" }
+      ]
+    }
+  }
+}

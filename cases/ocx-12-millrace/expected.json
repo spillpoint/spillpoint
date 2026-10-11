@@ -1,0 +1,149 @@
+{
+  "case": "ocx-12-millrace",
+  "worked_by": "hand (DERIVATION.md)",
+  "layout": "0.4/0.5",
+  "locked_case": "millrace",
+  "locked_after_event": "series_b",
+  "price_digits": 15,
+  "renamed": {
+    "ana": "ana_ortiz",
+    "dev": "dev_patel",
+    "lena": "lena_fischer",
+    "priya": "priya_shah",
+    "marcus": "marcus_lee",
+    "harbor_lane": "harbor_lane_ventures_fund_i",
+    "ridgeline": "ridgeline_capital_fund_iii",
+    "cobalt": "cobalt_family_office_llc",
+    "common": "common_stock",
+    "seed_shadow": "seed_preferred_from_safes",
+    "seed": "seed_preferred",
+    "series_a": "series_a_preferred",
+    "series_b": "series_b_preferred",
+    "options_0.05": "options_1",
+    "options_0.11": "options_2",
+    "options_0.42": "options_3"
+  },
+  "answers": [
+    { "security": "options_1", "field": "strike", "value": "0.05" },
+    { "security": "options_2", "field": "strike", "value": "0.11" },
+    { "security": "options_3", "field": "strike", "value": "0.42" },
+    {
+      "field": "seniority",
+      "value": [["series_b_preferred"], ["series_a_preferred"], ["seed_preferred_from_safes", "seed_preferred"]]
+    }
+  ],
+  "result": {
+    "as_of": "2025-03-31",
+    "cap_table": {
+      "holders": [
+        { "id": "ana_ortiz", "name": "Ana Ortiz" },
+        { "id": "dev_patel", "name": "Dev Patel" },
+        { "id": "lena_fischer", "name": "Lena Fischer" },
+        { "id": "other_employees", "name": "Other employees" },
+        { "id": "priya_shah", "name": "Priya Shah" },
+        { "id": "marcus_lee", "name": "Marcus Lee" },
+        { "id": "harbor_lane_ventures_fund_i", "name": "Harbor Lane Ventures Fund I" },
+        { "id": "ridgeline_capital_fund_iii", "name": "Ridgeline Capital Fund III" },
+        { "id": "cobalt_family_office_llc", "name": "Cobalt Family Office LLC" }
+      ],
+      "securities": [
+        { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+        {
+          "id": "seed_preferred_from_safes",
+          "name": "Seed Preferred (from SAFEs)",
+          "kind": "preferred",
+          "original_issue_price": "0.384930031564263",
+          "conversion_price": "0.384930031564263",
+          "preference_multiple": "1.5",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "seed_preferred",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "0.463514850338896",
+          "conversion_price": "0.463514850338896",
+          "preference_multiple": "1.5",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a_preferred",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2.07547159770336",
+          "conversion_price": "1.82475202417806",
+          "preference_multiple": "1.25",
+          "participation": "participating_capped",
+          "cap_multiple": "2.75",
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_b_preferred",
+          "name": "Series B Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1.08211182499324",
+          "conversion_price": "1.08211182499324",
+          "preference_multiple": "2",
+          "participation": "participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        { "id": "options_1", "name": "2021 Stock Plan Options", "kind": "option", "strike": null },
+        { "id": "options_2", "name": "2022 Stock Plan Options", "kind": "option", "strike": null },
+        { "id": "options_3", "name": "2023 Stock Plan Options", "kind": "option", "strike": null }
+      ],
+      "seniority": null,
+      "conversion_groups": [],
+      "positions": [
+        { "holder": "ana_ortiz", "security": "common_stock", "shares": 5500000 },
+        { "holder": "dev_patel", "security": "common_stock", "shares": 4500000 },
+        { "holder": "dev_patel", "security": "options_3", "shares": 250000 },
+        { "holder": "lena_fischer", "security": "common_stock", "shares": 638297 },
+        { "holder": "lena_fischer", "security": "options_1", "shares": 40000 },
+        { "holder": "lena_fischer", "security": "options_3", "shares": 300000 },
+        { "holder": "other_employees", "security": "options_1", "shares": 450000 },
+        { "holder": "other_employees", "security": "options_2", "shares": 1100000 },
+        { "holder": "other_employees", "security": "options_3", "shares": 2250000 },
+        { "holder": "priya_shah", "security": "seed_preferred_from_safes", "shares": 779362 },
+        { "holder": "marcus_lee", "security": "seed_preferred_from_safes", "shares": 389681 },
+        { "holder": "harbor_lane_ventures_fund_i", "security": "seed_preferred", "shares": 5393570 },
+        { "holder": "harbor_lane_ventures_fund_i", "security": "series_a_preferred", "shares": 1445454 },
+        { "holder": "ridgeline_capital_fund_iii", "security": "series_a_preferred", "shares": 4336363 },
+        { "holder": "cobalt_family_office_llc", "security": "series_b_preferred", "shares": 9241189 }
+      ],
+      "unissued_pool": 5101136
+    },
+    "issue_order": ["seed_preferred_from_safes", "seed_preferred", "series_a_preferred", "series_b_preferred"],
+    "to_fill": [
+      { "security": "options_1", "field": "strike" },
+      { "security": "options_2", "field": "strike" },
+      { "security": "options_3", "field": "strike" },
+      { "field": "seniority" }
+    ],
+    "report": {
+      "read": { "stakeholders": 9, "pool_rows": 1, "share_classes": 5, "stock_plans": 3, "financing_rounds": 4 },
+      "not_needed": {},
+      "notes": [
+        { "code": "version_label", "field": "0.5" },
+        { "code": "no_dividend_field" },
+        { "code": "no_conversion_group_field" },
+        { "code": "no_carve_out_field" },
+        { "code": "no_sale_date_field" },
+        { "code": "no_seniority_field" },
+        { "code": "conversion_ratio_rounded", "subject": "series_a_preferred" },
+        { "code": "participation_cap_includes_preference", "subject": "series_a_preferred" },
+        { "code": "no_anti_dilution_field", "subject": "seed_preferred_from_safes" },
+        { "code": "no_anti_dilution_field", "subject": "seed_preferred" },
+        { "code": "no_anti_dilution_field", "subject": "series_a_preferred" },
+        { "code": "no_anti_dilution_field", "subject": "series_b_preferred" },
+        { "code": "no_strike_field", "subject": "options_1" },
+        { "code": "no_strike_field", "subject": "options_2" },
+        { "code": "no_strike_field", "subject": "options_3" }
+      ]
+    }
+  }
+}
