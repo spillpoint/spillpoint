@@ -31,7 +31,7 @@ import { StabilityWatch, snapshotAt } from "./decisions.ts";
 import type { Snapshot } from "./decisions.ts";
 import { describeChange } from "./reasons.ts";
 import type { Reason } from "./reasons.ts";
-import { payout } from "./waterfall.ts";
+import { settle } from "./waterfall.ts";
 import type { Decisions, PreparedCapTable } from "./waterfall.ts";
 
 export interface Breakpoint {
@@ -134,8 +134,8 @@ function payoutsAlong(s: Stretch, x: Decimal): { values: Decimal[]; slopes: Deci
 
 /** The payouts exactly at x under one side's decisions, and their slopes on that side (X17). */
 function exactlyAt(pc: PreparedCapTable, decisions: Decisions, x: Decimal, side: -1 | 1): { values: Decimal[]; slopes: Decimal[] } {
-  const at = payout(pc, x, decisions).lines.map((l) => l.amount);
-  const near = payout(pc, x.plus(SLOPE_STEP.times(side)), decisions).lines.map((l) => l.amount);
+  const at = settle(pc, x, decisions).lines.map((l) => l.amount);
+  const near = settle(pc, x.plus(SLOPE_STEP.times(side)), decisions).lines.map((l) => l.amount);
   return { values: at, slopes: at.map((v, i) => near[i]!.minus(v).div(SLOPE_STEP).times(side)) };
 }
 

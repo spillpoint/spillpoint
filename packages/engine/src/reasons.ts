@@ -10,7 +10,7 @@ import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
-import { CARVE_OUT, carveOutAt, payout } from "./waterfall.ts";
+import { CARVE_OUT, carveOutAt, settle } from "./waterfall.ts";
 import type { PreparedCapTable } from "./waterfall.ts";
 
 export type ReasonCode =
@@ -103,8 +103,8 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   const before = below.answer.decisions;
   const after = above.answer.decisions;
   // Both answers paid out at the breakpoint itself: the outcome from below, and the limit of the outcome from above.
-  const atBefore = payout(pc, x, before);
-  const atAfter = payout(pc, x, after);
+  const atBefore = settle(pc, x, before);
+  const atAfter = settle(pc, x, after);
   const reasons: Reason[] = [];
 
   // E20: the SAFEs' greater-of comes last. Where a series or a note switches and SAFEs switch with it, the SAFEs
@@ -338,7 +338,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       // so they switch together where converting with the others first pays (12k).
       const others = together(f.id);
       if (others.length > 0 && f.postMoneyCap) {
-        const alone = payout(pc, x, { converted: new Set([...before.converted, f.id]), exercised: before.exercised }).bySecurity.get(f.id)!;
+        const alone = settle(pc, x, { converted: new Set([...before.converted, f.id]), exercised: before.exercised }).bySecurity.get(f.id)!;
         if (alone.lt(f.purchaseAmount)) {
           const one = others.length === 1;
           text +=
@@ -457,7 +457,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   if (jumps) {
     // The new outcome's limit, just above x: at x itself it may not exist yet, as for a SAFE with no cap,
     // which can convert only above the point where it first can (X9).
-    const justAbove = payout(pc, x.plus(JUST_ABOVE), after);
+    const justAbove = settle(pc, x.plus(JUST_ABOVE), after);
     const moves: string[] = [];
     for (const [sid, was] of atBefore.classTotals) {
       const is = justAbove.classTotals.get(sid)!;
