@@ -287,7 +287,7 @@ After 1.0 a term is never renamed or reused for something else. A new one can be
   - main's case files, with only the name and id substitutions applied, are byte-identical to 07b's
 
   07b's review note lists the substitutions exactly, as a script you can run on main.
-- **07c, the engine:** items 3, 4 and 7 to 14, items 17 and 18's README sections, and both READMEs.
+- **07c, the engine** (done; `notes/review-07c.md`): items 3, 4 and 7 to 14, items 17 and 18's README sections, and both READMEs.
 - **07d, the page:** item 6, and the page following 07b's and 07c's changes.
 - **07e, release 0.7.0:** "Changes that can break 0.6.0 code", item by item.
 
