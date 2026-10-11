@@ -148,6 +148,27 @@ None from building it.
 - **Reference:** 73 unit tests pass, and every `expected.json` matches.
 - **Typecheck and build:** clean.
 
+## After your review (Jordan, after #87)
+
+**Your check:** `readOcx` gave the same import as your reader on every OCX case and fixture, and on the real Mantle export. Across about 13,000 randomly broken workbooks, five differences were left. You also found the engine's 0.7 header lists match the Mantle export exactly. My three decisions are agreed.
+
+**One commit, with no change to `cases/`:**
+1. **An `(as converted)` formula with no saved value no longer refuses a 0.4/0.5 workbook.** It's a check, so a blank, "N/A" or a formula with no saved value skips that holder's check, as a total's would, with the `formula_totals_skipped` line. A column's total isn't checked where one of its values was skipped.
+   - **Your test,** in `ocx.test`: every OCX case with every formula's saved value dropped reads to its expected result plus `formula_totals_skipped`. All nine do.
+   - **Proof it bites:** with the old reading put back, exactly Hollis Mill and Millrace fail, as you found.
+2. **A blank `# of Securities` or `Outstanding Amount`** on a convertibles row is `bad_number`, naming the row's type, in both layouts. A written 0 is still read: a row of 0 SAFEs makes none.
+3. **A conversion price of 0** is `bad_number`, naming the class, before the ratio check.
+4. **In 0.7, the per-holder `Total` row's check** names each row's holder when a holding is unreadable, not "Stakeholder View".
+5. **A 0.4/0.5 workbook with a `Detailed Snapshot` tab** is `mixed_layout`, naming it, as 0.7's is.
+6. **`unrecognized_tab`:** a tab no layout names, and in 0.7 no header row marks as a ledger, gets a line naming it. OX12 says so, and OX8's 06f line now points to it. The two 0.7 and 0.4/0.5 tests check it.
+
+**In ASSUMPTIONS:** OX11, OX12 and OX14 say the new rules, and the 06f additions are marked agreed.
+
+**Checks:**
+- **Engine:** 2,758 tests pass, 14 more. Taking out the old no-line tab test, that's 15 new: 9 for the dropped formulas, 2 for unrecognized tabs, and 4 for the other fixes.
+- **Page:** unchanged.
+- **Typecheck and build:** clean.
+
 ## Next
 
 06g, the page: "Open a cap table export" for .xlsx, the seniority and preferred-term questions, the one-strike question, `ocf-check` on .xlsx, and "Copy a summary to share". I'm stopping here.

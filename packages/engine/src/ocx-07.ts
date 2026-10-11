@@ -184,6 +184,8 @@ export function read07(book: Book, draft: Draft): string {
   for (const tab of book.tabs.filter((t) => !named.has(t.name))) {
     const found = ledgerKind(tab);
     if (found) ledgers.push({ tab, kind: found.kind, header: found.header });
+    // A tab no layout names, and no header row marks as a ledger, isn't read; a line says so (OX12).
+    else draft.notes.add("unrecognized_tab", tab.name);
   }
   for (const l of ledgers.filter((x) => x.kind === "class")) {
     const byName = classes.find((c) => normal(l.tab.name) === `${c.name} Ledger`);
@@ -382,8 +384,8 @@ export function read07(book: Book, draft: Draft): string {
     for (const cell of holdingCells) {
       const total = totalAt(holdersTab, holdTotalRow, cell.column, `${holdersTab.name}: ${cell.text}`, "its total");
       if (total === undefined) continue;
-      const rows = [...holderRows.map((h) => h.row), ...(poolRow === undefined ? [] : [poolRow])];
-      const added = sum(rows.map((r) => value(r, cell.column, holdersTab.name)));
+      const rows = [...holderRows, ...(poolRow === undefined ? [] : [{ row: poolRow, name: holdersTab.text(poolRow, nameColumn) }])];
+      const added = sum(rows.map((r) => value(r.row, cell.column, r.name)));
       if (!total.eq(added)) malformed("total_mismatch", `${holdersTab.name}: ${cell.text}`, `the total, ${written(total)}, isn't its rows' ${written(added)}`);
     }
   }

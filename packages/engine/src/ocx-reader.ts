@@ -36,7 +36,7 @@ export function readOcx(workbook: OcxWorkbook): CapTableImport {
   else if (names.includes("Summary View")) layout = "0.7";
   else if (names.includes("Summary Snapshot")) layout = "0.4/0.5";
   if (!layout) return unsupported("ocx_layout", version ?? "", "the workbook has none of the tabs an OCX layout spillpoint reads has");
-  const others = layout === "0.7" ? [...FIVE, "Detailed Snapshot"] : SEVEN;
+  const others = layout === "0.7" ? [...FIVE, "Detailed Snapshot"] : [...SEVEN, "Detailed Snapshot"];
   const stray = names.find((n) => others.includes(n));
   if (stray) malformed("mixed_layout", stray, `a tab of another OCX layout beside ${layout}'s`);
 

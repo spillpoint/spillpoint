@@ -187,8 +187,51 @@ describe("rules the OCX cases don't reach", () => {
     expect(r.report.notes.map((n) => n.code)).not.toContain("no_financing_history");
   });
 
-  it("sets aside a tab no layout names and no ledger's header row marks, with no line (OX13)", () => {
-    const r = readOcx(changed("ocx-01-alder-gate", [{ op: "add_tab", after: "Context", sheet: { name: "Notes to the export", cells: [text("A1", "Prepared for the board")] } }]));
-    expect(asSet(r)).toEqual(asSet(expectedOf<CaseExpected>("ocx-01-alder-gate").result));
+  // OX12: a tab no layout names isn't read, and a line says so, naming it.
+  it.each([
+    ["ocx-01-alder-gate", "Context"],
+    ["ocx-06-hollis-mill", "Context"],
+  ])("sets aside a tab no layout names, with an unrecognized_tab line (%s)", (base, after) => {
+    const r = readOcx(changed(base, [{ op: "add_tab", after, sheet: { name: "Notes to the export", cells: [text("A1", "Prepared for the board")] } }]));
+    const want = expectedOf<CaseExpected>(base).result;
+    expect(asSet(r)).toEqual(asSet({ ...want, report: { ...want.report, notes: [...want.report.notes, { code: "unrecognized_tab", subject: "Notes to the export" }] } }));
+  });
+
+  // Jordan, after #87: the Mantle export writes every computed column as a formula with no saved value, and only the
+  // holdings as values. With every formula's value dropped, each case still reads, its unchecked totals noted (OX5).
+  it.each(WORKBOOK_CASES)("reads %s with every formula's saved value dropped, noting the totals it skipped", (name) => {
+    const workbook = readOcxWorkbook(name) as OcxWorkbook;
+    for (const sheet of workbook.sheets) for (const c of sheet.cells) if (c.formula) c.text = "";
+    const want = expectedOf<CaseExpected>(name).result;
+    const notes = want.report.notes.some((n) => n.code === "formula_totals_skipped") ? want.report.notes : [...want.report.notes, { code: "formula_totals_skipped" }];
+    expect(asSet(readOcx(workbook))).toEqual(asSet({ ...want, report: { ...want.report, notes } }));
+  });
+
+  it("refuses a convertibles row whose count or amount is blank, naming its type; a 0 written is read (OX13)", () => {
+    expect(refusalOf(changed("ocx-06-hollis-mill", [{ op: "clear", tab: "Summary Snapshot", address: "M3" }]))).toEqual({ kind: "malformed", term: "bad_number", subject: "Post-$ SAFEs" });
+    expect(refusalOf(changed("ocx-06-hollis-mill", [{ op: "clear", tab: "Summary Snapshot", address: "N4" }]))).toEqual({ kind: "malformed", term: "bad_number", subject: "Convertible Notes" });
+    expect(refusalOf(changed("ocx-01-alder-gate", [{ op: "clear", tab: "Summary View", address: "M3" }]))).toEqual({ kind: "malformed", term: "bad_number", subject: "Post-$ SAFEs" });
+    // A row of 0 SAFEs, written, makes no SAFE.
+    const r = readOcx(changed("ocx-06-hollis-mill", [
+      { op: "set", tab: "Summary Snapshot", cell: number("M3", "0") }, { op: "set", tab: "Summary Snapshot", cell: number("N3", "0") },
+    ]));
+    expect((r.cap_table as { unconverted_safes?: Json[] }).unconverted_safes).toBeUndefined();
+  });
+
+  it("refuses a conversion price of 0, naming the class (OX14)", () => {
+    expect(refusalOf(changed("ocx-06-hollis-mill", [{ op: "set", tab: "Context", cell: number("E8", "0") }]))).toEqual({ kind: "malformed", term: "bad_number", subject: "Series A Preferred" });
+  });
+
+  it("names the holder when a holding is unreadable, though the per-holder Total row has a saved value (OX9)", () => {
+    expect(refusalOf(changed("ocx-01-alder-gate", [
+      { op: "set", tab: "Stakeholder View", cell: { address: "C15", kind: "number", text: "8040000", formula: true } },
+      { op: "set", tab: "Stakeholder View", cell: text("C7", "5,000,000") },
+    ]))).toEqual({ kind: "malformed", term: "bad_number", subject: "Founder A" });
+  });
+
+  it("refuses 0.3's per-holder tab beside 0.4/0.5's as a mix of layouts (OX13, step 1)", () => {
+    expect(refusalOf(changed("ocx-06-hollis-mill", [{ op: "add_tab", after: "Context", sheet: { name: "Detailed Snapshot", cells: [text("A2", "Shareholder")] } }]))).toEqual({
+      kind: "malformed", term: "mixed_layout", subject: "Detailed Snapshot",
+    });
   });
 });

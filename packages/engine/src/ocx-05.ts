@@ -4,7 +4,7 @@
 import type { Decimal } from "decimal.js";
 
 import { ZERO } from "./decimal.ts";
-import { type Book, asOfOf, headerRow, isNA, label, malformed, numberAt, requireHeaders, tablesOf, unsupported, written } from "./ocx-cells.ts";
+import { type Book, asOfOf, headerRow, isBlank, isNA, label, malformed, numberAt, requireHeaders, tablesOf, unsupported, written } from "./ocx-cells.ts";
 import { OCX_ADDITIONAL, OCX_HEADERS, OCX_TITLES, OCX_VOTING } from "./ocx-headers.ts";
 import { type Draft, type ShareClass, sum } from "./ocx-import.ts";
 import { convertibleRows, matchRounds, noteFromRow, readRound, safeFromRow, summaryClasses, totalAt, unrecognized } from "./ocx-terms.ts";
@@ -97,6 +97,9 @@ export function read05(book: Book, draft: Draft): string {
   draft.count("stakeholders", holderRows.length);
   if (poolRow !== undefined) draft.count("pool_rows");
 
+  // A tab no layout names isn't read; a line says so (OX12).
+  for (const t of book.tabs) if (!["Summary Snapshot", "Stakeholder Snapshot", "Voting by SH Group", "Context"].includes(t.name)) draft.notes.add("unrecognized_tab", t.name);
+
   // 6. The rounds: each round's class, then each preferred class's round.
   const rounds = matchRounds(context, financing!, classes, draft);
 
@@ -111,8 +114,9 @@ export function read05(book: Book, draft: Draft): string {
   // 7. The rows, tab by tab in the workbook's order.
   const classTotals = new Map<ShareClass, Decimal | undefined>();
   const preferences = new Map<ShareClass, Decimal | undefined>();
-  const holdings = new Map<string, Map<number, Decimal>>();
-  const pooled = new Map<number, Decimal>();
+  // A holder's values by column; an `(as converted)` check left unreadable is undefined.
+  const holdings = new Map<string, Map<number, Decimal | undefined>>();
+  const pooled = new Map<number, Decimal | undefined>();
   const roundDates = new Map<ShareClass, string | undefined>();
   const plans: Decimal[] = [];
   let convertibles: ReturnType<typeof convertibleRows> = [];
@@ -148,12 +152,19 @@ export function read05(book: Book, draft: Draft): string {
     }
   }
 
-  /** A holder row's holdings, column by column, left to right: whole shares, but an `(as converted)` value, which the export rounds. */
-  function readRow(row: number, subject: string): Map<number, Decimal> {
-    const values = new Map<number, Decimal>();
+  /**
+   * A holder row's holdings, column by column, left to right: whole shares. An `(as converted)` value is a check, not
+   * a holding (OX14), so the export may round it, and one that's blank, "N/A" or a formula with no saved value skips
+   * that holder's check, as a total's would.
+   */
+  function readRow(row: number, subject: string): Map<number, Decimal | undefined> {
+    const values = new Map<number, Decimal | undefined>();
     for (const c of columns) {
       const cell = holdersTab.cell(row, c.column);
-      values.set(c.column, numberAt(cell, subject, `its ${c.text}`, c.kind !== "converted") ?? ZERO);
+      if (c.kind === "converted") {
+        const skipped = isBlank(cell) || isNA(cell) || (cell!.formula && cell!.text === "");
+        values.set(c.column, skipped ? undefined : numberAt(cell, subject, `its ${c.text}`));
+      } else values.set(c.column, numberAt(cell, subject, `its ${c.text}`, true) ?? ZERO);
     }
     return values;
   }
@@ -163,7 +174,8 @@ export function read05(book: Book, draft: Draft): string {
   if (totalRow !== undefined) {
     for (const c of columns) {
       const total = totalAt(holdersTab, totalRow, c.column, `${holdersTab.name}: ${c.text}`, "its total");
-      if (total === undefined) continue;
+      // A column's total isn't checked where one of its values was skipped.
+      if (total === undefined || all.some((m) => m.has(c.column) && m.get(c.column) === undefined)) continue;
       const added = sum(all.map((m) => m.get(c.column) ?? ZERO));
       if (!total.eq(added)) malformed("total_mismatch", `${holdersTab.name}: ${c.text}`, `the total, ${written(total)}, isn't its rows' ${written(added)}`);
     }
@@ -171,7 +183,7 @@ export function read05(book: Book, draft: Draft): string {
   for (const c of classes) {
     const total = classTotals.get(c);
     const own = columns.find((x) => x.kind === "class" && x.cls === c)!;
-    const held = sum([...holdings.values()].map((m) => m.get(own.column) ?? ZERO));
+    const held = sum([...holdings.values()].map((m) => m.get(own.column)!));
     if (total !== undefined && !total.eq(held)) malformed("total_mismatch", c.name, `the Summary gives ${written(total)} outstanding, and its holders hold ${written(held)}`);
   }
   for (const h of holderRows) {
@@ -180,8 +192,10 @@ export function read05(book: Book, draft: Draft): string {
       if (!t.original_issue_price || !t.conversion_price) continue;
       const own = columns.find((x) => x.kind === "class" && x.cls === conv.cls)!;
       const out = holdings.get(h.id)!.get(own.column)!;
+      const converted = holdings.get(h.id)!.get(conv.column);
+      if (converted === undefined) continue;
       const want = out.times(t.original_issue_price).div(t.conversion_price);
-      if (holdings.get(h.id)!.get(conv.column)!.minus(want).abs().gte(1)) {
+      if (converted.minus(want).abs().gte(1)) {
         malformed("holdings_mismatch", h.name, `its ${conv.text} isn't within a share of its outstanding shares as converted`);
       }
     }
@@ -191,7 +205,7 @@ export function read05(book: Book, draft: Draft): string {
     const t = c.terms!;
     if (lp === undefined || !t.original_issue_price || !t.preference_multiple) continue;
     const own = columns.find((x) => x.kind === "class" && x.cls === c)!;
-    const out = sum([...holdings.values()].map((m) => m.get(own.column) ?? ZERO));
+    const out = sum([...holdings.values()].map((m) => m.get(own.column)!));
     const want = out.times(t.original_issue_price).times(t.preference_multiple);
     if (lp.minus(want).abs().gte("0.01")) malformed("liquidation_preference_mismatch", c.name, `the Summary's ${written(lp)} isn't ${written(out)} × ${t.original_issue_price} × ${t.preference_multiple}`);
   }

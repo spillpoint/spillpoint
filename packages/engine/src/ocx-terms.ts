@@ -75,16 +75,19 @@ export function convertibleRows(tab: Tab, header: Header, draft: Draft): Convert
     if (label(type) === "total") break;
     if (!TYPES.includes(type)) unsupported("unknown_security_type", type, "a convertibles row of a type OCX doesn't list");
     draft.count("convertible_rows");
-    const count = numberAt(tab.cell(row, at("# of Securities")!), type, "its number of securities", true) ?? new D(0);
-    const amount = numberAt(tab.cell(row, at("Outstanding Amount")!), type, "its outstanding amount") ?? new D(0);
+    // OX13 step 7: a value the import needs, left blank, is bad_number; a 0 that's written is read.
+    const count = numberAt(tab.cell(row, at("# of Securities")!), type, "its number of securities", true);
+    if (count === undefined) malformed("bad_number", type, "its number of securities is blank");
+    const amount = numberAt(tab.cell(row, at("Outstanding Amount")!), type, "its outstanding amount");
+    if (amount === undefined) malformed("bad_number", type, "its outstanding amount is blank");
     const discount = discountAt(tab, row, at("Discount"), type);
     const capCell = tab.cell(row, at("Valuation Cap")!);
     const cap = isNA(capCell) ? undefined : numberAt(capCell, type, "its valuation cap");
-    if (type === "Warrants for future series of Preferred Stock" && count.gt(0)) {
+    if (type === "Warrants for future series of Preferred Stock" && count!.gt(0)) {
       unsupported("warrant_for_future_series", type, "warrants for a series not yet issued have no series to model them on");
     }
-    if (type === "Convertible Notes" && count.gt(1)) unsupported("several_notes_in_row", type, "a row of several notes can't be combined exactly");
-    rows.push({ type, count, amount, discount, cap });
+    if (type === "Convertible Notes" && count!.gt(1)) unsupported("several_notes_in_row", type, "a row of several notes can't be combined exactly");
+    rows.push({ type, count: count!, amount: amount!, discount, cap });
   }
   return rows;
 }
@@ -161,6 +164,7 @@ export function readRound(ctx: Tab, header: Header, round: Round, book: Book, dr
   const date = dateAt(at("Initial Closing Date"), book.dateSystem, cls.name, "its initial closing date");
   const oip = numberAt(at("Original Issue Price"), cls.name, "its original issue price");
   const cp = numberAt(at("Adjusted Conversion Price"), cls.name, "its adjusted conversion price");
+  if (cp?.isZero()) malformed("bad_number", cls.name, "its adjusted conversion price is 0; a conversion price must be more than zero");
   const ratio = numberAt(at("Conversion Ratio"), cls.name, "its conversion ratio");
   const multiple = numberAt(at("Liquidation Multiple"), cls.name, "its liquidation multiple");
   const yn = at("Participating (Y/N)");
