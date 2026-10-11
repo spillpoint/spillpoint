@@ -76,7 +76,8 @@ export interface Solution {
   answers: Answer[];
 }
 
-export interface SolveOptions {
+/** How the solver searches. Internal: since 05c5 every combination is checked with 12 or fewer decision-makers anyway (the naming review, item 8). */
+interface SolveOptions {
   /** Check every combination even when the two ends agree. Tests use it to confirm both routes give the same answers. */
   checkEveryCombination?: boolean;
 }
@@ -87,8 +88,14 @@ export const MAX_CHECKED = 12;
 /** Group vote shares that differ by less than this are equal; 40-digit division can leave a trace. */
 const SHARE_TIE = new D("1e-30");
 
-export function solve(pc: PreparedCapTable, exitValue: Decimal, options: SolveOptions = {}): Solution {
-  return new AtExit(working(pc), exitValue, options).solve();
+/** Who converts, who exercises, and what each holder gets at one exit value. */
+export function solve(pc: PreparedCapTable, exitValue: Decimal): Solution {
+  return new AtExit(working(pc), exitValue, {}).solve();
+}
+
+/** solve, checking every combination even where the two ends agree: the tests' check that both routes agree. Internal. */
+export function solveCheckingEveryCombination(pc: PreparedCapTable, exitValue: Decimal): Solution {
+  return new AtExit(working(pc), exitValue, { checkEveryCombination: true }).solve();
 }
 
 // ---------- the choice among series that decide for themselves (E15) ----------

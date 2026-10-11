@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { D, UnsupportedTermError, prepare, readCapTable, solve } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
+import { solveCheckingEveryCombination } from "../src/decisions.ts";
 import { readInputs } from "../src/case.ts";
 import type { Answer, Decisions } from "../src/index.ts";
 import { EXIT_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
@@ -49,7 +50,7 @@ describe.each(EXIT_CASES)("%s", (name) => {
     });
 
     // Checking every combination gives the same answers as solving from both ends.
-    const everything = solve(pc, point.exitValue, { checkEveryCombination: true });
+    const everything = solveCheckingEveryCombination(pc, point.exitValue);
     expect(everything.answers.map((a) => describeDecisions(a.decisions))).toEqual(
       solution.answers.map((a) => describeDecisions(a.decisions)),
     );
