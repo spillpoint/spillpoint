@@ -25,7 +25,7 @@ page's zip reader (`test/zip.test.ts`, M6 plan, answer 11):
 # Files saved by the page at v0.6.0
 
 Saved with the page as tag v0.6.0 has it (`apps/dashboard` at that tag, in a scratch worktree, clicked through by a
-scratch test like `test/acceptance.test.tsx`), for `test/saved-0.6.0.test.ts` (07d2). Each names a series from SAFEs
+scratch test like `test/acceptance.test.tsx`), for `test/saved-0.6.0.test.tsx` (07d2). Each names a series from SAFEs
 as 0.6.0 did, `<series>_shadow`, which 0.7.0 calls `<series>_safes`. Fictional names only.
 
 - `millrace-saved-0.6.0.json`: the Millrace example, saved as it opens. Its Seed, Series A and Series B list

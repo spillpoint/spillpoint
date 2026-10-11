@@ -7,8 +7,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { D, findBreakpoints, prepare, readExit, solve } from "spillpoint";
 import { describe, expect, it } from "vitest";
+
+import { App } from "../src/App.tsx";
 
 import { VERSION, fileText, readFile } from "../src/file.ts";
 import { exitOf } from "./payouts.ts";
@@ -53,6 +56,15 @@ describe.each(["millrace-saved-0.6.0.json", "company-saved-0.6.0.json"])("%s, sa
       expect(totals(payout.holderTotals), `${x}: holders`).toEqual(p.holders);
       expect(totals(payout.classTotals), `${x}: classes`).toEqual(Object.fromEntries(Object.entries(p.classes).map(([k, v]) => [renamed(k), v])));
     }
+  });
+
+  it("opens on the page, which said its rounds couldn't be built before 07d2", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([text], name, { type: "application/json" })] } });
+    await screen.findByText(`Opened ${name}.`);
+    expect(screen.queryAllByRole("alert").map((a) => a.textContent)).toEqual([]);
+    fireEvent.click(screen.getByRole("tab", { name: "Rounds" }));
+    expect(within(document.getElementById("panel-rounds")!).queryAllByRole("alert")).toEqual([]);
   });
 
   it("saves back as version 7, with no _shadow left, and opens again to the same", () => {
