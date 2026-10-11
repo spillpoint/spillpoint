@@ -1,6 +1,6 @@
 # OCX case 05, reads: derivation
 
-One small change to Alder Gate's 0.7 workbook (ocx-01) for each reading rule no other case or fixture reaches. Each changes the import, so each is here to re-derive, not only in 06f's tests (Jordan, 06e2 review). Each fixture lists its change, cell by cell (C18). **Each result is the whole import;** below, each says what differs from Alder Gate's `expected.json`. Everything else is Alder Gate's, line for line.
+One small change to an OCX workbook for each reading rule no other case or fixture reaches: 15 to Alder Gate's 0.7 workbook (ocx-01), and four to Hollis Mill's 0.5 one (ocx-06), at the end. Each changes the import, so each is here to re-derive, not only in 06f's tests (Jordan, 06e2 review). Each fixture lists its change, cell by cell (C18). **Each result is the whole import;** below, each says what differs from its base's `expected.json`. Everything else is its base's, line for line.
 
 None is refused. Where a change could trip a check, the rows below say why it doesn't.
 
@@ -221,6 +221,46 @@ The Summary View's plan rows aren't read, so they're left as they were.
 - **Not checked:** the money totals, `Cash Paid` (4,820 and 0) and `Investment Amount` (300,000), and the percentages, since a sum of rounded amounts needn't equal a rounded total (OX5). The per-holder totals and voting columns, and the Summary's own `Total` row, which mixes shares, percentages and the pool.
 
 **What differs:** `notes`: no `formula_totals_skipped`.
+
+## 0.4/0.5, on Hollis Mill (06e4)
+
+Four changes to case 06's workbook, Hollis Mill Robotics, for what only 0.4/0.5 reads (OX14). Each says what differs from Hollis Mill's `expected.json`.
+
+### `version-0.4`
+
+**The change:** the label reads "OCX Version 0.4" (C3).
+
+**How it's read:** 0.4 and 0.5 have the same tables and headers, and the layout is told apart by headers, never the label (OX4). It's read exactly as Hollis Mill.
+
+**What differs:** `version_label`'s field is "0.4".
+
+### `pre-money-safes-combined`
+
+**The change:** the SAFEs row is `Pre-$ SAFEs` (L3).
+
+**How it's read:** one SAFE for the row's total, now with a pre-money cap. Its holder is named for the row's type: "Pre-money SAFEs, $12,000,000 cap (2)", id `pre_money_safes_12_000_000_cap_2` (OX11). The SAFE's id follows.
+
+**What differs:**
+- **The made holder and the SAFE** take the new name and ids, with `pre_money_cap` "12000000" in place of `post_money_cap`.
+- **The new id** replaces the old in the issue order, and in the `safes_combined` and `issue_order_default` lines.
+
+### `participating-uncapped`
+
+**The change:** Series A's `Participation Cap` is "N/A" (I8).
+
+**How it's read:** "N/A" is no cap (OX14), and "Y" with no cap is participating.
+
+**What differs:**
+- `series_a_preferred`'s `participation` is "participating", and its `cap_multiple` null
+- no `participation_cap_includes_preference` line, since there's no cap
+
+### `cap-equal-to-multiple`
+
+**The change:** Series A's `Participation Cap` is 1 (I8), equal to its 1x multiple.
+
+**How it's read:** a cap read as including the preference, at the preference itself, leaves nothing to participate with, so it's non-participating (O4, OX14). Every class with a cap still gets the line saying how it was read, as in OCF.
+
+**What differs:** `series_a_preferred`'s `participation` is "non_participating", and its `cap_multiple` null. The `participation_cap_includes_preference` line stays.
 
 ## What a re-derivation should check
 

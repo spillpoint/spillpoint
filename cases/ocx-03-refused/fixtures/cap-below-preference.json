@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Series A's participation cap is 0.5x, below its 1x preference.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "I8", "kind": "number", "text": "0.5", "formula": false}}
+  ]
+}

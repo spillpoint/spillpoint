@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Series A participates with a cap equal to its 1x preference.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "I8", "kind": "number", "text": "1", "formula": false}}
+  ]
+}

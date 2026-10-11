@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "The Summary gives Series A a $4,600,000 liquidation preference, where 2,250,000 × $2 × 1 is $4,500,000.",
+  "change": [
+    {"op": "set", "tab": "Summary Snapshot", "cell": {"address": "G9", "kind": "number", "text": "4600000", "formula": true}}
+  ]
+}

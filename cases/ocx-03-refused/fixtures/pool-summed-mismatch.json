@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Context's plan details give 740,000 available for grant, where the pool row gives 750,000.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "H22", "kind": "number", "text": "740000", "formula": false}}
+  ]
+}

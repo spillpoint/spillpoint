@@ -60,6 +60,125 @@
         }
       }
     },
+    "cap-equal-to-multiple.json": {
+      "result": {
+        "as_of": "2025-12-31",
+        "cap_table": {
+          "holders": [
+            { "id": "advisor_e", "name": "Advisor E" },
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "investor_u", "name": "Investor U" },
+            { "id": "lender_l", "name": "Lender L" },
+            { "id": "post_money_safes_12_000_000_cap_2", "name": "Post-money SAFEs, $12,000,000 cap (2)" },
+            { "id": "convertible_notes_8_000_000_cap_20_discount_1", "name": "Convertible notes, $8,000,000 cap, 20% discount (1)" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            {
+              "id": "series_seed_preferred",
+              "name": "Series Seed Preferred",
+              "kind": "preferred",
+              "original_issue_price": "1",
+              "conversion_price": "1",
+              "preference_multiple": "1",
+              "participation": "non_participating",
+              "cap_multiple": null,
+              "anti_dilution": "none"
+            },
+            {
+              "id": "series_a_preferred",
+              "name": "Series A Preferred",
+              "kind": "preferred",
+              "original_issue_price": "2",
+              "conversion_price": "1.5",
+              "preference_multiple": "1",
+              "participation": "non_participating",
+              "cap_multiple": null,
+              "anti_dilution": "none"
+            },
+            { "id": "options_1", "name": "Common Stock Options", "kind": "option", "strike": null },
+            { "id": "options_2", "name": "Non-Plan Awards", "kind": "option", "strike": null },
+            { "id": "warrants_1", "name": "Warrants for Common Stock", "kind": "warrant", "strike": null, "underlying": "common" }
+          ],
+          "seniority": null,
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "advisor_e", "security": "options_2", "shares": 50000 },
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_1", "shares": 150000 },
+            { "holder": "employee_d", "security": "options_1", "shares": 100000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 3500000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+            { "holder": "investor_s", "security": "series_seed_preferred", "shares": 1000000 },
+            { "holder": "investor_t", "security": "series_seed_preferred", "shares": 500000 },
+            { "holder": "investor_t", "security": "series_a_preferred", "shares": 750000 },
+            { "holder": "investor_u", "security": "series_a_preferred", "shares": 1500000 },
+            { "holder": "lender_l", "security": "warrants_1", "shares": 40000 }
+          ],
+          "unissued_pool": 750000,
+          "unconverted_safes": [
+            { "id": "safe_post_money_safes_12_000_000_cap_2", "holder": "post_money_safes_12_000_000_cap_2", "purchase_amount": "500000", "post_money_cap": "12000000", "discount": "0" }
+          ],
+          "unconverted_notes": [
+            {
+              "id": "note_convertible_notes_8_000_000_cap_20_discount_1",
+              "holder": "convertible_notes_8_000_000_cap_20_discount_1",
+              "principal": "250000",
+              "interest_rate": null,
+              "interest_method": "simple",
+              "issue_date": null,
+              "valuation_cap": "8000000",
+              "cap_type": "pre_money",
+              "conversion_base": null,
+              "discount": "0.2",
+              "repayment_multiple": null
+            }
+          ]
+        },
+        "issue_order": ["series_seed_preferred", "series_a_preferred", "safe_post_money_safes_12_000_000_cap_2", "note_convertible_notes_8_000_000_cap_20_discount_1"],
+        "to_fill": [
+          { "security": "options_1", "field": "strike" },
+          { "security": "options_2", "field": "strike" },
+          { "security": "warrants_1", "field": "strike" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "interest_rate" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "issue_date" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "conversion_base" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "repayment_multiple" },
+          { "field": "seniority" }
+        ],
+        "report": {
+          "read": { "stakeholders": 10, "pool_rows": 1, "share_classes": 3, "convertible_rows": 2, "stock_plans": 1, "financing_rounds": 2 },
+          "not_needed": { "stock_plan_history": 2, "valuations_409a": 2, "split_adjustments": 1, "shareholder_groups": 3 },
+          "notes": [
+            { "code": "version_label", "field": "0.5" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "no_seniority_field" },
+            { "code": "conversion_ratio_rounded", "subject": "series_a_preferred" },
+            { "code": "participation_cap_includes_preference", "subject": "series_a_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_seed_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_a_preferred" },
+            { "code": "no_strike_field", "subject": "options_1" },
+            { "code": "no_strike_field", "subject": "options_2" },
+            { "code": "no_strike_field", "subject": "warrants_1" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "safes_combined", "subject": "safe_post_money_safes_12_000_000_cap_2" },
+            { "code": "note_from_convertibles_row", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "note_cap_read_as_pre_money", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "issue_order_default", "subject": "safe_post_money_safes_12_000_000_cap_2" },
+            { "code": "issue_order_default", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "left_out_stakeholder", "subject": "former_f" }
+          ]
+        }
+      }
+    },
     "common-named-preferred.json": {
       "result": {
         "as_of": "2025-10-31",
@@ -304,6 +423,124 @@
         }
       }
     },
+    "participating-uncapped.json": {
+      "result": {
+        "as_of": "2025-12-31",
+        "cap_table": {
+          "holders": [
+            { "id": "advisor_e", "name": "Advisor E" },
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "investor_u", "name": "Investor U" },
+            { "id": "lender_l", "name": "Lender L" },
+            { "id": "post_money_safes_12_000_000_cap_2", "name": "Post-money SAFEs, $12,000,000 cap (2)" },
+            { "id": "convertible_notes_8_000_000_cap_20_discount_1", "name": "Convertible notes, $8,000,000 cap, 20% discount (1)" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            {
+              "id": "series_seed_preferred",
+              "name": "Series Seed Preferred",
+              "kind": "preferred",
+              "original_issue_price": "1",
+              "conversion_price": "1",
+              "preference_multiple": "1",
+              "participation": "non_participating",
+              "cap_multiple": null,
+              "anti_dilution": "none"
+            },
+            {
+              "id": "series_a_preferred",
+              "name": "Series A Preferred",
+              "kind": "preferred",
+              "original_issue_price": "2",
+              "conversion_price": "1.5",
+              "preference_multiple": "1",
+              "participation": "participating",
+              "cap_multiple": null,
+              "anti_dilution": "none"
+            },
+            { "id": "options_1", "name": "Common Stock Options", "kind": "option", "strike": null },
+            { "id": "options_2", "name": "Non-Plan Awards", "kind": "option", "strike": null },
+            { "id": "warrants_1", "name": "Warrants for Common Stock", "kind": "warrant", "strike": null, "underlying": "common" }
+          ],
+          "seniority": null,
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "advisor_e", "security": "options_2", "shares": 50000 },
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_1", "shares": 150000 },
+            { "holder": "employee_d", "security": "options_1", "shares": 100000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 3500000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+            { "holder": "investor_s", "security": "series_seed_preferred", "shares": 1000000 },
+            { "holder": "investor_t", "security": "series_seed_preferred", "shares": 500000 },
+            { "holder": "investor_t", "security": "series_a_preferred", "shares": 750000 },
+            { "holder": "investor_u", "security": "series_a_preferred", "shares": 1500000 },
+            { "holder": "lender_l", "security": "warrants_1", "shares": 40000 }
+          ],
+          "unissued_pool": 750000,
+          "unconverted_safes": [
+            { "id": "safe_post_money_safes_12_000_000_cap_2", "holder": "post_money_safes_12_000_000_cap_2", "purchase_amount": "500000", "post_money_cap": "12000000", "discount": "0" }
+          ],
+          "unconverted_notes": [
+            {
+              "id": "note_convertible_notes_8_000_000_cap_20_discount_1",
+              "holder": "convertible_notes_8_000_000_cap_20_discount_1",
+              "principal": "250000",
+              "interest_rate": null,
+              "interest_method": "simple",
+              "issue_date": null,
+              "valuation_cap": "8000000",
+              "cap_type": "pre_money",
+              "conversion_base": null,
+              "discount": "0.2",
+              "repayment_multiple": null
+            }
+          ]
+        },
+        "issue_order": ["series_seed_preferred", "series_a_preferred", "safe_post_money_safes_12_000_000_cap_2", "note_convertible_notes_8_000_000_cap_20_discount_1"],
+        "to_fill": [
+          { "security": "options_1", "field": "strike" },
+          { "security": "options_2", "field": "strike" },
+          { "security": "warrants_1", "field": "strike" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "interest_rate" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "issue_date" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "conversion_base" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "repayment_multiple" },
+          { "field": "seniority" }
+        ],
+        "report": {
+          "read": { "stakeholders": 10, "pool_rows": 1, "share_classes": 3, "convertible_rows": 2, "stock_plans": 1, "financing_rounds": 2 },
+          "not_needed": { "stock_plan_history": 2, "valuations_409a": 2, "split_adjustments": 1, "shareholder_groups": 3 },
+          "notes": [
+            { "code": "version_label", "field": "0.5" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "no_seniority_field" },
+            { "code": "conversion_ratio_rounded", "subject": "series_a_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_seed_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_a_preferred" },
+            { "code": "no_strike_field", "subject": "options_1" },
+            { "code": "no_strike_field", "subject": "options_2" },
+            { "code": "no_strike_field", "subject": "warrants_1" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "safes_combined", "subject": "safe_post_money_safes_12_000_000_cap_2" },
+            { "code": "note_from_convertibles_row", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "note_cap_read_as_pre_money", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "issue_order_default", "subject": "safe_post_money_safes_12_000_000_cap_2" },
+            { "code": "issue_order_default", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "left_out_stakeholder", "subject": "former_f" }
+          ]
+        }
+      }
+    },
     "pre-money-safe.json": {
       "result": {
         "as_of": "2025-10-31",
@@ -361,6 +598,125 @@
             { "code": "warrant_counts_are_maximums" },
             { "code": "left_out_stakeholder", "subject": "employee_e" },
             { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "pre-money-safes-combined.json": {
+      "result": {
+        "as_of": "2025-12-31",
+        "cap_table": {
+          "holders": [
+            { "id": "advisor_e", "name": "Advisor E" },
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "investor_u", "name": "Investor U" },
+            { "id": "lender_l", "name": "Lender L" },
+            { "id": "pre_money_safes_12_000_000_cap_2", "name": "Pre-money SAFEs, $12,000,000 cap (2)" },
+            { "id": "convertible_notes_8_000_000_cap_20_discount_1", "name": "Convertible notes, $8,000,000 cap, 20% discount (1)" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            {
+              "id": "series_seed_preferred",
+              "name": "Series Seed Preferred",
+              "kind": "preferred",
+              "original_issue_price": "1",
+              "conversion_price": "1",
+              "preference_multiple": "1",
+              "participation": "non_participating",
+              "cap_multiple": null,
+              "anti_dilution": "none"
+            },
+            {
+              "id": "series_a_preferred",
+              "name": "Series A Preferred",
+              "kind": "preferred",
+              "original_issue_price": "2",
+              "conversion_price": "1.5",
+              "preference_multiple": "1",
+              "participation": "participating_capped",
+              "cap_multiple": "3",
+              "anti_dilution": "none"
+            },
+            { "id": "options_1", "name": "Common Stock Options", "kind": "option", "strike": null },
+            { "id": "options_2", "name": "Non-Plan Awards", "kind": "option", "strike": null },
+            { "id": "warrants_1", "name": "Warrants for Common Stock", "kind": "warrant", "strike": null, "underlying": "common" }
+          ],
+          "seniority": null,
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "advisor_e", "security": "options_2", "shares": 50000 },
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_1", "shares": 150000 },
+            { "holder": "employee_d", "security": "options_1", "shares": 100000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 3500000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+            { "holder": "investor_s", "security": "series_seed_preferred", "shares": 1000000 },
+            { "holder": "investor_t", "security": "series_seed_preferred", "shares": 500000 },
+            { "holder": "investor_t", "security": "series_a_preferred", "shares": 750000 },
+            { "holder": "investor_u", "security": "series_a_preferred", "shares": 1500000 },
+            { "holder": "lender_l", "security": "warrants_1", "shares": 40000 }
+          ],
+          "unissued_pool": 750000,
+          "unconverted_safes": [
+            { "id": "safe_pre_money_safes_12_000_000_cap_2", "holder": "pre_money_safes_12_000_000_cap_2", "purchase_amount": "500000", "pre_money_cap": "12000000", "discount": "0" }
+          ],
+          "unconverted_notes": [
+            {
+              "id": "note_convertible_notes_8_000_000_cap_20_discount_1",
+              "holder": "convertible_notes_8_000_000_cap_20_discount_1",
+              "principal": "250000",
+              "interest_rate": null,
+              "interest_method": "simple",
+              "issue_date": null,
+              "valuation_cap": "8000000",
+              "cap_type": "pre_money",
+              "conversion_base": null,
+              "discount": "0.2",
+              "repayment_multiple": null
+            }
+          ]
+        },
+        "issue_order": ["series_seed_preferred", "series_a_preferred", "safe_pre_money_safes_12_000_000_cap_2", "note_convertible_notes_8_000_000_cap_20_discount_1"],
+        "to_fill": [
+          { "security": "options_1", "field": "strike" },
+          { "security": "options_2", "field": "strike" },
+          { "security": "warrants_1", "field": "strike" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "interest_rate" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "issue_date" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "conversion_base" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "repayment_multiple" },
+          { "field": "seniority" }
+        ],
+        "report": {
+          "read": { "stakeholders": 10, "pool_rows": 1, "share_classes": 3, "convertible_rows": 2, "stock_plans": 1, "financing_rounds": 2 },
+          "not_needed": { "stock_plan_history": 2, "valuations_409a": 2, "split_adjustments": 1, "shareholder_groups": 3 },
+          "notes": [
+            { "code": "version_label", "field": "0.5" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "no_seniority_field" },
+            { "code": "conversion_ratio_rounded", "subject": "series_a_preferred" },
+            { "code": "participation_cap_includes_preference", "subject": "series_a_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_seed_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_a_preferred" },
+            { "code": "no_strike_field", "subject": "options_1" },
+            { "code": "no_strike_field", "subject": "options_2" },
+            { "code": "no_strike_field", "subject": "warrants_1" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "safes_combined", "subject": "safe_pre_money_safes_12_000_000_cap_2" },
+            { "code": "note_from_convertibles_row", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "note_cap_read_as_pre_money", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "issue_order_default", "subject": "safe_pre_money_safes_12_000_000_cap_2" },
+            { "code": "issue_order_default", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "left_out_stakeholder", "subject": "former_f" }
           ]
         }
       }
@@ -853,6 +1209,125 @@
             { "code": "warrant_counts_are_maximums" },
             { "code": "left_out_stakeholder", "subject": "employee_e" },
             { "code": "left_out_stakeholder", "subject": "employee_f" }
+          ]
+        }
+      }
+    },
+    "version-0.4.json": {
+      "result": {
+        "as_of": "2025-12-31",
+        "cap_table": {
+          "holders": [
+            { "id": "advisor_e", "name": "Advisor E" },
+            { "id": "employee_c", "name": "Employee C" },
+            { "id": "employee_d", "name": "Employee D" },
+            { "id": "founder_a", "name": "Founder A" },
+            { "id": "founder_b", "name": "Founder B" },
+            { "id": "investor_s", "name": "Investor S" },
+            { "id": "investor_t", "name": "Investor T" },
+            { "id": "investor_u", "name": "Investor U" },
+            { "id": "lender_l", "name": "Lender L" },
+            { "id": "post_money_safes_12_000_000_cap_2", "name": "Post-money SAFEs, $12,000,000 cap (2)" },
+            { "id": "convertible_notes_8_000_000_cap_20_discount_1", "name": "Convertible notes, $8,000,000 cap, 20% discount (1)" }
+          ],
+          "securities": [
+            { "id": "common_stock", "name": "Common Stock", "kind": "common" },
+            {
+              "id": "series_seed_preferred",
+              "name": "Series Seed Preferred",
+              "kind": "preferred",
+              "original_issue_price": "1",
+              "conversion_price": "1",
+              "preference_multiple": "1",
+              "participation": "non_participating",
+              "cap_multiple": null,
+              "anti_dilution": "none"
+            },
+            {
+              "id": "series_a_preferred",
+              "name": "Series A Preferred",
+              "kind": "preferred",
+              "original_issue_price": "2",
+              "conversion_price": "1.5",
+              "preference_multiple": "1",
+              "participation": "participating_capped",
+              "cap_multiple": "3",
+              "anti_dilution": "none"
+            },
+            { "id": "options_1", "name": "Common Stock Options", "kind": "option", "strike": null },
+            { "id": "options_2", "name": "Non-Plan Awards", "kind": "option", "strike": null },
+            { "id": "warrants_1", "name": "Warrants for Common Stock", "kind": "warrant", "strike": null, "underlying": "common" }
+          ],
+          "seniority": null,
+          "conversion_groups": [],
+          "positions": [
+            { "holder": "advisor_e", "security": "options_2", "shares": 50000 },
+            { "holder": "employee_c", "security": "common_stock", "shares": 500000 },
+            { "holder": "employee_c", "security": "options_1", "shares": 150000 },
+            { "holder": "employee_d", "security": "options_1", "shares": 100000 },
+            { "holder": "founder_a", "security": "common_stock", "shares": 3500000 },
+            { "holder": "founder_b", "security": "common_stock", "shares": 2000000 },
+            { "holder": "investor_s", "security": "series_seed_preferred", "shares": 1000000 },
+            { "holder": "investor_t", "security": "series_seed_preferred", "shares": 500000 },
+            { "holder": "investor_t", "security": "series_a_preferred", "shares": 750000 },
+            { "holder": "investor_u", "security": "series_a_preferred", "shares": 1500000 },
+            { "holder": "lender_l", "security": "warrants_1", "shares": 40000 }
+          ],
+          "unissued_pool": 750000,
+          "unconverted_safes": [
+            { "id": "safe_post_money_safes_12_000_000_cap_2", "holder": "post_money_safes_12_000_000_cap_2", "purchase_amount": "500000", "post_money_cap": "12000000", "discount": "0" }
+          ],
+          "unconverted_notes": [
+            {
+              "id": "note_convertible_notes_8_000_000_cap_20_discount_1",
+              "holder": "convertible_notes_8_000_000_cap_20_discount_1",
+              "principal": "250000",
+              "interest_rate": null,
+              "interest_method": "simple",
+              "issue_date": null,
+              "valuation_cap": "8000000",
+              "cap_type": "pre_money",
+              "conversion_base": null,
+              "discount": "0.2",
+              "repayment_multiple": null
+            }
+          ]
+        },
+        "issue_order": ["series_seed_preferred", "series_a_preferred", "safe_post_money_safes_12_000_000_cap_2", "note_convertible_notes_8_000_000_cap_20_discount_1"],
+        "to_fill": [
+          { "security": "options_1", "field": "strike" },
+          { "security": "options_2", "field": "strike" },
+          { "security": "warrants_1", "field": "strike" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "interest_rate" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "issue_date" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "conversion_base" },
+          { "note": "note_convertible_notes_8_000_000_cap_20_discount_1", "field": "repayment_multiple" },
+          { "field": "seniority" }
+        ],
+        "report": {
+          "read": { "stakeholders": 10, "pool_rows": 1, "share_classes": 3, "convertible_rows": 2, "stock_plans": 1, "financing_rounds": 2 },
+          "not_needed": { "stock_plan_history": 2, "valuations_409a": 2, "split_adjustments": 1, "shareholder_groups": 3 },
+          "notes": [
+            { "code": "version_label", "field": "0.4" },
+            { "code": "no_dividend_field" },
+            { "code": "no_conversion_group_field" },
+            { "code": "no_carve_out_field" },
+            { "code": "no_sale_date_field" },
+            { "code": "no_seniority_field" },
+            { "code": "conversion_ratio_rounded", "subject": "series_a_preferred" },
+            { "code": "participation_cap_includes_preference", "subject": "series_a_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_seed_preferred" },
+            { "code": "no_anti_dilution_field", "subject": "series_a_preferred" },
+            { "code": "no_strike_field", "subject": "options_1" },
+            { "code": "no_strike_field", "subject": "options_2" },
+            { "code": "no_strike_field", "subject": "warrants_1" },
+            { "code": "warrant_counts_are_maximums" },
+            { "code": "safes_combined", "subject": "safe_post_money_safes_12_000_000_cap_2" },
+            { "code": "note_from_convertibles_row", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "note_cap_read_as_pre_money", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "issue_order_default", "subject": "safe_post_money_safes_12_000_000_cap_2" },
+            { "code": "issue_order_default", "subject": "note_convertible_notes_8_000_000_cap_20_discount_1" },
+            { "code": "left_out_stakeholder", "subject": "former_f" }
           ]
         }
       }

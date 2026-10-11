@@ -1,0 +1,15 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Financing History has a Series B round, and the workbook has no Series B class.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "A9", "kind": "text", "text": "Series B", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "B9", "kind": "text", "text": "2025.06.01", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "C9", "kind": "text", "text": "2025.06.01", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "D9", "kind": "number", "text": "3", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "E9", "kind": "number", "text": "3", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "F9", "kind": "number", "text": "1", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "G9", "kind": "number", "text": "1", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "H9", "kind": "text", "text": "N", "formula": false}},
+    {"op": "set", "tab": "Context", "cell": {"address": "I9", "kind": "text", "text": "N/A", "formula": false}}
+  ]
+}

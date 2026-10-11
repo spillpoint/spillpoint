@@ -1,6 +1,6 @@
 # OCX case 03, refused: derivation
 
-One small change to an OCX 0.7 workbook for each thing the import refuses: 31 fixtures, 12 unsupported and 19 malformed. 29 change case 01's workbook, Alder Gate Labs, and two change case 02's, Ferncliff Labs, where preferred stock is needed. Each fixture file names its base and lists its change, cell by cell (C18). Each change leaves one problem, so each result is one refusal: its kind, its term, and its subject, the workbook's own text for what it's about (OX13).
+One small change to an OCX workbook for each thing the import refuses: 42 fixtures, 15 unsupported and 27 malformed. 29 change case 01's workbook, Alder Gate Labs, and two change case 02's, Ferncliff Labs, where preferred stock is needed, all 0.7. Eleven change case 06's, Hollis Mill Robotics, for what only 0.4/0.5 reads (its own section, at the end). Each fixture file names its base and lists its change, cell by cell (C18). Each change leaves one problem, so each result is one refusal: its kind, its term, and its subject, the workbook's own text for what it's about (OX13).
 
 **Two kinds of refusal:**
 - **Unsupported:** the workbook may well be right, and spillpoint doesn't read what it says.
@@ -160,6 +160,36 @@ W-1 is outstanding (30,000, "Outstanding"). Alder Gate has no Series A Preferred
 - **`holdings-mismatch`:** Founder A's one certificate, CS-1, holds 5,000,000. The total checks pass first: the Summary still says 8,040,000, and the Stakeholder View's `Total` row is a formula with no saved value, so it's skipped. Holders are checked in the Stakeholder View's order, and Employees C to F agree, so Founder A is the first that doesn't.
 - **`pool-mismatch`:** the pool row's value under "Alder Gate 2023 Equity Plan Options" is 610,000. Context's row for that plan says 600,000. Every holder's holdings agree, so the pool's is the first check to fail. The subject is the plan.
 - **`convertibles-mismatch`:** the SAFEs Ledger has one outstanding post-money SAFE, SAFE-2, for $200,000. The `Post-$ SAFEs` row now counts 2 for the same $200,000.
+
+## 0.4/0.5, on Hollis Mill (06e4)
+
+Eleven changes to case 06's workbook, Hollis Mill Robotics, for what only 0.4/0.5 reads: its layout's neighbor 0.3, Financing History, the RSUs on Context, and its checks (OX14). The terms 0.4/0.5 shares with 0.7 refuse the same way in both, and are shown above. Hollis Mill's steps run in its own tab order: `Summary Snapshot`, `Stakeholder Snapshot`, `Voting by SH Group` (set aside), `Context`.
+
+| Fixture | The change | Refused |
+|---|---|---|
+| `layout-0.3` | the per-holder tab is `Detailed Snapshot`, headed `Shareholder` and `Shareholder Group`, and Context has no version label (C3) | unsupported, `ocx_layout`, "" |
+| `round-without-class` | Financing History has a "Series B" round (row 9) | malformed, `round_without_class`, "Series B" |
+| `class-without-round` | Financing History has no Series Seed row (row 7 cleared) | malformed, `class_without_round`, "Series Seed Preferred" |
+| `conversion-ratio-mismatch` | Series A's `Conversion Ratio` is 1.5 (F8) | malformed, `conversion_ratio_mismatch`, "Series A Preferred" |
+| `cap-below-preference` | Series A's `Participation Cap` is 0.5 (I8) | unsupported, `cap_below_preference`, "Series A Preferred" |
+| `rsus-not-separated` | the plan has 10,000 `Outstanding RSUs` and 240,000 options (F22, E22) | unsupported, `rsus_not_separated`, "Hollis Mill 2022 Stock Plan" |
+| `snapshot-total-mismatch` | the per-holder `Total` row gives Common Stock 6,000,100 (C16) | malformed, `total_mismatch`, "Stakeholder Snapshot: Common Stock" |
+| `summary-outstanding-mismatch` | the Summary gives Series Seed Preferred 1,500,100 outstanding (C8) | malformed, `total_mismatch`, "Series Seed Preferred" |
+| `as-converted-mismatch` | Investor U's Series A is 2,100,000 as converted (F11), and the column's total 3,100,000 (F16) | malformed, `holdings_mismatch`, "Investor U" |
+| `liquidation-preference-mismatch` | the Summary gives Series A a $4,600,000 liquidation preference (G9) | malformed, `liquidation_preference_mismatch`, "Series A Preferred" |
+| `pool-summed-mismatch` | Context's plan details give 740,000 available for grant (H22) | malformed, `pool_mismatch`, "Options Remaining for Issuance" |
+
+- **`layout-0.3`:** `Detailed Snapshot` is 0.3's per-holder tab, and it sets the layout (OX13, step 1), so `Summary Snapshot`, shared by 0.3 to 0.5, doesn't. 0.3 has no version label, so the subject is empty. The headers are 0.3's too, but the tab's name decides first.
+- **`round-without-class`:** rounds are matched first, in Financing History's order. Series Seed and Series A find their classes; "Series B" matches neither "Series Seed Preferred" nor "Series A Preferred" less "Preferred", or "Common Stock".
+- **`class-without-round`:** the remaining round, Series A, finds its class. Then Series Seed Preferred has no round, so no issue price, conversion or preference.
+- **`conversion-ratio-mismatch`:** 2 ÷ 1.5 = 1.3333…. The ratio 1.5, written to one place, could be 1.45 to 1.55, which doesn't reach it. It's refused when Series A's row is read, in step 7, before any check.
+- **`cap-below-preference`:** "Y" with a cap of 0.5x below the 1x preference. Read as including the preference, as spillpoint reads caps, the series would take less than its preference. It only makes sense if the cap excludes it, which OCX doesn't say (O4). Series A's other cells before it read as in Hollis Mill.
+- **`rsus-not-separated`:** the per-holder tab's option column counts 250,000, options and RSUs together, and can't say whose are RSUs (0.6.0 plan, answer 8). It's refused when Context's plan row is read, after Financing History's rows, which are fine. The options and RSUs together still make the 250,000 granted, so nothing else disagrees.
+- **`snapshot-total-mismatch`:** the per-holder `Total` row is checked first in step 8, column by column, and Common Stock is the first: its rows make 6,000,000. The subject is the column, as its tab and header.
+- **`summary-outstanding-mismatch`:** the per-holder totals all agree. Then each class's `Outstanding Shares` against its column's holders: Common Stock's 6,000,000 agrees, and Series Seed Preferred's holders hold 1,000,000 + 500,000 = 1,500,000, not 1,500,100.
+- **`as-converted-mismatch`:** the column's total is changed too, so the totals agree. Then the holders, in order. Investor T's 1,000,000 is 750,000 × 2 ÷ 1.5, and Investor U's 2,100,000 isn't within a share of 1,500,000 × 2 ÷ 1.5 = 2,000,000.
+- **`liquidation-preference-mismatch`:** the totals and holdings agree. Series Seed's $1,500,000 is 1,500,000 × $1 × 1, and Series A's $4,600,000 isn't within a cent of 2,250,000 × $2 × 1 = $4,500,000. The Summary's own `Total` under `Liquidation Preference` is money, so it isn't checked.
+- **`pool-summed-mismatch`:** everything before agrees. The pool row's 750,000, summed across the one option column, isn't the plans' 740,000 available, summed across the one plan. The subject is the pool row as written.
 
 ## What a re-derivation should check
 

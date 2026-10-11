@@ -1,0 +1,8 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Investor U's Series A is 2,100,000 as converted, where 1,500,000 × $2 ÷ $1.50 is 2,000,000; the column's total agrees.",
+  "change": [
+    {"op": "set", "tab": "Stakeholder Snapshot", "cell": {"address": "F11", "kind": "number", "text": "2100000", "formula": true}},
+    {"op": "set", "tab": "Stakeholder Snapshot", "cell": {"address": "F16", "kind": "number", "text": "3100000", "formula": true}}
+  ]
+}

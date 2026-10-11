@@ -454,11 +454,14 @@ function ocxResultChecks(workbook: OcxWorkbookJson, layout: string, result: OcxR
   const cells = workbook.sheets.flatMap((s) => s.cells);
   const texts = new Set(cells.filter((c) => c.kind === "text").map((c) => c.text));
 
-  it("gives its as-of date on every tab, in 0.7's form", () => {
-    if (layout !== "0.7") return;
+  it("gives its as-of date on every tab, in its layout's form", () => {
     const [y, m, d] = result.as_of.split("-").map(Number);
     const day = new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay();
-    const label = `As of ${DAYS[day]}, ${String(d).padStart(2, "0")} ${MONTHS[m! - 1]} ${y}`;
+    // 0.7's form, the weekday checked (OX5); 0.4/0.5's, our cases' choice of the forms OX14 reads, the reference's dotted one.
+    const label =
+      layout === "0.7"
+        ? `As of ${DAYS[day]}, ${String(d).padStart(2, "0")} ${MONTHS[m! - 1]} ${y}`
+        : `As of ${result.as_of.replaceAll("-", ".")}`;
     for (const sheet of workbook.sheets) expect(sheet.cells.some((c) => c.text === label), `${sheet.name}: ${label}`).toBe(true);
   });
 

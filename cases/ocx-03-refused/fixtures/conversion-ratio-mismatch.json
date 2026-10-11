@@ -1,0 +1,7 @@
+{
+  "base": "ocx-06-hollis-mill",
+  "about": "Series A's conversion ratio is 1.5, where its prices give 1.3333.",
+  "change": [
+    {"op": "set", "tab": "Context", "cell": {"address": "F8", "kind": "number", "text": "1.5", "formula": false}}
+  ]
+}
