@@ -373,7 +373,7 @@ describe("warrants and cumulative dividends (M5k2)", () => {
     const file = { format: "spillpoint", version: 3, name: "Case 22", holders: inputs.holders, events: inputs.events, cap_table_after_event: "series_a", range: ["0", "40000000"] };
     const opened = readFile(JSON.stringify(file));
     if (!opened.ok) throw new Error(opened.message);
-    expect(opened.draft.securities.find((s) => s.kind === "warrant")).toMatchObject({ name: "Warrants for Common Stock ($0.5 strike)", strike: "0.5", underlying: "common" });
+    expect(opened.draft.securities.find((s) => s.kind === "warrant")).toMatchObject({ name: "Warrants for Common Stock ($0.50 strike)", strike: "0.5", underlying: "common" });
   });
 });
 

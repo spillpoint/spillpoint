@@ -68,3 +68,13 @@ export function parseExact(value: unknown, where: string): Decimal {
 export function toCents(amount: Decimal): string {
   return amount.toDecimalPlaces(2, D.ROUND_HALF_UP).toFixed(2);
 }
+
+/**
+ * A strike as a class's name shows it, money to the cent at least (the naming review, item 1): "0.10" in
+ * "Options ($0.10 strike)", "5.00" in "($5.00 strike)". A strike with more places keeps every one, "0.0025", since a
+ * price per share can be set below a cent. Never rounded: the name says the strike exactly. Ids keep the strike as
+ * written (`options_0.1`), since inputs name them.
+ */
+export function strikeInName(strike: Decimal): string {
+  return strike.toFixed(Math.max(2, strike.decimalPlaces()));
+}

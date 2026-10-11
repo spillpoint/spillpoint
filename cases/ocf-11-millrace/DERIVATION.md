@@ -30,13 +30,13 @@ OCF writes numbers to at most 10 decimal places, and none of Millrace's prices t
 | Nine stakeholders | the nine holders, with Millrace's names and ids |
 | Common Stock: Ana 5,500,000, Dev 4,500,000, Lena 638,297 | `common`, the same positions |
 | Priya's and Marcus's SAFEs: $300,000 and $150,000, post-money, a $5,000,000 cap, an exit multiple of 1, both seniority 1 | converted at the Seed (below), so none is outstanding |
-| The SAFEs' conversions at the Seed: 779,362 and 389,681 shares of Seed Preferred (from SAFEs) | Priya 779,362 and Marcus 389,681 `seed_shadow` |
-| Seed Preferred (from SAFEs): 0.3849300316, 1.5x, participation cap 1.5, 1 for 1, seniority 2 | `seed_shadow`: non-participating, a cap equal to the preference (O4) |
+| The SAFEs' conversions at the Seed: 779,362 and 389,681 shares of Seed Preferred (from SAFEs) | Priya 779,362 and Marcus 389,681 `seed_safes` |
+| Seed Preferred (from SAFEs): 0.3849300316, 1.5x, participation cap 1.5, 1 for 1, seniority 2 | `seed_safes`: non-participating, a cap equal to the preference (O4) |
 | Seed Preferred: 0.4635148503, 1.5x, participation cap 1.5, 1 for 1, seniority 2. Harbor Lane 5,393,570 | `seed`, non-participating, the same position |
 | Series A Preferred: 2.0754715977, 1.25x, participation cap 2.75, 1 for 1, seniority 3. Ridgeline 4,336,363, Harbor Lane 1,445,454 | `series_a`: participating, capped at 2.75x |
 | Series A's conversion ratio adjustment, Mar 31, 2025: conversion price 1.8247520242, ratio 1.1373992577 for 1 | Series A converts at 1.8247520242 (O4; the ratio below) |
 | Series B Preferred: 1.0821118250, 2x, no participation cap, 1 for 1, seniority 4. Cobalt 9,241,189 | `series_b`: participation **blank, to fill in** (O4) |
-| Seniority 4, then 3, then 2 | tiers `[series_b]`, `[series_a]`, then `[seed_shadow, seed]` pari passu |
+| Seniority 4, then 3, then 2 | tiers `[series_b]`, `[series_a]`, then `[seed_safes, seed]` pari passu |
 | The 2021 plan: 1,182,033 reserved, raised to 4,373,370 at the Seed, 5,926,363 at the Series A and 9,491,136 at the Series B | |
 | Grants at $0.05: Lena 40,000, other employees 450,000 | `options_0.05` |
 | Grants at $0.11: other employees 1,100,000 | `options_0.11` |

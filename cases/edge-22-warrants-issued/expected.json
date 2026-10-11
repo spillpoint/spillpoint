@@ -182,7 +182,7 @@
           },
           {
             "id": "options_0.1",
-            "name": "Options ($0.1 strike)",
+            "name": "Options ($0.10 strike)",
             "kind": "option",
             "strike": "0.1"
           }
@@ -265,13 +265,13 @@
           },
           {
             "id": "options_0.1",
-            "name": "Options ($0.1 strike)",
+            "name": "Options ($0.10 strike)",
             "kind": "option",
             "strike": "0.1"
           },
           {
             "id": "warrants_common_0.5",
-            "name": "Warrants for Common Stock ($0.5 strike)",
+            "name": "Warrants for Common Stock ($0.50 strike)",
             "kind": "warrant",
             "strike": "0.5",
             "underlying": "common"
@@ -363,13 +363,13 @@
           },
           {
             "id": "options_0.1",
-            "name": "Options ($0.1 strike)",
+            "name": "Options ($0.10 strike)",
             "kind": "option",
             "strike": "0.1"
           },
           {
             "id": "warrants_common_0.5",
-            "name": "Warrants for Common Stock ($0.5 strike)",
+            "name": "Warrants for Common Stock ($0.50 strike)",
             "kind": "warrant",
             "strike": "0.5",
             "underlying": "common"
@@ -450,7 +450,7 @@
             "conversion_price": "15/17",
             "conversion_price_approx": "0.8823529412",
             "shares": 1133333,
-            "series": "series_a_shadow"
+            "series": "series_a_safes"
           }
         ],
         "new_shares": [
@@ -497,19 +497,19 @@
           },
           {
             "id": "options_0.1",
-            "name": "Options ($0.1 strike)",
+            "name": "Options ($0.10 strike)",
             "kind": "option",
             "strike": "0.1"
           },
           {
             "id": "warrants_common_0.5",
-            "name": "Warrants for Common Stock ($0.5 strike)",
+            "name": "Warrants for Common Stock ($0.50 strike)",
             "kind": "warrant",
             "strike": "0.5",
             "underlying": "common"
           },
           {
-            "id": "series_a_shadow",
+            "id": "series_a_safes",
             "name": "Series A Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "15/17",
@@ -546,7 +546,7 @@
         "seniority": [
           [
             "series_a",
-            "series_a_shadow"
+            "series_a_safes"
           ]
         ],
         "positions": [
@@ -572,7 +572,7 @@
           },
           {
             "holder": "investor_s",
-            "security": "series_a_shadow",
+            "security": "series_a_safes",
             "shares": 1133333
           },
           {
@@ -588,14 +588,14 @@
             "common": 9000000,
             "options_0.1": 400000,
             "warrants_common_0.5": 200000,
-            "series_a_shadow": 1133333,
+            "series_a_safes": 1133333,
             "series_a": 3066666
           },
           "as_converted_by_security": {
             "common": "9000000",
             "options_0.1": "400000",
             "warrants_common_0.5": "200000",
-            "series_a_shadow": "1133333",
+            "series_a_safes": "1133333",
             "series_a": "3066666"
           },
           "fully_diluted": "15333332",

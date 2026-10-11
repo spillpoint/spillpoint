@@ -321,7 +321,7 @@
             "conversion_price": "101/136",
             "conversion_price_approx": "0.7426470588",
             "shares": 1346534,
-            "series": "series_a_shadow"
+            "series": "series_a_safes"
           }
         ],
         "new_shares": [
@@ -369,7 +369,7 @@
             "strike": "0.25"
           },
           {
-            "id": "series_a_shadow",
+            "id": "series_a_safes",
             "name": "Series A Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "101/136",
@@ -406,7 +406,7 @@
         "seniority": [
           [
             "series_a",
-            "series_a_shadow"
+            "series_a_safes"
           ]
         ],
         "positions": [
@@ -427,7 +427,7 @@
           },
           {
             "holder": "investor_s",
-            "security": "series_a_shadow",
+            "security": "series_a_safes",
             "shares": 1346534
           },
           {
@@ -442,13 +442,13 @@
           "shares_by_security": {
             "common": 8000000,
             "options_0.25": 500000,
-            "series_a_shadow": 1346534,
+            "series_a_safes": 1346534,
             "series_a": 3029702
           },
           "as_converted_by_security": {
             "common": "8000000",
             "options_0.25": "500000",
-            "series_a_shadow": "1346534",
+            "series_a_safes": "1346534",
             "series_a": "3029702"
           },
           "fully_diluted": "15148513",

@@ -122,7 +122,7 @@ Stock Plan Details lists the three. `read.stock_plans` is 3.
 
 **Renamed:**
 - **The holders**, named in full: `ana` to `ana_ortiz`, `dev` to `dev_patel`, `lena` to `lena_fischer`, `priya` to `priya_shah`, `marcus` to `marcus_lee`, `harbor_lane` to `harbor_lane_ventures_fund_i`, `ridgeline` to `ridgeline_capital_fund_iii`, and `cobalt` to `cobalt_family_office_llc`. "Other employees" keeps `other_employees`.
-- **The classes:** `common` to `common_stock`, `seed_shadow` to `seed_preferred_from_safes`, `seed` to `seed_preferred`, `series_a` to `series_a_preferred`, and `series_b` to `series_b_preferred`.
+- **The classes:** `common` to `common_stock`, `seed_safes` to `seed_preferred_from_safes`, `seed` to `seed_preferred`, `series_a` to `series_a_preferred`, and `series_b` to `series_b_preferred`.
 - **The options:** `options_0.05` to `options_1`, `options_0.11` to `options_2`, and `options_0.42` to `options_3`.
 
 **The prices** (`price_digits` 15): each locked price, an exact fraction, rounded half up to 15 significant digits, is the price the import reads:

@@ -17,10 +17,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -195,10 +195,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "seed_preferred", "name": "Seed Preferred", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -259,10 +259,10 @@
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
             { "id": "options_0.05", "name": "Options ($0.05 strike)", "kind": "option", "strike": "0.05" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -319,10 +319,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -379,7 +379,7 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" }
           ],
@@ -557,10 +557,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -737,10 +737,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -798,10 +798,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -859,10 +859,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -920,9 +920,9 @@
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
             { "id": "options_0.0025", "name": "Options ($0.0025 strike)", "kind": "option", "strike": "0.0025" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -981,10 +981,10 @@
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
             { "id": "options_0.05", "name": "Options ($0.05 strike)", "kind": "option", "strike": "0.05" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -1042,11 +1042,11 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
-            { "id": "options_0.5", "name": "Options ($0.5 strike)", "kind": "option", "strike": "0.5" },
+            { "id": "options_0.5", "name": "Options ($0.50 strike)", "kind": "option", "strike": "0.5" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -1105,10 +1105,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -1167,10 +1167,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],
@@ -1348,10 +1348,10 @@
           "securities": [
             { "id": "common_stock", "name": "Common Stock", "kind": "common" },
             { "id": "common_seed_safe_conversion", "name": "Common Seed (SAFE conversion)", "kind": "common" },
-            { "id": "options_0.1", "name": "Options ($0.1 strike)", "kind": "option", "strike": "0.1" },
+            { "id": "options_0.1", "name": "Options ($0.10 strike)", "kind": "option", "strike": "0.1" },
             { "id": "options_0.25", "name": "Options ($0.25 strike)", "kind": "option", "strike": "0.25" },
             { "id": "rsus", "name": "RSUs (no strike)", "kind": "option", "strike": "0" },
-            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.5 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
+            { "id": "warrants_common_0.5", "name": "Warrants for Common Stock ($0.50 strike)", "kind": "warrant", "strike": "0.5", "underlying": "common" }
           ],
           "seniority": [],
           "conversion_groups": [],

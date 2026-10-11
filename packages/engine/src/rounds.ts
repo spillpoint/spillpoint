@@ -17,7 +17,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ONE, ZERO } from "./decimal.ts";
+import { D, ONE, ZERO, strikeInName } from "./decimal.ts";
 import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
 import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
@@ -481,7 +481,7 @@ function grantOptionsEvent(company: Company, ev: Json, path: string): EventDetai
     const strike = notNegative(g.strike, `${at}.strike`);
     const shares = wholeShares(g.shares, `${at}.shares`);
     const id = `options_${strike.toString()}`;
-    ensureSecurity(company, { id, name: `Options ($${strike.toString()} strike)`, kind: "option", strike: strike.toString() }, at);
+    ensureSecurity(company, { id, name: `Options ($${strikeInName(strike)} strike)`, kind: "option", strike: strike.toString() }, at);
     if (shares.gt(company.unissuedPool)) {
       throw new InputError(`${at}.shares`, `a grant of ${count(shares)} options is more than the ${count(company.unissuedPool)} left in the unissued pool`);
     }
@@ -515,7 +515,7 @@ function issueWarrantsEvent(company: Company, ev: Json, path: string): EventDeta
     const id = `warrants_${underlying}_${strike.toString()}`;
     ensureSecurity(
       company,
-      { id, name: `Warrants for ${what} ($${strike.toString()} strike)`, kind: "warrant", strike: strike.toString(), underlying },
+      { id, name: `Warrants for ${what} ($${strikeInName(strike)} strike)`, kind: "warrant", strike: strike.toString(), underlying },
       at,
     );
     company.issue(text(w.holder, `${at}.holder`), id, shares, `${at}.holder`);
@@ -1024,7 +1024,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     let into = safeSeries.find((x) => nearlyEqual(x.price, conversionPrice));
     if (!into) {
       const n = safeSeries.length;
-      into = { price: conversionPrice, id: `${seriesId}_shadow${n === 0 ? "" : `_${n + 1}`}` };
+      into = { price: conversionPrice, id: `${seriesId}_safes${n === 0 ? "" : `_${n + 1}`}` };
       safeSeries.push(into);
       company.securities.push(
         readSecurity(

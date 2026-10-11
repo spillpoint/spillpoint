@@ -82,7 +82,7 @@ describe("the exit cases the engine runs", () => {
     const seriesA = exit.capTable.securities.find((s) => s.id === "series_a") as PreferredSeries;
     // Series A's conversion price fell from $2.075472 to $1.824752 in the down round.
     expect(seriesA.conversionRatio.toFixed(10)).toBe("1.1373992577");
-    expect(exit.capTable.seniority).toEqual([["series_b"], ["series_a"], ["seed", "seed_shadow"]]);
+    expect(exit.capTable.seniority).toEqual([["series_b"], ["series_a"], ["seed", "seed_safes"]]);
     expect(exit.range.map((v) => v.toString())).toEqual(["0", "300000000"]);
   });
 

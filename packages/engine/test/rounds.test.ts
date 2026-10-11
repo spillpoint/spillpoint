@@ -231,7 +231,7 @@ describe("warrants issued (R29, C15; M5d)", () => {
   it("count like options, and aren't drawn from the pool", () => {
     const [, pool, warrants, second] = buildCapTables(company([{ holder: "l", shares: 100000, strike: "1", underlying: "common" }]));
     expect(warrants!.capTable.unissuedPool.eq(pool!.capTable.unissuedPool)).toBe(true);
-    expect(warrants!.capTable.securities.at(-1)).toMatchObject({ id: "warrants_common_1", name: "Warrants for Common Stock ($1 strike)", kind: "warrant", underlying: "common" });
+    expect(warrants!.capTable.securities.at(-1)).toMatchObject({ id: "warrants_common_1", name: "Warrants for Common Stock ($1.00 strike)", kind: "warrant", underlying: "common" });
     const details = second!.details as { kind: string; basisShares: D; poolCreated: D };
     expect([details.kind, details.basisShares.toString(), details.poolCreated.toString()]).toEqual(["create_pool", "1000000", "111111"]);
   });
@@ -250,11 +250,11 @@ describe("cumulative dividends on a round's series (R30, M5e3)", () => {
   it("accrue from the round's date, on the round's series and its series from SAFEs, each on its own issue price", () => {
     const after = buildCapTables(case23()).at(-1)!.capTable.securities;
     const terms = (id: string) => after.find((s) => s.id === id) as PreferredSeries;
-    for (const id of ["series_a", "series_a_shadow"]) {
+    for (const id of ["series_a", "series_a_safes"]) {
       expect(terms(id).cumulativeDividend).toMatchObject({ method: "simple", accrualStart: "2023-06-30", onConversion: "forfeited" });
       expect(terms(id).cumulativeDividend!.rate.toString()).toBe("0.08");
     }
-    expect([terms("series_a").originalIssuePrice.toString(), terms("series_a_shadow").originalIssuePrice.toString()]).toEqual(["2.5", "2"]);
+    expect([terms("series_a").originalIssuePrice.toString(), terms("series_a_safes").originalIssuePrice.toString()]).toEqual(["2.5", "2"]);
   });
 
   it("refuse an accrual start of their own, and a round with no date", () => {
@@ -303,10 +303,10 @@ describe("the round cases built in full", () => {
     if (seed.kind !== "priced_round") throw new Error("the Seed is a priced round");
     // The SAFEs convert at their $5,000,000 post-money cap into Seed Preferred (from SAFEs) (R4, R5).
     expect(seed.safeConversions.map((c) => [c.holder, c.method, c.shares.toNumber(), c.series])).toEqual([
-      ["priya", "cap", 779_362, "seed_shadow"],
-      ["marcus", "cap", 389_681, "seed_shadow"],
+      ["priya", "cap", 779_362, "seed_safes"],
+      ["marcus", "cap", 389_681, "seed_safes"],
     ]);
-    expect(built[5]!.capTable.securities.find((s) => s.id === "seed_shadow")!.name).toBe("Seed Preferred (from SAFEs)");
+    expect(built[5]!.capTable.securities.find((s) => s.id === "seed_safes")!.name).toBe("Seed Preferred (from SAFEs)");
     expect(built[5]!.unconvertedSafes).toEqual([]);
     const seriesA = built[7]!.details;
     if (seriesA.kind !== "priced_round") throw new Error("the Series A is a priced round");
@@ -375,7 +375,7 @@ describe("the round cases built in full", () => {
     const built = buildCapTables(readCaseFile("edge-21-note-and-pre-money-safe", "inputs.json")).at(-1)!;
     const series = built.details;
     if (series.kind !== "priced_round") throw new Error("a priced round");
-    expect(series.safeConversions.map((c) => [c.method, c.shares.toNumber(), c.series])).toEqual([["cap", 1_102_165, "series_a_shadow"]]);
+    expect(series.safeConversions.map((c) => [c.method, c.shares.toNumber(), c.series])).toEqual([["cap", 1_102_165, "series_a_safes"]]);
     expect(series.noteConversions.map((c) => [c.baseShares.toNumber(), c.method, c.shares.toNumber(), c.series])).toEqual([[10_000_000, "cap", 1_325_000, "series_a_notes"]]);
     expect(built.capTable.securities.map((s) => s.name)).toEqual([
       "Common Stock", "Options ($0.25 strike)", "Series A Preferred (from SAFEs)", "Series A Preferred (from notes)", "Series A Preferred",
@@ -435,7 +435,7 @@ describe("what M4d refuses", () => {
         {
           id: "series_a", date: null, type: "priced_round", pre_money: "20000000", investments: [{ holder: "y", amount: "5000000" }],
           series: { id: "series_a", name: "Series A Preferred", kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
-          seniority: [["series_a", "series_a_shadow", "series_a_shadow_2"]],
+          seniority: [["series_a", "series_a_safes", "series_a_safes_2"]],
         },
       ],
     }).at(-1)!.details;
@@ -455,7 +455,7 @@ describe("what M4d refuses", () => {
         { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "a", shares: 1000 }] },
         { id: "safe", date: null, type: "safes", safes: [{ id: "safe_s", holder: "s", purchase_amount: "80", pre_money_cap: "800", discount: "0.2" }] },
         {
-          id: "seed", date: null, type: "priced_round", pre_money: "1100", investments: [{ holder: "x", amount: "500" }], seniority: [["seed", "seed_shadow"]],
+          id: "seed", date: null, type: "priced_round", pre_money: "1100", investments: [{ holder: "x", amount: "500" }], seniority: [["seed", "seed_safes"]],
           series: { id: "seed", name: "Seed Preferred", kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
         },
       ],
@@ -767,26 +767,26 @@ describe("a round's seniority without its series from SAFEs and notes (R28)", ()
     const written = tables(millrace);
     seed.seniority = [["seed"]];
     expect(tables(millrace)).toEqual(written);
-    expect(buildCapTables(millrace)[5]!.capTable.seniority).toEqual([["seed", "seed_shadow"]]);
+    expect(buildCapTables(millrace)[5]!.capTable.seniority).toEqual([["seed", "seed_safes"]]);
 
     const case21 = readCaseFile("edge-21-note-and-pre-money-safe", "inputs.json") as Case;
     const full = tables(case21);
     case21.events.at(-1)!.seniority = [["series_a"]];
     expect(tables(case21)).toEqual(full);
-    expect(buildCapTables(case21).at(-1)!.capTable.seniority).toEqual([["series_a", "series_a_shadow", "series_a_notes"]]);
+    expect(buildCapTables(case21).at(-1)!.capTable.seniority).toEqual([["series_a", "series_a_safes", "series_a_notes"]]);
   });
 
   it("keeps a series from SAFEs where the seniority puts it", () => {
     const millrace = readCaseFile("millrace", "inputs.json") as Case;
-    millrace.events.find((e) => e.id === "seed")!.seniority = [["seed"], ["seed_shadow"]];
-    expect(buildCapTables(millrace)[5]!.capTable.seniority).toEqual([["seed"], ["seed_shadow"]]);
+    millrace.events.find((e) => e.id === "seed")!.seniority = [["seed"], ["seed_safes"]];
+    expect(buildCapTables(millrace)[5]!.capTable.seniority).toEqual([["seed"], ["seed_safes"]]);
   });
 
   it("still needs the round's new series, and every earlier series", () => {
     const millrace = readCaseFile("millrace", "inputs.json") as Case;
     millrace.events.find((e) => e.id === "series_a")!.seniority = [["series_a"], ["seed"]];
-    expect(() => buildCapTables(millrace)).toThrow("inputs.events[7].seniority: seed_shadow must appear in exactly one tier (it appears 0 times)");
-    millrace.events.find((e) => e.id === "series_a")!.seniority = [["seed", "seed_shadow"]];
+    expect(() => buildCapTables(millrace)).toThrow("inputs.events[7].seniority: seed_safes must appear in exactly one tier (it appears 0 times)");
+    millrace.events.find((e) => e.id === "series_a")!.seniority = [["seed", "seed_safes"]];
     expect(() => buildCapTables(millrace)).toThrow("inputs.events[7].seniority: series_a must appear in exactly one tier (it appears 0 times)");
   });
 });

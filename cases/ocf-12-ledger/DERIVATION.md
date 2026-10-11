@@ -63,7 +63,7 @@ Case 01 tests reading and leaves terms blank. This one settles every term, so it
 | Seed Preferred | $1.20; 1x; participation cap 1; converts at $1.20, 1 for 1, then $1.00, 6 for 5 (tx-29); seniority 2 | `seed`: issue price $1.20, conversion price **$1.00**, 1x, **non-participating** (a cap equal to the preference) |
 | Series A Preferred | $1.00; 1x; participation cap 2.5; converts at $1.00, 1 for 1; seniority 3 | `series_a`: participating, **capped at 2.5x**, the cap including the preference (E7) |
 | Seniority 3 ahead of 2 | | tiers `[series_a]`, then `[seed]` |
-| Grants by exercise price | | `options_0.1` "Options ($0.1 strike)", `options_0.25` "Options ($0.25 strike)". D's `opt-d2` joins the $0.25 class from its repricing; no grant is left at $0.40. |
+| Grants by exercise price | | `options_0.1` "Options ($0.10 strike)", `options_0.25` "Options ($0.25 strike)". D's `opt-d2` joins the $0.25 class from its repricing; no grant is left at $0.40. |
 
 ## The pool (O6)
 

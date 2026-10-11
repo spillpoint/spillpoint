@@ -91,7 +91,7 @@
           },
           {
             "id": "options_0.1",
-            "name": "Options ($0.1 strike)",
+            "name": "Options ($0.10 strike)",
             "kind": "option",
             "strike": "0.1"
           },
@@ -326,7 +326,7 @@
           },
           {
             "id": "options_0.1",
-            "name": "Options ($0.1 strike)",
+            "name": "Options ($0.10 strike)",
             "kind": "option",
             "strike": "0.1"
           },

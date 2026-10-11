@@ -72,7 +72,7 @@
       "investments": [{ "holder": "harbor_lane", "amount": "2500000" }],
       "convert_safes": true,
       "pool_target_unissued_percent_post": "18",
-      "seniority": [["seed", "seed_shadow"]]
+      "seniority": [["seed", "seed_safes"]]
     },
     {
       "id": "grants_seed_to_a",
@@ -99,7 +99,7 @@
         { "holder": "harbor_lane", "amount": "3000000", "pro_rata": true }
       ],
       "pool_target_unissued_percent_post": "15",
-      "seniority": [["series_a"], ["seed", "seed_shadow"]]
+      "seniority": [["series_a"], ["seed", "seed_safes"]]
     },
     {
       "id": "grants_a_to_b",
@@ -129,7 +129,7 @@
       "pool_target_unissued_percent_post": "12",
       "anti_dilution_shares_in_post": true,
       "anti_dilution_include_unissued_pool_in_a": false,
-      "seniority": [["series_b"], ["series_a"], ["seed", "seed_shadow"]]
+      "seniority": [["series_b"], ["series_a"], ["seed", "seed_safes"]]
     }
   ],
   "exit": {

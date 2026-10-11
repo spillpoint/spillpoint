@@ -3,7 +3,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ZERO } from "./decimal.ts";
+import { D, ZERO, strikeInName } from "./decimal.ts";
 import type { CapTableImport, ImportBlank } from "./imports.ts";
 import { Ids, idOf, written } from "./ocx-cells.ts";
 import { Notes } from "./ocf-notes.ts";
@@ -169,10 +169,10 @@ export class Draft {
   }
 }
 
-/** The engine's own name for an option class by its strike (O6): `options_0.1`, "Options ($0.1 strike)". */
+/** The engine's own name for an option class by its strike (O6): `options_0.1`, "Options ($0.10 strike)". */
 export function optionClass(strike: Decimal): Json {
   const s = written(strike);
-  return { id: `options_${s}`, name: `Options ($${s} strike)`, kind: "option", strike: s };
+  return { id: `options_${s}`, name: `Options ($${strikeInName(strike)} strike)`, kind: "option", strike: s };
 }
 
 export const sum = (xs: Iterable<Decimal>): Decimal => [...xs].reduce((a, b) => a.plus(b), new D(0));

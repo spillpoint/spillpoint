@@ -70,6 +70,17 @@ def money(x):
     return decimal(x, 2)
 
 
+def strike_name(x):
+    """A strike as a class's name shows it (the naming review, item 1): money to the cent at least, "0.10" in
+    "Options ($0.10 strike)", "5.00" in "($5.00 strike)". More places are kept, "0.0025", and nothing is rounded.
+    Ids keep the strike as `exact` writes it (`options_0.1`)."""
+    s = exact(x)
+    if "/" in s:
+        return s
+    whole, _, places = s.partition(".")
+    return f"{whole}.{places.ljust(2, '0')}"
+
+
 def usd(x):
     """Human-readable dollars for explanations: $1,234,567.89."""
     s = money(x)

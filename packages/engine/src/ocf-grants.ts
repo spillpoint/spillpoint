@@ -6,7 +6,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { ZERO } from "./decimal.ts";
+import { ZERO, strikeInName } from "./decimal.ts";
 import { Book } from "./ocf-book.ts";
 import type { OcfClass } from "./ocf-classes.ts";
 import type { Notes } from "./ocf-notes.ts";
@@ -231,5 +231,5 @@ function whole(o: Json, field: string): Decimal {
 function optionClass(t: GrantTerms): OptionClass {
   if (t.rsu) return { id: "rsus", name: "RSUs (no strike)", strike: ZERO, rsu: true };
   const strike = t.strike.toString();
-  return { id: `options_${strike}`, name: `Options ($${strike} strike)`, strike: t.strike, rsu: false };
+  return { id: `options_${strike}`, name: `Options ($${strikeInName(t.strike)} strike)`, strike: t.strike, rsu: false };
 }

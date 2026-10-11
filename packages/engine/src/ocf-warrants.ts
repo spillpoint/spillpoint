@@ -5,7 +5,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ZERO } from "./decimal.ts";
+import { D, ZERO, strikeInName } from "./decimal.ts";
 import { Book } from "./ocf-book.ts";
 import type { OcfClass } from "./ocf-classes.ts";
 import type { Notes } from "./ocf-notes.ts";
@@ -87,7 +87,7 @@ export class Warrants {
       const cls = this.classes.get(s.terms.cls!)!;
       const strike = s.terms.strike!.toString();
       const on = cls.common ? "common" : cls.id;
-      const c = { id: `warrants_${on}_${strike}`, name: `Warrants for ${cls.name} ($${strike} strike)`, strike: s.terms.strike!, underlying: on, cls: cls.id };
+      const c = { id: `warrants_${on}_${strike}`, name: `Warrants for ${cls.name} ($${strikeInName(s.terms.strike!)} strike)`, strike: s.terms.strike!, underlying: on, cls: cls.id };
       classes.set(c.id, c);
       underlying.add(cls.id);
       const byClass = positions.get(s.holder) ?? new Map<string, Decimal>();

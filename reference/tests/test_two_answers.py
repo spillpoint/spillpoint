@@ -105,7 +105,7 @@ RANDOM_1_121 = {
     ),
     "securities": [
         {"id": "common", "name": "Common Stock", "kind": "common"},
-        {"id": "options_0", "name": "Options ($0 strike)", "kind": "option", "strike": "0"},
+        {"id": "options_0", "name": "Options ($0.00 strike)", "kind": "option", "strike": "0"},
         series("series_0", "Series 0 Preferred", "1"),
         series("series_1", "Series 1 Preferred", "1"),
     ],

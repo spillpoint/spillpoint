@@ -39,13 +39,13 @@
         },
         {
           "id": "options_1",
-          "name": "Options ($1 strike)",
+          "name": "Options ($1.00 strike)",
           "kind": "option",
           "strike": "1"
         },
         {
           "id": "options_3",
-          "name": "Options ($3 strike)",
+          "name": "Options ($3.00 strike)",
           "kind": "option",
           "strike": "3"
         }

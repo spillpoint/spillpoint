@@ -274,7 +274,7 @@ After 1.0 a term is never renamed or reused for something else. A new one can be
   - the cell-kinds script
 
   `readOcx` follows, after the headers, built to these names.
-- **07b, items 1 and 15 everywhere at once** (the `cases/` edit rule lifted): generated names to the cent and `_shadow` to `_safes`, in:
+- **07b, items 1 and 15 everywhere at once** (done; `notes/review-07b.md` lists every file; the `cases/` edit rule lifted): generated names to the cent and `_shadow` to `_safes`, in:
   - the engine's naming code
   - the reference's naming code
   - the tests that pin names

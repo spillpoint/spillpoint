@@ -131,8 +131,8 @@ const company = {
       pre_money: "20000000",
       investments: [{ holder: "lead", amount: "5000000" }],
       pool_target_unissued_percent_post: "10",
-      // The SAFE converts into "Series A Preferred (from SAFEs)", id series_a_shadow.
-      seniority: [["series_a", "series_a_shadow"]],
+      // The SAFE converts into "Series A Preferred (from SAFEs)", id series_a_safes.
+      seniority: [["series_a", "series_a_safes"]],
     },
   ],
 };
@@ -185,7 +185,7 @@ After series_a:
   priced at $1.730769; the pool tops up by 444444
   seed_safe converts at its cap, $0.900000, into 1111111 shares
   ana on common: 9000000
-  seed on series_a_shadow: 1111111
+  seed on series_a_safes: 1111111
   lead on series_a: 2888888
   unissued pool: 1444444
 At $20000000.00:

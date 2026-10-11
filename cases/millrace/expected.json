@@ -521,7 +521,7 @@
             "conversion_price": "455000/1182033",
             "conversion_price_approx": "0.3849300316",
             "shares": 779362,
-            "series": "seed_shadow"
+            "series": "seed_safes"
           },
           {
             "safe": "safe_marcus",
@@ -530,7 +530,7 @@
             "conversion_price": "455000/1182033",
             "conversion_price_approx": "0.3849300316",
             "shares": 389681,
-            "series": "seed_shadow"
+            "series": "seed_safes"
           }
         ],
         "new_shares": [
@@ -594,7 +594,7 @@
             "strike": "0.05"
           },
           {
-            "id": "seed_shadow",
+            "id": "seed_safes",
             "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
@@ -631,7 +631,7 @@
         "seniority": [
           [
             "seed",
-            "seed_shadow"
+            "seed_safes"
           ]
         ],
         "positions": [
@@ -662,12 +662,12 @@
           },
           {
             "holder": "priya",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 779362
           },
           {
             "holder": "marcus",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 389681
           },
           {
@@ -682,13 +682,13 @@
           "shares_by_security": {
             "common": 10638297,
             "options_0.05": 490000,
-            "seed_shadow": 1169043,
+            "seed_safes": 1169043,
             "seed": 5393570
           },
           "as_converted_by_security": {
             "common": "10638297",
             "options_0.05": "490000",
-            "seed_shadow": "1169043",
+            "seed_safes": "1169043",
             "seed": "5393570"
           },
           "fully_diluted": "21574280",
@@ -761,7 +761,7 @@
             "strike": "0.05"
           },
           {
-            "id": "seed_shadow",
+            "id": "seed_safes",
             "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
@@ -804,7 +804,7 @@
         "seniority": [
           [
             "seed",
-            "seed_shadow"
+            "seed_safes"
           ]
         ],
         "positions": [
@@ -835,12 +835,12 @@
           },
           {
             "holder": "priya",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 779362
           },
           {
             "holder": "marcus",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 389681
           },
           {
@@ -860,14 +860,14 @@
           "shares_by_security": {
             "common": 10638297,
             "options_0.05": 490000,
-            "seed_shadow": 1169043,
+            "seed_safes": 1169043,
             "seed": 5393570,
             "options_0.11": 1100000
           },
           "as_converted_by_security": {
             "common": "10638297",
             "options_0.05": "490000",
-            "seed_shadow": "1169043",
+            "seed_safes": "1169043",
             "seed": "5393570",
             "options_0.11": "1100000"
           },
@@ -968,7 +968,7 @@
             "strike": "0.05"
           },
           {
-            "id": "seed_shadow",
+            "id": "seed_safes",
             "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
@@ -1031,7 +1031,7 @@
           ],
           [
             "seed",
-            "seed_shadow"
+            "seed_safes"
           ]
         ],
         "positions": [
@@ -1062,12 +1062,12 @@
           },
           {
             "holder": "priya",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 779362
           },
           {
             "holder": "marcus",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 389681
           },
           {
@@ -1097,7 +1097,7 @@
           "shares_by_security": {
             "common": 10638297,
             "options_0.05": 490000,
-            "seed_shadow": 1169043,
+            "seed_safes": 1169043,
             "seed": 5393570,
             "options_0.11": 1100000,
             "series_a": 5781817
@@ -1105,7 +1105,7 @@
           "as_converted_by_security": {
             "common": "10638297",
             "options_0.05": "490000",
-            "seed_shadow": "1169043",
+            "seed_safes": "1169043",
             "seed": "5393570",
             "options_0.11": "1100000",
             "series_a": "5781817"
@@ -1181,7 +1181,7 @@
             "strike": "0.05"
           },
           {
-            "id": "seed_shadow",
+            "id": "seed_safes",
             "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
@@ -1250,7 +1250,7 @@
           ],
           [
             "seed",
-            "seed_shadow"
+            "seed_safes"
           ]
         ],
         "positions": [
@@ -1281,12 +1281,12 @@
           },
           {
             "holder": "priya",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 779362
           },
           {
             "holder": "marcus",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 389681
           },
           {
@@ -1331,7 +1331,7 @@
           "shares_by_security": {
             "common": 10638297,
             "options_0.05": 490000,
-            "seed_shadow": 1169043,
+            "seed_safes": 1169043,
             "seed": 5393570,
             "options_0.11": 1100000,
             "series_a": 5781817,
@@ -1340,7 +1340,7 @@
           "as_converted_by_security": {
             "common": "10638297",
             "options_0.05": "490000",
-            "seed_shadow": "1169043",
+            "seed_safes": "1169043",
             "seed": "5393570",
             "options_0.11": "1100000",
             "series_a": "5781817",
@@ -1445,7 +1445,7 @@
             "strike": "0.05"
           },
           {
-            "id": "seed_shadow",
+            "id": "seed_safes",
             "name": "Seed Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "455000/1182033",
@@ -1534,7 +1534,7 @@
           ],
           [
             "seed",
-            "seed_shadow"
+            "seed_safes"
           ]
         ],
         "positions": [
@@ -1565,12 +1565,12 @@
           },
           {
             "holder": "priya",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 779362
           },
           {
             "holder": "marcus",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "shares": 389681
           },
           {
@@ -1620,7 +1620,7 @@
           "shares_by_security": {
             "common": 10638297,
             "options_0.05": 490000,
-            "seed_shadow": 1169043,
+            "seed_safes": 1169043,
             "seed": 5393570,
             "options_0.11": 1100000,
             "series_a": 5781817,
@@ -1630,7 +1630,7 @@
           "as_converted_by_security": {
             "common": "10638297",
             "options_0.05": "490000",
-            "seed_shadow": "1169043",
+            "seed_safes": "1169043",
             "seed": "5393570",
             "options_0.11": "1100000",
             "series_a": "152639344610344468098431916410860/23210751954500413429338027",
@@ -1693,7 +1693,7 @@
             "tier": 3,
             "securities": [
               "seed",
-              "seed_shadow"
+              "seed_safes"
             ],
             "text": "The preference tier Seed Preferred and Seed Preferred (from SAFEs) is fully paid ($4,424,999.33). Above this exit value, the next dollar goes to the residual, shared as common."
           }
@@ -1741,7 +1741,7 @@
         "reasons": [
           {
             "code": "series_converts",
-            "security": "seed_shadow",
+            "security": "seed_safes",
             "converts": true,
             "text": "Seed Preferred (from SAFEs) converts to common. At this exit value its as-converted share (1,169,043 common shares at $0.5774 each = $674,999.64) equals its 1.5x preference of $674,999.64. Below it, staying preferred pays more; above it, converting pays more."
           }
@@ -1793,7 +1793,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -1829,12 +1829,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
@@ -1892,7 +1892,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.05": "0.00",
-              "seed_shadow": "0.00",
+              "seed_safes": "0.00",
               "seed": "0.00",
               "options_0.11": "0.00",
               "series_a": "0.00",
@@ -1911,7 +1911,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -1947,12 +1947,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
@@ -2010,7 +2010,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.05": "0.00",
-              "seed_shadow": "0.00",
+              "seed_safes": "0.00",
               "seed": "0.00",
               "options_0.11": "0.00",
               "series_a": "0.00",
@@ -2029,7 +2029,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -2065,12 +2065,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
@@ -2128,7 +2128,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.05": "0.00",
-              "seed_shadow": "0.00",
+              "seed_safes": "0.00",
               "seed": "0.00",
               "options_0.11": "0.00",
               "series_a": "5000000.21",
@@ -2147,7 +2147,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -2183,12 +2183,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "0.00"
               },
               {
@@ -2246,7 +2246,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.05": "0.00",
-              "seed_shadow": "0.00",
+              "seed_safes": "0.00",
               "seed": "0.00",
               "options_0.11": "0.00",
               "series_a": "14999996.21",
@@ -2265,7 +2265,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -2301,12 +2301,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -2364,7 +2364,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.05": "0.00",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "0.00",
               "series_a": "14999996.21",
@@ -2383,7 +2383,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -2419,12 +2419,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -2482,7 +2482,7 @@
             "class_totals": {
               "common": "231219.20",
               "options_0.05": "0.00",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "0.00",
               "series_a": "15142928.08",
@@ -2501,7 +2501,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "not_exercised",
@@ -2537,12 +2537,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -2600,7 +2600,7 @@
             "class_totals": {
               "common": "531914.85",
               "options_0.05": "0.00",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "0.00",
               "series_a": "15328807.93",
@@ -2619,7 +2619,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -2655,12 +2655,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -2718,7 +2718,7 @@
             "class_totals": {
               "common": "1170212.67",
               "options_0.05": "29400.00",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "0.00",
               "series_a": "15723381.99",
@@ -2737,7 +2737,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -2773,12 +2773,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -2836,7 +2836,7 @@
             "class_totals": {
               "common": "4066499.68",
               "options_0.05": "162802.99",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "299476.10",
               "series_a": "17513768.38",
@@ -2855,7 +2855,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -2891,12 +2891,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -2954,7 +2954,7 @@
             "class_totals": {
               "common": "4468084.74",
               "options_0.05": "181300.00",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "341000.00",
               "series_a": "17762014.64",
@@ -2973,7 +2973,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "keeps_preference",
+              "seed_safes": "keeps_preference",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3009,12 +3009,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "449999.76"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "224999.88"
               },
               {
@@ -3072,7 +3072,7 @@
             "class_totals": {
               "common": "6142500.00",
               "options_0.05": "258423.57",
-              "seed_shadow": "674999.64",
+              "seed_safes": "674999.64",
               "seed": "3749999.69",
               "options_0.11": "514134.55",
               "series_a": "18797081.36",
@@ -3091,7 +3091,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3127,12 +3127,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "541868.79"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "270934.40"
               },
               {
@@ -3190,7 +3190,7 @@
             "class_totals": {
               "common": "7396512.96",
               "options_0.05": "316183.41",
-              "seed_shadow": "812803.19",
+              "seed_safes": "812803.19",
               "seed": "3749999.69",
               "options_0.11": "643799.50",
               "series_a": "19572269.64",
@@ -3209,7 +3209,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3245,12 +3245,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "860888.66"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "430444.33"
               },
               {
@@ -3308,7 +3308,7 @@
             "class_totals": {
               "common": "11751136.51",
               "options_0.05": "516757.39",
-              "seed_shadow": "1291332.99",
+              "seed_safes": "1291332.99",
               "seed": "5957774.76",
               "options_0.11": "1094067.62",
               "series_a": "22264150.21",
@@ -3327,7 +3327,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3363,12 +3363,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "1381736.51"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "690868.26"
               },
               {
@@ -3426,7 +3426,7 @@
             "class_totals": {
               "common": "18860713.47",
               "options_0.05": "844224.53",
-              "seed_shadow": "2072604.77",
+              "seed_safes": "2072604.77",
               "seed": "9562299.15",
               "options_0.11": "1829197.93",
               "series_a": "26659049.54",
@@ -3445,7 +3445,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3481,12 +3481,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "2133213.58"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "1066606.79"
               },
               {
@@ -3544,7 +3544,7 @@
             "class_totals": {
               "common": "29118380.98",
               "options_0.05": "1316692.74",
-              "seed_shadow": "3199820.37",
+              "seed_safes": "3199820.37",
               "seed": "14762891.66",
               "options_0.11": "2889840.84",
               "series_a": "32999991.66",
@@ -3563,7 +3563,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3599,12 +3599,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "2485333.47"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "1242666.73"
               },
               {
@@ -3662,7 +3662,7 @@
             "class_totals": {
               "common": "33924820.02",
               "options_0.05": "1538077.34",
-              "seed_shadow": "3728000.20",
+              "seed_safes": "3728000.20",
               "seed": "17199735.21",
               "options_0.11": "3386826.68",
               "series_a": "32999991.66",
@@ -3681,7 +3681,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "keeps_preference",
               "options_0.05": "exercised",
@@ -3717,12 +3717,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "3910891.56"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "1955445.78"
               },
               {
@@ -3780,7 +3780,7 @@
             "class_totals": {
               "common": "53383698.46",
               "options_0.05": "2434353.35",
-              "seed_shadow": "5866337.35",
+              "seed_safes": "5866337.35",
               "seed": "27065301.38",
               "options_0.11": "5398874.87",
               "series_a": "32999991.66",
@@ -3799,7 +3799,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "converts",
               "options_0.05": "exercised",
@@ -3835,12 +3835,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "4298484.39"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "2149242.20"
               },
               {
@@ -3898,7 +3898,7 @@
             "class_totals": {
               "common": "58674343.37",
               "options_0.05": "2678040.48",
-              "seed_shadow": "6447726.59",
+              "seed_safes": "6447726.59",
               "seed": "29747635.19",
               "options_0.11": "5945927.60",
               "series_a": "36270488.89",
@@ -3917,7 +3917,7 @@
         "equilibria": [
           {
             "decisions": {
-              "seed_shadow": "converts",
+              "seed_safes": "converts",
               "seed": "converts",
               "series_a": "converts",
               "options_0.05": "exercised",
@@ -3953,12 +3953,12 @@
               },
               {
                 "holder": "priya",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "5861027.94"
               },
               {
                 "holder": "marcus",
-                "security": "seed_shadow",
+                "security": "seed_safes",
                 "amount": "2930513.97"
               },
               {
@@ -4016,7 +4016,7 @@
             "class_totals": {
               "common": "80003074.25",
               "options_0.05": "3660441.90",
-              "seed_shadow": "8791541.91",
+              "seed_safes": "8791541.91",
               "seed": "40561208.36",
               "options_0.11": "8151318.56",
               "series_a": "49455186.87",

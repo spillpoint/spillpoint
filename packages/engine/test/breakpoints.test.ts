@@ -256,7 +256,7 @@ describe("warrants (E4, E12, R29; M5d)", () => {
       holders: ["f", "l"].map((id) => ({ id, name: id })),
       securities: [
         { id: "common", name: "Common Stock", kind: "common" },
-        { id: "w", name: "Warrants for Common Stock ($1 strike)", kind: "warrant", strike: "1", underlying: "common" },
+        { id: "w", name: "Warrants for Common Stock ($1.00 strike)", kind: "warrant", strike: "1", underlying: "common" },
       ],
       seniority: [],
       positions: [
