@@ -103,7 +103,7 @@ function show(t: CapTableAfterEvent): void {
       // R25: with conversions, each piece at its own price, and where it went.
       for (const p of a.pieces ?? []) {
         const where = p.inA ? `in A, ${grouped(p.inA)} shares (exempt, or issued before ${a.series})` : p.counted ? "below CP1: counted in B and C" : "not below CP1: left out";
-        console.log(`  piece ${p.piece} at $${p.price.toFixed(6)}: ${where}`);
+        console.log(`  piece ${p.kind === "new_money" ? "new money" : p.id} at $${p.price.toFixed(6)}: ${where}`);
       }
     }
     for (const c of d.noteConversions) {
@@ -130,8 +130,10 @@ function show(t: CapTableAfterEvent): void {
   }
   if (!ct.unissuedPool.isZero()) rows.push(["Unissued pool", "", grouped(ct.unissuedPool), `${ct.unissuedPool.div(total).times(100).toFixed(2)}%`]);
   console.log(pad(rows));
-  if (t.unconvertedSafes.length) console.log(`SAFEs outstanding: ${t.unconvertedSafes.map((f) => `${f.id} $${grouped(f.purchaseAmount)}`).join(", ")}`);
-  if (t.unconvertedNotes.length) console.log(`Notes outstanding: ${t.unconvertedNotes.map((n) => `${n.id} $${grouped(n.principal)}`).join(", ")}`);
+  const safes = ct.unconvertedSafes ?? [];
+  const notes = ct.unconvertedNotes ?? [];
+  if (safes.length) console.log(`SAFEs outstanding: ${safes.map((f) => `${f.id} $${grouped(f.purchaseAmount)}`).join(", ")}`);
+  if (notes.length) console.log(`Notes outstanding: ${notes.map((n) => `${n.id} $${grouped(n.principal)}`).join(", ")}`);
   console.log(matches(t));
 }
 

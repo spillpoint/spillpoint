@@ -6,13 +6,14 @@ import type { Decimal } from "decimal.js";
 import { D } from "./decimal.ts";
 import { ImportRefusal } from "./errors.ts";
 import type { OcxCell, OcxSheet, OcxWorkbook } from "./ocx.ts";
+import type { OcxTerm } from "./stable-names.ts";
 
 /** OX13: every refusal names the workbook's own text: a name, a row's number, a tab, or a tab and header. */
-export function refuse(kind: "unsupported" | "malformed", term: string, subject: string, what: string): never {
+export function refuse(kind: "unsupported" | "malformed", term: OcxTerm, subject: string, what: string): never {
   throw new ImportRefusal("ocx", kind, term, subject, `${subject ? `${subject}: ` : ""}${what}`);
 }
-export const malformed = (term: string, subject: string, what: string): never => refuse("malformed", term, subject, what);
-export const unsupported = (term: string, subject: string, what: string): never => refuse("unsupported", term, subject, what);
+export const malformed = (term: OcxTerm, subject: string, what: string): never => refuse("malformed", term, subject, what);
+export const unsupported = (term: OcxTerm, subject: string, what: string): never => refuse("unsupported", term, subject, what);
 
 /** OX5: a header matches once runs of spaces and line breaks are one space, the ends trimmed and trailing `*` marks dropped. */
 export function normal(text: string): string {

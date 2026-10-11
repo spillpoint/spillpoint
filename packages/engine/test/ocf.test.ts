@@ -7,8 +7,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { D, OcfRefusal, buildCapTables, findBreakpoints, prepare, readCapTable, readInputs, readOcf, solve } from "../src/index.ts";
-import type { Breakpoint, Decisions, OcfFile, OcfImport } from "../src/index.ts";
+import { D, ImportRefusal, buildCapTables, findBreakpoints, prepare, readCapTable, readInputs, readOcf, solve } from "../src/index.ts";
+import type { Breakpoint, CapTableImport, Decisions, OcfFile } from "../src/index.ts";
 import { CASES_DIR, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 import { OCF_FIXTURE_CASES, OCF_PACKAGE_CASES, fixtureNames, packageFiles, withFixture } from "./support/ocf.ts";
 
@@ -19,7 +19,7 @@ type Json = Record<string, unknown>;
  * What an OCF case records (C16): the import as of 0.4.0. The issue order came in 0.5.0 (O14) and isn't in the locked
  * files, so it's tested on its own, below, against the locked starting tables of cases 26 and 27.
  */
-type Recorded = Omit<OcfImport, "issue_order">;
+type Recorded = Omit<CapTableImport, "issue_order">;
 interface PackageExpected {
   result: Recorded;
   locked_case?: string;
@@ -28,10 +28,10 @@ interface PackageExpected {
 interface Adds {
   read?: Record<string, number>;
   not_needed?: Record<string, number>;
-  notes?: OcfImport["report"]["notes"];
+  notes?: CapTableImport["report"]["notes"];
   unconverted_safes?: Json[];
   unconverted_notes?: Json[];
-  to_fill?: OcfImport["to_fill"];
+  to_fill?: CapTableImport["to_fill"];
 }
 interface FixtureExpected {
   base: string;
@@ -49,7 +49,8 @@ function refusalOf(files: OcfFile[]): { kind: string; term: string; subject: str
     readOcf(files);
     return null;
   } catch (e) {
-    if (!(e instanceof OcfRefusal)) throw e;
+    if (!(e instanceof ImportRefusal)) throw e;
+    expect(e.format).toBe("ocf");
     return { kind: e.kind, term: e.term, subject: e.subject };
   }
 }

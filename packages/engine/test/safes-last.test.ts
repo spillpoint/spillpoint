@@ -23,12 +23,12 @@ describe("Larkspur at a sale, where the Seed and the SAFEs went round in a circl
     const { answers } = solve(pc, x);
     expect(answers).toHaveLength(1);
     expect(answers[0]!.decisions.converted.has("cls-seed")).toBe(false);
-    expect(answers[0]!.payout.bySecurity.get("cls-seed")!.toString()).toBe("2925000");
+    expect(answers[0]!.payout.classTotals.get("cls-seed")!.toString()).toBe("2925000");
     // Converting, the Seed joins the SAFEs' count, and each SAFE's conversion shares are then worth more than its cash.
     const converting = payout(pc, x, { converted: new Set(["cls-seed", "safe-x1", "safe-s3"]), exercised: new Set(OPTIONS) });
     const cashX = payout(pc, x, { converted: new Set(["cls-seed", "safe-s3"]), exercised: new Set(OPTIONS) });
-    expect(converting.bySecurity.get("safe-x1")!.gt(cashX.bySecurity.get("safe-x1")!)).toBe(true);
-    expect(converting.bySecurity.get("cls-seed")!.toDecimalPlaces(2).toString()).toBe("2921654.22");
+    expect(converting.classTotals.get("safe-x1")!.gt(cashX.classTotals.get("safe-x1")!)).toBe(true);
+    expect(converting.classTotals.get("cls-seed")!.toDecimalPlaces(2).toString()).toBe("2921654.22");
   });
 
   it.each([
@@ -39,7 +39,7 @@ describe("Larkspur at a sale, where the Seed and the SAFEs went round in a circl
     for (let x = lo; x <= hi; x += 12_500) {
       const solution = solve(pc, new D(x));
       expect(solution.answers, `$${x}`).toHaveLength(1);
-      expect(solution.complete).toBe(true);
+      expect(Object.keys(solution).sort()).toEqual(["answers", "exitValue"]);
     }
   });
 
@@ -91,7 +91,7 @@ describe("several SAFEs that could settle more than one way take the most conver
     const { answers } = solve(pc, new D(5250000));
     expect(answers).toHaveLength(1);
     expect([...answers[0]!.decisions.converted].sort()).toEqual(["safe_x", "safe_y"]);
-    expect(answers[0]!.payout.bySecurity.get("safe_x")!.toString()).toBe("525000");
+    expect(answers[0]!.payout.classTotals.get("safe_x")!.toString()).toBe("525000");
   });
 
   it("bends at $5,000,000, where converting together first pays, and says so", () => {

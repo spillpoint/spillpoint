@@ -124,7 +124,7 @@ describe("what is refused, never skipped", () => {
       unconverted_safes: [{ id: "x", holder: "s", purchase_amount: "100000", discount: "0.2" }],
     });
     const [answer] = solve(prepare(ct, null), new D(3500000)).answers;
-    const paid = answer!.payout.bySecurity;
+    const paid = answer!.payout.classTotals;
     expect([...answer!.decisions.converted]).toEqual(["x"]);
     expect([paid.get("p")!, paid.get("common")!, paid.get("x")!].map((v) => v.toString())).toEqual(["2000000", "1375000", "125000"]);
     expect(answer!.payout.atCap).toEqual(["p"]);

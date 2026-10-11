@@ -15,9 +15,10 @@ const ZERO = new D(0);
  * everything else one for one.
  */
 function asConverted(pc: PreparedCapTable, security: string, shares: Decimal): Decimal {
-  const warrant = pc.warrants.get(security);
-  const series = pc.preferred.get(warrant ? warrant.underlying : security);
-  return series ? shares.times(series.conversionRatio) : shares;
+  const of = (id: string) => pc.capTable.securities.find((s) => s.id === id);
+  const s = of(security);
+  const series = of(s?.kind === "warrant" ? s.underlying : security);
+  return series?.kind === "preferred" ? shares.times(series.conversionRatio) : shares;
 }
 
 /**

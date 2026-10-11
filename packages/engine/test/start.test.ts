@@ -124,8 +124,8 @@ describe("a starting table", () => {
     expect(() => readCapTable(uncapped)).toThrow(UnsupportedTermError);
     expect(company([{ ...start, cap_table: uncapped }])).not.toThrow();
     const [t] = buildCapTables({ holders: inputs.holders, events: [start] });
-    expect(t!.unconvertedSafes.map((f) => f.id)).toEqual(["safe-x1", "safe-s3"]);
-    expect(t!.unconvertedNotes.map((n) => n.id)).toEqual(["note-n1"]);
+    expect(t!.capTable.unconvertedSafes!.map((f) => f.id)).toEqual(["safe-x1", "safe-s3"]);
+    expect(t!.capTable.unconvertedNotes!.map((n) => n.id)).toEqual(["note-n1"]);
     expect(t!.details).toEqual({ kind: "start" });
   });
 

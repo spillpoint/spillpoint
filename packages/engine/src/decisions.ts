@@ -30,9 +30,9 @@
 //   doesn't pick one (E8; Jordan, after #73). Above 12 they're solved from
 //   both ends: from "nobody converts" and from "everyone converts", one at a
 //   time makes the switch that gains it the most, until no one wants to
-//   switch. If the two ends agree, that is the answer; if not, the answers
-//   found are reported and flagged as possibly incomplete. Going round in a
-//   circle is an error.
+//   switch. If the two ends agree, that is the answer; if not, both are
+//   stable and pay holders differently, so the engine stops as above (E8).
+//   Going round in a circle is an error.
 // - Where several decision sets pay everyone the same, the reported one has
 //   the fewest conversions and exercises (E5).
 // - Work is reused from one exit value to the next (05c4). With the decisions
@@ -51,8 +51,8 @@ import { money } from "./reasons.ts";
 import { EVERYWHERE, inside, meet, pastZero, payoutWithLines, signHolds } from "./lines.ts";
 import type { Interval, Line, PayoutLines } from "./lines.ts";
 import type { ConversionGroup, OptionClass } from "./model.ts";
-import { payout } from "./waterfall.ts";
-import type { Decisions, Payout, PreparedCapTable } from "./waterfall.ts";
+import { publicPayout, settle, working } from "./waterfall.ts";
+import type { Decisions, Payout, Prepared, PreparedCapTable, Settlement } from "./waterfall.ts";
 
 /** One stable answer: the decisions and what they pay. */
 export interface Answer {
@@ -60,15 +60,24 @@ export interface Answer {
   payout: Payout;
 }
 
-export interface Solution {
-  exitValue: Decimal;
-  /** Every distinct stable answer (E8). Almost always exactly one. */
-  answers: Answer[];
-  /** False only when the list may be incomplete: more than 12 series to check and the two ends disagreed (E15). */
-  complete: boolean;
+/** An answer as the solver works with it, its payout with the finder's workings (Settlement). Internal. */
+export interface Worked {
+  decisions: Decisions;
+  payout: Settlement;
 }
 
-export interface SolveOptions {
+export interface Solution {
+  exitValue: Decimal;
+  /**
+   * Exactly one stable answer. Where a second is stable and pays holders differently, solve stops with a
+   * NoAnswerError naming them (E8); answers that pay every holder the same are one (E5). A list, so that reporting
+   * both, on the later list, can come without a break.
+   */
+  answers: Answer[];
+}
+
+/** How the solver searches. Internal: since 05c5 every combination is checked with 12 or fewer decision-makers anyway (the naming review, item 8). */
+interface SolveOptions {
   /** Check every combination even when the two ends agree. Tests use it to confirm both routes give the same answers. */
   checkEveryCombination?: boolean;
 }
@@ -79,8 +88,14 @@ export const MAX_CHECKED = 12;
 /** Group vote shares that differ by less than this are equal; 40-digit division can leave a trace. */
 const SHARE_TIE = new D("1e-30");
 
-export function solve(pc: PreparedCapTable, exitValue: Decimal, options: SolveOptions = {}): Solution {
-  return new AtExit(pc, exitValue, options).solve();
+/** Who converts, who exercises, and what each holder gets at one exit value. */
+export function solve(pc: PreparedCapTable, exitValue: Decimal): Solution {
+  return new AtExit(working(pc), exitValue, {}).solve();
+}
+
+/** solve, checking every combination even where the two ends agree: the tests' check that both routes agree. Internal. */
+export function solveCheckingEveryCombination(pc: PreparedCapTable, exitValue: Decimal): Solution {
+  return new AtExit(working(pc), exitValue, { checkEveryCombination: true }).solve();
 }
 
 // ---------- the choice among series that decide for themselves (E15) ----------
@@ -198,7 +213,7 @@ export function settleChoice(choice: Choice, checkEveryCombination = false): Set
 // ---------- one exit value ----------
 
 /** Whether two payouts pay every security the same, and so every holder (E9). */
-function samePayouts(a: Payout, b: Payout): boolean {
+function samePayouts(a: Settlement, b: Settlement): boolean {
   return [...a.bySecurity].every(([id, v]) => sameAmount(v, b.bySecurity.get(id)!));
 }
 
@@ -217,7 +232,7 @@ function narrow(h: Holds, i: Holds): Holds {
 }
 
 /** An answer as the solver weighs it: with its payout's lines, if known, and where it holds. */
-interface Weighed extends Answer {
+interface Weighed extends Worked {
   lines: PayoutLines | null;
   holds: Holds;
 }
@@ -285,10 +300,10 @@ interface SafeCompare {
 }
 
 /** What each set of decisions settled to, kept across exit values for each prepared cap table, with the comparisons it turned on. */
-const OPTIONS_SETTLED = new WeakMap<PreparedCapTable, Map<string, { exercised: Set<string>; checks: Check<OptionCompare>[] }>>();
-const SAFES_SETTLED = new WeakMap<PreparedCapTable, Map<string, { path: Set<string>[]; checks: Check<SafeCompare>[] }>>();
+const OPTIONS_SETTLED = new WeakMap<Prepared, Map<string, { exercised: Set<string>; checks: Check<OptionCompare>[] }>>();
+const SAFES_SETTLED = new WeakMap<Prepared, Map<string, { path: Set<string>[]; checks: Check<SafeCompare>[] }>>();
 
-function kept<T>(store: WeakMap<PreparedCapTable, Map<string, T>>, pc: PreparedCapTable): Map<string, T> {
+function kept<T>(store: WeakMap<Prepared, Map<string, T>>, pc: Prepared): Map<string, T> {
   let byKey = store.get(pc);
   if (!byKey) store.set(pc, (byKey = new Map()));
   return byKey;
@@ -296,7 +311,7 @@ function kept<T>(store: WeakMap<PreparedCapTable, Map<string, T>>, pc: PreparedC
 
 /** What decides the answer at one exit value: the answer, and how far each deciding quantity is from changing it. */
 export interface Snapshot {
-  answer: Answer;
+  answer: Worked;
   /**
    * Each quantity whose sign decides something: a tier not yet paid in full,
    * a cap not yet reached, the next option class's net if exercised, a
@@ -326,12 +341,12 @@ interface Watched {
  * the plain message stops the finder. Internal: the breakpoint finder's.
  */
 export class StabilityWatch {
-  private readonly pc: PreparedCapTable;
+  private readonly pc: Prepared;
   private watched: Watched[] | null = null;
   /** False where it can't follow: past 12 decision-makers (E15), fewer than two, or payouts that curve (X17). */
   following = true;
 
-  constructor(pc: PreparedCapTable) {
+  constructor(pc: Prepared) {
     this.pc = pc;
   }
 
@@ -382,12 +397,12 @@ export class StabilityWatch {
 const UNCERTAIN_STEP = new D("1e-6");
 
 /** The answer at one exit value with its margins, for the breakpoint finder. Internal. */
-export function snapshotAt(pc: PreparedCapTable, exitValue: Decimal): Snapshot {
+export function snapshotAt(pc: Prepared, exitValue: Decimal): Snapshot {
   return new AtExit(pc, exitValue, {}).snapshot();
 }
 
 class AtExit {
-  private readonly pc: PreparedCapTable;
+  private readonly pc: Prepared;
   private readonly x: Decimal;
   private readonly options: SolveOptions;
   private readonly settled = new Map<string, Weighed>();
@@ -405,7 +420,7 @@ class AtExit {
   /** For each set of the others' choices, the sets of SAFEs converting that settling them went through, the answer's last (E20). */
   private readonly followedPaths = new Map<string, Set<string>[]>();
 
-  constructor(pc: PreparedCapTable, x: Decimal, options: SolveOptions) {
+  constructor(pc: Prepared, x: Decimal, options: SolveOptions) {
     this.pc = pc;
     this.x = x;
     this.options = options;
@@ -428,16 +443,21 @@ class AtExit {
 
   solve(): Solution {
     if (!this.group) {
-      const { answers, complete } = this.settleFree(new Set());
-      return { exitValue: this.x, answers: answers.map((a) => this.exact(a)), complete };
+      const { answers } = this.settleFree(new Set());
+      return { exitValue: this.x, answers: answers.map((a) => this.exact(a)) };
     }
     const { converting, staying } = this.groupChoices();
-    return { exitValue: this.x, answers: [this.exact(this.groupVotes(converting, staying) ? converting : staying)], complete: true };
+    return { exitValue: this.x, answers: [this.exact(this.groupVotes(converting, staying) ? converting : staying)] };
   }
 
   /** An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. */
-  private exact(a: Answer): Answer {
-    return { decisions: a.decisions, payout: payout(this.pc, this.x, a.decisions) };
+  private exact(a: Worked): Answer {
+    return { decisions: a.decisions, payout: publicPayout(settle(this.pc, this.x, a.decisions)) };
+  }
+
+  /** The same, as the breakpoint finder works with it: the settlement, with its workings. */
+  private exactWorked(a: Worked): Worked {
+    return { decisions: a.decisions, payout: settle(this.pc, this.x, a.decisions) };
   }
 
   /** E17: for each of the group's two choices, everyone else settles. Each must settle one way. */
@@ -457,9 +477,9 @@ class AtExit {
   }
 
   /** Each voter's preference for converting: its group payout converting minus staying (E11). */
-  private voterMargins(converting: Answer, staying: Answer): Map<string, Decimal> {
+  private voterMargins(converting: Worked, staying: Worked): Map<string, Decimal> {
     const members = new Set(this.group!.series);
-    const onGroup = (a: Answer, holder: string) =>
+    const onGroup = (a: Worked, holder: string) =>
       a.payout.lines.filter((l) => l.holder === holder && members.has(l.security)).reduce((sum, l) => sum.plus(l.amount), ZERO);
     const out = new Map<string, Decimal>();
     for (const p of this.pc.capTable.positions) {
@@ -475,7 +495,7 @@ class AtExit {
    * its group shares converting than staying; an indifferent holder votes to
    * stay. Votes are weighted by as-converted shares of the group's series.
    */
-  private groupVotes(converting: Answer, staying: Answer): boolean {
+  private groupVotes(converting: Worked, staying: Worked): boolean {
     const group = this.group!;
     const members = new Set(group.series);
     const weight = new Map<string, Decimal>();
@@ -497,7 +517,7 @@ class AtExit {
   }
 
   /** The choices in an answer that lead (E20): the series and notes converted and the warrants exercised. */
-  private chosen(a: Answer): Set<string> {
+  private chosen(a: Worked): Set<string> {
     return new Set([...[...a.decisions.converted].filter((id) => !this.pc.safes.has(id)), ...[...a.decisions.exercised].filter((id) => this.warrants.has(id))]);
   }
 
@@ -540,7 +560,7 @@ class AtExit {
    * one's conversion joins the SAFEs' count, so the SAFEs convert and dilute
    * it, and the other then keeps its preference.
    */
-  private severalAnswers(answers: Answer[]): NoAnswerError {
+  private severalAnswers(answers: Worked[]): NoAnswerError {
     const choices = answers.map((a) => this.chosen(a));
     const ids = this.free.filter((id) => choices.some((c) => c.has(id) !== choices[0]!.has(id)));
     const holderName = (h: string) => this.pc.capTable.holders.find((x) => x.id === h)?.name ?? h;
@@ -746,13 +766,13 @@ class AtExit {
       const { answers, complete } = this.settleFree(new Set());
       const answer = this.single(answers, complete);
       this.addSettled(margins, "answer", answer, new Set());
-      return { answer: this.exact(answer), margins };
+      return { answer: this.exactWorked(answer), margins };
     }
     const { converting, staying } = this.groupChoices();
     this.addSettled(margins, "converts", converting, new Set(this.group.series));
     this.addSettled(margins, "stays", staying, new Set());
     for (const [holder, m] of this.voterMargins(converting, staying)) margins.set(`vote:${holder}`, m);
-    return { answer: this.exact(this.groupVotes(converting, staying) ? converting : staying), margins };
+    return { answer: this.exactWorked(this.groupVotes(converting, staying) ? converting : staying), margins };
   }
 
   /**
@@ -796,7 +816,7 @@ class AtExit {
   }
 
   /** Every stable answer here, by checking every combination: stops with the plain message where there's more than one. */
-  answerHere(): Answer {
+  answerHere(): Worked {
     if (this.group) return this.solveGroup();
     const { answers, complete } = this.settleFree(new Set());
     return this.single(answers, complete);
@@ -808,7 +828,7 @@ class AtExit {
     return this.groupVotes(converting, staying) ? converting : staying;
   }
 
-  private single<T extends Answer>(answers: T[], complete: boolean): T {
+  private single<T extends Worked>(answers: T[], complete: boolean): T {
     if (answers.length !== 1 || !complete) {
       throw new NoAnswerError(
         `${this.where} there ${answers.length === 1 ? "may be more than one stable answer" : `are ${answers.length} stable answers`}; ` +
@@ -824,8 +844,8 @@ class AtExit {
    * it (E20). Each SAFE's gain from switching is a margin in both, since where
    * it reaches zero the SAFEs settle differently.
    */
-  private addSettled(margins: Map<string, Decimal>, label: string, answer: Answer, fixed: ReadonlySet<string>): void {
-    const tag = (a: Answer) => `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
+  private addSettled(margins: Map<string, Decimal>, label: string, answer: Worked, fixed: ReadonlySet<string>): void {
+    const tag = (a: Worked) => `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
     this.addFollowed(margins, tag, tag(answer), answer);
     for (const sid of this.free) {
       const alternative = this.followed(toggled(new Set([...fixed, ...this.chosen(answer)]), sid));
@@ -840,7 +860,7 @@ class AtExit {
    * SAFE converts" through fewer: at each set on the way, each converting
    * SAFE's gain from staying decides whether it drops, so those are margins too.
    */
-  private addFollowed(margins: Map<string, Decimal>, tag: (a: Answer) => string, prefix: string, a: Answer): void {
+  private addFollowed(margins: Map<string, Decimal>, tag: (a: Worked) => string, prefix: string, a: Worked): void {
     this.addStructure(margins, prefix, a);
     if (this.safes.length === 0) return;
     const leaders = this.chosen(a);
@@ -865,9 +885,9 @@ class AtExit {
    * edge, and the next option class's net if it were exercised. A tier's margin
    * and the carve-out's edge are straight lines even where payouts curve (X17).
    */
-  private addStructure(margins: Map<string, Decimal>, tag: string, a: Answer): void {
+  private addStructure(margins: Map<string, Decimal>, tag: string, a: Worked): void {
     const edges = this.pc.capTable.carveOut?.tiers;
-    const structural = (prefix: string, p: Payout) => {
+    const structural = (prefix: string, p: Settlement) => {
       for (const t of p.tiers) if (!t.full) margins.set(`${prefix}|tier:${t.index}`, t.paid.minus(t.claim));
       for (const [sid, room] of p.capRoom) margins.set(`${prefix}|cap:${sid}`, room);
       const edge = p.carveOut && edges ? edges[p.carveOut.band]?.to : null;

@@ -10,23 +10,12 @@ import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
-import { CARVE_OUT, carveOutAt, payout } from "./waterfall.ts";
-import type { PreparedCapTable } from "./waterfall.ts";
+import type { ReasonCode } from "./stable-names.ts";
+import { CARVE_OUT, carveOutAt, settle } from "./waterfall.ts";
+import type { Prepared } from "./waterfall.ts";
 
-export type ReasonCode =
-  | "tier_fully_paid"
-  | "cap_reached"
-  | "option_in_the_money"
-  | "warrant_in_the_money"
-  | "series_converts"
-  | "safe_cash_out_paid"
-  | "safe_switches"
-  | "note_repayment_paid"
-  | "note_switches"
-  | "carve_out_tier"
-  | "payouts_jump"
-  | "payouts_curve"
-  | "other";
+/** What a breakpoint's reason is about (stable-names.ts). */
+export type { ReasonCode };
 
 export interface Reason {
   code: ReasonCode;
@@ -90,7 +79,7 @@ const JUST_ABOVE = new D("1e-12");
 // The wording is for founders: no assumption codes in the text (they stay in
 // the structured fields and in the code comments), and money in plain dollars.
 
-export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot, above: Snapshot, jumps: boolean): Reason[] {
+export function describeChange(pc: Prepared, x: Decimal, below: Snapshot, above: Snapshot, jumps: boolean): Reason[] {
   const { capTable } = pc;
   const name = new Map<string, string>([
     ...capTable.holders.map((h) => [h.id, h.name] as [string, string]),
@@ -103,8 +92,8 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   const before = below.answer.decisions;
   const after = above.answer.decisions;
   // Both answers paid out at the breakpoint itself: the outcome from below, and the limit of the outcome from above.
-  const atBefore = payout(pc, x, before);
-  const atAfter = payout(pc, x, after);
+  const atBefore = settle(pc, x, before);
+  const atAfter = settle(pc, x, after);
   const reasons: Reason[] = [];
 
   // E20: the SAFEs' greater-of comes last. Where a series or a note switches and SAFEs switch with it, the SAFEs
@@ -338,7 +327,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
       // so they switch together where converting with the others first pays (12k).
       const others = together(f.id);
       if (others.length > 0 && f.postMoneyCap) {
-        const alone = payout(pc, x, { converted: new Set([...before.converted, f.id]), exercised: before.exercised }).bySecurity.get(f.id)!;
+        const alone = settle(pc, x, { converted: new Set([...before.converted, f.id]), exercised: before.exercised }).bySecurity.get(f.id)!;
         if (alone.lt(f.purchaseAmount)) {
           const one = others.length === 1;
           text +=
@@ -457,7 +446,7 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
   if (jumps) {
     // The new outcome's limit, just above x: at x itself it may not exist yet, as for a SAFE with no cap,
     // which can convert only above the point where it first can (X9).
-    const justAbove = payout(pc, x.plus(JUST_ABOVE), after);
+    const justAbove = settle(pc, x.plus(JUST_ABOVE), after);
     const moves: string[] = [];
     for (const [sid, was] of atBefore.classTotals) {
       const is = justAbove.classTotals.get(sid)!;
@@ -498,12 +487,12 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
  * it; with preferred, what is left after the preferences, since participating or converted preferred shares it too
  * (12i, 13h; Jordan, 03a review).
  */
-function leftFor(pc: PreparedCapTable, what: string): string {
+function leftFor(pc: Prepared, what: string): string {
   return pc.preferred.size > 0 ? "what is left after the preferences" : `what is left for common and ${what}`;
 }
 
 /** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs and notes converting. */
-function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
+function sharers(pc: Prepared, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
   const safes = [...pc.safes.keys(), ...pc.notes.keys()].filter((id) => d.converted.has(id));
   return pc.capTable.securities
     .filter((s) => {

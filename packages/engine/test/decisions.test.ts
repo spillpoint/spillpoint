@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { D, UnsupportedTermError, prepare, readCapTable, solve } from "../src/index.ts";
 import { sameAmount } from "../src/decimal.ts";
+import { solveCheckingEveryCombination } from "../src/decisions.ts";
 import { readInputs } from "../src/case.ts";
 import type { Answer, Decisions } from "../src/index.ts";
 import { EXIT_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
@@ -28,7 +29,7 @@ describe.each(EXIT_CASES)("%s", (name) => {
 
   it.each(expectedPoints(name).map((p) => [p.label, p] as const))("solves $%s: the recorded decisions and payouts", (_, point) => {
     const solution = solve(pc, point.exitValue);
-    expect(solution.complete).toBe(true);
+    expect(Object.keys(solution).sort()).toEqual(["answers", "exitValue"]);
     expect(solution.answers).toHaveLength(point.equilibria.length);
 
     solution.answers.forEach((answer: Answer, i) => {
@@ -49,7 +50,7 @@ describe.each(EXIT_CASES)("%s", (name) => {
     });
 
     // Checking every combination gives the same answers as solving from both ends.
-    const everything = solve(pc, point.exitValue, { checkEveryCombination: true });
+    const everything = solveCheckingEveryCombination(pc, point.exitValue);
     expect(everything.answers.map((a) => describeDecisions(a.decisions))).toEqual(
       solution.answers.map((a) => describeDecisions(a.decisions)),
     );
@@ -88,8 +89,8 @@ describe("options follow the price, and a group decides first (E16, E17)", () =>
     expect(others).toHaveLength(0);
     expect(describeDecisions(answer!.decisions)).toEqual({ converted: ["a", "b"], exercised: ["o"] });
     const price = new D(7450000).div(6500000);
-    expect(sameAmount(answer!.payout.bySecurity.get("b")!, price.times(3000000))).toBe(true);
-    expect(sameAmount(answer!.payout.bySecurity.get("o")!, price.minus("0.5").times(500000))).toBe(true);
+    expect(sameAmount(answer!.payout.classTotals.get("b")!, price.times(3000000))).toBe(true);
+    expect(sameAmount(answer!.payout.classTotals.get("o")!, price.minus("0.5").times(500000))).toBe(true);
   });
 
   it("refuses more than one conversion group", () => {

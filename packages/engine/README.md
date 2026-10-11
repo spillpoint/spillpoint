@@ -138,7 +138,7 @@ const company = {
 };
 
 // The cap table after each event.
-for (const { event, capTable, unconvertedSafes, details } of buildCapTables(company)) {
+for (const { event, capTable, details } of buildCapTables(company)) {
   console.log(`After ${event}:`);
   if (details.kind === "priced_round") {
     console.log(`  priced at $${details.price.toFixed(6)}; the pool tops up by ${details.poolTopUp}`);
@@ -148,7 +148,7 @@ for (const { event, capTable, unconvertedSafes, details } of buildCapTables(comp
   }
   for (const p of capTable.positions) console.log(`  ${p.holder} on ${p.security}: ${p.shares}`);
   console.log(`  unissued pool: ${capTable.unissuedPool}`);
-  for (const f of unconvertedSafes) console.log(`  ${f.id} outstanding: $${toCents(f.purchaseAmount)}`);
+  for (const f of capTable.unconvertedSafes ?? []) console.log(`  ${f.id} outstanding: $${toCents(f.purchaseAmount)}`);
 }
 
 // An exit on the cap table after the Series A.
@@ -386,14 +386,14 @@ fund on seed: $4000000.00
 - **Seed's participation is blank.** OCF gives Seed no participation cap, which could mean non-participating or participating without a cap. Once you say which, the cap table reads like any other.
 - **At $20M the fund converts:** its 20% as common is $4M, more than its $3M preference.
 
-**What an import gives,** a `CapTableImport` *(0.6.0: the name both imports share; `OcfImport`, its old name, stays until 0.7.0)*:
+**What an import gives,** a `CapTableImport` *(0.6.0: the name both imports share; 0.7.0: its old name, `OcfImport`, is gone)*:
 - `as_of`: the package's date.
 - `cap_table`: the cap table in the input format below, with `null` wherever OCF doesn't settle a term. OCF has no participation flag, no anti-dilution, no cumulative dividends and no conversion groups, so those are left blank or noted.
 - `issue_order` *(0.5.0)*: its preferred series, SAFEs and notes, earliest issued first, ready to pass as a `start` event's `issue_order` when you build a round on the import. A series is dated by its first issuance, and a SAFE or note by its own, or by the one it came from by a transfer. One dated the same day as a series counts as issued after it.
 - `to_fill`: each blank, for you to fill in before `readCapTable`.
 - `report`: what was read, by object type; what was read and set aside, because it doesn't change payouts (`not_needed`), such as vesting, valuations and legends; and a `notes` line, by code, for each choice the import made.
 
-**Anything it won't read is refused** with an `ImportRefusal` *(0.6.0)*, carrying:
+**Anything it won't read is refused** with an `ImportRefusal` *(0.6.0; 0.7.0: before, `readOcf` threw an `OcfRefusal`, a subclass, which is gone)*, carrying:
 - its `format`: `"ocf"`
 - its `kind`: `"unsupported"` for valid OCF that spillpoint doesn't model, or `"malformed"` for files that disagree with each other or with OCF
 - a `term` naming the problem
@@ -497,7 +497,7 @@ seed_fund on seed_preferred: $4000000.00
 
 ## What it covers
 
-Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)* or *(0.6.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)* or *(0.7.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -563,7 +563,7 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)* or *(0.6.0)* are new in 
 - **Anti-dilution in a down round:**
   - **Methods:** broad-based weighted average, narrow-based weighted average, and full ratchet.
   - **Toggles:** the unissued pool in A, the adjustment shares in the round's price, and rounding the new conversion price to $0.0001 or $0.01.
-  - **With SAFEs and notes converting** *(0.3.0)*: each conversion is a piece of the round of its own, tested at the price it converts at, as the new money is at the round's price. A series is adjusted when any piece is priced below its conversion price, and only those pieces count in B and C: what was paid (a SAFE's purchase amount, a note's principal plus interest) and their shares. Each adjustment reports its `pieces`.
+  - **With SAFEs and notes converting** *(0.3.0)*: each conversion is a piece of the round of its own, tested at the price it converts at, as the new money is at the round's price. A series is adjusted when any piece is priced below its conversion price, and only those pieces count in B and C: what was paid (a SAFE's purchase amount, a note's principal plus interest) and their shares. Each adjustment reports its `pieces`, each with its `kind` (`"new_money"`, `"safe"` or `"note"`), its `id` (null for the new money), its `price`, whether it was `counted`, and its shares `inA` where it counted there instead *(0.7.0: before, a `piece` field, "new money" or an id)*.
   - **A conversion that doesn't count against a series** goes into its A at the shares it receives: when the round exempts conversions (`anti_dilution_exempts_conversions`, a charter carve-out or a waiver), or when the SAFE or note was issued before the series *(0.3.0)*.
 - **Pay-to-play:**
   - **Each holder's requirement** is its share of the named series × the amount offered.
@@ -649,29 +649,200 @@ Every modeling choice the engine makes is written down, with its default, in the
 
 All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js) at 40 significant digits, never floating point. Amounts are reported as Decimals: use `toCents` to round half-up to the cent, or `new D("20000000")` to make one. The engine is checked against an independent calculator that uses exact fractions, and agrees with it to the cent.
 
+**`D` is decimal.js's `Decimal`,** at 40 significant digits with half-up rounding *(0.7.0: said here)*. Every amount, price and share count the API takes or returns is one, so it's part of the API: a major decimal.js release that changes `Decimal` would be a major spillpoint release. spillpoint stays on decimal.js 10 (`^10.6.0`), and moves to a new major only with a new major of its own.
+
 ## API
 
 | Function | What it does |
 |---|---|
 | `readExit(json)`, `readCapTable(json)` | Read and check an input. |
-| `buildCapTables(company)` | Build the cap table after each event. Each comes with the SAFEs and notes still outstanding and what the event worked out. |
+| `buildCapTables(company)` | Build the cap table after each event, with what the event worked out. The SAFEs and notes still outstanding are on its `capTable` *(0.7.0: no longer also beside it)*. |
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
 | `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
 | `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |
-| `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps, and each note's interest, repayment and conversion. `exitDate` is needed only for dividends and notes. |
-| `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
-| `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
+| `prepare(capTable, exitDate)` | Prepare a cap table for exit values, to pass to `solve`, `payout`, `findBreakpoints` and `paySchedule`. The engine works out the fixed quantities once, and keeps them inside: what you get back shows `capTable` and `exitDate` *(0.7.0: before, 13 working quantities besides)*. Each series' preference, accrued dividends, cap and as-converted shares are on a payout's `series`. `exitDate` is needed only for dividends and notes. |
+| `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns `{ exitValue, answers }`, where `answers` holds the one stable answer: its `decisions` and its `payout`, with its lines, holder totals and class totals. Where a second stable answer pays holders differently, it stops with a `NoAnswerError` instead. *(0.7.0: no `complete` field, and no third argument.)* |
+| `payout(table, exitValue, decisions)` | Pay out with decisions you choose. A payout has its `lines`, `holderTotals` and `classTotals`, each series as it stands (`series`), each SAFE and note, the tiers, and what's held at a cap. *(0.7.0: no `bySecurity`, which `classTotals` gives to the cent, and none of the breakpoint finder's workings: `structure`, `capRoom`, and a SAFE's or note's `room`.)* |
 | `paySchedule(table, schedule)` *(0.2.0)* | Each payment's take: `cumulative`, the `decisions` there, the take per holder × security in `lines`, holder and class totals, and `lowered`, the holders whose running total falls. |
-| `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |
-| `D`, `parseExact`, `toCents` | Make and format the engine's Decimals. |
+| `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code` (listed under [Stable from 1.0](#stable-from-10)), a `subject`, whether it `starts` (converts, comes into the money) or stops, and its `text`. |
+| `D`, `parseExact(value, where?)`, `toCents` | Make and format the engine's Decimals. `parseExact` reads an exact number as the input format writes it, an integer, a decimal or "a/b"; `where` is the path its error names *(0.7.0: optional)*. |
+
+**What the API hands back has exactly the fields its type lists** *(0.7.0)*, and nothing else: `console.log` and `JSON.stringify` show only those, and only they are part of the API.
+
+**Names:** what reads an input (`readExit`, `readInputs`, `readCapTable`, `buildCapTables`) returns the engine's own objects, in camelCase. `readOcf` and `readOcx` return case-file JSON, in the input format's snake_case, since what they give is input: to save, to fill in and read with `readCapTable`, or to pass on as a `start` event's fields.
 
 **Errors:**
 - `InputError`: the input is malformed.
-- `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term` and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
+- `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term`, one of those listed under [Stable from 1.0](#stable-from-10), and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
-- `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`. `readOcf` throws it as an `OcfRefusal`, a subclass, so code that catches `OcfRefusal`, as 0.4.0 and 0.5.0 code does, still works. From 0.7.0 `readOcf` throws `ImportRefusal` itself and `OcfRefusal` goes, as do the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`, which are now aliases of `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`.
+- `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term`, listed under [Stable from 1.0](#stable-from-10), and the `subject`. `readOcf` and `readOcx` both throw it. *(0.7.0: `OcfRefusal`, which `readOcf` threw from 0.4.0 to 0.6.0, is gone, and so are the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`: use `ImportRefusal`, `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`, which 0.6.0 added beside them.)*
 
 **Types for the OCX import** *(0.6.0)*: `OcxWorkbook`, `OcxSheet` and `OcxCell`, what `readOcx` takes: the date system, and each tab's cells with their kind, their text as stored and whether each holds a formula. See [Reading an OCX workbook](#reading-an-ocx-workbook-060).
+
+## Stable from 1.0
+
+Code can match on these names, as the project's page and check script do: the terms the engine and the imports refuse with, the codes an import's report notes, and the reasons a breakpoint gives. From 1.0 a name is never renamed or reused for something else. A new one can be added, and one stops being raised when spillpoint comes to model what it refuses; it stays here, marked as no longer raised. A test fails if the engine can raise a name this list doesn't have. The rules behind each are in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+
+### `UnsupportedTermError`'s terms
+
+What the engine doesn't model in an input it reads:
+- `anti_dilution_with_conversions`: full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes (R25).
+- `conversion_groups`: more than one group of series that must convert together (E17).
+- `cumulative_dividend_in_rounds`: cumulative dividends on a series issued by an `issue` event, not a priced round.
+- `discounted_conversion_in_anti_dilution_a`: a SAFE or note converting at its discount and counted in a series' anti-dilution A, in a round that adjusts that series with the adjustment shares in its price (R25).
+- `dividends_added_to_conversion`: accrued dividends added to what converts, rather than forfeited or paid (X5).
+- `note_compounding_interest`: a note with interest other than simple (R23).
+- `note_post_money_cap`: a note with a post-money cap (R23).
+- `note_with_safe_or_carve_out`: at a sale, a note beside a carve-out, or beside a SAFE unless the note has a cap and every SAFE a post-money cap (X12, X18).
+- `pre_money_safe_with_preferred`: at a sale, a pre-money SAFE beside preferred stock (X14).
+- `several_notes`: at a sale, more than one note, unless each has a cap (X15).
+- `several_safes`: at a sale, more than one SAFE, unless each has a post-money cap (X13, X14).
+
+### `ImportRefusal`'s terms for OCF
+
+An Open Cap Format package `readOcf` won't read, its `format` `"ocf"`, with each term's `kind`:
+- `after_as_of` *(malformed)*: a transaction dated after the package's as-of date.
+- `ambiguous_file` *(malformed)*: two files of one name, so which the manifest means can't be told.
+- `bad_value` *(malformed)*: a value OCF doesn't allow there, such as a class type other than COMMON or PREFERRED.
+- `cancellation_behavior_missing` *(unsupported)*: a plan with shares cancelled or expired that gives no cancellation behavior, so whether they return to the pool would be a guess.
+- `cap_below_preference` *(unsupported)*: a participation cap below the class's preference multiple, which makes sense only as a cap that leaves the preference out.
+- `class_conversion_mechanism` *(unsupported)*: a class that converts by a mechanism other than a ratio.
+- `closed_security` *(malformed)*: a transaction naming a security after it was closed.
+- `common_conversion_right` *(unsupported)*: a common class with a conversion right.
+- `compensation_type` *(unsupported)*: a grant other than an option or an RSU.
+- `conversion_into_preferred` *(unsupported)*: a class that converts into another preferred class.
+- `conversion_ratio_mismatch` *(malformed)*: a class's conversion ratio that doesn't agree with its issue price ÷ conversion price, even allowing for how the numbers are written.
+- `convertible_mechanism_mismatch` *(malformed)*: a SAFE or note without its kind's conversion mechanism on every trigger.
+- `convertible_security` *(unsupported)*: a convertible of OCF's general kind, neither a SAFE nor a note.
+- `convertible_seniority` *(unsupported)*: outstanding convertibles at different seniorities.
+- `convertible_triggers_differ` *(unsupported)*: a convertible that converts on different terms at different triggers.
+- `currency` *(unsupported)*: an amount in a currency other than US dollars.
+- `duplicate_id` *(malformed)*: two objects with one id.
+- `duplicate_security` *(malformed)*: two issuances of one security.
+- `fractional_shares` *(unsupported)*: a share count that isn't whole.
+- `grant_of_preferred` *(unsupported)*: options over a preferred class.
+- `missing_field` *(malformed)*: a field OCF requires, missing.
+- `missing_file` *(malformed)*: a file the manifest lists that isn't in the package.
+- `no_manifest` *(malformed)*: a package with no manifest.
+- `not_an_ocf_file` *(malformed)*: a file with no `file_type`.
+- `note_accrual_period` *(unsupported)*: a note whose interest accrues other than daily.
+- `note_base_counts_other_convertibles` *(unsupported)*: a note whose cap counts other converting securities, with another SAFE or note outstanding beside it.
+- `note_cash_interest` *(unsupported)*: a note that pays its interest in cash, rather than deferring it.
+- `note_compounding` *(unsupported)*: a note with compounding interest.
+- `note_day_count` *(unsupported)*: a note whose interest counts days other than Actual/365.
+- `note_mfn` *(unsupported)*: a most-favored-nation note.
+- `note_rate_periods` *(unsupported)*: a note with more than one interest rate, or a rate for a set period.
+- `ocf_version` *(unsupported)*: an OCF version other than 1.0 to 1.2; the subject is the version.
+- `pool_overdrawn` *(malformed)*: a plan whose grants and deliveries come to more than it reserves.
+- `quantities_dont_reconcile` *(malformed)*: a transaction whose quantities don't add up for the security it acts on.
+- `return_to_pool_conflict` *(unsupported)*: a return to a pool whose plan's own rule already decides what returns.
+- `safe_exit_multiple` *(unsupported)*: a SAFE with an exit multiple other than 1.
+- `several_conversion_rights` *(unsupported)*: a class with more than one conversion right.
+- `several_manifests` *(malformed)*: a package with more than one manifest.
+- `split_of_preferred` *(unsupported)*: a split of a preferred class, since OCF doesn't record how its terms adjust.
+- `split_with_derivatives` *(unsupported)*: a split of a class while something that converts into it or is exercised for it is outstanding.
+- `stock_appreciation_right` *(unsupported)*: a stock appreciation right.
+- `too_many_shares` *(unsupported)*: a share count larger than a cap table here can hold exactly.
+- `unknown_file_type` *(unsupported)*: a file whose `file_type` isn't an OCF file type.
+- `unknown_object_type` *(unsupported)*: an object of a type spillpoint doesn't read.
+- `unknown_security` *(malformed)*: a transaction naming a security no issuance creates, or before it's issued.
+- `unknown_stakeholder` *(malformed)*: an issuance to someone who isn't a stakeholder in the package.
+- `unknown_stock_class` *(malformed)*: a stock class the package doesn't have.
+- `unknown_stock_plan` *(malformed)*: a stock plan the package doesn't have.
+- `warrant_mechanism` *(unsupported)*: an outstanding warrant whose exercise isn't one fixed-amount conversion into a stock class.
+- `warrant_quantity` *(malformed)*: a warrant whose quantity and its conversion's differ.
+
+### `ImportRefusal`'s terms for OCX
+
+An OCX workbook `readOcx` won't read, its `format` `"ocx"`, with each term's `kind`:
+- `bad_date` *(malformed)*: a date the reader doesn't read, or an as-of date whose weekday is wrong.
+- `bad_number` *(malformed)*: a value the import needs that's blank or not a number, or a discount that isn't a fraction below 1.
+- `cap_below_preference` *(unsupported)*: a participation cap below the preference multiple, which makes sense only as a cap that leaves the preference out.
+- `class_without_round` *(malformed)*: a preferred class with no round in Financing History.
+- `conversion_ratio_mismatch` *(malformed)*: a series' prices that don't give its conversion ratio, even allowing for a spreadsheet's 15 digits.
+- `convertibles_mismatch` *(malformed)*: the summary's convertibles table disagreeing with the SAFEs ledger, by count or amount.
+- `currency` *(unsupported)*: an amount in a currency other than US dollars.
+- `duplicate_stakeholder` *(malformed)*: two holder rows with one name.
+- `formula_without_value` *(malformed)*: a value the import needs that's a formula with no saved value.
+- `fractional_shares` *(malformed)*: a holding that isn't a whole number of shares.
+- `grant_for_unknown_class` *(malformed)*: a grant whose share class the summary doesn't list.
+- `grant_of_preferred` *(unsupported)*: a grant over a preferred class.
+- `holdings_mismatch` *(malformed)*: a holder's holdings disagreeing between tabs.
+- `ledger_without_class` *(malformed)*: a class ledger whose tab name and title name no class the summary lists.
+- `liquidation_preference_mismatch` *(malformed)*: a class's liquidation preference on the summary that isn't its outstanding shares × issue price × multiple, within a cent.
+- `missing_header` *(malformed)*: a header the layout needs, missing; the subject is the tab and header.
+- `missing_tab` *(malformed)*: a tab the layout needs, a class's ledger among them, missing.
+- `mixed_layout` *(malformed)*: a tab of another OCX layout beside this one's.
+- `non_plan_awards` *(unsupported)*: in 0.7, non-plan awards outstanding, which no ledger the reader knows holds.
+- `ocx_layout` *(unsupported)*: a layout spillpoint doesn't read, 0.3's among them; the subject is the version label's version.
+- `pool_mismatch` *(malformed)*: a pool row that doesn't agree with the plans' shares available for grant.
+- `round_without_class` *(malformed)*: a Financing History round with no preferred class of its name.
+- `rsus_not_separated` *(unsupported)*: in 0.4/0.5, a plan with RSUs outstanding, which its option columns don't tell apart from options.
+- `several_notes_in_row` *(unsupported)*: a convertibles row of several notes, which can't be combined exactly.
+- `status_mismatch` *(malformed)*: a grant or warrant with shares outstanding whose status isn't "Outstanding".
+- `stock_appreciation_right` *(unsupported)*: a stock appreciation right.
+- `total_mismatch` *(malformed)*: a total with a saved value that isn't what its rows add up to.
+- `unknown_class_heading` *(unsupported)*: a class with no holdings column the reader recognizes.
+- `unknown_holdings_header` *(unsupported)*: a holdings column of a kind the reader doesn't know.
+- `unknown_security_type` *(unsupported)*: a convertibles row of a type OCX doesn't list.
+- `unknown_stakeholder` *(malformed)*: a ledger naming a holder who isn't on the per-holder tab.
+- `unknown_status` *(unsupported)*: a status, or a Y or N, the reader doesn't know.
+- `warrant_for_future_series` *(unsupported)*: warrants for a series not yet issued.
+- `warrant_for_unknown_class` *(unsupported)*: a warrant for a class the workbook doesn't have.
+
+### An import's report-note codes
+
+What an import's `report.notes` say, with the format each comes from:
+- `common_named_preferred` *(OCX)*: a class under Common Stock whose name says Preferred, read as common.
+- `common_preference_ignored` *(OCF)*: a preference on a common class, which changes nothing at a sale, ignored.
+- `conversion_ratio_rounded` *(both)*: a conversion ratio that agrees with its prices only within how they're written; the prices are read.
+- `conversion_rounding_not_modeled` *(OCF)*: a class's rounding of converted shares, which the engine doesn't model: it converts without rounding.
+- `convertible_seniority_ignored` *(OCF)*: the convertibles' seniority among themselves, the same for each, isn't used; spillpoint ranks them as it ranks any SAFE or note.
+- `expired_option_left_out` *(both)*: an option past its expiration date, left out.
+- `expired_warrant_left_out` *(both)*: a warrant past its expiration date, left out.
+- `formula_totals_skipped` *(OCX)*: a total or check that's a formula with no saved value, so not checked.
+- `issue_order_default` *(OCX)*: a SAFE or note placed after every series in the issue order, the default, with no date to place it by.
+- `issue_price_from_ledger` *(OCX)*: in 0.7 without Financing History, a series' issue price read from its ledger.
+- `issued_at_other_price` *(OCF)*: preferred shares issued at a price other than their class's, which still carry the class's terms.
+- `left_out_stakeholder` *(both)*: a holder with nothing outstanding, left out.
+- `left_out_stock_class` *(OCF)*: a class with nothing outstanding, left out.
+- `no_anti_dilution_field` *(both)*: a preferred series' anti-dilution, which neither format records, read as none.
+- `no_carve_out_field` *(both)*: neither format has a field for a carve-out.
+- `no_conversion_group_field` *(both)*: neither format has a field for series that must convert together.
+- `no_dividend_field` *(both)*: neither format has a field for cumulative dividends.
+- `no_financing_history` *(OCX)*: a 0.7 workbook without Financing History, so a series' conversion price, multiple and participation are blank.
+- `no_sale_date_field` *(both)*: neither format has a field for the sale's date.
+- `no_seniority_field` *(OCX)*: OCX has no seniority, so it's blank to fill.
+- `no_strike_field` *(OCX)*: in 0.4/0.5, an option, award or warrant column with no strike, blank to fill.
+- `not_in_manifest` *(OCF)*: a file the manifest doesn't list, read anyway.
+- `note_base_other_convertibles_ignored` *(OCF)*: a note whose cap counts other converting securities, with none outstanding beside it, so the setting changes nothing.
+- `note_cap_read_as_pre_money` *(both)*: a note's cap, whose kind neither format records, read as pre-money.
+- `note_from_convertibles_row` *(OCX)*: a note read from the summary's convertibles table, its interest rate, issue date, base and repayment multiple blank.
+- `participation_cap_includes_preference` *(both)*: a participation cap read as including the preference.
+- `rsu_as_option` *(both)*: an RSU read as an option at a $0 strike.
+- `safe_exit_multiple_read_as_1` *(OCF)*: a SAFE that gives no exit multiple, paid its purchase amount, a multiple of 1.
+- `safes_combined` *(OCX)*: a convertibles row of SAFEs read as one SAFE for its total, held by a holder made for it.
+- `unrecognized_field` *(both)*: a field or header the import doesn't know, set aside.
+- `unrecognized_tab` *(OCX)*: a tab no layout names, not read.
+- `version_label` *(OCX)*: the workbook's version label, as written, which decides nothing.
+- `warrant_counts_are_maximums` *(OCX)*: the workbook's warrant counts, the most each warrant can buy.
+
+### `ReasonCode`
+
+What a breakpoint's reason, `reasons[i].code`, is about:
+- `tier_fully_paid`: a seniority tier's preferences are paid in full.
+- `cap_reached`: a capped participating series reaches its cap.
+- `option_in_the_money`: an option class comes into the money and is exercised.
+- `warrant_in_the_money`: a warrant comes into the money and is exercised.
+- `series_converts`: a series, or a group of series, converts to common.
+- `safe_cash_out_paid`: the SAFEs' Cash-Out Amounts are paid in full.
+- `safe_switches`: a SAFE switches between its Cash-Out Amount and its Conversion Amount.
+- `note_repayment_paid`: the notes' repayment is paid in full.
+- `note_switches`: a note switches between repayment and conversion.
+- `carve_out_tier`: a carve-out's tier ends.
+- `payouts_jump`: payouts jump rather than bend.
+- `payouts_curve`: payouts curve on one side or both, with a carve-out alongside the preferences (X17).
+- `other`: a safety net, "Payout slopes change here.", where payouts bend and no specific reason is found. No case produces it.
 
 ## License
 

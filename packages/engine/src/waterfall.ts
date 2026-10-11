@@ -43,6 +43,10 @@ export interface SafeHere {
   liquidityCapitalization: Decimal | null;
   liquidityPrice: Decimal | null;
   shares: Decimal | null;
+}
+
+/** A SAFE as the engine works with it: what the breakpoint finder follows besides. Internal. */
+export interface SafeSettled extends SafeHere {
   /**
    * With no cap and set to convert: (1 − discount) × what is left for it and
    * common, less its purchase amount. Converting is possible only while it is
@@ -51,7 +55,7 @@ export interface SafeHere {
   room: Decimal | null;
 }
 
-/** A convertible note at the sale, worked out once from the exit date (X3, X10–X12). */
+/** A convertible note at the sale, worked out once from the exit date (X3, X10–X12). Internal: a prepared table's. */
 export interface NoteTerms {
   note: Note;
   /** Simple interest, Actual/365, from the issue date to the exit date. */
@@ -74,6 +78,10 @@ export interface NoteHere {
   converts: boolean;
   /** Converting: its shares as common. */
   shares: Decimal | null;
+}
+
+/** A note as the engine works with it. Internal. */
+export interface NoteSettled extends NoteHere {
   /** With no cap and set to convert: (1 − discount) × what is left for it and common, less what converts (X12). */
   room: Decimal | null;
 }
@@ -152,8 +160,6 @@ export interface Payout {
   strikeCash: Decimal;
   /** What each share sharing the residual receives: the common price per share. */
   commonPrice: Decimal;
-  /** Total per security; options and warrants net of strike. */
-  bySecurity: Map<string, Decimal>;
   /** Each preferred series as it stands here, with any exercised warrant shares for it. */
   series: Map<string, SeriesHere>;
   /** The carve-out here, if the cap table has one. */
@@ -180,6 +186,24 @@ export interface Payout {
   tiers: TierPayment[];
   /** Capped participating series held at their cap. */
   atCap: string[];
+}
+
+/**
+ * A payout as the engine works with it: the public Payout, plus what the
+ * breakpoint finder follows to know where the formula changes. Internal: the
+ * API hands back publicPayout's copy, with Payout's fields and no others, so
+ * nothing outside comes to rely on the finder's workings (the naming review,
+ * item 4).
+ */
+export interface Settlement extends Omit<Payout, "safes" | "notes"> {
+  /**
+   * Total per security, options and warrants net of strike: worked out before the lines, for the solver, which
+   * weighs many payouts by their security totals alone. The public payout's classTotals gives the same to the cent,
+   * summed from the lines (the naming review, item 9).
+   */
+  bySecurity: Map<string, Decimal>;
+  safes: Map<string, SafeSettled>;
+  notes: Map<string, NoteSettled>;
   /**
    * Each condition that decides which formula pays out here, as a signed
    * amount: a debt, a carve-out or a tier paid in full or not, the carve-out's
@@ -202,9 +226,20 @@ export interface Slack {
   value: Decimal;
 }
 
-/** The cap table with the quantities every waterfall run needs, worked out once. */
+/**
+ * A cap table prepared for exit values: what prepare gives, to pass to solve, payout, findBreakpoints and
+ * paySchedule. It shows the cap table and the day dividends and interest accrue to; the quantities every waterfall
+ * run needs, worked out once, stay with it inside the engine (the naming review, item 11). What a reader needs of
+ * them is on the payout: each series' preference, accrued dividends, cap and as-converted shares on payout.series.
+ */
 export interface PreparedCapTable {
   capTable: CapTable;
+  /** The day dividends and a note's interest accrue to, if the exit has one. */
+  exitDate: string | null;
+}
+
+/** The cap table with the quantities every waterfall run needs, worked out once. Internal: the engine's own. */
+export interface Prepared extends PreparedCapTable {
   shares: Map<string, Decimal>;
   preferred: Map<string, PreferredSeries>;
   options: Map<string, OptionClass>;
@@ -220,16 +255,36 @@ export interface PreparedCapTable {
   preference: Map<string, Decimal>;
   /** Accrued and unpaid cumulative dividends at the exit date, by series (X2, X5). */
   dividends: Map<string, Decimal>;
-  /** The day dividends accrue to, if the exit has one. */
-  exitDate: string | null;
   /** Capped participating: the most preference plus participation can reach, cap multiple × original issue price × shares (E7). */
   capTotal: Map<string, Decimal>;
   /** Exact as-converted common shares for each preferred series (E2). */
   asConverted: Map<string, Decimal>;
 }
 
-/** The exit date is needed only when a series accrues cumulative dividends (X2): they accrue to it. */
+/** Each prepared table's working quantities, kept with it but out of sight (item 11). */
+const WORKING = new WeakMap<PreparedCapTable, Prepared>();
+
+/**
+ * The exit date is needed only when a series accrues cumulative dividends (X2) or a note is outstanding (X3): they
+ * accrue to it. What it gives has exactly PreparedCapTable's fields; the rest stays inside.
+ */
 export function prepare(capTable: CapTable, exitDate: string | null = null): PreparedCapTable {
+  const table: PreparedCapTable = { capTable, exitDate };
+  WORKING.set(table, prepareWorking(capTable, exitDate));
+  return table;
+}
+
+/**
+ * The working quantities of a prepared table. One built by hand, not by prepare, is prepared on first use, so the
+ * public type is all a caller needs to write.
+ */
+export function working(pc: PreparedCapTable): Prepared {
+  let w = WORKING.get(pc);
+  if (!w) WORKING.set(pc, (w = prepareWorking(pc.capTable, pc.exitDate)));
+  return w;
+}
+
+function prepareWorking(capTable: CapTable, exitDate: string | null): Prepared {
   const shares = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
   for (const p of capTable.positions) shares.set(p.security, shares.get(p.security)!.plus(p.shares));
   const preferred = new Map<string, PreferredSeries>();
@@ -331,7 +386,7 @@ function noteTerms(n: Note, exitDate: string, counts: { outstanding: Decimal; un
  * leaving out the unissued pool, this SAFE, other SAFEs and notes. Its shares
  * sit on top.
  */
-export function liquidityCapitalization(pc: PreparedCapTable, f: Safe, converted: ReadonlySet<string>, exercised: ReadonlySet<string> = new Set()): Decimal {
+export function liquidityCapitalization(pc: Prepared, f: Safe, converted: ReadonlySet<string>, exercised: ReadonlySet<string> = new Set()): Decimal {
   if (f.preMoneyCap) return pc.outstanding;
   let others = pc.outstanding;
   const inLieu = (sid: string) => pc.preferred.get(sid)!.participation === "non_participating" && !converted.has(sid);
@@ -363,7 +418,7 @@ function safeTier(capTable: CapTable, f: Safe): number {
 }
 
 /** Decisions must name real convertible series, option classes and warrants, and a conversion group converts as one (E11). */
-function checkDecisions(pc: PreparedCapTable, d: Decisions): void {
+function checkDecisions(pc: Prepared, d: Decisions): void {
   for (const sid of d.converted) {
     if (pc.safes.has(sid)) continue;
     if (pc.notes.has(sid)) {
@@ -387,7 +442,35 @@ function checkDecisions(pc: PreparedCapTable, d: Decisions): void {
   }
 }
 
+/** The payout for these decisions, as the API hands it back: Payout's fields, and no others. */
 export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Decisions): Payout {
+  return publicPayout(settle(working(pc), exitValue, decisions));
+}
+
+/** The public copy of a settlement: what a payout is, without the finder's workings (item 4). */
+export function publicPayout(s: Settlement): Payout {
+  return {
+    exitValue: s.exitValue,
+    decisions: s.decisions,
+    strikeCash: s.strikeCash,
+    commonPrice: s.commonPrice,
+    series: s.series,
+    carveOut: s.carveOut,
+    safes: new Map([...s.safes].map(([id, f]) => [id, { converts: f.converts, liquidityCapitalization: f.liquidityCapitalization, liquidityPrice: f.liquidityPrice, shares: f.shares }])),
+    notes: new Map([...s.notes].map(([id, n]) => [id, { converts: n.converts, shares: n.shares }])),
+    noteDebt: s.noteDebt,
+    safeCash: s.safeCash,
+    curved: s.curved,
+    lines: s.lines,
+    holderTotals: s.holderTotals,
+    classTotals: s.classTotals,
+    tiers: s.tiers,
+    atCap: s.atCap,
+  };
+}
+
+/** The waterfall for these decisions, with everything the engine works with (Settlement). Internal. */
+export function settle(pc: Prepared, exitValue: Decimal, decisions: Decisions): Settlement {
   checkDecisions(pc, decisions);
   const { capTable } = pc;
   const total = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
@@ -507,7 +590,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   // A SAFE taking its Conversion Amount shares as common. With a cap, on
   // purchase amount ÷ Liquidity Price shares, where the Liquidity Price is its
   // cap ÷ the Liquidity Capitalization (X1, X13, X14).
-  const safes = new Map<string, SafeHere>();
+  const safes = new Map<string, SafeSettled>();
   for (const f of cashSafes) safes.set(f.id, { converts: false, liquidityCapitalization: null, liquidityPrice: null, shares: null, room: null });
   const convertingSafes = [...pc.safes.values()].filter((f) => decisions.converted.has(f.id));
   // X13: one count for the company, the same for every converting post-money SAFE, so it's worked out once.
@@ -526,7 +609,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
   }
   // A note converting shares as common. With a cap, on principal plus
   // interest ÷ its conversion price (X10, X11).
-  const notes = new Map<string, NoteHere>();
+  const notes = new Map<string, NoteSettled>();
   for (const t of repaid) notes.set(t.note.id, { converts: false, shares: null, room: null });
   const convertingNotes = [...pc.notes.values()].filter((t) => decisions.converted.has(t.note.id));
   for (const t of convertingNotes) {
@@ -560,7 +643,7 @@ export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Deci
     const room = ONE.minus(uncapped.discount).times(remaining).minus(uncapped.amount);
     structure.push({ label: "room", value: room });
     if (!room.gt(0) || others.isZero()) {
-      const asCash = payout(pc, exitValue, { converted: new Set([...decisions.converted].filter((id) => id !== uncapped.id)), exercised: decisions.exercised });
+      const asCash = settle(pc, exitValue, { converted: new Set([...decisions.converted].filter((id) => id !== uncapped.id)), exercised: decisions.exercised });
       if (uncappedSafe) asCash.safes.set(uncapped.id, { ...asCash.safes.get(uncapped.id)!, room });
       else asCash.notes.set(uncapped.id, { ...asCash.notes.get(uncapped.id)!, room });
       return { ...asCash, decisions, structure: [...structure, ...asCash.structure.map((sl) => ({ ...sl, label: `cash:${sl.label}` }))] };

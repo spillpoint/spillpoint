@@ -5,7 +5,7 @@ import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, buildCapTables, parseExact } from "../src/index.ts";
-import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
+import type { AntiDilutionPiece, CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
 import { roundDownShares, roundHalfUp } from "../src/rounds.ts";
 import { D } from "../src/decimal.ts";
 import { ALL_CASES, OCF_CASES, OCX_CASES, readCaseFile } from "./support/cases.ts";
@@ -83,8 +83,9 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
   });
 
   const safes = exp.unconverted_safes ?? [];
-  expect(built.unconvertedSafes.map((f) => [f.id, f.holder])).toEqual(safes.map((f) => [f.id, f.holder]));
-  built.unconvertedSafes.forEach((f, i) => {
+  const builtSafes = built.capTable.unconvertedSafes ?? [];
+  expect(builtSafes.map((f) => [f.id, f.holder])).toEqual(safes.map((f) => [f.id, f.holder]));
+  builtSafes.forEach((f, i) => {
     const e = safes[i]!;
     expectSameNumber(f.purchaseAmount, e.purchase_amount, `${at} ${f.id} purchase amount`);
     expectSameNumber(f.postMoneyCap, e.post_money_cap ?? null, `${at} ${f.id} post-money cap`);
@@ -92,10 +93,11 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
     expectSameNumber(f.discount, e.discount, `${at} ${f.id} discount`);
   });
   const notes = exp.unconverted_notes ?? [];
-  expect(built.unconvertedNotes.map((n) => [n.id, n.holder, n.issueDate, n.conversionBase])).toEqual(
+  const builtNotes = built.capTable.unconvertedNotes ?? [];
+  expect(builtNotes.map((n) => [n.id, n.holder, n.issueDate, n.conversionBase])).toEqual(
     notes.map((n) => [n.id, n.holder, n.issue_date, n.conversion_base]),
   );
-  built.unconvertedNotes.forEach((n, i) => {
+  builtNotes.forEach((n, i) => {
     const e = notes[i]!;
     expectSameNumber(n.principal, e.principal, `${at} ${n.id} principal`);
     expectSameNumber(n.interestRate, e.interest_rate, `${at} ${n.id} rate`);
@@ -163,11 +165,17 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
       else expect(x.b, `${what} B`).toBeNull();
       expectClose(x.newConversionRatio, e.new_conversion_ratio, `${what} new conversion ratio`);
       // R25: with conversions, each piece's price, whether it counted, and its shares in A when it counted there instead.
+      // The case file names a piece "new money" or by its SAFE's or note's id; the engine gives its kind and id (item 12).
       const pieces = (e.pieces ?? null) as { piece: string; price: string; counted: boolean; in_a?: number }[] | null;
-      expect(x.pieces?.map((p) => [p.piece, p.counted, p.inA?.toNumber() ?? null]) ?? null, `${what} pieces`).toEqual(
+      const named = (p: AntiDilutionPiece) => (p.kind === "new_money" ? "new money" : p.id);
+      expect(x.pieces?.map((p) => [named(p), p.counted, p.inA?.toNumber() ?? null]) ?? null, `${what} pieces`).toEqual(
         pieces && pieces.map((p) => [p.piece, p.counted, p.in_a ?? null]),
       );
-      x.pieces?.forEach((p, j) => expectClose(p.price, pieces![j]!.price, `${what} ${p.piece} price`));
+      x.pieces?.forEach((p, j) => expectClose(p.price, pieces![j]!.price, `${what} ${named(p)} price`));
+      for (const p of x.pieces ?? []) expect(Object.keys(p), `${what} piece`).toEqual(["kind", "id", "price", "counted", "inA"]);
+      expect(x.pieces?.map((p) => p.kind) ?? [], `${what} kinds`).toEqual(
+        (pieces ?? []).map((p, j) => (j === 0 ? "new_money" : d.safeConversions.some((c) => c.safe === p.piece) ? "safe" : "note")),
+      );
     });
     const p2p = ed.pay_to_play as Record<string, unknown> | undefined;
     if (p2p == null) expect(d.payToPlay, `${at} pay-to-play`).toBeNull();
@@ -307,7 +315,7 @@ describe("the round cases built in full", () => {
       ["marcus", "cap", 389_681, "seed_safes"],
     ]);
     expect(built[5]!.capTable.securities.find((s) => s.id === "seed_safes")!.name).toBe("Seed Preferred (from SAFEs)");
-    expect(built[5]!.unconvertedSafes).toEqual([]);
+    expect(built[5]!.capTable.unconvertedSafes ?? []).toEqual([]);
     const seriesA = built[7]!.details;
     if (seriesA.kind !== "priced_round") throw new Error("the Series A is a priced round");
     expect(seriesA.proRata.map((p) => [p.holder, p.preRoundShare.times(100).toFixed(6), p.entitlement.toFixed(2)])).toEqual([["harbor_lane", "28.703080", "3444369.64"]]);
@@ -380,7 +388,7 @@ describe("the round cases built in full", () => {
     expect(built.capTable.securities.map((s) => s.name)).toEqual([
       "Common Stock", "Options ($0.25 strike)", "Series A Preferred (from SAFEs)", "Series A Preferred (from notes)", "Series A Preferred",
     ]);
-    expect(built.unconvertedNotes).toEqual([]);
+    expect(built.capTable.unconvertedNotes ?? []).toEqual([]);
   });
 
   it("18 counts the SAFE's 1,000,000 shares in Investor X's pro-rata base: $1,090,909.09, not $1,200,000 (R6)", () => {
@@ -576,10 +584,10 @@ describe("anti-dilution beyond the cases (M4e)", () => {
     const [founding, note, safe, seed, seriesA] = inputs.events;
     inputs.events = [founding!, safe!, seed!, note!, seriesA!];
     const [seedAdjusted] = pricedRound(inputs).antiDilution;
-    expect(seedAdjusted!.pieces!.map((x) => [x.piece, x.counted, x.inA?.toNumber() ?? null])).toEqual([
-      ["new money", false, null],
-      ["safe_s", false, 1_500_000],
-      ["note_n", true, null],
+    expect(seedAdjusted!.pieces!.map((x) => [x.kind, x.id, x.counted, x.inA?.toNumber() ?? null])).toEqual([
+      ["new_money", null, false, null],
+      ["safe", "safe_s", false, 1_500_000],
+      ["note", "note_n", true, null],
     ]);
     expect([seedAdjusted!.a!.toString(), seedAdjusted!.b!.toString()]).toEqual(["11500000", "440000"]);
   });

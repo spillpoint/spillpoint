@@ -82,7 +82,7 @@ describe("two warrants for one series (E12; fixed in 03f)", () => {
       unissued_pool: 0,
     });
     const [answer] = solve(prepare(ct, null), new D(1500000)).answers;
-    const paid = answer!.payout.bySecurity;
+    const paid = answer!.payout.classTotals;
     const perShare = new D(161).div(220);
     expect([...answer!.decisions.exercised].sort()).toEqual(["w1", "w2"]);
     expect(sameAmount(paid.get("seed")!, perShare.times(2000000))).toBe(true);

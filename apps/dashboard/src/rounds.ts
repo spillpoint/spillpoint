@@ -277,8 +277,8 @@ export function eventViews(rounds: Rounds, tables: CapTableAfterEvent[]): EventV
       pool: { shares: ct.unissuedPool, fullyDiluted: share(ct.unissuedPool) },
       stakes,
       outstanding: [
-        ...t.unconvertedSafes.map((f) => `${holder(f.holder)}'s SAFE, ${dollars(f.purchaseAmount)}`),
-        ...t.unconvertedNotes.map((n) => `${holder(n.holder)}'s convertible note, ${dollars(n.principal)} plus interest`),
+        ...(ct.unconvertedSafes ?? []).map((f) => `${holder(f.holder)}'s SAFE, ${dollars(f.purchaseAmount)}`),
+        ...(ct.unconvertedNotes ?? []).map((n) => `${holder(n.holder)}'s convertible note, ${dollars(n.principal)} plus interest`),
       ],
     };
   });
@@ -516,15 +516,15 @@ function pieceLines(a: AntiDilutionAdjustment, ev: Json, d: RoundDetails, holder
   return (a.pieces ?? []).map((p) => {
     if (p.inA) {
       const why = ev.anti_dilution_exempts_conversions === true ? "is exempt under this round's setting" : `was issued before ${series}`;
-      return `${owner(p.piece)} ${why}, so it counts in the starting share count instead.`;
+      return `${owner(p.id!)} ${why}, so it counts in the starting share count instead.`;
     }
     // To the cent, as a founder reads a price, unless that would show it equal to the conversion price it's compared with.
     const close = p.price.toFixed(2, D.ROUND_HALF_UP) === a.cp1.toFixed(2, D.ROUND_HALF_UP) && !p.price.eq(a.cp1);
     const show = (x: Decimal) => `$${x.toFixed(close ? 6 : 2, D.ROUND_HALF_UP)}`;
     const where = p.price.lt(a.cp1) ? "below" : p.price.eq(a.cp1) ? "at" : "above";
     const verdict = p.counted ? `so it counts against ${series}` : "so it doesn't count";
-    return p.piece === "new money"
+    return p.kind === "new_money"
       ? `New money at ${show(p.price)} a share: ${where} ${series}'s ${show(a.cp1)}, ${verdict}.`
-      : `${owner(p.piece)} converts at ${show(p.price)} a share: ${where} ${show(a.cp1)}, ${verdict}.`;
+      : `${owner(p.id!)} converts at ${show(p.price)} a share: ${where} ${show(a.cp1)}, ${verdict}.`;
   });
 }

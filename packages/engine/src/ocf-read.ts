@@ -5,14 +5,15 @@
 import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
-import { OcfRefusal } from "./errors.ts";
+import { ImportRefusal } from "./errors.ts";
+import type { OcfTerm } from "./stable-names.ts";
 
 export type Json = Record<string, unknown>;
 
-export const malformed = (term: string, subject: string, message: string): OcfRefusal =>
-  new OcfRefusal("malformed", term, subject, message);
-export const unsupported = (term: string, subject: string, message: string): OcfRefusal =>
-  new OcfRefusal("unsupported", term, subject, message);
+export const malformed = (term: OcfTerm, subject: string, message: string): ImportRefusal =>
+  new ImportRefusal("ocf", "malformed", term, subject, message);
+export const unsupported = (term: OcfTerm, subject: string, message: string): ImportRefusal =>
+  new ImportRefusal("ocf", "unsupported", term, subject, message);
 
 export function isObject(value: unknown): value is Json {
   return typeof value === "object" && value !== null && !Array.isArray(value);

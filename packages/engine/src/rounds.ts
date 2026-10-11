@@ -18,14 +18,13 @@
 import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO, strikeInName } from "./decimal.ts";
-import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
+import { InputError, NoAnswerError, unsupportedTerm } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
 import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
 import type { CapTable, ConversionGroup, Holder, Note, Position, PreferredSeries, Safe, Security } from "./model.ts";
 
 type Json = Record<string, unknown>;
 
-/** A SAFE, outstanding until a round converts it: post-money (R4) or pre-money (R24), never both. */
 /** A SAFE's conversion in a round (R4, R5, R24). */
 export interface SafeConversion {
   safe: string;
@@ -96,10 +95,15 @@ export interface AntiDilutionAdjustment {
 
 /** One piece of a round, as one series' anti-dilution saw it (R25). */
 export interface AntiDilutionPiece {
-  /** "new money", or the SAFE's or note's id. */
-  piece: string;
+  /** The round's new money, or a SAFE or note converting in it (the naming review, item 12). */
+  kind: "new_money" | "safe" | "note";
+  /** The SAFE's or note's id; null for the new money. */
+  id: string | null;
+  /** The price it was issued at: the round's price for the new money, the conversion price for a SAFE or note. */
   price: Decimal;
+  /** It was priced below the series' conversion price, so it counted in B and C. */
   counted: boolean;
+  /** For a conversion counted in the series' A instead (exempt, or issued before the series): its shares there. */
   inA: Decimal | null;
 }
 
@@ -177,11 +181,11 @@ export interface CapTableAfterEvent {
   /** The event's id. */
   event: string;
   date: string | null;
+  /**
+   * The cap table after the event, with the SAFEs and notes issued and not yet converted as its unconvertedSafes and
+   * unconvertedNotes, left out when there are none: where an exit on it reads them (the naming review, item 10).
+   */
   capTable: CapTable;
-  /** SAFEs issued and not yet converted. */
-  unconvertedSafes: Safe[];
-  /** Notes issued and not yet converted. */
-  unconvertedNotes: Note[];
   details: EventDetails;
 }
 
@@ -322,7 +326,7 @@ function fraction(value: unknown, path: string, allowZero = false): Decimal {
  */
 function noDividendsInRounds(value: unknown, path: string): void {
   if (value != null && typeof value === "object" && (value as Json).cumulative_dividend != null) {
-    throw new UnsupportedTermError(
+    throw unsupportedTerm(
       "cumulative_dividend_in_rounds", `${path}.cumulative_dividend`, "Cumulative dividends on a series issued outside a priced round",
     );
   }
@@ -893,7 +897,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       }
     });
     if (!extraA.growing.isZero()) {
-      throw new UnsupportedTermError(
+      throw unsupportedTerm(
         "discounted_conversion_in_anti_dilution_a", `${path}.convert_safes`,
         `A SAFE or note converting at its discount and counted in ${s.id}'s A (exempt from anti-dilution, or issued before ${s.id}), ` +
           "in a round that adjusts it with the adjustment shares in its price: the price would not be exact (R25)",
@@ -980,7 +984,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   // conversions' shares, are unsettled.
   const unsettled = protectedSeries.find(({ rule }, k) => triggered[k] && rule !== "broad_based");
   if (unsettled && conversionIds.length > 0) {
-    throw new UnsupportedTermError(
+    throw unsupportedTerm(
       "anti_dilution_with_conversions", `${path}.convert_safes`,
       `${unsettled.rule === "full_ratchet" ? "Full-ratchet" : "Narrow-based"} anti-dilution on ${unsettled.series.id} in a round that converts SAFEs or notes (R25)`,
     );
@@ -1161,8 +1165,14 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       conversions.length === 0
         ? null
         : [
-            { piece: "new money", price, counted: p[0]!, inA: null },
-            ...conversions.map((x, i) => ({ piece: conversionIds[i]!, price: x.conversionPrice, counted: !inA[k]![i] && p[1 + i]!, inA: inA[k]![i] ? x.shares : null })),
+            { kind: "new_money" as const, id: null, price, counted: p[0]!, inA: null },
+            ...conversions.map((x, i) => ({
+              kind: i < safes.length ? ("safe" as const) : ("note" as const),
+              id: conversionIds[i]!,
+              price: x.conversionPrice,
+              counted: !inA[k]![i] && p[1 + i]!,
+              inA: inA[k]![i] ? x.shares : null,
+            })),
           ];
     antiDilution.push({ series: s.id, rule, cp1, cp2Unrounded: rounding === "exact" ? null : exact, cp2, a: aWithConversions, b, c, newConversionRatio, pieces: piecesReport });
   });
@@ -1257,8 +1267,6 @@ export function buildCapTables(value: unknown, path = "inputs"): CapTableAfterEv
       event: id,
       date,
       capTable: company.snapshot(),
-      unconvertedSafes: company.safes.map((f) => ({ ...f })),
-      unconvertedNotes: company.notes.map((n) => ({ ...n })),
       details,
     };
   });

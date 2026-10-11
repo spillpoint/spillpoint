@@ -16,8 +16,8 @@
 import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
-import { payout } from "./waterfall.ts";
-import type { Decisions, NoteHere, Payout, PayoutLine, PreparedCapTable, SafeHere, TierPayment } from "./waterfall.ts";
+import { settle } from "./waterfall.ts";
+import type { Decisions, NoteSettled, PayoutLine, Prepared, SafeSettled, Settlement, TierPayment } from "./waterfall.ts";
 
 /** How far from changing a condition must be, in dollars or shares, for a line to stand in for the waterfall. */
 export const EPS = new D("1e-9");
@@ -85,7 +85,7 @@ function lineThrough(x0: Decimal, v0: Decimal, v1: Decimal, perDollar: Decimal):
 const ZERO_D = new D(0);
 
 /** A payout's discrete shape, which two readings must share to be on one set of lines. */
-function shape(p: Payout): string | null {
+function shape(p: Settlement): string | null {
   if (p.curved || p.structure.some((sl) => sl.value.abs().lt(EPS))) return null;
   const parts: string[] = [];
   for (const sl of p.structure) parts.push(sl.label, sl.value.isNegative() ? "-" : "+");
@@ -102,8 +102,8 @@ function shape(p: Payout): string | null {
 /** One payout for fixed decisions as straight lines, on the interval where its structure holds. */
 export class PayoutLines {
   readonly interval: Interval;
-  private readonly p0: Payout;
-  private readonly p1: Payout;
+  private readonly p0: Settlement;
+  private readonly p1: Settlement;
   private readonly perDollar: Decimal;
   private readonly bySecurity: Map<string, Line> = new Map();
   private readonly price: Line;
@@ -113,16 +113,16 @@ export class PayoutLines {
   private readonly debtPaid: Line | null;
   private readonly cashPaid: Line | null;
 
-  private constructor(p0: Payout, p1: Payout, perDollar: Decimal, interval: Interval) {
+  private constructor(p0: Settlement, p1: Settlement, perDollar: Decimal, interval: Interval) {
     this.p0 = p0;
     this.p1 = p1;
     this.perDollar = perDollar;
     this.interval = interval;
-    const line = (pick: (p: Payout) => Decimal) => this.through(pick);
+    const line = (pick: (p: Settlement) => Decimal) => this.through(pick);
     this.price = line((p) => p.commonPrice);
     this.tiers = p0.tiers.map((_, i) => ({ claim: line((p) => p.tiers[i]!.claim), paid: line((p) => p.tiers[i]!.paid) }));
     this.carve = p0.carveOut && { claim: line((p) => p.carveOut!.claim), paid: line((p) => p.carveOut!.paid) };
-    const roomsOf = <T extends { room: Decimal | null }>(m: (p: Payout) => Map<string, T>) =>
+    const roomsOf = <T extends { room: Decimal | null }>(m: (p: Settlement) => Map<string, T>) =>
       new Map([...m(p0)].filter(([, v]) => v.room !== null).map(([id]) => [id, line((p) => m(p).get(id)!.room!)]));
     this.rooms = {
       safes: roomsOf((p) => p.safes),
@@ -133,12 +133,12 @@ export class PayoutLines {
     this.cashPaid = p0.safeCash && line((p) => p.safeCash!.paid);
   }
 
-  private through(pick: (p: Payout) => Decimal): Line {
+  private through(pick: (p: Settlement) => Decimal): Line {
     return lineThrough(this.p0.exitValue, pick(this.p0), pick(this.p1), this.perDollar);
   }
 
   /** The lines through two exact readings with the same shape, or null if they don't share one. */
-  static through(p0: Payout, p1: Payout): PayoutLines | null {
+  static through(p0: Settlement, p1: Settlement): PayoutLines | null {
     if (p0.exitValue.eq(p1.exitValue)) return null;
     const s0 = shape(p0);
     if (s0 === null || s0 !== shape(p1)) return null;
@@ -161,7 +161,7 @@ export class PayoutLines {
   }
 
   /** The payout at x, which must be inside the interval. Each part is worked out when first read: the solver reads few. */
-  at(x: Decimal): Payout {
+  at(x: Decimal): Settlement {
     const { p0 } = this;
     const self = this;
     const memo = <T>(make: () => T) => {
@@ -174,7 +174,7 @@ export class PayoutLines {
     const worthOver = (n: Decimal | null) => (n === null || price().isZero() ? n : n.times(p0.commonPrice).div(price()));
     const safes = memo(
       () =>
-        new Map<string, SafeHere>(
+        new Map<string, SafeSettled>(
           [...p0.safes].map(([id, f]) => {
             const room = this.rooms.safes.get(id);
             return [id, { ...f, room: room ? at(room, x) : null, shares: f.converts && f.liquidityCapitalization === null ? worthOver(f.shares) : f.shares }];
@@ -183,14 +183,14 @@ export class PayoutLines {
     );
     const notes = memo(
       () =>
-        new Map<string, NoteHere>(
+        new Map<string, NoteSettled>(
           [...p0.notes].map(([id, n]) => {
             const room = this.rooms.notes.get(id);
             return [id, { ...n, room: room ? at(room, x) : null, shares: n.converts && room ? worthOver(n.shares) : n.shares }];
           }),
         ),
     );
-    const totals = (pick: (p: Payout) => Map<string, Decimal>) =>
+    const totals = (pick: (p: Settlement) => Map<string, Decimal>) =>
       memo(() => new Map([...pick(p0).keys()].map((k) => [k, at(this.through((p) => pick(p).get(k)!), x)])));
     const holderTotals = totals((p) => p.holderTotals);
     const classTotals = totals((p) => p.classTotals);
@@ -307,7 +307,7 @@ interface Readings {
   lines: PayoutLines | null;
 }
 
-const READINGS = new WeakMap<PreparedCapTable, Map<string, Readings>>();
+const READINGS = new WeakMap<Prepared, Map<string, Readings>>();
 
 function decisionsKey(d: Decisions): string {
   return `${[...d.converted].sort().join("\u0000")}/${[...d.exercised].sort().join("\u0000")}`;
@@ -317,17 +317,17 @@ function decisionsKey(d: Decisions): string {
  * The payout for these decisions at x, from its lines where they hold, or else run exactly; with its lines, if
  * known, which hold on their interval.
  */
-export function payoutWithLines(pc: PreparedCapTable, x: Decimal, decisions: Decisions): { payout: Payout; lines: PayoutLines | null } {
+export function payoutWithLines(pc: Prepared, x: Decimal, decisions: Decisions): { payout: Settlement; lines: PayoutLines | null } {
   let byKey = READINGS.get(pc);
   if (!byKey) READINGS.set(pc, (byKey = new Map()));
   const k = decisionsKey(decisions);
   let r = byKey.get(k);
   if (!r) byKey.set(k, (r = { lines: null }));
   if (r.lines && inside(r.lines.interval, x)) return { payout: r.lines.at(x), lines: r.lines };
-  const exact = payout(pc, x, decisions);
+  const exact = settle(pc, x, decisions);
   // A second reading just beside this one gives its lines at once, unless this exit value is next to a change.
   for (const beside of [x.plus(BESIDE), x.minus(BESIDE)]) {
-    const lines = PayoutLines.through(exact, payout(pc, beside, decisions));
+    const lines = PayoutLines.through(exact, settle(pc, beside, decisions));
     if (lines && inside(lines.interval, x)) {
       r.lines = lines;
       return { payout: exact, lines };

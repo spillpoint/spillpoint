@@ -280,8 +280,8 @@ describe("warrants (E4, E12, R29; M5d)", () => {
     // At $2.1M: ($2.1M + $100k) ÷ 1.1M = $2 a share, so the warrant nets 100,000 × $2 − $100,000.
     const [answer] = solve(pc, new D(2100000)).answers;
     expect([...answer!.decisions.exercised]).toEqual(["w"]);
-    expect(answer!.payout.bySecurity.get("w")!.toString()).toBe("100000");
-    expect(answer!.payout.bySecurity.get("common")!.toString()).toBe("2000000");
+    expect(answer!.payout.classTotals.get("w")!.toString()).toBe("100000");
+    expect(answer!.payout.classTotals.get("common")!.toString()).toBe("2000000");
   });
 
   it("a warrant for preferred joins its series: case 8's shares, preference and conversion", () => {

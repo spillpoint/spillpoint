@@ -74,7 +74,7 @@ export interface PreferredSeries {
   antiDilution: AntiDilution;
   /** What A counts in the weighted-average formula (C10), if the input names it. */
   antiDilutionA: string | null;
-  /** Missing or null: no cumulative dividends. Optional, so series built by 0.1.0 code keep working. */
+  /** Missing or null: no cumulative dividends. Optional, so a series written by hand needn't say it has none. */
   cumulativeDividend?: CumulativeDividend | null;
 }
 
@@ -120,7 +120,7 @@ export interface Safe {
   preMoneyCap: D | null;
   /** In a round, the discount to the round's price; at a sale, used only with no cap (X9). */
   discount: D;
-  /** At a sale, the series whose tier its Cash-Out Amount ranks with; missing, the most junior tier (X9). */
+  /** At a sale, the series whose tier its Cash-Out Amount ranks with; missing or null, the most junior tier (X9). */
   cashOutRanksWith?: string | null;
 }
 
@@ -165,11 +165,14 @@ export interface CapTable {
   positions: Position[];
   /** Never participates in an exit (SPEC). */
   unissuedPool: D;
-  /** Optional, so 0.1.0 code that builds a cap table keeps working. */
+  /**
+   * A management carve-out (C6). This and the two lists below are optional, so a cap table written by hand needn't
+   * write what it doesn't have: missing is none. The engine's own leave a list out when it's empty.
+   */
   carveOut?: CarveOut | null;
-  /** SAFEs still outstanding at the sale (C8). Optional, for the same reason. */
+  /** SAFEs still outstanding at the sale (C8). */
   unconvertedSafes?: Safe[];
-  /** Convertible notes still outstanding at the sale (C9). Optional, for the same reason. */
+  /** Convertible notes still outstanding at the sale (C9). */
   unconvertedNotes?: Note[];
 }
 
@@ -190,8 +193,11 @@ export interface ExitInput {
   /** Breakpoints are reported strictly inside this range (SPEC, Breakpoints). */
   range: [D, D];
   exitValues: D[];
-  /** YYYY-MM-DD: the day dividends accrue to. Needed when a series has cumulative dividends; optional, so 0.1.0 code that builds an ExitInput keeps working. */
+  /**
+   * YYYY-MM-DD: the day dividends and a note's interest accrue to. Needed when a series has cumulative dividends or a
+   * note is outstanding; optional, so an exit written by hand without either needn't give one.
+   */
   exitDate?: string | null;
-  /** Escrow and earnout schedules to pay out (C7). Optional, so 0.1.0 code that builds an ExitInput keeps working. */
+  /** Escrow and earnout schedules to pay out (C7). Optional: missing is none. */
   paymentSchedules?: PaymentSchedule[];
 }
