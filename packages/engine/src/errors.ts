@@ -1,5 +1,7 @@
 // The ways the engine says no to an input.
 
+import type { UnsupportedTerm } from "./stable-names.ts";
+
 /** The input is malformed: a missing field, an unknown holder, a bad number. */
 export class InputError extends Error {
   override name = "InputError";
@@ -64,4 +66,9 @@ export class UnsupportedTermError extends Error {
     this.term = term;
     this.path = path;
   }
+}
+
+/** The engine's own way to raise one: only with a term the stable list has (item 17). Internal. */
+export function unsupportedTerm(term: UnsupportedTerm, path: string, what: string): UnsupportedTermError {
+  return new UnsupportedTermError(term, path, what);
 }

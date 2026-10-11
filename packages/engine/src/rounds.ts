@@ -18,7 +18,7 @@
 import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO, strikeInName } from "./decimal.ts";
-import { InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
+import { InputError, NoAnswerError, unsupportedTerm } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
 import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
 import type { CapTable, ConversionGroup, Holder, Note, Position, PreferredSeries, Safe, Security } from "./model.ts";
@@ -326,7 +326,7 @@ function fraction(value: unknown, path: string, allowZero = false): Decimal {
  */
 function noDividendsInRounds(value: unknown, path: string): void {
   if (value != null && typeof value === "object" && (value as Json).cumulative_dividend != null) {
-    throw new UnsupportedTermError(
+    throw unsupportedTerm(
       "cumulative_dividend_in_rounds", `${path}.cumulative_dividend`, "Cumulative dividends on a series issued outside a priced round",
     );
   }
@@ -897,7 +897,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       }
     });
     if (!extraA.growing.isZero()) {
-      throw new UnsupportedTermError(
+      throw unsupportedTerm(
         "discounted_conversion_in_anti_dilution_a", `${path}.convert_safes`,
         `A SAFE or note converting at its discount and counted in ${s.id}'s A (exempt from anti-dilution, or issued before ${s.id}), ` +
           "in a round that adjusts it with the adjustment shares in its price: the price would not be exact (R25)",
@@ -984,7 +984,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   // conversions' shares, are unsettled.
   const unsettled = protectedSeries.find(({ rule }, k) => triggered[k] && rule !== "broad_based");
   if (unsettled && conversionIds.length > 0) {
-    throw new UnsupportedTermError(
+    throw unsupportedTerm(
       "anti_dilution_with_conversions", `${path}.convert_safes`,
       `${unsettled.rule === "full_ratchet" ? "Full-ratchet" : "Narrow-based"} anti-dilution on ${unsettled.series.id} in a round that converts SAFEs or notes (R25)`,
     );

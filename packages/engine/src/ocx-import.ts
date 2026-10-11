@@ -7,6 +7,7 @@ import { D, ZERO, strikeInName } from "./decimal.ts";
 import type { CapTableImport, ImportBlank } from "./imports.ts";
 import { Ids, idOf, written } from "./ocx-cells.ts";
 import { Notes } from "./ocf-notes.ts";
+import type { ImportNoteCode } from "./stable-names.ts";
 
 type Json = Record<string, unknown>;
 
@@ -71,7 +72,7 @@ export class Draft {
   /** O14: each series, SAFE and note with the date it was issued, or none, where the default puts it after every series. */
   readonly issued: { id: string; date?: string; series: boolean }[] = [];
   /** Lines that come after the cap table's own: issue order, then holders left out. */
-  private readonly lateNotes: [string, string][] = [];
+  private readonly lateNotes: [ImportNoteCode, string][] = [];
 
   count(key: string, n = 1): void {
     this.counts.set(key, (this.counts.get(key) ?? 0) + n);
@@ -113,7 +114,7 @@ export class Draft {
     return n === 1 ? `${prefix}_${holder}` : `${prefix}_${holder}_${n}`;
   }
 
-  late(code: string, subject: string): void {
+  late(code: ImportNoteCode, subject: string): void {
     this.lateNotes.push([code, subject]);
   }
 

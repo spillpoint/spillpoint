@@ -27,6 +27,7 @@ import { ShareLedger } from "./ocf-ledger.ts";
 import { Notes } from "./ocf-notes.ts";
 import { type Json, asWritten, date, isObject, malformed, text, unsupported } from "./ocf-read.ts";
 import { Warrants } from "./ocf-warrants.ts";
+import { NO_FIELD } from "./stable-names.ts";
 
 /** One file of a package, its JSON already parsed. */
 export interface OcfFile {
@@ -275,7 +276,7 @@ export function readOcf(files: readonly OcfFile[]): CapTableImport {
   const seniority = levels.map((level) => preferred.filter((c) => c.seniority.eq(level)).map((c) => c.id));
 
   // O11: terms OCF has no field for, one line each.
-  for (const code of ["no_dividend_field", "no_conversion_group_field", "no_carve_out_field", "no_sale_date_field"]) notes.add(code);
+  for (const code of NO_FIELD) notes.add(code);
 
   // O14: the issue order. A series takes the date of its first issuance not retracted, or, if none, of the first warrant
   // for it (a class kept only for a warrant); a SAFE or note its own, from convertibles.issuedOn. On one date, series

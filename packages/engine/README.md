@@ -673,6 +673,171 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 
 **Types for the OCX import** *(0.6.0)*: `OcxWorkbook`, `OcxSheet` and `OcxCell`, what `readOcx` takes: the date system, and each tab's cells with their kind, their text as stored and whether each holds a formula. See [Reading an OCX workbook](#reading-an-ocx-workbook-060).
 
+## Stable from 1.0
+
+Code can match on these names, as the project's page and check script do: the terms the engine and the imports refuse with, the codes an import's report notes, and the reasons a breakpoint gives. From 1.0 a name is never renamed or reused for something else. A new one can be added, and one stops being raised when spillpoint comes to model what it refuses; it stays here, marked as no longer raised. A test fails if the engine can raise a name this list doesn't have. The rules behind each are in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+
+### `UnsupportedTermError`'s terms
+
+What the engine doesn't model in an input it reads:
+- `anti_dilution_with_conversions`: full-ratchet or narrow-based anti-dilution in a round that converts SAFEs or notes (R25).
+- `conversion_groups`: more than one group of series that must convert together (E17).
+- `cumulative_dividend_in_rounds`: cumulative dividends on a series issued by an `issue` event, not a priced round.
+- `discounted_conversion_in_anti_dilution_a`: a SAFE or note converting at its discount and counted in a series' anti-dilution A, in a round that adjusts that series with the adjustment shares in its price (R25).
+- `dividends_added_to_conversion`: accrued dividends added to what converts, rather than forfeited or paid (X5).
+- `note_compounding_interest`: a note with interest other than simple (R23).
+- `note_post_money_cap`: a note with a post-money cap (R23).
+- `note_with_safe_or_carve_out`: at a sale, a note beside a carve-out, or beside a SAFE unless the note has a cap and every SAFE a post-money cap (X12, X18).
+- `pre_money_safe_with_preferred`: at a sale, a pre-money SAFE beside preferred stock (X14).
+- `several_notes`: at a sale, more than one note, unless each has a cap (X15).
+- `several_safes`: at a sale, more than one SAFE, unless each has a post-money cap (X13, X14).
+
+### `ImportRefusal`'s terms for OCF
+
+An Open Cap Format package `readOcf` won't read, its `format` `"ocf"`, with each term's `kind`:
+- `after_as_of` *(malformed)*: a transaction dated after the package's as-of date.
+- `ambiguous_file` *(malformed)*: two files of one name, so which the manifest means can't be told.
+- `bad_value` *(malformed)*: a value OCF doesn't allow there, such as a class type other than COMMON or PREFERRED.
+- `cancellation_behavior_missing` *(unsupported)*: a plan with shares cancelled or expired that gives no cancellation behavior, so whether they return to the pool would be a guess.
+- `cap_below_preference` *(unsupported)*: a participation cap below the class's preference multiple, which makes sense only as a cap that leaves the preference out.
+- `class_conversion_mechanism` *(unsupported)*: a class that converts by a mechanism other than a ratio.
+- `closed_security` *(malformed)*: a transaction naming a security after it was closed.
+- `common_conversion_right` *(unsupported)*: a common class with a conversion right.
+- `compensation_type` *(unsupported)*: a grant other than an option or an RSU.
+- `conversion_into_preferred` *(unsupported)*: a class that converts into another preferred class.
+- `conversion_ratio_mismatch` *(malformed)*: a class's conversion ratio that doesn't agree with its issue price ÷ conversion price, even allowing for how the numbers are written.
+- `convertible_mechanism_mismatch` *(malformed)*: a SAFE or note without its kind's conversion mechanism on every trigger.
+- `convertible_security` *(unsupported)*: a convertible of OCF's general kind, neither a SAFE nor a note.
+- `convertible_seniority` *(unsupported)*: outstanding convertibles at different seniorities.
+- `convertible_triggers_differ` *(unsupported)*: a convertible that converts on different terms at different triggers.
+- `currency` *(unsupported)*: an amount in a currency other than US dollars.
+- `duplicate_id` *(malformed)*: two objects with one id.
+- `duplicate_security` *(malformed)*: two issuances of one security.
+- `fractional_shares` *(unsupported)*: a share count that isn't whole.
+- `grant_of_preferred` *(unsupported)*: options over a preferred class.
+- `missing_field` *(malformed)*: a field OCF requires, missing.
+- `missing_file` *(malformed)*: a file the manifest lists that isn't in the package.
+- `no_manifest` *(malformed)*: a package with no manifest.
+- `not_an_ocf_file` *(malformed)*: a file with no `file_type`.
+- `note_accrual_period` *(unsupported)*: a note whose interest accrues other than daily.
+- `note_base_counts_other_convertibles` *(unsupported)*: a note whose cap counts other converting securities, with another SAFE or note outstanding beside it.
+- `note_cash_interest` *(unsupported)*: a note that pays its interest in cash, rather than deferring it.
+- `note_compounding` *(unsupported)*: a note with compounding interest.
+- `note_day_count` *(unsupported)*: a note whose interest counts days other than Actual/365.
+- `note_mfn` *(unsupported)*: a most-favored-nation note.
+- `note_rate_periods` *(unsupported)*: a note with more than one interest rate, or a rate for a set period.
+- `ocf_version` *(unsupported)*: an OCF version other than 1.0 to 1.2; the subject is the version.
+- `pool_overdrawn` *(malformed)*: a plan whose grants and deliveries come to more than it reserves.
+- `quantities_dont_reconcile` *(malformed)*: a transaction whose quantities don't add up for the security it acts on.
+- `return_to_pool_conflict` *(unsupported)*: a return to a pool whose plan's own rule already decides what returns.
+- `safe_exit_multiple` *(unsupported)*: a SAFE with an exit multiple other than 1.
+- `several_conversion_rights` *(unsupported)*: a class with more than one conversion right.
+- `several_manifests` *(malformed)*: a package with more than one manifest.
+- `split_of_preferred` *(unsupported)*: a split of a preferred class, since OCF doesn't record how its terms adjust.
+- `split_with_derivatives` *(unsupported)*: a split of a class while something that converts into it or is exercised for it is outstanding.
+- `stock_appreciation_right` *(unsupported)*: a stock appreciation right.
+- `too_many_shares` *(unsupported)*: a share count larger than a cap table here can hold exactly.
+- `unknown_file_type` *(unsupported)*: a file whose `file_type` isn't an OCF file type.
+- `unknown_object_type` *(unsupported)*: an object of a type spillpoint doesn't read.
+- `unknown_security` *(malformed)*: a transaction naming a security no issuance creates, or before it's issued.
+- `unknown_stakeholder` *(malformed)*: an issuance to someone who isn't a stakeholder in the package.
+- `unknown_stock_class` *(malformed)*: a stock class the package doesn't have.
+- `unknown_stock_plan` *(malformed)*: a stock plan the package doesn't have.
+- `warrant_mechanism` *(unsupported)*: an outstanding warrant whose exercise isn't one fixed-amount conversion into a stock class.
+- `warrant_quantity` *(malformed)*: a warrant whose quantity and its conversion's differ.
+
+### `ImportRefusal`'s terms for OCX
+
+An OCX workbook `readOcx` won't read, its `format` `"ocx"`, with each term's `kind`:
+- `bad_date` *(malformed)*: a date the reader doesn't read, or an as-of date whose weekday is wrong.
+- `bad_number` *(malformed)*: a value the import needs that's blank or not a number, or a discount that isn't a fraction below 1.
+- `cap_below_preference` *(unsupported)*: a participation cap below the preference multiple, which makes sense only as a cap that leaves the preference out.
+- `class_without_round` *(malformed)*: a preferred class with no round in Financing History.
+- `conversion_ratio_mismatch` *(malformed)*: a series' prices that don't give its conversion ratio, even allowing for a spreadsheet's 15 digits.
+- `convertibles_mismatch` *(malformed)*: the summary's convertibles table disagreeing with the SAFEs ledger, by count or amount.
+- `currency` *(unsupported)*: an amount in a currency other than US dollars.
+- `duplicate_stakeholder` *(malformed)*: two holder rows with one name.
+- `formula_without_value` *(malformed)*: a value the import needs that's a formula with no saved value.
+- `fractional_shares` *(malformed)*: a holding that isn't a whole number of shares.
+- `grant_for_unknown_class` *(malformed)*: a grant whose share class the summary doesn't list.
+- `grant_of_preferred` *(unsupported)*: a grant over a preferred class.
+- `holdings_mismatch` *(malformed)*: a holder's holdings disagreeing between tabs.
+- `ledger_without_class` *(malformed)*: a class ledger whose tab name and title name no class the summary lists.
+- `liquidation_preference_mismatch` *(malformed)*: a class's liquidation preference on the summary that isn't its outstanding shares × issue price × multiple, within a cent.
+- `missing_header` *(malformed)*: a header the layout needs, missing; the subject is the tab and header.
+- `missing_tab` *(malformed)*: a tab the layout needs, a class's ledger among them, missing.
+- `mixed_layout` *(malformed)*: a tab of another OCX layout beside this one's.
+- `non_plan_awards` *(unsupported)*: in 0.7, non-plan awards outstanding, which no ledger the reader knows holds.
+- `ocx_layout` *(unsupported)*: a layout spillpoint doesn't read, 0.3's among them; the subject is the version label's version.
+- `pool_mismatch` *(malformed)*: a pool row that doesn't agree with the plans' shares available for grant.
+- `round_without_class` *(malformed)*: a Financing History round with no preferred class of its name.
+- `rsus_not_separated` *(unsupported)*: in 0.4/0.5, a plan with RSUs outstanding, which its option columns don't tell apart from options.
+- `several_notes_in_row` *(unsupported)*: a convertibles row of several notes, which can't be combined exactly.
+- `status_mismatch` *(malformed)*: a grant or warrant with shares outstanding whose status isn't "Outstanding".
+- `stock_appreciation_right` *(unsupported)*: a stock appreciation right.
+- `total_mismatch` *(malformed)*: a total with a saved value that isn't what its rows add up to.
+- `unknown_class_heading` *(unsupported)*: a class with no holdings column the reader recognizes.
+- `unknown_holdings_header` *(unsupported)*: a holdings column of a kind the reader doesn't know.
+- `unknown_security_type` *(unsupported)*: a convertibles row of a type OCX doesn't list.
+- `unknown_stakeholder` *(malformed)*: a ledger naming a holder who isn't on the per-holder tab.
+- `unknown_status` *(unsupported)*: a status, or a Y or N, the reader doesn't know.
+- `warrant_for_future_series` *(unsupported)*: warrants for a series not yet issued.
+- `warrant_for_unknown_class` *(unsupported)*: a warrant for a class the workbook doesn't have.
+
+### An import's report-note codes
+
+What an import's `report.notes` say, with the format each comes from:
+- `common_named_preferred` *(OCX)*: a class under Common Stock whose name says Preferred, read as common.
+- `common_preference_ignored` *(OCF)*: a preference on a common class, which changes nothing at a sale, ignored.
+- `conversion_ratio_rounded` *(both)*: a conversion ratio that agrees with its prices only within how they're written; the prices are read.
+- `conversion_rounding_not_modeled` *(OCF)*: a class's rounding of converted shares, which the engine doesn't model: it converts without rounding.
+- `convertible_seniority_ignored` *(OCF)*: the convertibles' seniority among themselves, the same for each, isn't used; spillpoint ranks them as it ranks any SAFE or note.
+- `expired_option_left_out` *(both)*: an option past its expiration date, left out.
+- `expired_warrant_left_out` *(both)*: a warrant past its expiration date, left out.
+- `formula_totals_skipped` *(OCX)*: a total or check that's a formula with no saved value, so not checked.
+- `issue_order_default` *(OCX)*: a SAFE or note placed after every series in the issue order, the default, with no date to place it by.
+- `issue_price_from_ledger` *(OCX)*: in 0.7 without Financing History, a series' issue price read from its ledger.
+- `issued_at_other_price` *(OCF)*: preferred shares issued at a price other than their class's, which still carry the class's terms.
+- `left_out_stakeholder` *(both)*: a holder with nothing outstanding, left out.
+- `left_out_stock_class` *(OCF)*: a class with nothing outstanding, left out.
+- `no_anti_dilution_field` *(both)*: a preferred series' anti-dilution, which neither format records, read as none.
+- `no_carve_out_field` *(both)*: neither format has a field for a carve-out.
+- `no_conversion_group_field` *(both)*: neither format has a field for series that must convert together.
+- `no_dividend_field` *(both)*: neither format has a field for cumulative dividends.
+- `no_financing_history` *(OCX)*: a 0.7 workbook without Financing History, so a series' conversion price, multiple and participation are blank.
+- `no_sale_date_field` *(both)*: neither format has a field for the sale's date.
+- `no_seniority_field` *(OCX)*: OCX has no seniority, so it's blank to fill.
+- `no_strike_field` *(OCX)*: in 0.4/0.5, an option, award or warrant column with no strike, blank to fill.
+- `not_in_manifest` *(OCF)*: a file the manifest doesn't list, read anyway.
+- `note_base_other_convertibles_ignored` *(OCF)*: a note whose cap counts other converting securities, with none outstanding beside it, so the setting changes nothing.
+- `note_cap_read_as_pre_money` *(both)*: a note's cap, whose kind neither format records, read as pre-money.
+- `note_from_convertibles_row` *(OCX)*: a note read from the summary's convertibles table, its interest rate, issue date, base and repayment multiple blank.
+- `participation_cap_includes_preference` *(both)*: a participation cap read as including the preference.
+- `rsu_as_option` *(both)*: an RSU read as an option at a $0 strike.
+- `safe_exit_multiple_read_as_1` *(OCF)*: a SAFE that gives no exit multiple, paid its purchase amount, a multiple of 1.
+- `safes_combined` *(OCX)*: a convertibles row of SAFEs read as one SAFE for its total, held by a holder made for it.
+- `unrecognized_field` *(both)*: a field or header the import doesn't know, set aside.
+- `unrecognized_tab` *(OCX)*: a tab no layout names, not read.
+- `version_label` *(OCX)*: the workbook's version label, as written, which decides nothing.
+- `warrant_counts_are_maximums` *(OCX)*: the workbook's warrant counts, the most each warrant can buy.
+
+### `ReasonCode`
+
+What a breakpoint's reason, `reasons[i].code`, is about:
+- `tier_fully_paid`: a seniority tier's preferences are paid in full.
+- `cap_reached`: a capped participating series reaches its cap.
+- `option_in_the_money`: an option class comes into the money and is exercised.
+- `warrant_in_the_money`: a warrant comes into the money and is exercised.
+- `series_converts`: a series, or a group of series, converts to common.
+- `safe_cash_out_paid`: the SAFEs' Cash-Out Amounts are paid in full.
+- `safe_switches`: a SAFE switches between its Cash-Out Amount and its Conversion Amount.
+- `note_repayment_paid`: the notes' repayment is paid in full.
+- `note_switches`: a note switches between repayment and conversion.
+- `carve_out_tier`: a carve-out's tier ends.
+- `payouts_jump`: payouts jump rather than bend.
+- `payouts_curve`: payouts curve on one side or both, with a carve-out alongside the preferences (X17).
+- `other`: a safety net, "Payout slopes change here.", where payouts bend and no specific reason is found. No case produces it.
+
 ## License
 
 Apache-2.0.

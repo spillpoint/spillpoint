@@ -10,27 +10,12 @@ import type { Decimal } from "decimal.js";
 
 import { D, ONE, ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
+import type { ReasonCode } from "./stable-names.ts";
 import { CARVE_OUT, carveOutAt, settle } from "./waterfall.ts";
 import type { Prepared } from "./waterfall.ts";
 
-/**
- * What a breakpoint's reason is about, for code to match on (stable from 1.0, the naming review's item 17). "other" is
- * a safety net: "Payout slopes change here.", where payouts bend and no specific reason is found. No case produces it.
- */
-export type ReasonCode =
-  | "tier_fully_paid"
-  | "cap_reached"
-  | "option_in_the_money"
-  | "warrant_in_the_money"
-  | "series_converts"
-  | "safe_cash_out_paid"
-  | "safe_switches"
-  | "note_repayment_paid"
-  | "note_switches"
-  | "carve_out_tier"
-  | "payouts_jump"
-  | "payouts_curve"
-  | "other";
+/** What a breakpoint's reason is about (stable-names.ts). */
+export type { ReasonCode };
 
 export interface Reason {
   code: ReasonCode;

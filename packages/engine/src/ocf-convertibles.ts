@@ -10,6 +10,7 @@ import { D } from "./decimal.ts";
 import { Book } from "./ocf-book.ts";
 import type { Notes } from "./ocf-notes.ts";
 import { type Json, asWritten, date, isObject, malformed, money, numericText, required, text, unsupported } from "./ocf-read.ts";
+import type { OcfTerm } from "./stable-names.ts";
 
 interface ConvertibleTerms {
   kind: "SAFE" | "NOTE" | "CONVERTIBLE_SECURITY";
@@ -123,7 +124,7 @@ export class Convertibles {
     if (!Array.isArray(rates) || rates.length !== 1 || !isObject(rates[0]) || rates[0].accrual_end_date != null) {
       throw unsupported("note_rate_periods", subject, `${sec} accrues interest at more than one rate or for a set period; spillpoint reads one rate for the note's life`);
     }
-    const terms: [string, string, string][] = [
+    const terms: [string, string, OcfTerm][] = [
       ["day_count_convention", "ACTUAL_365", "note_day_count"],
       ["interest_payout", "DEFERRED", "note_cash_interest"],
       ["interest_accrual_period", "DAILY", "note_accrual_period"],
