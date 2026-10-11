@@ -14,7 +14,7 @@ const cases = resolve(import.meta.dirname, "../../../cases");
 const caseFile = (path: string) => readFileSync(resolve(cases, path));
 const packageOf = (name: string) => readdirSync(resolve(cases, name, "package")).map((f) => new File([caseFile(`${name}/package/${f}`)], f, { type: "application/json" }));
 const zip = (name: string) => new File([readFileSync(resolve(import.meta.dirname, "fixtures", name))], name, { type: "application/zip" });
-const upload = (files: File[]) => fireEvent.change(screen.getByLabelText(/Open an OCF export/), { target: { files } });
+const upload = (files: File[]) => fireEvent.change(screen.getByLabelText(/Open a cap table export/), { target: { files } });
 const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
 const review = () => screen.findByRole("region", { name: /^Importing / });
 

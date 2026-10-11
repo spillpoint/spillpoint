@@ -30,8 +30,13 @@ import type { Built, Checked, Draft } from "./draft.ts";
 import { fileName, fileText, readFile } from "./file.ts";
 import { ImportReview } from "./ImportReview.tsx";
 import type { ImportUse } from "./ImportReview.tsx";
+import { ocfSource, ocxSource } from "./importSources.ts";
+import type { ImportSource } from "./importSources.ts";
 import { importOcf } from "./ocfImport.ts";
-import type { Imported } from "./ocfImport.ts";
+import { summaryLines } from "./ocfSummary.ts";
+import { importOcx, isWorkbook } from "./ocxImport.ts";
+import { ocxShareLines } from "./ocxSummary.ts";
+import { ShareSummary } from "./ShareSummary.tsx";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { saleLimitText } from "./saleLimits.ts";
 import { dateText, eventViews, exampleContents, fromRounds } from "./rounds.ts";
@@ -150,7 +155,8 @@ function youIn(built: Built, capTable: CapTable, youKey: string | null): string 
 /** The exit value, kept inside the range even when an edit narrows it. */
 const insideRange = (x: D, [lo, hi]: readonly [D, D]) => D.min(hi, D.max(lo, x));
 
-type FileStatus = { kind: "done" | "problem"; text: string } | null;
+/** What a file action said; a refused import also offers its summary to share (O15). */
+type FileStatus = { kind: "done" | "problem"; text: string; share?: string[] } | null;
 
 /** Saving means downloading the file; nothing leaves the computer, and the link is let go straight after. */
 function download(name: string, text: string) {
@@ -182,8 +188,8 @@ export function App() {
   const [edited, setEdited] = useState(false);
   const [unsaved, setUnsaved] = useState(false);
   const [fileStatus, setFileStatus] = useState<FileStatus>(null);
-  // An OCF import being reviewed: its report and questions come before its cap table is used (M6 plan, answer 9).
-  const [importing, setImporting] = useState<Extract<Imported, { ok: true }> | null>(null);
+  // An import being reviewed, OCF or OCX: its report and questions come before its cap table is used (M6 plan, answer 9).
+  const [importing, setImporting] = useState<ImportSource | null>(null);
   useUnsavedWarning(unsaved);
 
   const built = useMemo(() => buildExit(session.draft), [session.draft]);
@@ -325,17 +331,32 @@ export function App() {
 
   const importPicker = useRef<HTMLInputElement>(null);
   const openImport = () => {
-    if (okToLose("Open an OCF export")) importPicker.current?.click();
+    if (okToLose("Open a cap table export")) importPicker.current?.click();
   };
+  /** An OCX workbook (.xlsx) on its own, or an OCF export: a .zip, or the package's .ocf.json files (06g). */
   const imported = async (chosen: File[]) => {
     const picked = await Promise.all(chosen.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })));
+    if (picked.some(isWorkbook)) {
+      if (picked.length > 1) {
+        setFileStatus({ kind: "problem", text: "Open an OCX workbook on its own: one .xlsx, with no other files." });
+        return;
+      }
+      const result = await importOcx(picked[0]!);
+      if (!result.ok) {
+        setFileStatus({ kind: "problem", text: result.message, share: ocxShareLines(result, build.engineVersion) });
+        return;
+      }
+      setFileStatus(null);
+      setImporting(ocxSource(result, build.engineVersion));
+      return;
+    }
     const result = await importOcf(picked);
     if (!result.ok) {
-      setFileStatus({ kind: "problem", text: result.message });
+      setFileStatus({ kind: "problem", text: result.message, share: summaryLines(result, build.engineVersion) });
       return;
     }
     setFileStatus(null);
-    setImporting(result);
+    setImporting(ocfSource(result, build.engineVersion));
   };
   /** An import's cap table, once its questions are answered, opens as a saved file would; it isn't saved until you save it. */
   const applyImport = (use: ImportUse) => {
@@ -414,16 +435,16 @@ export function App() {
             }}
           />
           <button type="button" className="file-button" onClick={openImport}>
-            Open an OCF export
+            Open a cap table export
           </button>
           <input
             ref={importPicker}
             type="file"
             multiple
-            accept=".zip,.json,application/zip,application/json"
+            accept=".xlsx,.zip,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/json"
             className="visually-hidden"
             tabIndex={-1}
-            aria-label="Open an OCF export: a .zip, or the package's .ocf.json files"
+            aria-label="Open a cap table export: an OCX workbook (.xlsx), or an OCF export (a .zip, or the package's .ocf.json files)"
             onChange={(e) => {
               const chosen = [...(e.target.files ?? [])];
               e.target.value = "";
@@ -437,13 +458,15 @@ export function App() {
           {fileStatus.text}
         </p>
       )}
+      {fileStatus?.share && (
+        <div className="import__share">
+          <ShareSummary lines={fileStatus.share} />
+        </div>
+      )}
       <GovernanceNote />
       {importing && (
         <ImportReview
-          result={importing.result}
-          files={importing.files}
-          source={importing.source}
-          skipped={importing.skipped}
+          source={importing}
           onUse={applyImport}
           onCancel={() => setImporting(null)}
         />
