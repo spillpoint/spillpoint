@@ -3,7 +3,10 @@
 // it comes from (fully diluted, including the pool), so the two can be
 // compared. On a phone the two shares move under the name as one line, so
 // the table fits without scrolling sideways (M3a review); the stylesheet
-// shows one form or the other, never both.
+// shows one form or the other, never both. Each payout is what would be paid
+// (P1): every holder's amount for each class rounded down to the cent, a
+// total the sum of those, and the cents left over on a row of their own, so
+// the column adds up to the exit value.
 
 import { useState } from "react";
 import { D } from "spillpoint";
@@ -11,6 +14,7 @@ import type { Answer, PreferredSeries, PreparedCapTable } from "spillpoint";
 
 import { CARVE_OUT, CARVE_OUT_NAME, classShares, fractionOf, fullyDiluted, holderShares, outstandingNames } from "./capTable.ts";
 import { dollarsAndCents, percent, shortDollars } from "./format.ts";
+import { leftOver, paid } from "./paid.ts";
 import { dateText } from "./rounds.ts";
 
 type Decimal = D;
@@ -37,29 +41,31 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
   const fd = fullyDiluted(pc);
   const zero = new D(0);
   const outstanding = outstandingNames(pc);
+  const payments = paid(answer.payout.lines);
+  const left = leftOver(exitValue, payments);
 
   const rows: Row[] =
     view === "holder"
       ? capTable.holders
-          .filter((h) => answer.payout.holderTotals.has(h.id))
+          .filter((h) => payments.holderTotals.has(h.id))
           .map((h) => ({
             key: h.id,
             name: h.name,
-            amount: answer.payout.holderTotals.get(h.id)!,
+            amount: payments.holderTotals.get(h.id)!,
             shares: holderShares(pc, h.id),
             you: h.id === you,
           }))
       : [
           ...classOrder(pc)
-            .filter((s) => answer.payout.classTotals.has(s.id))
-            .map((s) => ({ key: s.id, name: s.name, amount: answer.payout.classTotals.get(s.id)!, shares: classShares(pc, s.id), you: false })),
+            .filter((s) => payments.classTotals.has(s.id))
+            .map((s) => ({ key: s.id, name: s.name, amount: payments.classTotals.get(s.id)!, shares: classShares(pc, s.id), you: false })),
           // Each SAFE and note is its own class (C8, C9), after the stock.
           ...[...outstanding]
-            .filter(([id]) => answer.payout.classTotals.has(id))
-            .map(([id, name]) => ({ key: id, name, amount: answer.payout.classTotals.get(id)!, shares: null, you: false })),
+            .filter(([id]) => payments.classTotals.has(id))
+            .map(([id, name]) => ({ key: id, name, amount: payments.classTotals.get(id)!, shares: null, you: false })),
           // So is the carve-out (C6), which holds no shares either.
-          ...(answer.payout.classTotals.has(CARVE_OUT)
-            ? [{ key: CARVE_OUT, name: CARVE_OUT_NAME, amount: answer.payout.classTotals.get(CARVE_OUT)!, shares: null, you: false }]
+          ...(payments.classTotals.has(CARVE_OUT)
+            ? [{ key: CARVE_OUT, name: CARVE_OUT_NAME, amount: payments.classTotals.get(CARVE_OUT)!, shares: null, you: false }]
             : []),
         ];
   if (capTable.unissuedPool.gt(0)) {
@@ -113,6 +119,16 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
                 <td className="num share">{r.shares === null ? <span aria-label={company(r.key, null)}>—</span> : percent(fractionOf(r.shares, fd))}</td>
               </tr>
             ))}
+            {left.gt(0) && (
+              <tr className="payouts__left-over">
+                <th scope="row">Left over from rounding down</th>
+                <td className="num">{dollarsAndCents(left)}</td>
+                <td className="num share">{percent(proceeds(left))}</td>
+                <td className="num share">
+                  <span aria-label="no shares">—</span>
+                </td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr>
@@ -124,7 +140,7 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
           </tfoot>
         </table>
       </div>
-      <RoundingNote amounts={rows.map((r) => r.amount)} total={exitValue} />
+      <LeftOverNote left={left} />
       <p className="footnote">
         Share of the company is fully diluted: every share, option{pc.capTable.securities.some((s) => s.kind === "warrant") ? ", warrant" : ""} and preferred share as converted
         {capTable.unissuedPool.gt(0) ? ", and the unissued option pool" : ""}.
@@ -220,18 +236,13 @@ function classOrder(pc: PreparedCapTable) {
   return [...common, ...byStrike("option"), ...byStrike("warrant"), ...preferred];
 }
 
-/**
- * Each payout is rounded half-up to the cent, as the engine's toCents and the locked cases are, and the total row is
- * the exit value. When the rounded payouts don't add up to it, a quiet line says by how much.
- */
-function RoundingNote({ amounts, total }: { amounts: Decimal[]; total: Decimal }) {
-  const cent = (v: Decimal) => v.toDecimalPlaces(2, D.ROUND_HALF_UP);
-  const sum = amounts.reduce((t, a) => t.plus(cent(a)), new D(0));
-  const off = sum.minus(cent(total)).abs().times(100).toNumber();
-  if (off === 0) return null;
+/** P1: what the left-over row is, under the table, when something is left over. */
+function LeftOverNote({ left }: { left: Decimal }) {
+  if (!left.gt(0)) return null;
+  const cents = left.times(100).toNumber();
   return (
     <p className="footnote">
-      Each payout is rounded to the cent, so together they come to {dollarsAndCents(sum)}, {off === 1 ? "1 cent" : `${off} cents`} from the total.
+      Each payment is rounded down to the cent, as payments usually are; the {cents === 1 ? "1 cent" : `${cents} cents`} left over {cents === 1 ? "isn't" : "aren't"} paid to any holder.
     </p>
   );
 }

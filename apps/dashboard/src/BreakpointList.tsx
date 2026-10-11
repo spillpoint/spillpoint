@@ -70,7 +70,7 @@ const CURVE_WHY = "because the carve-out's claim grows with the exit value";
 /**
  * One line on how a breakpoint changes your payout. A bend compares what each
  * extra $1M adds just above the breakpoint with just below it; a jump gives
- * its size, to the cent, as the payouts are. A rate is approximate: whole
+ * its size, to the cent, from what you'd be paid on each side (P1). A rate is approximate: whole
  * dollars, unless they would round two different rates to the same figure,
  * then cents. On a curved side the rate is the one right at
  * the breakpoint, so it's "about" that, and the line says why it keeps
@@ -78,9 +78,8 @@ const CURVE_WHY = "because the carve-out's claim grows with the exit value";
  */
 function forYou(change: Change): string {
   if (change.kind === "jump") {
-    // The size is the difference of the two amounts as shown, to the cent, so the line adds up as written.
-    const shown = (v: D) => v.toDecimalPlaces(2, D.ROUND_HALF_UP);
-    const by = shown(change.to).minus(shown(change.from));
+    // Each side is what you'd be paid there, in whole cents, so the size is their difference and the line adds up as written.
+    const by = change.to.minus(change.from);
     return `For you: your payout ${by.isNegative() ? "drops" : "jumps"} ${dollarsAndCents(by.abs())} here, from ${dollarsAndCents(change.from)} to ${dollarsAndCents(change.to)}.`;
   }
   const money = dollars(change.after) === dollars(change.before) ? dollarsAndCents : dollars;

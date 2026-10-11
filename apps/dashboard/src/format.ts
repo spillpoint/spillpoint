@@ -1,9 +1,13 @@
 // How the dashboard writes and reads money. Founders read these, so:
 // - short forms in headlines, chart axes and labels, and the slider's ends ("$9.75M")
-// - to the cent wherever an amount is exact: every payout in the who-gets-what
-//   table and its total, each breakpoint's exit value, the exit value once it has
-//   cents, and a jump in your payout ("$9,750,989.67"), each rounded half-up, as
-//   the engine's toCents and the locked cases round, so the page agrees with them
+// - to the cent wherever an amount is exact. A payment is what would be paid
+//   (paid.ts, ASSUMPTIONS P1): every payout in the who-gets-what table, a jump in
+//   your payout and a schedule's takes are each holder's amount for each class
+//   rounded down to the cent, and totals are sums of those ("$9,750,989.66"); the
+//   "you get" headline is the short form of such a total. Anything else to the
+//   cent, such as each breakpoint's exit value, the exit value once it has cents,
+//   or what a series is owed, is rounded half-up here, as the engine's toCents
+//   and the locked cases round
 // - whole dollars elsewhere, such as the approximate per-$1M rates ("$250,000")
 // Amounts are engine Decimals throughout; nothing here uses floating point.
 
@@ -23,7 +27,7 @@ export function dollars(amount: Decimal): string {
   return `${sign}$${grouped(rounded.abs().toFixed(0))}`;
 }
 
-/** "$204,114.37": to the cent, half-up, for an exact amount: a payout, a breakpoint, a jump. */
+/** "$204,114.37": to the cent, half-up. A payment comes already rounded down to the cent (paid.ts), so it's written as it is; anything else, a breakpoint or what a series is owed, rounds half-up. */
 export function dollarsAndCents(amount: Decimal): string {
   const rounded = amount.toDecimalPlaces(2, D.ROUND_HALF_UP);
   const sign = rounded.isNegative() ? "-" : "";

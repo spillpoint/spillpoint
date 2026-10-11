@@ -58,7 +58,8 @@ describe("the founder view, on Millrace", () => {
     const table = screen.getByRole("table");
     const ana = within(table).getByText("Ana Ortiz").closest("tr")!;
     expect(ana.textContent).toContain("(you)");
-    expect(ana.textContent).toContain("$9,750,989.67");
+    // As she would be paid (P1): each of her payments rounded down to the cent, together.
+    expect(ana.textContent).toContain("$9,750,989.66");
     // On a phone the two shares show as a line under the name instead of their columns.
     expect(ana.querySelector(".payouts__shares")!.textContent).toBe("9.8% of the proceeds, 12.9% of the company");
     expect(within(table).getByText("Unissued option pool")).toBeTruthy();

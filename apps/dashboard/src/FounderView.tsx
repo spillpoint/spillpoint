@@ -8,6 +8,7 @@ import { D } from "spillpoint";
 import { fractionOf, fullyDiluted, holderShares, payoutStart } from "./capTable.ts";
 import type { AnalysisState } from "./analysis.ts";
 import { percent, shortDollars, withoutCodes } from "./format.ts";
+import { paid } from "./paid.ts";
 
 type Decimal = D;
 
@@ -22,7 +23,8 @@ interface Props {
 }
 
 export function FounderView({ pc, range, answer, exitValue, you, onChooseYou, breakpoints }: Props) {
-  const gets = answer.payout.holderTotals.get(you) ?? new D(0);
+  // What you'd be paid (P1): each of your payments rounded down to the cent, together.
+  const gets = paid(answer.payout.lines).holderTotals.get(you) ?? new D(0);
   const ofProceeds = fractionOf(gets, exitValue);
   const ofCompany = fractionOf(holderShares(pc, you), fullyDiluted(pc));
 

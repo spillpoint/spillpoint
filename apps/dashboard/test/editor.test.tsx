@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.tsx";
 import { dollarsAndCents } from "../src/format.ts";
 import { analysed } from "./analysis.ts";
+import { nearCaseTotal, paidOnCase } from "./payouts.ts";
 
 const headline = () => screen.getByRole("heading", { level: 1 }).textContent;
 const type = (el: HTMLElement, value: string) => fireEvent.change(el, { target: { value } });
@@ -86,7 +87,10 @@ describe("building case 6b from scratch", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
+        // As the page pays it (P1): the case's exact payments, each rounded down, and within a cent a payment of its total.
+        const pays = paidOnCase("edge-06b-forced-class", p.exit_value).get(holder)!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(pays.amount))]);
+        expect(nearCaseTotal(amount, pays), `${p.exit_value}: ${holder}`).toBe(true);
       }
     }
   });
@@ -289,7 +293,10 @@ describe("SAFEs and notes still outstanding (M5k)", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
+        // As the page pays it (P1): the case's exact payments, each rounded down, and within a cent a payment of its total.
+        const pays = paidOnCase(name, p.exit_value).get(holder)!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(pays.amount))]);
+        expect(nearCaseTotal(amount, pays), `${p.exit_value}: ${holder}`).toBe(true);
       }
     }
   }
@@ -388,7 +395,10 @@ describe("warrants and cumulative dividends (M5k2)", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
+        // As the page pays it (P1): the case's exact payments, each rounded down, and within a cent a payment of its total.
+        const pays = paidOnCase(name, p.exit_value).get(holder)!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(pays.amount))]);
+        expect(nearCaseTotal(amount, pays), `${p.exit_value}: ${holder}`).toBe(true);
       }
     }
   }
@@ -482,7 +492,10 @@ describe("a management carve-out (M5k3)", () => {
       const table = screen.getByRole("table");
       for (const [holder, amount] of Object.entries(p.equilibria[0].holder_totals as Record<string, string>)) {
         const row = within(table).getByText(names[holder]!).closest("tr")!;
-        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(new D(amount)))]);
+        // As the page pays it (P1): the case's exact payments, each rounded down, and within a cent a payment of its total.
+        const pays = paidOnCase("edge-10b-carve-out-alongside-preferences", p.exit_value).get(holder)!;
+        expect([p.exit_value, row.textContent]).toEqual([p.exit_value, expect.stringContaining(dollarsAndCents(pays.amount))]);
+        expect(nearCaseTotal(amount, pays), `${p.exit_value}: ${holder}`).toBe(true);
       }
     }
   });

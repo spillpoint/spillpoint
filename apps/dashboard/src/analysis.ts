@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 import { D, findBreakpoints, prepare, readExit, solve } from "spillpoint";
 import type { ReasonCode } from "spillpoint";
 
+import { paid } from "./paid.ts";
+
 /** Payouts by holder and by class, as plain strings. */
 export interface Totals {
   holders: Record<string, string>;
@@ -44,6 +46,8 @@ export interface CurvePoint extends Totals {
   side: "at" | "above" | "sample";
   /** Whether payouts curve from here to the next point. */
   curvedAfter: boolean;
+  /** What each holder would be paid here (P1): its payments, each rounded down to the cent, together. A jump in your payout is in these. */
+  paidHolders: Record<string, string>;
 }
 
 export interface Analysis {
@@ -69,7 +73,7 @@ export function computeAnalysis(exit: unknown): Analysis {
   const strings = (m: Map<string, D>) => Object.fromEntries([...m].map(([k, v]) => [k, v.toString()]));
   const point = (x: D, side: CurvePoint["side"], curvedAfter = false): CurvePoint => {
     const payout = payoutAt(x);
-    return { exitValue: x.toString(), side, curvedAfter, holders: strings(payout.holderTotals), classes: strings(payout.classTotals) };
+    return { exitValue: x.toString(), side, curvedAfter, holders: strings(payout.holderTotals), classes: strings(payout.classTotals), paidHolders: strings(paid(payout.lines).holderTotals) };
   };
   /** What each extra dollar adds on one side of x, read across a step far below a cent. */
   const rates = (x: D, side: -1 | 1): Totals => {

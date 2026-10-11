@@ -14,7 +14,7 @@ import { changeAt, changesAt, chartRows, curvedAt, niceScale, nodeAt, seriesNode
 // Two holders over exit values $0 to $30. "a" gets nothing until $10, then
 // half of each dollar; at $20 its payout jumps from $5 to $8, then it gets
 // every dollar. "b" gets every dollar throughout, a straight line.
-const at = (exitValue: string, a: string, b: string): CurvePoint => ({ exitValue, side: "at", curvedAfter: false, holders: { a, b }, classes: {} });
+const at = (exitValue: string, a: string, b: string): CurvePoint => ({ exitValue, side: "at", curvedAfter: false, holders: { a, b }, classes: {}, paidHolders: { a, b } });
 const curve: CurvePoint[] = [at("0", "0", "0"), at("10", "0", "10"), at("20", "5", "20"), { ...at("20", "8", "20"), side: "above" }, at("30", "18", "30")];
 const a = seriesNodes(curve, "holder", "a");
 const b = seriesNodes(curve, "holder", "b");

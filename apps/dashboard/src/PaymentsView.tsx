@@ -11,6 +11,7 @@ import type { PaymentSchedule, PaymentTake, PreparedCapTable } from "spillpoint"
 
 import { outstandingNames } from "./capTable.ts";
 import { dollars, dollarsAndCents, withoutCodes } from "./format.ts";
+import { paid } from "./paid.ts";
 
 type Decimal = D;
 
@@ -20,7 +21,7 @@ interface Props {
   you: string;
 }
 
-/** A take to the cent, each rounded on its own (X8), with a true minus sign where it's negative. */
+/** A take to the cent, as it would be paid (P1), with a true minus sign where it's negative (X8). */
 function take(amount: Decimal): string {
   const shown = dollarsAndCents(amount);
   return shown.startsWith("-") ? `−${shown.slice(1)}` : shown;
@@ -40,7 +41,7 @@ export function PaymentsView({ pc, schedules, you }: Props) {
       {schedules.map((schedule) => (
         <Schedule key={schedule.id} pc={pc} schedule={schedule} you={you} />
       ))}
-      <p className="footnote">Each take is rounded to the cent on its own, so a row's takes can add up to a cent more or less than its total.</p>
+      <p className="footnote">Each take is rounded down to the cent, as payments usually are, so a row's takes add up to its total; the cents left over aren't paid to any holder.</p>
     </section>
   );
 }
@@ -62,7 +63,9 @@ function Schedule({ pc, schedule, you }: { pc: PreparedCapTable; schedule: Payme
   const holderName = (id: string) => pc.capTable.holders.find((h) => h.id === id)?.name ?? id;
   // Everyone with a take in some payment, in the cap table's order.
   const holders = pc.capTable.holders.filter((h) => takes.some((t) => !t.holderTotals.get(h.id)?.isZero() && t.holderTotals.has(h.id)));
-  const total = (id: string) => takes.reduce((sum, t) => sum.plus(t.holderTotals.get(id) ?? 0), new D(0));
+  // Each take as it would be paid (P1): every holder's take for each class rounded down to the cent, a holder's the sum of those.
+  const paidTakes = takes.map((t) => paid(t.lines));
+  const total = (id: string) => paidTakes.reduce((sum, p) => sum.plus(p.holderTotals.get(id) ?? 0), new D(0));
   return (
     <div className="payments">
       <h3>{name}</h3>
@@ -92,7 +95,7 @@ function Schedule({ pc, schedule, you }: { pc: PreparedCapTable; schedule: Payme
                   {h.id === you && <span className="you-tag"> (you)</span>}
                 </th>
                 {takes.map((t, k) => {
-                  const v = t.holderTotals.get(h.id)!;
+                  const v = paidTakes[k]!.holderTotals.get(h.id) ?? new D(0);
                   const lowered = t.lowered.includes(h.id);
                   return (
                     <td key={k} className={`num${lowered ? " payments__lowered" : ""}`}>
@@ -127,7 +130,8 @@ function Lowered({ pc, take: t, before, holderName }: { pc: PreparedCapTable; ta
     converting.length > 0 ? `${list(converting)} ${converting.length === 1 ? "converts" : "convert"}` : null,
     reverting.length > 0 ? `${list(reverting)} no longer ${reverting.length === 1 ? "converts" : "convert"}` : null,
   ].filter((x): x is string => x !== null);
-  const giving = t.lowered.map((id) => `${holderName(id)} gives back ${dollarsAndCents(t.holderTotals.get(id)!.neg())}`);
+  const paying = paid(t.lines);
+  const giving = t.lowered.map((id) => `${holderName(id)} gives back ${dollarsAndCents(paying.holderTotals.get(id)!.neg())}`);
   const why = changed.length > 0 && before ? `At ${dollars(t.cumulative)} paid in all, ${list(changed)}, unlike at ${dollars(before.cumulative)}. ` : "";
   return (
     <div className="notice notice--problem payments__warning" role="note">
