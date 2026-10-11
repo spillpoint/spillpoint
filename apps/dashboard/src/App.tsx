@@ -36,6 +36,7 @@ import { importOcf } from "./ocfImport.ts";
 import { summaryLines } from "./ocfSummary.ts";
 import { importOcx, isWorkbook } from "./ocxImport.ts";
 import { ocxShareLines } from "./ocxSummary.ts";
+import { paid } from "./paid.ts";
 import { ShareSummary } from "./ShareSummary.tsx";
 import { shortDollars, withoutCodes } from "./format.ts";
 import { saleLimitText } from "./saleLimits.ts";
@@ -608,8 +609,14 @@ function Workspace(props: WorkspaceProps) {
   const changes = useMemo(() => {
     if (!ready) return [];
     const nodes = seriesNodes(ready.curve, "holder", you);
+    // A jump is a change in what you're paid, so it's given in payments as they'd be paid (P1); the rates stay exact.
+    const paidNodes = seriesNodes(ready.curve.map((p) => ({ ...p, holders: p.paidHolders })), "holder", you);
     const rate = (r: { holders: Record<string, string> } | undefined) => (r ? new D(r.holders[you] ?? "0") : undefined);
-    return ready.breakpoints.map((b) => changeAt(nodes, nodeAt(nodes, new D(b.exitValue)), { below: rate(b.rates.below), above: rate(b.rates.above) }));
+    return ready.breakpoints.map((b) => {
+      const i = nodeAt(nodes, new D(b.exitValue));
+      const change = changeAt(nodes, i, { below: rate(b.rates.below), above: rate(b.rates.above) });
+      return change?.kind === "jump" ? { ...change, from: paidNodes[i]!.left, to: paidNodes[i]!.right } : change;
+    });
   }, [ready, you]);
   const yours = useMemo(() => changes.map((c) => c !== null), [changes]);
 
@@ -682,7 +689,7 @@ function Workspace(props: WorkspaceProps) {
       : null;
 
   const summary = solved.ok
-    ? `At ${shortDollars(exitValue)}, ${yourName} gets ${shortDollars(solved.answer.payout.holderTotals.get(you) ?? new D(0))}.`
+    ? `At ${shortDollars(exitValue)}, ${yourName} gets ${shortDollars(paid(solved.answer.payout.lines).holderTotals.get(you) ?? new D(0))}.`
     : "";
 
   return (

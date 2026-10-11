@@ -110,6 +110,8 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .payouts tfoot th, .payouts tfoot td { font-weight: 600; border-bottom: 0; }
 .payouts tr.is-you th, .payouts tr.is-you td { background: var(--accent-soft); font-weight: 650; }
 .payouts tr.is-you th { box-shadow: inset 4px 0 0 var(--accent); }
+/* P1: the cents left over from rounding each payment down, paid to no holder. */
+.payouts tr.payouts__left-over th, .payouts tr.payouts__left-over td { color: var(--muted); font-weight: 400; }
 .you-tag { font-weight: 600; color: var(--accent); }
 /* The shares as one line under the name: shown instead of their columns on a phone. */
 .payouts__shares { display: none; }
