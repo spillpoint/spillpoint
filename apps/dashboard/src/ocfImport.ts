@@ -7,7 +7,7 @@
 import { D, ImportRefusal, readOcf } from "spillpoint";
 import type { CapTableImport, ImportBlank, OcfFile } from "spillpoint";
 
-import { shortDollars } from "./format.ts";
+import { shortDollars, strikeText } from "./format.ts";
 import { MOST_BYTES, ZipError, readZip } from "./zip.ts";
 
 type Json = Record<string, unknown>;
@@ -226,7 +226,7 @@ export function reportLines(result: CapTableImport, pkg: Package): string[] {
       case "expired_option_left_out": {
         const iss = pkg.issuance(subject);
         const strike = amountOf(iss, "exercise_price");
-        const what = String(iss?.compensation_type ?? iss?.plan_security_type) === "RSU" ? "RSUs" : `options${strike ? ` at ${price(strike)}` : ""}`;
+        const what = String(iss?.compensation_type ?? iss?.plan_security_type) === "RSU" ? "RSUs" : `options${strike ? ` at ${strikeText(strike)}` : ""}`;
         const when = typeof iss?.expiration_date === "string" ? ` on ${longDate(iss.expiration_date)}` : "";
         return `${holderOf(subject)}'s ${count(iss?.quantity ?? "0")} ${what} expired${when}, before ${asOf}, so they're left out.`;
       }

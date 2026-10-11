@@ -1,9 +1,30 @@
-import { D } from "spillpoint";
+import { D, buildCapTables } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
-import { dollars, parseDollars, percent, priceText, shortDollars, withoutCodes } from "../src/format.ts";
+import { dollars, parseDollars, percent, priceText, shortDollars, strikeText, withoutCodes } from "../src/format.ts";
 
 describe("money for founders", () => {
+  it("writes a strike as the engine's class names do: to the cent at least, every further place kept, never rounded", () => {
+    expect(strikeText("0.1")).toBe("$0.10");
+    expect(strikeText("1")).toBe("$1.00");
+    expect(strikeText(5)).toBe("$5.00");
+    expect(strikeText("0.0125")).toBe("$0.0125");
+    expect(strikeText("0.123456789")).toBe("$0.123456789");
+    expect(strikeText(new D("0.25"))).toBe("$0.25");
+    // Each as the engine names the class a grant at it makes, a strike typed as a fraction included.
+    for (const strike of ["0.1", "5", "0.0125", "1/3"]) {
+      const built = buildCapTables({
+        holders: [{ id: "a", name: "A" }],
+        events: [
+          { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "a", shares: 1000 }] },
+          { id: "pool", date: null, type: "create_pool", percent: "10" },
+          { id: "grant", date: null, type: "grant_options", grants: [{ holder: "a", shares: 10, strike }] },
+        ],
+      });
+      expect(built.at(-1)!.capTable.securities.find((s) => s.kind === "option")!.name).toBe(`Options (${strikeText(strike)} strike)`);
+    }
+  });
+
   it("writes whole dollars for tables", () => {
     expect(dollars(new D("9750989.67"))).toBe("$9,750,990");
     expect(dollars(new D("0"))).toBe("$0");

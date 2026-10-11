@@ -7,7 +7,7 @@
 // - whole dollars elsewhere, such as the approximate per-$1M rates ("$250,000")
 // Amounts are engine Decimals throughout; nothing here uses floating point.
 
-import { D } from "spillpoint";
+import { D, parseExact } from "spillpoint";
 
 /** The engine's 40-digit Decimal. */
 type Decimal = D;
@@ -52,6 +52,16 @@ export function shortDollars(amount: Decimal): string {
     }
   }
   return `${sign}$${a.toDecimalPlaces(0, D.ROUND_HALF_UP).toFixed(0)}`;
+}
+
+/**
+ * A strike as the engine's class names write it (the naming review, item 1): money to the cent at least, every further
+ * place kept, never rounded: "$0.10", "$1.00", "$0.0125". It reads the strike as the engine does, so a sentence and
+ * the class it names agree: "options at $0.10 a share" beside "Options ($0.10 strike)".
+ */
+export function strikeText(strike: Decimal | string | number): string {
+  const d = strike instanceof D ? strike : parseExact(strike, "strike");
+  return `$${d.toFixed(Math.max(2, d.decimalPlaces()))}`;
 }
 
 /** "9.8%": a fraction as a percentage to one place. */

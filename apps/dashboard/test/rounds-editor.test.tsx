@@ -428,6 +428,22 @@ describe("warrants and dividends in the rounds (M5k2)", () => {
     return `At $100M you get ${shortDollars(solve(prepare(exit.capTable, exit.exitDate), new D("100000000")).answers[0]!.payout.holderTotals.get("ana")!)}`;
   }
 
+  it("writes a grant's strike as its class name does: options at $0.10 a share, Options ($0.10 strike)", () => {
+    render(<App />);
+    openTab("Rounds");
+    addEvent("Options granted");
+    // Millrace has three grants already; the new one is last.
+    const granted = within(panel()).getAllByRole("heading", { level: 3, name: /Options granted/ }).at(-1)!.closest("li")!;
+    const line = within(granted).getByRole("group", { name: /Grant 1/ });
+    fireEvent.change(within(line).getByLabelText("Holder"), { target: { value: (within(line).getByRole("option", { name: "Lena Fischer" }) as HTMLOptionElement).value } });
+    type(within(line).getByLabelText("Options"), "1,000");
+    type(within(line).getByLabelText("Strike ($ a share)"), "0.1");
+    expect(within(panel()).queryAllByRole("alert")).toEqual([]);
+    expect([...granted.querySelectorAll(".rounds__lines li")].map(ownText)).toEqual(["Lena Fischer: 1,000 options at $0.10 a share, from the pool."]);
+    openTab("Cap table");
+    expect(screen.getAllByText(/Options \(\$0\.10 strike\)/).length).toBeGreaterThan(0);
+  });
+
   it("adds warrants for common at the end, and the payouts follow", () => {
     render(<App />);
     openTab("Rounds");
@@ -439,7 +455,7 @@ describe("warrants and dividends in the rounds (M5k2)", () => {
     type(within(line).getByLabelText("Strike ($ a share)"), "1");
     expect((within(line).getByLabelText("It buys") as HTMLSelectElement).value).toBe("common");
     expect(within(panel()).queryAllByRole("alert")).toEqual([]);
-    expect(lines(/Warrants issued/)).toEqual(["Lena Fischer: warrants for 500,000 common shares at $1 a share, not from the pool."]);
+    expect(lines(/Warrants issued/)).toEqual(["Lena Fischer: warrants for 500,000 common shares at $1.00 a share, not from the pool."]);
     expect(within(warrants).getByText("The payouts use the cap table after this event.")).toBeTruthy();
     openTab("Payouts");
     const expected = anaAt((events) => [...events, { id: "warrants", date: null, type: "issue_warrants", warrants: [{ holder: "lena", shares: "500000", strike: "1", underlying: "common" }] }], "warrants");
