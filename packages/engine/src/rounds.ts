@@ -96,10 +96,15 @@ export interface AntiDilutionAdjustment {
 
 /** One piece of a round, as one series' anti-dilution saw it (R25). */
 export interface AntiDilutionPiece {
-  /** "new money", or the SAFE's or note's id. */
-  piece: string;
+  /** The round's new money, or a SAFE or note converting in it (the naming review, item 12). */
+  kind: "new_money" | "safe" | "note";
+  /** The SAFE's or note's id; null for the new money. */
+  id: string | null;
+  /** The price it was issued at: the round's price for the new money, the conversion price for a SAFE or note. */
   price: Decimal;
+  /** It was priced below the series' conversion price, so it counted in B and C. */
   counted: boolean;
+  /** For a conversion counted in the series' A instead (exempt, or issued before the series): its shares there. */
   inA: Decimal | null;
 }
 
@@ -1161,8 +1166,14 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       conversions.length === 0
         ? null
         : [
-            { piece: "new money", price, counted: p[0]!, inA: null },
-            ...conversions.map((x, i) => ({ piece: conversionIds[i]!, price: x.conversionPrice, counted: !inA[k]![i] && p[1 + i]!, inA: inA[k]![i] ? x.shares : null })),
+            { kind: "new_money" as const, id: null, price, counted: p[0]!, inA: null },
+            ...conversions.map((x, i) => ({
+              kind: i < safes.length ? ("safe" as const) : ("note" as const),
+              id: conversionIds[i]!,
+              price: x.conversionPrice,
+              counted: !inA[k]![i] && p[1 + i]!,
+              inA: inA[k]![i] ? x.shares : null,
+            })),
           ];
     antiDilution.push({ series: s.id, rule, cp1, cp2Unrounded: rounding === "exact" ? null : exact, cp2, a: aWithConversions, b, c, newConversionRatio, pieces: piecesReport });
   });

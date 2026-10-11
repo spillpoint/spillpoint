@@ -5,7 +5,7 @@ import type { Decimal } from "decimal.js";
 import { describe, expect, it } from "vitest";
 
 import { InputError, UnsupportedTermError, buildCapTables, parseExact } from "../src/index.ts";
-import type { CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
+import type { AntiDilutionPiece, CapTableAfterEvent, PreferredSeries } from "../src/index.ts";
 import { roundDownShares, roundHalfUp } from "../src/rounds.ts";
 import { D } from "../src/decimal.ts";
 import { ALL_CASES, OCF_CASES, OCX_CASES, readCaseFile } from "./support/cases.ts";
@@ -165,11 +165,17 @@ function expectSameTable(built: CapTableAfterEvent, expected: ExpectedTable): vo
       else expect(x.b, `${what} B`).toBeNull();
       expectClose(x.newConversionRatio, e.new_conversion_ratio, `${what} new conversion ratio`);
       // R25: with conversions, each piece's price, whether it counted, and its shares in A when it counted there instead.
+      // The case file names a piece "new money" or by its SAFE's or note's id; the engine gives its kind and id (item 12).
       const pieces = (e.pieces ?? null) as { piece: string; price: string; counted: boolean; in_a?: number }[] | null;
-      expect(x.pieces?.map((p) => [p.piece, p.counted, p.inA?.toNumber() ?? null]) ?? null, `${what} pieces`).toEqual(
+      const named = (p: AntiDilutionPiece) => (p.kind === "new_money" ? "new money" : p.id);
+      expect(x.pieces?.map((p) => [named(p), p.counted, p.inA?.toNumber() ?? null]) ?? null, `${what} pieces`).toEqual(
         pieces && pieces.map((p) => [p.piece, p.counted, p.in_a ?? null]),
       );
-      x.pieces?.forEach((p, j) => expectClose(p.price, pieces![j]!.price, `${what} ${p.piece} price`));
+      x.pieces?.forEach((p, j) => expectClose(p.price, pieces![j]!.price, `${what} ${named(p)} price`));
+      for (const p of x.pieces ?? []) expect(Object.keys(p), `${what} piece`).toEqual(["kind", "id", "price", "counted", "inA"]);
+      expect(x.pieces?.map((p) => p.kind) ?? [], `${what} kinds`).toEqual(
+        (pieces ?? []).map((p, j) => (j === 0 ? "new_money" : d.safeConversions.some((c) => c.safe === p.piece) ? "safe" : "note")),
+      );
     });
     const p2p = ed.pay_to_play as Record<string, unknown> | undefined;
     if (p2p == null) expect(d.payToPlay, `${at} pay-to-play`).toBeNull();
@@ -578,10 +584,10 @@ describe("anti-dilution beyond the cases (M4e)", () => {
     const [founding, note, safe, seed, seriesA] = inputs.events;
     inputs.events = [founding!, safe!, seed!, note!, seriesA!];
     const [seedAdjusted] = pricedRound(inputs).antiDilution;
-    expect(seedAdjusted!.pieces!.map((x) => [x.piece, x.counted, x.inA?.toNumber() ?? null])).toEqual([
-      ["new money", false, null],
-      ["safe_s", false, 1_500_000],
-      ["note_n", true, null],
+    expect(seedAdjusted!.pieces!.map((x) => [x.kind, x.id, x.counted, x.inA?.toNumber() ?? null])).toEqual([
+      ["new_money", null, false, null],
+      ["safe", "safe_s", false, 1_500_000],
+      ["note", "note_n", true, null],
     ]);
     expect([seedAdjusted!.a!.toString(), seedAdjusted!.b!.toString()]).toEqual(["11500000", "440000"]);
   });

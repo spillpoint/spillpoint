@@ -103,7 +103,7 @@ function show(t: CapTableAfterEvent): void {
       // R25: with conversions, each piece at its own price, and where it went.
       for (const p of a.pieces ?? []) {
         const where = p.inA ? `in A, ${grouped(p.inA)} shares (exempt, or issued before ${a.series})` : p.counted ? "below CP1: counted in B and C" : "not below CP1: left out";
-        console.log(`  piece ${p.piece} at $${p.price.toFixed(6)}: ${where}`);
+        console.log(`  piece ${p.kind === "new_money" ? "new money" : p.id} at $${p.price.toFixed(6)}: ${where}`);
       }
     }
     for (const c of d.noteConversions) {
