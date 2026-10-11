@@ -218,6 +218,28 @@ The steps for saving it are in section 3 above.
 - **Engine:** unchanged.
 - **Typecheck and build:** clean.
 
+## The re-saved workbook (Jordan, after the review commit)
+
+**`fixtures/hollis-mill-saved.xlsx` is committed,** as you saved it from ONLYOFFICE 8.1, byte for byte (shasum `ec9600176792635456fecd4a468db39b367d513e`).
+
+**The waiting test runs and passes:** the saved file imports through the page's reader exactly as case 06 does. It's real spreadsheet-app XML. ONLYOFFICE:
+- rewrote every part
+- added `docProps/app.xml`, `docProps/core.xml` and a theme
+- wrote apostrophes as `&apos;`
+
+It kept the same 473 cells, the same text, and no formulas.
+
+**The author fields needed no blanking.** Its `docProps/core.xml` has no `dc:creator`, and its `cp:lastModifiedBy` is already empty. So I left the file unchanged rather than rewrite the zip for nothing. I also checked:
+- `docProps/app.xml` holds only the app's name and version and five standard flags; there's no Company field
+- no part holds a path, a user name or an address other than the fixture's own at hollis-mill.example
+- the zip carries no comments
+
+The reader never reads `docProps/`.
+
+**The fixtures README** now says which app saved the file and that its author fields were checked.
+
+**Checks:** the page's 654 tests pass, with none waiting. The engine is unchanged.
+
 ## Next
 
 06h, release 0.6.0: the version, the release notes with 06a's breaking changes, both READMEs (readOcx in the API section), and the packed build checked. I'm stopping here.
