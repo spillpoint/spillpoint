@@ -303,6 +303,17 @@ export interface Question {
   hint: string;
   /** Choices, for a question with set answers; none for a typed number. */
   choices?: { value: string; label: string }[];
+  /**
+   * What else it is (06g): a date; a rate typed as a percentage; the series' seniority, with `series` to order; or a
+   * yes-or-no "gate" whose "no" stops the import with `stop`. None: a number, or one of `choices`.
+   */
+  kind?: "date" | "rate" | "seniority" | "gate";
+  series?: { id: string; name: string }[];
+  stop?: string;
+  /** One-click answers: each sets answers from those given so far, when clicked. Never preset (06d review). */
+  shortcuts?: { label: string; sets: (answers: Record<string, string>) => Record<string, string> }[];
+  /** Asked only once another question has this answer. */
+  showWhen?: { key: string; value: string };
 }
 
 /** One question for each blank the import left (O1, answer 4). */

@@ -10,6 +10,10 @@ import { describe, expect, it } from "vitest";
 import { ISSUE_PRICE, PLACEHOLDER, answerSets, checkExport } from "../src/ocfCheck.ts";
 import type { EngineRuns } from "../src/ocfCheck.ts";
 import type { Picked } from "../src/ocfImport.ts";
+import type { OcxWorkbook } from "spillpoint";
+import { applyOcxChange } from "../../../packages/engine/test/support/ocx.ts";
+import type { OcxFixture } from "../../../packages/engine/test/support/ocx.ts";
+import { xlsxOf } from "./workbooks.ts";
 
 
 const cases = resolve(import.meta.dirname, "../../../cases");
@@ -176,6 +180,61 @@ describe("what it never prints", () => {
     // counts the summary prints by design, so a quantity of 0 or 1 isn't looked for.
     const tokens = new Set(printed.split(/[^A-Za-z0-9_.,+-]+/).map((t) => t.replace(/[.,]+$/, "")));
     for (const word of words) if (!/^\d{1,3}$/.test(word)) expect(tokens.has(word), word).toBe(false);
+    for (const [, answer] of printed.matchAll(/#\d+ [a-z_]+=([^,:]+)/g)) expect(PRINTABLE.has(answer!), answer).toBe(true);
+  });
+});
+
+// ---------- an OCX workbook (06g) ----------
+
+describe("an OCX workbook", () => {
+  const read = <T,>(path: string): T => JSON.parse(readFileSync(resolve(cases, path), "utf8")) as T;
+  const asXlsx = (book: OcxWorkbook, name: string): Picked[] => [{ name, bytes: xlsxOf(book) }];
+  const workbookCase = (name: string) => asXlsx(read<OcxWorkbook>(`${name}/workbook.json`), `${name}.xlsx`);
+  const fixture = (dir: string, name: string) => {
+    const f = read<OcxFixture>(`${dir}/fixtures/${name}`);
+    return asXlsx(applyOcxChange(read(`${f.base}/workbook.json`), f.change) as unknown as OcxWorkbook, "fixture.xlsx");
+  };
+  const runs: EngineRuns = new Map();
+
+  it("Hollis Mill: read, its blanks tried, and the engine reads every set", async () => {
+    const lines = await checkExport(workbookCase("ocx-06-hollis-mill"), "0.6.0", runs);
+    expect(lines.slice(0, 2)).toEqual(["spillpoint 0.6.0: an OCX import, in counts and codes", "Import: read"]);
+    expect(lines).toContain("Blanks: conversion_base 1, interest_rate 1, issue_date 1, repayment_multiple 1, seniority 1, strike 3");
+    const sets = lines.filter((l) => l.startsWith("set "));
+    expect(lines).toContain(`Answer sets: ${sets.length} tried, of 6 possible`);
+    // The one-strike question is tried as yes; the seniority orders that need no hand arranging, both.
+    expect(sets[0]).toMatch(/^set 1: #1 one_strike=yes, #2 strike=placeholder, .* #\d+ seniority=pari_passu: reads$/);
+    for (const set of sets) expect(set).toMatch(/: reads$/);
+    // The workbook's structure follows, as the cell-kinds script prints it (OX2).
+    expect(lines).toContain("Tabs: Summary Snapshot, Stakeholder Snapshot, Voting by SH Group, Context");
+  });
+
+  it("a refused workbook: its kind and term, and its structure", async () => {
+    const lines = await checkExport(fixture("ocx-03-refused", "currency.json"), "0.6.0", runs);
+    expect(lines[1]).toBe("Import: refused, unsupported currency");
+    expect(lines.some((l) => l.startsWith("set "))).toBe(false);
+  });
+
+  const all: [string, Picked[]][] = [
+    ...readdirSync(cases).filter((c) => c.startsWith("ocx-") && readdirSync(resolve(cases, c)).includes("workbook.json")).map((c) => [c, workbookCase(c)] as [string, Picked[]]),
+    ...readdirSync(cases)
+      .filter((c) => c.startsWith("ocx-") && readdirSync(resolve(cases, c)).includes("fixtures"))
+      .flatMap((c) => readdirSync(resolve(cases, c, "fixtures")).map((f) => [`${c}/${f}`, fixture(c, f)] as [string, Picked[]])),
+  ];
+  const PRINTABLE = new Set([
+    "non_participating", "participating", "participating_capped", "pre_money", "post_money", "with_pool", "without_pool", "common_only", "yes", "pari_passu", "stacked",
+    PLACEHOLDER, ISSUE_PRICE, "as-of date",
+  ]);
+
+  it.each(all)("%s: no name, amount or date", async (_, picked) => {
+    const book = await import("../src/xlsx.ts").then((m) => m.readXlsx(picked[0]!.bytes));
+    const printed = (await checkExport(picked, "0.6.0", runs)).join("\n");
+    expect(printed).not.toMatch(/\d{4}[-.]\d{2}[-.]\d{2}/);
+    const holders = book.sheets.find((s) => /^Stakeholder (View|Snapshot)$/.test(s.name))?.cells.filter((c) => /^A\d+$/.test(c.address) && c.kind === "text").map((c) => c.text) ?? [];
+    for (const name of holders.filter((h) => !/^(Stakeholder|Total|Options remaining for issuance|Notes|As of .*|\*.*)$/i.test(h))) expect(printed.includes(name), name).toBe(false);
+    // Amounts: any number of four digits or more the workbook holds.
+    const tokens = new Set(printed.split(/[^A-Za-z0-9_.,+-]+/).map((t) => t.replace(/[.,]+$/, "")));
+    for (const c of book.sheets.flatMap((s) => s.cells)) if (c.kind === "number" && /^\d{4,}$/.test(c.text)) expect(tokens.has(c.text), c.text).toBe(false);
     for (const [, answer] of printed.matchAll(/#\d+ [a-z_]+=([^,:]+)/g)) expect(PRINTABLE.has(answer!), answer).toBe(true);
   });
 });

@@ -7,8 +7,11 @@ import { InputError, NoAnswerError, UnsupportedTermError, findBreakpoints, prepa
 import type { OcfFile, OcfImport } from "spillpoint";
 
 import { Package, defaultTop, filled, importOcf, questions } from "./ocfImport.ts";
-import type { Picked } from "./ocfImport.ts";
+import type { Picked, Question } from "./ocfImport.ts";
 import { summaryLines } from "./ocfSummary.ts";
+import { importOcx, isWorkbook, ocxFilled, ocxQuestions } from "./ocxImport.ts";
+import type { OcxImported } from "./ocxImport.ts";
+import { ocxShareLines } from "./ocxSummary.ts";
 
 type Json = Record<string, unknown>;
 
@@ -125,8 +128,60 @@ function answerRuns(result: OcfImport, files: OcfFile[], runs: EngineRuns): stri
   ];
 }
 
+/**
+ * An OCX workbook's answers to try (06g), each as used and as printed: a choice its own code, but only the seniority
+ * orders that need no hand arranging; the one-strike question "yes", since "no" stops the import; a number a
+ * placeholder, a cap one above the multiple's; a date the workbook's own; a rate 5%.
+ */
+function ocxOptions(q: Question, result: OcxImported & { ok: true }): { value: string; printed: string }[] {
+  if (q.kind === "gate") return [{ value: "yes", printed: "yes" }];
+  if (q.kind === "seniority") return ["pari_passu", "stacked"].map((v) => ({ value: v, printed: v }));
+  if (q.choices) return q.choices.map((c) => ({ value: c.value, printed: c.value }));
+  if (q.kind === "date") return [{ value: result.result.as_of, printed: "as-of date" }];
+  if (q.kind === "rate") return [{ value: "5", printed: PLACEHOLDER }];
+  if (q.blank.field === "cap_multiple") return [{ value: "2", printed: PLACEHOLDER }];
+  const securities = (result.result.cap_table as { securities: Json[] }).securities;
+  return [placeholder(q.blank.field, securities.find((s) => s.id === q.blank.security))];
+}
+
+/** The lines of the engine's runs over an OCX workbook's answers, as for an OCF export's. */
+function ocxAnswerRuns(imported: OcxImported & { ok: true }, runs: EngineRuns): string[] {
+  const { result } = imported;
+  const asked = ocxQuestions(result, imported.workbook);
+  const fill = (answers: Record<string, string>) => {
+    let capTable: Json;
+    try {
+      capTable = ocxFilled(result, asked, answers);
+    } catch (e) {
+      return stopped(e);
+    }
+    const key = JSON.stringify([capTable, result.as_of]);
+    let line = runs.get(key);
+    if (line === undefined) runs.set(key, (line = runEngine(capTable, result.as_of)));
+    return line;
+  };
+  if (asked.length === 0) return [`The engine, with nothing to fill in: ${fill({})}`];
+  const options = asked.map((q) => ocxOptions(q, imported));
+  const { sets: picks, possible } = answerSets(options.map((o) => o.map((_, i) => String(i))));
+  const sets = picks.map((set) => set.map((i, j) => options[j]![Number(i)]!));
+  return [
+    `Answer sets: ${sets.length} tried, of ${possible} possible${possible > MOST_SETS ? ", one blank at a time" : ""}`,
+    ...sets.map((set, i) => {
+      const answers = Object.fromEntries(asked.map((q, j) => [q.key, set[j]!.value]));
+      const given = asked.map((q, j) => `#${j + 1} ${q.kind === "gate" ? "one_strike" : q.blank.field}=${set[j]!.printed}`).join(", ");
+      return `set ${i + 1}: ${given}: ${fill(answers)}`;
+    }),
+  ];
+}
+
 /** What the check script prints for an export: the summary, then the engine's runs over the blanks' answers. */
 export async function checkExport(picked: readonly Picked[], engineVersion: string, runs: EngineRuns = new Map()): Promise<string[]> {
+  // An OCX workbook, on its own (06g).
+  if (picked.length === 1 && isWorkbook(picked[0]!)) {
+    const workbook = await importOcx(picked[0]!);
+    const lines = ocxShareLines(workbook, engineVersion);
+    return workbook.ok ? [...lines, ...ocxAnswerRuns(workbook, runs)] : lines;
+  }
   const imported = await importOcf(picked);
   const lines = summaryLines(imported, engineVersion);
   return imported.ok ? [...lines, ...answerRuns(imported.result, imported.files, runs)] : lines;

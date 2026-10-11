@@ -1,8 +1,10 @@
 // Workbooks the tests write, our own (hard rule 10): a zip of the parts an .xlsx has, so each reading rule (OX1) is
 // tested on exactly the XML that exercises it. No workbook from the Open Cap Table Coalition or anyone else is in the
-// repo; the page test on a workbook saved by a spreadsheet app comes later in 0.6.0.
+// repo. xlsxOf writes a case's workbook.json as an .xlsx, for the page's import tests (06g).
 
 import { deflateRawSync } from "node:zlib";
+
+import type { OcxWorkbook } from "spillpoint";
 
 import { crc32 } from "../src/zip.ts";
 
@@ -142,4 +144,31 @@ export function workbookParts(spec: WorkbookSpec): Record<string, string> {
 
 export function workbook(spec: WorkbookSpec): Uint8Array {
   return zipOf(workbookParts(spec), { deflate: spec.deflate === true });
+}
+
+/**
+ * An OCX case's workbook (OX1's shape) as an .xlsx, written as Excel writes one: text in the shared strings, numbers as
+ * numbers, a day count in a date format, and a formula with its saved value, or none. With `formulas: false`, a
+ * formula's cell holds only its saved value, so a spreadsheet app that opens it has nothing to work out (06g).
+ */
+export function xlsxOf(book: OcxWorkbook, options: { formulas?: boolean } = {}): Uint8Array {
+  const formulas = options.formulas ?? true;
+  const DATE = 1;
+  return workbook({
+    formats: [0, 14],
+    ...(book.dateSystem === 1904 ? { date1904: "1" } : {}),
+    sheets: book.sheets.map((s) => ({
+      name: s.name,
+      cells: s.cells.flatMap((c): Cell[] => {
+        if (c.formula && !formulas) {
+          if (c.text === "") return [];
+          return [c.kind === "text" ? { at: c.address, text: c.text } : { at: c.address, number: c.text }];
+        }
+        const formula = c.formula ? { formula: "SUM(A1)", ...(c.text === "" ? { noValue: true } : {}) } : {};
+        if (c.kind === "text") return [{ at: c.address, text: c.text, ...formula }];
+        if (c.kind === "date") return [{ at: c.address, number: c.text, style: DATE, ...formula }];
+        return [{ at: c.address, number: c.text, ...formula }];
+      }),
+    })),
+  });
 }

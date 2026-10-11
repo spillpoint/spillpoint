@@ -1,9 +1,11 @@
-// Checks an Open Cap Format export without sharing it (0.5.0, 05a; ASSUMPTIONS O15):
+// Checks a cap table export without sharing it (0.5.0, 05a; ASSUMPTIONS O15): an Open Cap Format export, or since
+// 0.6.0 an OCX workbook:
 //
 //   pnpm ocf-check path/to/export.zip
 //   pnpm ocf-check path/to/folder-of-ocf-files
+//   pnpm ocf-check path/to/workbook.xlsx
 //
-// It reads the export as the page does, with the page's own zip reader and the engine's readOcf, then tries each set
+// It reads the export as the page does, with the page's own readers and the engine's readOcf or readOcx, then tries each set
 // of answers to the blanks the import leaves through the engine. It prints only counts and codes: never a name, an
 // id, an amount or a date, so its output can be pasted anywhere. It reads only the files named and writes nothing.
 //
@@ -20,7 +22,7 @@ if (major < 22 || (major === 22 && minor < 18)) {
 }
 const target = process.argv[2];
 if (!target) {
-  console.error("Usage: pnpm ocf-check <export.zip | folder of .ocf.json files>");
+  console.error("Usage: pnpm ocf-check <export.zip | folder of .ocf.json files | workbook.xlsx>");
   process.exit(1);
 }
 

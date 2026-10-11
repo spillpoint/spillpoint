@@ -45,7 +45,7 @@ const save = async () => {
 /** Quillfern's export, imported and used: edge case 25's cap table. */
 async function importQuillfern() {
   render(<App />);
-  fireEvent.change(screen.getByLabelText(/Open an OCF export/), { target: { files: [zip("quillfern-macos.zip")] } });
+  fireEvent.change(screen.getByLabelText(/Open a cap table export/), { target: { files: [zip("quillfern-macos.zip")] } });
   await screen.findByRole("region", { name: /^Importing / });
   click("Use this cap table");
   await screen.findByText(/^Imported Quillfern Labs, Inc\./);
@@ -182,7 +182,7 @@ async function importLarkspur(extra: { file: string; safeCap: "Pre-money" | "Pos
     (f) => new File([readFileSync(resolve(cases, "ocf-01-larkspur/package", f))], f, { type: "application/json" }),
   );
   if (extra) files.push(new File([readFileSync(resolve(cases, extra.file))], extra.file.split("/").at(-1)!, { type: "application/json" }));
-  fireEvent.change(screen.getByLabelText(/Open an OCF export/), { target: { files } });
+  fireEvent.change(screen.getByLabelText(/Open a cap table export/), { target: { files } });
   const panel = await screen.findByRole("region", { name: /^Importing / });
   fireEvent.click(within(within(panel).getByRole("group", { name: "Does Seed Preferred participate?" })).getByLabelText(/^Non-participating/));
   if (extra) fireEvent.click(within(within(panel).getByRole("group", { name: "Is this SAFE's cap pre-money or post-money?" })).getByLabelText(extra.safeCap));
