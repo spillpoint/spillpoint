@@ -13,6 +13,10 @@ import type { Snapshot } from "./decisions.ts";
 import { CARVE_OUT, carveOutAt, settle } from "./waterfall.ts";
 import type { Prepared } from "./waterfall.ts";
 
+/**
+ * What a breakpoint's reason is about, for code to match on (stable from 1.0, the naming review's item 17). "other" is
+ * a safety net: "Payout slopes change here.", where payouts bend and no specific reason is found. No case produces it.
+ */
 export type ReasonCode =
   | "tier_fully_paid"
   | "cap_reached"

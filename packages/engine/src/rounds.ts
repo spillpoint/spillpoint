@@ -25,7 +25,6 @@ import type { CapTable, ConversionGroup, Holder, Note, Position, PreferredSeries
 
 type Json = Record<string, unknown>;
 
-/** A SAFE, outstanding until a round converts it: post-money (R4) or pre-money (R24), never both. */
 /** A SAFE's conversion in a round (R4, R5, R24). */
 export interface SafeConversion {
   safe: string;
