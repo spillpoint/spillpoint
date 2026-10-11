@@ -37,7 +37,9 @@ export { readOcf } from "./ocf.ts";
 export type { OcfFile, OcfImport, OcfNote, OcfReport, OcfToFill } from "./ocf.ts";
 // What an import gives, whichever format it read (0.6.0; the OCF names above are aliases until 0.7.0).
 export type { CapTableImport, ImportBlank, ImportNote, ImportReport } from "./imports.ts";
-// An OCX workbook, the Open Cap Table Coalition's Excel layout, as the page reads it from an .xlsx (0.6.0, OX1).
+// Reading an OCX workbook, the Open Cap Table Coalition's Excel layout, into a cap table (0.6.0, OX1–OX14), as the
+// page reads it from an .xlsx.
+export { readOcx } from "./ocx-reader.ts";
 export type { OcxCell, OcxSheet, OcxWorkbook } from "./ocx.ts";
 
 // Building cap tables from a company's rounds (M4).

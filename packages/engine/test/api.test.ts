@@ -22,6 +22,7 @@ it("exports exactly the public API", () => {
     "readExit",
     "readInputs",
     "readOcf",
+    "readOcx",
     "solve",
     "toCents",
   ]);

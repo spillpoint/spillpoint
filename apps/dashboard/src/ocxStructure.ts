@@ -31,7 +31,7 @@ const FINANCING = [
 const PLAN_DETAILS = ["Total Reserved", "Total Granted", "Outstanding Shares/Exercised Options", "Outstanding Options", "Outstanding RSUs", "Shares Returned to Plan", "Shares Available for Grant"];
 
 /** The headers each kind of tab has: the ones a reader matches, and the script looks for. */
-const HEADERS: Record<string, readonly string[]> = {
+export const HEADERS: Record<string, readonly string[]> = {
   "Summary Snapshot": [
     "Share Class", "Shares Authorized/ Reserved", "Outstanding Shares", "Fully Diluted Shares", "% Fully Diluted", "Liquidation Preference",
     "Voting Multiplier", "Voting Power", "Voting %", "Security Type", "# of Securities", "Outstanding Amount", "Discount", "Valuation Cap",
@@ -102,12 +102,12 @@ const NAMED_LEDGERS: [string, string][] = [["class ledger", "Stockholder"], ["pl
 const PER_HOLDER = ["Stakeholder Snapshot", "Detailed Snapshot", "Stakeholder View"];
 
 /** A block on the per-holder tab that's set aside: voting power by holder. */
-const VOTING = ["All Common", "All Preferred (as converted)"];
+export const VOTING = ["All Common", "All Preferred (as converted)"];
 /**
  * The Additional Information block on the per-holder tab: holders' details, which nothing reads. Its last header,
  * "Notes", is also the footnotes' title, so the block is known by the others.
  */
-const ADDITIONAL = [
+export const ADDITIONAL = [
   "Primary Stakeholder Type", "Secondary Stakeholder Types", "Mailing Address Line 1", "Mailing Address Line 2", "City", "State", "Country", "Zip Code",
   "Email Address",
 ];

@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { FORMAT_NAMES, normalHeader, structureLines } from "../src/ocxStructure.ts";
+import { OCX_ADDITIONAL, OCX_HEADERS, OCX_VOTING } from "../../../packages/engine/src/ocx-headers.ts";
+import { ADDITIONAL, FORMAT_NAMES, HEADERS, VOTING, normalHeader, structureLines } from "../src/ocxStructure.ts";
 import { readXlsx } from "../src/xlsx.ts";
 import { workbook } from "./workbooks.ts";
 import type { Cell } from "./workbooks.ts";
@@ -387,5 +388,16 @@ describe("normalHeader", () => {
     ["Series A \nPreferred Stock \n(outstanding) (1.0000)", "Series A Preferred Stock (outstanding) (1.0000)"],
   ])("%j reads as %j", (raw, read) => {
     expect(normalHeader(raw)).toBe(read);
+  });
+});
+
+// The engine's readOcx knows the same headers as this script (OX12): a header outside them gets an
+// `unrecognized_field` line there, and is counted here only by its kind.
+describe("the headers readOcx knows", () => {
+  it("are this script's, tab by tab", () => {
+    for (const [tab, headers] of Object.entries(OCX_HEADERS)) expect(headers, tab).toEqual(HEADERS[tab]);
+    expect(OCX_VOTING).toEqual(VOTING);
+    // "Notes" heads the Additional Information block's last column; this script knows it as the footnotes' title.
+    expect(OCX_ADDITIONAL).toEqual([...ADDITIONAL, "Notes"]);
   });
 });
