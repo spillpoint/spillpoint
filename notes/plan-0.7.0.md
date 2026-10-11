@@ -289,7 +289,7 @@ After 1.0 a term is never renamed or reused for something else. A new one can be
   07b's review note lists the substitutions exactly, as a script you can run on main.
 - **07c, the engine** (done; `notes/review-07c.md`): items 3, 4 and 7 to 14, items 17 and 18's README sections, and both READMEs.
 - **07d, the page** (done; `notes/review-07d.md`): item 6, and the page following 07b's and 07c's changes.
-- **07e, release 0.7.0:** "Changes that can break 0.6.0 code", item by item.
+- **07e, release 0.7.0** (done; `notes/release-0.7.0.md`): "Changes that can break 0.6.0 code", item by item.
 
 **Then 1.0:** the domain and the release, with no API changes.
 
