@@ -56,7 +56,7 @@ Nothing is guessed, never 1x and never $1. The engine does no I/O: you pass each
 - **Every case before 0.6.0 is unchanged** and gives the same answer: the 83 exit and round cases, and the 13 OCF cases.
 - **Each of the nine OCX workbook cases,** with every saved formula value removed, reads the same, with the `formula_totals_skipped` line.
 - **The reference calculator** gained a test that a row of identical SAFEs, post-money or pre-money, pays as the SAFEs one by one (`reference/tests/test_safe_row.py`).
-- **An independent reader,** written from the rules alone, agrees with `readOcx` on every case and fixture, and on about 17,000 randomly broken workbooks.
+- **An independent reader,** written from the rules alone, agrees with `readOcx` on every case and fixture. Run against about 20,000 randomly broken workbooks, it found five places where `readOcx` strayed from the rules; each was fixed before this release, and none has turned up since.
 - **The real 0.7 export** reads, and on the page asks nothing but the exit range.
 
 ## On the page

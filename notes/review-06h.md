@@ -207,6 +207,25 @@ None: no modeling choice changed.
 - **No changes** to `.github/workflows/` or `.claude/`.
 - **Nothing ran outside the sandbox.** CI's commands ran with `pnpm install --offline`, and the throwaway project linked the installed decimal.js. Nothing was downloaded.
 
+## After your review (Jordan, after #89)
+
+**Your pre-publish checks pass:**
+- your own pack gives the shasum above, with 71 files
+- against 0.5.0 from npm, only the 20 new files are added, and `package.json` changes only its version
+- the README's five examples print their Output blocks from the packed package
+- the old and new names typecheck as the notes say
+- every claim about 0.5.0 in the breaking changes holds against 0.5.0 from npm
+- the engine suite passes against the packed dist
+- the packed engine matches your calculator on 54 fuzzed tables and 1,500 more fuzzed OCX workbooks
+
+**Decisions 1, 2 and 4 are agreed.** Decision 3 is settled by your wording below.
+
+**The fix, in `notes/release-0.6.0.md`.** The independent-reader bullet said it agreed with `readOcx` on about 17,000 broken workbooks, which isn't what happened. It now reads, in your words: "An independent reader, written from the rules alone, agrees with readOcx on every case and fixture. Run against about 20,000 randomly broken workbooks, it found five places where readOcx strayed from the rules; each was fixed before this release, and none has turned up since."
+
+**Nothing under `packages/` changed,** so the tarball is still `301d5879a00af73135c0bf5c23dfe89ba37fe367`.
+
+**For 07b:** CLAUDE.md's "Released through" line moves to 0.6.0 in its first commit (open question 1).
+
 ## Next
 
 0.6.0 is ready for you to publish and tag. After it come 07b to 07e, the naming review. I'm stopping here.
