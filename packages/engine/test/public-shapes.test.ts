@@ -27,7 +27,7 @@ const SOLUTION = fieldsOf<Solution>()(["exitValue", "answers"]);
 const ANSWER = fieldsOf<Answer>()(["decisions", "payout"]);
 const DECISIONS = fieldsOf<Decisions>()(["converted", "exercised"]);
 const PAYOUT = fieldsOf<Payout>()([
-  "exitValue", "decisions", "strikeCash", "commonPrice", "bySecurity", "series", "carveOut", "safes", "notes", "noteDebt", "safeCash", "curved",
+  "exitValue", "decisions", "strikeCash", "commonPrice", "series", "carveOut", "safes", "notes", "noteDebt", "safeCash", "curved",
   "lines", "holderTotals", "classTotals", "tiers", "atCap",
 ]);
 const SERIES_HERE = fieldsOf<SeriesHere>()(["shares", "preference", "dividends", "claim", "capTotal", "asConverted"]);

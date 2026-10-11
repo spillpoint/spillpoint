@@ -110,7 +110,7 @@ describe("dividends paid on conversion (X5)", () => {
     // 365 days at 10%: $100,000. Converted at $3M: $100,000 in the tier, then half of $2.9M.
     const exit = exitOn({ accrual_start: "2023-01-01", on_conversion: "paid" }, "2024-01-01");
     const p = payout(prepare(exit.capTable, exit.exitDate), new D(3000000), { converted: new Set(["p"]), exercised: new Set() });
-    expect([p.tiers[0]!.claim.toString(), p.bySecurity.get("p")!.toString()]).toEqual(["100000", "1550000"]);
+    expect([p.tiers[0]!.claim.toString(), p.classTotals.get("p")!.toString()]).toEqual(["100000", "1550000"]);
   });
 });
 

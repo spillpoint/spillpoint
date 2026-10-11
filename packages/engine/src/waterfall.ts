@@ -160,8 +160,6 @@ export interface Payout {
   strikeCash: Decimal;
   /** What each share sharing the residual receives: the common price per share. */
   commonPrice: Decimal;
-  /** Total per security; options and warrants net of strike. */
-  bySecurity: Map<string, Decimal>;
   /** Each preferred series as it stands here, with any exercised warrant shares for it. */
   series: Map<string, SeriesHere>;
   /** The carve-out here, if the cap table has one. */
@@ -198,6 +196,12 @@ export interface Payout {
  * item 4).
  */
 export interface Settlement extends Omit<Payout, "safes" | "notes"> {
+  /**
+   * Total per security, options and warrants net of strike: worked out before the lines, for the solver, which
+   * weighs many payouts by their security totals alone. The public payout's classTotals gives the same to the cent,
+   * summed from the lines (the naming review, item 9).
+   */
+  bySecurity: Map<string, Decimal>;
   safes: Map<string, SafeSettled>;
   notes: Map<string, NoteSettled>;
   /**
@@ -419,7 +423,6 @@ export function publicPayout(s: Settlement): Payout {
     decisions: s.decisions,
     strikeCash: s.strikeCash,
     commonPrice: s.commonPrice,
-    bySecurity: s.bySecurity,
     series: s.series,
     carveOut: s.carveOut,
     safes: new Map([...s.safes].map(([id, f]) => [id, { converts: f.converts, liquidityCapitalization: f.liquidityCapitalization, liquidityPrice: f.liquidityPrice, shares: f.shares }])),

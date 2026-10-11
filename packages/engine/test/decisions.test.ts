@@ -88,8 +88,8 @@ describe("options follow the price, and a group decides first (E16, E17)", () =>
     expect(others).toHaveLength(0);
     expect(describeDecisions(answer!.decisions)).toEqual({ converted: ["a", "b"], exercised: ["o"] });
     const price = new D(7450000).div(6500000);
-    expect(sameAmount(answer!.payout.bySecurity.get("b")!, price.times(3000000))).toBe(true);
-    expect(sameAmount(answer!.payout.bySecurity.get("o")!, price.minus("0.5").times(500000))).toBe(true);
+    expect(sameAmount(answer!.payout.classTotals.get("b")!, price.times(3000000))).toBe(true);
+    expect(sameAmount(answer!.payout.classTotals.get("o")!, price.minus("0.5").times(500000))).toBe(true);
   });
 
   it("refuses more than one conversion group", () => {

@@ -71,7 +71,7 @@ describe("a note with neither a cap nor a discount (X12)", () => {
     expect(pc.notes.get("note")!.canConvert).toBe(false);
     const [answer] = solve(pc, new D(10000000)).answers;
     expect([...answer!.decisions.converted]).toEqual([]);
-    expect(answer!.payout.bySecurity.get("note")!.toString()).toBe("100000");
+    expect(answer!.payout.classTotals.get("note")!.toString()).toBe("100000");
   });
 });
 
@@ -86,7 +86,7 @@ describe("a note with no cap beside capped participating preferred (X12, 13h)", 
     ct.positions.push({ holder: "m", security: "p", shares: 800000 });
     const exit = exitOn(ct);
     const [answer] = solve(prepare(exit.capTable, exit.exitDate), new D(3000000)).answers;
-    const paid = answer!.payout.bySecurity;
+    const paid = answer!.payout.classTotals;
     expect([...answer!.decisions.converted]).toEqual(["note"]);
     expect([paid.get("p")!, paid.get("common")!, paid.get("note")!].map((v) => v.toString())).toEqual(["1600000", "1275000", "125000"]);
     expect(answer!.payout.atCap).toEqual(["p"]);

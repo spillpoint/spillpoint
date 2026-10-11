@@ -111,6 +111,6 @@ describe("paying it (X7)", () => {
       ["2222222.22", false, false],
     ]);
     const [answer] = solve(pc, new D(1000000)).answers;
-    expect(answer!.payout.bySecurity.get("carve_out")!.minus(new D(1000000).div(11)).abs().lt("1e-30")).toBe(true);
+    expect(answer!.payout.classTotals.get("carve_out")!.minus(new D(1000000).div(11)).abs().lt("1e-30")).toBe(true);
   });
 });
