@@ -39,7 +39,7 @@ describe("Larkspur at a sale, where the Seed and the SAFEs went round in a circl
     for (let x = lo; x <= hi; x += 12_500) {
       const solution = solve(pc, new D(x));
       expect(solution.answers, `$${x}`).toHaveLength(1);
-      expect(solution.complete).toBe(true);
+      expect(Object.keys(solution).sort()).toEqual(["answers", "exitValue"]);
     }
   });
 

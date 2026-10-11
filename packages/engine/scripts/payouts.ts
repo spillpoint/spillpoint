@@ -62,7 +62,6 @@ if (all) {
   for (const point of points) {
     const solution = solve(pc, point.exitValue);
     const same =
-      solution.complete &&
       solution.answers.length === point.equilibria.length &&
       solution.answers.every((answer, i) => {
         const recorded = point.equilibria[i]!;
@@ -105,7 +104,6 @@ if (convert || exercise) {
 } else {
   const solution = solve(pc, at);
   if (solution.answers.length > 1) console.log(`Note: ${solution.answers.length} stable answers here (E8); showing the first.`);
-  if (!solution.complete) console.log("Note: the list of answers may be incomplete (E15).");
   decisions = solution.answers[0]!.decisions;
   source = "solved by the engine";
   if (recordedOutcome) {

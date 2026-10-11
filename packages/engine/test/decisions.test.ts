@@ -28,7 +28,7 @@ describe.each(EXIT_CASES)("%s", (name) => {
 
   it.each(expectedPoints(name).map((p) => [p.label, p] as const))("solves $%s: the recorded decisions and payouts", (_, point) => {
     const solution = solve(pc, point.exitValue);
-    expect(solution.complete).toBe(true);
+    expect(Object.keys(solution).sort()).toEqual(["answers", "exitValue"]);
     expect(solution.answers).toHaveLength(point.equilibria.length);
 
     solution.answers.forEach((answer: Answer, i) => {

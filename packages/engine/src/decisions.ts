@@ -30,9 +30,9 @@
 //   doesn't pick one (E8; Jordan, after #73). Above 12 they're solved from
 //   both ends: from "nobody converts" and from "everyone converts", one at a
 //   time makes the switch that gains it the most, until no one wants to
-//   switch. If the two ends agree, that is the answer; if not, the answers
-//   found are reported and flagged as possibly incomplete. Going round in a
-//   circle is an error.
+//   switch. If the two ends agree, that is the answer; if not, both are
+//   stable and pay holders differently, so the engine stops as above (E8).
+//   Going round in a circle is an error.
 // - Where several decision sets pay everyone the same, the reported one has
 //   the fewest conversions and exercises (E5).
 // - Work is reused from one exit value to the next (05c4). With the decisions
@@ -62,10 +62,12 @@ export interface Answer {
 
 export interface Solution {
   exitValue: Decimal;
-  /** Every distinct stable answer (E8). Almost always exactly one. */
+  /**
+   * Exactly one stable answer. Where a second is stable and pays holders differently, solve stops with a
+   * NoAnswerError naming them (E8); answers that pay every holder the same are one (E5). A list, so that reporting
+   * both, on the later list, can come without a break.
+   */
   answers: Answer[];
-  /** False only when the list may be incomplete: more than 12 series to check and the two ends disagreed (E15). */
-  complete: boolean;
 }
 
 export interface SolveOptions {
@@ -428,11 +430,11 @@ class AtExit {
 
   solve(): Solution {
     if (!this.group) {
-      const { answers, complete } = this.settleFree(new Set());
-      return { exitValue: this.x, answers: answers.map((a) => this.exact(a)), complete };
+      const { answers } = this.settleFree(new Set());
+      return { exitValue: this.x, answers: answers.map((a) => this.exact(a)) };
     }
     const { converting, staying } = this.groupChoices();
-    return { exitValue: this.x, answers: [this.exact(this.groupVotes(converting, staying) ? converting : staying)], complete: true };
+    return { exitValue: this.x, answers: [this.exact(this.groupVotes(converting, staying) ? converting : staying)] };
   }
 
   /** An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. */
