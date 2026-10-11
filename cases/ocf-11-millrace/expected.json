@@ -52,7 +52,7 @@
           "kind": "common"
         },
         {
-          "id": "seed_shadow",
+          "id": "seed_safes",
           "name": "Seed Preferred (from SAFEs)",
           "kind": "preferred",
           "original_issue_price": "0.3849300316",
@@ -122,7 +122,7 @@
           "series_a"
         ],
         [
-          "seed_shadow",
+          "seed_safes",
           "seed"
         ]
       ],
@@ -175,12 +175,12 @@
         },
         {
           "holder": "priya",
-          "security": "seed_shadow",
+          "security": "seed_safes",
           "shares": 779362
         },
         {
           "holder": "marcus",
-          "security": "seed_shadow",
+          "security": "seed_safes",
           "shares": 389681
         },
         {
@@ -244,7 +244,7 @@
         },
         {
           "code": "no_anti_dilution_field",
-          "subject": "seed_shadow"
+          "subject": "seed_safes"
         },
         {
           "code": "no_anti_dilution_field",
@@ -260,7 +260,7 @@
         },
         {
           "code": "participation_cap_includes_preference",
-          "subject": "seed_shadow"
+          "subject": "seed_safes"
         },
         {
           "code": "participation_cap_includes_preference",
@@ -272,7 +272,7 @@
         },
         {
           "code": "conversion_rounding_not_modeled",
-          "subject": "seed_shadow"
+          "subject": "seed_safes"
         },
         {
           "code": "conversion_rounding_not_modeled",

@@ -242,7 +242,7 @@
             "conversion_price": "8/9",
             "conversion_price_approx": "0.8888888889",
             "shares": 900000,
-            "series": "series_a_shadow"
+            "series": "series_a_safes"
           },
           {
             "safe": "safe_s",
@@ -251,7 +251,7 @@
             "conversion_price": "10/11",
             "conversion_price_approx": "0.9090909091",
             "shares": 1100000,
-            "series": "series_a_shadow_2"
+            "series": "series_a_safes_2"
           }
         ],
         "new_shares": [
@@ -293,7 +293,7 @@
             "kind": "common"
           },
           {
-            "id": "series_a_shadow",
+            "id": "series_a_safes",
             "name": "Series A Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "8/9",
@@ -310,7 +310,7 @@
             }
           },
           {
-            "id": "series_a_shadow_2",
+            "id": "series_a_safes_2",
             "name": "Series A Preferred (from SAFEs) 2",
             "kind": "preferred",
             "original_issue_price": "10/11",
@@ -347,8 +347,8 @@
         "seniority": [
           [
             "series_a",
-            "series_a_shadow",
-            "series_a_shadow_2"
+            "series_a_safes",
+            "series_a_safes_2"
           ]
         ],
         "positions": [
@@ -364,12 +364,12 @@
           },
           {
             "holder": "investor_p",
-            "security": "series_a_shadow",
+            "security": "series_a_safes",
             "shares": 900000
           },
           {
             "holder": "investor_s",
-            "security": "series_a_shadow_2",
+            "security": "series_a_safes_2",
             "shares": 1100000
           },
           {
@@ -383,14 +383,14 @@
         "totals": {
           "shares_by_security": {
             "common": 9000000,
-            "series_a_shadow": 900000,
-            "series_a_shadow_2": 1100000,
+            "series_a_safes": 900000,
+            "series_a_safes_2": 1100000,
             "series_a": 2750000
           },
           "as_converted_by_security": {
             "common": "9000000",
-            "series_a_shadow": "900000",
-            "series_a_shadow_2": "1100000",
+            "series_a_safes": "900000",
+            "series_a_safes_2": "1100000",
             "series_a": "2750000"
           },
           "fully_diluted": "13750000",

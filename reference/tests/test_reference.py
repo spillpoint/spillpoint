@@ -124,7 +124,7 @@ class Rounds(unittest.TestCase):
             "pre_money": "18000000",
             "investments": [{"holder": "b", "amount": "2000000"}],
             "pool_target_unissued_percent_post": "0",
-            "seniority": [["seed", "seed_shadow"]],
+            "seniority": [["seed", "seed_safes"]],
         }
         ev["series"].pop("original_issue_price")
         ev.update(kw)
@@ -146,8 +146,8 @@ class Rounds(unittest.TestCase):
         ev, ct, d = out[-1]
         self.assertEqual(d["price_per_share"], "1.8")
         self.assertEqual(d["company_capitalization"], "10000000")
-        self.assertEqual(ct.positions[("s", "seed_shadow")], 1_000_000)
-        self.assertEqual(ct.securities["seed_shadow"]["original_issue_price"], F(1))
+        self.assertEqual(ct.positions[("s", "seed_safes")], 1_000_000)
+        self.assertEqual(ct.securities["seed_safes"]["original_issue_price"], F(1))
         self.assertEqual(ct.positions[("b", "seed")], 1_111_111)
 
     def test_dividends_on_a_rounds_series(self):
@@ -164,9 +164,9 @@ class Rounds(unittest.TestCase):
             ]
 
         _, ct, _ = self.run_events(events({"rate": "0.08", "method": "simple", "on_conversion": "forfeited"}))[-1]
-        for sid in ("seed", "seed_shadow"):
+        for sid in ("seed", "seed_safes"):
             self.assertEqual(ct.securities[sid]["cumulative_dividend"]["accrual_start"], datetime.date(2024, 1, 1))
-        self.assertEqual(ct.securities["seed_shadow"]["original_issue_price"], 1)
+        self.assertEqual(ct.securities["seed_safes"]["original_issue_price"], 1)
         with self.assertRaisesRegex(ValueError, "accrue from its date; give no accrual_start"):
             self.run_events(events({"rate": "0.08", "accrual_start": "2023-01-01"}))
         with self.assertRaisesRegex(ValueError, "so the round needs a date"):
@@ -188,7 +188,7 @@ class Rounds(unittest.TestCase):
         ev, ct, d = out[-1]
         self.assertEqual(F(d["price_per_share"]), F(20_000_000) / (F(9_000_000) / F(67, 80)))
         self.assertEqual(d["safe_conversions"][0]["method"], "discount")
-        self.assertEqual(ct.positions[("s", "seed_shadow")], 671_641)
+        self.assertEqual(ct.positions[("s", "seed_safes")], 671_641)
 
     def test_pool_already_meets_target(self):
         # 900,000 common and a 100,000-share pool (10% of 1,000,000). Round:
@@ -304,7 +304,7 @@ class Rounds(unittest.TestCase):
                  "series": {"id": "series_a", "name": "Series A", "kind": "preferred", "preference_multiple": "1",
                             "participation": "non_participating", "cap_multiple": None, "anti_dilution": "none"},
                  "pre_money": "2000000", "investments": [{"holder": "y", "amount": "500000"}], "convert_notes": True,
-                 "seniority": [["series_a", "series_a_shadow", "series_a_notes"]]},
+                 "seniority": [["series_a", "series_a_safes", "series_a_notes"]]},
             ],
         }
 

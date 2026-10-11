@@ -9,7 +9,7 @@ Edge case 8's cap table, written by hand as an OCF 1.2 package as of Jan 1, 2024
 | Founders 6,000,000 and 2,000,000; X 2,000,000 Seed | the same positions |
 | Lender L's warrant: 200,000, at $0.50, a fixed-amount conversion into Seed Preferred | a warrant class for `seed` at $0.50: L 200,000 (O7) |
 
-**The one difference.** The locked case names the warrant class by hand: `warrant_seed`, "Warrant for Seed Preferred ($0.50 strike)". An import takes the engine's own name, as a company built from its rounds does: `warrants_seed_0.5`, "Warrants for Seed Preferred ($0.5 strike)" (O7). The class is the same in every term, so the payouts are the same, under the other name.
+**The one difference.** The locked case names the warrant class by hand: `warrant_seed`, "Warrant for Seed Preferred ($0.50 strike)". An import takes the engine's own name, as a company built from its rounds does: `warrants_seed_0.5`, "Warrants for Seed Preferred ($0.50 strike)" (O7). The class is the same in every term, so the payouts are the same, under the other name.
 
 **The report:**
 - **Read:** a count of each object in the package.

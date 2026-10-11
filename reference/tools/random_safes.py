@@ -46,7 +46,7 @@ import datetime  # noqa: E402
 
 from spillpoint_ref.case import _outcome_json, run_case  # noqa: E402
 from spillpoint_ref.model import CapTable  # noqa: E402
-from spillpoint_ref.num import exact, money  # noqa: E402
+from spillpoint_ref.num import exact, money, strike_name  # noqa: E402
 from spillpoint_ref.waterfall import SeveralAnswers, Waterfall  # noqa: E402
 
 TOP = 40_000_000
@@ -63,7 +63,7 @@ def random_inputs(rng, n):
         holders.append({"id": "employee_c", "name": "Employee C"})
         strike = rng.choice(["0", "0.1", "0.25", "0.5"])
         sid = f"options_{strike}"
-        securities.append({"id": sid, "name": f"Options (${strike} strike)", "kind": "option", "strike": strike})
+        securities.append({"id": sid, "name": f"Options (${strike_name(strike)} strike)", "kind": "option", "strike": strike})
         positions.append({"holder": "employee_c", "security": sid, "shares": rng.choice([2, 5, 10]) * 100_000})
     series = []
     for i in range(rng.choice([0, 1, 1, 2, 2])):

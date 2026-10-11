@@ -338,7 +338,7 @@ export const RANDOM_1_121: Json = {
       },
       {
         "id": "options_0",
-        "name": "Options ($0 strike)",
+        "name": "Options ($0.00 strike)",
         "kind": "option",
         "strike": "0"
       },

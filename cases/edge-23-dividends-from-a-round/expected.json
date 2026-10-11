@@ -321,7 +321,7 @@
             "conversion_price": "2",
             "conversion_price_approx": "2.0000000000",
             "shares": 300000,
-            "series": "series_a_shadow"
+            "series": "series_a_safes"
           }
         ],
         "new_shares": [
@@ -369,7 +369,7 @@
             "strike": "0.25"
           },
           {
-            "id": "series_a_shadow",
+            "id": "series_a_safes",
             "name": "Series A Preferred (from SAFEs)",
             "kind": "preferred",
             "original_issue_price": "2",
@@ -418,7 +418,7 @@
         "seniority": [
           [
             "series_a",
-            "series_a_shadow"
+            "series_a_safes"
           ]
         ],
         "positions": [
@@ -439,7 +439,7 @@
           },
           {
             "holder": "investor_s",
-            "security": "series_a_shadow",
+            "security": "series_a_safes",
             "shares": 300000
           },
           {
@@ -454,13 +454,13 @@
           "shares_by_security": {
             "common": 6000000,
             "options_0.25": 500000,
-            "series_a_shadow": 300000,
+            "series_a_safes": 300000,
             "series_a": 2000000
           },
           "as_converted_by_security": {
             "common": "6000000",
             "options_0.25": "500000",
-            "series_a_shadow": "300000",
+            "series_a_safes": "300000",
             "series_a": "2000000"
           },
           "fully_diluted": "10000000",
@@ -479,7 +479,7 @@
   "exit": {
     "accrued_dividends": [
       {
-        "security": "series_a_shadow",
+        "security": "series_a_safes",
         "accrual_start": "2023-06-30",
         "exit_date": "2026-06-30",
         "days": 1096,
@@ -509,7 +509,7 @@
             "tier": 1,
             "securities": [
               "series_a",
-              "series_a_shadow"
+              "series_a_safes"
             ],
             "text": "The preference tier Series A Preferred and Series A Preferred (from SAFEs) is fully paid ($6,945,227.40). Above this exit value, the next dollar goes to the residual, shared as common."
           }
@@ -533,7 +533,7 @@
         "reasons": [
           {
             "code": "series_converts",
-            "security": "series_a_shadow",
+            "security": "series_a_safes",
             "converts": true,
             "text": "Series A Preferred (from SAFEs) converts to common. At this exit value its as-converted share (300,000 common shares at $2.4804 each = $744,131.51) equals its 1x preference plus accrued dividends, $744,131.51 (dividends are forfeited on conversion). Below it, staying preferred pays more; above it, converting pays more."
           }
@@ -562,7 +562,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "not_exercised"
             },
@@ -585,7 +585,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "321428.57"
               },
               {
@@ -604,7 +604,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.25": "0.00",
-              "series_a_shadow": "321428.57",
+              "series_a_safes": "321428.57",
               "series_a": "2678571.43"
             }
           }
@@ -619,7 +619,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "not_exercised"
             },
@@ -642,7 +642,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "744131.51"
               },
               {
@@ -661,7 +661,7 @@
             "class_totals": {
               "common": "0.00",
               "options_0.25": "0.00",
-              "series_a_shadow": "744131.51",
+              "series_a_safes": "744131.51",
               "series_a": "6201095.89"
             }
           }
@@ -676,7 +676,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "not_exercised"
             },
@@ -699,7 +699,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "744131.51"
               },
               {
@@ -718,7 +718,7 @@
             "class_totals": {
               "common": "1054772.60",
               "options_0.25": "0.00",
-              "series_a_shadow": "744131.51",
+              "series_a_safes": "744131.51",
               "series_a": "6201095.89"
             }
           }
@@ -733,7 +733,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "not_exercised"
             },
@@ -756,7 +756,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "744131.51"
               },
               {
@@ -775,7 +775,7 @@
             "class_totals": {
               "common": "1500000.00",
               "options_0.25": "0.00",
-              "series_a_shadow": "744131.51",
+              "series_a_safes": "744131.51",
               "series_a": "6201095.89"
             }
           }
@@ -790,7 +790,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "exercised"
             },
@@ -813,7 +813,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "744131.51"
               },
               {
@@ -832,7 +832,7 @@
             "class_totals": {
               "common": "2935174.71",
               "options_0.25": "119597.89",
-              "series_a_shadow": "744131.51",
+              "series_a_safes": "744131.51",
               "series_a": "6201095.89"
             }
           }
@@ -847,7 +847,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "exercised"
             },
@@ -870,7 +870,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "744131.51"
               },
               {
@@ -889,7 +889,7 @@
             "class_totals": {
               "common": "12165943.94",
               "options_0.25": "888828.66",
-              "series_a_shadow": "744131.51",
+              "series_a_safes": "744131.51",
               "series_a": "6201095.89"
             }
           }
@@ -904,7 +904,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "keeps_preference",
+              "series_a_safes": "keeps_preference",
               "series_a": "keeps_preference",
               "options_0.25": "exercised"
             },
@@ -927,7 +927,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "744131.51"
               },
               {
@@ -946,7 +946,7 @@
             "class_totals": {
               "common": "14882630.14",
               "options_0.25": "1115219.18",
-              "series_a_shadow": "744131.51",
+              "series_a_safes": "744131.51",
               "series_a": "6201095.89"
             }
           }
@@ -961,7 +961,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "converts",
+              "series_a_safes": "converts",
               "series_a": "keeps_preference",
               "options_0.25": "exercised"
             },
@@ -984,7 +984,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "834878.12"
               },
               {
@@ -1003,7 +1003,7 @@
             "class_totals": {
               "common": "16697562.45",
               "options_0.25": "1266463.54",
-              "series_a_shadow": "834878.12",
+              "series_a_safes": "834878.12",
               "series_a": "6201095.89"
             }
           }
@@ -1018,7 +1018,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "converts",
+              "series_a_safes": "converts",
               "series_a": "keeps_preference",
               "options_0.25": "exercised"
             },
@@ -1041,7 +1041,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "930164.38"
               },
               {
@@ -1060,7 +1060,7 @@
             "class_totals": {
               "common": "18603287.67",
               "options_0.25": "1425273.97",
-              "series_a_shadow": "930164.38",
+              "series_a_safes": "930164.38",
               "series_a": "6201095.89"
             }
           }
@@ -1075,7 +1075,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "converts",
+              "series_a_safes": "converts",
               "series_a": "converts",
               "options_0.25": "exercised"
             },
@@ -1098,7 +1098,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "1026988.64"
               },
               {
@@ -1117,7 +1117,7 @@
             "class_totals": {
               "common": "20539772.73",
               "options_0.25": "1586647.73",
-              "series_a_shadow": "1026988.64",
+              "series_a_safes": "1026988.64",
               "series_a": "6846590.91"
             }
           }
@@ -1132,7 +1132,7 @@
         "equilibria": [
           {
             "decisions": {
-              "series_a_shadow": "converts",
+              "series_a_safes": "converts",
               "series_a": "converts",
               "options_0.25": "exercised"
             },
@@ -1155,7 +1155,7 @@
               },
               {
                 "holder": "investor_s",
-                "security": "series_a_shadow",
+                "security": "series_a_safes",
                 "amount": "1367897.73"
               },
               {
@@ -1174,7 +1174,7 @@
             "class_totals": {
               "common": "27357954.55",
               "options_0.25": "2154829.55",
-              "series_a_shadow": "1367897.73",
+              "series_a_safes": "1367897.73",
               "series_a": "9119318.18"
             }
           }

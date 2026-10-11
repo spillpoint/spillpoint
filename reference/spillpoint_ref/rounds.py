@@ -12,7 +12,7 @@ import itertools
 from fractions import Fraction
 
 from .model import CapTable, note_from_json, note_interest, security_from_json, safe_from_json
-from .num import parse, floor, exact, decimal, usd
+from .num import parse, floor, exact, decimal, strike_name, usd
 
 
 def build(inputs):
@@ -135,7 +135,7 @@ def ev_grant_options(ct, ev):
         strike = parse(g["strike"])
         sid = option_security_id(strike)
         if sid not in ct.securities:
-            ct.add_security({"id": sid, "name": f"Options (${exact(strike)} strike)", "kind": "option", "strike": strike})
+            ct.add_security({"id": sid, "name": f"Options (${strike_name(strike)} strike)", "kind": "option", "strike": strike})
         n = int(parse(g["shares"]))
         if n > ct.unissued_pool:
             raise ValueError(f"grant of {n} exceeds unissued pool {ct.unissued_pool}")
@@ -168,7 +168,7 @@ def ev_issue_warrants(ct, ev):
         if sid not in ct.securities:
             what = "Common Stock" if underlying == "common" else ct.securities[underlying]["name"]
             ct.add_security(
-                {"id": sid, "name": f"Warrants for {what} (${exact(strike)} strike)", "kind": "warrant", "strike": strike, "underlying": underlying}
+                {"id": sid, "name": f"Warrants for {what} (${strike_name(strike)} strike)", "kind": "warrant", "strike": strike, "underlying": underlying}
             )
         ct.issue(w["holder"], sid, int(parse(w["shares"])))
 
@@ -721,7 +721,7 @@ def ev_priced_round(ct, ev):
         cp = cap_price(k, f, x, top_up, safe_branch) if b == "cap" else price * (1 - f["discount"])
         if cp not in shadow_by_price:
             idx = len(shadow_by_price)
-            sid = f"{series['id']}_shadow" + ("" if idx == 0 else f"_{idx + 1}")
+            sid = f"{series['id']}_safes" + ("" if idx == 0 else f"_{idx + 1}")
             name = f"{series['name']} (from SAFEs)" + ("" if idx == 0 else f" {idx + 1}")
             shadow = security_from_json(
                 {

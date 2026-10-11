@@ -81,7 +81,7 @@
         },
         {
           "id": "options_0.1",
-          "name": "Options ($0.1 strike)",
+          "name": "Options ($0.10 strike)",
           "kind": "option",
           "strike": "0.1"
         },
@@ -93,7 +93,7 @@
         },
         {
           "id": "warrants_cls-seed_1",
-          "name": "Warrants for Seed Preferred ($1 strike)",
+          "name": "Warrants for Seed Preferred ($1.00 strike)",
           "kind": "warrant",
           "strike": "1",
           "underlying": "cls-seed"

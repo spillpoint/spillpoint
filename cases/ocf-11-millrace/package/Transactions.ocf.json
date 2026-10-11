@@ -198,7 +198,7 @@
       "security_id": "sec-11",
       "custom_id": "S-11",
       "stakeholder_id": "priya",
-      "stock_class_id": "seed_shadow",
+      "stock_class_id": "seed_safes",
       "share_price": {
         "amount": "0.3849300316",
         "currency": "USD"
@@ -225,7 +225,7 @@
       "security_id": "sec-13",
       "custom_id": "S-13",
       "stakeholder_id": "marcus",
-      "stock_class_id": "seed_shadow",
+      "stock_class_id": "seed_safes",
       "share_price": {
         "amount": "0.3849300316",
         "currency": "USD"

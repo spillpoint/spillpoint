@@ -207,9 +207,9 @@ describe("how a round ranks", () => {
     ]);
     fireEvent.change(rank, { target: { value: "alongside" } });
     const file = await savedFile();
-    expect(file.events[7].seniority).toEqual([["series_a", "seed", "seed_shadow"]]);
+    expect(file.events[7].seniority).toEqual([["series_a", "seed", "seed_safes"]]);
     openTab("Payouts");
-    expect(headline()).toBe(anaAt100M((events) => (events[7]!.seniority = [["series_a", "seed", "seed_shadow"]])));
+    expect(headline()).toBe(anaAt100M((events) => (events[7]!.seniority = [["series_a", "seed", "seed_safes"]])));
   });
 });
 

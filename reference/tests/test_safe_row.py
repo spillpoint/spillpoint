@@ -44,7 +44,7 @@ def table(safes, preferred):
     positions = [{"holder": "founder", "security": "common", "shares": 6000000}]
     if preferred:
         securities += [
-            {"id": "options_0.5", "name": "Options ($0.5 strike)", "kind": "option", "strike": "0.5"},
+            {"id": "options_0.5", "name": "Options ($0.50 strike)", "kind": "option", "strike": "0.5"},
             {"id": "seed", "name": "Seed Preferred", "kind": "preferred", "original_issue_price": "1", "conversion_price": "1",
              "preference_multiple": "1", "participation": "non_participating", "cap_multiple": None, "anti_dilution": "none"},
         ]

@@ -180,7 +180,7 @@ The Summary View's plan rows aren't read, so they're left as they were.
 - **The adoption row is set aside,** like the first plan's two: `not_needed.stock_plan_history` is 3.
 
 **What differs:**
-- `securities`: `options_0.5`, "Options ($0.5 strike)", before `rsus`
+- `securities`: `options_0.5`, "Options ($0.50 strike)", before `rsus`
 - `positions`: Founder B holds 100,000 `options_0.5`
 - `unissued_pool`: 1010000
 - `read`: `plan_grants` 7, `stock_plans` 2

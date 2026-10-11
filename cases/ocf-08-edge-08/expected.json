@@ -45,7 +45,7 @@
         },
         {
           "id": "warrants_seed_0.5",
-          "name": "Warrants for Seed Preferred ($0.5 strike)",
+          "name": "Warrants for Seed Preferred ($0.50 strike)",
           "kind": "warrant",
           "strike": "0.5",
           "underlying": "seed"

@@ -3,7 +3,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ZERO } from "./decimal.ts";
+import { D, ZERO, strikeInName } from "./decimal.ts";
 import {
   type Book, Header, type Tab, UNKNOWN, asOfOf, dateAt, headerRow, isBlank, label, malformed, normal, numberAt, requireHeaders, tablesOf, unsupported,
   written,
@@ -482,7 +482,7 @@ export function read07(book: Book, draft: Draft): string {
     const under = w.cls.kind === "common" ? "common" : w.cls.id;
     const id = `warrants_${under}_${written(w.strike)}`;
     if (!draft.derived.some((s) => s.id === id)) {
-      draft.derived.push({ id, name: `Warrants for ${w.cls.name} ($${written(w.strike)} strike)`, kind: "warrant", strike: written(w.strike), underlying: under });
+      draft.derived.push({ id, name: `Warrants for ${w.cls.name} ($${strikeInName(w.strike)} strike)`, kind: "warrant", strike: written(w.strike), underlying: under });
     }
     draft.hold(w.holder, id, w.shares);
   }

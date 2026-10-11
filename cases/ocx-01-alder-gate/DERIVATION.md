@@ -124,7 +124,7 @@ The plan ledger's tab, "Alder Gate 2023 Equity Plan...", is cut too. It's known 
 - **Then the expiry rule:** EP-4 expired on 30 September 2025, before 31 October. It's left out and listed: `expired_option_left_out`, naming EP-4. The export still counts it, which is why the check comes before.
 
 The grants left, by strike, named as O6:
-- **`options_0.1`,** "Options ($0.1 strike)": Employee C 200,000, Employee D 60,000.
+- **`options_0.1`,** "Options ($0.10 strike)": Employee C 200,000, Employee D 60,000.
 - **`options_0.25`,** "Options ($0.25 strike)": Employee D 50,000.
 - **`rsus`,** "RSUs (no strike)", at "0": Employee C 10,000.
 
@@ -145,7 +145,7 @@ No class is made for EP-4's $0.05 strike, since nothing is left at it.
 - **Its status:** above 0 and "Outstanding".
 - **The check:** Lender L's 30,000 equals the Stakeholder View's `Stock Warrants`.
 - **Not expired:** 2031 is after the as-of date.
-- **Its class:** "Common Stock" is a common class, so it's a warrant for `common`, named with that class (O7): `warrants_common_0.5`, "Warrants for Common Stock ($0.5 strike)", strike "0.5", Lender L 30,000.
+- **Its class:** "Common Stock" is a common class, so it's a warrant for `common`, named with that class (O7): `warrants_common_0.5`, "Warrants for Common Stock ($0.50 strike)", strike "0.5", Lender L 30,000.
 - **One `warrant_counts_are_maximums` line,** since 0.7's counts are the most an adjustable warrant can buy.
 
 ## The SAFEs (OX11)
