@@ -181,6 +181,43 @@ I opened `local/ocx-reference/Test-Mantle_Export-2026_10_10.xlsx` on the page lo
 - **Typecheck and build:** clean.
 - **Reference:** untouched.
 
+## After your review (Jordan, after #88)
+
+**Your check:** you drove the built page in headless Chromium, with workbooks written by openpyxl, a different writer from ours, and with the real Mantle export:
+- every question, answer and refusal behaved as this note says
+- the saved file held every answer, and nothing was preset
+- no summary or `ocf-check` output held a name, amount or date
+
+The nine decisions are agreed, and the summary keeps its full structure (open question 2).
+
+**One commit:**
+1. **The fixture now opens in a spreadsheet app.** `xlsxOf` wrote an empty `[Content_Types].xml` and a styles part with only `cellXfs`, which LibreOffice and openpyxl refused. It now writes:
+   - **the content types:** defaults for the relationship parts and for XML, and overrides for the workbook, each worksheet, the shared strings and the styles
+   - **a styles part with what Excel expects:** a font, the two required fills, a border, `cellStyleXfs`, `cellXfs` with their ids, and the Normal cell style
+
+   **The page's reader** reads only `cellXfs`, so its own tests are unchanged.
+
+   **`fixtures/hollis-mill.xlsx` is regenerated.** I checked it here with openpyxl, the one other reader on this machine (no LibreOffice or Excel). openpyxl opens it and re-saves it, and the copy openpyxl saved imports through the page's reader exactly as case 06 does.
+
+   **A new test** checks that every part in a workbook `xlsxOf` writes has a content type, and that each override names a part that's there.
+2. **The one-strike stop shows as soon as "No" is picked,** under the question, and again at Use.
+3. **Warrant columns are asked too** (open question 1), the same way: "Do all the warrants in "Warrants for Common Stock" have the same strike?", with the strike asked only after "Yes". Hollis Mill's warrant column is tested like its option column.
+4. **A made holder's note questions read with the name in quotes:** The note "Convertible notes, $8,000,000 cap, 20% discount (1)": simple interest (% a year). Likewise its issue date, its cap's base and its repayment multiple.
+
+**In ASSUMPTIONS:** OX15 says warrant columns are asked, the stop shows at once, and the summary keeps its full structure, and it's marked agreed.
+
+**When your re-saved workbook is in `fixtures/`,** I'll:
+1. **run the waiting test**
+2. **blank `dc:creator` and `cp:lastModifiedBy` in its `docProps/core.xml`** before committing it; the reader never reads that part
+3. **say so in that commit's note**
+
+The steps for saving it are in section 3 above.
+
+**Checks:**
+- **Page:** 653 tests pass, 2 more, with 1 waiting for the re-saved workbook.
+- **Engine:** unchanged.
+- **Typecheck and build:** clean.
+
 ## Next
 
 06h, release 0.6.0: the version, the release notes with 06a's breaking changes, both READMEs (readOcx in the API section), and the packed build checked. I'm stopping here.

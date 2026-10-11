@@ -203,6 +203,12 @@ export function ImportReview({ source, onUse, onCancel }: Props) {
             </label>
           ))}
           {shortcuts(q)}
+          {/* OX14: the stop shows as soon as "No" is picked, before anything else is filled in. */}
+          {q.kind === "gate" && answers[q.key] === "no" && (
+            <p className="field-error" role="alert">
+              {q.stop}
+            </p>
+          )}
           {missing.has(q.key) && <span className="field-error">Choose one.</span>}
         </fieldset>
       );

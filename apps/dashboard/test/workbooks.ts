@@ -95,6 +95,24 @@ const PKG = "http://schemas.openxmlformats.org/package/2006/relationships";
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+const TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml";
+/**
+ * The package's content types, without which a spreadsheet app won't open it: a default for the relationship parts
+ * and for any other XML, and the workbook's own parts by name.
+ */
+function contentTypes(sheets: string[]): string {
+  const override = (part: string, type: string) => `<Override PartName="/${part}" ContentType="${TYPE}.${type}+xml"/>`;
+  return (
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+    `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>` +
+    override("xl/workbook.xml", "sheet.main") +
+    sheets.map((s) => override(s, "worksheet")).join("") +
+    override("xl/sharedStrings.xml", "sharedStrings") +
+    override("xl/styles.xml", "styles") +
+    `</Types>`
+  );
+}
+
 /** The parts of a workbook, before zipping, so a test can change one. */
 export function workbookParts(spec: WorkbookSpec): Record<string, string> {
   const p = spec.prefix ? `${spec.prefix}:` : "";
@@ -126,12 +144,23 @@ export function workbookParts(spec: WorkbookSpec): Record<string, string> {
   }));
   const formats = spec.formats ?? [0];
   const custom = formats.map((f, i) => (typeof f === "string" ? { id: 164 + i, code: f } : null)).filter((f) => f != null);
-  const styles = `<${p}styleSheet ${ns}>${custom.length > 0 ? `<${p}numFmts count="${custom.length}">${custom.map((f) => `<${p}numFmt numFmtId="${f.id}" formatCode="${escape(f.code)}"/>`).join("")}</${p}numFmts>` : ""}<${p}cellXfs count="${formats.length}">${formats.map((f, i) => `<${p}xf numFmtId="${typeof f === "string" ? 164 + i : f}"/>`).join("")}</${p}cellXfs></${p}styleSheet>`;
+  // What Excel expects of a styles part, so a spreadsheet app opens the workbook: a font, the two fills it requires,
+  // a border, the Normal cell style and its format, and each cell style by those ids, with its number format.
+  const numFmts = custom.length > 0 ? `<${p}numFmts count="${custom.length}">${custom.map((f) => `<${p}numFmt numFmtId="${f.id}" formatCode="${escape(f.code)}"/>`).join("")}</${p}numFmts>` : "";
+  const xfs = formats.map((f, i) => `<${p}xf numFmtId="${typeof f === "string" ? 164 + i : f}" fontId="0" fillId="0" borderId="0" xfId="0"${f === 0 ? "" : ` applyNumberFormat="1"`}/>`).join("");
+  const styles =
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<${p}styleSheet ${ns}>${numFmts}` +
+    `<${p}fonts count="1"><${p}font><${p}sz val="11"/><${p}name val="Calibri"/></${p}font></${p}fonts>` +
+    `<${p}fills count="2"><${p}fill><${p}patternFill patternType="none"/></${p}fill><${p}fill><${p}patternFill patternType="gray125"/></${p}fill></${p}fills>` +
+    `<${p}borders count="1"><${p}border><${p}left/><${p}right/><${p}top/><${p}bottom/><${p}diagonal/></${p}border></${p}borders>` +
+    `<${p}cellStyleXfs count="1"><${p}xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></${p}cellStyleXfs>` +
+    `<${p}cellXfs count="${formats.length}">${xfs}</${p}cellXfs>` +
+    `<${p}cellStyles count="1"><${p}cellStyle name="Normal" xfId="0" builtinId="0"/></${p}cellStyles></${p}styleSheet>`;
   const sst = () => `<${p}sst ${ns} count="${shared.length}">${shared.map((t) => `<${p}si><${p}t xml:space="preserve">${escape(t)}</${p}t></${p}si>`).join("")}${(spec.sharedItems ?? []).join("")}</${p}sst>`;
   const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<${p}workbook ${ns} xmlns:r="${REL}">${spec.date1904 != null ? `<${p}workbookPr date1904="${spec.date1904}"/>` : ""}<${p}sheets>${spec.sheets.map((s, i) => `<${p}sheet name="${escape(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</${p}sheets></${p}workbook>`;
   const rels = `<Relationships xmlns="${PKG}">${sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="${REL}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rIdS" Type="${REL}/sharedStrings" Target="sharedStrings.xml"/><Relationship Id="rIdT" Type="${REL}/styles" Target="styles.xml"/></Relationships>`;
   const parts: Record<string, string> = {
-    "[Content_Types].xml": `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>`,
+    "[Content_Types].xml": contentTypes(sheets.map((s) => s.path)),
     "_rels/.rels": `<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
     "xl/workbook.xml": workbook,
     "xl/_rels/workbook.xml.rels": rels,

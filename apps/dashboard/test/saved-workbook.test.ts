@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import type { CapTableImport, OcxWorkbook } from "spillpoint";
 
 import { importOcx } from "../src/ocxImport.ts";
+import { readZip } from "../src/zip.ts";
 import { xlsxOf } from "./workbooks.ts";
 
 const fixtures = resolve(import.meta.dirname, "fixtures");
@@ -35,4 +36,18 @@ describe("a workbook for a spreadsheet app to save", () => {
   it.skipIf(!existsSync(resolve(fixtures, "hollis-mill-saved.xlsx")))("imports as case 06 does once a spreadsheet app has saved it", async () => {
     expect(asSet(await imported("hollis-mill-saved.xlsx"))).toEqual(asSet(expected));
   });
+});
+
+// A spreadsheet app refuses a package whose parts have no content type (Jordan, after #88's review), so each part the
+// writer writes has one: a default for its extension, or an override by its name.
+it("gives every part of a workbook it writes a content type, so a spreadsheet app opens it", async () => {
+  const entries = await readZip(xlsxOf(book));
+  const types = new TextDecoder().decode(entries.find((e) => e.name === "[Content_Types].xml")!.bytes);
+  const defaults = new Set([...types.matchAll(/<Default Extension="([^"]+)"/g)].map((m) => m[1]));
+  const overrides = new Set([...types.matchAll(/<Override PartName="\/([^"]+)"/g)].map((m) => m[1]));
+  const parts = entries.map((e) => e.name).filter((n) => n !== "[Content_Types].xml");
+  for (const part of parts) expect(overrides.has(part) || defaults.has(part.split(".").pop()!), part).toBe(true);
+  // Each override names a part that's there, and the workbook's own parts have one.
+  for (const part of overrides) expect(parts, part!).toContain(part);
+  for (const part of ["xl/workbook.xml", "xl/styles.xml", "xl/sharedStrings.xml", ...book.sheets.map((_, i) => `xl/worksheets/sheet${i + 1}.xml`)]) expect(overrides.has(part), part).toBe(true);
 });

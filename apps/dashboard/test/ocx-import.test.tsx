@@ -77,7 +77,7 @@ function answerLocked(expected: { answers: { security?: string; field: string; v
   for (const a of expected.answers) {
     if (a.field === "strike") {
       const s = securities.find((x) => x.id === a.security)!;
-      if (s.kind === "option") choose(`Do all the options in "${String(s.name)}" have the same strike?`, "Yes, one strike");
+      choose(`Do all the ${s.kind === "option" ? "options" : "warrants"} in "${String(s.name)}" have the same strike?`, "Yes, one strike");
       type(`The strike for "${String(s.name)}", a share`, String(a.value));
     } else if (a.field === "seniority") {
       const tiers = a.value as string[][];
@@ -136,16 +136,22 @@ describe("Hollis Mill's questions (ocx-06)", () => {
     return review();
   };
 
-  it("asks whether an option column has one strike before its strike, and stops on no, naming the column (OX14)", async () => {
+  it.each([
+    ["options", "Common Stock Options"],
+    ["warrants", "Warrants for Common Stock"],
+  ])("asks whether a column of %s has one strike before its strike, and says at once that no stops it (OX14)", async (what, column) => {
     await open();
+    const question = `Do all the ${what} in "${column}" have the same strike?`;
+    const stop =
+      `"${column}" holds ${what} at more than one strike, and spillpoint can read only one strike for a column, so it can't import this workbook. ` +
+      "Enter the cap table by hand instead, or export it with each strike in a column of its own.";
     // The strike isn't asked until the column is said to have one.
-    expect(screen.queryByLabelText('The strike for "Common Stock Options", a share')).toBeNull();
-    choose('Do all the options in "Common Stock Options" have the same strike?', "No, more than one");
+    expect(screen.queryByLabelText(`The strike for "${column}", a share`)).toBeNull();
+    choose(question, "No, more than one");
+    // Said under the question as soon as "No" is picked, before anything else is filled in.
+    expect(within(group(question)).getByRole("alert").textContent).toBe(stop);
     click("Use this cap table");
-    expect((await screen.findByRole("alert")).textContent).toBe(
-      '"Common Stock Options" holds options at more than one strike, and spillpoint can read only one strike for a column, so it can\'t import this workbook. ' +
-        "Enter the cap table by hand instead, or export it with each strike in a column of its own.",
-    );
+    expect(screen.getAllByRole("alert").map((a) => a.textContent)).toEqual([stop, stop]);
     expect(screen.queryByRole("tab", { name: "Payouts" })).toBeNull();
   });
 
@@ -162,12 +168,13 @@ describe("Hollis Mill's questions (ocx-06)", () => {
     type('The strike for "Common Stock Options", a share', "0.1");
     choose('Do all the options in "Non-Plan Awards" have the same strike?', "Yes, one strike");
     type('The strike for "Non-Plan Awards", a share', "0.25");
+    choose('Do all the warrants in "Warrants for Common Stock" have the same strike?', "Yes, one strike");
     type('The strike for "Warrants for Common Stock", a share', "0.5");
-    const note = "Convertible notes, $8,000,000 cap, 20% discount (1)";
-    type(`${note}'s simple interest (% a year)`, "6");
-    type(`When was ${note}'s note issued?`, "2024-01-15");
-    choose(`What does ${note}'s cap divide by?`, "The company's shares, options and unissued pool");
-    type(`${note}'s repayment multiple at a sale`, "1.5");
+    const note = 'The note "Convertible notes, $8,000,000 cap, 20% discount (1)"';
+    type(`${note}: simple interest (% a year)`, "6");
+    type(`${note}: when was it issued?`, "2024-01-15");
+    choose(`${note}: what does its cap divide by?`, "The company's shares, options and unissued pool");
+    type(`${note}: repayment multiple at a sale`, "1.5");
     choose("Which series is paid first at a sale?", /^Stacked, latest round senior: Series A Preferred, then Series Seed Preferred/);
     type("When is the sale?", "2026-06-30");
     click("Use this cap table");

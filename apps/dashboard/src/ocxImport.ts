@@ -192,7 +192,7 @@ export const capKey = (security: string): string => `security:${security}:cap_mu
  * One question for each blank the import left (O1), and two more kinds the workbook needs:
  * - **seniority**, from no order set: "all pari passu", "stacked, latest round senior", or arranged by hand (0.6.0
  *   plan, answer 7)
- * - **one strike?** before a 0.4/0.5 option column's strike: "No" stops the import, naming the column (OX14)
+ * - **one strike?** before a 0.4/0.5 option or warrant column's strike: "No" stops the import, naming the column (OX14)
  *
  * A preferred series' conversion price and terms have one-click answers, "conversion price = issue price" and "1x,
  * non-participating", which you click; neither is ever preset (06d review).
@@ -227,25 +227,23 @@ export function ocxQuestions(result: CapTableImport, workbook: OcxWorkbook): Que
       const name = String(s.name);
       const id = String(s.id);
       if (blank.field === "strike") {
-        if (s.kind === "option") {
-          asked.push({
-            key: gateKey(id), blank, kind: "gate",
-            label: `Do all the options in "${name}" have the same strike?`,
-            hint: "OCX 0.4 and 0.5 give one column per plan or class, with no strikes, so spillpoint can read one strike for the column.",
-            choices: [
-              { value: "yes", label: "Yes, one strike" },
-              { value: "no", label: "No, more than one" },
-            ],
-            stop: `"${name}" holds options at more than one strike, and spillpoint can read only one strike for a column, so it can't import this workbook. Enter the cap table by hand instead, or export it with each strike in a column of its own.`,
-          });
-          asked.push({
-            key, blank, showWhen: { key: gateKey(id), value: "yes" },
-            label: `The strike for "${name}", a share`,
-            hint: "The price each option is exercised at. OCX doesn't give it.",
-          });
-        } else {
-          asked.push({ key, blank, label: `The strike for "${name}", a share`, hint: "The price each warrant is exercised at. OCX doesn't give it." });
-        }
+        // OX14: a 0.4/0.5 column, of options or of warrants, can't say whether it holds one strike; "No" stops the import.
+        const what = s.kind === "option" ? "options" : "warrants";
+        asked.push({
+          key: gateKey(id), blank, kind: "gate",
+          label: `Do all the ${what} in "${name}" have the same strike?`,
+          hint: "OCX 0.4 and 0.5 give one column per plan or class, with no strikes, so spillpoint can read one strike for the column.",
+          choices: [
+            { value: "yes", label: "Yes, one strike" },
+            { value: "no", label: "No, more than one" },
+          ],
+          stop: `"${name}" holds ${what} at more than one strike, and spillpoint can read only one strike for a column, so it can't import this workbook. Enter the cap table by hand instead, or export it with each strike in a column of its own.`,
+        });
+        asked.push({
+          key, blank, showWhen: { key: gateKey(id), value: "yes" },
+          label: `The strike for "${name}", a share`,
+          hint: `The price each ${what === "options" ? "option" : "warrant"} is exercised at. OCX doesn't give it.`,
+        });
         continue;
       }
       switch (blank.field) {
@@ -319,15 +317,15 @@ export function ocxQuestions(result: CapTableImport, workbook: OcxWorkbook): Que
     const who = holders.get(String(note.holder)) ?? String(note.holder);
     switch (blank.field) {
       case "interest_rate":
-        asked.push({ key, blank, kind: "rate", label: `${who}'s simple interest (% a year)`, hint: "The workbook gives none. 0 if it bears none." });
+        asked.push({ key, blank, kind: "rate", label: `The note "${who}": simple interest (% a year)`, hint: "The workbook gives none. 0 if it bears none." });
         break;
       case "issue_date":
-        asked.push({ key, blank, kind: "date", label: `When was ${who}'s note issued?`, hint: "Interest runs from it." });
+        asked.push({ key, blank, kind: "date", label: `The note "${who}": when was it issued?`, hint: "Interest runs from it." });
         break;
       case "conversion_base":
         asked.push({
           key, blank,
-          label: `What does ${who}'s cap divide by?`,
+          label: `The note "${who}": what does its cap divide by?`,
           hint: "The note's terms say which shares its cap price counts.",
           choices: [
             { value: "with_pool", label: "The company's shares, options and unissued pool" },
@@ -339,7 +337,7 @@ export function ocxQuestions(result: CapTableImport, workbook: OcxWorkbook): Que
       case "repayment_multiple":
         asked.push({
           key, blank,
-          label: `${who}'s repayment multiple at a sale`,
+          label: `The note "${who}": repayment multiple at a sale`,
           hint: "spillpoint won't assume 1x. At a sale the note takes this multiple of principal plus interest, or converts, whichever pays more.",
         });
         break;
