@@ -497,7 +497,7 @@ seed_fund on seed_preferred: $4000000.00
 
 ## What it covers
 
-Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)* or *(0.6.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)* or *(0.7.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -662,16 +662,20 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |
 | `prepare(capTable, exitDate)` | Prepare a cap table for exit values, to pass to `solve`, `payout`, `findBreakpoints` and `paySchedule`. The engine works out the fixed quantities once, and keeps them inside: what you get back shows `capTable` and `exitDate` *(0.7.0: before, 13 working quantities besides)*. Each series' preference, accrued dividends, cap and as-converted shares are on a payout's `series`. `exitDate` is needed only for dividends and notes. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns `{ exitValue, answers }`, where `answers` holds the one stable answer: its `decisions` and its `payout`, with its lines, holder totals and class totals. Where a second stable answer pays holders differently, it stops with a `NoAnswerError` instead. *(0.7.0: no `complete` field, and no third argument.)* |
-| `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
+| `payout(table, exitValue, decisions)` | Pay out with decisions you choose. A payout has its `lines`, `holderTotals` and `classTotals`, each series as it stands (`series`), each SAFE and note, the tiers, and what's held at a cap. *(0.7.0: no `bySecurity`, which `classTotals` gives to the cent, and none of the breakpoint finder's workings: `structure`, `capRoom`, and a SAFE's or note's `room`.)* |
 | `paySchedule(table, schedule)` *(0.2.0)* | Each payment's take: `cumulative`, the `decisions` there, the take per holder × security in `lines`, holder and class totals, and `lowered`, the holders whose running total falls. |
-| `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |
+| `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code` (listed under [Stable from 1.0](#stable-from-10)), a `subject`, whether it `starts` (converts, comes into the money) or stops, and its `text`. |
 | `D`, `parseExact(value, where?)`, `toCents` | Make and format the engine's Decimals. `parseExact` reads an exact number as the input format writes it, an integer, a decimal or "a/b"; `where` is the path its error names *(0.7.0: optional)*. |
+
+**What the API hands back has exactly the fields its type lists** *(0.7.0)*, and nothing else: `console.log` and `JSON.stringify` show only those, and only they are part of the API.
+
+**Names:** what reads an input (`readExit`, `readInputs`, `readCapTable`, `buildCapTables`) returns the engine's own objects, in camelCase. `readOcf` and `readOcx` return case-file JSON, in the input format's snake_case, since what they give is input: to save, to fill in and read with `readCapTable`, or to pass on as a `start` event's fields.
 
 **Errors:**
 - `InputError`: the input is malformed.
-- `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term` and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
+- `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term`, one of those listed under [Stable from 1.0](#stable-from-10), and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
-- `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term` and the `subject`. `readOcf` and `readOcx` both throw it. *(0.7.0: `OcfRefusal`, which `readOcf` threw from 0.4.0 to 0.6.0, is gone, and so are the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`: use `ImportRefusal`, `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`, which 0.6.0 added beside them.)*
+- `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term`, listed under [Stable from 1.0](#stable-from-10), and the `subject`. `readOcf` and `readOcx` both throw it. *(0.7.0: `OcfRefusal`, which `readOcf` threw from 0.4.0 to 0.6.0, is gone, and so are the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`: use `ImportRefusal`, `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`, which 0.6.0 added beside them.)*
 
 **Types for the OCX import** *(0.6.0)*: `OcxWorkbook`, `OcxSheet` and `OcxCell`, what `readOcx` takes: the date system, and each tab's cells with their kind, their text as stored and whether each holds a formula. See [Reading an OCX workbook](#reading-an-ocx-workbook-060).
 
