@@ -393,8 +393,8 @@ describe.each(ocfFixtureDirs)("OCF fixtures %s", (dir) => {
 });
 
 // OCX cases (0.6.0, C18): an OCX workbook of our own, in the engine's OcxWorkbook shape, and its import worked by hand.
-// readOcx comes in 06f; until then these check the files themselves: the workbook's shape, and that the result agrees
-// with itself and with the workbook where that needs no reading of it.
+// These check the files themselves: the workbook's shape, and that the result agrees with itself and with the workbook
+// where that needs no reading of it. readOcx reads them in ocx.test (06f).
 interface OcxResult {
   as_of: string;
   cap_table: {
@@ -558,9 +558,8 @@ describe.each(ocxWorkbookDirs)("OCX case %s", (dir) => {
   // ids, so `renamed` gives the import's id for each of the case's that comes out differently; it has no strikes or
   // seniority, so `answers` fills each blank the import lists. Prices are compared at the significant digits the
   // workbook carries them to (OX5), the locked price rounded half up. What OCX can't carry at all is compared as the
-  // import reads it: anti-dilution as none (OX7); a renamed class's name, and an option or warrant class's, which the
-  // import takes from its column's heading (OX14); and a SAFE's or note's holder's name, which the convertibles table
-  // doesn't give (OX11).
+  // import reads it: anti-dilution as none (OX7); an option or warrant class's name, which the import takes from its
+  // column's heading (OX14); and a SAFE's or note's holder's name, which the convertibles table doesn't give (OX11).
   const lockedOcx = expected as unknown as {
     locked_case?: string;
     locked_after_event?: string;
@@ -592,7 +591,6 @@ describe.each(ocxWorkbookDirs)("OCX case %s", (dir) => {
         : readJson<{ exit: { cap_table: Table } }>(lockedCase, "inputs.json").exit.cap_table;
       const renamed = lockedOcx.renamed;
       const name = (id: string) => renamed[id] ?? id;
-      const imported = new Set(Object.values(renamed));
       const made = new Set(ours.holders.filter((h) => MADE_HOLDER.test(h.name as string)).map((h) => h.id as string));
       const digits = lockedOcx.price_digits;
       const price = (v: unknown) => {
@@ -609,7 +607,7 @@ describe.each(ocxWorkbookDirs)("OCX case %s", (dir) => {
             return Object.fromEntries(
               Object.entries({ ...s, id, ...(s.underlying !== undefined ? { underlying: rename(s.underlying as string) } : {}) }).map(([k, v]) => [
                 k,
-                k === "name" && (imported.has(id) || s.kind === "option" || s.kind === "warrant") ? undefined : k === "anti_dilution" ? "none" : k === "original_issue_price" || k === "conversion_price" ? price(v) : v,
+                k === "name" && (s.kind === "option" || s.kind === "warrant") ? undefined : k === "anti_dilution" ? "none" : k === "original_issue_price" || k === "conversion_price" ? price(v) : v,
               ]),
             );
           })
