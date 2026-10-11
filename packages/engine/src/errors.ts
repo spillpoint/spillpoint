@@ -29,7 +29,8 @@ export class NoAnswerError extends Error {
  * format, so there's no single cap table to build. The term names the problem;
  * the subject is what it's about (for OCF, the object id, file name or
  * version), and `format` says which importer refused. One class for both
- * imports, so a page catches one (the naming review's item 7).
+ * imports, so a page catches one (the naming review's item 7): readOcf and
+ * readOcx both throw it, since 0.7.0 under no other name.
  */
 export class ImportRefusal extends Error {
   override name = "ImportRefusal";
@@ -44,21 +45,6 @@ export class ImportRefusal extends Error {
     this.kind = kind;
     this.term = term;
     this.subject = subject;
-  }
-}
-
-/**
- * An Open Cap Format package readOcf won't read: an ImportRefusal whose format
- * is "ocf".
- *
- * @deprecated Catch ImportRefusal instead. From 0.7.0 readOcf throws
- * ImportRefusal itself, and this name goes.
- */
-export class OcfRefusal extends ImportRefusal {
-  override name = "OcfRefusal";
-
-  constructor(kind: "unsupported" | "malformed", term: string, subject: string, message: string) {
-    super("ocf", kind, term, subject, message);
   }
 }
 

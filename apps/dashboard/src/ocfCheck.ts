@@ -4,7 +4,7 @@
 // page, though it reads the export exactly as the page does.
 
 import { InputError, NoAnswerError, UnsupportedTermError, findBreakpoints, prepare, readExit, solve } from "spillpoint";
-import type { OcfFile, OcfImport } from "spillpoint";
+import type { CapTableImport, OcfFile } from "spillpoint";
 
 import { Package, defaultTop, filled, importOcf, questions } from "./ocfImport.ts";
 import type { Picked, Question } from "./ocfImport.ts";
@@ -67,7 +67,7 @@ function pathOf(path: string): string | null {
 export type EngineRuns = Map<string, string>;
 
 /** Fills the blanks with one set of answers and runs the engine over the default range: it reads, pays at every breakpoint, or stops. */
-function run(result: OcfImport, answers: Record<string, string>, runs: EngineRuns): string {
+function run(result: CapTableImport, answers: Record<string, string>, runs: EngineRuns): string {
   let capTable: Json;
   try {
     capTable = filled(result, answers);
@@ -108,7 +108,7 @@ function stopped(e: unknown): string {
 }
 
 /** The lines of the engine's runs over the blanks' answers. */
-function answerRuns(result: OcfImport, files: OcfFile[], runs: EngineRuns): string[] {
+function answerRuns(result: CapTableImport, files: OcfFile[], runs: EngineRuns): string[] {
   const asked = questions(result, new Package(files));
   if (asked.length === 0) return [`The engine, with nothing to fill in: ${run(result, {}, runs)}`];
   const securities = (result.cap_table as { securities: Json[] }).securities;

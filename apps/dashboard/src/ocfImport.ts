@@ -4,8 +4,8 @@
 // 9), asks for each term OCF left open, and only then opens the cap table, as
 // a saved file would be. Everything happens on this computer.
 
-import { D, OcfRefusal, readOcf } from "spillpoint";
-import type { OcfFile, OcfImport, OcfToFill } from "spillpoint";
+import { D, ImportRefusal, readOcf } from "spillpoint";
+import type { CapTableImport, ImportBlank, OcfFile } from "spillpoint";
 
 import { shortDollars } from "./format.ts";
 import { MOST_BYTES, ZipError, readZip } from "./zip.ts";
@@ -38,9 +38,9 @@ export type Failure =
   | { stage: "picked"; code: "none_chosen" | "zip_beside_files" | "too_large" }
   | { stage: "zip"; code: string }
   | { stage: "json"; code: "not_json" | "no_json" }
-  | { stage: "import"; refusal: OcfRefusal };
+  | { stage: "import"; refusal: ImportRefusal };
 
-export type Imported = ({ ok: true; result: OcfImport } & Read) | { ok: false; message: string; failure: Failure; read: Read | null };
+export type Imported = ({ ok: true; result: CapTableImport } & Read) | { ok: false; message: string; failure: Failure; read: Read | null };
 
 /** What a zip made on a Mac carries besides the files themselves: resource forks and folder settings. */
 const clutter = (name: string) => name.startsWith("__MACOSX/") || /(^|\/)\._/.test(name) || /(^|\/)\.DS_Store$/.test(name);
@@ -92,7 +92,7 @@ export async function importOcf(picked: readonly Picked[]): Promise<Imported> {
   try {
     return { ok: true, result: readOcf(read.files), ...read };
   } catch (e) {
-    if (!(e instanceof OcfRefusal)) throw e;
+    if (!(e instanceof ImportRefusal)) throw e;
     const message = e.message.endsWith(".") ? e.message : `${e.message}.`;
     return fail(
       e.kind === "unsupported"
@@ -164,7 +164,7 @@ const amountOf = (o: Json | undefined, field: string): D | null => {
 };
 
 /** One line for each of the report's notes (O10), in plain English. */
-export function reportLines(result: OcfImport, pkg: Package): string[] {
+export function reportLines(result: CapTableImport, pkg: Package): string[] {
   const securities = (result.cap_table as { securities: Json[] }).securities;
   const security = (id: string) => securities.find((s) => s.id === id);
   const ct = result.cap_table as { unconverted_safes?: unknown[]; unconverted_notes?: unknown[] };
@@ -257,7 +257,7 @@ export function reportLines(result: OcfImport, pkg: Package): string[] {
 }
 
 /** What was read, as one sentence: "10 holders; 3 classes of stock, 2 option classes and a warrant class; 2 SAFEs and a note; an unissued pool of 1,260,000." */
-export function summary(result: OcfImport): string {
+export function summary(result: CapTableImport): string {
   const ct = result.cap_table as { holders: unknown[]; securities: Json[]; unissued_pool: number; unconverted_safes?: unknown[]; unconverted_notes?: unknown[] };
   const of = (n: number, one: string, many: string) => (n === 1 ? `a ${one}` : `${n} ${many}`);
   const kinds = (k: string) => ct.securities.filter((s) => s.kind === k).length;
@@ -296,7 +296,7 @@ export function typeName(type: string): string {
 
 export interface Question {
   key: string;
-  blank: OcfToFill;
+  blank: ImportBlank;
   /** What's asked. */
   label: string;
   /** Why it's asked, or what it means. */
@@ -317,7 +317,7 @@ export interface Question {
 }
 
 /** One question for each blank the import left (O1, answer 4). */
-export function questions(result: OcfImport, pkg: Package): Question[] {
+export function questions(result: CapTableImport, pkg: Package): Question[] {
   const ct = result.cap_table as { securities: Json[]; unconverted_safes?: Json[]; unconverted_notes?: Json[] };
   return result.to_fill.map((blank) => {
     const key = `${blank.security ? "security" : blank.safe ? "safe" : "note"}:${blank.security ?? blank.safe ?? blank.note}:${blank.field}`;
@@ -412,7 +412,7 @@ export function defaultTop(capTable: Json): string {
  * The cap table with the answers filled in, ready for readExit. A SAFE whose cap kind was blank takes the cap as a
  * post-money or pre-money cap; a series answered "participating, without a cap" has no cap.
  */
-export function filled(result: OcfImport, answers: Record<string, string>): Json {
+export function filled(result: CapTableImport, answers: Record<string, string>): Json {
   const ct = structuredClone(result.cap_table) as Json & { securities: Json[]; unconverted_safes?: Json[]; unconverted_notes?: Json[] };
   for (const q of result.to_fill) {
     const key = `${q.security ? "security" : q.safe ? "safe" : "note"}:${q.security ?? q.safe ?? q.note}:${q.field}`;

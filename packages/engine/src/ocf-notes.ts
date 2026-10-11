@@ -3,9 +3,6 @@
 
 import type { ImportNote } from "./imports.ts";
 
-/** @deprecated Use ImportNote: the OCF names go in 0.7.0. */
-export type OcfNote = ImportNote;
-
 export class Notes {
   private readonly lines: ImportNote[] = [];
   private readonly seen = new Set<string>();

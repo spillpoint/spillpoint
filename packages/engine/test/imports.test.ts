@@ -1,10 +1,12 @@
-// One refusal class and one result type for both imports (0.6.0; the naming review's item 7). Added beside the OCF
-// names, which stay until 0.7.0, so nothing that reads 0.5.0's API breaks.
+// One refusal class and one result type for both imports (the naming review's item 7). Added in 0.6.0 beside the OCF
+// names; since 0.7.0 they're the only names: readOcf throws ImportRefusal itself, and OcfRefusal and the Ocf* types
+// are gone.
 
 import { describe, expect, it } from "vitest";
 
-import { ImportRefusal, OcfRefusal, readOcf } from "../src/index.ts";
-import type { CapTableImport, ImportBlank, ImportNote, ImportReport, OcfImport, OcfNote, OcfReport, OcfToFill, OcxWorkbook } from "../src/index.ts";
+import * as spillpoint from "../src/index.ts";
+import { ImportRefusal, readOcf } from "../src/index.ts";
+import type { CapTableImport, ImportBlank, ImportNote, ImportReport, OcxWorkbook } from "../src/index.ts";
 import { packageFiles } from "./support/ocf.ts";
 
 function refusalOf(read: () => unknown): unknown {
@@ -17,30 +19,31 @@ function refusalOf(read: () => unknown): unknown {
 }
 
 describe("ImportRefusal", () => {
-  it("is what readOcf throws, as an OcfRefusal whose format is ocf", () => {
+  it("is what readOcf throws, itself, its format ocf", () => {
     const e = refusalOf(() => readOcf([{ name: "Notes.json", content: { file_type: "NOT_OCF" } }]));
     expect(e).toBeInstanceOf(ImportRefusal);
-    expect(e).toBeInstanceOf(OcfRefusal);
-    expect({ ...(e as object) }).toEqual({ name: "OcfRefusal", format: "ocf", kind: "unsupported", term: "unknown_file_type", subject: "Notes.json" });
+    expect(Object.getPrototypeOf(e)).toBe(ImportRefusal.prototype);
+    expect({ ...(e as object) }).toEqual({ name: "ImportRefusal", format: "ocf", kind: "unsupported", term: "unknown_file_type", subject: "Notes.json" });
   });
 
-  it("can be raised for an OCX workbook, which isn't an OcfRefusal", () => {
+  it("is raised for an OCX workbook the same way", () => {
     const e = new ImportRefusal("ocx", "malformed", "missing_tab", "Context", "The workbook has no Context tab");
     expect(e).toBeInstanceOf(Error);
-    expect(e).not.toBeInstanceOf(OcfRefusal);
     expect({ ...e }).toEqual({ name: "ImportRefusal", format: "ocx", kind: "malformed", term: "missing_tab", subject: "Context" });
     expect(e.message).toBe("The workbook has no Context tab");
+  });
+
+  it("is the only name: OcfRefusal is gone", () => {
+    expect("OcfRefusal" in spillpoint).toBe(false);
   });
 });
 
 describe("the shared result type", () => {
-  it("is what readOcf returns, and the OCF names are the same types", () => {
+  it("is what readOcf returns", () => {
     const imported: CapTableImport = readOcf(packageFiles("ocf-12-ledger"));
-    // Each OCF name is an alias, so a value of one is a value of the other, both ways.
-    const asOcf: OcfImport = imported;
-    const report: ImportReport = asOcf.report satisfies OcfReport;
-    const notes: ImportNote[] = report.notes satisfies OcfNote[];
-    const blanks: ImportBlank[] = asOcf.to_fill satisfies OcfToFill[];
+    const report: ImportReport = imported.report;
+    const notes: ImportNote[] = report.notes;
+    const blanks: ImportBlank[] = imported.to_fill;
     expect(imported.as_of).toBe("2025-12-31");
     expect(notes.length).toBeGreaterThan(0);
     expect(blanks).toEqual([]);

@@ -10,7 +10,6 @@ it("exports exactly the public API", () => {
     "ImportRefusal",
     "InputError",
     "NoAnswerError",
-    "OcfRefusal",
     "UnsupportedTermError",
     "buildCapTables",
     "findBreakpoints",

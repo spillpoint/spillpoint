@@ -28,25 +28,12 @@ import { Notes } from "./ocf-notes.ts";
 import { type Json, asWritten, date, isObject, malformed, text, unsupported } from "./ocf-read.ts";
 import { Warrants } from "./ocf-warrants.ts";
 
-export type { OcfNote } from "./ocf-notes.ts";
-
 /** One file of a package, its JSON already parsed. */
 export interface OcfFile {
   /** The file's name, as the manifest lists it (Stakeholders.ocf.json, ...). A folder in front is ignored. */
   name: string;
   content: unknown;
 }
-
-// Since 0.6.0 an import's result has names shared by both formats (imports.ts); these OCF names are aliases.
-
-/** @deprecated Use ImportBlank: the OCF names go in 0.7.0. */
-export type OcfToFill = ImportBlank;
-
-/** @deprecated Use ImportReport: the OCF names go in 0.7.0. */
-export type OcfReport = ImportReport;
-
-/** @deprecated Use CapTableImport: the OCF names go in 0.7.0. */
-export type OcfImport = CapTableImport;
 
 const FILE_TYPES = [
   "OCF_MANIFEST_FILE", "OCF_STAKEHOLDERS_FILE", "OCF_STOCK_CLASSES_FILE", "OCF_STOCK_LEGEND_TEMPLATES_FILE", "OCF_STOCK_PLANS_FILE",
@@ -136,7 +123,7 @@ const READ_VERSIONS = /^1\.[0-2]\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
 /** The last part of a path: a manifest lists files by name, and a .zip may keep them in a folder. */
 const fileName = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
-/** Reads an OCF package (O1–O12). Throws OcfRefusal, an ImportRefusal, for anything it won't read. */
+/** Reads an OCF package (O1–O12). Throws an ImportRefusal, its format "ocf", for anything it won't read. */
 export function readOcf(files: readonly OcfFile[]): CapTableImport {
   const notes = new Notes();
 

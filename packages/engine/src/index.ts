@@ -14,7 +14,7 @@
 export { D, parseExact, toCents } from "./decimal.ts";
 
 // What the engine refuses, and why.
-export { ImportRefusal, InputError, NoAnswerError, OcfRefusal, UnsupportedTermError } from "./errors.ts";
+export { ImportRefusal, InputError, NoAnswerError, UnsupportedTermError } from "./errors.ts";
 
 // Reading an exit input in the case-file format (ASSUMPTIONS C1–C4, C12).
 export { readCapTable, readExit } from "./input.ts";
@@ -34,8 +34,8 @@ export type { PaymentTake } from "./payments.ts";
 
 // Reading an Open Cap Format package into a cap table (M6, ASSUMPTIONS O1–O12), with its issue order (O14).
 export { readOcf } from "./ocf.ts";
-export type { OcfFile, OcfImport, OcfNote, OcfReport, OcfToFill } from "./ocf.ts";
-// What an import gives, whichever format it read (0.6.0; the OCF names above are aliases until 0.7.0).
+export type { OcfFile } from "./ocf.ts";
+// What an import gives, whichever format it read (0.6.0; the naming review's item 7).
 export type { CapTableImport, ImportBlank, ImportNote, ImportReport } from "./imports.ts";
 // Reading an OCX workbook, the Open Cap Table Coalition's Excel layout, into a cap table (0.6.0, OX1–OX14), as the
 // page reads it from an .xlsx.
