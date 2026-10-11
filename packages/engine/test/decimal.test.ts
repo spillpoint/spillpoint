@@ -25,6 +25,11 @@ describe("parseExact (C1)", () => {
     expect(() => parseExact("1e6", "x")).toThrow(/not an exact number/);
     expect(() => parseExact("3/0", "x")).toThrow(/divides by zero/);
   });
+
+  it("needs no path: one number on its own, and an error naming it as value", () => {
+    expect(parseExact("1.5").toString()).toBe("1.5");
+    expect(() => parseExact("1.5.0")).toThrow('value: "1.5.0" is not an exact number (an integer, a decimal, or "a/b")');
+  });
 });
 
 describe("ties (E14)", () => {

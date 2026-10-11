@@ -663,7 +663,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
 | `paySchedule(table, schedule)` *(0.2.0)* | Each payment's take: `cumulative`, the `decisions` there, the take per holder × security in `lines`, holder and class totals, and `lowered`, the holders whose running total falls. |
 | `findBreakpoints(table, [low, high])` | Every breakpoint strictly inside the range. Each has `exitValue`, `jumps`, `curveBelow` and `curveAbove` *(0.2.0)*, and `reasons`, where each reason has a `code`, a `subject` and its `text`. |
-| `D`, `parseExact`, `toCents` | Make and format the engine's Decimals. |
+| `D`, `parseExact(value, where?)`, `toCents` | Make and format the engine's Decimals. `parseExact` reads an exact number as the input format writes it, an integer, a decimal or "a/b"; `where` is the path its error names *(0.7.0: optional)*. |
 
 **Errors:**
 - `InputError`: the input is malformed.

@@ -43,9 +43,11 @@ const FRACTION = /^-?\d+\/\d+$/;
 /**
  * Reads an exact number from a case file (C1). JSON integers are accepted for
  * share counts; a non-integer JSON number is refused, because a float may
- * already have lost the exact value.
+ * already have lost the exact value. `where` is the path an error names; a
+ * caller reading one number has none to give, and its error names "value"
+ * (the naming review, item 13).
  */
-export function parseExact(value: unknown, where: string): Decimal {
+export function parseExact(value: unknown, where = "value"): Decimal {
   if (typeof value === "number") {
     if (!Number.isSafeInteger(value)) {
       throw new InputError(where, `${value} is not a whole number; write exact non-integers as strings (C1)`);
