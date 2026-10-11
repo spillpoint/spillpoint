@@ -48,9 +48,8 @@ A release usually goes:
 
 ## Where things stand
 
-- **Released through 0.6.0,** on npm and as GitHub releases. 0.6.0 reads OCX, the Open Cap Table Coalition's spreadsheet format, in its 0.4/0.5 and 0.7 layouts; no Carta export has been tested yet.
-- **Next, 0.7.0:** the naming review of the API (`notes/plan-0.7.0.md`), in steps 07b to 07e. The last release that breaks anything.
-- **Then 1.0:** the spillpoint.io domain and the release, with no API changes.
+- **Released through 0.7.0,** on npm and as GitHub releases. 0.7.0 is the naming review (`notes/plan-0.7.0.md`): every name in the API settled, the last release that breaks anything. 0.6.0 reads OCX in its 0.4/0.5 and 0.7 layouts; no Carta export has been tested yet.
+- **Next, 1.0:** the spillpoint.io domain and the release, with no API changes. It waits on an outside waterfall that matches ours, and a few outside users.
 
 Deferred work lives in the "Later" section of `docs/ASSUMPTIONS.md`.
 
