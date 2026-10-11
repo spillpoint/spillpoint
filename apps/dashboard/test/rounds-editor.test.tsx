@@ -569,4 +569,26 @@ describe("SAFEs and notes in a round that triggers anti-dilution (R25; 0.3.0 wor
     edit("Series B Preferred, a priced round");
     expect([setting(/Series B Preferred, a priced round/, POOL_IN_A), setting(/Series B Preferred, a priced round/, EXEMPT)]).toEqual([null, null]);
   });
+
+  // The naming review's item 6: the pool in the pro-rata base, in plain words, as 03i put the anti-dilution pool.
+  const PRO_RATA_POOL = "Pro-rata base includes the unused option pool (smaller pro-rata rights for earlier investors)";
+
+  it("shows the pro-rata pool setting only for a round with an investment under a pro-rata right: Millrace's Series A, not its Seed", async () => {
+    await openCase("millrace");
+    edit("Seed Preferred, a priced round");
+    expect(setting(/Seed Preferred, a priced round/, PRO_RATA_POOL)).toBeNull();
+    edit("Series A Preferred, a priced round");
+    expect(setting(/Series A Preferred, a priced round/, PRO_RATA_POOL)?.checked).toBe(false);
+  });
+
+  it("shows 18b's pro-rata pool setting as on, and says so when nothing in the round is under a pro-rata right", async () => {
+    await openCase("edge-18b-pro-rata-pool-in-base");
+    edit("Series A Preferred, a priced round");
+    const seriesA = /Series A Preferred, a priced round/;
+    expect(setting(seriesA, PRO_RATA_POOL)?.checked).toBe(true);
+    const underRight = within(card(seriesA)).getAllByLabelText("Under its pro-rata right") as HTMLInputElement[];
+    fireEvent.click(underRight.find((c) => c.checked)!);
+    expect(setting(seriesA, PRO_RATA_POOL)).toBeNull();
+    expect(setting(seriesA, `${PRO_RATA_POOL} (doesn't apply to this round)`)?.checked).toBe(true);
+  });
 });
