@@ -55,7 +55,7 @@ export interface SafeSettled extends SafeHere {
   room: Decimal | null;
 }
 
-/** A convertible note at the sale, worked out once from the exit date (X3, X10–X12). */
+/** A convertible note at the sale, worked out once from the exit date (X3, X10–X12). Internal: a prepared table's. */
 export interface NoteTerms {
   note: Note;
   /** Simple interest, Actual/365, from the issue date to the exit date. */
@@ -226,9 +226,20 @@ export interface Slack {
   value: Decimal;
 }
 
-/** The cap table with the quantities every waterfall run needs, worked out once. */
+/**
+ * A cap table prepared for exit values: what prepare gives, to pass to solve, payout, findBreakpoints and
+ * paySchedule. It shows the cap table and the day dividends and interest accrue to; the quantities every waterfall
+ * run needs, worked out once, stay with it inside the engine (the naming review, item 11). What a reader needs of
+ * them is on the payout: each series' preference, accrued dividends, cap and as-converted shares on payout.series.
+ */
 export interface PreparedCapTable {
   capTable: CapTable;
+  /** The day dividends and a note's interest accrue to, if the exit has one. */
+  exitDate: string | null;
+}
+
+/** The cap table with the quantities every waterfall run needs, worked out once. Internal: the engine's own. */
+export interface Prepared extends PreparedCapTable {
   shares: Map<string, Decimal>;
   preferred: Map<string, PreferredSeries>;
   options: Map<string, OptionClass>;
@@ -244,16 +255,36 @@ export interface PreparedCapTable {
   preference: Map<string, Decimal>;
   /** Accrued and unpaid cumulative dividends at the exit date, by series (X2, X5). */
   dividends: Map<string, Decimal>;
-  /** The day dividends accrue to, if the exit has one. */
-  exitDate: string | null;
   /** Capped participating: the most preference plus participation can reach, cap multiple × original issue price × shares (E7). */
   capTotal: Map<string, Decimal>;
   /** Exact as-converted common shares for each preferred series (E2). */
   asConverted: Map<string, Decimal>;
 }
 
-/** The exit date is needed only when a series accrues cumulative dividends (X2): they accrue to it. */
+/** Each prepared table's working quantities, kept with it but out of sight (item 11). */
+const WORKING = new WeakMap<PreparedCapTable, Prepared>();
+
+/**
+ * The exit date is needed only when a series accrues cumulative dividends (X2) or a note is outstanding (X3): they
+ * accrue to it. What it gives has exactly PreparedCapTable's fields; the rest stays inside.
+ */
 export function prepare(capTable: CapTable, exitDate: string | null = null): PreparedCapTable {
+  const table: PreparedCapTable = { capTable, exitDate };
+  WORKING.set(table, prepareWorking(capTable, exitDate));
+  return table;
+}
+
+/**
+ * The working quantities of a prepared table. One built by hand, not by prepare, is prepared on first use, so the
+ * public type is all a caller needs to write.
+ */
+export function working(pc: PreparedCapTable): Prepared {
+  let w = WORKING.get(pc);
+  if (!w) WORKING.set(pc, (w = prepareWorking(pc.capTable, pc.exitDate)));
+  return w;
+}
+
+function prepareWorking(capTable: CapTable, exitDate: string | null): Prepared {
   const shares = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
   for (const p of capTable.positions) shares.set(p.security, shares.get(p.security)!.plus(p.shares));
   const preferred = new Map<string, PreferredSeries>();
@@ -355,7 +386,7 @@ function noteTerms(n: Note, exitDate: string, counts: { outstanding: Decimal; un
  * leaving out the unissued pool, this SAFE, other SAFEs and notes. Its shares
  * sit on top.
  */
-export function liquidityCapitalization(pc: PreparedCapTable, f: Safe, converted: ReadonlySet<string>, exercised: ReadonlySet<string> = new Set()): Decimal {
+export function liquidityCapitalization(pc: Prepared, f: Safe, converted: ReadonlySet<string>, exercised: ReadonlySet<string> = new Set()): Decimal {
   if (f.preMoneyCap) return pc.outstanding;
   let others = pc.outstanding;
   const inLieu = (sid: string) => pc.preferred.get(sid)!.participation === "non_participating" && !converted.has(sid);
@@ -387,7 +418,7 @@ function safeTier(capTable: CapTable, f: Safe): number {
 }
 
 /** Decisions must name real convertible series, option classes and warrants, and a conversion group converts as one (E11). */
-function checkDecisions(pc: PreparedCapTable, d: Decisions): void {
+function checkDecisions(pc: Prepared, d: Decisions): void {
   for (const sid of d.converted) {
     if (pc.safes.has(sid)) continue;
     if (pc.notes.has(sid)) {
@@ -413,7 +444,7 @@ function checkDecisions(pc: PreparedCapTable, d: Decisions): void {
 
 /** The payout for these decisions, as the API hands it back: Payout's fields, and no others. */
 export function payout(pc: PreparedCapTable, exitValue: Decimal, decisions: Decisions): Payout {
-  return publicPayout(settle(pc, exitValue, decisions));
+  return publicPayout(settle(working(pc), exitValue, decisions));
 }
 
 /** The public copy of a settlement: what a payout is, without the finder's workings (item 4). */
@@ -439,7 +470,7 @@ export function publicPayout(s: Settlement): Payout {
 }
 
 /** The waterfall for these decisions, with everything the engine works with (Settlement). Internal. */
-export function settle(pc: PreparedCapTable, exitValue: Decimal, decisions: Decisions): Settlement {
+export function settle(pc: Prepared, exitValue: Decimal, decisions: Decisions): Settlement {
   checkDecisions(pc, decisions);
   const { capTable } = pc;
   const total = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));

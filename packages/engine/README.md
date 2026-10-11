@@ -658,7 +658,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
 | `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
 | `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |
-| `prepare(capTable, exitDate)` | Work out the fixed quantities once: shares, preference amounts with any dividends accrued to the exit date, caps, and each note's interest, repayment and conversion. `exitDate` is needed only for dividends and notes. |
+| `prepare(capTable, exitDate)` | Prepare a cap table for exit values, to pass to `solve`, `payout`, `findBreakpoints` and `paySchedule`. The engine works out the fixed quantities once, and keeps them inside: what you get back shows `capTable` and `exitDate` *(0.7.0: before, 13 working quantities besides)*. Each series' preference, accrued dividends, cap and as-converted shares are on a payout's `series`. `exitDate` is needed only for dividends and notes. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns the stable answer, with its decisions and payout lines, holder totals and class totals. |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. |
 | `paySchedule(table, schedule)` *(0.2.0)* | Each payment's take: `cumulative`, the `decisions` there, the take per holder × security in `lines`, holder and class totals, and `lowered`, the holders whose running total falls. |

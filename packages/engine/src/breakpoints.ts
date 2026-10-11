@@ -31,8 +31,8 @@ import { StabilityWatch, snapshotAt } from "./decisions.ts";
 import type { Snapshot } from "./decisions.ts";
 import { describeChange } from "./reasons.ts";
 import type { Reason } from "./reasons.ts";
-import { settle } from "./waterfall.ts";
-import type { Decisions, PreparedCapTable } from "./waterfall.ts";
+import { settle, working } from "./waterfall.ts";
+import type { Decisions, Prepared, PreparedCapTable } from "./waterfall.ts";
 
 export interface Breakpoint {
   /** Where the payouts bend or jump, to 40 digits. */
@@ -87,7 +87,7 @@ function sameState(s: Snapshot, t: Snapshot): boolean {
 }
 
 /** Read the stretch that starts just above x. */
-function stretchAbove(pc: PreparedCapTable, x: Decimal): Stretch {
+function stretchAbove(pc: Prepared, x: Decimal): Stretch {
   for (const step of STEPS) {
     const a = x.plus(step);
     const b = a.plus(step);
@@ -133,7 +133,7 @@ function payoutsAlong(s: Stretch, x: Decimal): { values: Decimal[]; slopes: Deci
 }
 
 /** The payouts exactly at x under one side's decisions, and their slopes on that side (X17). */
-function exactlyAt(pc: PreparedCapTable, decisions: Decisions, x: Decimal, side: -1 | 1): { values: Decimal[]; slopes: Decimal[] } {
+function exactlyAt(pc: Prepared, decisions: Decisions, x: Decimal, side: -1 | 1): { values: Decimal[]; slopes: Decimal[] } {
   const at = settle(pc, x, decisions).lines.map((l) => l.amount);
   const near = settle(pc, x.plus(SLOPE_STEP.times(side)), decisions).lines.map((l) => l.amount);
   return { values: at, slopes: at.map((v, i) => near[i]!.minus(v).div(SLOPE_STEP).times(side)) };
@@ -155,7 +155,7 @@ function curveGuard(s: Stretch, end: Decimal): NoAnswerError {
  * common gets nothing. The exception is a warrant for a series in that tier,
  * which is paid from the tier itself (case 8b).
  */
-function checkCurve(pc: PreparedCapTable, s: Stretch, end: Decimal): Decimal | null {
+function checkCurve(pc: Prepared, s: Stretch, end: Decimal): Decimal | null {
   const readings: [Decimal, Snapshot][] = [
     [s.a, s.at],
     [s.b, s.then],
@@ -182,7 +182,7 @@ function checkCurve(pc: PreparedCapTable, s: Stretch, end: Decimal): Decimal | n
  * finder with the guard error; so does a jump there, checked once the answer
  * above is read.
  */
-function decisionOnCurve(pc: PreparedCapTable, s: Stretch, readings: [Decimal, Snapshot][], out: Decimal, outside: Snapshot, end: Decimal): Decimal {
+function decisionOnCurve(pc: Prepared, s: Stretch, readings: [Decimal, Snapshot][], out: Decimal, outside: Snapshot, end: Decimal): Decimal {
   // Gather at least four readings in the stretch's state, bisecting towards the change.
   for (let i = 0; readings.length < 4; i++) {
     if (i >= MAX_BISECTIONS) throw curveGuard(s, end);
@@ -241,7 +241,7 @@ function middle(s: Stretch, end: Decimal): Decimal {
 }
 
 /** Within a straight stretch, nothing should change: the answer and its payouts at the midpoint must match the straight line. */
-function checkStretch(pc: PreparedCapTable, s: Stretch, end: Decimal): void {
+function checkStretch(pc: Prepared, s: Stretch, end: Decimal): void {
   const mid = middle(s, end);
   if (!mid.gt(s.b)) return;
   const reading = snapshotAt(pc, mid);
@@ -266,7 +266,8 @@ function walkStability(watch: StabilityWatch, s: Stretch, end: Decimal): void {
 }
 
 /** Every breakpoint strictly inside the range, lowest first. */
-export function findBreakpoints(pc: PreparedCapTable, range: readonly [Decimal, Decimal]): Breakpoint[] {
+export function findBreakpoints(table: PreparedCapTable, range: readonly [Decimal, Decimal]): Breakpoint[] {
+  const pc = working(table);
   const [lo, hi] = range;
   const found: Breakpoint[] = [];
   const watch = new StabilityWatch(pc);

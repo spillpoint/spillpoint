@@ -11,7 +11,7 @@ import type { Decimal } from "decimal.js";
 import { D, ONE, ZERO, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
 import { CARVE_OUT, carveOutAt, settle } from "./waterfall.ts";
-import type { PreparedCapTable } from "./waterfall.ts";
+import type { Prepared } from "./waterfall.ts";
 
 export type ReasonCode =
   | "tier_fully_paid"
@@ -90,7 +90,7 @@ const JUST_ABOVE = new D("1e-12");
 // The wording is for founders: no assumption codes in the text (they stay in
 // the structured fields and in the code comments), and money in plain dollars.
 
-export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot, above: Snapshot, jumps: boolean): Reason[] {
+export function describeChange(pc: Prepared, x: Decimal, below: Snapshot, above: Snapshot, jumps: boolean): Reason[] {
   const { capTable } = pc;
   const name = new Map<string, string>([
     ...capTable.holders.map((h) => [h.id, h.name] as [string, string]),
@@ -498,12 +498,12 @@ export function describeChange(pc: PreparedCapTable, x: Decimal, below: Snapshot
  * it; with preferred, what is left after the preferences, since participating or converted preferred shares it too
  * (12i, 13h; Jordan, 03a review).
  */
-function leftFor(pc: PreparedCapTable, what: string): string {
+function leftFor(pc: Prepared, what: string): string {
   return pc.preferred.size > 0 ? "what is left after the preferences" : `what is left for common and ${what}`;
 }
 
 /** Who shares the residual, by class: common, exercised options and warrants for common, participating or converted preferred (SPEC), and SAFEs and notes converting. */
-function sharers(pc: PreparedCapTable, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
+function sharers(pc: Prepared, d: { converted: ReadonlySet<string>; exercised: ReadonlySet<string> }): string[] {
   const safes = [...pc.safes.keys(), ...pc.notes.keys()].filter((id) => d.converted.has(id));
   return pc.capTable.securities
     .filter((s) => {

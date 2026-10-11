@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { D, UnsupportedTermError, payout, prepare, readCapTable, readExit, solve } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
+import { working } from "../src/waterfall.ts";
 import { readCaseFile } from "./support/cases.ts";
 
 interface ReportedNote {
@@ -33,7 +34,7 @@ describe("each note's figures (X3, X10, X11)", () => {
       const reported = (readCaseFile(name, "expected.json") as { exit: { unconverted_notes: ReportedNote[] } }).exit.unconverted_notes;
       const pc = prepare(exit.capTable, exit.exitDate);
       for (const r of reported) {
-        const t = pc.notes.get(r.note)!;
+        const t = working(pc).notes.get(r.note)!;
         expect(t.days).toBe(r.days);
         expect(same(t.interest, r.interest) && same(t.repayment, r.repayment), r.note).toBe(true);
         if (r.conversion_price) {
@@ -68,7 +69,7 @@ describe("a note with neither a cap nor a discount (X12)", () => {
   it("is only ever repaid: it decides nothing, and is paid its repayment ahead of common", () => {
     const exit = exitOn(table({ valuation_cap: null }));
     const pc = prepare(exit.capTable, exit.exitDate);
-    expect(pc.notes.get("note")!.canConvert).toBe(false);
+    expect(working(pc).notes.get("note")!.canConvert).toBe(false);
     const [answer] = solve(pc, new D(10000000)).answers;
     expect([...answer!.decisions.converted]).toEqual([]);
     expect(answer!.payout.classTotals.get("note")!.toString()).toBe("100000");

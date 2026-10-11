@@ -51,8 +51,8 @@ import { money } from "./reasons.ts";
 import { EVERYWHERE, inside, meet, pastZero, payoutWithLines, signHolds } from "./lines.ts";
 import type { Interval, Line, PayoutLines } from "./lines.ts";
 import type { ConversionGroup, OptionClass } from "./model.ts";
-import { payout, settle } from "./waterfall.ts";
-import type { Decisions, Payout, PreparedCapTable, Settlement } from "./waterfall.ts";
+import { publicPayout, settle, working } from "./waterfall.ts";
+import type { Decisions, Payout, Prepared, PreparedCapTable, Settlement } from "./waterfall.ts";
 
 /** One stable answer: the decisions and what they pay. */
 export interface Answer {
@@ -88,7 +88,7 @@ export const MAX_CHECKED = 12;
 const SHARE_TIE = new D("1e-30");
 
 export function solve(pc: PreparedCapTable, exitValue: Decimal, options: SolveOptions = {}): Solution {
-  return new AtExit(pc, exitValue, options).solve();
+  return new AtExit(working(pc), exitValue, options).solve();
 }
 
 // ---------- the choice among series that decide for themselves (E15) ----------
@@ -293,10 +293,10 @@ interface SafeCompare {
 }
 
 /** What each set of decisions settled to, kept across exit values for each prepared cap table, with the comparisons it turned on. */
-const OPTIONS_SETTLED = new WeakMap<PreparedCapTable, Map<string, { exercised: Set<string>; checks: Check<OptionCompare>[] }>>();
-const SAFES_SETTLED = new WeakMap<PreparedCapTable, Map<string, { path: Set<string>[]; checks: Check<SafeCompare>[] }>>();
+const OPTIONS_SETTLED = new WeakMap<Prepared, Map<string, { exercised: Set<string>; checks: Check<OptionCompare>[] }>>();
+const SAFES_SETTLED = new WeakMap<Prepared, Map<string, { path: Set<string>[]; checks: Check<SafeCompare>[] }>>();
 
-function kept<T>(store: WeakMap<PreparedCapTable, Map<string, T>>, pc: PreparedCapTable): Map<string, T> {
+function kept<T>(store: WeakMap<Prepared, Map<string, T>>, pc: Prepared): Map<string, T> {
   let byKey = store.get(pc);
   if (!byKey) store.set(pc, (byKey = new Map()));
   return byKey;
@@ -334,12 +334,12 @@ interface Watched {
  * the plain message stops the finder. Internal: the breakpoint finder's.
  */
 export class StabilityWatch {
-  private readonly pc: PreparedCapTable;
+  private readonly pc: Prepared;
   private watched: Watched[] | null = null;
   /** False where it can't follow: past 12 decision-makers (E15), fewer than two, or payouts that curve (X17). */
   following = true;
 
-  constructor(pc: PreparedCapTable) {
+  constructor(pc: Prepared) {
     this.pc = pc;
   }
 
@@ -390,12 +390,12 @@ export class StabilityWatch {
 const UNCERTAIN_STEP = new D("1e-6");
 
 /** The answer at one exit value with its margins, for the breakpoint finder. Internal. */
-export function snapshotAt(pc: PreparedCapTable, exitValue: Decimal): Snapshot {
+export function snapshotAt(pc: Prepared, exitValue: Decimal): Snapshot {
   return new AtExit(pc, exitValue, {}).snapshot();
 }
 
 class AtExit {
-  private readonly pc: PreparedCapTable;
+  private readonly pc: Prepared;
   private readonly x: Decimal;
   private readonly options: SolveOptions;
   private readonly settled = new Map<string, Weighed>();
@@ -413,7 +413,7 @@ class AtExit {
   /** For each set of the others' choices, the sets of SAFEs converting that settling them went through, the answer's last (E20). */
   private readonly followedPaths = new Map<string, Set<string>[]>();
 
-  constructor(pc: PreparedCapTable, x: Decimal, options: SolveOptions) {
+  constructor(pc: Prepared, x: Decimal, options: SolveOptions) {
     this.pc = pc;
     this.x = x;
     this.options = options;
@@ -445,7 +445,7 @@ class AtExit {
 
   /** An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. */
   private exact(a: Worked): Answer {
-    return { decisions: a.decisions, payout: payout(this.pc, this.x, a.decisions) };
+    return { decisions: a.decisions, payout: publicPayout(settle(this.pc, this.x, a.decisions)) };
   }
 
   /** The same, as the breakpoint finder works with it: the settlement, with its workings. */

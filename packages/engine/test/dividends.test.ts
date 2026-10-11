@@ -8,6 +8,7 @@ import { anniversary, compoundingPeriods } from "../src/dates.ts";
 import { D, InputError, UnsupportedTermError, buildCapTables, payout, prepare, readCapTable, readExit } from "../src/index.ts";
 import type { CapTable, PreferredSeries } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
+import { working } from "../src/waterfall.ts";
 import { readCaseFile } from "./support/cases.ts";
 
 /** 1M common and 1M preferred at $1, 1x non-participating, with a 10% cumulative dividend. */
@@ -49,20 +50,20 @@ describe("what accrues", () => {
       const exit = readInputs(readCaseFile(name, "inputs.json"));
       const expected = (readCaseFile(name, "expected.json") as { exit: { accrued_dividends: { total: string }[] } }).exit.accrued_dividends[0]!.total;
       const [num, den = "1"] = expected.split("/");
-      const accrued = prepare(exit.capTable, exit.exitDate).dividends.get("seed")!;
+      const accrued = working(prepare(exit.capTable, exit.exitDate)).dividends.get("seed")!;
       expect(accrued.minus(new D(num!).div(den)).abs().lt("1e-30")).toBe(true);
     }
   });
 
   it("compounds a full year at exactly the rate, even one with 366 days", () => {
     const exit = exitOn({ method: "compounding", accrual_start: "2023-03-01" }, "2024-03-01");
-    expect(prepare(exit.capTable, exit.exitDate).dividends.get("p")!.toString()).toBe("100000");
+    expect(working(prepare(exit.capTable, exit.exitDate)).dividends.get("p")!.toString()).toBe("100000");
   });
 
   it("compounds from a 29 February start: two years at 10%, then 181 days simple on $1.21", () => {
     const exit = exitOn({ method: "compounding" }, "2026-08-28");
     const expected = new D("1.21").times(new D("0.1").times(181).plus(365)).div(365).minus(1).times(1000000);
-    expect(prepare(exit.capTable, exit.exitDate).dividends.get("p")!.minus(expected).abs().lt("1e-30")).toBe(true);
+    expect(working(prepare(exit.capTable, exit.exitDate)).dividends.get("p")!.minus(expected).abs().lt("1e-30")).toBe(true);
   });
 
   it("gives a warrant's shares no dividends: they weren't outstanding while they accrued (X5)", () => {
@@ -101,7 +102,7 @@ describe("a series built by 0.1.0 code", () => {
       unissuedPool: new D(0),
     };
     const pc = prepare(capTable);
-    expect([pc.preference.get("p")!.toString(), pc.dividends.get("p")!.toString()]).toEqual(["1000000", "0"]);
+    expect([working(pc).preference.get("p")!.toString(), working(pc).dividends.get("p")!.toString()]).toEqual(["1000000", "0"]);
   });
 });
 

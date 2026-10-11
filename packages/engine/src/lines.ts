@@ -17,7 +17,7 @@ import type { Decimal } from "decimal.js";
 
 import { D } from "./decimal.ts";
 import { settle } from "./waterfall.ts";
-import type { Decisions, NoteSettled, PayoutLine, PreparedCapTable, SafeSettled, Settlement, TierPayment } from "./waterfall.ts";
+import type { Decisions, NoteSettled, PayoutLine, Prepared, SafeSettled, Settlement, TierPayment } from "./waterfall.ts";
 
 /** How far from changing a condition must be, in dollars or shares, for a line to stand in for the waterfall. */
 export const EPS = new D("1e-9");
@@ -307,7 +307,7 @@ interface Readings {
   lines: PayoutLines | null;
 }
 
-const READINGS = new WeakMap<PreparedCapTable, Map<string, Readings>>();
+const READINGS = new WeakMap<Prepared, Map<string, Readings>>();
 
 function decisionsKey(d: Decisions): string {
   return `${[...d.converted].sort().join("\u0000")}/${[...d.exercised].sort().join("\u0000")}`;
@@ -317,7 +317,7 @@ function decisionsKey(d: Decisions): string {
  * The payout for these decisions at x, from its lines where they hold, or else run exactly; with its lines, if
  * known, which hold on their interval.
  */
-export function payoutWithLines(pc: PreparedCapTable, x: Decimal, decisions: Decisions): { payout: Settlement; lines: PayoutLines | null } {
+export function payoutWithLines(pc: Prepared, x: Decimal, decisions: Decisions): { payout: Settlement; lines: PayoutLines | null } {
   let byKey = READINGS.get(pc);
   if (!byKey) READINGS.set(pc, (byKey = new Map()));
   const k = decisionsKey(decisions);

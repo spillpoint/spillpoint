@@ -5,8 +5,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { prepare, solve } from "../src/index.ts";
-import type { Answer, CarveOutHere, Decisions, NoteHere, Payout, PayoutLine, SafeHere, SeriesHere, Solution, TierPayment } from "../src/index.ts";
+import { D, prepare, solve } from "../src/index.ts";
+import type { Answer, CarveOutHere, Decisions, NoteHere, Payout, PayoutLine, PreparedCapTable, SafeHere, SeriesHere, Solution, TierPayment } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import { EXIT_CASES, expectedPoints, readCaseFile } from "./support/cases.ts";
 
@@ -23,6 +23,7 @@ function expectFields(o: object, fields: readonly string[], what: string, option
   expect(fields.filter((k) => !optional.includes(k) && !keys.includes(k)), `${what}: fields its type lists that it lacks`).toEqual([]);
 }
 
+const PREPARED = fieldsOf<PreparedCapTable>()(["capTable", "exitDate"]);
 const SOLUTION = fieldsOf<Solution>()(["exitValue", "answers"]);
 const ANSWER = fieldsOf<Answer>()(["decisions", "payout"]);
 const DECISIONS = fieldsOf<Decisions>()(["converted", "exercised"]);
@@ -56,6 +57,21 @@ function expectPayout(p: Payout, what: string): void {
 describe.each(EXIT_CASES)("%s", (name) => {
   const exit = readInputs(readCaseFile(name, "inputs.json"));
   const pc = prepare(exit.capTable, exit.exitDate);
+
+  it("prepares to a table that shows its cap table and exit date, and nothing else", () => {
+    expect(Object.keys(pc)).toEqual(["capTable", "exitDate"]);
+    expectFields(pc, PREPARED, "the prepared table");
+    expect(JSON.parse(JSON.stringify(pc, (_, v) => (v instanceof D ? v.toString() : v)))).toEqual(
+      JSON.parse(JSON.stringify({ capTable: exit.capTable, exitDate: exit.exitDate ?? null }, (_, v) => (v instanceof D ? v.toString() : v))),
+    );
+  });
+
+  it("solves a table written by hand, not by prepare, as it solves prepare's", () => {
+    const byHand: PreparedCapTable = { capTable: exit.capTable, exitDate: exit.exitDate ?? null };
+    const [point] = expectedPoints(name);
+    const lines = (t: PreparedCapTable) => solve(t, point!.exitValue).answers[0]!.payout.lines.map((l) => `${l.holder} ${l.security} ${l.amount.toString()}`);
+    expect(lines(byHand)).toEqual(lines(pc));
+  });
 
   it("solves to a solution, answers and payouts with exactly their types' fields, at every exit value it lists", () => {
     for (const point of expectedPoints(name)) {

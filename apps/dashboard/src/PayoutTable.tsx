@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { D } from "spillpoint";
-import type { Answer, PreparedCapTable } from "spillpoint";
+import type { Answer, PreferredSeries, PreparedCapTable } from "spillpoint";
 
 import { CARVE_OUT, CARVE_OUT_NAME, classShares, fractionOf, fullyDiluted, holderShares, outstandingNames } from "./capTable.ts";
 import { dollarsAndCents, percent, shortDollars } from "./format.ts";
@@ -126,12 +126,12 @@ export function PayoutTable({ pc, answer, exitValue, you }: Props) {
       </div>
       <RoundingNote amounts={rows.map((r) => r.amount)} total={exitValue} />
       <p className="footnote">
-        Share of the company is fully diluted: every share, option{pc.warrants.size > 0 ? ", warrant" : ""} and preferred share as converted
+        Share of the company is fully diluted: every share, option{pc.capTable.securities.some((s) => s.kind === "warrant") ? ", warrant" : ""} and preferred share as converted
         {capTable.unissuedPool.gt(0) ? ", and the unissued option pool" : ""}.
         {outstanding.size > 0 && ` ${outstandingFootnote(pc)}`}
         {pc.capTable.carveOut && " The management carve-out holds no shares: it's paid out of the exit value, to the people it names."}
       </p>
-      <Dividends pc={pc} />
+      <Dividends pc={pc} answer={answer} />
       <Decisions pc={pc} answer={answer} />
     </section>
   );
@@ -150,15 +150,15 @@ function outstandingFootnote(pc: PreparedCapTable): string {
  * whatever the exit value: they add to its preference at 1x (X4), and a
  * series that converts gives them up or is still paid them (X5).
  */
-function Dividends({ pc }: { pc: PreparedCapTable }) {
-  const accruing = [...pc.preferred.values()].filter((s) => s.cumulativeDividend);
+function Dividends({ pc, answer }: { pc: PreparedCapTable; answer: Answer }) {
+  const accruing = pc.capTable.securities.filter((s) => s.kind === "preferred" && s.cumulativeDividend) as PreferredSeries[];
   if (accruing.length === 0) return null;
   return (
     <p className="footnote">
       {accruing
         .map((s) => {
           const conversion = s.cumulativeDividend!.onConversion === "paid" ? "if it converts, they're still paid, in its own place in the order" : "if it converts, it gives them up";
-          return `${s.name} has accrued ${dollarsAndCents(pc.dividends.get(s.id)!)} of cumulative dividends by ${dateText(pc.exitDate)}, the date of the sale. They add to its preference; ${conversion}.`;
+          return `${s.name} has accrued ${dollarsAndCents(answer.payout.series.get(s.id)!.dividends)} of cumulative dividends by ${dateText(pc.exitDate)}, the date of the sale. They add to its preference; ${conversion}.`;
         })
         .join(" ")}
     </p>
@@ -173,11 +173,12 @@ function Dividends({ pc }: { pc: PreparedCapTable }) {
 function Decisions({ pc, answer }: { pc: PreparedCapTable; answer: Answer }) {
   const name = (id: string) => pc.capTable.securities.find((s) => s.id === id)?.name ?? id;
   const { converted: chosen } = answer.decisions;
-  const converted = [...chosen].filter((id) => pc.preferred.has(id)).map(name);
-  const exercised = [...answer.decisions.exercised].filter((id) => !pc.warrants.has(id)).map(name);
+  const kind = (id: string) => pc.capTable.securities.find((s) => s.id === id)?.kind;
+  const converted = [...chosen].filter((id) => kind(id) === "preferred").map(name);
+  const exercised = [...answer.decisions.exercised].filter((id) => kind(id) !== "warrant").map(name);
   const options = pc.capTable.securities.filter((s) => s.kind === "option");
   // R29: warrants are exercised like options, once what they buy is worth more than the strike.
-  const warrants = [...pc.warrants.keys()];
+  const warrants = pc.capTable.securities.filter((s) => s.kind === "warrant").map((s) => s.id);
   const warrantsExercised = warrants.filter((id) => answer.decisions.exercised.has(id)).map(name);
   const outstanding = outstandingNames(pc);
   const safes = (pc.capTable.unconvertedSafes ?? []).map((f) => `${outstanding.get(f.id)} ${chosen.has(f.id) ? "converts to common" : "takes its Cash-Out Amount"} here.`);
