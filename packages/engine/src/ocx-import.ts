@@ -7,7 +7,6 @@ import { D, ZERO, strikeInName } from "./decimal.ts";
 import type { CapTableImport, ImportBlank } from "./imports.ts";
 import { Ids, idOf, written } from "./ocx-cells.ts";
 import { Notes } from "./ocf-notes.ts";
-import type { ImportNoteCode } from "./stable-names.ts";
 
 type Json = Record<string, unknown>;
 
@@ -71,8 +70,6 @@ export class Draft {
   pool: Decimal = ZERO;
   /** O14: each series, SAFE and note with the date it was issued, or none, where the default puts it after every series. */
   readonly issued: { id: string; date?: string; series: boolean }[] = [];
-  /** Lines that come after the cap table's own: issue order, then holders left out. */
-  private readonly lateNotes: [ImportNoteCode, string][] = [];
 
   count(key: string, n = 1): void {
     this.counts.set(key, (this.counts.get(key) ?? 0) + n);
@@ -114,10 +111,6 @@ export class Draft {
     return n === 1 ? `${prefix}_${holder}` : `${prefix}_${holder}_${n}`;
   }
 
-  late(code: ImportNoteCode, subject: string): void {
-    this.lateNotes.push([code, subject]);
-  }
-
   /** O14, OX12: dated ones by date, a series before a SAFE or note of the same day; the rest after, by the default, each with a line. */
   private issueOrder(): string[] {
     const dated = this.issued.map((x, i) => ({ ...x, i })).filter((x) => x.date !== undefined);
@@ -146,7 +139,6 @@ export class Draft {
         .map(([security, shares]) => ({ holder: h.id, security, shares: Number(shares.toFixed()) })),
     );
     const issueOrder = this.issueOrder();
-    for (const [code, subject] of this.lateNotes) this.notes.add(code, subject);
     for (const h of this.holders) if (!holding(h)) this.notes.add("left_out_stakeholder", h.id);
 
     const capTable: Json = {

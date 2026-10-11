@@ -373,6 +373,9 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
   const exemptApplies = converting && protectedBefore.size > 0;
   const showPoolInA = poolInAApplies || json.anti_dilution_include_unissued_pool_in_a === true;
   const showExempt = exemptApplies || json.anti_dilution_exempts_conversions === true;
+  // R6: the pool in the pro-rata base matters only with an investment under a pro-rata right (the naming review, item 6).
+  const proRataApplies = ((json.investments as Json[] | undefined) ?? []).some((inv) => inv.pro_rata === true);
+  const showProRataPool = proRataApplies || json.pro_rata_base_includes_unissued_pool === true;
   const notHere = (label: string, applies: boolean) => (applies ? label : `${label} (doesn't apply to this round)`);
   return (
     <>
@@ -434,7 +437,12 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
 
       <details className="event-form__more">
         <summary>More terms</summary>
-        {f.check("pro_rata_base_includes_unissued_pool", "Pro-rata counts the unissued pool", false)}
+        {showProRataPool &&
+          f.check(
+            "pro_rata_base_includes_unissued_pool",
+            notHere("Pro-rata base includes the unused option pool (smaller pro-rata rights for earlier investors)", proRataApplies),
+            false,
+          )}
         {showPoolInA &&
           f.check(
             "anti_dilution_include_unissued_pool_in_a",

@@ -11,7 +11,7 @@ import type { AntiDilutionAdjustment, CapTable, CapTableAfterEvent, RoundDetails
 
 import { NotShownYet, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
-import { dollars, dollarsAndCents, percent, withoutCodes } from "./format.ts";
+import { dollars, dollarsAndCents, percent, strikeText, withoutCodes } from "./format.ts";
 
 type Decimal = D;
 type Json = Record<string, unknown>;
@@ -304,7 +304,7 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name,
     case "grant_options":
       return {
         title: "Options granted",
-        lines: items("grants").map((g) => `${holder(g.holder)}: ${count(new D(String(g.shares)))} options at $${String(g.strike)} a share, from the pool.`),
+        lines: items("grants").map((g) => `${holder(g.holder)}: ${count(new D(String(g.shares)))} options at ${strikeText(g.strike as string | number)} a share, from the pool.`),
       };
     case "issue_warrants":
       // R29: counted like options, and not drawn from the pool.
@@ -313,7 +313,7 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name,
         lines: items("warrants").map(
           (w) =>
             `${holder(w.holder)}: warrants for ${count(new D(String(w.shares)))} ${w.underlying === "common" ? "common" : security(w.underlying)} shares ` +
-            `at $${String(w.strike)} a share, not from the pool.`,
+            `at ${strikeText(w.strike as string | number)} a share, not from the pool.`,
         ),
       };
     case "safes":
