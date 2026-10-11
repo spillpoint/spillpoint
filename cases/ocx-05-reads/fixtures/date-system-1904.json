@@ -1,0 +1,8 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The workbook counts days from 1904, and EP-4's expiration date is a day count, 31 March 2026 from 1904.",
+  "change": [
+    {"op": "date_system", "to": 1904},
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "K6", "kind": "date", "text": "44650", "formula": false}}
+  ]
+}

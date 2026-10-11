@@ -1,0 +1,8 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2's cap is pre-money, and the Summary View's row says so.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "G4", "kind": "text", "text": "Pre Money", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "L3", "kind": "text", "text": "Pre-$ SAFEs", "formula": false}}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The SAFE's conversion class is named Seed Preferred, under Common Stock.",
+  "change": [
+    {"op": "set", "tab": "Summary View", "cell": {"address": "A6", "kind": "text", "text": "Seed Preferred", "formula": false}},
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "D2", "kind": "text", "text": "Seed Preferred Stock", "formula": false}},
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "P2", "kind": "text", "text": "Seed Preferred Stock (outstanding)", "formula": false}},
+    {"op": "rename_tab", "tab": "Common Seed (SAFE conversion...", "to": "Seed Preferred Ledger"},
+    {"op": "set", "tab": "Seed Preferred Ledger", "cell": {"address": "B1", "kind": "text", "text": "Alder Gate Labs Seed Preferred Ledger", "formula": false}},
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "L3", "kind": "text", "text": "Seed Preferred", "formula": false}}
+  ]
+}

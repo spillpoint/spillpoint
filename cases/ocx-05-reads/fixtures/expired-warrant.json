@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "W-1 expired on 30 June 2025.",
+  "change": [
+    {"op": "set", "tab": "Warrants Ledger", "cell": {"address": "I3", "kind": "text", "text": "2025-06-30", "formula": false}}
+  ]
+}

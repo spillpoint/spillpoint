@@ -506,17 +506,19 @@ function ocxResultChecks(workbook: OcxWorkbookJson, layout: string, result: OcxR
     expect(skipped).toBe(cells.some((c) => c.formula && c.text === ""));
   });
 
-  it("names, in each note, something of its own or something the workbook holds", () => {
+  it("names, in each note, something of its own, or a tab or text the workbook holds", () => {
     const ct = result.cap_table;
     const ids = new Set([
       ...ct.holders.map((h) => h.id),
       ...ct.securities.map((s) => s.id as string),
       ...[...(ct.unconverted_safes ?? []), ...(ct.unconverted_notes ?? [])].map((x) => x.id as string),
     ]);
+    // An unrecognized header's line names its tab (OX12).
+    const tabs = new Set(workbook.sheets.map((s) => s.name));
     for (const n of result.report.notes) {
       if (!n.subject) continue;
       const leftOut = n.code === "left_out_stakeholder";
-      expect(ids.has(n.subject) || leftOut || texts.has(n.subject), `${n.code} ${n.subject}`).toBe(true);
+      expect(ids.has(n.subject) || leftOut || texts.has(n.subject) || tabs.has(n.subject), `${n.code} ${n.subject}`).toBe(true);
     }
   });
 
@@ -550,7 +552,8 @@ describe.each(ocxWorkbookDirs)("OCX case %s", (dir) => {
   ocxResultChecks(workbook, expected.layout, expected.result);
 });
 
-// Fixture cases (C18, 06e2): each a base case's workbook with one small change, refused or read with blanks.
+// Fixture cases (C18, 06e2, 06e3): each a base case's workbook with one small change, refused, read with blanks, or
+// read by a rule no case reaches on its own.
 describe.each(ocxFixtureDirs)("OCX fixtures %s", (dir) => {
   const expected = readJson<{ case: string; fixtures: Record<string, { refused?: OcxRefusal; result?: OcxResult }> }>(dir, "expected.json");
   const names = readdirSync(join(CASES, dir, "fixtures")).sort();
@@ -597,7 +600,14 @@ describe.each(ocxFixtureDirs)("OCX fixtures %s", (dir) => {
         expect(result).not.toEqual(base.result);
       });
 
-      ocxResultChecks(applyOcxChange(readOcxWorkbook(f.base), f.change), base.layout, result);
+      // A step that doesn't apply fails the step check above, by name, rather than every check here.
+      let workbook: OcxWorkbookJson | undefined;
+      try {
+        workbook = applyOcxChange(readOcxWorkbook(f.base), f.change);
+      } catch {
+        workbook = undefined;
+      }
+      if (workbook) ocxResultChecks(workbook, base.layout, result);
     });
   }
 });

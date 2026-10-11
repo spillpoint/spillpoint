@@ -1,0 +1,15 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "SAFE-2 was cancelled, so the Summary View's convertibles table has no row.",
+  "change": [
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "K4", "kind": "text", "text": "2025-06-01", "formula": false}},
+    {"op": "set", "tab": "SAFEs Ledger", "cell": {"address": "N4", "kind": "text", "text": "Cancelled", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "L3", "kind": "text", "text": "Total", "formula": false}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "M3", "kind": "number", "text": "", "formula": true}},
+    {"op": "set", "tab": "Summary View", "cell": {"address": "N3", "kind": "number", "text": "", "formula": true}},
+    {"op": "clear", "tab": "Summary View", "address": "P3"},
+    {"op": "clear", "tab": "Summary View", "address": "L4"},
+    {"op": "clear", "tab": "Summary View", "address": "M4"},
+    {"op": "clear", "tab": "Summary View", "address": "N4"}
+  ]
+}

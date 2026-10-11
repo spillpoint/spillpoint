@@ -24,7 +24,8 @@ export type OcxChange =
   | { op: "clear"; tab: string; address: string }
   | { op: "rename_tab"; tab: string; to: string }
   | { op: "remove_tab"; tab: string }
-  | { op: "add_tab"; after: string; sheet: { name: string; cells: OcxCellJson[] } };
+  | { op: "add_tab"; after: string; sheet: { name: string; cells: OcxCellJson[] } }
+  | { op: "date_system"; to: number };
 
 export interface OcxFixture {
   base: string;
@@ -86,6 +87,11 @@ export function applyOcxChange(base: OcxWorkbookJson, change: OcxChange[]): OcxW
       case "add_tab":
         if (workbook.sheets.some((s) => s.name === step.sheet.name)) throw new Error(`a tab is already named "${step.sheet.name}"`);
         workbook.sheets.splice(workbook.sheets.indexOf(tab(step.after)) + 1, 0, structuredClone(step.sheet));
+        break;
+      case "date_system":
+        // Excel counts days from 1900 or from 1904 (OX1, OX5); a fixture can switch which.
+        if (workbook.dateSystem === step.to) throw new Error(`the workbook already counts days from ${step.to}`);
+        workbook.dateSystem = step.to;
         break;
       default:
         throw new Error(`unknown step ${JSON.stringify(step)}`);

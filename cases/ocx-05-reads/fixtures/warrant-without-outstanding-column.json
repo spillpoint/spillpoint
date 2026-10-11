@@ -1,0 +1,11 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "The Warrants Ledger has no Warrant Shares Outstanding column, and W-1 is 5,000 exercised, as the Stakeholder View counts.",
+  "change": [
+    {"op": "clear", "tab": "Warrants Ledger", "address": "M2"},
+    {"op": "clear", "tab": "Warrants Ledger", "address": "M3"},
+    {"op": "clear", "tab": "Warrants Ledger", "address": "M5"},
+    {"op": "set", "tab": "Warrants Ledger", "cell": {"address": "G3", "kind": "number", "text": "5000", "formula": false}},
+    {"op": "set", "tab": "Stakeholder View", "cell": {"address": "F11", "kind": "number", "text": "25000", "formula": false}}
+  ]
+}

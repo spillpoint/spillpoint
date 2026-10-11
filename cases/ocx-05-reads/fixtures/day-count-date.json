@@ -1,0 +1,7 @@
+{
+  "base": "ocx-01-alder-gate",
+  "about": "EP-1's expiration date is a day count, 30 October 2025, the day before the as-of date.",
+  "change": [
+    {"op": "set", "tab": "Alder Gate 2023 Equity Plan...", "cell": {"address": "K3", "kind": "date", "text": "45960", "formula": false}}
+  ]
+}
