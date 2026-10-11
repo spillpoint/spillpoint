@@ -1,0 +1,140 @@
+{
+  "format": "spillpoint",
+  "version": 6,
+  "name": "My company",
+  "holders": [
+    {
+      "id": "founder",
+      "name": "Founder A"
+    },
+    {
+      "id": "investor_p",
+      "name": "Investor P"
+    },
+    {
+      "id": "investor_q",
+      "name": "Investor Q"
+    },
+    {
+      "id": "fund_r",
+      "name": "Fund R"
+    },
+    {
+      "id": "fund_s",
+      "name": "Fund S"
+    }
+  ],
+  "events": [
+    {
+      "id": "founding",
+      "date": null,
+      "type": "issue",
+      "security": {
+        "id": "common",
+        "name": "Common Stock",
+        "kind": "common"
+      },
+      "issues": [
+        {
+          "holder": "founder",
+          "shares": "8000000"
+        }
+      ]
+    },
+    {
+      "id": "option_pool",
+      "date": null,
+      "type": "create_pool",
+      "percent": "10"
+    },
+    {
+      "id": "safes",
+      "date": null,
+      "type": "safes",
+      "safes": [
+        {
+          "id": "safes_1",
+          "holder": "investor_p",
+          "purchase_amount": "500000",
+          "post_money_cap": "6000000",
+          "discount": null
+        },
+        {
+          "id": "safes_2",
+          "holder": "investor_q",
+          "purchase_amount": "500000",
+          "post_money_cap": "10000000",
+          "discount": null
+        }
+      ]
+    },
+    {
+      "id": "series_a",
+      "date": null,
+      "type": "priced_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based"
+      },
+      "pre_money": "20000000",
+      "investments": [
+        {
+          "holder": "fund_r",
+          "amount": "5000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": "10",
+      "seniority": [
+        [
+          "series_a"
+        ]
+      ],
+      "convert_notes": true
+    },
+    {
+      "id": "series_b",
+      "date": null,
+      "type": "priced_round",
+      "series": {
+        "id": "series_b",
+        "name": "Series B Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "broad_based"
+      },
+      "pre_money": "60000000",
+      "investments": [
+        {
+          "holder": "fund_s",
+          "amount": "15000000"
+        }
+      ],
+      "pool_target_unissued_percent_post": null,
+      "seniority": [
+        [
+          "series_b",
+          "series_a",
+          "series_a_shadow",
+          "series_a_shadow_2"
+        ]
+      ],
+      "convert_notes": true
+    }
+  ],
+  "cap_table_after_event": "series_b",
+  "range": [
+    "0",
+    "100000000"
+  ],
+  "view": {
+    "exit_value": "50000000",
+    "you": "founder"
+  }
+}
