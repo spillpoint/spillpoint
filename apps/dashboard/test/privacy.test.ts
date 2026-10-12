@@ -51,7 +51,21 @@ describe("the built page", () => {
   it("loads only its own files", () => {
     const sources = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]!);
     expect(sources.length).toBeGreaterThan(0);
-    for (const source of sources) expect(source).toMatch(/^(\.\/assets\/|data:)/);
+    // Its scripts and styles in assets/, and its two icons beside index.html (10b).
+    for (const source of sources) expect(source).toMatch(/^(\.\/assets\/|\.\/favicon\.svg$|\.\/favicon-32\.png$|data:)/);
+  });
+
+  it("ships its icons beside index.html, as they are in public/, and the policy lets it load them", () => {
+    const icons = [...html.matchAll(/<link rel="icon" href="([^"]+)"[^>]*type="([^"]+)"/g)].map((m) => [m[1], m[2]]);
+    expect(icons).toEqual([
+      ["./favicon-32.png", "image/png"],
+      ["./favicon.svg", "image/svg+xml"],
+    ]);
+    for (const name of ["favicon.svg", "favicon-32.png"]) {
+      expect(readFileSync(join(outDir, name)).equals(readFileSync(join(dashboard, "public", name))), name).toBe(true);
+    }
+    const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html)![1]!.replaceAll("&#39;", "'");
+    expect(policy).toContain("img-src 'self'");
   });
 
   it("contains no way to send anything, and keeps nothing in browser storage", () => {

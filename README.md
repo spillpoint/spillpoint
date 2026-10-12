@@ -1,4 +1,4 @@
-# spillpoint
+# <picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/lockup-dark.svg"><img src="docs/brand/lockup-light.svg" alt="spillpoint" height="48"></picture>
 
 Open-source exit waterfall engine and dashboard. Given a cap table and an exit value, spillpoint works out who gets what: preferences, participation and caps, conversions and options. It also finds every breakpoint where the payout curve bends or jumps, and explains each one in plain English.
 
