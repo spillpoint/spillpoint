@@ -49,7 +49,7 @@ Code can match on these, and none is renamed or reused from 0.1.0. The package's
 - **Beyond the cases:**
   - **Random funds:** Jordan's checker agreed with the engine's breakpoints on 6,026 random funds (f01c).
   - **The clawback** never rises as X grows, on the reference's random funds too.
-- **The names:** a test fails if the engine can give a name or a wording `docs/STABLE.md` doesn't list, or the list has one the engine doesn't give.
+- **The names:** a test fails if the engine can give a name or a wording `docs/STABLE.md` and the package's README don't list, or a list has one the engine doesn't give.
 - **The page:**
   - **Its numbers:** each is held to the cases' `expected.json`.
   - **Its chart:** the lines are exact between breakpoints.
