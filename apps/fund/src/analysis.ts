@@ -50,12 +50,13 @@ export function niceUp(v: Decimal): Decimal {
 }
 
 /**
- * The chart's and the slider's top, unless one is typed (plan, "The chart"): the larger of 1.5 × NAV and 1.25 × the
- * last breakpoint, and at least twice the LPs' paid-in, rounded up to two significant digits.
+ * The chart's and the slider's top, unless one is typed (plan, "The chart"): the largest of 1.5 × NAV, 1.25 × the last
+ * breakpoint, 1.25 × the X the page opens at (f01g review, answer 1), and twice the LPs' paid-in, rounded up to two
+ * significant digits.
  */
-export function defaultTop(fund: Fund, breakpoints: readonly Breakpoint[]): Decimal {
+export function defaultTop(fund: Fund, breakpoints: readonly Breakpoint[], opening: Decimal): Decimal {
   const paidIn = splitAt(fund, new D(0)).lpsPaidIn;
-  const candidates = [paidIn.times(2)];
+  const candidates = [paidIn.times(2), opening.times("1.25")];
   if (fund.nav) candidates.push(fund.nav.times("1.5"));
   const last = breakpoints.at(-1);
   if (last) candidates.push(last.x.times("1.25"));

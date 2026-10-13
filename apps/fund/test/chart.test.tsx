@@ -29,7 +29,7 @@ describe("the chart's lines are exact", () => {
   it.each(RUN_CASES)("%s: X's split at every point between two chart points is on the straight line between them", (dir) => {
     const fund = fundOf(dir);
     const bps = breakpointViews(fund);
-    const top = defaultTop(fund, bps);
+    const top = defaultTop(fund, bps, new D(0));
     const points = chartPoints(fund, bps, top);
     expect(points[0]!.x.isZero()).toBe(true);
     expect(points.at(-1)!.x.eq(top)).toBe(true);
@@ -56,13 +56,18 @@ describe("the chart's lines are exact", () => {
     }
   });
 
-  it("chooses each example's range: 2 x paid-in, 1.25 x the last breakpoint, 1.5 x NAV, the largest, to two digits", () => {
+  it("chooses each example's range: 2 x paid-in, 1.25 x the last breakpoint, 1.5 x NAV, 1.25 x the opening X, the largest, to two digits", () => {
     const tops = examples.map((e) => {
       const fund = readFund(e.fund);
-      return defaultTop(fund, breakpointViews(fund)).toString();
+      return defaultTop(fund, breakpointViews(fund), new D(e.defaultX)).toString();
     });
-    // Case 3: 2 x $10,449,000; case 8: 1.25 x $63,833,333.33; case 13: 2 x $20,000,000; case 12: 1.5 x $6,000,000.
-    expect(tops).toEqual(["21000000", "80000000", "40000000", "9000000"]);
+    // Case 3: 1.25 x its opening $20,000,000; case 8: 1.25 x $63,833,333.33; case 13: 2 x $20,000,000; case 12: 1.5 x $6,000,000.
+    expect(tops).toEqual(["25000000", "80000000", "40000000", "9000000"]);
+  });
+
+  it("opens case 3 on a range that takes in its opening X with room to spare", () => {
+    render(<App />);
+    expect(screen.getByRole("slider", { name: "X, from $0 to $25M" })).toBeDefined();
   });
 });
 

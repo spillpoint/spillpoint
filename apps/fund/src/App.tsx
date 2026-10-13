@@ -30,11 +30,11 @@ interface TopState {
   problem: string | null;
 }
 
-function opened(id: string): { fund: Fund; x: XState; top: TopState } {
+function opened(id: string): { fund: Fund; opening: D; x: XState; top: TopState } {
   const example = examples.find((e) => e.id === id)!;
   const fund = readFund(example.fund);
   const x = parseDollars(example.defaultX)!;
-  return { fund, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
+  return { fund, opening: x, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
 }
 
 /** The slider's positions: X moves in steps of a thousandth of the range. */
@@ -44,11 +44,12 @@ const CROWDED = 9;
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
-  const [{ fund, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
+  const [{ fund, opening, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
-  // The range's top: as typed, or the page's own; raised to take in an X typed past it.
-  const base = topState.set ?? defaultTop(fund, breakpoints);
+  // The range's top: as typed, or the page's own; an X past it raises it to 1.25 × X, so X's mark is never off the chart
+  // (f01g review, answer 1).
+  const base = topState.set ?? defaultTop(fund, breakpoints, opening);
   const top = x.shown.gt(base) ? niceUp(x.shown.times("1.25")) : base;
   const points = useMemo(() => chartPoints(fund, breakpoints, top), [fund, breakpoints, top]);
 
@@ -109,7 +110,6 @@ export function App() {
       <GovernanceNote />
       <Headline fund={fund} split={split} />
       <XBox fund={fund} x={x} onType={typeX} top={top} topState={topState} onTop={typeTop} breakpoints={breakpoints} onX={setX} />
-      <SplitTable fund={fund} split={split} />
       <Chart
         points={points}
         breakpoints={breakpoints}
@@ -119,6 +119,7 @@ export function App() {
         at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
         hasCommitment={fund.terms.gpCommitment !== null}
       />
+      <SplitTable fund={fund} split={split} />
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={setX} />
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. */}
       <footer className="page-footer">

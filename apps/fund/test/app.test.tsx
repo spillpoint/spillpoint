@@ -208,6 +208,12 @@ describe("the fund page", () => {
     expect(screen.queryByText(/GP commitment's paid-in/)).toBeNull();
   });
 
+  it("puts the cards in the main page's order: the answer, X and its slider, the chart, the split, the breakpoints", () => {
+    render(<App />);
+    const cards = [...document.querySelectorAll(".page > section")].map((s) => s.getAttribute("aria-label") ?? s.querySelector("h2")!.textContent);
+    expect(cards).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $20,000,000", "Breakpoints"]);
+  });
+
   it("names spillpoint-fund's version and the commit in the footer", () => {
     render(<App />);
     expect(screen.getByRole("contentinfo").textContent).toMatch(/^spillpoint-fund 0\.0\.0 \([0-9a-f]{7}(, modified)?\)$/);

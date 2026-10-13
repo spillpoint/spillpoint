@@ -28,6 +28,10 @@ One column of cards, in the main page's style (`notes/design-m3.md`):
 - never color alone
 - nothing off the screen down to 320 pixels
 
+### The order of the cards
+
+The main page's (f01g review, from your look at the page): the answer, then X with its slider, the chart right under them, the split table after it, and the breakpoint list last. The clawback card, when there is one, sits under the main chart (below), before the split.
+
 ### The answer first
 
 A headline at the chosen X, in neutral words, since the same file goes to LPs and co-GPs (your answer 6): "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M. The LPs get $32.8M and the GP commitment $400K." Under it, the caveat every spillpoint page carries: the fund's documents govern, not this tool, and nothing leaves the computer.
@@ -44,11 +48,13 @@ Three lines against X, each straight between breakpoints, so the chart is drawn 
 - **The NAV point,** labelled "NAV".
 - **The chosen X,** which a slider and a text box both set.
 
-**The range** runs from 0 to a top the page chooses: the larger of 1.5 × NAV and 1.25 × the last breakpoint, and at least twice the LPs' paid-in. The top is editable.
+**The range** runs from 0 to a top the page chooses: the larger of 1.5 × NAV and 1.25 × the last breakpoint, and at least twice the LPs' paid-in. The top is editable. It also covers 1.25 × the X the page opens at, and an X typed past the top raises it to 1.25 × that X, so X's mark is never off the chart (f01g review, answer 1).
+
+**No zoom:** the range's top does that job (f01g review, answer 3).
 
 ### The breakpoints, in sentences
 
-A numbered list matching the chart's numbers, each the engine's reason, then what it means for the GP per extra $1M, as the main page's "For you" line does. For example: "2. At $34,500,000: LPs reach 3.0x: carry is 25% from here. The GP's carry goes from $198,000 to $247,500 per extra $1M." Where several reasons share a point, they're one item.
+A numbered list matching the chart's numbers, each the engine's reason, then what it means for the GP per extra $1M, as the main page's "For you" line does. That's the GP's carry only, not the GP commitment's line (f01g review, answer 2). For example: "2. At $34,500,000: LPs reach 3.0x: carry is 25% from here. The GP's carry goes from $198,000 to $247,500 per extra $1M." Where several reasons share a point, they're one item.
 
 ### The split at X
 
@@ -312,6 +318,7 @@ Each is one branch, one PR and one evening, with a review note and what to check
      - **A file with `hurdle_irr`** is refused in plain words.
 8. **f01m: the keyboard, narrow screens and screenshots,** as M3e did for the main page.
    - **What it adds:**
+     - **Clicking or tapping the chart sets X there,** in place of a hover readout (f01g review, answer 3).
      - **The keyboard:** every control reachable and labelled, and the chart's values in its legend.
      - **Narrow screens:** the cash-flow table on a phone, one row a card under 480 pixels.
      - **Screenshots** for the review, from a copy of the screenshot script.
