@@ -30,13 +30,17 @@ One column of cards, in the main page's style (`notes/design-m3.md`):
 
 ### The order of the cards
 
-The main page's (f01g review, from your look at the page): the answer, then X with its slider, the chart right under them, the split table after it, and the breakpoint list last. The clawback card, when there is one, sits under the main chart (below), before the split.
+The main page's (f01g review, from your look at the page): the answer, then X with its slider, the chart right under them, the split table after it, and the breakpoint list last. The clawback card, when there is one, sits after the split, so the chart and the split, both about this distribution, sit together (f01i; in f01h it was under the chart).
+
+**Tabs, as the main page has them (f01i):** Payouts (everything above), Terms and Cash flows. Under the picker, one line on the fund behind the answers, as the main page's "built from its 10 events": "This fund: $11M paid in over 4 calls, $4M distributed before X and a NAV of $40M on 30 Sep 2026. X isn't its last distribution."
 
 ### The answer first
 
 A headline at the chosen X, in neutral words, since the same file goes to LPs and co-GPs (your answer 6): "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M. The LPs get $32.8M and the GP commitment $400K." Under it, the caveat every spillpoint page carries: the fund's documents govern, not this tool, and nothing leaves the computer.
 
-**When the GP owes a clawback,** the headline says so, so it never shows carry without the clawback beside it (f01h): "At a $15M distribution on 1 Jan 2025, the GP's carry is $1M, and it owes $750K back." At $0 it leads "With nothing distributed on 1 Jan 2025". A fund that isn't final owes one only at NAV: "…, and if the fund were liquidated at NAV it would owe $750K back."
+**When the GP owes a clawback,** the headline says so, so it never shows carry without the clawback beside it (f01h). It stays in one frame (f01i):
+- **A fund that isn't final:** this distribution, as before: "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M." At NAV, when something would be owed: "…, and if the fund were liquidated at NAV it would owe $750K back."
+- **A final fund:** the GP's carry over the fund's life. "If $15M on 1 Jan 2025 is the last distribution, the GP ends with $5M of carry: it gets $1M now and gives back $750K." With nothing owed: "If $6M on 1 May 2026 is the last distribution, the GP ends with $792K of carry." At $0: "If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M." The line under it says it's this distribution: "Of the $15M, the LPs get $14M." In f01h it read "the GP's carry is $1M, and it owes $750K back", as if the GP netted $250K.
 
 ### The chart
 
@@ -87,8 +91,8 @@ A table by tier, for X alone and for the fund to date:
 - **Why its own:** it's a different scale, and often zero.
 
 **As built in f01h:**
-- **Where:** the card sits right under the main chart, before the split.
-- **A final fund** has it at every X. Under the chart, the breakpoints where the clawback bends, numbered as in the list, in the engine's clawback words, with what's owed at each.
+- **Where:** the card sits after the split (f01i; in f01h it was under the main chart).
+- **A final fund** has it at every X. Its chart marks the breakpoints where the clawback bends, numbered as in the breakpoint list, which gives their reasons. In f01h the card listed them too; f01i drops that list.
 - **A final fund that owes nothing at $0** owes nothing at any X (FA9), so the card says so in place of a flat chart. That's case 12.
 - **A fund that isn't final** has the card at the NAV point only, with the sentence and no chart: only that point is final (F14).
 
@@ -121,6 +125,13 @@ A table by tier, for X alone and for the fund to date:
 - The form writes "20%" and the file "0.2", converted exactly.
 - A rate typed with more places keeps them all ("7.25%" is "0.0725").
 - Nothing is rounded.
+
+**As built in f01i:**
+- **Where:** the Terms tab. Each change runs the engine again.
+- **A term turned on** starts at its usual value, in its field to change: a pref of 8% a year, a partial catch-up of 50% to the GP, a GP commitment of 1%. A pref brings in the catch-up at "None", which is what leaving it out of the input means.
+- **Carry, flat or in steps:** switching keeps both. The flat rate becomes the first step's, and the steps come back on the way back.
+- **Text the page can't read as a number** ("twenty") is said under its field, and nothing goes to the engine. Every other rule is the engine's, worded by the page.
+- **Once a term changes,** the picker reads "An example, with your changes", and the line under it "This fund, with your changes to its terms: …". Picking an example asks first, as the main page does.
 
 ### The cash flows: a table
 

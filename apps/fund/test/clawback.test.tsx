@@ -49,6 +49,7 @@ const xBox = () => screen.getByLabelText(/^Distribution on/) as HTMLInputElement
 const typeX = (text: string) => fireEvent.change(xBox(), { target: { value: text } });
 const card = () => screen.getByRole("region", { name: "The clawback" });
 const sentence = () => within(card()).getByText(/^If this is the fund's last distribution/).textContent;
+const answer = () => screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent;
 const owedLegend = () => within(card()).getByRole("list", { name: /^Owed at X/ }).textContent;
 
 describe("the clawback's sentence and chart", () => {
@@ -86,9 +87,7 @@ describe("case 13: a late call and a clawback", () => {
   it("opens at $0, owing $2,750,000.00: the GP has been paid $4,750,000.00 and has earned $2,000,000.00", () => {
     open("fund-13-clawback-steps");
     expect(xBox().value).toBe("$0");
-    expect(screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent).toBe(
-      "With nothing distributed on 1 Jan 2025, the GP's carry is $0, and it owes $2.75M back.",
-    );
+    expect(answer()).toBe("If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M.");
     expect(sentence()).toBe(
       "If this is the fund's last distribution, the GP has been paid $4,750,000.00 of carry, has earned $2,000,000.00 on the fund's totals, and owes $2,750,000.00 back to the LPs.",
     );
@@ -104,30 +103,33 @@ describe("case 13: a late call and a clawback", () => {
     expect(["10000000", "12000000", "15000000", "15937500", "25000000"].map(owedAt)).toEqual(["$750,000.00", "$750,000.00", "$750,000.00", "$656,250.00", "$656,250.00"]);
     // Between $15,000,000 and $15,937,500 it falls on a straight line: halfway, halfway between $750,000 and $656,250.
     expect(owedAt("15468750")).toBe("$703,125.00");
-    typeX("15000000");
-    expect(screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent).toBe(
-      "At a $15M distribution on 1 Jan 2025, the GP's carry is $1M, and it owes $750K back.",
-    );
   });
 
-  it("lists where the clawback bends, in the engine's words, numbered as in the breakpoint list, with what's owed at each", () => {
+  it("gives the GP's carry over the fund's life in the headline, with what it gets now and gives back: $0, $15M and $25M", () => {
     open("fund-13-clawback-steps");
-    const items = within(within(card()).getByRole("list", { name: "Where the clawback bends" }))
-      .getAllByRole("listitem")
-      .map((li) => [li.querySelector("button")!.textContent, ...[...li.querySelectorAll("p")].map((p) => p.textContent)]);
-    expect(items).toEqual([
-      ["1$10,000,000.00", "The clawback owed stops falling.", "Owed at this X: $750,000.00."],
-      ["2$15,000,000.00", "The clawback owed starts to fall: on the fund's totals, LPs reach 2.0x: carry is 30% from here.", "Owed at this X: $750,000.00."],
-      ["3$15,937,500.00", "The clawback owed stops falling.", "Owed at this X: $656,250.00."],
+    const at = (x: string) => {
+      typeX(x);
+      return answer();
+    };
+    // Carry paid less what's owed, which is what the GP earned on the fund's totals: $2M, $5M, $8M (the case's).
+    expect(["0", "15000000", "25000000"].map(at)).toEqual([
+      "If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M.",
+      "If $15M on 1 Jan 2025 is the last distribution, the GP ends with $5M of carry: it gets $1M now and gives back $750K.",
+      "If $25M on 1 Jan 2025 is the last distribution, the GP ends with $8M of carry: it gets $3.91M now and gives back $656K.",
     ]);
+    // At $10M, X's carry is nothing, so the GP only gives back.
+    expect(at("10000000")).toBe("If $10M on 1 Jan 2025 is the last distribution, the GP ends with $4M of carry: it gives back $750K.");
   });
 
-  it("marks the bends and X on its own chart, and moves X to a bend when it's chosen", () => {
+  it("marks the bends and X on its own chart, numbered as in the breakpoint list, which gives their reasons", () => {
     open("fund-13-clawback-steps");
     const chart = within(card()).getByRole("img", { name: "The clawback owed against X, from $0 to $40M, with 3 breakpoints marked." });
     const texts = [...chart.querySelectorAll("svg text")].map((t) => t.textContent);
     for (const mark of ["1", "2", "3", "X = $0"]) expect(texts).toContain(mark);
-    fireEvent.click(within(card()).getAllByRole("button")[2]!);
+    // No list of its own: the breakpoint list has the bends and their reasons (f01i).
+    expect(within(card()).queryByRole("list", { name: "Where the clawback bends" })).toBeNull();
+    expect(within(card()).queryByRole("button")).toBeNull();
+    fireEvent.click(within(screen.getByRole("region", { name: "Breakpoints" })).getAllByRole("button")[2]!);
     expect(xBox().value).toBe("$15,937,500");
     expect(sentence()).toBe(
       "If this is the fund's last distribution, the GP has been paid $5,937,500.00 of carry, has earned $5,281,250.00 on the fund's totals, and owes $656,250.00 back to the LPs.",
@@ -144,9 +146,7 @@ describe("the NAV point", () => {
     );
     expect(within(card()).queryByRole("img")).toBeNull();
     expect(within(card()).getByText("The fund isn't final, so away from NAV there's no clawback, and no chart of one against X.")).toBeDefined();
-    expect(screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent).toBe(
-      "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.",
-    );
+    expect(answer()).toBe("At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.");
     expect(screen.getByText("X is at NAV")).toBeDefined();
   });
 
@@ -185,7 +185,7 @@ describe("the NAV point", () => {
     const fund = readFund({ ...caseFile("fund-13-clawback-steps", "inputs.json").fund, final: false, nav: "10000000" });
     const atNav = splitAtNav(fund)!;
     expect(atNav.clawback!.owed.toFixed(2)).toBe("750000.00");
-    expect(answerText(fund, atNav, atNav.clawback!.owed)).toBe(
+    expect(answerText(fund, atNav, atNav.clawback)).toBe(
       "At a $10M distribution on 1 Jan 2025, the GP's carry is $0, and if the fund were liquidated at NAV it would owe $750K back.",
     );
     // Away from NAV, a fund that isn't final has no clawback.
