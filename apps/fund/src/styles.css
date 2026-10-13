@@ -253,8 +253,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .flows, .flows tbody { display: block; }
   .flows thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
   .flows tbody tr:not(.flows__problem) {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "date type" "kind amount" "n remove";
-    gap: 8px; align-items: start; padding: 8px; margin-top: 8px; border: 1px solid var(--line); border-radius: var(--radius);
+    display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); grid-template-areas: "date type" "kind amount" "n remove";
+    gap: 6px; align-items: start; padding: 6px; margin-top: 8px; border: 1px solid var(--line); border-radius: var(--radius);
   }
   .flows tbody th, .flows tbody td { padding: 0; border: 0; font-size: 1rem; }
   .flows th.flows__n { grid-area: n; position: static; padding-top: 6px; white-space: nowrap; }
@@ -266,7 +266,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .flows .flows__remove { grid-area: remove; justify-self: end; }
   /* Two to a line at 320 pixels: the fields' own padding is trimmed so a date and "Distribution" fit whole. */
   .flows input, .flows select, .flows input.flows__amount { width: 100%; min-width: 0; padding: 6px 6px; }
-  .flows input[type="date"] { padding: 6px 4px; }
+  .flows input[type="date"] { padding: 6px 2px 6px 4px; }
   .flows input[type="date"]::-webkit-calendar-picker-indicator { margin: 0; padding: 0 0 0 2px; }
   .flows .muted { padding-top: 6px; }
   /* A cash flow's own problem, under its card. */
