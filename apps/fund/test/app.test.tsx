@@ -105,7 +105,7 @@ const headline = () => [...screen.getByRole("region", { name: "The answer" }).qu
 const fact = (label: string | RegExp) => screen.getByText(label, { selector: "dt" }).nextElementSibling!.textContent;
 
 describe("the fund page", () => {
-  it("offers four examples, read from the locked cases at build time, a flat 20% fund first", () => {
+  it("offers four examples, read from the locked cases at build time, a flat 20% fund first, then a blank fund", () => {
     expect(examples.map((e) => e.id)).toEqual(["fund-03-gp-commitment", "fund-08-carry-steps", "fund-13-clawback-steps", "fund-12-spv"]);
     for (const e of examples) expect(e.fund).toEqual(caseFile(e.id, "inputs.json").fund);
     render(<App />);
@@ -115,6 +115,7 @@ describe("the fund page", () => {
       "A VC fund with premium carry: 20%, then 25% from 3x and 30% from 5x (fictional)",
       "A late call and a clawback (fictional)",
       "An SPV: one company, the exit as its last distribution (fictional)",
+      "A blank fund",
     ]);
     expect(picker.value).toBe("fund-03-gp-commitment");
   });
@@ -136,9 +137,13 @@ describe("the fund page", () => {
     expect((screen.getByLabelText(/^Distribution on 30 Sep 2026/) as HTMLInputElement).value).toBe("$40,000,000");
     expect(headline()).toEqual([
       "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free.",
-      "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.",
-      "The LPs get $32.8M and the GP commitment $400K.",
+      // At NAV, the fund's life, as if liquidated there (f01i review, answer 1).
+      "If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.81M of carry.",
+      "Of the $40M, the LPs get $32.8M and the GP commitment $400K.",
     ]);
+    // Away from NAV, this distribution.
+    fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "34500000" } });
+    expect(headline().slice(1)).toEqual(["At a $34.5M distribution on 30 Sep 2026, the GP's carry is $5.45M.", "The LPs get $28.7M and the GP commitment $345K."]);
   });
 
   it("splits case 8 at $40,000,000 as the case does, X alone and the fund to date, each step a band of the LPs' multiple", () => {

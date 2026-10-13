@@ -62,28 +62,21 @@ describe("the tabs", () => {
 });
 
 describe("the Cash flows tab", () => {
-  it("shows case 8's cash flows as entered, and the facts about D, read-only", () => {
+  it("shows case 8's cash flows as entered, and the facts about D, each in its field", () => {
     open("fund-08-carry-steps");
     fireEvent.click(screen.getByRole("tab", { name: "Cash flows" }));
     const panel = screen.getByRole("tabpanel", { name: "Cash flows" });
-    const rows = within(panel)
-      .getAllByRole("row")
-      .slice(1)
-      .map((r) => within(r).getAllByRole("cell").map((c) => c.textContent));
+    const value = (label: string) => (within(panel).getByLabelText(label) as HTMLInputElement | HTMLSelectElement).value;
+    const rows = [1, 2, 3, 4, 5].map((n) => [value(`Row ${n}'s date`), value(`Row ${n}'s type`), within(panel).queryByLabelText(`Row ${n}'s kind`) ? value(`Row ${n}'s kind`) : "—", value(`Row ${n}'s amount`)]);
     expect(rows).toEqual([
-      ["15 Jan 2021", "Call", "Investment", "$8,000,000.00"],
-      ["15 Jan 2021", "Call", "Fee", "$495,000.00"],
-      ["15 Jan 2022", "Call", "Fee", "$495,000.00"],
-      ["1 Jun 2022", "Call", "Investment", "$2,000,000.00"],
-      ["1 May 2024", "Distribution", "—", "$4,000,000.00"],
+      ["2021-01-15", "call", "investment", "$8,000,000"],
+      ["2021-01-15", "call", "fee", "$495,000"],
+      ["2022-01-15", "call", "fee", "$495,000"],
+      ["2022-06-01", "call", "investment", "$2,000,000"],
+      ["2024-05-01", "distribution", "—", "$4,000,000"],
     ]);
-    const facts = [...panel.querySelectorAll("dl div")].map((d) => [d.querySelector("dt")!.textContent, d.querySelector("dd")!.textContent]);
-    expect(facts).toEqual([
-      ["As of", "30 Sep 2026"],
-      ["Distribution date (D)", "30 Sep 2026"],
-      ["This is the fund's last distribution", "No"],
-      ["NAV on D", "$40,000,000.00"],
-    ]);
-    expect(within(panel).queryByRole("textbox")).toBeNull();
+    // D isn't given, so it's the as-of date: the field is empty, and says so.
+    expect([value("As of"), value("Distribution date (D)"), value("NAV on D")]).toEqual(["2026-09-30", "", "$40,000,000"]);
+    expect(within(panel).getByRole("checkbox", { name: "This is the fund's last distribution" })).toHaveProperty("checked", false);
   });
 });

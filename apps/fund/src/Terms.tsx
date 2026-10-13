@@ -2,6 +2,7 @@
 // GP commitment with F3's two flags. Each change runs the engine again; a refusal shows under the field its path names,
 // and at the top of the form with "Show me".
 
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import type { Problem, StepText, TermsForm } from "./terms.ts";
@@ -59,6 +60,21 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
 
 export function Terms({ form, problem, onForm, onShow }: Props) {
   const { carry, pref, catchUp, gpCommitment: g } = form;
+  // A term turned on starts at its usual value, selected in its field, so it's typed straight over (f01i review,
+  // answer 3). The field appears with the change, so it's focused once it's there.
+  const [selecting, setSelecting] = useState<string | null>(null);
+  useEffect(() => {
+    if (selecting === null) return;
+    const field = document.getElementById(selecting);
+    if (!(field instanceof HTMLInputElement)) return;
+    field.focus();
+    field.select();
+    setSelecting(null);
+  }, [selecting, form]);
+  const turnOn = (next: TermsForm, field: string) => {
+    onForm(next);
+    setSelecting(field);
+  };
   const setStep = (i: number, step: StepText) => onForm({ ...form, carry: { ...carry, steps: carry.steps.map((s, j) => (j === i ? step : s)) } });
   const stepPath = (i: number) => `terms.carry.steps[${i}]`;
   return (
@@ -67,7 +83,7 @@ export function Terms({ form, problem, onForm, onShow }: Props) {
       <p className="card__intro">Rates are percents, written exactly as typed: 7.25% is 0.0725, with nothing rounded. Each change runs the waterfall again.</p>
       {problem && (
         <div className="notice notice--problem" role="status">
-          <strong>The fund can't run with these terms.</strong> {problem.message}{" "}
+          <strong>The fund can't run as it is.</strong> {problem.message}{" "}
           <button type="button" className="link-button" onClick={() => onShow(problem.path)}>
             Show me
           </button>
@@ -138,7 +154,12 @@ export function Terms({ form, problem, onForm, onShow }: Props) {
 
       <Fieldset legend="Pref">
         <label className="terms__check">
-          <input type="checkbox" checked={pref.on} onChange={(e) => onForm({ ...form, pref: { ...pref, on: e.target.checked } })} /> A preferred return
+          <input
+            type="checkbox"
+            checked={pref.on}
+            onChange={(e) => (e.target.checked ? turnOn({ ...form, pref: { ...pref, on: true } }, "terms.pref.rate") : onForm({ ...form, pref: { ...pref, on: false } }))}
+          />{" "}
+          A preferred return
         </label>
         {pref.on && (
           <>
@@ -160,7 +181,13 @@ export function Terms({ form, problem, onForm, onShow }: Props) {
               ] as const
             ).map(([kind, text]) => (
               <label key={kind}>
-                <input type="radio" name="catch-up" checked={catchUp.kind === kind} onChange={() => onForm({ ...form, catchUp: { ...catchUp, kind } })} /> {text}
+                <input
+                  type="radio"
+                  name="catch-up"
+                  checked={catchUp.kind === kind}
+                  onChange={() => (kind === "partial" ? turnOn({ ...form, catchUp: { ...catchUp, kind } }, "terms.catch_up.gp_share") : onForm({ ...form, catchUp: { ...catchUp, kind } }))}
+                />{" "}
+                {text}
               </label>
             ))}
           </div>
@@ -173,7 +200,12 @@ export function Terms({ form, problem, onForm, onShow }: Props) {
 
       <Fieldset legend="GP commitment">
         <label className="terms__check">
-          <input type="checkbox" checked={g.on} onChange={(e) => onForm({ ...form, gpCommitment: { ...g, on: e.target.checked } })} /> A GP commitment
+          <input
+            type="checkbox"
+            checked={g.on}
+            onChange={(e) => (e.target.checked ? turnOn({ ...form, gpCommitment: { ...g, on: true } }, "terms.gp_commitment.share") : onForm({ ...form, gpCommitment: { ...g, on: false } }))}
+          />{" "}
+          A GP commitment
         </label>
         {g.on && (
           <>
