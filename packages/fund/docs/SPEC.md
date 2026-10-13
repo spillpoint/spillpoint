@@ -166,7 +166,7 @@ One X can carry several reasons: capital returned and clawback cleared together,
 
 ## Cases
 
-Thirteen cases and a set of refusals, in `packages/fund/cases/` (FC2):
+Fifteen cases and a set of refusals, in `packages/fund/cases/` (FC2):
 
 1. One investment call, 20% carry.
 2. Investment, fee and expense calls all count as capital; an interim distribution returns part of it.
@@ -182,6 +182,8 @@ Thirteen cases and a set of refusals, in `packages/fund/cases/` (FC2):
 12. An SPV: one investment and a setup fee, the exit as its final distribution, with NAV.
 13. A late call against a carry step: the clawback falls, holds, falls again and holds for good.
 14. Fifteen refusals, each one change to case 6.
+15. A late call leaves the fund's totals short of capital: the clawback holds until the totals' run has the LPs' capital back, then falls (f01e).
+16. A pref and full catch-up with a late call: the clawback falls through the totals' pref and catch-up, a dollar a dollar, then 20 cents (f01e).
 
 ## Decided
 

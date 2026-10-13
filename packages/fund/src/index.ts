@@ -15,11 +15,11 @@ export { D, toCents } from "./decimal.ts";
 
 // What the engine refuses, and why (F18).
 export { FundRefusal } from "./errors.ts";
-export type { InputTerm, RefusalKind } from "./errors.ts";
+export type { RefusalKind } from "./errors.ts";
 
 // Reading a fund's input.
 export { readFund } from "./input.ts";
-export type { CallKind, CarryStep, CashFlow, Fund, GpCommitment } from "./model.ts";
+export type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment } from "./model.ts";
 
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";
@@ -28,4 +28,7 @@ export type { Clawback, Split, StepCarry, Tiers } from "./waterfall.ts";
 // Every X where the split bends, with its reasons (F15).
 export { findBreakpoints } from "./breakpoints.ts";
 export type { Breakpoint } from "./breakpoints.ts";
-export type { ClawbackChange, Reason, ReasonCode, TierReasonCode } from "./reasons.ts";
+export type { Reason } from "./reasons.ts";
+
+// The names and words code can match on, stable from 0.1.0 (docs/STABLE.md).
+export type { ClawbackChange, InputTerm, ReasonCode, TierReasonCode, UnsupportedTerm } from "./stable-names.ts";

@@ -1,0 +1,38 @@
+{
+  "case": "fund-15-clawback-capital",
+  "description": "A late call leaves the fund's totals short of capital at X = 0. The clawback holds until the totals' run has the LPs' capital back, then falls, and clears where X returns the late call.",
+  "xs": [
+    "0",
+    "2000000",
+    "4000000",
+    "7000000",
+    "10000000",
+    "12000000"
+  ],
+  "fund": {
+    "as_of": "2024-01-01",
+    "terms": {
+      "carry": "0.20"
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "distribution",
+        "amount": "16000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ],
+    "final": true
+  }
+}

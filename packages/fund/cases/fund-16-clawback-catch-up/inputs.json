@@ -1,0 +1,45 @@
+{
+  "case": "fund-16-clawback-catch-up",
+  "description": "An 8% pref and a full catch-up, with a late call. The totals' run owes its pref and catch-up after X = 0: the clawback holds, falls a dollar a dollar through the totals' catch-up, then 20 cents a dollar, and clears where X returns the late call.",
+  "xs": [
+    "0",
+    "500000",
+    "900000",
+    "5000000",
+    "10500000",
+    "10900000",
+    "15000000"
+  ],
+  "fund": {
+    "as_of": "2024-01-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "distribution",
+        "amount": "20000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ],
+    "final": true
+  }
+}

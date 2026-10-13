@@ -71,8 +71,8 @@ function rate(x: D): string {
  */
 export function asCaseBlock(fund: Fund, t: Tiers): CaseBlock {
   const lps: Record<string, string> = { capital: toCents(t.lps.capital), carry_tier: toCents(t.lps.carryTier), total: toCents(t.lps.total) };
-  if (fund.prefRate) lps.pref = toCents(t.lps.pref);
-  if (fund.catchUpShare) lps.catch_up = toCents(t.lps.catchUp);
+  if (fund.terms.pref) lps.pref = toCents(t.lps.pref);
+  if (fund.terms.catchUp) lps.catch_up = toCents(t.lps.catchUp);
   const carry = t.gp.carry.map((s) => ({
     rate: rate(s.rate),
     ...(s.fromLpMultiple ? { from_lp_multiple: rate(s.fromLpMultiple) } : {}),
@@ -80,9 +80,9 @@ export function asCaseBlock(fund: Fund, t: Tiers): CaseBlock {
   }));
   return {
     amount: toCents(t.amount),
-    ...(fund.gpCommitment ? { gp_commitment: toCents(t.gpCommitment) } : {}),
+    ...(fund.terms.gpCommitment ? { gp_commitment: toCents(t.gpCommitment) } : {}),
     lps,
-    gp: { ...(fund.catchUpShare ? { catch_up: toCents(t.gp.catchUp) } : {}), carry, total: toCents(t.gp.total) },
+    gp: { ...(fund.terms.catchUp ? { catch_up: toCents(t.gp.catchUp) } : {}), carry, total: toCents(t.gp.total) },
   };
 }
 
@@ -90,9 +90,9 @@ export function asCaseBlock(fund: Fund, t: Tiers): CaseBlock {
 export function absentTiersAreZero(fund: Fund, split: Split): boolean {
   return [split.distribution, split.toDate].every(
     (t) =>
-      (fund.prefRate !== null || t.lps.pref.isZero()) &&
-      (fund.catchUpShare !== null || (t.lps.catchUp.isZero() && t.gp.catchUp.isZero())) &&
-      (fund.gpCommitment !== null || t.gpCommitment.isZero()),
+      (fund.terms.pref !== null || t.lps.pref.isZero()) &&
+      (fund.terms.catchUp !== null || (t.lps.catchUp.isZero() && t.gp.catchUp.isZero())) &&
+      (fund.terms.gpCommitment !== null || t.gpCommitment.isZero()),
   );
 }
 

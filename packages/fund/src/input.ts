@@ -13,9 +13,8 @@
 
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
-import { FundRefusal } from "./errors.ts";
-import type { InputTerm } from "./errors.ts";
-import type { CallKind, CarryStep, CashFlow, Fund, GpCommitment } from "./model.ts";
+import { refuse, unsupported } from "./errors.ts";
+import type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment } from "./model.ts";
 
 type Json = Record<string, unknown>;
 
@@ -33,26 +32,6 @@ const CALL_KINDS: readonly CallKind[] = ["investment", "fee", "expense"];
 /** F9: carry is 20% when the terms don't give it. */
 const DEFAULT_CARRY = "0.2";
 
-const MESSAGES: Record<InputTerm, string> = {
-  bad_number: "not an exact number in range: amounts as exact strings, more than zero; no negative rate or share",
-  bad_date: "not a date written YYYY-MM-DD that exists",
-  bad_field: "not a value this field can take",
-  missing_field: "missing",
-  unknown_field: "not a field a fund input has",
-  carry_rate_not_below_one: "a carry rate must be below 1",
-  steps_out_of_order: "carry steps need rising rates, each from a higher LP multiple above 1, and none on the first step",
-  catch_up_without_pref: "a catch-up needs a pref to catch up to",
-  catch_up_share_not_above_carry: "the GP's share of the catch-up must be above the carry rate, or it never catches up",
-  gp_commitment_not_below_one: "the GP commitment's share must be below 1",
-  no_calls: "a fund needs at least one call",
-  distribution_before_call: "a distribution comes before the fund's first call",
-  cash_flow_after_distribution_date: "a cash flow comes after the distribution date",
-};
-
-function refuse(term: InputTerm, field: string): FundRefusal {
-  return new FundRefusal("input", term, field, MESSAGES[term]);
-}
-
 function isObject(value: unknown): value is Json {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -67,25 +46,25 @@ function checkUnsupported(terms: unknown): void {
   if (!isObject(terms)) return;
   for (const [key, value] of Object.entries(terms)) {
     const field = `terms.${key}`;
-    if (!(key in TERM_KEYS)) throw new FundRefusal("unsupported", key, field, `"${key}" is a term v1 doesn't model`);
+    if (!(key in TERM_KEYS)) throw unsupported({ key }, field, `"${key}" is a term v1 doesn't model`);
     if (!isObject(value)) continue;
     if (key === "carry") {
       for (const [k2, steps] of Object.entries(value)) {
-        if (k2 !== "steps") throw new FundRefusal("unsupported", k2, `${field}.${k2}`, `"${k2}" is a carry term v1 doesn't model`);
+        if (k2 !== "steps") throw unsupported({ key: k2 }, `${field}.${k2}`, `"${k2}" is a carry term v1 doesn't model`);
         if (!Array.isArray(steps)) continue;
         steps.forEach((step, i) => {
           if (!isObject(step)) return;
           for (const k3 of Object.keys(step)) {
-            if (!STEP_KEYS.includes(k3)) throw new FundRefusal("unsupported", k3, `${field}.steps[${i}].${k3}`, `"${k3}" is a carry step term v1 doesn't model`);
+            if (!STEP_KEYS.includes(k3)) throw unsupported({ key: k3 }, `${field}.steps[${i}].${k3}`, `"${k3}" is a carry step term v1 doesn't model`);
           }
         });
       }
       continue;
     }
     for (const [k2, v2] of Object.entries(value)) {
-      if (!TERM_KEYS[key]!.includes(k2)) throw new FundRefusal("unsupported", k2, `${field}.${k2}`, `"${k2}" is a ${key} term v1 doesn't model`);
+      if (!TERM_KEYS[key]!.includes(k2)) throw unsupported({ key: k2 }, `${field}.${k2}`, `"${k2}" is a ${key} term v1 doesn't model`);
       if (key === "pref" && k2 === "compounding" && v2 !== null && v2 !== "simple") {
-        throw new FundRefusal("unsupported", "compounded_pref", `${field}.compounding`, "only a simple pref is modeled in v1 (F7)");
+        throw unsupported("compounded_pref", `${field}.compounding`, "only a simple pref is modeled in v1 (F7)");
       }
     }
   }
@@ -150,7 +129,7 @@ function termObject(terms: Json, key: string): Json | null {
   return terms[key] as Json;
 }
 
-function readTerms(terms: unknown): Pick<Fund, "carry" | "prefRate" | "catchUpShare" | "gpCommitment"> {
+function readTerms(terms: unknown): FundTerms {
   if (!isObject(terms)) throw refuse("bad_field", "terms");
   const carry = readCarry(terms);
 
@@ -190,7 +169,7 @@ function readTerms(terms: unknown): Pick<Fund, "carry" | "prefRate" | "catchUpSh
     if (prefRate === null) throw refuse("catch_up_without_pref", "terms.catch_up");
     if (catchUpShare.lte(carry[0]!.rate)) throw refuse("catch_up_share_not_above_carry", "terms.catch_up.gp_share");
   }
-  return { carry, prefRate, catchUpShare, gpCommitment };
+  return { carry, pref: prefRate && { rate: prefRate }, catchUp: catchUpShare && { gpShare: catchUpShare }, gpCommitment };
 }
 
 function readFlows(raw: unknown): CashFlow[] {
@@ -252,7 +231,7 @@ export function readFund(input: unknown): Fund {
   const cashFlows = [...flows].sort(
     (a, b) => dayNumber(a.date)! - dayNumber(b.date)! || (a.type === b.type ? 0 : a.type === "call" ? -1 : 1) || a.index - b.index,
   );
-  const fund: Fund = deepFreeze({ asOf, distributionDate, final, nav, ...terms, cashFlows });
+  const fund: Fund = deepFreeze({ asOf, terms, cashFlows, distributionDate, final, nav });
   readFunds.add(fund);
   return fund;
 }
