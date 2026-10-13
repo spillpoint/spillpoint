@@ -195,7 +195,9 @@ export function App() {
     setFileLabel(`${result.name}, opened from ${file.name}`);
     setState(fromFund(result.fund, result.name, result.x ?? new D(0)));
     setUnsaved(false);
-    setFileStatus({ kind: "done", text: `Opened ${file.name}.` });
+    // A fraction is kept to the engine's 40 digits, and a save writes it so: said, not silent (f01l review, answer 2).
+    const fractions = result.fraction ? ` Its fractions, like ${result.fraction}, are kept to 40 digits, and a save writes them that way.` : "";
+    setFileStatus({ kind: "done", text: `Opened ${file.name}.${fractions}` });
   };
 
   /** X set exactly, by the slider, a mark or a breakpoint: the box shows it. */
@@ -359,9 +361,10 @@ function Payouts({ fund, state, onX, onTypeX, onTop }: { fund: Fund; state: Open
         top={top}
         at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
         hasCommitment={fund.terms.gpCommitment !== null}
+        onX={onX}
       />
       <SplitTable fund={fund} split={split} />
-      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} />}
+      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} onX={onX} />}
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={onX} />
     </>
   );

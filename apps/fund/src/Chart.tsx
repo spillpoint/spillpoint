@@ -26,6 +26,30 @@ const HEIGHT = 340;
 export const Y_AXIS_WIDTH = 64;
 export const X_AXIS_HEIGHT = 30;
 export const MARGIN_SIDE = 16;
+/** A click or tap this close to a breakpoint's line, in pixels, lands on the breakpoint exactly. */
+export const SNAP = 8;
+/** A click elsewhere picks the nearest of this many steps across the range. */
+const STEPS = 1000;
+
+/**
+ * The X a click or tap at px picks, on a chart width pixels wide running from $0 to top (f01g review, answer 3): the
+ * nearest thousandth of the range in whole dollars; or, within SNAP pixels of a breakpoint, the breakpoint exactly, so
+ * a tap near a bend lands on it. The pixel only picks a step: X itself is worked out exactly.
+ */
+export function xAtPixel(px: number, width: number, top: Decimal, breakpoints: readonly { x: Decimal }[]): Decimal {
+  const left = MARGIN_SIDE + Y_AXIS_WIDTH;
+  const right = width - MARGIN_SIDE;
+  const at = (x: Decimal) => left + x.div(top).toNumber() * (right - left);
+  const near = breakpoints
+    .filter((b) => b.x.lte(top))
+    .map((b) => ({ x: b.x, off: Math.abs(at(b.x) - px) }))
+    .filter((b) => b.off <= SNAP)
+    .sort((a, b) => a.off - b.off)[0];
+  if (near) return near.x;
+  const step = Math.round(Math.min(1, Math.max(0, (px - left) / (right - left))) * STEPS);
+  return top.times(step).div(STEPS).toDecimalPlaces(0, D.ROUND_HALF_UP);
+}
+
 /** Room above the plot for a row of breakpoint numbers; numbers closer than this step up a row, up to four. */
 export const BADGE_ROW = 22;
 const MAX_BADGE_ROWS = 4;
@@ -74,9 +98,11 @@ interface Props {
   /** X's split at the chosen X, for the legend's values. */
   at: { lps: Decimal; gp: Decimal; gpCommitment: Decimal };
   hasCommitment: boolean;
+  /** A click or tap on the chart sets X there. */
+  onX: (x: Decimal) => void;
 }
 
-export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment }: Props) {
+export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment, onX }: Props) {
   const [ref, width] = useWidth(960);
   const series: Series[] = [
     { key: "gp", name: "The GP's carry", colour: GP, width: 2.5 },
@@ -101,11 +127,13 @@ export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment }: P
       <h2 id="chart-heading">Who gets what as X grows</h2>
       <p className="card__intro">
         Each line is what one side gets from this distribution at every X, from $0 to {short(top)}. Numbered marks are breakpoints, listed below
-        {nav && nav.lte(top) ? "; NAV marks the fund's net asset value on D" : ""}.
+        {nav && nav.lte(top) ? "; NAV marks the fund's net asset value on D" : ""}. Click or tap the chart to set X there.
       </p>
       <div
         ref={ref}
-        className="chart"
+        className="chart chart--pick"
+        // A click or tap sets X there, in place of a hover readout; the keyboard has the slider and the box.
+        onClick={(e) => onX(xAtPixel(e.clientX - e.currentTarget.getBoundingClientRect().left, width, top, breakpoints))}
         role="img"
         aria-label={`The LPs', the GP's carry${hasCommitment ? " and the GP commitment's" : ""} lines against X, from $0 to ${short(top)}, with ${inView.length} breakpoint${inView.length === 1 ? "" : "s"} marked.`}
       >

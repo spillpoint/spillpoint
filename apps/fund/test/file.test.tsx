@@ -216,6 +216,20 @@ describe("a file the page can't use is refused in one line, the current fund kep
     expect(refused(savedFund(case8(), { view: { x: "-1" } }))).toBe('Its X isn\'t readable: it should be an amount from 0 up, written as a string, like "15000000".');
   });
 
+  it("says when a file's fractions are kept to 40 digits, and a save writes them that way", async () => {
+    render(<App />);
+    const fund = { ...case8(), cash_flows: case8().cash_flows.map((f: object, i: number) => (i === 3 ? { ...f, amount: "10000000/3" } : f)) };
+    await openFile(savedFund(fund), "frac.json");
+    expect(status()).toBe("Opened frac.json. Its fractions, like 10000000/3, are kept to 40 digits, and a save writes them that way.");
+    save();
+    expect((await saved()).fund.cash_flows[3].amount).toBe("3333333.333333333333333333333333333333333");
+    // The engine read the fraction to 40 digits, so the values are the same as the file's.
+    expect(valuesOf((await saved()).fund)).toEqual(valuesOf(fund));
+    // A file with none says nothing more.
+    await openFile(savedFund(case8()), "plain.json");
+    expect(status()).toBe("Opened plain.json.");
+  });
+
   it('opens a bare input as "My fund", and a saved file\'s X', () => {
     const bare = readFile(JSON.stringify(case8()));
     expect(bare.ok && [bare.name, bare.x]).toEqual(["My fund", null]);
