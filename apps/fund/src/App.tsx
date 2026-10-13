@@ -3,7 +3,8 @@
 // with the NAV button (f01h), on the Payouts tab; the fund behind them, editable, on the Terms (f01i) and Cash flows
 // (f01j) tabs. Pasting cash flows and files come in f01k to f01m.
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { Ref, RefObject } from "react";
 import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
@@ -663,7 +664,7 @@ interface SplitRow {
   gp: [D, D] | null;
 }
 
-/** Under 480 pixels the split is two tables, one above the other, so nothing scrolls sideways (f01m review, answer 2). */
+/** Under 480 pixels the split is always two tables, one above the other (f01m review, answer 2); above, where it must. */
 const NARROW = "(max-width: 479px)";
 
 /** Whether the window is a phone's width, following it as it changes. False where there's no window to ask. */
@@ -725,9 +726,79 @@ function NarrowSplit({ caption, which, rows, total }: { caption: string; which: 
   );
 }
 
+/** The split as one table: each tier a row, X's amounts and the fund to date's side by side. */
+function WideSplit({ ref, rows, total }: { ref: Ref<HTMLTableElement>; rows: SplitRow[]; total: SplitRow }) {
+  return (
+    <table ref={ref} className="split">
+      <thead>
+        <tr>
+          <td />
+          <th scope="colgroup" colSpan={2}>
+            This distribution
+          </th>
+          <th scope="colgroup" colSpan={2} className="split__group">
+            The fund to date
+          </th>
+        </tr>
+        <tr>
+          <th scope="col">Tier</th>
+          <th scope="col" className="num">
+            LPs
+          </th>
+          <th scope="col" className="num">
+            GP
+          </th>
+          <th scope="col" className="num split__group">
+            LPs
+          </th>
+          <th scope="col" className="num">
+            GP
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <Row key={i} {...r} />
+        ))}
+      </tbody>
+      <tfoot>
+        <Row {...total} />
+      </tfoot>
+    </table>
+  );
+}
+
+/**
+ * Whether the one table would scroll sideways in its card (f01n): measured on the card's own width, as the cash flows'
+ * cards are, so it's two tables wherever one wouldn't fit, at any window width, and one wherever it does. Where
+ * nothing is laid out (a hidden tab, or the tests), it keeps what it has.
+ */
+function useTooWide(box: RefObject<HTMLDivElement | null>, table: RefObject<HTMLTableElement | null>, content: unknown): boolean {
+  const [tooWide, setTooWide] = useState(false);
+  useLayoutEffect(() => {
+    const check = () => {
+      const room = box.current?.clientWidth ?? 0;
+      if (!room || !table.current) return;
+      // The table is 100% wide, so it's wider than its card only when its content can't fit in it.
+      setTooWide(table.current.offsetWidth > room);
+    };
+    check();
+    if (!box.current || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(check);
+    watch.observe(box.current);
+    return () => watch.disconnect();
+  }, [box, table, content]);
+  return tooWide;
+}
+
 /** The split by tier (F16): a tier the terms don't have isn't shown, though the engine gives it as zero. */
 function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
-  const narrow = useNarrow();
+  const box = useRef<HTMLDivElement>(null);
+  const wide = useRef<HTMLTableElement>(null);
+  const phone = useNarrow();
+  const tooWide = useTooWide(box, wide, split);
+  // Two tables on a phone always (f01m2), and wherever the one table wouldn't fit its card (f01n).
+  const narrow = phone || tooWide;
   const now = split.distribution;
   const all = split.toDate;
   const pair = (f: (t: Tiers) => D): [D, D] => [f(now), f(all)];
@@ -751,51 +822,22 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
   return (
     <section className="card" aria-labelledby="split-heading">
       <h2 id="split-heading">The split at {xText(split.x)}</h2>
-      {narrow ? (
-        <>
-          <NarrowSplit caption="This distribution" which={0} rows={rows} total={total} />
-          <NarrowSplit caption="The fund to date" which={1} rows={rows} total={total} />
-        </>
-      ) : (
-        <div className="table-scroll">
-          <table className="split">
-            <thead>
-              <tr>
-                <td />
-                <th scope="colgroup" colSpan={2}>
-                  This distribution
-                </th>
-                <th scope="colgroup" colSpan={2} className="split__group">
-                  The fund to date
-                </th>
-              </tr>
-              <tr>
-                <th scope="col">Tier</th>
-                <th scope="col" className="num">
-                  LPs
-                </th>
-                <th scope="col" className="num">
-                  GP
-                </th>
-                <th scope="col" className="num split__group">
-                  LPs
-                </th>
-                <th scope="col" className="num">
-                  GP
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <Row key={i} {...r} />
-              ))}
-            </tbody>
-            <tfoot>
-              <Row {...total} />
-            </tfoot>
-          </table>
-        </div>
-      )}
+      <div ref={box}>
+        {narrow ? (
+          <>
+            <NarrowSplit caption="This distribution" which={0} rows={rows} total={total} />
+            <NarrowSplit caption="The fund to date" which={1} rows={rows} total={total} />
+            {/* The one table, out of sight and out of the accessibility tree, measured to see when it fits again. */}
+            <div className="split__measure" aria-hidden="true">
+              <WideSplit ref={wide} rows={rows} total={total} />
+            </div>
+          </>
+        ) : (
+          <div className="table-scroll">
+            <WideSplit ref={wide} rows={rows} total={total} />
+          </div>
+        )}
+      </div>
       {fund.terms.gpCommitment && (
         <p className="split__commitment">
           The GP commitment's line, outside the tiers: {cents(now.gpCommitment)} of this distribution, {cents(all.gpCommitment)} to date.

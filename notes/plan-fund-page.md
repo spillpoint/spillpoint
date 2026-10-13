@@ -389,6 +389,9 @@ Each is one branch, one PR and one evening, with a review note and what to check
        - **The cash flows never scroll sideways.** They're cards wherever the table wouldn't fit, up to a 760-pixel card, whatever the window. A container query on the card's own width decides, so an upright iPad (768) shows cards, and 900 the table.
        - **The split on a phone:** under 480 pixels it's two tables, one above the other, "This distribution" then "The fund to date". Each has Tier, LPs and GP, with the tier's name on its own line above its two amounts, as the main page's payouts table puts shares under each name (M3e) (f01m review, answer 2).
        - **A tap within 8 pixels of the NAV line** lands on NAV exactly, as on a breakpoint. When a breakpoint is as close, the nearer of the two wins (f01m review, answer 1).
+     - **f01n's first commit:**
+       - **The masthead's picker shrinks** with the masthead, so no window width scrolls the page; from f01k to f01m2 it did between 644 and 692 pixels.
+       - **The split switches to its two tables by its card's width,** as the cash flows do: wherever the one table wouldn't fit, at any window width. Under 480 pixels it's always two. The page measures the one table, out of sight while the two show, to see when it fits again.
      - **Screenshots** for the review, from a copy of the screenshot script.
    - **You check:** the page at 320 pixels, and by keyboard alone.
 
