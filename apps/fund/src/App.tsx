@@ -3,7 +3,7 @@
 // (f01h), on the Payouts tab; the fund behind them on the Terms and Cash flows tabs (f01i). The cash-flow form and files
 // come in f01j to f01m.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { Clawback as ClawbackAmounts, Fund, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
@@ -15,6 +15,9 @@ import { Breakpoints } from "./Breakpoints.tsx";
 import { CashFlows } from "./CashFlows.tsx";
 import { Chart } from "./Chart.tsx";
 import { Clawback, owesSomething } from "./Clawback.tsx";
+import { Terms } from "./Terms.tsx";
+import { controlFor, formFrom, termsInput, termsProblem } from "./terms.ts";
+import type { Problem, TermsForm } from "./terms.ts";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
 /** What the X box holds: the text typed, and the last amount that split, which the page shows while the text doesn't. */
@@ -33,14 +36,54 @@ interface TopState {
   problem: string | null;
 }
 
-function opened(id: string): { fund: Fund; opening: D; x: XState; top: TopState } {
+/**
+ * The page's fund: the input the form writes, the Terms tab's form, and the last fund the engine accepted, which every
+ * payout shows. While the input has a problem, the payouts stay on that fund and say so (plan, "Refusals").
+ */
+interface Opened {
+  input: Record<string, unknown>;
+  form: TermsForm;
+  fund: Fund;
+  problem: Problem | null;
+  /** A term has changed since the example was picked. */
+  edited: boolean;
+  opening: D;
+  x: XState;
+  top: TopState;
+}
+
+function opened(id: string): Opened {
   const example = examples.find((e) => e.id === id)!;
   const fund = readFund(example.fund);
   const x = parseDollars(example.defaultX)!;
-  return { fund, opening: x, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
+  return {
+    input: example.fund as Record<string, unknown>,
+    form: formFrom(fund.terms),
+    fund,
+    problem: null,
+    edited: false,
+    opening: x,
+    x: { text: xText(x), shown: x, problem: null },
+    top: { text: null, set: null, problem: null },
+  };
+}
+
+/** The fund with the form's terms, or the problem under the field it names: the page's reading first, then the engine's. */
+function withTerms(s: Opened, form: TermsForm): Opened {
+  const written = termsInput(form);
+  if ("problem" in written) return { ...s, form, edited: true, problem: written.problem };
+  const input = { ...s.input, terms: written.terms };
+  try {
+    return { ...s, input, form, edited: true, fund: readFund(input), problem: null };
+  } catch (e) {
+    if (!(e instanceof FundRefusal)) throw e;
+    return { ...s, input, form, edited: true, problem: termsProblem(e, form) };
+  }
 }
 
 type Tab = "payouts" | "terms" | "flows";
+/** The picker's value once a term has changed. */
+const EDITED = "edited";
 const TABS: { id: Tab; label: string }[] = [
   { id: "payouts", label: "Payouts" },
   { id: "terms", label: "Terms" },
@@ -55,7 +98,20 @@ const CROWDED = 9;
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
   const [tab, setTab] = useState<Tab>("payouts");
-  const [{ fund, opening, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
+  const [{ fund, form, problem, edited, opening, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
+  // A problem's field, to focus once the Terms tab shows it.
+  const [focusing, setFocusing] = useState<string | null>(null);
+  useEffect(() => {
+    if (focusing === null || tab !== "terms") return;
+    const el = document.getElementById(focusing);
+    el?.focus();
+    el?.scrollIntoView?.({ block: "center" });
+    setFocusing(null);
+  }, [focusing, tab]);
+  const show = (path: string) => {
+    setTab("terms");
+    setFocusing(controlFor(path));
+  };
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
   // The range's top: as typed, or the page's own; an X past it raises it to 1.25 × X, so X's mark is never off the chart
@@ -70,6 +126,8 @@ export function App() {
   const bends = useMemo(() => breakpoints.filter(bendsClawback), [breakpoints]);
 
   const choose = (id: string) => {
+    // As the main page asks before a change is lost.
+    if (edited && !window.confirm("Start over from this example? Your changes to the terms will be lost.")) return;
     setExampleId(id);
     setState(opened(id));
   };
@@ -112,7 +170,9 @@ export function App() {
         <div className="masthead__controls">
           <label className="masthead__example">
             Start from{" "}
-            <select value={exampleId} onChange={(e) => choose(e.target.value)}>
+            <select value={edited ? EDITED : exampleId} onChange={(e) => e.target.value !== EDITED && choose(e.target.value)}>
+              {/* Once a term changes, the fund isn't the case any more, so the list doesn't name it (f01i). */}
+              {edited && <option value={EDITED}>An example, with your changes</option>}
               {examples.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.label}
@@ -125,9 +185,17 @@ export function App() {
       </header>
       <GovernanceNote />
       <main>
-        <p className="example-label">{summaryText(fund)}</p>
+        <p className="example-label">{summaryText(fund, edited)}</p>
         <Tabs tab={tab} onTab={setTab} />
         <div role="tabpanel" id="panel-payouts" aria-labelledby="tab-payouts" hidden={tab !== "payouts"}>
+          {problem && (
+            <div className="notice notice--problem" role="status">
+              <strong>Your last change to the terms has a problem, so these payouts are from the fund before it.</strong> {problem.message}{" "}
+              <button type="button" className="link-button" onClick={() => show(problem.path)}>
+                Fix it
+              </button>
+            </div>
+          )}
           <Headline fund={fund} split={split} clawback={clawbackAt?.clawback ?? null} />
           <XBox fund={fund} x={x} onType={typeX} top={top} topState={topState} onTop={typeTop} breakpoints={breakpoints} onX={setX} />
           {/* The chart and the split are both about this distribution, so they sit together; the clawback, about the fund's life, after them (f01i). */}
@@ -145,10 +213,7 @@ export function App() {
           <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={setX} />
         </div>
         <div role="tabpanel" id="panel-terms" aria-labelledby="tab-terms" hidden={tab !== "terms"}>
-          <section className="card" aria-labelledby="terms-heading">
-            <h2 id="terms-heading">Terms</h2>
-            <p>{termsText(fund)}</p>
-          </section>
+          <Terms form={form} problem={problem} onForm={(next) => setState((s) => withTerms(s, next))} onShow={show} />
         </div>
         <div role="tabpanel" id="panel-flows" aria-labelledby="tab-flows" hidden={tab !== "flows"}>
           <CashFlows fund={fund} />
@@ -208,7 +273,7 @@ function Tabs({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
  * what's been paid in, what's been distributed before X, the NAV if there is one, and whether X is the last
  * distribution. The amounts are the cash flows' own, added up as entered.
  */
-export function summaryText(fund: Fund): string {
+export function summaryText(fund: Fund, edited = false): string {
   const calls = fund.cashFlows.filter((f) => f.type === "call");
   const distributions = fund.cashFlows.filter((f) => f.type === "distribution");
   const total = (flows: typeof calls) => flows.reduce((sum, f) => sum.plus(f.amount), new D(0));
@@ -217,7 +282,7 @@ export function summaryText(fund: Fund): string {
     distributions.length === 0 ? "nothing distributed before X" : `${short(total(distributions))} distributed before X`,
     ...(fund.nav ? [`a NAV of ${short(fund.nav)} on ${dateText(fund.distributionDate)}`] : []),
   ];
-  return `This fund: ${listed(parts)}. X ${fund.final ? "is" : "isn't"} its last distribution.`;
+  return `This fund${edited ? ", with your changes to its terms" : ""}: ${listed(parts)}. X ${fund.final ? "is" : "isn't"} its last distribution.`;
 }
 
 /** "a, b and c". */

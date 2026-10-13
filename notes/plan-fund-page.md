@@ -126,6 +126,13 @@ A table by tier, for X alone and for the fund to date:
 - A rate typed with more places keeps them all ("7.25%" is "0.0725").
 - Nothing is rounded.
 
+**As built in f01i:**
+- **Where:** the Terms tab. Each change runs the engine again.
+- **A term turned on** starts at its usual value, in its field to change: a pref of 8% a year, a partial catch-up of 50% to the GP, a GP commitment of 1%. A pref brings in the catch-up at "None", which is what leaving it out of the input means.
+- **Carry, flat or in steps:** switching keeps both. The flat rate becomes the first step's, and the steps come back on the way back.
+- **Text the page can't read as a number** ("twenty") is said under its field, and nothing goes to the engine. Every other rule is the engine's, worded by the page.
+- **Once a term changes,** the picker reads "An example, with your changes", and the line under it "This fund, with your changes to its terms: …". Picking an example asks first, as the main page does.
+
 ### The cash flows: a table
 
 **Each row:**
