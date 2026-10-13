@@ -33,8 +33,10 @@ const STEPS = 1000;
 
 /**
  * The X a click or tap at px picks, on a chart width pixels wide running from $0 to top (f01g review, answer 3): the
- * nearest thousandth of the range in whole dollars; or, within SNAP pixels of a breakpoint, the breakpoint exactly, so
- * a tap near a bend lands on it. The pixel only picks a step: X itself is worked out exactly.
+ * nearest thousandth of the range in whole dollars; or, within SNAP pixels of a mark, the mark exactly, so a tap near
+ * a bend lands on it. The marks are the breakpoints and, on the main chart, NAV (f01m review, answer 3): a few
+ * thousand dollars off NAV reads as a different answer. The nearer mark wins. The pixel only picks a step: X itself is
+ * worked out exactly.
  */
 export function xAtPixel(px: number, width: number, top: Decimal, breakpoints: readonly { x: Decimal }[]): Decimal {
   const left = MARGIN_SIDE + Y_AXIS_WIDTH;
@@ -133,7 +135,7 @@ export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment, onX
         ref={ref}
         className="chart chart--pick"
         // A click or tap sets X there, in place of a hover readout; the keyboard has the slider and the box.
-        onClick={(e) => onX(xAtPixel(e.clientX - e.currentTarget.getBoundingClientRect().left, width, top, breakpoints))}
+        onClick={(e) => onX(xAtPixel(e.clientX - e.currentTarget.getBoundingClientRect().left, width, top, nav ? [...breakpoints, { x: nav }] : breakpoints))}
         role="img"
         aria-label={`The LPs', the GP's carry${hasCommitment ? " and the GP commitment's" : ""} lines against X, from $0 to ${short(top)}, with ${inView.length} breakpoint${inView.length === 1 ? "" : "s"} marked.`}
       >

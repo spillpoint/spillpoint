@@ -385,6 +385,10 @@ Each is one branch, one PR and one evening, with a review note and what to check
      - **The keyboard:** every control reachable and labelled, and the chart's values in its legend.
      - **Narrow screens:** the cash-flow table on a phone, one row a card under 480 pixels. As built: date and type on one line, kind and amount on the next, the row's number and "Remove" at its end.
      - **Escape** closes the paste box as "Cancel" does, and the focus goes back to its button.
+     - **f01m2, before the release:**
+       - **The cash flows never scroll sideways.** They're cards wherever the table wouldn't fit, up to a 760-pixel card, whatever the window. A container query on the card's own width decides, so an upright iPad (768) shows cards, and 900 the table.
+       - **The split on a phone:** under 480 pixels it's two tables, one above the other, "This distribution" then "The fund to date". Each has Tier, LPs and GP, with the tier's name on its own line above its two amounts, as the main page's payouts table puts shares under each name (M3e) (f01m review, answer 2).
+       - **A tap within 8 pixels of the NAV line** lands on NAV exactly, as on a breakpoint. When a breakpoint is as close, the nearer of the two wins (f01m review, answer 1).
      - **Screenshots** for the review, from a copy of the screenshot script.
    - **You check:** the page at 320 pixels, and by keyboard alone.
 
