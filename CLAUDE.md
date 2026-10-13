@@ -58,7 +58,9 @@ Deferred work lives in the "Later" section of `docs/ASSUMPTIONS.md`.
 A second package, `packages/fund` (`spillpoint-fund`): the fund-level waterfall, how a distribution splits between LPs and GP. Its rules are `packages/fund/docs/SPEC.md` (F1 to F18) and `ASSUMPTIONS.md` beside it.
 
 - **The engine comes first.** If an engine step comes up, Jordan says whether to finish or park the fund step. The two never have PRs open at once.
-- **Private and off the page** until its release step: `"private": true`, and nothing in `apps/` uses it.
+- **Private, and off the site** until its release step, f01n: `"private": true`.
+  - **Its page is `apps/fund`** (`@spillpoint/fund-page`, private; `notes/plan-fund-page.md`). CI builds and tests it, but Pages uploads only `apps/dashboard/dist`, so it isn't deployed until f01n adds it under `/fund/`.
+  - **Nothing in `apps/dashboard` uses either** until f01n's footer link.
 - **No `spillpoint` import** until engine 1.0.
 - **Steps** are named f01a, f01b and so on for its 0.1.0, under the same hard rules: one branch and one PR each, a review note, then stop.
 - **Everything fund lives under `packages/fund`:**
@@ -66,7 +68,7 @@ A second package, `packages/fund` (`spillpoint-fund`): the fund-level waterfall,
   - its cases in `cases/`
   - its reference in `reference/`, with the same discipline as spillpoint's `reference/`
 
-  Nothing in `packages/engine`, `apps/`, `reference/` or `cases/` changes for it. If something there seems to need a change, stop and ask. `files` in its `package.json` keeps the cases and the reference out of a publish.
+  Its page is the one exception, in `apps/fund`, above. Nothing in `packages/engine`, `apps/dashboard`, `reference/` or `cases/` changes for it. If something there seems to need a change, stop and ask. `files` in its `package.json` keeps the cases and the reference out of a publish.
 - **The fund cases are locked like `cases/`** (hard rule 1):
   - `cases-locked.yml` fails a PR that touches `packages/fund/cases/` without Jordan's label.
   - `.claude/settings.json` denies `Edit(packages/fund/cases/**)`.
@@ -77,6 +79,7 @@ A second package, `packages/fund` (`spillpoint-fund`): the fund-level waterfall,
 
 - `packages/engine`: the npm package `spillpoint`. Pure functions, no UI, no I/O.
 - `packages/fund`: `spillpoint-fund`, private, with its own docs, cases and reference ("The fund workstream", above).
+- `apps/fund`: the fund page, `@spillpoint/fund-page`, private and not deployed until f01n ("The fund workstream", above).
 - `cases/`: one folder per case, each with `expected.json` and `DERIVATION.md` (a plain-English walk-through of the answer). An exit or round case has `inputs.json`; an OCF case has an OCF package or one-file fixtures instead (ASSUMPTIONS C16). Locked (hard rule 1).
 - `reference/`: a standalone Python brute-force calculator that produced the expected values. The engine never imports it. It exists so expected values don't come from the code they test, and it uses a different method from the engine: at each exit value it tries every combination of conversion and exercise decisions and keeps the stable ones.
 - `apps/dashboard`: Vite + React, deployed to GitHub Pages at `spillpoint.github.io/spillpoint`.
