@@ -136,9 +136,13 @@ describe("the fund page", () => {
     expect((screen.getByLabelText(/^Distribution on 30 Sep 2026/) as HTMLInputElement).value).toBe("$40,000,000");
     expect(headline()).toEqual([
       "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free.",
-      "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.",
-      "The LPs get $32.8M and the GP commitment $400K.",
+      // At NAV, the fund's life, as if liquidated there (f01i review, answer 1).
+      "If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.81M of carry.",
+      "Of the $40M, the LPs get $32.8M and the GP commitment $400K.",
     ]);
+    // Away from NAV, this distribution.
+    fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "34500000" } });
+    expect(headline().slice(1)).toEqual(["At a $34.5M distribution on 30 Sep 2026, the GP's carry is $5.45M.", "The LPs get $28.7M and the GP commitment $345K."]);
   });
 
   it("splits case 8 at $40,000,000 as the case does, X alone and the fund to date, each step a band of the LPs' multiple", () => {

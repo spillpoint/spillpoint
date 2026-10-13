@@ -39,7 +39,7 @@ The main page's (f01g review, from your look at the page): the answer, then X wi
 A headline at the chosen X, in neutral words, since the same file goes to LPs and co-GPs (your answer 6): "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M. The LPs get $32.8M and the GP commitment $400K." Under it, the caveat every spillpoint page carries: the fund's documents govern, not this tool, and nothing leaves the computer.
 
 **When the GP owes a clawback,** the headline says so, so it never shows carry without the clawback beside it (f01h). It stays in one frame (f01i):
-- **A fund that isn't final:** this distribution, as before: "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M." At NAV, when something would be owed: "…, and if the fund were liquidated at NAV it would owe $750K back."
+- **A fund that isn't final:** this distribution, as before: "At a $34.5M distribution on 30 Sep 2026, the GP's carry is $5.45M." At NAV, the fund's life, since NAV is final by definition (f01i review, answer 1): "If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.81M of carry." When something would be owed: "…would end with $5M of carry: it would get $1M now and give back $750K." The line under it is this distribution's, as for a final fund: "Of the $40M, the LPs get $32.8M and the GP commitment $400K."
 - **A final fund:** the GP's carry over the fund's life. "If $15M on 1 Jan 2025 is the last distribution, the GP ends with $5M of carry: it gets $1M now and gives back $750K." With nothing owed: "If $6M on 1 May 2026 is the last distribution, the GP ends with $792K of carry." At $0: "If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M." The line under it says it's this distribution: "Of the $15M, the LPs get $14M." In f01h it read "the GP's carry is $1M, and it owes $750K back", as if the GP netted $250K.
 
 ### The chart
@@ -128,7 +128,7 @@ A table by tier, for X alone and for the fund to date:
 
 **As built in f01i:**
 - **Where:** the Terms tab. Each change runs the engine again.
-- **A term turned on** starts at its usual value, in its field to change: a pref of 8% a year, a partial catch-up of 50% to the GP, a GP commitment of 1%. A pref brings in the catch-up at "None", which is what leaving it out of the input means.
+- **A term turned on** starts at its usual value, in its field to change: a pref of 8% a year, a partial catch-up of 50% to the GP, a GP commitment of 1%. A pref brings in the catch-up at "None", which is what leaving it out of the input means. The field is focused with its value selected, so a GP types straight over it (f01i review, answer 3).
 - **Carry, flat or in steps:** switching keeps both. The flat rate becomes the first step's, and the steps come back on the way back.
 - **Text the page can't read as a number** ("twenty") is said under its field, and nothing goes to the engine. Every other rule is the engine's, worded by the page.
 - **Once a term changes,** the picker reads "An example, with your changes", and the line under it "This fund, with your changes to its terms: …". Picking an example asks first, as the main page does.

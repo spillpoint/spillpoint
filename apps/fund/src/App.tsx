@@ -308,38 +308,44 @@ function termsText(fund: Fund): string {
  * The answer first, in neutral words: the same file goes to LPs and co-GPs (plan answer 6), and in one frame (f01i).
  * - A final fund: the GP's carry over the fund's life, if X is its last distribution, with what it gets now and gives
  *   back when it owes a clawback, so the carry is never shown without it (f01h).
- * - A fund that isn't final: this distribution, and at NAV what the GP would owe if the fund were liquidated there.
+ * - At NAV, a fund that isn't final: the same, as if it were liquidated there, since NAV is final by definition (F14;
+ *   f01i review, answer 1).
+ * - Otherwise: this distribution.
  */
 export function answerText(fund: Fund, split: Split, clawback: ClawbackAmounts | null): string {
   const date = dateText(fund.distributionDate);
   const now = split.distribution.gp.total;
-  if (fund.final && clawback) {
+  if (clawback) {
     // F12, one way only: the GP ends with what it was paid less what it gives back, which is the less of what it was
     // paid and what it earned on the fund's totals.
-    const ends = D.min(clawback.carryPaid, clawback.entitlement);
+    const ends = short(D.min(clawback.carryPaid, clawback.entitlement));
+    const owes = owesSomething(clawback.owed);
+    const gets = owesSomething(now);
+    if (!fund.final) {
+      const back = !owes ? "" : gets ? `: it would get ${short(now)} now and give back ${short(clawback.owed)}` : `: it would give back ${short(clawback.owed)}`;
+      return `If the fund were liquidated at NAV, ${short(split.x)} on ${date}, the GP would end with ${ends} of carry${back}.`;
+    }
     const lead = split.x.isZero() ? `If nothing more is distributed after ${date}` : `If ${short(split.x)} on ${date} is the last distribution`;
-    const back = !owesSomething(clawback.owed)
-      ? ""
-      : owesSomething(now)
-        ? `: it gets ${short(now)} now and gives back ${short(clawback.owed)}`
-        : `: it gives back ${short(clawback.owed)}`;
-    return `${lead}, the GP ends with ${short(ends)} of carry${back}.`;
+    const back = !owes ? "" : gets ? `: it gets ${short(now)} now and gives back ${short(clawback.owed)}` : `: it gives back ${short(clawback.owed)}`;
+    return `${lead}, the GP ends with ${ends} of carry${back}.`;
   }
   const lead = split.x.isZero() ? `With nothing distributed on ${date}` : `At a ${short(split.x)} distribution on ${date}`;
-  const back = clawback && owesSomething(clawback.owed) ? `, and if the fund were liquidated at NAV it would owe ${short(clawback.owed)} back` : "";
-  return `${lead}, the GP's carry is ${short(now)}${back}.`;
+  return `${lead}, the GP's carry is ${short(now)}.`;
 }
 
-/** The LPs' side of this distribution. For a final fund it says so, since the line above is about the fund's life. */
-export function restText(fund: Fund, split: Split): string | null {
+/**
+ * The LPs' side of this distribution. When the line above is about the fund's life (a final fund, or NAV), it says
+ * it's this distribution's; at $0 there's none (f01i review, answer 2).
+ */
+export function restText(fund: Fund, split: Split, lifeFrame: boolean): string | null {
   const d = split.distribution;
   const commitment = fund.terms.gpCommitment ? ` and the GP commitment ${short(d.gpCommitment)}` : "";
-  if (!fund.final) return `The LPs get ${short(d.lps.total)}${commitment}.`;
+  if (!lifeFrame) return `The LPs get ${short(d.lps.total)}${commitment}.`;
   return split.x.isZero() ? null : `Of the ${short(split.x)}, the LPs get ${short(d.lps.total)}${commitment}.`;
 }
 
 function Headline({ fund, split, clawback }: { fund: Fund; split: Split; clawback: ClawbackAmounts | null }) {
-  const rest = restText(fund, split);
+  const rest = restText(fund, split, clawback !== null);
   return (
     <section className="headline" aria-label="The answer">
       <p className="headline__terms">{termsText(fund)}</p>

@@ -138,7 +138,7 @@ describe("case 13: a late call and a clawback", () => {
 });
 
 describe("the NAV point", () => {
-  it("case 8 opens at NAV, owing nothing: the card says so, and the headline has no clawback", () => {
+  it("case 8 opens at NAV, owing nothing: the card says so, and the headline is the fund's life, as if liquidated there", () => {
     open("fund-08-carry-steps");
     expect(sentence()).toBe(sentenceFor(caseFile("fund-08-carry-steps", "expected.json").points.find((p: { x: string }) => p.x === "40000000.00").clawback));
     expect(sentence()).toBe(
@@ -146,7 +146,7 @@ describe("the NAV point", () => {
     );
     expect(within(card()).queryByRole("img")).toBeNull();
     expect(within(card()).getByText("The fund isn't final, so away from NAV there's no clawback, and no chart of one against X.")).toBeDefined();
-    expect(answer()).toBe("At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.");
+    expect(answer()).toBe("If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.81M of carry.");
     expect(screen.getByText("X is at NAV")).toBeDefined();
   });
 
@@ -181,13 +181,16 @@ describe("the NAV point", () => {
     expect(within(card()).getByText(/^Nothing is owed at any X/)).toBeDefined();
   });
 
-  it("says what a fund that isn't final would owe if liquidated at NAV: case 13's terms, not final, NAV $10M", () => {
+  it("says what a fund that isn't final would end with and give back if liquidated at NAV: case 13's terms, not final", () => {
+    const at = (nav: string) => {
+      const fund = readFund({ ...caseFile("fund-13-clawback-steps", "inputs.json").fund, final: false, nav });
+      const atNav = splitAtNav(fund)!;
+      return answerText(fund, atNav, atNav.clawback);
+    };
+    // Your sentence, at a NAV of $15M; at $10M, X itself pays the GP nothing, so it only gives back.
+    expect(at("15000000")).toBe("If the fund were liquidated at NAV, $15M on 1 Jan 2025, the GP would end with $5M of carry: it would get $1M now and give back $750K.");
+    expect(at("10000000")).toBe("If the fund were liquidated at NAV, $10M on 1 Jan 2025, the GP would end with $4M of carry: it would give back $750K.");
     const fund = readFund({ ...caseFile("fund-13-clawback-steps", "inputs.json").fund, final: false, nav: "10000000" });
-    const atNav = splitAtNav(fund)!;
-    expect(atNav.clawback!.owed.toFixed(2)).toBe("750000.00");
-    expect(answerText(fund, atNav, atNav.clawback)).toBe(
-      "At a $10M distribution on 1 Jan 2025, the GP's carry is $0, and if the fund were liquidated at NAV it would owe $750K back.",
-    );
     // Away from NAV, a fund that isn't final has no clawback.
     expect(splitAt(fund, "15000000").clawback).toBeNull();
   });

@@ -107,7 +107,7 @@ describe("the carry", () => {
     expect(breakpointXs()).toEqual(["$7,000,000.00"]);
     const carry = within(screen.getByRole("rowheader", { name: "Carry at 20%" }).closest("tr")!).getAllByRole("cell");
     expect(carry[1]!.textContent).toBe("$6,534,000.00");
-    expect(headline()[1]).toBe("At a $40M distribution on 30 Sep 2026, the GP's carry is $6.53M.");
+    expect(headline()[1]).toBe("If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.53M of carry.");
     // The fund isn't case 8 any more: the list says so, and the line under it.
     expect((screen.getByLabelText("Start from") as HTMLSelectElement).selectedOptions[0]!.textContent).toBe("An example, with your changes");
     expect(document.querySelector(".example-label")!.textContent).toMatch(/^This fund, with your changes to its terms: \$11M paid in over 4 calls/);
@@ -138,6 +138,23 @@ describe("the carry", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove step 4" }));
     tab("Payouts");
     expect(breakpointXs()).toEqual(["$7,000,000.00", "$34,500,000.00", "$63,833,333.33"]);
+  });
+});
+
+describe("a term turned on", () => {
+  it("starts at its usual value, focused and selected, so it's typed straight over", () => {
+    terms();
+    const selected = (label: string) => {
+      const field = screen.getByLabelText(label) as HTMLInputElement;
+      return [document.activeElement === field, field.value.slice(field.selectionStart!, field.selectionEnd!)];
+    };
+    fireEvent.click(screen.getByRole("checkbox", { name: "A preferred return" }));
+    expect(selected("Rate a year, simple")).toEqual([true, "8"]);
+    fireEvent.click(screen.getByRole("radio", { name: "Partial" }));
+    expect(selected("The GP's share")).toEqual([true, "50"]);
+    fireEvent.click(screen.getByRole("checkbox", { name: "A GP commitment" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "A GP commitment" }));
+    expect(selected("Its share of the fund")).toEqual([true, "2"]);
   });
 });
 
