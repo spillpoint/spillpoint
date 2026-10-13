@@ -12,7 +12,8 @@
       "Bash(gh label*)",
       "Bash(gh pr edit*label*)",
       "Bash(gh api*labels*)",
-      "Edit(cases/**)"
+      "Edit(cases/**)",
+      "Edit(packages/fund/cases/**)"
     ]
   }
 }
