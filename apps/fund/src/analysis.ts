@@ -9,7 +9,7 @@
 // arithmetic: every amount is the engine's.
 
 import { D, findBreakpoints, splitAt } from "spillpoint-fund";
-import type { Breakpoint, Fund } from "spillpoint-fund";
+import type { Breakpoint, Fund, ReasonCode } from "spillpoint-fund";
 
 type Decimal = D;
 
@@ -73,4 +73,40 @@ export function chartPoints(fund: Fund, breakpoints: readonly Breakpoint[], top:
     const d = splitAt(fund, x).distribution;
     return { x, lps: d.lps.total, gp: d.gp.total, gpCommitment: d.gpCommitment };
   });
+}
+
+/** One point of the clawback's chart: an X, and what the GP owes back to the LPs if X is the fund's last distribution. */
+export interface OwedPoint {
+  x: Decimal;
+  owed: Decimal;
+}
+
+const CLAWBACK_REASONS: ReadonlySet<ReasonCode> = new Set<ReasonCode>(["clawback_cleared", "clawback_starts", "clawback_changes"]);
+
+/** A reason that's the clawback's (F15): it clears, starts, or changes how fast it falls. */
+export function isClawbackReason(code: ReasonCode): boolean {
+  return CLAWBACK_REASONS.has(code);
+}
+
+/** A breakpoint where the clawback owed bends. */
+export function bendsClawback(b: Breakpoint): boolean {
+  return b.reasons.some((r) => isClawbackReason(r.code));
+}
+
+/** The breakpoints where the clawback bends, numbered as in the list, each with what's owed at it. */
+export function clawbackBends(fund: Fund, breakpoints: readonly BreakpointView[]): (BreakpointView & { owed: Decimal })[] {
+  return breakpoints.filter(bendsClawback).map((b) => ({ ...b, owed: splitAt(fund, b.x, { final: true }).clawback!.owed }));
+}
+
+/**
+ * The clawback chart's points, for a final fund (F12): what the GP owes back at 0, at every breakpoint where the
+ * clawback bends, and at the top. The engine reports every X where what's owed bends, so it's a straight line between
+ * them, and the chart is exact as the main one is.
+ */
+export function owedPoints(fund: Fund, breakpoints: readonly Breakpoint[], top: Decimal): OwedPoint[] {
+  const xs = [new D(0), ...breakpoints.filter(bendsClawback).map((b) => b.x), top]
+    .filter((x) => x.lte(top))
+    .sort((a, b) => a.cmp(b))
+    .filter((x, i, all) => i === 0 || !x.eq(all[i - 1]!));
+  return xs.map((x) => ({ x, owed: splitAt(fund, x, { final: true }).clawback!.owed }));
 }

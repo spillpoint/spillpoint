@@ -36,6 +36,8 @@ The main page's (f01g review, from your look at the page): the answer, then X wi
 
 A headline at the chosen X, in neutral words, since the same file goes to LPs and co-GPs (your answer 6): "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M. The LPs get $32.8M and the GP commitment $400K." Under it, the caveat every spillpoint page carries: the fund's documents govern, not this tool, and nothing leaves the computer.
 
+**When the GP owes a clawback,** the headline says so, so it never shows carry without the clawback beside it (f01h): "At a $15M distribution on 1 Jan 2025, the GP's carry is $1M, and it owes $750K back." At $0 it leads "With nothing distributed on 1 Jan 2025". A fund that isn't final owes one only at NAV: "…, and if the fund were liquidated at NAV it would owe $750K back."
+
 ### The chart
 
 Three lines against X, each straight between breakpoints, so the chart is drawn exactly from the range's ends and the breakpoints, as the main page draws its curves:
@@ -83,6 +85,12 @@ A table by tier, for X alone and for the fund to date:
 **A small chart of its own** under the main one, not a fourth line on it:
 - **What it shows:** the clawback owed against X, with its own breakpoints from F15, cleared or changes.
 - **Why its own:** it's a different scale, and often zero.
+
+**As built in f01h:**
+- **Where:** the card sits right under the main chart, before the split.
+- **A final fund** has it at every X. Under the chart, the breakpoints where the clawback bends, numbered as in the list, in the engine's clawback words, with what's owed at each.
+- **A final fund that owes nothing at $0** owes nothing at any X (FA9), so the card says so in place of a flat chart. That's case 12.
+- **A fund that isn't final** has the card at the NAV point only, with the sentence and no chart: only that point is final (F14).
 
 ### Amounts: to the cent, not as paid (your answer 2)
 
@@ -160,7 +168,7 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
 **The examples** are read at build time from the locked fund cases, as the main page reads Millrace, so they can't drift from the tests (your answer 5):
 - **"A fund: 20% carry and a 2% GP commitment",** case 3, the default, at $20,000,000. Most VC funds have flat 20%, so the page opens on one (f01g, from your look at the page).
 - **"A VC fund with premium carry: 20%, then 25% from 3x and 30% from 5x",** case 8, second. It has a NAV.
-- **"A late call and a clawback",** case 13, final.
+- **"A late call and a clawback",** case 13, final. It opens at $0, where the clawback is the story: $2,750,000 owed if nothing more comes in (f01h).
 - **"An SPV: one company, the exit as its last distribution",** case 12, final, with a NAV. Many emerging managers run SPVs, and it's the shortest example.
 
 **Saving** downloads a file the page makes, as the main page does:

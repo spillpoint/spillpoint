@@ -183,6 +183,7 @@ describe("the chart", () => {
 
   it("leaves out the GP commitment's line in a fund without one", () => {
     open("fund-13-clawback-steps");
+    fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "15000000" } });
     const legend = within(screen.getByRole("list", { name: /^Values at X/ })).getAllByRole("listitem").map((li) => li.textContent);
     expect(legend).toEqual(["The GP's carry$1,000,000.00", "The LPs$14,000,000.00"]);
   });

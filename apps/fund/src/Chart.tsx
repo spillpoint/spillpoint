@@ -6,7 +6,7 @@
 // in grey ink; the GP commitment's line dashed. Never colour alone: the legend names each line beside a swatch of its
 // stroke and gives its value at X, so no one matches colours. Numbers become floats only here, for drawing.
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
 import { D } from "spillpoint-fund";
 
@@ -18,16 +18,16 @@ type Decimal = D;
 const GP = "#2a78d6";
 const LPS = "#5b6370";
 const COMMITMENT = "#8a919c";
-const INK_MUTED = "#5b6370";
-const LINE_HAIR = "#e3e6ea";
-const ACCENT = "#1d3557";
+export const INK_MUTED = "#5b6370";
+export const LINE_HAIR = "#e3e6ea";
+export const ACCENT = "#1d3557";
 
 const HEIGHT = 340;
-const Y_AXIS_WIDTH = 64;
-const X_AXIS_HEIGHT = 30;
-const MARGIN_SIDE = 16;
+export const Y_AXIS_WIDTH = 64;
+export const X_AXIS_HEIGHT = 30;
+export const MARGIN_SIDE = 16;
 /** Room above the plot for a row of breakpoint numbers; numbers closer than this step up a row, up to four. */
-const BADGE_ROW = 22;
+export const BADGE_ROW = 22;
 const MAX_BADGE_ROWS = 4;
 
 interface Series {
@@ -38,12 +38,16 @@ interface Series {
   dash?: string;
 }
 
-function useWidth(fallback: number) {
+export function useWidth(fallback: number) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(fallback);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el) return;
+    // Measured before the first paint, so a chart that appears (the clawback's, on picking a final fund) never shows a
+    // frame at the fallback width, wider than a phone.
+    if (el.clientWidth > 0) setWidth(Math.max(240, el.clientWidth));
+    if (typeof ResizeObserver === "undefined") return;
     // Never wider than its card, down to the narrowest phones.
     const observer = new ResizeObserver(([entry]) => setWidth(Math.max(240, Math.floor(entry!.contentRect.width))));
     observer.observe(el);
@@ -53,7 +57,7 @@ function useWidth(fallback: number) {
 }
 
 /** A tidy axis: a top at or above max, and a step that divides it into about five. */
-function niceScale(max: number): { top: number; step: number } {
+export function niceScale(max: number): { top: number; step: number } {
   if (!(max > 0)) return { top: 1, step: 0.25 };
   const rough = max / 5;
   const power = 10 ** Math.floor(Math.log10(rough));
@@ -87,22 +91,8 @@ export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment }: P
   const xTicks: number[] = [];
   for (let t = 0; t <= to + 1e-9; t += xScale.step) xTicks.push(t);
 
-  // Breakpoint numbers closer than one badge apart step up a row, so none overlap; past four rows a number is left off.
-  const plotLeft = MARGIN_SIDE + Y_AXIS_WIDTH;
-  const plotRight = width - MARGIN_SIDE;
-  const xPx = (v: number) => plotLeft + (v / to) * (plotRight - plotLeft);
   const inView = breakpoints.filter((b) => b.x.gt(0) && b.x.lt(top));
-  const rowOf = new Map<number, number | null>();
-  const lastInRow: number[] = [];
-  for (const b of inView) {
-    const px = xPx(b.x.toNumber());
-    let row = 0;
-    while (lastInRow[row] !== undefined && px - lastInRow[row]! < BADGE_ROW) row++;
-    rowOf.set(b.n, row < MAX_BADGE_ROWS ? row : null);
-    if (row < MAX_BADGE_ROWS) lastInRow[row] = px;
-  }
-  const rowsUsed = Math.max(1, ...[...rowOf.values()].map((r) => (r === null ? 1 : r + 1)));
-  const hidden = [...rowOf.values()].filter((r) => r === null).length;
+  const { rowOf, rowsUsed, hidden } = badgeRows(inView, top, width);
   const margin = { top: 8 + rowsUsed * BADGE_ROW, right: MARGIN_SIDE, bottom: 4, left: MARGIN_SIDE };
 
   const beyond = breakpoints.length - inView.length;
@@ -185,8 +175,30 @@ export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment }: P
   );
 }
 
+/**
+ * Each breakpoint number's row above a plot from 0 to top, width pixels wide: numbers closer than one badge apart step
+ * up a row, so none overlap; past four rows a number is left off (null).
+ */
+export function badgeRows(inView: readonly BreakpointView[], top: Decimal, width: number) {
+  const plotLeft = MARGIN_SIDE + Y_AXIS_WIDTH;
+  const plotRight = width - MARGIN_SIDE;
+  const xPx = (v: number) => plotLeft + (v / top.toNumber()) * (plotRight - plotLeft);
+  const rowOf = new Map<number, number | null>();
+  const lastInRow: number[] = [];
+  for (const b of inView) {
+    const px = xPx(b.x.toNumber());
+    let row = 0;
+    while (lastInRow[row] !== undefined && px - lastInRow[row]! < BADGE_ROW) row++;
+    rowOf.set(b.n, row < MAX_BADGE_ROWS ? row : null);
+    if (row < MAX_BADGE_ROWS) lastInRow[row] = px;
+  }
+  const rowsUsed = Math.max(1, ...[...rowOf.values()].map((r) => (r === null ? 1 : r + 1)));
+  const hidden = [...rowOf.values()].filter((r) => r === null).length;
+  return { rowOf, rowsUsed, hidden };
+}
+
 /** A breakpoint's number at the top of its line. No row: left off, its line stays. */
-function Badge({ n, row, viewBox }: { n: number; row: number | null; viewBox?: { x: number; y: number } }) {
+export function Badge({ n, row, viewBox }: { n: number; row: number | null; viewBox?: { x: number; y: number } }) {
   if (!viewBox || row === null) return null;
   return (
     <g transform={`translate(${viewBox.x}, ${viewBox.y - 14 - row * BADGE_ROW})`}>
@@ -202,7 +214,7 @@ function Badge({ n, row, viewBox }: { n: number; row: number | null; viewBox?: {
  * A mark's name beside its line: NAV at the top of the plot, X at the bottom, so the two never sit on each other. Near
  * the right edge it goes on the left of its line, so it isn't cut off.
  */
-function MarkLabel({ text, colour, at, left, viewBox }: { text: string; colour: string; at: "top" | "bottom"; left: boolean; viewBox?: { x: number; y: number; height: number } }) {
+export function MarkLabel({ text, colour, at, left, viewBox }: { text: string; colour: string; at: "top" | "bottom"; left: boolean; viewBox?: { x: number; y: number; height: number } }) {
   if (!viewBox) return null;
   return (
     <text
