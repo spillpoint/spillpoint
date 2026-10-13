@@ -54,6 +54,13 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | FA11 | `as_of` | Only D's default. It isn't checked against the cash flows; F4 checks D. | Fixed | Confirmed (f01a review) |
 | FA12 | Cash flows in the input | They may be listed in any order; F4 orders them by date, calls first. A distribution has no `kind`: one given is refused as `unknown_field`. A refusal's path is the flow's place in the list as given. | Fixed | Confirmed (f01a review) |
 
+## Added in f01b
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA13 | What X can be | An exact amount from 0 up: an exact string (FC1) or a Decimal. Anything else is refused as `bad_number` at the field `x`, through the same FundRefusal. X = 0 is a distribution of nothing, as cases 10, 11 and 13 report. | Fixed | New |
+| FA14 | Showing an amount to the cent (FC8) | Round to 20 places first, then half away from zero to the cent. 40-digit arithmetic can land a hair below an amount that is exactly half a cent: 699,291.385 worked out as 699,291.38499…9, which would show a cent low. The first rounding puts it back. An amount whose exact denominator is under about 10^18 can't sit within 10^-20 of a half cent without being on it, so only true ties move. Amounts themselves stay at 40 digits; this is for showing only. No fund case has such a tie. Comparing with the reference on 300 random funds found 3 in 77,785 amounts. | Fixed | New |
+
 ## Later
 
 Each rule's later work, as the spec gives it. None is refused today unless F18 says so.

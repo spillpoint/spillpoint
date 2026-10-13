@@ -1,3 +1,25 @@
-// spillpoint-fund: the fund-level waterfall. Private until its release step; the engine arrives in f01b.
+// spillpoint-fund: how a fund's distribution splits between LPs and GP, tier
+// by tier, and any clawback the GP owes. Private until its release step; every
+// name here is provisional until a naming review before 0.1.0.
+//
+//   const fund = readFund(json);                 // check the input (F18)
+//   const split = splitAt(fund, "20000000");     // X on D, by tier (F16)
+//   const nav = splitAtNav(fund);                // the NAV point, final (F14)
+//
+// Everything runs locally: no I/O, no network. Rules are in docs/SPEC.md and
+// choices in docs/ASSUMPTIONS.md; the fund's own documents govern, not this.
 
-export { D } from "./decimal.ts";
+// Numbers: 40-digit decimals (F17), and amounts to the cent for showing (FC8).
+export { D, toCents } from "./decimal.ts";
+
+// What the engine refuses, and why (F18).
+export { FundRefusal } from "./errors.ts";
+export type { InputTerm, RefusalKind } from "./errors.ts";
+
+// Reading a fund's input.
+export { readFund } from "./input.ts";
+export type { CallKind, CarryStep, CashFlow, Fund, GpCommitment } from "./model.ts";
+
+// The split at X on D.
+export { splitAt, splitAtNav } from "./waterfall.ts";
+export type { Clawback, Split, StepCarry, Tiers } from "./waterfall.ts";
