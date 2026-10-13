@@ -6,7 +6,7 @@
 // The rules (f01k, Jordan's answers):
 // - Columns: date, type, kind, amount, in that order. A first row with no date in its first cell that names any of
 //   those four is a header, and skipped. Cells past the fourth are ignored.
-// - Dates: YYYY-MM-DD; numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name, as
+// - Dates: YYYY-MM-DD or YYYY/MM/DD; numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name, as
 //   15-Jan-2021, Jan 15, 2021 or 15 Jan 2021. Numbers with slashes could be month first (US) or day first: a date with a
 //   number above 12 settles it for the whole paste; if none does and some date could be either, the page asks once,
 //   month first selected. A date that can't be read in the paste's order is refused.
@@ -40,6 +40,11 @@ export interface PasteRead {
   noKind: number;
   /** The first date that could be read either way, when nothing in the paste settles which: the page asks once. */
   ambiguous: string | null;
+  /**
+   * When any date could be read either way, which way they were read and why (f01k review, answer 1): a typo like
+   * 13/1/2023 in a US paste turns every other date day first, and this line is how a GP sees it.
+   */
+  orderNote: string | null;
   /** The order the paste's slashed dates are read in: settled by the paste, or chosen. */
   order: Order;
 }
@@ -86,8 +91,9 @@ type DateCell = { iso: string | null } | { slashed: [number, number, number] } |
 /** A cell as a date: a whole date, or numbers with slashes whose order the paste settles; null if it isn't one. */
 function dateCell(text: string): DateCell {
   const t = text.trim();
-  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
-  if (m) return { iso: iso(Number(m[1]), Number(m[2]), Number(m[3])) };
+  // YYYY-MM-DD, or YYYY/MM/DD as some spreadsheets copy it: year first, it reads only one way.
+  let m = /^(\d{4})([-/])(\d{1,2})\2(\d{1,2})$/.exec(t);
+  if (m) return { iso: iso(Number(m[1]), Number(m[3]), Number(m[4])) };
   m = /^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})$/.exec(t);
   if (m) return { slashed: [Number(m[1]), Number(m[2]), fullYear(m[3]!)] };
   // 15-Jan-2021, 15 Jan 2021, 15-Jan-21
@@ -130,6 +136,13 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
   const order: Order = settler ? implied(settler.cell.slashed) : chosen;
   const either = settler ? undefined : slashed.find(({ cell: { slashed: [a, b] } }) => a <= 12 && b <= 12 && a !== b);
   const ambiguous = either ? lines[either.i]![0]! : null;
+  const anyEither = slashed.some(({ cell: { slashed: [a, b] } }) => a <= 12 && b <= 12 && a !== b);
+  const way = order === "day-first" ? "day first" : "month first";
+  const orderNote = !anyEither
+    ? null
+    : settler
+      ? `Dates read ${way}, as ${lines[settler.i]![0]} in row ${settler.i + 1} can only be read that way.`
+      : `Dates read ${way}, as chosen above.`;
 
   const rows: PastedRow[] = [];
   const unread: string[] = [];
@@ -169,6 +182,8 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
     }
 
     if (amountText === undefined || amountText === "") return void unread.push(`${row}: has no amount; the columns are date, type, kind and amount`);
+    // An accounting format's zero, "$ -" or "-", is a zero, not a negative.
+    if (/^\$?\s*-$/.test(amountText)) return void unread.push(`${row}: '${amountText}' isn't an amount more than zero`);
     // "-500,000", "-$500,000", "$-500,000", "(500,000)" and "$(500,000)": the ways a spreadsheet writes a negative.
     if (/^-|^\$\s*-|^\$?\s*\(.*\)$/.test(amountText)) {
       return void unread.push(`${row}: '${amountText}' is negative. Write amounts as positive; the type says which way the money goes`);
@@ -179,7 +194,7 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
     rows.push({ line: i + 1, date, type, kind, amount });
     if (kindless) noKind++;
   });
-  return { rows, unread, noKind, ambiguous, order };
+  return { rows, unread, noKind, ambiguous, orderNote, order };
 }
 
 /** The question when the paste can't settle the order: how its first such date reads each way. */

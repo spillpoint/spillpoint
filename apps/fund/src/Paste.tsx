@@ -62,6 +62,7 @@ export function PasteBox({ paste, onPaste, here, onAdd, onCancel }: Props) {
       {pasted && (
         <div className="paste__preview" role="status">
           <p className="paste__summary">{pasteSummary(read, here)}</p>
+          {read.orderNote && <p>{read.orderNote}</p>}
           {read.noKind > 0 && (
             <p>
               {read.noKind === 1 ? "1 call had" : `${read.noKind} calls had`} no kind: read as {read.noKind === 1 ? "an investment" : "investments"}.

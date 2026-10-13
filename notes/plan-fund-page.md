@@ -170,8 +170,9 @@ A table by tier, for X alone and for the fund to date:
 - **Where:** "Paste rows from a spreadsheet" opens a box under the table. More than one cell pasted into a table cell goes to the same box instead of into the cell.
 - **Columns:** date, type, kind, amount, in that order. A first row with no date in its first cell that names any of the four is a header, and skipped. Cells past the fourth are ignored.
 - **Dates:**
-  - **The forms:** YYYY-MM-DD; numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name: 15-Jan-2021, Jan 15, 2021 or 15 Jan 2021.
+  - **The forms:** YYYY-MM-DD or YYYY/MM/DD (f01l); numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name: 15-Jan-2021, Jan 15, 2021 or 15 Jan 2021.
   - **Which comes first:** the first slashed date with a number above 12 settles month first or day first for the whole paste. If none does and some date could be either, the page asks once, month first selected. A row that can't be read in the paste's order is refused.
+  - **Whenever a date could be read either way,** the preview says which way it read them and why (f01k review, answer 1): "Dates read day first, as 13/1/2023 in row 3 can only be read that way.", or "…, as chosen above." when the page asked. A US paste with one typo would otherwise turn every other date day first without a word.
 - **Types:** Call, Capital call, Contribution, Drawdown; Distribution. Any case.
 - **Kinds:**
   - **The names:** Investment; Fee or Management fee; Expense or Fund expense.
@@ -179,7 +180,7 @@ A table by tier, for X alone and for the fund to date:
   - **A distribution's kind cell** is ignored.
 - **Amounts:**
   - **Read as the cells take them,** digits kept exactly.
-  - **A negative is refused,** in any of the ways a spreadsheet writes one ("-500,000", "(500,000)", "$(500,000)"): "Write amounts as positive; the type says which way the money goes."
+  - **A negative is refused,** in any of the ways a spreadsheet writes one ("-500,000", "(500,000)", "$(500,000)"): "Write amounts as positive; the type says which way the money goes." An accounting format's zero, "$ -", is a zero: "isn't an amount more than zero" (f01l).
 - **Adding:** after the rows already there, in the order pasted, unsorted. Rows with nothing in them, like a blank fund's first, give way. Nothing is added until "Add them"; "Cancel" leaves the table as it was.
 - **The preview:** "5 cash flows: 3 calls, $10,500,000 called; 2 distributions, $12,000,000 distributed; they'll be the table's first.", then each row it can't read with why: "Row 2: 'Q3 2021' isn't a date". Rows are numbered by their place in the paste, the header included, so a paste from a sheet's first row numbers as the sheet does.
 

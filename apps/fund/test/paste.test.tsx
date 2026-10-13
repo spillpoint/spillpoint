@@ -46,9 +46,24 @@ describe("the reader", () => {
   });
 
   it("reads dates as YYYY-MM-DD, with slashes and a four- or two-digit year, or with a month's name", () => {
-    const dates = ["2021-01-15", "1/15/2021", "1/15/21", "15-Jan-2021", "Jan 15, 2021", "15 Jan 2021", "January 15 2021", "15-Jan-21", "jan. 15, 2021"];
+    const dates = ["2021-01-15", "2021/01/15", "2021/1/15", "1/15/2021", "1/15/21", "15-Jan-2021", "Jan 15, 2021", "15 Jan 2021", "January 15 2021", "15-Jan-21", "jan. 15, 2021"];
     expect(rowsOf(dates.map((d) => `${d}\tCall\tInvestment\t100`).join("\n")).map((r) => r[0])).toEqual(Array(dates.length).fill("2021-01-15"));
     expect(rowsOf("Sept 3, 2022\tCall\tFee\t5")[0]![0]).toBe("2022-09-03");
+  });
+
+  it("says which way it read dates that could be either, and why: a typo in a US paste is seen, not silent", () => {
+    // 13/1/2023 is a typo for 1/13/2023, but it settles day first: the other two become 3 Apr and 6 Jul.
+    const typo = readPaste("3/4/2021\tCall\tInvestment\t1\n6/7/2022\tCall\tFee\t2\n13/1/2023\tDistribution\t\t3");
+    expect(typo.rows.map((r) => r.date)).toEqual(["2021-04-03", "2022-07-06", "2023-01-13"]);
+    expect(typo.orderNote).toBe("Dates read day first, as 13/1/2023 in row 3 can only be read that way.");
+    // Fixed, it settles month first, and says so.
+    const fixed = readPaste("Date\tType\tKind\tAmount\n1/15/2021\tCall\tInvestment\t1\n6/7/2022\tCall\tFee\t2");
+    expect(fixed.orderNote).toBe("Dates read month first, as 1/15/2021 in row 2 can only be read that way.");
+    // Nothing settles it: the page asks, and the line says the answer is what's read.
+    expect(readPaste("6/7/2022\tCall\tFee\t2").orderNote).toBe("Dates read month first, as chosen above.");
+    expect(readPaste("6/7/2022\tCall\tFee\t2", "day-first").orderNote).toBe("Dates read day first, as chosen above.");
+    // No date could be either: no line.
+    expect([readPaste("1/15/2021\tCall\tFee\t2").orderNote, readPaste("3/3/2021\tCall\tFee\t2").orderNote, readPaste(CASE_9.replace(/7\/1\//g, "7/13/")).orderNote]).toEqual([null, null, null]);
   });
 
   it("lets a date with a number above 12 settle which comes first, and refuses a row that disagrees", () => {
@@ -100,6 +115,8 @@ describe("the reader", () => {
   });
 
   it("refuses a negative amount, however a spreadsheet writes it, and says why", () => {
+    // An accounting format's zero, "$ -", is a zero, not a negative.
+    expect(unreadOf("2021-01-01\tCall\tFee\t$ -\n2021-01-01\tCall\tFee\t-")).toEqual(["Row 1: '$ -' isn't an amount more than zero", "Row 2: '-' isn't an amount more than zero"]);
     const negatives = ["-500,000", "-$500,000", "$-500,000", "(500,000)", "$(500,000)"];
     expect(unreadOf(negatives.map((a) => `2021-01-01\tDistribution\t\t${a}`).join("\n"))).toEqual(
       negatives.map((a, i) => `Row ${i + 1}: '${a}' is negative. Write amounts as positive; the type says which way the money goes`),
@@ -155,6 +172,7 @@ describe("the paste box", () => {
     fireEvent.change(screen.getByLabelText("As of"), { target: { value: "2025-07-01" } });
     paste(CASE_9);
     expect(within(pasteBox()).getByRole("radio", { name: "Month first: 7/1/2023 is 1 Jul 2023" })).toHaveProperty("checked", true);
+    expect(within(preview()).getByText(/^Dates read/).textContent).toBe("Dates read month first, as chosen above.");
     expect(preview().querySelector(".paste__summary")!.textContent).toBe(
       "5 cash flows: 3 calls, $10,500,000 called; 2 distributions, $12,000,000 distributed; they'll be the table's first.",
     );
