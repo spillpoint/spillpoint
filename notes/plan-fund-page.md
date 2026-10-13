@@ -218,6 +218,23 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
 - **A file that can't be read** says why in one line under the masthead, the main page's pattern.
 - **"Not saved"** marks unsaved changes.
 
+**As built in f01l, with your answers:**
+- **"Save"** downloads the file, named after the fund's name, and says where: "Saved as a-late-call-and-a-clawback.json, in your downloads."
+- **The name** is a field at the top of the Terms tab, as the main page has the cap table's. It starts as the example's label, or "My fund" for a blank fund or a bare input. A case's `inputs.json` is named by its case id.
+- **Only a fund the engine accepts is saved:** "Not saved: the cash flows have a problem to fix first. …" (or the terms), so a saved file always opens.
+- **The fund in the form is the fund in the file.** A save writes the input the two tabs write, and an opened file goes into them. A file opened and saved with no change has the same values, as the engine reads them, for every case's `inputs.json`.
+- **X** comes back from `view`, or $0 without one. Moving X isn't a change, but a save keeps it.
+- **"Open a file"** asks first if there are unsaved changes, as does picking another fund. So does leaving or reloading the page.
+- **The picker** shows "<name>, opened from <file>".
+- **Refused in one line under the masthead,** the current fund kept:
+  - not JSON
+  - a version above 1: "made by a newer spillpoint"
+  - the main page's file: "This is a cap table file. Open it on the main page."
+  - a term the page doesn't model: "This file has a term the page doesn't model: `hurdle_irr`."
+  - any other refusal, naming the row or term: "Row 5 of its cash flows: this distribution is before the fund's first call."
+- **A field the file format doesn't have** is refused, as the main page refuses one (C12), so a misspelt one can't be ignored.
+- **Nothing is kept in the browser,** and nothing goes in the address.
+
 **The rule holds:** nothing is kept in the browser, and nothing goes in the URL.
 
 ## How it's built: its own app, `apps/fund` (your answer 1)

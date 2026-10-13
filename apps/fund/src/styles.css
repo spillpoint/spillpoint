@@ -40,6 +40,17 @@ select, input[type="text"], input[type="date"] {
 select { max-width: 100%; }
 select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* Open and save, as the main page has them (f01l) */
+.file-button { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 14px; cursor: pointer; }
+.file-button:hover { border-color: var(--accent); }
+.file-status { margin: 0 0 16px; padding: 8px 12px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); overflow-wrap: anywhere; }
+.file-status--problem { border-left: 4px solid var(--error); }
+.file-status--done { border-left: 4px solid var(--accent); }
+.example-label__unsaved { margin-left: 8px; }
+.terms__name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 16px; }
+.terms__name label { font-weight: 600; }
+.terms__name input { flex: 1 1 16rem; max-width: 32rem; }
+
 /* A problem with the input: the payouts stay on the last fund the engine accepted, and say so. */
 .notice--problem { border-left-color: var(--warn); margin-bottom: 16px; }
 .link-button { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
