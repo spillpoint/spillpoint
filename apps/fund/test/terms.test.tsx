@@ -236,7 +236,7 @@ describe("starting over", () => {
     type("Carry rate", "25");
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-12-spv" } });
-    expect(confirm).toHaveBeenCalledWith("Start over? Your changes to this fund will be lost.");
+    expect(confirm).toHaveBeenCalledWith("Start over? Your unsaved changes to this fund will be lost.");
     expect((screen.getByLabelText("Carry rate") as HTMLInputElement).value).toBe("25");
     confirm.mockReturnValue(true);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-12-spv" } });

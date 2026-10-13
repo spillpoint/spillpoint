@@ -101,7 +101,8 @@ describe("a fund typed in from blank", () => {
     expect(breakpointXs()).toEqual(["$10,000,000.00", "$14,004,383.56", "$15,005,479.45"]);
     // The blank fund stays the blank fund as it's filled in.
     expect((screen.getByLabelText("Start from") as HTMLSelectElement).value).toBe("blank");
-    expect(document.querySelector(".example-label")!.textContent).toBe("This fund: $10M paid in over 1 call and nothing distributed before X. X isn't its last distribution.");
+    // Typed in, and not saved yet: the line says so.
+    expect(document.querySelector(".example-label")!.textContent).toBe("This fund: $10M paid in over 1 call and nothing distributed before X. X isn't its last distribution.Not saved");
     for (const p of caseFile("fund-06-full-catch-up", "expected.json").points) {
       set(/^Distribution on/, p.x);
       expect(totals(), p.x).toEqual([money(p.distribution.lps.total), money(p.distribution.gp.total), money(p.to_date.lps.total), money(p.to_date.gp.total)]);
@@ -248,7 +249,7 @@ describe("the rows and the facts about D", () => {
     open("fund-08-carry-steps");
     tab("Cash flows");
     fireEvent.click(screen.getByRole("checkbox", { name: "This is the fund's last distribution" }));
-    expect(document.querySelector(".example-label")!.textContent).toMatch(/X is its last distribution\.$/);
+    expect(document.querySelector(".example-label")!.textContent).toMatch(/X is its last distribution\.Not saved$/);
     tab("Payouts");
     expect(screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent).toBe(
       "If $40M on 30 Sep 2026 is the last distribution, the GP ends with $6.81M of carry.",
@@ -262,7 +263,7 @@ describe("the rows and the facts about D", () => {
     set("As of", "2025-01-01");
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-03-gp-commitment" } });
-    expect(confirm).toHaveBeenCalledWith("Start over? Your changes to this fund will be lost.");
+    expect(confirm).toHaveBeenCalledWith("Start over? Your unsaved changes to this fund will be lost.");
     expect((screen.getByLabelText("As of") as HTMLInputElement).value).toBe("2025-01-01");
   });
 });

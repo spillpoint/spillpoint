@@ -3,7 +3,7 @@
 // with the NAV button (f01h), on the Payouts tab; the fund behind them, editable, on the Terms (f01i) and Cash flows
 // (f01j) tabs. Pasting cash flows and files come in f01k to f01m.
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
@@ -16,9 +16,10 @@ import { CashFlows } from "./CashFlows.tsx";
 import { Chart } from "./Chart.tsx";
 import { Clawback, owesSomething } from "./Clawback.tsx";
 import { Terms } from "./Terms.tsx";
-import { blankFlows, flowsFrom, flowsInput, flowsProblem } from "./flows.ts";
+import { fileName, fileText, inputOf, readFile, UNNAMED } from "./file.ts";
+import { blankFlows, flowsFrom, flowsProblem } from "./flows.ts";
 import type { FlowsForm } from "./flows.ts";
-import { controlFor, formFrom, tabFor, termsInput, termsProblem } from "./terms.ts";
+import { controlFor, formFrom, tabFor, termsProblem } from "./terms.ts";
 import type { Problem, TermsForm } from "./terms.ts";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
@@ -49,15 +50,18 @@ interface Opened {
   /** Null for a blank fund until the engine first runs it. */
   fund: Fund | null;
   problem: Problem | null;
-  /** Something has changed since the example was picked. */
+  /** Something has changed since the example or file was picked. */
   edited: boolean;
+  /** The fund's name: a saved file is named after it (f01l). */
+  name: string;
   opening: D;
   x: XState;
   top: TopState;
 }
 
-/** The picker's value for a blank fund, and once an example has changed. */
+/** The picker's value for a blank fund, a fund opened from a file, and once an example has changed. */
 const BLANK = "blank";
+const FILE = "file";
 const EDITED = "edited";
 
 /** A blank fund's terms: F9's 20% carry, flat, and nothing else, each to change on the Terms tab. */
@@ -67,17 +71,28 @@ function opened(id: string): Opened {
   const fresh = { problem: null, edited: false, top: { text: null, set: null, problem: null } };
   if (id === BLANK) {
     const zero = new D(0);
-    const s: Opened = { ...fresh, input: {}, terms: formFrom(BLANK_TERMS), flows: blankFlows(), fund: null, opening: zero, x: { text: xText(zero), shown: zero, problem: null } };
+    const s: Opened = { ...fresh, name: UNNAMED, input: {}, terms: formFrom(BLANK_TERMS), flows: blankFlows(), fund: null, opening: zero, x: { text: xText(zero), shown: zero, problem: null } };
     return { ...run(s, s.terms, s.flows), edited: false };
   }
   const example = examples.find((e) => e.id === id)!;
-  const fund = readFund(example.fund);
-  const x = parseDollars(example.defaultX)!;
+  return fromFund(readFund(example.fund), example.label, parseDollars(example.defaultX)!);
+}
+
+/**
+ * A fund the engine read, an example's or a file's, in the two tabs' forms. The input is the forms' own, so the fund
+ * in the form is the fund in the file: a save with no change writes the same values back (f01l).
+ */
+function fromFund(fund: Fund, name: string, x: D): Opened {
+  const terms = formFrom(fund.terms);
+  const flows = flowsFrom(fund);
   return {
-    ...fresh,
-    input: example.fund as Record<string, unknown>,
-    terms: formFrom(fund.terms),
-    flows: flowsFrom(fund),
+    problem: null,
+    edited: false,
+    top: { text: null, set: null, problem: null },
+    name,
+    input: inputOf(terms, flows),
+    terms,
+    flows,
     fund,
     opening: x,
     x: { text: xText(x), shown: x, problem: null },
@@ -89,8 +104,7 @@ function opened(id: string): Opened {
  * in its order (FA2), so the problem shown is its first, on whichever tab.
  */
 function run(s: Opened, terms: TermsForm, flows: FlowsForm): Opened {
-  const { as_of, ...rest } = flowsInput(flows);
-  const input = { as_of, terms: termsInput(terms), ...rest };
+  const input = inputOf(terms, flows);
   try {
     return { ...s, input, terms, flows, edited: true, fund: readFund(input), problem: null };
   } catch (e) {
@@ -114,6 +128,8 @@ const CROWDED = 9;
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
+  // A fund opened from a file: "<name>, opened from <file>" in the picker.
+  const [fileLabel, setFileLabel] = useState("");
   const [tab, setTab] = useState<Tab>("payouts");
   const [state, setState] = useState(() => opened(examples[0]!.id));
   const { fund, terms, flows, problem, edited, x } = state;
@@ -131,11 +147,55 @@ export function App() {
     setFocusing(controlFor(path));
   };
 
+  // Unsaved: changed since the last open, save or example (f01l). Moving X isn't a change, though a save keeps it.
+  const [unsaved, setUnsaved] = useState(false);
+  const [fileStatus, setFileStatus] = useState<FileStatus>(null);
+  useUnsavedWarning(unsaved);
+  /** A change to the fund: its terms, its cash flows or its name. */
+  const change = (next: (s: Opened) => Opened) => {
+    setState(next);
+    setUnsaved(true);
+    setFileStatus(null);
+  };
+  // As the main page asks before unsaved changes are lost.
+  const okToLose = (what: string) => !unsaved || window.confirm(`${what}? Your unsaved changes to this fund will be lost.`);
+
   const choose = (id: string) => {
-    // As the main page asks before a change is lost.
-    if (edited && !window.confirm("Start over? Your changes to this fund will be lost.")) return;
+    if (!okToLose("Start over")) return;
     setExampleId(id);
     setState(opened(id));
+    setUnsaved(false);
+    setFileStatus(null);
+  };
+
+  /** Only a fund the engine accepts is saved, so a saved file always opens; X goes in too, so it reopens where it was. */
+  const save = () => {
+    if (!fund || problem) {
+      const where = problem && tabFor(problem.path) === "terms" ? "the terms have" : "the cash flows have";
+      setFileStatus({ kind: "problem", text: `Not saved: ${where} a problem to fix first. ${problem?.message ?? ""}`.trim() });
+      return;
+    }
+    const name = fileName(state.name);
+    download(name, fileText(state.name, inputOf(terms, flows), x.shown));
+    setUnsaved(false);
+    setFileStatus({ kind: "done", text: `Saved as ${name}, in your downloads.` });
+  };
+  const picker = useRef<HTMLInputElement>(null);
+  const open = () => {
+    if (okToLose("Open a file")) picker.current?.click();
+  };
+  /** A saved fund, a bare input or a case's inputs.json; refused in one line, the current fund kept. */
+  const openFile = async (file: File) => {
+    const result = readFile(await file.text());
+    if (!result.ok) {
+      setFileStatus({ kind: "problem", text: `Couldn't open ${file.name}. ${result.message}` });
+      return;
+    }
+    setExampleId(FILE);
+    setFileLabel(`${result.name}, opened from ${file.name}`);
+    setState(fromFund(result.fund, result.name, result.x ?? new D(0)));
+    setUnsaved(false);
+    setFileStatus({ kind: "done", text: `Opened ${file.name}.` });
   };
 
   /** X set exactly, by the slider, a mark or a breakpoint: the box shows it. */
@@ -166,8 +226,9 @@ export function App() {
     }
   };
 
-  // A blank fund stays "A blank fund" as it's filled in; an example changed isn't the case any more (f01i).
-  const pickerValue = edited && exampleId !== BLANK ? EDITED : exampleId;
+  // A blank fund stays "A blank fund" as it's filled in, and a file its name; an example changed isn't the case any
+  // more (f01i).
+  const pickerValue = edited && exampleId !== BLANK && exampleId !== FILE ? EDITED : exampleId;
   return (
     <div className="page">
       <header className="masthead">
@@ -187,13 +248,41 @@ export function App() {
                 </option>
               ))}
               <option value={BLANK}>A blank fund</option>
+              {exampleId === FILE && <option value={FILE}>{fileLabel}</option>}
             </select>
           </label>
+          <button type="button" className="file-button" onClick={save}>
+            Save
+          </button>
+          <button type="button" className="file-button" onClick={open}>
+            Open a file
+          </button>
+          <input
+            ref={picker}
+            type="file"
+            accept=".json,application/json"
+            className="visually-hidden"
+            tabIndex={-1}
+            aria-label="Open a saved fund"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void openFile(file);
+            }}
+          />
         </div>
       </header>
+      {fileStatus && (
+        <p className={`file-status file-status--${fileStatus.kind}`} role={fileStatus.kind === "problem" ? "alert" : "status"}>
+          <Coded text={fileStatus.text} />
+        </p>
+      )}
       <GovernanceNote />
       <main>
-        <p className="example-label">{fund ? summaryText(fund, pickerValue === EDITED) : "A blank fund: its payouts show here once it has an as-of date, its terms and its cash flows."}</p>
+        <p className="example-label">
+          {fund ? summaryText(fund, edited && exampleId !== BLANK) : "A blank fund: its payouts show here once it has an as-of date, its terms and its cash flows."}
+          {unsaved && <span className="tag tag--quiet example-label__unsaved">Not saved</span>}
+        </p>
         <Tabs tab={tab} onTab={setTab} />
         <div role="tabpanel" id="panel-payouts" aria-labelledby="tab-payouts" hidden={tab !== "payouts"}>
           {fund ? (
@@ -221,10 +310,17 @@ export function App() {
           )}
         </div>
         <div role="tabpanel" id="panel-terms" aria-labelledby="tab-terms" hidden={tab !== "terms"}>
-          <Terms form={terms} problem={problem} onForm={(next) => setState((s) => run(s, next, s.flows))} onShow={show} />
+          <Terms
+            name={state.name}
+            onName={(name) => change((s) => ({ ...s, name, edited: true }))}
+            form={terms}
+            problem={problem}
+            onForm={(next) => change((s) => run(s, next, s.flows))}
+            onShow={show}
+          />
         </div>
         <div role="tabpanel" id="panel-flows" aria-labelledby="tab-flows" hidden={tab !== "flows"}>
-          <CashFlows form={flows} problem={problem} onForm={(next) => setState((s) => run(s, s.terms, next))} onShow={show} />
+          <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next))} onShow={show} />
         </div>
       </main>
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. */}
@@ -267,6 +363,41 @@ function Payouts({ fund, state, onX, onTypeX, onTop }: { fund: Fund; state: Open
       <SplitTable fund={fund} split={split} />
       {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} />}
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={onX} />
+    </>
+  );
+}
+
+type FileStatus = { kind: "done" | "problem"; text: string } | null;
+
+/** Saving means downloading the file; nothing leaves the computer, and the link is let go straight after. */
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Leaving or reloading the page with unsaved changes asks first, as the main page does. */
+function useUnsavedWarning(unsaved: boolean) {
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Older browsers ask only when this is set.
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
+}
+
+/** A line with a term in backticks set as code: "a term the page doesn't model: `hurdle_irr`." */
+function Coded({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("`").map((part, i) => (i % 2 === 1 ? <code key={i}>{part}</code> : <Fragment key={i}>{part}</Fragment>))}
     </>
   );
 }

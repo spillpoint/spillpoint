@@ -170,8 +170,9 @@ A table by tier, for X alone and for the fund to date:
 - **Where:** "Paste rows from a spreadsheet" opens a box under the table. More than one cell pasted into a table cell goes to the same box instead of into the cell.
 - **Columns:** date, type, kind, amount, in that order. A first row with no date in its first cell that names any of the four is a header, and skipped. Cells past the fourth are ignored.
 - **Dates:**
-  - **The forms:** YYYY-MM-DD; numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name: 15-Jan-2021, Jan 15, 2021 or 15 Jan 2021.
+  - **The forms:** YYYY-MM-DD or YYYY/MM/DD (f01l); numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name: 15-Jan-2021, Jan 15, 2021 or 15 Jan 2021.
   - **Which comes first:** the first slashed date with a number above 12 settles month first or day first for the whole paste. If none does and some date could be either, the page asks once, month first selected. A row that can't be read in the paste's order is refused.
+  - **Whenever a date could be read either way,** the preview says which way it read them and why (f01k review, answer 1): "Dates read day first, as 13/1/2023 in row 3 can only be read that way.", or "…, as chosen above." when the page asked. A US paste with one typo would otherwise turn every other date day first without a word.
 - **Types:** Call, Capital call, Contribution, Drawdown; Distribution. Any case.
 - **Kinds:**
   - **The names:** Investment; Fee or Management fee; Expense or Fund expense.
@@ -179,7 +180,7 @@ A table by tier, for X alone and for the fund to date:
   - **A distribution's kind cell** is ignored.
 - **Amounts:**
   - **Read as the cells take them,** digits kept exactly.
-  - **A negative is refused,** in any of the ways a spreadsheet writes one ("-500,000", "(500,000)", "$(500,000)"): "Write amounts as positive; the type says which way the money goes."
+  - **A negative is refused,** in any of the ways a spreadsheet writes one ("-500,000", "(500,000)", "$(500,000)"): "Write amounts as positive; the type says which way the money goes." An accounting format's zero, "$ -", is a zero: "isn't an amount more than zero" (f01l).
 - **Adding:** after the rows already there, in the order pasted, unsorted. Rows with nothing in them, like a blank fund's first, give way. Nothing is added until "Add them"; "Cancel" leaves the table as it was.
 - **The preview:** "5 cash flows: 3 calls, $10,500,000 called; 2 distributions, $12,000,000 distributed; they'll be the table's first.", then each row it can't read with why: "Row 2: 'Q3 2021' isn't a date". Rows are numbered by their place in the paste, the header included, so a paste from a sheet's first row numbers as the sheet does.
 
@@ -216,6 +217,23 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
 - **What it takes:** a saved file; a bare fund input; or a fund case's `inputs.json`, which has `fund` inside.
 - **A file that can't be read** says why in one line under the masthead, the main page's pattern.
 - **"Not saved"** marks unsaved changes.
+
+**As built in f01l, with your answers:**
+- **"Save"** downloads the file, named after the fund's name, and says where: "Saved as a-late-call-and-a-clawback.json, in your downloads."
+- **The name** is a field at the top of the Terms tab, as the main page has the cap table's. It starts as the example's label, or "My fund" for a blank fund or a bare input. A case's `inputs.json` is named by its case id.
+- **Only a fund the engine accepts is saved:** "Not saved: the cash flows have a problem to fix first. …" (or the terms), so a saved file always opens.
+- **The fund in the form is the fund in the file.** A save writes the input the two tabs write, and an opened file goes into them. A file opened and saved with no change has the same values, as the engine reads them, for every case's `inputs.json`.
+- **X** comes back from `view`, or $0 without one. Moving X isn't a change, but a save keeps it.
+- **"Open a file"** asks first if there are unsaved changes, as does picking another fund. So does leaving or reloading the page.
+- **The picker** shows "<name>, opened from <file>".
+- **Refused in one line under the masthead,** the current fund kept:
+  - not JSON
+  - a version above 1: "made by a newer spillpoint"
+  - the main page's file: "This is a cap table file. Open it on the main page."
+  - a term the page doesn't model: "This file has a term the page doesn't model: `hurdle_irr`."
+  - any other refusal, naming the row or term: "Row 5 of its cash flows: this distribution is before the fund's first call."
+- **A field the file format doesn't have** is refused, as the main page refuses one (C12), so a misspelt one can't be ignored.
+- **Nothing is kept in the browser,** and nothing goes in the address.
 
 **The rule holds:** nothing is kept in the browser, and nothing goes in the URL.
 

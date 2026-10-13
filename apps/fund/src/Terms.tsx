@@ -9,6 +9,9 @@ import type { Problem, StepText, TermsForm } from "./terms.ts";
 import { controlFor, toFlat, toSteps } from "./terms.ts";
 
 interface Props {
+  /** The fund's name, as the main page has the cap table's: a saved file is named after it. */
+  name: string;
+  onName: (name: string) => void;
   form: TermsForm;
   problem: Problem | null;
   onForm: (form: TermsForm) => void;
@@ -58,7 +61,7 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
   );
 }
 
-export function Terms({ form, problem, onForm, onShow }: Props) {
+export function Terms({ name, onName, form, problem, onForm, onShow }: Props) {
   const { carry, pref, catchUp, gpCommitment: g } = form;
   // A term turned on starts at its usual value, selected in its field, so it's typed straight over (f01i review,
   // answer 3). The field appears with the change, so it's focused once it's there.
@@ -81,6 +84,13 @@ export function Terms({ form, problem, onForm, onShow }: Props) {
     <section className="card terms" aria-labelledby="terms-heading">
       <h2 id="terms-heading">Terms</h2>
       <p className="card__intro">Rates are percents, written exactly as typed: 7.25% is 0.0725, with nothing rounded. Each change runs the waterfall again.</p>
+      <div className="terms__name">
+        <label htmlFor="fund-name">Name of this fund</label>
+        <input id="fund-name" type="text" value={name} onChange={(e) => onName(e.target.value)} aria-describedby="fund-name-hint" />
+        <span id="fund-name-hint" className="flows__hint">
+          A saved file is named after it.
+        </span>
+      </div>
       {problem && (
         <div className="notice notice--problem" role="status">
           <strong>The fund can't run as it is.</strong> {problem.message}{" "}
