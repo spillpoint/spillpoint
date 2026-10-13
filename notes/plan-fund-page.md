@@ -149,6 +149,13 @@ A table by tier, for X alone and for the fund to date:
 - **"This is the fund's last distribution",** F12's final
 - **"NAV on D",** optional
 
+**As built in f01j:**
+- **Amounts** are typed in dollars ("$8,000,000", "8000000" or "8M") and written exactly.
+- **D left empty** is the as-of date, which is what leaving it out of the input means; the field says so.
+- **A problem** shows in the cell its path names: a cash flow's own (before the first call, after D) in a line under its row, and "a fund needs a call" under the table. Text the page can't read (a blank amount, "lots") goes to the engine as "", so every problem, on either tab, comes one at a time in the engine's order (FA2): a blank fund asks for its as-of date before a carry rate.
+- **"A blank fund"** is last in the list: no dates, a flat 20% carry (F9's), and one call to fill in. Until the engine can run it, Payouts says "No payouts yet" and what's needed first. It stays "A blank fund" as it's filled in.
+- **"Add a cash flow"** adds a call with its date focused. **"Sort by date"** keeps the order shown within a date.
+
 **Pasting rows from a spreadsheet** is its own step, right after the table and before release (your answer 8): a GP won't type years of flows by hand. Copied cells from Excel, Numbers or Google Sheets arrive as tab-separated rows.
 - **The page reads each row** as date, type, kind and amount, in that order, and skips a header row it recognizes.
   - **Dates:** YYYY-MM-DD, or month/day/year as US spreadsheets copy them. A date that could be either day-first or month-first (03/04/2021) is asked about once for the whole paste, never guessed.

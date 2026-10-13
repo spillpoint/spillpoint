@@ -33,7 +33,7 @@ body { margin: 0; }
 .masthead__example { color: var(--muted); }
 .masthead__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
-select, input[type="text"] {
+select, input[type="text"], input[type="date"] {
   font: inherit; color: var(--text); background: var(--surface);
   border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 10px;
 }
@@ -104,7 +104,8 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* The split */
-.table-scroll { overflow-x: auto; }
+/* Positioned, so a visually hidden header inside is clipped with the table, not left out past the page. */
+.table-scroll { position: relative; overflow-x: auto; }
 .split { width: 100%; border-collapse: collapse; margin-top: 16px; font-variant-numeric: tabular-nums; }
 .split th, .split td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
 .split thead th { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
@@ -126,12 +127,30 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .muted { color: var(--muted); }
 
 /* The chart */
-.chart { position: relative; margin-top: 12px; user-select: none; }
+/* Clipped: a chart drawn while its tab was hidden has its first width until it's shown, and never widens the page. */
+.chart { position: relative; margin-top: 12px; user-select: none; overflow: hidden; }
 .chart :focus:not(:focus-visible) { outline: none; }
 .chart__hint { color: var(--muted); font-size: 0.8125rem; margin: 6px 0 0; }
 .legend { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 12px; }
 .legend li { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); }
 .legend__value { font-variant-numeric: tabular-nums; }
+
+/* The Cash flows tab */
+.flows__facts { display: grid; gap: 10px; margin: 16px 0 0; }
+.flows__facts > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.flows__facts > div > label { min-width: 11.5rem; font-weight: 600; }
+.flows__facts input[type="text"] { width: 12rem; font-variant-numeric: tabular-nums; }
+.flows__facts .field-error { flex-basis: 100%; margin: 0; }
+.flows__hint { color: var(--muted); font-size: 0.875rem; }
+.flows { margin-top: 12px; }
+.flows td { vertical-align: top; }
+.flows th[scope="row"] { color: var(--muted); padding-top: 14px; }
+.flows .field-error { margin: 4px 0 0; white-space: normal; }
+.flows input.flows__amount { width: 10rem; text-align: right; font-variant-numeric: tabular-nums; }
+.flows .muted { display: inline-block; padding-top: 6px; }
+.flows .link-button { padding-top: 6px; }
+.flows__problem td { border-top: 0; padding-top: 0; }
+.flows__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 /* The Terms tab */
 .terms .notice--problem { margin: 16px 0 0; }

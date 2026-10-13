@@ -105,7 +105,7 @@ const headline = () => [...screen.getByRole("region", { name: "The answer" }).qu
 const fact = (label: string | RegExp) => screen.getByText(label, { selector: "dt" }).nextElementSibling!.textContent;
 
 describe("the fund page", () => {
-  it("offers four examples, read from the locked cases at build time, a flat 20% fund first", () => {
+  it("offers four examples, read from the locked cases at build time, a flat 20% fund first, then a blank fund", () => {
     expect(examples.map((e) => e.id)).toEqual(["fund-03-gp-commitment", "fund-08-carry-steps", "fund-13-clawback-steps", "fund-12-spv"]);
     for (const e of examples) expect(e.fund).toEqual(caseFile(e.id, "inputs.json").fund);
     render(<App />);
@@ -115,6 +115,7 @@ describe("the fund page", () => {
       "A VC fund with premium carry: 20%, then 25% from 3x and 30% from 5x (fictional)",
       "A late call and a clawback (fictional)",
       "An SPV: one company, the exit as its last distribution (fictional)",
+      "A blank fund",
     ]);
     expect(picker.value).toBe("fund-03-gp-commitment");
   });

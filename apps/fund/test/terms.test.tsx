@@ -38,9 +38,7 @@ describe("rates as percents, exactly", () => {
   it.each(RUN_CASES)("%s: the form writes the case's terms back exactly, with the same breakpoints", (dir) => {
     const input = caseFile(dir, "inputs.json").fund;
     const fund = readFund(input);
-    const written = termsInput(formFrom(fund.terms));
-    expect("terms" in written).toBe(true);
-    const again = readFund({ ...input, terms: (written as { terms: unknown }).terms });
+    const again = readFund({ ...input, terms: termsInput(formFrom(fund.terms)) });
     expect(termsOf(again)).toEqual(termsOf(fund));
     expect(findBreakpoints(again).map((b) => b.x.toString())).toEqual(findBreakpoints(fund).map((b) => b.x.toString()));
   });
@@ -91,7 +89,7 @@ describe("the carry", () => {
     expect(headline()[1]).toBe("At a $20M distribution on 1 Apr 2026, the GP's carry is $2.29M.");
   });
 
-  it("says what it can't read, and doesn't run the engine on it", () => {
+  it("says what it can't read, under its field, in the engine's order", () => {
     terms();
     type("Carry rate", "twenty");
     expect(problemUnder("Carry rate")).toBe("Write the carry rate as a percent, 0 or more: 20 or 27.5.");
@@ -110,7 +108,7 @@ describe("the carry", () => {
     expect(headline()[1]).toBe("If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.53M of carry.");
     // The fund isn't case 8 any more: the list says so, and the line under it.
     expect((screen.getByLabelText("Start from") as HTMLSelectElement).selectedOptions[0]!.textContent).toBe("An example, with your changes");
-    expect(document.querySelector(".example-label")!.textContent).toMatch(/^This fund, with your changes to its terms: \$11M paid in over 4 calls/);
+    expect(document.querySelector(".example-label")!.textContent).toMatch(/^This fund, with your changes: \$11M paid in over 4 calls/);
     // Back to steps: case 8's three come back.
     tab("Terms");
     fireEvent.click(screen.getByRole("radio", { name: "In steps" }));
@@ -238,7 +236,7 @@ describe("starting over", () => {
     type("Carry rate", "25");
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-12-spv" } });
-    expect(confirm).toHaveBeenCalledWith("Start over from this example? Your changes to the terms will be lost.");
+    expect(confirm).toHaveBeenCalledWith("Start over? Your changes to this fund will be lost.");
     expect((screen.getByLabelText("Carry rate") as HTMLInputElement).value).toBe("25");
     confirm.mockReturnValue(true);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-12-spv" } });

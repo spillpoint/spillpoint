@@ -3,7 +3,8 @@
 //
 // Rates are typed as percents and written exactly, as strings: "7.25" is "0.0725", by moving the decimal point, so
 // nothing is rounded however many places are typed. The page reads only what it can't hand the engine (text that isn't
-// a number); every rule about the terms is the engine's, and its refusal says which (F18).
+// a number), and hands that to the engine as "", which it refuses; every rule about the terms is the engine's, and its
+// refusal says which (F18).
 
 import { D, FundRefusal } from "spillpoint-fund";
 import type { FundTerms } from "spillpoint-fund";
@@ -22,6 +23,9 @@ export interface TermsForm {
   /** F3's flags: fee-free and paying its share of expenses unless the terms say otherwise. */
   gpCommitment: { on: boolean; share: string; paysFees: boolean; paysExpenses: boolean };
 }
+
+/** What the page writes for text it can't read: not a number, so the engine refuses it where it is. */
+export const UNREAD = "";
 
 /** Where a problem is, as the engine's paths name it, and the page's words for it. */
 export interface Problem {
@@ -97,48 +101,25 @@ const WORDS = {
 };
 
 /**
- * The terms the engine reads, written from the form, in the engine's order (FA2): carry, pref, catch-up, GP
- * commitment. A field whose text isn't a number is the problem, under that field, and nothing goes to the engine.
+ * The terms the engine reads, written from the form. Text that isn't a number goes as "", which the engine refuses
+ * at that field's path, so every problem, the page's reading included, comes one at a time in the engine's order (FA2).
  */
-export function termsInput(form: TermsForm): { terms: Record<string, unknown> } | { problem: Problem } {
+export function termsInput(form: TermsForm): Record<string, unknown> {
+  const rate = (text: string) => rateFrom(text) ?? UNREAD;
   const terms: Record<string, unknown> = {};
-  if (form.carry.mode === "flat") {
-    const rate = rateFrom(form.carry.flat);
-    if (rate === null) return { problem: { path: "terms.carry", message: WORDS.carryRate } };
-    terms.carry = rate;
-  } else {
-    const steps: Record<string, string>[] = [];
-    for (const [i, s] of form.carry.steps.entries()) {
-      const at = `terms.carry.steps[${i}]`;
-      const rate = rateFrom(s.rate);
-      if (rate === null) return { problem: { path: `${at}.rate`, message: WORDS.carryRate } };
-      if (i === 0) {
-        steps.push({ rate });
-        continue;
-      }
-      const from = multipleFrom(s.from);
-      if (from === null) return { problem: { path: `${at}.from_lp_multiple`, message: WORDS.multiple } };
-      steps.push({ rate, from_lp_multiple: from });
-    }
-    terms.carry = { steps };
-  }
+  terms.carry =
+    form.carry.mode === "flat"
+      ? rate(form.carry.flat)
+      : { steps: form.carry.steps.map((s, i) => (i === 0 ? { rate: rate(s.rate) } : { rate: rate(s.rate), from_lp_multiple: multipleFrom(s.from) ?? UNREAD })) };
   if (form.pref.on) {
-    const rate = rateFrom(form.pref.rate);
-    if (rate === null) return { problem: { path: "terms.pref.rate", message: WORDS.prefRate } };
-    terms.pref = { rate };
+    terms.pref = { rate: rate(form.pref.rate) };
     // F8: a catch-up only with a pref, so the form shows it only then.
-    if (form.catchUp.kind !== "none") {
-      const share = form.catchUp.kind === "full" ? "1" : rateFrom(form.catchUp.share);
-      if (share === null) return { problem: { path: "terms.catch_up.gp_share", message: WORDS.catchUpShare } };
-      terms.catch_up = { gp_share: share };
-    }
+    if (form.catchUp.kind !== "none") terms.catch_up = { gp_share: form.catchUp.kind === "full" ? "1" : rate(form.catchUp.share) };
   }
   if (form.gpCommitment.on) {
-    const share = rateFrom(form.gpCommitment.share);
-    if (share === null) return { problem: { path: "terms.gp_commitment.share", message: WORDS.gpShare } };
-    terms.gp_commitment = { share, pays_fees: form.gpCommitment.paysFees, pays_expenses: form.gpCommitment.paysExpenses };
+    terms.gp_commitment = { share: rate(form.gpCommitment.share), pays_fees: form.gpCommitment.paysFees, pays_expenses: form.gpCommitment.paysExpenses };
   }
-  return { terms };
+  return terms;
 }
 
 /** A percent as typed, tidied for a sentence: " 25 % " is "25%". */
@@ -193,9 +174,18 @@ export function termsProblem(refusal: FundRefusal, form: TermsForm): Problem {
   return { path, message: words() };
 }
 
-/** The form control a problem's path names: a step's own problem goes to its rate. */
+/**
+ * The form control a problem's path names, on either tab: a step's own problem goes to its rate, a cash flow's to its
+ * date, and the cash flows' to "Add a cash flow".
+ */
 export function controlFor(path: string): string {
   if (/^terms\.carry\.steps\[\d+\]$/.test(path)) return `${path}.rate`;
   if (path === "terms.catch_up") return "terms.catch_up.gp_share";
+  if (/^cash_flows\[\d+\]$/.test(path)) return `${path}.date`;
   return path;
+}
+
+/** The tab a problem's path is on: the terms on Terms, everything else on Cash flows. */
+export function tabFor(path: string): "terms" | "flows" {
+  return path.startsWith("terms") ? "terms" : "flows";
 }

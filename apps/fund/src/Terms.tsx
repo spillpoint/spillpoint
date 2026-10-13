@@ -83,7 +83,7 @@ export function Terms({ form, problem, onForm, onShow }: Props) {
       <p className="card__intro">Rates are percents, written exactly as typed: 7.25% is 0.0725, with nothing rounded. Each change runs the waterfall again.</p>
       {problem && (
         <div className="notice notice--problem" role="status">
-          <strong>The fund can't run with these terms.</strong> {problem.message}{" "}
+          <strong>The fund can't run as it is.</strong> {problem.message}{" "}
           <button type="button" className="link-button" onClick={() => onShow(problem.path)}>
             Show me
           </button>
