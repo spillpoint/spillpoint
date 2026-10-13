@@ -1,13 +1,17 @@
-// The fund page (notes/plan-fund-page.md), its first step, f01f: an example fund from the locked cases, an X box, and
-// the split at X, for X alone and the fund to date. The chart, the clawback, the form, the cash-flow table and files
-// come in f01g to f01m.
+// The fund page (notes/plan-fund-page.md): an example fund from the locked cases, an X box with a slider, the split at
+// X for X alone and the fund to date (f01f), and the chart and the breakpoints (f01g). The clawback, the form, the
+// cash-flow table and files come in f01h to f01m.
 
 import { useMemo, useState } from "react";
-import { FundRefusal, readFund, splitAt } from "spillpoint-fund";
-import type { D, Fund, Split, Tiers } from "spillpoint-fund";
+import { D, FundRefusal, readFund, splitAt } from "spillpoint-fund";
+import type { Fund, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
+import { breakpointViews, chartPoints, defaultTop, niceUp } from "./analysis.ts";
+import type { BreakpointView } from "./analysis.ts";
+import { Breakpoints } from "./Breakpoints.tsx";
+import { Chart } from "./Chart.tsx";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
 /** What the X box holds: the text typed, and the last amount that split, which the page shows while the text doesn't. */
@@ -19,21 +23,50 @@ interface XState {
 
 const NOT_AN_AMOUNT = "Write an amount in dollars, 0 or more: 40000000, 40,000,000 or $40M.";
 
-function opened(id: string): { fund: Fund; x: XState } {
+/** The range's top as typed: its text, the amount it set (null: the page's own choice), and why the text doesn't read. */
+interface TopState {
+  text: string | null;
+  set: D | null;
+  problem: string | null;
+}
+
+function opened(id: string): { fund: Fund; x: XState; top: TopState } {
   const example = examples.find((e) => e.id === id)!;
   const fund = readFund(example.fund);
   const x = parseDollars(example.defaultX)!;
-  return { fund, x: { text: xText(x), shown: x, problem: null } };
+  return { fund, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
 }
+
+/** The slider's positions: X moves in steps of a thousandth of the range. */
+const POSITIONS = 1000;
+/** Marks under the slider closer than this, in percent of its width, step down a row: about 30 pixels on a phone. */
+const CROWDED = 9;
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
-  const [{ fund, x }, setState] = useState(() => opened(examples[0]!.id));
+  const [{ fund, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
+  const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
+  // The range's top: as typed, or the page's own; raised to take in an X typed past it.
+  const base = topState.set ?? defaultTop(fund, breakpoints);
+  const top = x.shown.gt(base) ? niceUp(x.shown.times("1.25")) : base;
+  const points = useMemo(() => chartPoints(fund, breakpoints, top), [fund, breakpoints, top]);
 
   const choose = (id: string) => {
     setExampleId(id);
     setState(opened(id));
+  };
+
+  /** X set exactly, by the slider, a mark or a breakpoint: the box shows it. */
+  const setX = (v: D) => setState((s) => ({ ...s, x: { text: xText(v), shown: v, problem: null } }));
+
+  const typeTop = (text: string) => {
+    const amount = parseDollars(text);
+    setState((s) =>
+      amount && amount.gt(0)
+        ? { ...s, top: { text, set: amount, problem: null } }
+        : { ...s, top: { ...s.top, text, problem: "Write an amount above $0: 100000000, 100,000,000 or $100M." } },
+    );
   };
 
   const typeX = (text: string) => {
@@ -75,8 +108,18 @@ export function App() {
       </header>
       <GovernanceNote />
       <Headline fund={fund} split={split} />
-      <XBox fund={fund} x={x} onType={typeX} />
+      <XBox fund={fund} x={x} onType={typeX} top={top} topState={topState} onTop={typeTop} breakpoints={breakpoints} onX={setX} />
       <SplitTable fund={fund} split={split} />
+      <Chart
+        points={points}
+        breakpoints={breakpoints}
+        nav={fund.nav}
+        x={x.shown}
+        top={top}
+        at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
+        hasCommitment={fund.terms.gpCommitment !== null}
+      />
+      <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={setX} />
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. */}
       <footer className="page-footer">
         spillpoint-fund {build.fundVersion} ({build.commit})
@@ -131,7 +174,38 @@ function Headline({ fund, split }: { fund: Fund; split: Split }) {
   );
 }
 
-function XBox({ fund, x, onType }: { fund: Fund; x: XState; onType: (text: string) => void }) {
+interface XBoxProps {
+  fund: Fund;
+  x: XState;
+  onType: (text: string) => void;
+  top: D;
+  topState: TopState;
+  onTop: (text: string) => void;
+  breakpoints: readonly BreakpointView[];
+  onX: (x: D) => void;
+}
+
+/**
+ * X: typed exactly, or set by the slider beside the box, from $0 to the range's top. Under the slider, each breakpoint
+ * is a numbered mark and NAV a mark of its own; choosing one moves X there exactly.
+ */
+function XBox({ fund, x, onType, top, topState, onTop, breakpoints, onX }: XBoxProps) {
+  const position = D.min(POSITIONS, x.shown.div(top).times(POSITIONS).round()).toNumber();
+  const percent = (v: D) => v.div(top).times(100).toNumber();
+  const marks = breakpoints.filter((b) => b.x.lte(top));
+  // Each mark under the slider, breakpoints and NAV in order of X. A mark closer to the one before than CROWDED percent
+  // of the slider steps down a row, so none overlap on a phone; the chart's numbers step up the same way.
+  const placed: { key: string; at: number; label: string; text: string; nav: boolean; onClick: () => void }[] = [
+    ...marks.map((b) => ({ key: `b${b.n}`, at: percent(b.x), label: `Breakpoint ${b.n}, at ${cents(b.x)}`, text: String(b.n), nav: false, onClick: () => onX(b.x) })),
+    ...(fund.nav && fund.nav.lte(top) ? [{ key: "nav", at: percent(fund.nav), label: `NAV, at ${cents(fund.nav)}`, text: "NAV", nav: true, onClick: () => onX(fund.nav!) }] : []),
+  ].sort((m, n) => m.at - n.at);
+  const lastInRow: number[] = [];
+  const rows = placed.map((m) => {
+    let row = 0;
+    while (lastInRow[row] !== undefined && m.at - lastInRow[row]! < CROWDED) row++;
+    lastInRow[row] = m.at;
+    return row;
+  });
   return (
     <section className="card x-box" aria-label="The distribution">
       <div className="x-box__typed">
@@ -143,6 +217,54 @@ function XBox({ fund, x, onType }: { fund: Fund; x: XState; onType: (text: strin
           {x.problem} Showing {xText(x.shown)}, the last amount that worked.
         </p>
       )}
+      <div className="x-box__slider">
+        <input
+          type="range"
+          min={0}
+          max={POSITIONS}
+          step={1}
+          value={position}
+          onChange={(e) => onX(top.times(Number(e.target.value)).div(POSITIONS))}
+          aria-label={`X, from $0 to ${short(top)}`}
+          aria-valuetext={xText(x.shown)}
+        />
+        <div className="x-box__marks" style={{ height: `${22 * Math.max(1, ...rows.map((r) => r + 1))}px` }}>
+          {placed.map((m, i) => (
+            <button
+              key={m.key}
+              type="button"
+              className={`x-box__mark${m.nav ? " x-box__mark--nav" : ""}`}
+              style={{ left: `${m.at}%`, top: `${rows[i]! * 22}px` }}
+              aria-label={m.label}
+              onClick={m.onClick}
+            >
+              {m.text}
+            </button>
+          ))}
+        </div>
+        <div className="x-box__ends" aria-hidden="true">
+          <span>$0</span>
+          <span>{short(top)}</span>
+        </div>
+      </div>
+      <div className="x-box__top">
+        <label htmlFor="top">The slider and the chart run up to</label>
+        <input
+          id="top"
+          type="text"
+          inputMode="decimal"
+          value={topState.text ?? xText(top)}
+          onChange={(e) => onTop(e.target.value)}
+          aria-invalid={topState.problem !== null}
+          aria-describedby="top-problem"
+        />
+        {topState.problem && (
+          <p id="top-problem" className="field-error" role="alert">
+            {topState.problem}
+          </p>
+        )}
+      </div>
+      {marks.length > 0 && <p className="x-box__caption">Each numbered mark is a breakpoint, listed below; choose one to move X there.</p>}
     </section>
   );
 }

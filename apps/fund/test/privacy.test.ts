@@ -66,7 +66,15 @@ describe("the built fund page", () => {
   });
 
   it("mentions no web address except documentation links in library error messages", () => {
-    const allowed = [/^http:\/\/www\.w3\.org\//, /^https:\/\/react\.dev\/errors\//, /^https:\/\/github\.com\/MikeMcl\/decimal\.js/];
+    // The main page's list. Recharts (f01g) brings Redux Toolkit's and Immer's error-message links with it.
+    const allowed = [
+      /^http:\/\/www\.w3\.org\//,
+      /^https:\/\/react\.dev\/errors\//,
+      /^https:\/\/redux(-toolkit)?\.js\.org\/Errors/,
+      /^https:\/\/github\.com\/MikeMcl\/decimal\.js/,
+      // Immer's error messages point here for details.
+      /^https:\/\/bit\.ly\/3cXEKWf/,
+    ];
     const addresses = scripts.flatMap(({ text }) => [...text.matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => m[0]));
     expect(addresses.filter((a) => !allowed.some((r) => r.test(a)))).toEqual([]);
   });

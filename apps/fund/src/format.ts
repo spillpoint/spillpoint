@@ -19,6 +19,13 @@ export function cents(amount: Decimal): string {
   return whole.startsWith("-") ? `-$${grouped(whole.slice(1))}.${part}` : `$${grouped(whole)}.${part}`;
 }
 
+/** "$198,000": to the dollar, half up, for a rate per extra $1M, which is approximate. */
+export function wholeDollars(amount: Decimal): string {
+  const rounded = amount.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(0, D.ROUND_HALF_UP);
+  const sign = rounded.isNegative() ? "-" : "";
+  return `${sign}$${grouped(rounded.abs().toFixed(0))}`;
+}
+
 /** X as the box shows it: whole dollars when it has no cents, "$40,000,000"; to the cent when it has, "$63,833,333.33". */
 export function xText(amount: Decimal): string {
   const c = cents(amount);
