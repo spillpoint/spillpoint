@@ -1,17 +1,18 @@
 // The fund page (notes/plan-fund-page.md): an example fund from the locked cases, an X box with a slider, the split at
-// X for X alone and the fund to date (f01f), and the chart and the breakpoints (f01g). The clawback, the form, the
-// cash-flow table and files come in f01h to f01m.
+// X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), and the clawback with the NAV button
+// (f01h). The form, the cash-flow table and files come in f01i to f01m.
 
 import { useMemo, useState } from "react";
-import { D, FundRefusal, readFund, splitAt } from "spillpoint-fund";
+import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { Fund, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
-import { breakpointViews, chartPoints, defaultTop, niceUp } from "./analysis.ts";
+import { breakpointViews, chartPoints, clawbackBends, defaultTop, niceUp, owedPoints } from "./analysis.ts";
 import type { BreakpointView } from "./analysis.ts";
 import { Breakpoints } from "./Breakpoints.tsx";
 import { Chart } from "./Chart.tsx";
+import { Clawback, owesSomething } from "./Clawback.tsx";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
 /** What the X box holds: the text typed, and the last amount that split, which the page shows while the text doesn't. */
@@ -30,11 +31,11 @@ interface TopState {
   problem: string | null;
 }
 
-function opened(id: string): { fund: Fund; x: XState; top: TopState } {
+function opened(id: string): { fund: Fund; opening: D; x: XState; top: TopState } {
   const example = examples.find((e) => e.id === id)!;
   const fund = readFund(example.fund);
   const x = parseDollars(example.defaultX)!;
-  return { fund, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
+  return { fund, opening: x, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
 }
 
 /** The slider's positions: X moves in steps of a thousandth of the range. */
@@ -44,13 +45,19 @@ const CROWDED = 9;
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
-  const [{ fund, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
+  const [{ fund, opening, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
-  // The range's top: as typed, or the page's own; raised to take in an X typed past it.
-  const base = topState.set ?? defaultTop(fund, breakpoints);
+  // The range's top: as typed, or the page's own; an X past it raises it to 1.25 × X, so X's mark is never off the chart
+  // (f01g review, answer 1).
+  const base = topState.set ?? defaultTop(fund, breakpoints, opening);
   const top = x.shown.gt(base) ? niceUp(x.shown.times("1.25")) : base;
   const points = useMemo(() => chartPoints(fund, breakpoints, top), [fund, breakpoints, top]);
+  // The clawback (F12): a final fund's at X; for a fund that isn't final, the NAV point's alone, which F14 takes as final.
+  const atNav = fund.nav !== null && x.shown.eq(fund.nav);
+  const clawbackAt = fund.final ? split : atNav ? splitAtNav(fund) : null;
+  const owed = useMemo(() => (fund.final ? owedPoints(fund, breakpoints, top) : null), [fund, breakpoints, top]);
+  const bends = useMemo(() => clawbackBends(fund, breakpoints), [fund, breakpoints]);
 
   const choose = (id: string) => {
     setExampleId(id);
@@ -107,9 +114,8 @@ export function App() {
         </div>
       </header>
       <GovernanceNote />
-      <Headline fund={fund} split={split} />
+      <Headline fund={fund} split={split} owed={clawbackAt?.clawback?.owed ?? null} />
       <XBox fund={fund} x={x} onType={typeX} top={top} topState={topState} onTop={typeTop} breakpoints={breakpoints} onX={setX} />
-      <SplitTable fund={fund} split={split} />
       <Chart
         points={points}
         breakpoints={breakpoints}
@@ -119,6 +125,8 @@ export function App() {
         at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
         hasCommitment={fund.terms.gpCommitment !== null}
       />
+      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} onX={setX} />}
+      <SplitTable fund={fund} split={split} />
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={setX} />
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. */}
       <footer className="page-footer">
@@ -156,16 +164,25 @@ function termsText(fund: Fund): string {
   return `${carry}; ${pref}; ${gp}.`;
 }
 
-/** The answer first, in neutral words: the same file goes to LPs and co-GPs (plan answer 6). */
-function Headline({ fund, split }: { fund: Fund; split: Split }) {
+/**
+ * The answer first, in neutral words: the same file goes to LPs and co-GPs (plan answer 6). When the GP owes a
+ * clawback, the headline says so beside the carry, so it never shows carry without it (f01h): a final fund's at X, or
+ * a fund's that isn't final at NAV, as if it were liquidated there.
+ */
+export function answerText(fund: Fund, split: Split, owed: D | null): string {
+  const date = dateText(fund.distributionDate);
+  const lead = split.x.isZero() ? `With nothing distributed on ${date}` : `At a ${short(split.x)} distribution on ${date}`;
+  const back = owed === null || !owesSomething(owed) ? "" : fund.final ? `, and it owes ${short(owed)} back` : `, and if the fund were liquidated at NAV it would owe ${short(owed)} back`;
+  return `${lead}, the GP's carry is ${short(split.distribution.gp.total)}${back}.`;
+}
+
+function Headline({ fund, split, owed }: { fund: Fund; split: Split; owed: D | null }) {
   const d = split.distribution;
   const commitment = fund.terms.gpCommitment ? ` and the GP commitment ${short(d.gpCommitment)}` : "";
   return (
     <section className="headline" aria-label="The answer">
       <p className="headline__terms">{termsText(fund)}</p>
-      <p className="headline__answer">
-        At a {short(split.x)} distribution on {dateText(fund.distributionDate)}, the GP's carry is {short(d.gp.total)}.
-      </p>
+      <p className="headline__answer">{answerText(fund, split, owed)}</p>
       <p className="headline__rest">
         The LPs get {short(d.lps.total)}
         {commitment}.
@@ -212,6 +229,19 @@ function XBox({ fund, x, onType, top, topState, onTop, breakpoints, onX }: XBoxP
         <label htmlFor="x">Distribution on {dateText(fund.distributionDate)} (X)</label>
         <input id="x" type="text" inputMode="decimal" value={x.text} onChange={(e) => onType(e.target.value)} aria-describedby="x-problem" aria-invalid={x.problem !== null} />
       </div>
+      {fund.nav && (
+        // The NAV point (plan, "The NAV point"): X at NAV is the split as if the fund were liquidated on D (F14).
+        <p className="x-box__nav">
+          <button type="button" className="button" onClick={() => onX(fund.nav!)}>
+            Set X to NAV
+          </button>
+          <span>
+            At NAV, {cents(fund.nav)}, as if the fund were liquidated on {dateText(fund.distributionDate)}
+            {fund.final ? "" : "; the clawback card then shows what the GP would owe back"}.
+          </span>
+          {x.shown.eq(fund.nav) && <span className="tag tag--quiet">X is at NAV</span>}
+        </p>
+      )}
       {x.problem && (
         <p id="x-problem" className="field-error" role="alert">
           {x.problem} Showing {xText(x.shown)}, the last amount that worked.

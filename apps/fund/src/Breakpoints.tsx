@@ -1,6 +1,6 @@
 // Every breakpoint, numbered as on the chart, in the engine's words (F15), with what an extra $1M of X gives the GP in
-// carry on either side. For a final fund the clawback's reasons are listed too; its card comes in f01h. Choosing one
-// moves X there, exactly.
+// carry on either side. For a final fund the clawback's reasons are listed too, as in the clawback card (f01h).
+// Choosing one moves X there, exactly.
 
 import type { D, Fund } from "spillpoint-fund";
 import { toCents } from "spillpoint-fund";

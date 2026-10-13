@@ -192,12 +192,18 @@ describe("the fund page", () => {
     expectSplit("fund-08-carry-steps", "20000000.00");
   });
 
-  it("opens case 13 at $15,000,000 and case 12 at its NAV, $6,000,000, each as its case splits them", () => {
+  it("opens case 13 at $0, where the clawback is the story, and case 12 at its NAV, $6,000,000, each as its case splits them", () => {
     render(<App />);
     const picker = screen.getByLabelText("Start from");
     fireEvent.change(picker, { target: { value: "fund-13-clawback-steps" } });
-    expect((screen.getByLabelText(/^Distribution on 1 Jan 2025/) as HTMLInputElement).value).toBe("$15,000,000");
+    const box = screen.getByLabelText(/^Distribution on 1 Jan 2025/) as HTMLInputElement;
+    expect(box.value).toBe("$0");
     expect(screen.getByText(/^Carry 20%/).textContent).toBe("Carry 20% and 30% from 2.0x; no pref; no GP commitment.");
+    expect(screen.getByText(/^With nothing/).textContent).toBe("With nothing distributed on 1 Jan 2025, the GP's carry is $0, and it owes $2.75M back.");
+    expectSplit("fund-13-clawback-steps", "0.00");
+    // The headline beside the carry, never without the clawback (f01h).
+    fireEvent.change(box, { target: { value: "15000000" } });
+    expect(screen.getByText(/^At a/).textContent).toBe("At a $15M distribution on 1 Jan 2025, the GP's carry is $1M, and it owes $750K back.");
     expectSplit("fund-13-clawback-steps", "15000000.00");
     expect(fact("The LPs' net multiple to date")).toBe("1.96x");
 
@@ -206,6 +212,12 @@ describe("the fund page", () => {
     expect(screen.getByText(/^The LPs get/).textContent).toBe("The LPs get $5.21M.");
     expectSplit("fund-12-spv", "6000000.00");
     expect(screen.queryByText(/GP commitment's paid-in/)).toBeNull();
+  });
+
+  it("puts the cards in the main page's order: the answer, X and its slider, the chart, the split, the breakpoints", () => {
+    render(<App />);
+    const cards = [...document.querySelectorAll(".page > section")].map((s) => s.getAttribute("aria-label") ?? s.querySelector("h2")!.textContent);
+    expect(cards).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $20,000,000", "Breakpoints"]);
   });
 
   it("names spillpoint-fund's version and the commit in the footer", () => {

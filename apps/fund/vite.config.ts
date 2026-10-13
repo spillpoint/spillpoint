@@ -33,7 +33,7 @@ const casesDir = resolve(repo, "packages/fund/cases");
 export const EXAMPLES = [
   { id: "fund-03-gp-commitment", label: "A fund: 20% carry and a 2% GP commitment", defaultX: "20000000" },
   { id: "fund-08-carry-steps", label: "A VC fund with premium carry: 20%, then 25% from 3x and 30% from 5x", defaultX: "40000000" },
-  { id: "fund-13-clawback-steps", label: "A late call and a clawback", defaultX: "15000000" },
+  { id: "fund-13-clawback-steps", label: "A late call and a clawback", defaultX: "0" },
   { id: "fund-12-spv", label: "An SPV: one company, the exit as its last distribution", defaultX: "6000000" },
 ];
 

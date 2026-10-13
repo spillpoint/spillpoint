@@ -32,14 +32,18 @@ export function xText(amount: Decimal): string {
   return c.endsWith(".00") ? c.slice(0, -3) : c;
 }
 
-/** "$6.81M", "$32.8M", "$400K", "$812": three significant digits, for the headline. */
+/**
+ * "$6.81M", "$32.8M", "$400K", "$812": three significant digits, for the headline. The unit is chosen after rounding,
+ * so $999,999.99 is "$1M", not "$1000K", and $999.50 is "$1K".
+ */
 export function short(amount: Decimal): string {
   const a = amount.abs();
   const sign = amount.isNegative() ? "-" : "";
+  const rounded = a.gte(1000) ? a.toSignificantDigits(3, D.ROUND_HALF_UP) : a.toDecimalPlaces(0, D.ROUND_HALF_UP);
   for (const [size, suffix] of [["1e9", "B"], ["1e6", "M"], ["1e3", "K"]] as const) {
-    if (a.gte(size)) return `${sign}$${a.div(size).toSignificantDigits(3, D.ROUND_HALF_UP).toString()}${suffix}`;
+    if (rounded.gte(size)) return `${sign}$${rounded.div(size).toString()}${suffix}`;
   }
-  return `${sign}$${a.toDecimalPlaces(0, D.ROUND_HALF_UP).toFixed(0)}`;
+  return `${sign}$${rounded.toFixed(0)}`;
 }
 
 /**

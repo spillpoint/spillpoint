@@ -21,6 +21,8 @@ describe("format", () => {
 
   it("writes headline amounts to three significant digits", () => {
     expect([short(new D("6806250")), short(new D("32793750")), short(new D("400000")), short(new D("812")), short(new D("0"))]).toEqual(["$6.81M", "$32.8M", "$400K", "$812", "$0"]);
+    // The unit comes after rounding: just under $1M is $1M, not $1000K; just under $1K is $1K.
+    expect([short(new D("999999.99")), short(new D("999.5")), short(new D("999.49")), short(new D("750000")), short(new D("2750000"))]).toEqual(["$1M", "$1K", "$999", "$750K", "$2.75M"]);
   });
 
   it("reads typed amounts exactly, and nothing that isn't one", () => {
