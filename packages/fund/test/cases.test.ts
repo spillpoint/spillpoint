@@ -71,8 +71,8 @@ const sum = (xs: (string | undefined)[]) => xs.reduce((s, x) => (x === undefined
 const near = (a: D, b: D, n: number) => a.minus(b).abs().lte(CENT.times(n).div(2));
 
 describe("fund cases", () => {
-  it("are thirteen runs and one set of refusals", () => {
-    expect(RUN).toHaveLength(13);
+  it("are fifteen runs and one set of refusals", () => {
+    expect(RUN).toHaveLength(15);
     expect(REFUSED).toEqual(["fund-14-refused"]);
     expect([...RUN, ...REFUSED].sort()).toEqual(FUND);
   });
