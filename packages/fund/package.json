@@ -1,0 +1,25 @@
+{
+  "name": "spillpoint-fund",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fund-level waterfall: how a distribution splits between LPs and GP, tier by tier, with every breakpoint and any clawback.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "decimal.js": "^10.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
