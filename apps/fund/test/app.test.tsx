@@ -1,0 +1,171 @@
+// The fund page's first step (f01f): the three examples, the X box and the split, each figure held to the locked case's
+// expected.json, so the page's numbers can't drift from the engine's or the cases'.
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import examples from "virtual:fund-examples";
+import { describe, expect, it } from "vitest";
+
+import { App } from "../src/App.tsx";
+
+const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
+const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
+
+interface Block {
+  amount: string;
+  gp_commitment?: string;
+  lps: { capital: string; pref?: string; catch_up?: string; carry_tier: string; total: string };
+  gp: { catch_up?: string; carry: { amount: string }[]; total: string };
+}
+interface Point {
+  x: string;
+  distribution: Block;
+  to_date: Block;
+}
+
+/** "6930000.00" as the page writes it: "$6,930,000.00". */
+const money = (s: string) => {
+  const [whole, part] = s.split(".") as [string, string];
+  return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${part}`;
+};
+
+/** A row of the split table, by its label: the four amounts, X's LPs and GP, then to date's. */
+function row(label: string | RegExp): string[] {
+  const header = within(screen.getByRole("table")).getByRole("rowheader", { name: label });
+  return within(header.closest("tr")!)
+    .getAllByRole("cell")
+    .map((c) => c.textContent!);
+}
+
+/** The point of a case's expected.json at an X. */
+function point(dir: string, x: string): Point {
+  const p = (caseFile(dir, "expected.json").points as Point[]).find((q) => q.x === x);
+  expect(p, `${dir} has a point at ${x}`).toBeDefined();
+  return p!;
+}
+
+/** Every row of the split, held to the case's point: each tier, each step, the totals and the GP commitment's line. */
+function expectSplit(dir: string, x: string) {
+  const p = point(dir, x);
+  const [now, all] = [p.distribution, p.to_date];
+  const inputs = caseFile(dir, "inputs.json").fund;
+  const NONE = "—";
+  expect(row("Capital")).toEqual([money(now.lps.capital), NONE, money(all.lps.capital), NONE]);
+  if (now.lps.pref) expect(row("Pref")).toEqual([money(now.lps.pref), NONE, money(all.lps.pref!), NONE]);
+  else expect(within(screen.getByRole("table")).queryByRole("rowheader", { name: "Pref" })).toBeNull();
+  if (now.gp.catch_up) expect(row("Catch-up")).toEqual([money(now.lps.catch_up!), money(now.gp.catch_up), money(all.lps.catch_up!), money(all.gp.catch_up!)]);
+  if (now.gp.carry.length === 1) {
+    expect(row(/^Carry, at/)).toEqual([money(now.lps.carry_tier), money(now.gp.carry[0]!.amount), money(all.lps.carry_tier), money(all.gp.carry[0]!.amount)]);
+  } else {
+    expect(row("Carry tier")).toEqual([money(now.lps.carry_tier), NONE, money(all.lps.carry_tier), NONE]);
+    now.gp.carry.forEach((s, i) => {
+      const rate = inputs.terms.carry.steps[i].rate;
+      expect(row(new RegExp(`^GP's carry at ${Number(rate) * 100}%`))).toEqual([NONE, money(s.amount), NONE, money(all.gp.carry[i]!.amount)]);
+    });
+  }
+  expect(row("Total")).toEqual([money(now.lps.total), money(now.gp.total), money(all.lps.total), money(all.gp.total)]);
+  if (now.gp_commitment) {
+    expect(screen.getByText(/The GP commitment's line, outside the tiers/).textContent).toBe(
+      `The GP commitment's line, outside the tiers: ${money(now.gp_commitment)} of this distribution, ${money(all.gp_commitment!)} to date.`,
+    );
+  }
+}
+
+/** A fact under the table, by its label. */
+const fact = (label: string | RegExp) => screen.getByText(label, { selector: "dt" }).nextElementSibling!.textContent;
+
+describe("the fund page", () => {
+  it("offers the three examples, read from the locked cases at build time, case 8 first", () => {
+    expect(examples.map((e) => e.id)).toEqual(["fund-08-carry-steps", "fund-13-clawback-steps", "fund-12-spv"]);
+    for (const e of examples) expect(e.fund).toEqual(caseFile(e.id, "inputs.json").fund);
+    render(<App />);
+    const picker = screen.getByLabelText("Start from") as HTMLSelectElement;
+    expect([...picker.options].map((o) => o.textContent)).toEqual([
+      "A VC fund: carry steps and a 1% GP commitment (fictional)",
+      "A late call and a clawback (fictional)",
+      "An SPV: one company, the exit as its last distribution (fictional)",
+    ]);
+    expect(picker.value).toBe("fund-08-carry-steps");
+  });
+
+  it("opens on case 8 at $40,000,000, with the answer first, in neutral words", () => {
+    render(<App />);
+    expect((screen.getByLabelText(/^Distribution on 30 Sep 2026/) as HTMLInputElement).value).toBe("$40,000,000");
+    expect(screen.getByText(/^Carry 20%/).textContent).toBe("Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free.");
+    expect(screen.getByText(/^At a/).textContent).toBe("At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.");
+    expect(screen.getByText(/^The LPs get/).textContent).toBe("The LPs get $32.8M and the GP commitment $400K.");
+  });
+
+  it("splits case 8 at $40,000,000 as the case does, X alone and the fund to date", () => {
+    render(<App />);
+    expect(screen.getByRole("heading", { name: "The split at $40,000,000" })).toBeDefined();
+    expectSplit("fund-08-carry-steps", "40000000.00");
+    // The figures the review note asks Jordan to check, written out.
+    expect(row("Total")).toEqual(["$32,793,750.00", "$6,806,250.00", "$36,753,750.00", "$6,806,250.00"]);
+    expect(row(/^GP's carry at 20%/)).toEqual(["—", "$5,445,000.00", "—", "$5,445,000.00"]);
+    expect(row(/^GP's carry at 25%, from 3.0x/)).toEqual(["—", "$1,361,250.00", "—", "$1,361,250.00"]);
+  });
+
+  it("gives the paid-in, the pref accrued and the LPs' net multiple under the split, from the engine", () => {
+    render(<App />);
+    expect(fact("Distributed")).toBe("$40,000,000.00 now, $44,000,000.00 to date");
+    expect(fact("The LPs' paid-in")).toBe("$10,890,000.00");
+    expect(fact("The GP commitment's paid-in")).toBe("$100,000.00");
+    // $36,753,750 to date on $10,890,000 paid in: 3.375, to two places.
+    expect(fact("The LPs' net multiple to date")).toBe("3.38x");
+    // Case 8 has no pref, so no pref accrued.
+    expect(screen.queryByText(/The pref accrued/)).toBeNull();
+  });
+
+  it("says why amounts are to the cent and not as paid", () => {
+    render(<App />);
+    expect(screen.getByText(/^Amounts are to the cent/).textContent).toBe(
+      `Amounts are to the cent. "The LPs" is every LP together, not one payment, so nothing here is rounded down as it would be paid; each row is rounded on its own and can differ from its total by a cent.`,
+    );
+  });
+
+  it("splits at a typed X: $34.5M, case 8's 3.0x breakpoint", () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "$34.5M" } });
+    expect(screen.getByRole("heading", { name: "The split at $34,500,000" })).toBeDefined();
+    expectSplit("fund-08-carry-steps", "34500000.00");
+    expect(fact("The LPs' net multiple to date")).toBe("3.00x");
+  });
+
+  it("says beside the box when the text isn't an amount, and keeps the last split that worked", () => {
+    render(<App />);
+    const box = screen.getByLabelText(/^Distribution on/);
+    fireEvent.change(box, { target: { value: "forty million" } });
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Write an amount in dollars, 0 or more: 40000000, 40,000,000 or $40M. Showing $40,000,000, the last amount that worked.",
+    );
+    expect(box.getAttribute("aria-invalid")).toBe("true");
+    expectSplit("fund-08-carry-steps", "40000000.00");
+    fireEvent.change(box, { target: { value: "20,000,000" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expectSplit("fund-08-carry-steps", "20000000.00");
+  });
+
+  it("opens case 13 at $15,000,000 and case 12 at its NAV, $6,000,000, each as its case splits them", () => {
+    render(<App />);
+    const picker = screen.getByLabelText("Start from");
+    fireEvent.change(picker, { target: { value: "fund-13-clawback-steps" } });
+    expect((screen.getByLabelText(/^Distribution on 1 Jan 2025/) as HTMLInputElement).value).toBe("$15,000,000");
+    expect(screen.getByText(/^Carry 20%/).textContent).toBe("Carry 20% and 30% from 2.0x; no pref; no GP commitment.");
+    expectSplit("fund-13-clawback-steps", "15000000.00");
+    expect(fact("The LPs' net multiple to date")).toBe("1.96x");
+
+    fireEvent.change(picker, { target: { value: "fund-12-spv" } });
+    expect(screen.getByText(/^At a/).textContent).toBe("At a $6M distribution on 1 May 2026, the GP's carry is $792K.");
+    expect(screen.getByText(/^The LPs get/).textContent).toBe("The LPs get $5.21M.");
+    expectSplit("fund-12-spv", "6000000.00");
+    expect(screen.queryByText(/GP commitment's paid-in/)).toBeNull();
+  });
+
+  it("names spillpoint-fund's version and the commit in the footer", () => {
+    render(<App />);
+    expect(screen.getByRole("contentinfo").textContent).toMatch(/^spillpoint-fund 0\.0\.0 \([0-9a-f]{7}(, modified)?\)$/);
+  });
+});

@@ -1,0 +1,99 @@
+/* The fund page's look: the main page's (notes/design-m3.md), plain, serious, readable.
+   System fonts only, so the page fetches nothing. One accent colour; nothing
+   relies on colour alone. The tokens are the main page's, copied, since the two
+   apps share no code (notes/plan-fund-page.md). */
+
+:root {
+  --text: #1b1f24;
+  --muted: #5b6370;
+  --line: #d8dce2;
+  --surface: #ffffff;
+  --page: #f6f7f9;
+  --accent: #1d3557;
+  --accent-soft: #e9eef5;
+  --error: #a4262c;
+  --radius: 6px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--page);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+.page { max-width: 1040px; margin: 0 auto; padding: 24px 24px 64px; }
+
+/* Masthead */
+.masthead { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.wordmark { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+.masthead__tagline { color: var(--muted); margin-left: 12px; }
+.masthead__example { color: var(--muted); }
+.masthead__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+select, input[type="text"] {
+  font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 10px;
+}
+select { max-width: 100%; }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The caveat: always visible, plain, not alarming. */
+.notice {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  border-radius: var(--radius); padding: 12px 16px; margin-bottom: 24px;
+}
+
+/* The answer first */
+.headline { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.headline__terms { color: var(--muted); margin: 0; }
+.headline__answer { font-size: 2rem; line-height: 1.2; margin: 16px 0 8px; font-weight: 650; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.headline__rest { font-size: 1.125rem; margin: 0; font-variant-numeric: tabular-nums; }
+
+/* The distribution, X */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin-top: 16px; }
+.card h2 { font-size: 1.25rem; margin: 0; }
+.x-box__typed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.x-box__typed label { font-weight: 600; }
+.x-box__typed input { width: 14rem; font-variant-numeric: tabular-nums; }
+.field-error { color: var(--error); font-size: 0.875rem; margin: 8px 0 0; }
+
+/* The split */
+.table-scroll { overflow-x: auto; }
+.split { width: 100%; border-collapse: collapse; margin-top: 16px; font-variant-numeric: tabular-nums; }
+.split th, .split td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
+.split thead th { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
+.split thead tr:first-child th, .split thead tr:first-child td { text-align: center; border-bottom: 0; padding-bottom: 0; color: var(--text); }
+/* A thin rule between X's columns and the fund to date's, so the two groups read as two. */
+.split .split__group { border-left: 1px solid var(--line); }
+.split tbody th { font-weight: 500; }
+.split .num { text-align: right; white-space: nowrap; }
+.split tr.split__sub th { padding-left: 28px; color: var(--muted); font-weight: 400; }
+.split tfoot th, .split tfoot td { font-weight: 600; border-bottom: 0; }
+.split__commitment { margin: 12px 0 0; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 24px; margin: 16px 0 0; }
+.facts div { margin: 0; }
+.facts dt { color: var(--muted); font-size: 0.875rem; }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.footnote { color: var(--muted); font-size: 0.875rem; margin: 12px 0 0; }
+.page-footer { margin-top: 32px; color: var(--muted); font-size: 0.75rem; text-align: center; }
+
+@media (max-width: 640px) {
+  .page { padding: 16px 12px 48px; }
+  .masthead__tagline { display: block; margin-left: 0; }
+  /* The example picker takes the full width rather than running off the screen, as on the main page. */
+  .masthead__controls { width: 100%; }
+  .masthead__example { display: flex; flex-direction: column; gap: 2px; flex: 1 1 100%; min-width: 0; }
+  .masthead__example select { width: 100%; }
+  .headline { padding: 16px; }
+  .headline__answer { font-size: 1.5rem; }
+  .card { padding: 16px; }
+  .x-box__typed input { width: 100%; }
+  .split th, .split td { padding: 6px 6px; font-size: 0.875rem; }
+  /* Each tier's label on one line, held in view while the figures scroll sideways inside the card, as the main page's
+     shares grid does. f01m's narrow-screen pass looks at the whole page again. */
+  .split th[scope="row"] { white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+}
