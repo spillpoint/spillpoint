@@ -15,7 +15,8 @@ function refusal(input: unknown): { kind: string; term: string; field: string } 
   } catch (e) {
     expect(e).toBeInstanceOf(FundRefusal);
     const r = e as FundRefusal;
-    return { kind: r.kind, term: r.term, field: r.field };
+    // The case files call the path `field` (FC7).
+    return { kind: r.kind, term: r.term, field: r.path };
   }
   throw new Error("not refused");
 }
@@ -47,28 +48,28 @@ describe("reading", () => {
     expect(fund.distributionDate).toBe("2025-01-01"); // FA11: as_of
     expect(fund.final).toBe(false);
     expect(fund.nav).toBeNull();
-    expect(fund.carry.map((s) => [s.rate.toString(), s.fromLpMultiple])).toEqual([["0.2", null]]);
-    expect(fund.prefRate?.toString()).toBe("0.08");
-    expect(fund.catchUpShare?.toString()).toBe("1");
-    expect(fund.gpCommitment).toBeNull();
+    expect(fund.terms.carry.map((s) => [s.rate.toString(), s.fromLpMultiple])).toEqual([["0.2", null]]);
+    expect(fund.terms.pref?.rate.toString()).toBe("0.08");
+    expect(fund.terms.catchUp?.gpShare.toString()).toBe("1");
+    expect(fund.terms.gpCommitment).toBeNull();
     // Read once and never changed, so the split can keep what it works out for it.
-    expect([Object.isFrozen(fund), Object.isFrozen(fund.cashFlows), Object.isFrozen(fund.cashFlows[0]), Object.isFrozen(fund.carry[0])]).toEqual([true, true, true, true]);
+    expect([Object.isFrozen(fund), Object.isFrozen(fund.cashFlows), Object.isFrozen(fund.cashFlows[0]), Object.isFrozen(fund.terms.carry[0])]).toEqual([true, true, true, true]);
   });
 
   it("gives carry of 20% when the terms don't, and a GP commitment fee-free, paying expenses (F3, F9)", () => {
     const fund = readFund({ as_of: "2025-01-01", terms: { gp_commitment: { share: "0.01" } }, cash_flows: BASE.cash_flows });
-    expect(fund.carry[0]!.rate.toString()).toBe("0.2");
-    expect(fund.gpCommitment).toMatchObject({ paysFees: false, paysExpenses: true });
+    expect(fund.terms.carry[0]!.rate.toString()).toBe("0.2");
+    expect(fund.terms.gpCommitment).toMatchObject({ paysFees: false, paysExpenses: true });
   });
 
   it("reads null as left out, except carry (FA3)", () => {
     const fund = readFund(change({ set: { "terms.gp_commitment": null, nav: null, final: null, distribution_date: null, "terms.pref.compounding": null }, del: "terms.catch_up" }));
-    expect([fund.gpCommitment, fund.nav, fund.final, fund.catchUpShare, fund.distributionDate]).toEqual([null, null, false, null, "2025-01-01"]);
+    expect([fund.terms.gpCommitment, fund.nav, fund.final, fund.terms.catchUp, fund.distributionDate]).toEqual([null, null, false, null, "2025-01-01"]);
     expect(refusal(change({ set: { "terms.carry": null } }))).toEqual({ kind: "input", term: "bad_number", field: "terms.carry" });
   });
 
   it("reads a simple pref named as one (F7)", () => {
-    expect(readFund(change({ set: { "terms.pref.compounding": "simple" } })).prefRate?.toString()).toBe("0.08");
+    expect(readFund(change({ set: { "terms.pref.compounding": "simple" } })).terms.pref?.rate.toString()).toBe("0.08");
   });
 
   it("orders cash flows by date, calls before distributions, distributions as listed (F4, FA12)", () => {
@@ -144,7 +145,7 @@ describe("X (FA13)", () => {
     try {
       splitAt(fund, x);
     } catch (e) {
-      expect([(e as FundRefusal).term, (e as FundRefusal).field]).toEqual(["bad_number", "x"]);
+      expect([(e as FundRefusal).term, (e as FundRefusal).path]).toEqual(["bad_number", "x"]);
     }
   });
 });

@@ -20,7 +20,9 @@
 import { D, ONE, ZERO } from "./decimal.ts";
 import type { Fund } from "./model.ts";
 import { multiple, percent, usd } from "./reasons.ts";
-import type { ClawbackChange, Reason, TierReasonCode } from "./reasons.ts";
+import type { Reason } from "./reasons.ts";
+import { CHANGE_WORDS, TOTALS_WORDINGS, WORDINGS } from "./stable-names.ts";
+import type { ClawbackChange, TierReasonCode } from "./stable-names.ts";
 import { splitAt, standingAtD, stepReached } from "./waterfall.ts";
 import type { Start } from "./waterfall.ts";
 
@@ -61,15 +63,15 @@ function segments(fund: Fund, start: Start): Segment[] {
     lps = lps.plus(start.capitalDue);
   }
   // F6: the pref accrued and unpaid.
-  if (fund.prefRate && start.prefDue.gt(TIE)) {
+  if (fund.terms.pref && start.prefDue.gt(TIE)) {
     add({ kind: "pref" }, ZERO, start.prefDue);
     lps = lps.plus(start.prefDue);
     profit = profit.plus(start.prefDue);
   }
   // F8: what brings the GP's carry to c of the profit, closing by s − c a dollar.
-  if (fund.catchUpShare) {
-    const s = fund.catchUpShare;
-    const c = fund.carry[0]!.rate;
+  if (fund.terms.catchUp) {
+    const s = fund.terms.catchUp.gpShare;
+    const c = fund.terms.carry[0]!.rate;
     const size = c.times(profit).minus(start.gp).div(s.minus(c));
     if (size.gt(TIE)) {
       add({ kind: "catch_up" }, s, size);
@@ -77,16 +79,16 @@ function segments(fund: Fund, start: Start): Segment[] {
     }
   }
   // F9 to F11: from the step the LPs have reached, what brings them to each next step's multiple.
-  let k = stepReached(fund.carry, lps, start.paidIn);
-  for (; k + 1 < fund.carry.length; k++) {
-    const target = fund.carry[k + 1]!.fromLpMultiple!.times(start.paidIn);
-    const size = target.minus(lps).div(ONE.minus(fund.carry[k]!.rate));
+  let k = stepReached(fund.terms.carry, lps, start.paidIn);
+  for (; k + 1 < fund.terms.carry.length; k++) {
+    const target = fund.terms.carry[k + 1]!.fromLpMultiple!.times(start.paidIn);
+    const size = target.minus(lps).div(ONE.minus(fund.terms.carry[k]!.rate));
     if (size.gt(TIE)) {
-      add({ kind: "carry", step: k }, fund.carry[k]!.rate, size);
+      add({ kind: "carry", step: k }, fund.terms.carry[k]!.rate, size);
       lps = target;
     }
   }
-  out.push({ tier: { kind: "carry", step: k }, gpRate: fund.carry[k]!.rate, end: null });
+  out.push({ tier: { kind: "carry", step: k }, gpRate: fund.terms.carry[k]!.rate, end: null });
   return out;
 }
 
@@ -101,19 +103,21 @@ function tierCode(tier: Tier): TierReasonCode {
 }
 
 /** F15's reason for X's own tier ending, `next` the tier the next dollar falls in. */
-function tierReason(fund: Fund, ended: Tier, next: Tier, paidIn: D, prefToD: D): Reason {
+function tierReason(fund: Fund, ended: Tier, next: Tier, paidIn: D, prefAccrued: D): Reason {
   switch (ended.kind) {
     case "capital":
-      return { code: "capital_returned", amount: paidIn, text: `LPs have their ${usd(paidIn)} of paid-in capital back` };
-    case "pref":
-      return { code: "pref_met", rate: fund.prefRate!, amount: prefToD, text: `LPs have their ${percent(fund.prefRate!)} pref, ${usd(prefToD)}` };
+      return { code: "capital_returned", amount: paidIn, text: WORDINGS.capital_returned(usd(paidIn)) };
+    case "pref": {
+      const rate = fund.terms.pref!.rate;
+      return { code: "pref_met", rate, amount: prefAccrued, text: WORDINGS.pref_met(percent(rate), usd(prefAccrued)) };
+    }
     case "catch_up": {
-      const c = fund.carry[0]!.rate;
-      return { code: "catch_up_done", carry: c, text: `the GP has ${percent(c)} of the profit` };
+      const c = fund.terms.carry[0]!.rate;
+      return { code: "catch_up_done", carry: c, text: WORDINGS.catch_up_done(percent(c)) };
     }
     case "carry": {
-      const step = fund.carry[(next as { step: number }).step]!;
-      return { code: "carry_step", lpMultiple: step.fromLpMultiple!, rate: step.rate, text: `LPs reach ${multiple(step.fromLpMultiple!)}: carry is ${percent(step.rate)} from here` };
+      const step = fund.terms.carry[(next as { step: number }).step]!;
+      return { code: "carry_step", lpMultiple: step.fromLpMultiple!, rate: step.rate, text: WORDINGS.carry_step(multiple(step.fromLpMultiple!), percent(step.rate)) };
     }
   }
 }
@@ -122,14 +126,14 @@ function tierReason(fund: Fund, ended: Tier, next: Tier, paidIn: D, prefToD: D):
 function totalsWording(fund: Fund, ended: Tier, next: Tier): string {
   switch (ended.kind) {
     case "capital":
-      return "LPs have their capital back";
+      return TOTALS_WORDINGS.capital_returned();
     case "pref":
-      return "LPs have their pref";
+      return TOTALS_WORDINGS.pref_met();
     case "catch_up":
-      return `the GP has ${percent(fund.carry[0]!.rate)} of the profit`;
+      return TOTALS_WORDINGS.catch_up_done(percent(fund.terms.carry[0]!.rate));
     case "carry": {
-      const step = fund.carry[(next as { step: number }).step]!;
-      return `LPs reach ${multiple(step.fromLpMultiple!)}: carry is ${percent(step.rate)} from here`;
+      const step = fund.terms.carry[(next as { step: number }).step]!;
+      return TOTALS_WORDINGS.carry_step(multiple(step.fromLpMultiple!), percent(step.rate));
     }
   }
 }
@@ -138,14 +142,14 @@ function totalsWording(fund: Fund, ended: Tier, next: Tier): string {
  * F15's words for the clawback's slope changing, per dollar of X. Rising isn't worded: v1 can't produce it (FA9), so
  * reaching it is a bug in the engine, not a problem with the input, and it's a plain Error, not a FundRefusal.
  */
-function change(below: D, above: D): [ClawbackChange, string] {
+function change(below: D, above: D): ClawbackChange {
   const zero = (d: D) => d.abs().lte(TIE);
-  if (zero(below) && above.lt(ZERO)) return ["starts_to_fall", "starts to fall"];
-  if (below.lt(ZERO) && zero(above)) return ["stops_falling", "stops falling"];
-  if (below.lt(ZERO) && above.lt(below)) return ["falls_faster", "falls faster"];
-  if (below.lt(ZERO) && above.gt(below) && above.lt(ZERO)) return ["falls_more_slowly", "falls more slowly"];
+  if (zero(below) && above.lt(ZERO)) return "starts_to_fall";
+  if (below.lt(ZERO) && zero(above)) return "stops_falling";
+  if (below.lt(ZERO) && above.lt(below)) return "falls_faster";
+  if (below.lt(ZERO) && above.gt(below) && above.lt(ZERO)) return "falls_more_slowly";
   throw new Error(
-    `spillpoint-fund bug, please report it: the clawback owed rises as X grows (its slope goes from ${below.toString()} to ${above.toString()}), which v1's terms can't produce (FA9)`,
+    `spillpoint-fund bug, please report it: the clawback rises as X grows (its slope goes from ${below.toString()} to ${above.toString()}), which v1's terms can't produce (FA9)`,
   );
 }
 
@@ -159,14 +163,14 @@ export function findBreakpoints(fund: Fund): Breakpoint[] {
   const standing = standingAtD(fund);
   const paidIn = standing.start.paidIn;
   // F3: X's tiers get 1 − g of each dollar of X.
-  const share = ONE.minus(fund.gpCommitment?.share ?? ZERO);
+  const share = ONE.minus(fund.terms.gpCommitment?.share ?? ZERO);
   const toX = (throughTiers: D) => throughTiers.div(share);
 
   // X's own run, ends in dollars of X.
   const mine = segments(fund, standing.start).map((s) => ({ ...s, end: s.end && toX(s.end) }));
   const ownEnds = mine.filter((s) => s.end !== null).map((s) => s.end!);
   if (!fund.final) {
-    return ownEnds.map((x, i) => ({ x, reasons: [tierReason(fund, mine[i]!.tier, mine[i + 1]!.tier, paidIn, standing.prefToD)] }));
+    return ownEnds.map((x, i) => ({ x, reasons: [tierReason(fund, mine[i]!.tier, mine[i + 1]!.tier, paidIn, standing.prefAccrued)] }));
   }
 
   // F12: the run on the fund's totals, from zero: all LP paid-in as capital and the hurdle pref, its amount everything
@@ -206,17 +210,17 @@ export function findBreakpoints(fund: Fund): Breakpoint[] {
   for (const { x, f } of points) {
     const reasons: Reason[] = [];
     const [ownBefore, ownAfter] = [segmentAt(mine, x, -1), segmentAt(mine, x, 1)];
-    if (ownBefore !== ownAfter) reasons.push(tierReason(fund, mine[ownBefore]!.tier, mine[ownAfter]!.tier, paidIn, standing.prefToD));
+    if (ownBefore !== ownAfter) reasons.push(tierReason(fund, mine[ownBefore]!.tier, mine[ownAfter]!.tier, paidIn, standing.prefAccrued));
 
     const [below, above] = [slope(x, -1), slope(x, 1)];
     const left = sign(f) !== 0 ? sign(f) : -sign(below);
     const right = sign(f) !== 0 ? sign(f) : sign(above);
     if (left > 0 && right <= 0) {
-      reasons.push({ code: "clawback_cleared", text: "from here the GP has earned all the carry it was paid earlier" });
+      reasons.push({ code: "clawback_cleared", text: WORDINGS.clawback_cleared() });
     } else if (left <= 0 && right > 0) {
-      reasons.push({ code: "clawback_starts", text: "from here the GP has been paid more carry than it has earned" });
+      reasons.push({ code: "clawback_starts", text: WORDINGS.clawback_starts() });
     } else if (left > 0 && right > 0 && below.minus(above).abs().gt(TIE)) {
-      const [code, words] = change(below, above);
+      const code = change(below, above);
       // FA8: the totals' run is the cause only where its GP rate changes here.
       const [totBefore, totAfter] = [segmentAt(totals, x, -1), segmentAt(totals, x, 1)];
       const totalsBend = totBefore !== totAfter && totals[totBefore]!.gpRate.minus(totals[totAfter]!.gpRate).abs().gt(TIE);
@@ -226,9 +230,9 @@ export function findBreakpoints(fund: Fund): Breakpoint[] {
               code: "clawback_changes",
               change: code,
               fundTotals: tierCode(totals[totBefore]!.tier),
-              text: `the clawback owed ${words}: on the fund's totals, ${totalsWording(fund, totals[totBefore]!.tier, totals[totAfter]!.tier)}`,
+              text: WORDINGS.clawback_changes_on_totals(CHANGE_WORDS[code], totalsWording(fund, totals[totBefore]!.tier, totals[totAfter]!.tier)),
             }
-          : { code: "clawback_changes", change: code, fundTotals: null, text: `the clawback owed ${words}` },
+          : { code: "clawback_changes", change: code, fundTotals: null, text: WORDINGS.clawback_changes(CHANGE_WORDS[code]) },
       );
     }
     // FA8: a point that bends nothing F15 reports isn't a breakpoint.

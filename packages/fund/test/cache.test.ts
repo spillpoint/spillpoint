@@ -12,14 +12,11 @@ it("works a fund built by hand from scratch, so a change after a split shows in 
   // One $5,000,000 call and 20% carry: at $12,500,000 the GP has 20% of $7,500,000.
   const fund: Fund = {
     asOf: "2026-03-01",
+    terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null },
+    cashFlows: [call(0, "2022-03-01", "5000000")],
     distributionDate: "2026-03-01",
     final: false,
     nav: null,
-    carry: [{ rate: new D("0.2"), fromLpMultiple: null }],
-    prefRate: null,
-    catchUpShare: null,
-    gpCommitment: null,
-    cashFlows: [call(0, "2022-03-01", "5000000")],
   };
   expect(toCents(splitAt(fund, "12500000").distribution.gp.total)).toBe("1500000.00");
 

@@ -27,7 +27,11 @@ describe.each(RUN_CASES)("%s", (dir) => {
     expect(toCents(split.lpsPaidIn)).toBe(expected.lps_paid_in);
     if (expected.gp_commitment_paid_in) expect(toCents(split.gpCommitmentPaidIn)).toBe(expected.gp_commitment_paid_in);
     else expect(split.gpCommitmentPaidIn.isZero()).toBe(true);
-    expect(split.prefToD && toCents(split.prefToD)).toBe(expected.pref_accrued_to_d ?? null);
+    expect(split.prefAccrued && toCents(split.prefAccrued)).toBe(expected.pref_accrued_to_d ?? null);
+    // F10: the LP multiple is the LPs' to date over their paid-in, exactly, and reproduces the case's LP total to the
+    // cent. The cases don't record the multiple itself (FC4).
+    expect(split.lpMultiple.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25")).toBe(true);
+    expect(split.lpMultiple.times(expected.lps_paid_in).minus(p.to_date.lps.total!).abs().lte("0.005")).toBe(true);
 
     if (!p.clawback) {
       expect(split.clawback).toBeNull();

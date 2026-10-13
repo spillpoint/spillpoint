@@ -7,7 +7,7 @@
 
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
-import { FundRefusal } from "./errors.ts";
+import { refuse } from "./errors.ts";
 import { wasRead } from "./input.ts";
 import type { CarryStep, Fund } from "./model.ts";
 
@@ -64,7 +64,12 @@ export interface Split {
   lpsPaidIn: D;
   gpCommitmentPaidIn: D;
   /** F6's pref accrued to D on the LPs' unreturned capital, paid or not. Null without a pref. */
-  prefToD: D | null;
+  prefAccrued: D | null;
+  /**
+   * F10's LP multiple, net DPI: the LPs' distributions to date, X's included, after carry, over their paid-in capital
+   * to date. The multiple carry steps are measured on.
+   */
+  lpMultiple: D;
   /** Null unless X is final or at the NAV point. */
   clawback: Clawback | null;
 }
@@ -123,7 +128,7 @@ export function stepReached(carry: CarryStep[], lps: D, paidIn: D): number {
 
 /** Runs `amount` down the four tiers from `start`: capital, pref, catch-up, carry (F5, F6, F8, F9). */
 function runTiers(fund: Fund, amount: D, start: Start): Tiers {
-  const out = emptyTiers(fund.carry);
+  const out = emptyTiers(fund.terms.carry);
   out.amount = amount;
   let left = amount;
   let { lps, gp, profit } = start;
@@ -135,7 +140,7 @@ function runTiers(fund: Fund, amount: D, start: Start): Tiers {
   lps = lps.plus(capital);
 
   // F6, tier 2: the pref accrued and unpaid, all to LPs. Capital comes first.
-  if (fund.prefRate && left.gt(ZERO)) {
+  if (fund.terms.pref && left.gt(ZERO)) {
     const pref = D.min(left, D.max(ZERO, start.prefDue));
     out.lps.pref = pref;
     left = left.minus(pref);
@@ -146,9 +151,9 @@ function runTiers(fund: Fund, amount: D, start: Start): Tiers {
   // F8, tier 3: the GP takes s of each dollar until its carry to date is c, the first carry rate, of all profit to
   // date. Each dollar raises the profit by 1 and the GP's carry by s, so the shortfall c × profit − carry closes by
   // s − c a dollar.
-  if (fund.catchUpShare && left.gt(ZERO)) {
-    const s = fund.catchUpShare;
-    const c = fund.carry[0]!.rate;
+  if (fund.terms.catchUp && left.gt(ZERO)) {
+    const s = fund.terms.catchUp.gpShare;
+    const c = fund.terms.carry[0]!.rate;
     const shortfall = c.times(profit).minus(gp);
     if (shortfall.gt(ZERO)) {
       const dollars = D.min(left, shortfall.div(s.minus(c)));
@@ -163,10 +168,10 @@ function runTiers(fund: Fund, amount: D, start: Start): Tiers {
 
   // F9 to F11, tier 4: carry at the step the LPs have reached; a higher rate only on profit above its threshold. The
   // LPs keep 1 − rate of each dollar, so the next step's multiple is (multiple × paid-in − LPs) ÷ (1 − rate) away.
-  let k = stepReached(fund.carry, lps, start.paidIn);
+  let k = stepReached(fund.terms.carry, lps, start.paidIn);
   while (left.gt(ZERO)) {
-    const rate = fund.carry[k]!.rate;
-    const next = fund.carry[k + 1];
+    const rate = fund.terms.carry[k]!.rate;
+    const next = fund.terms.carry[k + 1];
     const dollars = next ? D.min(left, next.fromLpMultiple!.times(start.paidIn).minus(lps).div(ONE.minus(rate))) : left;
     const toGp = dollars.times(rate);
     out.gp.carry[k]!.amount = out.gp.carry[k]!.amount.plus(toGp);
@@ -197,12 +202,12 @@ interface Ledger {
 }
 
 function prefOn(fund: Fund, balanceDays: D): D {
-  return fund.prefRate ? fund.prefRate.times(balanceDays).div(YEAR) : ZERO;
+  return fund.terms.pref ? fund.terms.pref.rate.times(balanceDays).div(YEAR) : ZERO;
 }
 
 /** F3: the GP commitment's part of a call, by its kind. */
 function gpCommitmentPart(fund: Fund, kind: string | null, amount: D): D {
-  const g = fund.gpCommitment;
+  const g = fund.terms.gpCommitment;
   if (!g) return ZERO;
   const pays = kind === "investment" || (kind === "expense" && g.paysExpenses) || (kind === "fee" && g.paysFees);
   return pays ? g.share.times(amount) : ZERO;
@@ -210,7 +215,7 @@ function gpCommitmentPart(fund: Fund, kind: string | null, amount: D): D {
 
 /** F3 and the tiers: g of the distribution to the GP commitment, the rest down the tiers from where the fund stands. */
 function distribute(fund: Fund, ledger: Ledger, amount: D): Tiers {
-  const gpCommitment = (fund.gpCommitment?.share ?? ZERO).times(amount);
+  const gpCommitment = (fund.terms.gpCommitment?.share ?? ZERO).times(amount);
   const tiers = runTiers(fund, amount.minus(gpCommitment), startOf(fund, ledger));
   return { ...tiers, amount, gpCommitment };
 }
@@ -254,7 +259,7 @@ function ledgerAtD(fund: Fund): Ledger {
     unreturnedDays: ZERO,
     hurdleDays: ZERO,
     throughTiers: ZERO,
-    toDate: emptyTiers(fund.carry),
+    toDate: emptyTiers(fund.terms.carry),
   };
   let day: number | null = null;
   const advance = (to: number) => {
@@ -290,7 +295,7 @@ export interface StandingAtD {
   /** Everything that ran the tiers before X: where the totals' run is before X adds to it. */
   throughTiers: D;
   /** F6's pref accrued to D, paid or not: what `pref_met` names (FA4). */
-  prefToD: D;
+  prefAccrued: D;
   /** F12's pref, on the hurdle balance: the totals' run's pref tier. */
   prefOnFundTotals: D;
 }
@@ -300,7 +305,7 @@ export function standingAtD(fund: Fund): StandingAtD {
   return {
     start: startOf(fund, ledger),
     throughTiers: ledger.throughTiers,
-    prefToD: prefOn(fund, ledger.unreturnedDays),
+    prefAccrued: prefOn(fund, ledger.unreturnedDays),
     prefOnFundTotals: prefOn(fund, ledger.hurdleDays),
   };
 }
@@ -314,7 +319,7 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
   // A Decimal from another clone is made the fund's, so every sum with it keeps 40 digits.
   const amount = typeof x === "string" ? exactOrNull(x) : new D(x);
   if (amount === null || !amount.isFinite() || (amount.isNegative() && !amount.isZero())) {
-    throw new FundRefusal("input", "bad_number", "x", "X must be an exact amount from 0 up");
+    throw refuse("bad_number", "x", "X must be an exact amount from 0 up");
   }
   const ledger = ledgerAtD(fund);
   const distribution = distribute(fund, ledger, amount);
@@ -337,7 +342,7 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
       carryPaid,
       entitlement: totals.gp.total,
       owed: D.max(ZERO, carryPaid.minus(totals.gp.total)),
-      prefOnFundTotals: fund.prefRate ? prefOn(fund, now.hurdleDays) : null,
+      prefOnFundTotals: fund.terms.pref ? prefOn(fund, now.hurdleDays) : null,
     };
   }
   return {
@@ -346,7 +351,8 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
     toDate: now.toDate,
     lpsPaidIn: now.lpsPaidIn,
     gpCommitmentPaidIn: now.gpCommitmentPaidIn,
-    prefToD: fund.prefRate ? prefOn(fund, ledger.unreturnedDays) : null,
+    prefAccrued: fund.terms.pref ? prefOn(fund, ledger.unreturnedDays) : null,
+    lpMultiple: now.toDate.lps.total.div(now.lpsPaidIn),
     clawback,
   };
 }

@@ -1,14 +1,10 @@
-// Why a breakpoint is where it is (F15): each reason's code, its fields (FC5)
-// and its words (FC6).
+// Why a breakpoint is where it is (F15): each reason's code, its fields (FC5),
+// and how FC6 writes the amounts, rates and multiples its words carry. The codes
+// and the words themselves are in stable-names.ts.
 
 import type { D } from "./decimal.ts";
 import { toCents } from "./decimal.ts";
-
-/** A tier of a run ending: X's own (F15), or the run on the fund's totals' when it bends the clawback. */
-export type TierReasonCode = "capital_returned" | "pref_met" | "catch_up_done" | "carry_step";
-
-/** How the clawback owed changes as X grows (F15). v1 has only these: it never rises (FA9). */
-export type ClawbackChange = "starts_to_fall" | "stops_falling" | "falls_faster" | "falls_more_slowly";
+import type { ClawbackChange, ReasonCode, TierReasonCode } from "./stable-names.ts";
 
 export type Reason =
   /** The LPs' paid-in capital to date. */
@@ -24,7 +20,11 @@ export type Reason =
   /** `fundTotals` names the totals' tier that ended when that run is the cause; null when X's own tier is. */
   | { code: "clawback_changes"; change: ClawbackChange; fundTotals: TierReasonCode | null; text: string };
 
-export type ReasonCode = Reason["code"];
+// Every code a Reason can have is on the stable list, and every code on it is a Reason's: the compiler checks both
+// ways, so a new reason can't be added without the list, nor the list grow without a reason.
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const codesAreStable: Same<Reason["code"], ReasonCode> = true;
+void codesAreStable;
 
 /** A number as FC1 writes it: "0.2", "3", or "a/b" for one whose decimal doesn't end (an "a/b" input). */
 function plain(x: D): string {
