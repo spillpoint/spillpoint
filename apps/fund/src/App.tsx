@@ -656,8 +656,78 @@ function Row({ label, lps, gp }: { label: string; lps: [D, D] | null; gp: [D, D]
   );
 }
 
+/** A tier of the split: its name, and X's amount and the fund to date's for each side, or none. */
+interface SplitRow {
+  label: string;
+  lps: [D, D] | null;
+  gp: [D, D] | null;
+}
+
+/** Under 480 pixels the split is two tables, one above the other, so nothing scrolls sideways (f01m review, answer 2). */
+const NARROW = "(max-width: 479px)";
+
+/** Whether the window is a phone's width, following it as it changes. False where there's no window to ask. */
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(NARROW).matches);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia(NARROW);
+    const follow = () => setNarrow(query.matches);
+    follow();
+    query.addEventListener("change", follow);
+    return () => query.removeEventListener("change", follow);
+  }, []);
+  return narrow;
+}
+
+/**
+ * One half of the split on a phone: "This distribution" (0) or "The fund to date" (1), with each tier's name on its own
+ * line above its two amounts, as the main page's payouts table puts each holder's shares under the name (M3e). Each
+ * tier is a row group, so its name is the header for both amounts.
+ */
+function NarrowSplit({ caption, which, rows, total }: { caption: string; which: 0 | 1; rows: SplitRow[]; total: SplitRow }) {
+  const lines = (r: SplitRow) => (
+    <>
+      <tr>
+        <th scope="rowgroup" colSpan={2}>
+          {r.label}
+        </th>
+      </tr>
+      <tr>
+        <td className="num">{r.lps ? cents(r.lps[which]) : NONE}</td>
+        <td className="num">{r.gp ? cents(r.gp[which]) : NONE}</td>
+      </tr>
+    </>
+  );
+  return (
+    <table className="split split--narrow">
+      <caption>{caption}</caption>
+      <thead>
+        <tr>
+          <th scope="col" colSpan={2}>
+            Tier
+          </th>
+        </tr>
+        <tr>
+          <th scope="col" className="num">
+            LPs
+          </th>
+          <th scope="col" className="num">
+            GP
+          </th>
+        </tr>
+      </thead>
+      {rows.map((r, i) => (
+        <tbody key={i}>{lines(r)}</tbody>
+      ))}
+      <tfoot>{lines(total)}</tfoot>
+    </table>
+  );
+}
+
 /** The split by tier (F16): a tier the terms don't have isn't shown, though the engine gives it as zero. */
 function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
+  const narrow = useNarrow();
   const now = split.distribution;
   const all = split.toDate;
   const pair = (f: (t: Tiers) => D): [D, D] => [f(now), f(all)];
@@ -670,51 +740,62 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
     const band = from && to ? `${stepMultiple(from)} to ${stepMultiple(to)}` : to ? `up to ${stepMultiple(to)}` : from ? `above ${stepMultiple(from)}` : null;
     return `at ${percentText(steps[i]!.rate)}${band ? ` (${band})` : ""}`;
   };
+  const rows: SplitRow[] = [
+    { label: "Capital", lps: pair((t) => t.lps.capital), gp: null },
+    ...(fund.terms.pref ? [{ label: "Pref", lps: pair((t) => t.lps.pref), gp: null }] : []),
+    ...(fund.terms.catchUp ? [{ label: "Catch-up", lps: pair((t) => t.lps.catchUp), gp: pair((t) => t.gp.catchUp) }] : []),
+    // One row a carry step, each side's share of it (f01f review, answer 2).
+    ...steps.map((_, i) => ({ label: `Carry ${stepLabel(i)}`, lps: pair((t) => t.gp.carry[i]!.lps), gp: pair((t) => t.gp.carry[i]!.amount) })),
+  ];
+  const total: SplitRow = { label: "Total", lps: pair((t) => t.lps.total), gp: pair((t) => t.gp.total) };
   return (
     <section className="card" aria-labelledby="split-heading">
       <h2 id="split-heading">The split at {xText(split.x)}</h2>
-      <div className="table-scroll">
-        <table className="split">
-          <thead>
-            <tr>
-              <td />
-              <th scope="colgroup" colSpan={2}>
-                This distribution
-              </th>
-              <th scope="colgroup" colSpan={2} className="split__group">
-                The fund to date
-              </th>
-            </tr>
-            <tr>
-              <th scope="col">Tier</th>
-              <th scope="col" className="num">
-                LPs
-              </th>
-              <th scope="col" className="num">
-                GP
-              </th>
-              <th scope="col" className="num split__group">
-                LPs
-              </th>
-              <th scope="col" className="num">
-                GP
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <Row label="Capital" lps={pair((t) => t.lps.capital)} gp={null} />
-            {fund.terms.pref && <Row label="Pref" lps={pair((t) => t.lps.pref)} gp={null} />}
-            {fund.terms.catchUp && <Row label="Catch-up" lps={pair((t) => t.lps.catchUp)} gp={pair((t) => t.gp.catchUp)} />}
-            {/* One row a carry step, each side's share of it (f01f review, answer 2). */}
-            {steps.map((_, i) => (
-              <Row key={i} label={`Carry ${stepLabel(i)}`} lps={pair((t) => t.gp.carry[i]!.lps)} gp={pair((t) => t.gp.carry[i]!.amount)} />
-            ))}
-          </tbody>
-          <tfoot>
-            <Row label="Total" lps={pair((t) => t.lps.total)} gp={pair((t) => t.gp.total)} />
-          </tfoot>
-        </table>
-      </div>
+      {narrow ? (
+        <>
+          <NarrowSplit caption="This distribution" which={0} rows={rows} total={total} />
+          <NarrowSplit caption="The fund to date" which={1} rows={rows} total={total} />
+        </>
+      ) : (
+        <div className="table-scroll">
+          <table className="split">
+            <thead>
+              <tr>
+                <td />
+                <th scope="colgroup" colSpan={2}>
+                  This distribution
+                </th>
+                <th scope="colgroup" colSpan={2} className="split__group">
+                  The fund to date
+                </th>
+              </tr>
+              <tr>
+                <th scope="col">Tier</th>
+                <th scope="col" className="num">
+                  LPs
+                </th>
+                <th scope="col" className="num">
+                  GP
+                </th>
+                <th scope="col" className="num split__group">
+                  LPs
+                </th>
+                <th scope="col" className="num">
+                  GP
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <Row key={i} {...r} />
+              ))}
+            </tbody>
+            <tfoot>
+              <Row {...total} />
+            </tfoot>
+          </table>
+        </div>
+      )}
       {fund.terms.gpCommitment && (
         <p className="split__commitment">
           The GP commitment's line, outside the tiers: {cents(now.gpCommitment)} of this distribution, {cents(all.gpCommitment)} to date.

@@ -126,6 +126,13 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .split tbody th { font-weight: 500; }
 .split .num { text-align: right; white-space: nowrap; }
 .split tfoot th, .split tfoot td { font-weight: 600; border-bottom: 0; }
+/* The split on a phone (f01m2): two tables, one above the other, each tier's name on its own line above its amounts. */
+.split--narrow { margin-top: 16px; table-layout: fixed; }
+.split--narrow caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
+.split--narrow th, .split--narrow td { padding: 4px 4px; white-space: normal; }
+.split--narrow tbody th[scope="rowgroup"], .split--narrow tfoot th[scope="rowgroup"] { border-bottom: 0; padding-top: 8px; position: static; font-weight: 500; }
+.split--narrow tfoot th[scope="rowgroup"], .split--narrow tfoot td { font-weight: 600; }
+.split--narrow thead tr:first-child th { text-align: left; border-bottom: 0; padding-bottom: 0; color: var(--muted); }
 .split__commitment { margin: 12px 0 0; }
 
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 24px; margin: 16px 0 0; }
@@ -159,11 +166,12 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .flows td { vertical-align: top; }
 .flows th[scope="row"] { color: var(--muted); padding-top: 14px; }
 .flows .field-error { margin: 4px 0 0; white-space: normal; }
-.flows input.flows__amount { width: 10rem; text-align: right; font-variant-numeric: tabular-nums; }
+.flows input.flows__amount { width: 9rem; text-align: right; font-variant-numeric: tabular-nums; }
 .flows .muted { display: inline-block; padding-top: 6px; }
 .flows .link-button { padding-top: 6px; }
 .flows__problem td { border-top: 0; padding-top: 0; }
 .flows__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.flows th, .flows td { padding-left: 6px; padding-right: 6px; }
 
 /* Pasting rows from a spreadsheet */
 .paste { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
@@ -245,11 +253,12 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .split th[scope="row"] { white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
 }
 
-/* Under 480 pixels each cash flow is a card (f01m): date and type on one line, kind and amount on the next, its
-   number and "Remove" at its end, so the table never scrolls sideways on a phone. Each field keeps its own label
-   ("Row 3's amount"), so the column headings can go. */
-@media (max-width: 479px) {
-  .flows__scroll { overflow-x: visible; }
+/* Each cash flow is a card wherever the table wouldn't fit (f01m; f01m2): date and type on one line, kind and amount
+   on the next, its number and "Remove" at its end, so the cash flows never scroll sideways, on a phone or an upright
+   tablet. The table needs about 720 pixels, so the cards go up to a 760-pixel card, whatever the window: it's the
+   card's own width that decides. Each field keeps its own label ("Row 3's amount"), so the column headings can go. */
+.flows__scroll { container-type: inline-size; }
+@container (max-width: 759px) {
   .flows, .flows tbody { display: block; }
   .flows thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
   .flows tbody tr:not(.flows__problem) {

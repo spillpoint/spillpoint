@@ -71,6 +71,22 @@ const SHOTS = {
     ],
     quality: 50,
   },
+  // f01m2: the cash flows at a phone's and a tablet's widths, cards until the table fits; and the split on a phone,
+  // two tables one above the other.
+  ...Object.fromEntries(
+    [480, 600, 768, 900].map((width) => [
+      `f01m2-case8-flows-${width}`,
+      { width, height: 900, mobile: width < 900, steps: [choose("Start from", "fund-08-carry-steps"), click("Cash flows")], clip: ["section[aria-labelledby=flows-heading]"], quality: 50 },
+    ]),
+  ),
+  "f01m2-case8-split-320": {
+    width: 320,
+    height: 900,
+    mobile: true,
+    steps: [choose("Start from", "fund-08-carry-steps")],
+    clip: ["section[aria-labelledby=split-heading]"],
+    quality: 50,
+  },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

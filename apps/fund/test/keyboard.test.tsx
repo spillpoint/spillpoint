@@ -58,6 +58,29 @@ describe("a click or tap on the chart sets X", () => {
     expect(xBox()).toBe("$5,000,000");
   });
 
+  it("lands on NAV within 8 pixels of its line, as on a breakpoint; the nearer of the two when both are close", () => {
+    const top = new D("80000000");
+    const nav = { x: new D("40000000") };
+    const bp = { x: new D("40500000") };
+    // NAV at 512 pixels, the breakpoint 5.4 pixels to its right: each wins on its own side of the middle.
+    expect(xAtPixel(pixelOf("40000000", "80000000") + 2, WIDTH, top, [bp, nav])).toBe(nav.x);
+    expect(xAtPixel(pixelOf("40500000", "80000000") - 2, WIDTH, top, [bp, nav])).toBe(bp.x);
+    expect(xAtPixel(pixelOf("40000000", "80000000") - 7.9, WIDTH, top, [nav]).toString()).toBe("40000000");
+  });
+
+  it("gives case 8 the NAV headline when the NAV line is tapped, from X elsewhere", () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
+    fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "20000000" } });
+    const answer = () => screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent;
+    expect(answer()).toBe("At a $20M distribution on 30 Sep 2026, the GP's carry is $2.57M.");
+    // Seven pixels off the NAV line, about $650,000 short of NAV: it lands on NAV exactly.
+    fireEvent.click(screen.getByRole("img", { name: /lines against X, from \$0 to \$80M/ }), { clientX: pixelOf("40000000", "80000000") - 7 });
+    expect(xBox()).toBe("$40,000,000");
+    expect(answer()).toBe("If the fund were liquidated at NAV, $40M on 30 Sep 2026, the GP would end with $6.81M of carry.");
+    expect(screen.getByText("X is at NAV")).toBeDefined();
+  });
+
   it("sets X from the clawback's chart too, onto a bend near one: case 13's $15,000,000", () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-13-clawback-steps" } });
