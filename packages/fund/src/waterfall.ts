@@ -11,11 +11,14 @@ import { refuse } from "./errors.ts";
 import { wasRead } from "./input.ts";
 import type { CarryStep, Fund } from "./model.ts";
 
-/** One carry step's share of a split (F16): the GP's carry at this rate. */
+/** One carry step's part of a split (F16): the GP's carry at this rate, and the LPs' share of the carry tier beside it. */
 export interface StepCarry {
   rate: D;
   fromLpMultiple: D | null;
+  /** The GP's carry at this step. */
   amount: D;
+  /** The LPs' share of the carry tier at this step: 1 − rate of each dollar. The steps' add up to `lps.carryTier`. */
+  lps: D;
 }
 
 /** A distribution, or the fund to date, by tier (F16). A tier the fund's terms don't have is zero. */
@@ -81,7 +84,7 @@ function emptyTiers(steps: CarryStep[]): Tiers {
     amount: ZERO,
     gpCommitment: ZERO,
     lps: { capital: ZERO, pref: ZERO, catchUp: ZERO, carryTier: ZERO, total: ZERO },
-    gp: { catchUp: ZERO, carry: steps.map((s) => ({ rate: s.rate, fromLpMultiple: s.fromLpMultiple, amount: ZERO })), total: ZERO },
+    gp: { catchUp: ZERO, carry: steps.map((s) => ({ rate: s.rate, fromLpMultiple: s.fromLpMultiple, amount: ZERO, lps: ZERO })), total: ZERO },
   };
 }
 
@@ -98,7 +101,7 @@ function addTiers(a: Tiers, b: Tiers): Tiers {
     },
     gp: {
       catchUp: a.gp.catchUp.plus(b.gp.catchUp),
-      carry: a.gp.carry.map((s, i) => ({ ...s, amount: s.amount.plus(b.gp.carry[i]!.amount) })),
+      carry: a.gp.carry.map((s, i) => ({ ...s, amount: s.amount.plus(b.gp.carry[i]!.amount), lps: s.lps.plus(b.gp.carry[i]!.lps) })),
       total: a.gp.total.plus(b.gp.total),
     },
   };
@@ -175,6 +178,7 @@ function runTiers(fund: Fund, amount: D, start: Start): Tiers {
     const dollars = next ? D.min(left, next.fromLpMultiple!.times(start.paidIn).minus(lps).div(ONE.minus(rate))) : left;
     const toGp = dollars.times(rate);
     out.gp.carry[k]!.amount = out.gp.carry[k]!.amount.plus(toGp);
+    out.gp.carry[k]!.lps = out.gp.carry[k]!.lps.plus(dollars.minus(toGp));
     out.lps.carryTier = out.lps.carryTier.plus(dollars.minus(toGp));
     lps = lps.plus(dollars.minus(toGp));
     left = left.minus(dollars);

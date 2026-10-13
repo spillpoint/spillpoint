@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { readFund, splitAt, splitAtNav, toCents } from "../src/index.ts";
+import { D, readFund, splitAt, splitAtNav, toCents } from "../src/index.ts";
 import { RUN_CASES, absentTiersAreZero, asCaseBlock, readCaseFile } from "./support/cases.ts";
 import type { CaseExpected, CaseInputs } from "./support/cases.ts";
 
@@ -32,6 +32,14 @@ describe.each(RUN_CASES)("%s", (dir) => {
     // cent. The cases don't record the multiple itself (FC4).
     expect(split.lpMultiple.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25")).toBe(true);
     expect(split.lpMultiple.times(expected.lps_paid_in).minus(p.to_date.lps.total!).abs().lte("0.005")).toBe(true);
+    // Each step's LP share is the GP's × (1 − rate) ÷ rate, and the steps' add up to the carry tier, for X and to date
+    // (f01f review, answer 2).
+    for (const t of [split.distribution, split.toDate]) {
+      for (const s of t.gp.carry) {
+        if (s.rate.gt(0)) expect(s.lps.minus(s.amount.times(D.sub(1, s.rate)).div(s.rate)).abs().lte("1e-20"), `${p.x} at ${s.rate}`).toBe(true);
+      }
+      expect(t.gp.carry.reduce((sum, s) => sum.plus(s.lps), new D(0)).minus(t.lps.carryTier).abs().lte("1e-20")).toBe(true);
+    }
 
     if (!p.clawback) {
       expect(split.clawback).toBeNull();

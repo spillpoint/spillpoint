@@ -19,6 +19,13 @@ export function cents(amount: Decimal): string {
   return whole.startsWith("-") ? `-$${grouped(whole.slice(1))}.${part}` : `$${grouped(whole)}.${part}`;
 }
 
+/** "$198,000": to the dollar, half up, for a rate per extra $1M, which is approximate. */
+export function wholeDollars(amount: Decimal): string {
+  const rounded = amount.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(0, D.ROUND_HALF_UP);
+  const sign = rounded.isNegative() ? "-" : "";
+  return `${sign}$${grouped(rounded.abs().toFixed(0))}`;
+}
+
 /** X as the box shows it: whole dollars when it has no cents, "$40,000,000"; to the cent when it has, "$63,833,333.33". */
 export function xText(amount: Decimal): string {
   const c = cents(amount);
@@ -65,7 +72,12 @@ export function stepMultiple(m: Decimal): string {
   return s.includes(".") ? `${s}x` : `${s}.0x`;
 }
 
-/** The LPs' net multiple to date, to two places: "3.38x". */
+/**
+ * The LPs' net multiple to date, to two places, rounded down: "3.37x" for 3.375. Rounded half up it could show a step
+ * the LPs haven't reached: a fraction of a cent below case 8's 5.0x step it would read 5.00x while the 30% step
+ * hasn't started (f01f review, answer 4). First to 20 places, as FA14 does, so a multiple that is exactly 5 in exact
+ * math but a hair below it at 40 digits still reads 5.00x.
+ */
 export function lpMultipleText(m: Decimal): string {
-  return `${m.toDecimalPlaces(2, D.ROUND_HALF_UP).toFixed(2)}x`;
+  return `${m.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(2, D.ROUND_DOWN).toFixed(2)}x`;
 }
