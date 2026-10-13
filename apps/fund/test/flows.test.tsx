@@ -33,6 +33,16 @@ describe("the form writes the cash flows exactly", () => {
     expect(findBreakpoints(again).map((b) => b.x.toString())).toEqual(findBreakpoints(fund).map((b) => b.x.toString()));
   });
 
+  it("keeps every place of an amount, so a sub-cent call and NAV are the file's, not rounded to the cent", () => {
+    const input = caseFile("fund-08-carry-steps", "inputs.json").fund;
+    const exact = { ...input, nav: "40000000.001", cash_flows: input.cash_flows.map((f: { amount: string }, i: number) => (i === 0 ? { ...f, amount: "8000000.005" } : f)) };
+    const form = flowsFrom(readFund(exact));
+    expect([form.rows[0]!.amount, form.nav]).toEqual(["$8,000,000.005", "$40,000,000.001"]);
+    const written = flowsInput(form) as { nav: string; cash_flows: { amount: string }[] };
+    expect([written.cash_flows[0]!.amount, written.nav]).toEqual(["8000000.005", "40000000.001"]);
+    expect(flowsOf(readFund({ ...written, terms: input.terms }))).toEqual(flowsOf(readFund(exact)));
+  });
+
   it("sorts by date and keeps the order shown within a date, since same-day distributions run in that order (F4)", () => {
     const row = (id: number, date: string, amount: string) => ({ id, date, type: "distribution" as const, kind: "investment" as const, amount });
     const form = { asOf: "", distributionDate: "", final: false, nav: "", rows: [row(1, "2025-01-01", "1"), row(2, "", "2"), row(3, "2024-01-01", "3"), row(4, "2025-01-01", "4")] };
@@ -148,15 +158,17 @@ describe("a refusal, in the cell its path names", () => {
     expect(document.activeElement).toBe(screen.getByLabelText("Row 5's date"));
   });
 
-  it("asks for an amount when one is blank, or isn't more than zero", () => {
+  it("asks for an amount when one is blank, isn't more than zero, or has a comma out of place", () => {
     open("fund-08-carry-steps");
     tab("Cash flows");
     set("Row 2's amount", "");
     expect(problemAt("Row 2's amount")).toBe("Write an amount in dollars, more than zero: 250000 or 250000.50.");
     set("Row 2's amount", "0");
     expect(problemAt("Row 2's amount")).toBe("Write an amount in dollars, more than zero: 250000 or 250000.50.");
-    set("Row 2's amount", "lots");
-    expect(problemAt("Row 2's amount")).toBe("Write an amount in dollars, more than zero: 250000 or 250000.50.");
+    for (const bad of ["lots", "1,5M", "495.000,00"]) {
+      set("Row 2's amount", bad);
+      expect(problemAt("Row 2's amount"), bad).toBe("Write an amount in dollars, more than zero: 250000 or 250000.50.");
+    }
     set("Row 2's amount", "$495,000.00");
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -209,7 +221,13 @@ describe("the rows and the facts about D", () => {
     tab("Cash flows");
     fireEvent.click(screen.getByRole("button", { name: "Add a cash flow" }));
     expect(document.activeElement).toBe(screen.getByLabelText("Row 6's date"));
+    // The row above is a distribution, so the new one is too (f01j review, answer 2).
+    expect((screen.getByLabelText("Row 6's type") as HTMLSelectElement).value).toBe("distribution");
     fillRow(6, "2021-06-01", "call", "fee", "100000");
+    fireEvent.click(screen.getByRole("button", { name: "Add a cash flow" }));
+    expect([(screen.getByLabelText("Row 7's type") as HTMLSelectElement).value, (screen.getByLabelText("Row 7's kind") as HTMLSelectElement).value]).toEqual(["call", "fee"]);
+    expect([(screen.getByLabelText("Row 7's date") as HTMLInputElement).value, (screen.getByLabelText("Row 7's amount") as HTMLInputElement).value]).toEqual(["", ""]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove row 7" }));
     fireEvent.click(screen.getByRole("button", { name: "Sort by date" }));
     expect([1, 2, 3, 4, 5, 6].map((n) => (screen.getByLabelText(`Row ${n}'s date`) as HTMLInputElement).value)).toEqual([
       "2021-01-15",

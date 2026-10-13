@@ -150,11 +150,12 @@ A table by tier, for X alone and for the fund to date:
 - **"NAV on D",** optional
 
 **As built in f01j:**
-- **Amounts** are typed in dollars ("$8,000,000", "8000000" or "8M") and written exactly.
+- **Amounts** are typed in dollars ("$8,000,000", "8000000" or "8M") and written exactly. Commas only between groups of three digits, in the cells, NAV and the X box: "1,5M" and a European "1.000.000,00" are refused (f01k). An amount comes into the form with every place it has, "$10,000,000.005", so the fund in the form is the fund in the file (f01k).
 - **D left empty** is the as-of date, which is what leaving it out of the input means; the field says so.
 - **A problem** shows in the cell its path names: a cash flow's own (before the first call, after D) in a line under its row, and "a fund needs a call" under the table. Text the page can't read (a blank amount, "lots") goes to the engine as "", so every problem, on either tab, comes one at a time in the engine's order (FA2): a blank fund asks for its as-of date before a carry rate.
 - **"A blank fund"** is last in the list: no dates, a flat 20% carry (F9's), and one call to fill in. Until the engine can run it, Payouts says "No payouts yet" and what's needed first. It stays "A blank fund" as it's filled in.
-- **"Add a cash flow"** adds a call with its date focused. **"Sort by date"** keeps the order shown within a date.
+- **"Add a cash flow"** adds a row of the type and kind of the row above it (a call, an investment, when there are none), with its date focused (f01j review, answer 2). **"Sort by date"** keeps the order shown within a date.
+- **A blank fund's carry** starts at a flat 20%: F9's default, and most VC funds' (f01j review, answer 1).
 
 **Pasting rows from a spreadsheet** is its own step, right after the table and before release (your answer 8): a GP won't type years of flows by hand. Copied cells from Excel, Numbers or Google Sheets arrive as tab-separated rows.
 - **The page reads each row** as date, type, kind and amount, in that order, and skips a header row it recognizes.
@@ -164,6 +165,23 @@ A table by tier, for X alone and for the fund to date:
   - **Kinds:** "Investment", "Fee", "Management fee", "Expense".
 - **Before anything is added,** a preview lists the rows as read ("37 cash flows: 25 calls, 12 distributions, $41,250,000 called"), and any row it can't read with why ("Row 12: 'Q3 2021' isn't a date"). "Add them" adds the rows that read; nothing is added until then.
 - **Its rules are its step's questions:** which date forms, whether a missing kind is asked or refused, and whether a paste adds to the table or replaces it.
+
+**As built in f01k, with your answers:**
+- **Where:** "Paste rows from a spreadsheet" opens a box under the table. More than one cell pasted into a table cell goes to the same box instead of into the cell.
+- **Columns:** date, type, kind, amount, in that order. A first row with no date in its first cell that names any of the four is a header, and skipped. Cells past the fourth are ignored.
+- **Dates:**
+  - **The forms:** YYYY-MM-DD; numbers with slashes and a four- or two-digit year (21 is 2021); or a month's name: 15-Jan-2021, Jan 15, 2021 or 15 Jan 2021.
+  - **Which comes first:** the first slashed date with a number above 12 settles month first or day first for the whole paste. If none does and some date could be either, the page asks once, month first selected. A row that can't be read in the paste's order is refused.
+- **Types:** Call, Capital call, Contribution, Drawdown; Distribution. Any case.
+- **Kinds:**
+  - **The names:** Investment; Fee or Management fee; Expense or Fund expense.
+  - **A call with no kind** is an investment, and the preview counts them: "1 call had no kind: read as an investment."
+  - **A distribution's kind cell** is ignored.
+- **Amounts:**
+  - **Read as the cells take them,** digits kept exactly.
+  - **A negative is refused,** in any of the ways a spreadsheet writes one ("-500,000", "(500,000)", "$(500,000)"): "Write amounts as positive; the type says which way the money goes."
+- **Adding:** after the rows already there, in the order pasted, unsorted. Rows with nothing in them, like a blank fund's first, give way. Nothing is added until "Add them"; "Cancel" leaves the table as it was.
+- **The preview:** "5 cash flows: 3 calls, $10,500,000 called; 2 distributions, $12,000,000 distributed; they'll be the table's first.", then each row it can't read with why: "Row 2: 'Q3 2021' isn't a date". Rows are numbered by their place in the paste, the header included, so a paste from a sheet's first row numbers as the sheet does.
 
 ### Refusals, in plain words, beside the field they name
 

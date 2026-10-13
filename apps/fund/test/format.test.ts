@@ -4,7 +4,7 @@
 import { D } from "spillpoint-fund";
 import { describe, expect, it } from "vitest";
 
-import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "../src/format.ts";
+import { cents, dateText, exactDollars, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "../src/format.ts";
 
 describe("format", () => {
   it("writes amounts to the cent, half away from zero, an exact half cent as exact math has it", () => {
@@ -33,6 +33,24 @@ describe("format", () => {
     expect(parseDollars("250k")!.toString()).toBe("250000");
     expect(parseDollars("0.1")!.toString()).toBe("0.1");
     for (const bad of ["", "forty", "-5", "1e6", "$", "4 0"]) expect(parseDollars(bad), bad).toBeNull();
+  });
+
+  it("takes commas only between groups of three digits, so a comma never reads as something else", () => {
+    expect(parseDollars("$1,234,567.891")!.toString()).toBe("1234567.891");
+    expect(parseDollars("1,000.5")!.toString()).toBe("1000.5");
+    expect(parseDollars("999,000k")!.toString()).toBe("999000000");
+    // "1,5M" isn't $15M, and a European "1.000.000,00" isn't anything: both are refused.
+    for (const bad of ["1,5M", "1.000.000,00", "1,0000", ",000", "1,,000", "1,000,00", "12,34"]) expect(parseDollars(bad), bad).toBeNull();
+  });
+
+  it("writes an amount into a form with every place it has, cents at least when there are any", () => {
+    expect(["8000000", "495000.5", "10000000.005", "0.001", "1234.56"].map((a) => exactDollars(new D(a)))).toEqual([
+      "$8,000,000",
+      "$495,000.50",
+      "$10,000,000.005",
+      "$0.001",
+      "$1,234.56",
+    ]);
   });
 
   it("writes dates, rates and multiples as the page shows them", () => {

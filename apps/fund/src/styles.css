@@ -100,7 +100,7 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   font: inherit; font-size: 0.875rem; font-weight: 600; padding: 4px 12px; color: var(--accent);
   background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); cursor: pointer;
 }
-.button:hover { color: #fff; background: var(--accent); }
+.button:hover:not(:disabled) { color: #fff; background: var(--accent); }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* The split */
@@ -151,6 +151,24 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .flows .link-button { padding-top: 6px; }
 .flows__problem td { border-top: 0; padding-top: 0; }
 .flows__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* Pasting rows from a spreadsheet */
+.paste { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+.paste h3 { font-size: 1rem; margin: 0; }
+.paste__how { color: var(--muted); margin: 6px 0 0; }
+.paste__text {
+  display: block; width: 100%; margin-top: 10px; font: 0.875rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; tab-size: 16;
+}
+.paste__text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.paste__order { border: 0; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; }
+.paste__order legend { font-weight: 600; padding: 0; margin-bottom: 4px; }
+.paste__preview { margin-top: 12px; }
+.paste__preview p { margin: 0 0 6px; }
+.paste__summary { font-weight: 600; }
+.paste__unread { margin: 0; padding-left: 20px; color: var(--error); }
+.button--quiet { color: var(--muted); background: var(--surface); border-color: var(--line); }
+.button:disabled { color: var(--muted); background: var(--page); border-color: var(--line); cursor: default; }
 
 /* The Terms tab */
 .terms .notice--problem { margin: 16px 0 0; }
