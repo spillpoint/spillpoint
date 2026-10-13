@@ -1,8 +1,9 @@
 name: Pages
 
-# Publishes the dashboard at https://spillpoint.github.io/spillpoint/ each
-# time main changes. It checks first, as CI does: typecheck, build and the
-# tests, which include the privacy test of the built page. Pull requests
+# Publishes the dashboard at https://spillpoint.github.io/spillpoint/, and the
+# fund page under it at /fund/ (spillpoint-fund 0.1.0), each time main changes.
+# It checks first, as CI does: typecheck, build and the tests, which include
+# the privacy tests of both built pages and of the two together. Pull requests
 # don't deploy; CI checks them. Needs Settings → Pages → Source set to
 # "GitHub Actions" (notes/review-m3.md).
 
@@ -32,10 +33,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - name: Build the npm package and the dashboard
+      - name: Build the npm packages, the dashboard and the fund page
         run: pnpm build
       - run: pnpm test
-      - name: Hand the built page to Pages
+      # The fund page builds with relative paths, so it works in a folder of
+      # the dashboard's (notes/review-f01n.md).
+      - name: Put the fund page under /fund/
+        run: cp -r apps/fund/dist apps/dashboard/dist/fund
+      - name: Hand the built pages to Pages
         uses: actions/upload-pages-artifact@v5
         with:
           path: apps/dashboard/dist

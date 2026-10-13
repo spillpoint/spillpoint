@@ -326,9 +326,10 @@ export function App() {
           <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next))} onShow={show} />
         </div>
       </main>
-      {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. */}
+      {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. The main page is
+          one level up on the site, as this one is under /fund/ (f01n). */}
       <footer className="page-footer">
-        spillpoint-fund {build.fundVersion} ({build.commit})
+        spillpoint-fund {build.fundVersion} ({build.commit}) · <a href="../">Exit waterfall</a>
       </footer>
     </div>
   );

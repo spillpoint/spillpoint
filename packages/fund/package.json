@@ -1,18 +1,50 @@
 {
   "name": "spillpoint-fund",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "Fund-level waterfall: how a distribution splits between LPs and GP, tier by tier, with every breakpoint and any clawback.",
   "license": "Apache-2.0",
   "type": "module",
+  "keywords": [
+    "fund",
+    "waterfall",
+    "carried interest",
+    "carry",
+    "clawback",
+    "preferred return",
+    "catch-up",
+    "breakpoints",
+    "private equity",
+    "venture capital"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spillpoint/spillpoint.git",
+    "directory": "packages/fund"
+  },
+  "homepage": "https://github.com/spillpoint/spillpoint/tree/main/packages/fund#readme",
+  "bugs": "https://github.com/spillpoint/spillpoint/issues",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/fix-declarations.mjs",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
     "decimal.js": "^10.6.0"

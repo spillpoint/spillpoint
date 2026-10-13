@@ -395,7 +395,7 @@ Each is one branch, one PR and one evening, with a review note and what to check
      - **Screenshots** for the review, from a copy of the screenshot script.
    - **You check:** the page at 320 pixels, and by keyboard alone.
 
-**f01n, the release,** then switches the page on, as above: npm 0.1.0, `pages.yml`'s copy step, the footer link, the package's README and licence, and the pack check.
+**f01n, the release,** then switches the page on, as above: npm 0.1.0, `pages.yml`'s copy step, the footer link, the package's README and licence, and the pack check. As built: `packages/fund` publishable at 0.1.0, built to `dist` as the engine is; its README and Apache-2.0 licence; `notes/release-fund-0.1.0.md`; `pages.yml` copying `apps/fund/dist` into the dashboard's as `fund/`; the main page's footer linking to `./fund/` and the fund page's back with `../`; `apps/fund/test/site.test.ts` holding the two together to the privacy rules.
 
 **Tests in every step:**
 - **jsdom tests,** as the main page's: each step's checks above, run against the cases' `expected.json`, so the page's numbers can't drift from the engine's.

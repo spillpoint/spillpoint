@@ -1,6 +1,6 @@
 // spillpoint-fund: how a fund's distribution splits between LPs and GP, tier
-// by tier, and any clawback the GP owes. Private until its release step; every
-// name here is provisional until a naming review before 0.1.0.
+// by tier, and any clawback the GP owes. On npm from 0.1.0; the names code can
+// match on are stable from then (docs/STABLE.md, and the README).
 //
 //   const fund = readFund(json);                 // check the input (F18)
 //   const split = splitAt(fund, "20000000");     // X on D, by tier (F16)
