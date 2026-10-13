@@ -134,14 +134,19 @@ function totalsWording(fund: Fund, ended: Tier, next: Tier): string {
   }
 }
 
-/** F15's words for the clawback's slope changing, per dollar of X. Rising isn't worded: v1 can't produce it (FA9). */
+/**
+ * F15's words for the clawback's slope changing, per dollar of X. Rising isn't worded: v1 can't produce it (FA9), so
+ * reaching it is a bug in the engine, not a problem with the input, and it's a plain Error, not a FundRefusal.
+ */
 function change(below: D, above: D): [ClawbackChange, string] {
   const zero = (d: D) => d.abs().lte(TIE);
   if (zero(below) && above.lt(ZERO)) return ["starts_to_fall", "starts to fall"];
   if (below.lt(ZERO) && zero(above)) return ["stops_falling", "stops falling"];
   if (below.lt(ZERO) && above.lt(below)) return ["falls_faster", "falls faster"];
   if (below.lt(ZERO) && above.gt(below) && above.lt(ZERO)) return ["falls_more_slowly", "falls more slowly"];
-  throw new Error(`the clawback's slope goes from ${below.toString()} to ${above.toString()}, which F15 doesn't word (FA9)`);
+  throw new Error(
+    `spillpoint-fund bug, please report it: the clawback owed rises as X grows (its slope goes from ${below.toString()} to ${above.toString()}), which v1's terms can't produce (FA9)`,
+  );
 }
 
 const sign = (d: D): number => (d.gt(TIE) ? 1 : d.lt(TIE.neg()) ? -1 : 0);
