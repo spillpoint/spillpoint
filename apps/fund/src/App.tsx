@@ -1,16 +1,18 @@
 // The fund page (notes/plan-fund-page.md): an example fund from the locked cases, an X box with a slider, the split at
 // X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), and the clawback with the NAV button
-// (f01h). The form, the cash-flow table and files come in f01i to f01m.
+// (f01h), on the Payouts tab; the fund behind them on the Terms and Cash flows tabs (f01i). The cash-flow form and files
+// come in f01j to f01m.
 
 import { useMemo, useState } from "react";
 import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
-import type { Fund, Split, Tiers } from "spillpoint-fund";
+import type { Clawback as ClawbackAmounts, Fund, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
-import { breakpointViews, chartPoints, clawbackBends, defaultTop, niceUp, owedPoints } from "./analysis.ts";
+import { bendsClawback, breakpointViews, chartPoints, defaultTop, niceUp, owedPoints } from "./analysis.ts";
 import type { BreakpointView } from "./analysis.ts";
 import { Breakpoints } from "./Breakpoints.tsx";
+import { CashFlows } from "./CashFlows.tsx";
 import { Chart } from "./Chart.tsx";
 import { Clawback, owesSomething } from "./Clawback.tsx";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
@@ -38,6 +40,13 @@ function opened(id: string): { fund: Fund; opening: D; x: XState; top: TopState 
   return { fund, opening: x, x: { text: xText(x), shown: x, problem: null }, top: { text: null, set: null, problem: null } };
 }
 
+type Tab = "payouts" | "terms" | "flows";
+const TABS: { id: Tab; label: string }[] = [
+  { id: "payouts", label: "Payouts" },
+  { id: "terms", label: "Terms" },
+  { id: "flows", label: "Cash flows" },
+];
+
 /** The slider's positions: X moves in steps of a thousandth of the range. */
 const POSITIONS = 1000;
 /** Marks under the slider closer than this, in percent of its width, step down a row: about 30 pixels on a phone. */
@@ -45,6 +54,7 @@ const CROWDED = 9;
 
 export function App() {
   const [exampleId, setExampleId] = useState(examples[0]!.id);
+  const [tab, setTab] = useState<Tab>("payouts");
   const [{ fund, opening, x, top: topState }, setState] = useState(() => opened(examples[0]!.id));
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
@@ -57,7 +67,7 @@ export function App() {
   const atNav = fund.nav !== null && x.shown.eq(fund.nav);
   const clawbackAt = fund.final ? split : atNav ? splitAtNav(fund) : null;
   const owed = useMemo(() => (fund.final ? owedPoints(fund, breakpoints, top) : null), [fund, breakpoints, top]);
-  const bends = useMemo(() => clawbackBends(fund, breakpoints), [fund, breakpoints]);
+  const bends = useMemo(() => breakpoints.filter(bendsClawback), [breakpoints]);
 
   const choose = (id: string) => {
     setExampleId(id);
@@ -114,20 +124,36 @@ export function App() {
         </div>
       </header>
       <GovernanceNote />
-      <Headline fund={fund} split={split} owed={clawbackAt?.clawback?.owed ?? null} />
-      <XBox fund={fund} x={x} onType={typeX} top={top} topState={topState} onTop={typeTop} breakpoints={breakpoints} onX={setX} />
-      <Chart
-        points={points}
-        breakpoints={breakpoints}
-        nav={fund.nav}
-        x={x.shown}
-        top={top}
-        at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
-        hasCommitment={fund.terms.gpCommitment !== null}
-      />
-      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} onX={setX} />}
-      <SplitTable fund={fund} split={split} />
-      <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={setX} />
+      <main>
+        <p className="example-label">{summaryText(fund)}</p>
+        <Tabs tab={tab} onTab={setTab} />
+        <div role="tabpanel" id="panel-payouts" aria-labelledby="tab-payouts" hidden={tab !== "payouts"}>
+          <Headline fund={fund} split={split} clawback={clawbackAt?.clawback ?? null} />
+          <XBox fund={fund} x={x} onType={typeX} top={top} topState={topState} onTop={typeTop} breakpoints={breakpoints} onX={setX} />
+          {/* The chart and the split are both about this distribution, so they sit together; the clawback, about the fund's life, after them (f01i). */}
+          <Chart
+            points={points}
+            breakpoints={breakpoints}
+            nav={fund.nav}
+            x={x.shown}
+            top={top}
+            at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
+            hasCommitment={fund.terms.gpCommitment !== null}
+          />
+          <SplitTable fund={fund} split={split} />
+          {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} />}
+          <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={setX} />
+        </div>
+        <div role="tabpanel" id="panel-terms" aria-labelledby="tab-terms" hidden={tab !== "terms"}>
+          <section className="card" aria-labelledby="terms-heading">
+            <h2 id="terms-heading">Terms</h2>
+            <p>{termsText(fund)}</p>
+          </section>
+        </div>
+        <div role="tabpanel" id="panel-flows" aria-labelledby="tab-flows" hidden={tab !== "flows"}>
+          <CashFlows fund={fund} />
+        </div>
+      </main>
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. */}
       <footer className="page-footer">
         spillpoint-fund {build.fundVersion} ({build.commit})
@@ -143,6 +169,55 @@ function GovernanceNote() {
       defaults; where your LPA differs, it wins. Everything runs on this computer: nothing you enter is sent anywhere.
     </aside>
   );
+}
+
+/** The tabs, with the keys screen-reader users expect: arrows to move between them, Home and End for the first and last. */
+function Tabs({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const at = TABS.findIndex((t) => t.id === tab);
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: TABS.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    const next = TABS[(to + TABS.length) % TABS.length]!.id;
+    onTab(next);
+    document.getElementById(`tab-${next}`)?.focus();
+  };
+  return (
+    <div className="tabs" role="tablist" aria-label="View">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          id={`tab-${t.id}`}
+          aria-selected={tab === t.id}
+          aria-controls={`panel-${t.id}`}
+          tabIndex={tab === t.id ? 0 : -1}
+          onClick={() => onTab(t.id)}
+          onKeyDown={onKeyDown}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The fund behind the answers, in one line under the picker, as the main page's "built from its 10 events" (f01i):
+ * what's been paid in, what's been distributed before X, the NAV if there is one, and whether X is the last
+ * distribution. The amounts are the cash flows' own, added up as entered.
+ */
+export function summaryText(fund: Fund): string {
+  const calls = fund.cashFlows.filter((f) => f.type === "call");
+  const distributions = fund.cashFlows.filter((f) => f.type === "distribution");
+  const total = (flows: typeof calls) => flows.reduce((sum, f) => sum.plus(f.amount), new D(0));
+  const parts = [
+    `${short(total(calls))} paid in over ${calls.length === 1 ? "1 call" : `${calls.length} calls`}`,
+    distributions.length === 0 ? "nothing distributed before X" : `${short(total(distributions))} distributed before X`,
+    ...(fund.nav ? [`a NAV of ${short(fund.nav)} on ${dateText(fund.distributionDate)}`] : []),
+  ];
+  return `This fund: ${listed(parts)}. X ${fund.final ? "is" : "isn't"} its last distribution.`;
 }
 
 /** "a, b and c". */
@@ -165,28 +240,46 @@ function termsText(fund: Fund): string {
 }
 
 /**
- * The answer first, in neutral words: the same file goes to LPs and co-GPs (plan answer 6). When the GP owes a
- * clawback, the headline says so beside the carry, so it never shows carry without it (f01h): a final fund's at X, or
- * a fund's that isn't final at NAV, as if it were liquidated there.
+ * The answer first, in neutral words: the same file goes to LPs and co-GPs (plan answer 6), and in one frame (f01i).
+ * - A final fund: the GP's carry over the fund's life, if X is its last distribution, with what it gets now and gives
+ *   back when it owes a clawback, so the carry is never shown without it (f01h).
+ * - A fund that isn't final: this distribution, and at NAV what the GP would owe if the fund were liquidated there.
  */
-export function answerText(fund: Fund, split: Split, owed: D | null): string {
+export function answerText(fund: Fund, split: Split, clawback: ClawbackAmounts | null): string {
   const date = dateText(fund.distributionDate);
+  const now = split.distribution.gp.total;
+  if (fund.final && clawback) {
+    // F12, one way only: the GP ends with what it was paid less what it gives back, which is the less of what it was
+    // paid and what it earned on the fund's totals.
+    const ends = D.min(clawback.carryPaid, clawback.entitlement);
+    const lead = split.x.isZero() ? `If nothing more is distributed after ${date}` : `If ${short(split.x)} on ${date} is the last distribution`;
+    const back = !owesSomething(clawback.owed)
+      ? ""
+      : owesSomething(now)
+        ? `: it gets ${short(now)} now and gives back ${short(clawback.owed)}`
+        : `: it gives back ${short(clawback.owed)}`;
+    return `${lead}, the GP ends with ${short(ends)} of carry${back}.`;
+  }
   const lead = split.x.isZero() ? `With nothing distributed on ${date}` : `At a ${short(split.x)} distribution on ${date}`;
-  const back = owed === null || !owesSomething(owed) ? "" : fund.final ? `, and it owes ${short(owed)} back` : `, and if the fund were liquidated at NAV it would owe ${short(owed)} back`;
-  return `${lead}, the GP's carry is ${short(split.distribution.gp.total)}${back}.`;
+  const back = clawback && owesSomething(clawback.owed) ? `, and if the fund were liquidated at NAV it would owe ${short(clawback.owed)} back` : "";
+  return `${lead}, the GP's carry is ${short(now)}${back}.`;
 }
 
-function Headline({ fund, split, owed }: { fund: Fund; split: Split; owed: D | null }) {
+/** The LPs' side of this distribution. For a final fund it says so, since the line above is about the fund's life. */
+export function restText(fund: Fund, split: Split): string | null {
   const d = split.distribution;
   const commitment = fund.terms.gpCommitment ? ` and the GP commitment ${short(d.gpCommitment)}` : "";
+  if (!fund.final) return `The LPs get ${short(d.lps.total)}${commitment}.`;
+  return split.x.isZero() ? null : `Of the ${short(split.x)}, the LPs get ${short(d.lps.total)}${commitment}.`;
+}
+
+function Headline({ fund, split, clawback }: { fund: Fund; split: Split; clawback: ClawbackAmounts | null }) {
+  const rest = restText(fund, split);
   return (
     <section className="headline" aria-label="The answer">
       <p className="headline__terms">{termsText(fund)}</p>
-      <p className="headline__answer">{answerText(fund, split, owed)}</p>
-      <p className="headline__rest">
-        The LPs get {short(d.lps.total)}
-        {commitment}.
-      </p>
+      <p className="headline__answer">{answerText(fund, split, clawback)}</p>
+      {rest && <p className="headline__rest">{rest}</p>}
     </section>
   );
 }

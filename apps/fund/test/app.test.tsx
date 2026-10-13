@@ -98,6 +98,9 @@ function openCase8() {
   fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
 }
 
+/** The headline's lines: the terms, the answer, and the LPs' side when there is one. */
+const headline = () => [...screen.getByRole("region", { name: "The answer" }).querySelectorAll("p")].map((p) => p.textContent);
+
 /** A fact under the table, by its label. */
 const fact = (label: string | RegExp) => screen.getByText(label, { selector: "dt" }).nextElementSibling!.textContent;
 
@@ -119,9 +122,11 @@ describe("the fund page", () => {
   it("opens on case 3 at $20,000,000, flat 20%, its carry one row", () => {
     render(<App />);
     expect((screen.getByLabelText(/^Distribution on 1 Apr 2026/) as HTMLInputElement).value).toBe("$20,000,000");
-    expect(screen.getByText(/^Carry 20%/).textContent).toBe("Carry 20%; no pref; GP commitment 2%, fee-free.");
-    expect(screen.getByText(/^At a/).textContent).toBe("At a $20M distribution on 1 Apr 2026, the GP's carry is $1.83M.");
-    expect(screen.getByText(/^The LPs get/).textContent).toBe("The LPs get $17.8M and the GP commitment $400K.");
+    expect(headline()).toEqual([
+      "Carry 20%; no pref; GP commitment 2%, fee-free.",
+      "At a $20M distribution on 1 Apr 2026, the GP's carry is $1.83M.",
+      "The LPs get $17.8M and the GP commitment $400K.",
+    ]);
     expectSplit("fund-03-gp-commitment", "20000000.00");
     expect(row("Carry at 20%")).toEqual(["$7,320,800.00", "$1,830,200.00", "$7,320,800.00", "$1,830,200.00"]);
   });
@@ -129,9 +134,11 @@ describe("the fund page", () => {
   it("opens case 8, picked from the list, at $40,000,000, with the answer first, in neutral words", () => {
     openCase8();
     expect((screen.getByLabelText(/^Distribution on 30 Sep 2026/) as HTMLInputElement).value).toBe("$40,000,000");
-    expect(screen.getByText(/^Carry 20%/).textContent).toBe("Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free.");
-    expect(screen.getByText(/^At a/).textContent).toBe("At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.");
-    expect(screen.getByText(/^The LPs get/).textContent).toBe("The LPs get $32.8M and the GP commitment $400K.");
+    expect(headline()).toEqual([
+      "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free.",
+      "At a $40M distribution on 30 Sep 2026, the GP's carry is $6.81M.",
+      "The LPs get $32.8M and the GP commitment $400K.",
+    ]);
   });
 
   it("splits case 8 at $40,000,000 as the case does, X alone and the fund to date, each step a band of the LPs' multiple", () => {
@@ -198,26 +205,35 @@ describe("the fund page", () => {
     fireEvent.change(picker, { target: { value: "fund-13-clawback-steps" } });
     const box = screen.getByLabelText(/^Distribution on 1 Jan 2025/) as HTMLInputElement;
     expect(box.value).toBe("$0");
-    expect(screen.getByText(/^Carry 20%/).textContent).toBe("Carry 20% and 30% from 2.0x; no pref; no GP commitment.");
-    expect(screen.getByText(/^With nothing/).textContent).toBe("With nothing distributed on 1 Jan 2025, the GP's carry is $0, and it owes $2.75M back.");
+    // A final fund's headline is the GP's carry over the fund's life (f01i): at $0, there's nothing of this distribution to give.
+    expect(headline()).toEqual([
+      "Carry 20% and 30% from 2.0x; no pref; no GP commitment.",
+      "If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M.",
+    ]);
     expectSplit("fund-13-clawback-steps", "0.00");
     // The headline beside the carry, never without the clawback (f01h).
     fireEvent.change(box, { target: { value: "15000000" } });
-    expect(screen.getByText(/^At a/).textContent).toBe("At a $15M distribution on 1 Jan 2025, the GP's carry is $1M, and it owes $750K back.");
+    expect(headline().slice(1)).toEqual([
+      "If $15M on 1 Jan 2025 is the last distribution, the GP ends with $5M of carry: it gets $1M now and gives back $750K.",
+      "Of the $15M, the LPs get $14M.",
+    ]);
     expectSplit("fund-13-clawback-steps", "15000000.00");
     expect(fact("The LPs' net multiple to date")).toBe("1.96x");
 
     fireEvent.change(picker, { target: { value: "fund-12-spv" } });
-    expect(screen.getByText(/^At a/).textContent).toBe("At a $6M distribution on 1 May 2026, the GP's carry is $792K.");
-    expect(screen.getByText(/^The LPs get/).textContent).toBe("The LPs get $5.21M.");
+    expect(headline().slice(1)).toEqual(["If $6M on 1 May 2026 is the last distribution, the GP ends with $792K of carry.", "Of the $6M, the LPs get $5.21M."]);
     expectSplit("fund-12-spv", "6000000.00");
     expect(screen.queryByText(/GP commitment's paid-in/)).toBeNull();
   });
 
-  it("puts the cards in the main page's order: the answer, X and its slider, the chart, the split, the breakpoints", () => {
+  it("puts the cards in the main page's order: the answer, X and its slider, the chart, the split, the clawback when there is one, the breakpoints", () => {
     render(<App />);
-    const cards = [...document.querySelectorAll(".page > section")].map((s) => s.getAttribute("aria-label") ?? s.querySelector("h2")!.textContent);
-    expect(cards).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $20,000,000", "Breakpoints"]);
+    const cards = () =>
+      [...screen.getByRole("tabpanel", { name: "Payouts" }).querySelectorAll(":scope > section")].map((s) => s.getAttribute("aria-label") ?? s.querySelector("h2")!.textContent);
+    expect(cards()).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $20,000,000", "Breakpoints"]);
+    // The chart and the split are both about this distribution; the clawback, about the fund's life, comes after them (f01i).
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-13-clawback-steps" } });
+    expect(cards()).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $0", "The clawback", "Breakpoints"]);
   });
 
   it("names spillpoint-fund's version and the commit in the footer", () => {

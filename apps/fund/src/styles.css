@@ -39,6 +39,17 @@ select, input[type="text"] {
 select { max-width: 100%; }
 select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* The fund behind the answers, under the picker (f01i), and the tabs, as the main page has them. */
+.example-label { color: var(--muted); margin: 0 0 8px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin: 8px 0 0; }
+.tabs [role="tab"] {
+  font: inherit; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-bottom: 3px solid transparent;
+  padding: 8px 14px; margin-bottom: -1px; cursor: pointer;
+}
+.tabs [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+[role="tabpanel"] { padding-top: 16px; }
+[role="tabpanel"] > :first-child { margin-top: 0; }
+
 /* The caveat: always visible, plain, not alarming. */
 .notice {
   background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
@@ -120,7 +131,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .clawback__sentence { font-size: 1.125rem; margin: 12px 0 0; font-variant-numeric: tabular-nums; }
 .clawback__sentence--owed { font-weight: 600; }
 .clawback__none { margin: 12px 0 0; }
-.clawback__bends { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
 /* One legend item, as wide as the main chart's, so its name and a seven-figure amount sit on one line. */
 .legend--clawback { grid-template-columns: minmax(0, min(100%, 320px)); }
 

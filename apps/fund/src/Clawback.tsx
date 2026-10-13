@@ -3,7 +3,8 @@
 // waterfall on the fund's totals gives it; what it was paid beyond that goes back (one way only).
 //
 // For a final fund it's there at every X, with a small chart of its own: what's owed against X, on its own scale since
-// it's often zero, with the breakpoints where it bends, numbered as in the list. For a fund that isn't final, only the
+// it's often zero, with the breakpoints where it bends marked, numbered as in the breakpoint list, which gives their
+// reasons (f01i). For a fund that isn't final, only the
 // NAV point is final (F14, the fund liquidated at NAV on D), so the card shows that point alone. Numbers become floats
 // only for drawing.
 
@@ -11,13 +12,11 @@ import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "rec
 import { D, toCents } from "spillpoint-fund";
 import type { Clawback as ClawbackAmounts, Fund } from "spillpoint-fund";
 
-import { isClawbackReason } from "./analysis.ts";
 import type { BreakpointView, OwedPoint } from "./analysis.ts";
 import { ACCENT, BADGE_ROW, Badge, INK_MUTED, LINE_HAIR, MARGIN_SIDE, MarkLabel, X_AXIS_HEIGHT, Y_AXIS_WIDTH, badgeRows, niceScale, useWidth } from "./Chart.tsx";
 import { cents, dateText, short } from "./format.ts";
 
 type Decimal = D;
-type Bend = BreakpointView & { owed: Decimal };
 
 /** What's owed, apart from the GP's blue and the LPs' grey on the main chart. */
 const OWED = "#a3501c";
@@ -40,14 +39,13 @@ interface Props {
   clawback: ClawbackAmounts;
   /** The small chart's points, for a final fund; null at a NAV point of a fund that isn't final. */
   points: readonly OwedPoint[] | null;
-  /** The breakpoints where the clawback bends, numbered as in the list, with what's owed at each. */
-  breakpoints: readonly Bend[];
+  /** The breakpoints where the clawback bends, numbered as in the list. */
+  breakpoints: readonly BreakpointView[];
   x: Decimal;
   top: Decimal;
-  onX: (x: Decimal) => void;
 }
 
-export function Clawback({ fund, clawback, points, breakpoints, x, top, onX }: Props) {
+export function Clawback({ fund, clawback, points, breakpoints, x, top }: Props) {
   return (
     <section className="card" aria-labelledby="clawback-heading">
       <h2 id="clawback-heading">The clawback</h2>
@@ -63,7 +61,7 @@ export function Clawback({ fund, clawback, points, breakpoints, x, top, onX }: P
         // FA9: what's owed never rises with X, so nothing owed at $0 is nothing owed at any X.
         <p className="clawback__none">Nothing is owed at any X: even at $0, the GP has been paid no more carry than it has earned on the fund's totals, and more X never adds to what's owed.</p>
       ) : (
-        <OwedChart points={points} breakpoints={breakpoints} x={x} top={top} owed={clawback.owed} onX={onX} />
+        <OwedChart points={points} breakpoints={breakpoints} x={x} top={top} owed={clawback.owed} />
       )}
     </section>
   );
@@ -71,15 +69,14 @@ export function Clawback({ fund, clawback, points, breakpoints, x, top, onX }: P
 
 interface ChartProps {
   points: readonly OwedPoint[];
-  breakpoints: readonly Bend[];
+  breakpoints: readonly BreakpointView[];
   x: Decimal;
   top: Decimal;
   owed: Decimal;
-  onX: (x: Decimal) => void;
 }
 
 /** What's owed against X, from $0 to the range's top, with the breakpoints where it bends and X marked. */
-function OwedChart({ points, breakpoints, x, top, owed, onX }: ChartProps) {
+function OwedChart({ points, breakpoints, x, top, owed }: ChartProps) {
   const [ref, width] = useWidth(960);
   const rows = points.map((p) => ({ x: p.x.toNumber(), owed: p.owed.toNumber() }));
   const to = top.toNumber();
@@ -143,28 +140,6 @@ function OwedChart({ points, breakpoints, x, top, owed, onX }: ChartProps) {
           <span className="legend__value">{cents(owed)}</span>
         </li>
       </ul>
-      {breakpoints.length > 0 && (
-        <ol className="clawback__bends" aria-label="Where the clawback bends">
-          {breakpoints.map((b) => (
-            <li key={b.n}>
-              <button type="button" className="breakpoints__head" onClick={() => onX(b.x)}>
-                <span className="breakpoints__n" aria-hidden="true">
-                  {b.n}
-                </span>
-                <span className="breakpoints__value">{cents(b.x)}</span>
-              </button>
-              {b.reasons
-                .filter((r) => isClawbackReason(r.code))
-                .map((r) => (
-                  <p key={r.code} className="breakpoints__reason">
-                    {`${r.text.charAt(0).toUpperCase()}${r.text.slice(1)}.`}
-                  </p>
-                ))}
-              <p className="breakpoints__gp">Owed at this X: {cents(b.owed)}.</p>
-            </li>
-          ))}
-        </ol>
-      )}
     </>
   );
 }

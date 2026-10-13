@@ -93,11 +93,6 @@ export function bendsClawback(b: Breakpoint): boolean {
   return b.reasons.some((r) => isClawbackReason(r.code));
 }
 
-/** The breakpoints where the clawback bends, numbered as in the list, each with what's owed at it. */
-export function clawbackBends(fund: Fund, breakpoints: readonly BreakpointView[]): (BreakpointView & { owed: Decimal })[] {
-  return breakpoints.filter(bendsClawback).map((b) => ({ ...b, owed: splitAt(fund, b.x, { final: true }).clawback!.owed }));
-}
-
 /**
  * The clawback chart's points, for a final fund (F12): what the GP owes back at 0, at every breakpoint where the
  * clawback bends, and at the top. The engine reports every X where what's owed bends, so it's a straight line between
