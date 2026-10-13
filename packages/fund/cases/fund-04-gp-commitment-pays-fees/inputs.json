@@ -1,0 +1,39 @@
+{
+  "case": "fund-04-gp-commitment-pays-fees",
+  "description": "fund-03 with the GP commitment paying fees and not expenses.",
+  "xs": [
+    "5000000",
+    "20000000"
+  ],
+  "fund": {
+    "as_of": "2026-04-01",
+    "terms": {
+      "carry": "0.20",
+      "gp_commitment": {
+        "share": "0.02",
+        "pays_fees": true,
+        "pays_expenses": false
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-04-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2021-04-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "600000"
+      },
+      {
+        "date": "2022-04-01",
+        "type": "call",
+        "kind": "expense",
+        "amount": "50000"
+      }
+    ]
+  }
+}

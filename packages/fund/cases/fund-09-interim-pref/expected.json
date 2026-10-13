@@ -1,0 +1,270 @@
+{
+  "case": "fund-09-interim-pref",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-07-01",
+  "final": false,
+  "lps_paid_in": "10500000.00",
+  "pref_accrued_to_d": "2159342.47",
+  "breakpoints": [
+    {
+      "x": "659342.47",
+      "exact": "48132000/73",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "rate": "0.08",
+          "amount": "157632000/73",
+          "text": "LPs have their 8% pref, $2,159,342.47"
+        }
+      ]
+    },
+    {
+      "x": "1199178.08",
+      "exact": "87540000/73",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "carry": "0.2",
+          "text": "the GP has 20% of the profit"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "500000.00",
+      "exact": "500000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "500000.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "500000.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "500000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "12500000.00",
+        "lps": {
+          "capital": "10500000.00",
+          "pref": "2000000.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "12500000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "659342.47",
+      "exact": "48132000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "659342.47",
+        "lps": {
+          "capital": "0.00",
+          "pref": "659342.47",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "659342.47"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "12659342.47",
+        "lps": {
+          "capital": "10500000.00",
+          "pref": "2159342.47",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "12659342.47"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "1000000.00",
+      "exact": "1000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "1000000.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "659342.47",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "659342.47"
+        },
+        "gp": {
+          "catch_up": "340657.53",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "340657.53"
+        }
+      },
+      "to_date": {
+        "amount": "13000000.00",
+        "lps": {
+          "capital": "10500000.00",
+          "pref": "2159342.47",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "12659342.47"
+        },
+        "gp": {
+          "catch_up": "340657.53",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "340657.53"
+        }
+      }
+    },
+    {
+      "x": "1199178.08",
+      "exact": "87540000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "1199178.08",
+        "lps": {
+          "capital": "0.00",
+          "pref": "659342.47",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "659342.47"
+        },
+        "gp": {
+          "catch_up": "539835.62",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "539835.62"
+        }
+      },
+      "to_date": {
+        "amount": "13199178.08",
+        "lps": {
+          "capital": "10500000.00",
+          "pref": "2159342.47",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "12659342.47"
+        },
+        "gp": {
+          "catch_up": "539835.62",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "539835.62"
+        }
+      }
+    },
+    {
+      "x": "3000000.00",
+      "exact": "3000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "3000000.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "659342.47",
+          "catch_up": "0.00",
+          "carry_tier": "1440657.53",
+          "total": "2100000.00"
+        },
+        "gp": {
+          "catch_up": "539835.62",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "360164.38"
+            }
+          ],
+          "total": "900000.00"
+        }
+      },
+      "to_date": {
+        "amount": "15000000.00",
+        "lps": {
+          "capital": "10500000.00",
+          "pref": "2159342.47",
+          "catch_up": "0.00",
+          "carry_tier": "1440657.53",
+          "total": "14100000.00"
+        },
+        "gp": {
+          "catch_up": "539835.62",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "360164.38"
+            }
+          ],
+          "total": "900000.00"
+        }
+      }
+    }
+  ]
+}

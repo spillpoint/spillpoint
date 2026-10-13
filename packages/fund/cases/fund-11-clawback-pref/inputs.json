@@ -1,0 +1,43 @@
+{
+  "case": "fund-11-clawback-pref",
+  "description": "A clawback with a pref and full catch-up: the fund-total run owes no pref on the later call, since earlier gains cover it.",
+  "xs": [
+    "0",
+    "2000000",
+    "5000000",
+    "5900000",
+    "8000000"
+  ],
+  "fund": {
+    "as_of": "2025-01-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2020-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "distribution",
+        "amount": "20000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "5000000"
+      }
+    ],
+    "final": true
+  }
+}

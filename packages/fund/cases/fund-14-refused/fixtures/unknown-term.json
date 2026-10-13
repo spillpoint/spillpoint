@@ -1,0 +1,9 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "An IRR hurdle, a term v1 doesn't model.",
+  "change": {
+    "set": {
+      "terms.hurdle_irr": "0.08"
+    }
+  }
+}

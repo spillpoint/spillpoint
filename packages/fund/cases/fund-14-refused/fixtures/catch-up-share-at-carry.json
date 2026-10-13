@@ -1,0 +1,9 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "A catch-up share of 20%, equal to the carry rate, so it never catches up.",
+  "change": {
+    "set": {
+      "terms.catch_up.gp_share": "0.2"
+    }
+  }
+}

@@ -1,0 +1,328 @@
+{
+  "case": "fund-06-full-catch-up",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-01-01",
+  "final": false,
+  "lps_paid_in": "10000000.00",
+  "pref_accrued_to_d": "4004383.56",
+  "breakpoints": [
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "10000000",
+          "text": "LPs have their $10,000,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "14004383.56",
+      "exact": "1022320000/73",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "rate": "0.08",
+          "amount": "292320000/73",
+          "text": "LPs have their 8% pref, $4,004,383.56"
+        }
+      ]
+    },
+    {
+      "x": "15005479.45",
+      "exact": "1095400000/73",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "carry": "0.2",
+          "text": "the GP has 20% of the profit"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10000000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10000000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "12000000.00",
+      "exact": "12000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "12000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "2000000.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "12000000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "12000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "2000000.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "12000000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "14004383.56",
+      "exact": "1022320000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "14004383.56",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14004383.56"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "14004383.56",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14004383.56"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "14500000.00",
+      "exact": "14500000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "14500000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14004383.56"
+        },
+        "gp": {
+          "catch_up": "495616.44",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "495616.44"
+        }
+      },
+      "to_date": {
+        "amount": "14500000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14004383.56"
+        },
+        "gp": {
+          "catch_up": "495616.44",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "495616.44"
+        }
+      }
+    },
+    {
+      "x": "15005479.45",
+      "exact": "1095400000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "15005479.45",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14004383.56"
+        },
+        "gp": {
+          "catch_up": "1001095.89",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "1001095.89"
+        }
+      },
+      "to_date": {
+        "amount": "15005479.45",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14004383.56"
+        },
+        "gp": {
+          "catch_up": "1001095.89",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "1001095.89"
+        }
+      }
+    },
+    {
+      "x": "20000000.00",
+      "exact": "20000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "20000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "3995616.44",
+          "total": "18000000.00"
+        },
+        "gp": {
+          "catch_up": "1001095.89",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "998904.11"
+            }
+          ],
+          "total": "2000000.00"
+        }
+      },
+      "to_date": {
+        "amount": "20000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "4004383.56",
+          "catch_up": "0.00",
+          "carry_tier": "3995616.44",
+          "total": "18000000.00"
+        },
+        "gp": {
+          "catch_up": "1001095.89",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "998904.11"
+            }
+          ],
+          "total": "2000000.00"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "A distribution and no calls at all.",
+  "change": {
+    "set": {
+      "cash_flows": [
+        {
+          "date": "2020-01-01",
+          "type": "distribution",
+          "amount": "1"
+        }
+      ]
+    }
+  }
+}

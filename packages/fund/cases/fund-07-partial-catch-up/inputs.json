@@ -1,0 +1,29 @@
+{
+  "case": "fund-07-partial-catch-up",
+  "description": "fund-05 with a 50/50 catch-up.",
+  "xs": [
+    "13000000",
+    "14000000",
+    "18000000"
+  ],
+  "fund": {
+    "as_of": "2024-01-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "0.5"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ]
+  }
+}

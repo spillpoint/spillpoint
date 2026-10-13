@@ -22,6 +22,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pnpm install --frozen-lockfile
+      # typecheck and test run in every workspace package, the fund package (packages/fund) included.
       - run: pnpm typecheck
       - name: Build the npm package
         run: pnpm build
@@ -30,6 +31,10 @@ jobs:
         run: python3 -m unittest discover reference/tests -v
       - name: Expected values match the reference calculator
         run: python3 reference/generate.py --check
+      - name: Fund reference unit tests
+        run: python3 -m unittest discover packages/fund/reference/tests -v
+      - name: Fund expected values match the fund reference
+        run: python3 packages/fund/reference/generate.py --check
 
   # The package claims Node 22 and later (engines ">=22"), so the oldest
   # supported Node runs the build and the tests too. A separate job keeps the
@@ -43,8 +48,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - run: pnpm install --frozen-lockfile
+      # typecheck and test run in every workspace package, the fund package (packages/fund) included.
       - run: pnpm typecheck
       - name: Build the npm package
         run: pnpm build
       - run: pnpm test
+      - name: Fund reference unit tests
+        run: python3 -m unittest discover packages/fund/reference/tests -v
+      - name: Fund expected values match the fund reference
+        run: python3 packages/fund/reference/generate.py --check

@@ -1,0 +1,37 @@
+{
+  "case": "fund-10-clawback",
+  "description": "Spec example C: carry paid early, then a written-off follow-on. The last distribution trues it up.",
+  "xs": [
+    "0",
+    "1000000",
+    "2000000",
+    "5000000"
+  ],
+  "fund": {
+    "as_of": "2025-03-01",
+    "terms": {
+      "carry": "0.20"
+    },
+    "cash_flows": [
+      {
+        "date": "2020-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-03-01",
+        "type": "distribution",
+        "amount": "15000000"
+      },
+      {
+        "date": "2023-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      }
+    ],
+    "final": true,
+    "nav": "1000000"
+  }
+}

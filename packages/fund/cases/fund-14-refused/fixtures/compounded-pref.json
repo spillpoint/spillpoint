@@ -1,0 +1,9 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "The pref compounding annually.",
+  "change": {
+    "set": {
+      "terms.pref.compounding": "annual"
+    }
+  }
+}
