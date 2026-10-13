@@ -183,7 +183,7 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
           type="button"
           className="button"
           onClick={() => {
-            onForm({ ...form, rows: [...form.rows, newRow()] });
+            onForm({ ...form, rows: [...form.rows, newRow(form.rows.at(-1))] });
             setFocusing(`${at(form.rows.length)}.date`);
           }}
         >
@@ -194,8 +194,8 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
         </button>
       </div>
       <p className="footnote">
-        On one date, calls run before distributions, and distributions run in the order shown here (F4). “Sort by date” keeps
-        that order within a date.
+        On one date, calls run before distributions, and distributions run in the order shown here. “Sort by date” keeps that
+        order within a date.
       </p>
     </section>
   );

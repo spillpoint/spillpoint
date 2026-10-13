@@ -19,6 +19,15 @@ export function cents(amount: Decimal): string {
   return whole.startsWith("-") ? `-$${grouped(whole.slice(1))}.${part}` : `$${grouped(whole)}.${part}`;
 }
 
+/**
+ * An amount for a form's field with every place it has, so the fund in the form is the fund in the file:
+ * "$8,000,000", "$495,000.50", "$10,000,000.005".
+ */
+export function exactDollars(amount: Decimal): string {
+  const [whole, part] = amount.toFixed().split(".") as [string, string?];
+  return part ? `$${grouped(whole)}.${part.padEnd(2, "0")}` : `$${grouped(whole)}`;
+}
+
 /** "$198,000": to the dollar, half up, for a rate per extra $1M, which is approximate. */
 export function wholeDollars(amount: Decimal): string {
   const rounded = amount.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(0, D.ROUND_HALF_UP);
@@ -48,10 +57,11 @@ export function short(amount: Decimal): string {
 
 /**
  * Reads a typed amount: "40000000", "40,000,000", "$40M", "40m", "34.5M", "250k". Null if it isn't a non-negative
- * amount in dollars. Exact: "34.5M" is 34,500,000, never a float.
+ * amount in dollars. Exact: "34.5M" is 34,500,000, never a float. Commas only between groups of three digits, so
+ * "1,5M" and a European "1.000.000,00" are refused, never read as something else.
  */
 export function parseDollars(text: string): Decimal | null {
-  const m = /^\s*\$?\s*([0-9][0-9,]*(?:\.[0-9]+)?|\.[0-9]+)\s*([kKmMbB]?)\s*$/.exec(text);
+  const m = /^\s*\$?\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?|\.[0-9]+)\s*([kKmMbB]?)\s*$/.exec(text);
   if (!m) return null;
   const scale = { "": "1", k: "1e3", m: "1e6", b: "1e9" }[m[2]!.toLowerCase() as "" | "k" | "m" | "b"];
   return new D(m[1]!.replace(/,/g, "")).times(scale);

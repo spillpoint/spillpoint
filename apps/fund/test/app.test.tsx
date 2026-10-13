@@ -199,6 +199,10 @@ describe("the fund page", () => {
     );
     expect(box.getAttribute("aria-invalid")).toBe("true");
     expectSplit("fund-08-carry-steps", "40000000.00");
+    // A comma out of place is refused, never read as something else: "1,5M" isn't $15M.
+    fireEvent.change(box, { target: { value: "1,5M" } });
+    expect(screen.getByRole("alert").textContent).toMatch(/^Write an amount in dollars/);
+    expectSplit("fund-08-carry-steps", "40000000.00");
     fireEvent.change(box, { target: { value: "20,000,000" } });
     expect(screen.queryByRole("alert")).toBeNull();
     expectSplit("fund-08-carry-steps", "20000000.00");

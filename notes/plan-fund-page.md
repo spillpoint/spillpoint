@@ -150,11 +150,12 @@ A table by tier, for X alone and for the fund to date:
 - **"NAV on D",** optional
 
 **As built in f01j:**
-- **Amounts** are typed in dollars ("$8,000,000", "8000000" or "8M") and written exactly.
+- **Amounts** are typed in dollars ("$8,000,000", "8000000" or "8M") and written exactly. Commas only between groups of three digits, in the cells, NAV and the X box: "1,5M" and a European "1.000.000,00" are refused (f01k). An amount comes into the form with every place it has, "$10,000,000.005", so the fund in the form is the fund in the file (f01k).
 - **D left empty** is the as-of date, which is what leaving it out of the input means; the field says so.
 - **A problem** shows in the cell its path names: a cash flow's own (before the first call, after D) in a line under its row, and "a fund needs a call" under the table. Text the page can't read (a blank amount, "lots") goes to the engine as "", so every problem, on either tab, comes one at a time in the engine's order (FA2): a blank fund asks for its as-of date before a carry rate.
 - **"A blank fund"** is last in the list: no dates, a flat 20% carry (F9's), and one call to fill in. Until the engine can run it, Payouts says "No payouts yet" and what's needed first. It stays "A blank fund" as it's filled in.
-- **"Add a cash flow"** adds a call with its date focused. **"Sort by date"** keeps the order shown within a date.
+- **"Add a cash flow"** adds a row of the type and kind of the row above it (a call, an investment, when there are none), with its date focused (f01j review, answer 2). **"Sort by date"** keeps the order shown within a date.
+- **A blank fund's carry** starts at a flat 20%: F9's default, and most VC funds' (f01j review, answer 1).
 
 **Pasting rows from a spreadsheet** is its own step, right after the table and before release (your answer 8): a GP won't type years of flows by hand. Copied cells from Excel, Numbers or Google Sheets arrive as tab-separated rows.
 - **The page reads each row** as date, type, kind and amount, in that order, and skips a header row it recognizes.

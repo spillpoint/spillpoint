@@ -8,7 +8,7 @@
 import { FundRefusal } from "spillpoint-fund";
 import type { CallKind, Fund } from "spillpoint-fund";
 
-import { dateText, parseDollars, xText } from "./format.ts";
+import { dateText, exactDollars, parseDollars } from "./format.ts";
 import type { Problem } from "./terms.ts";
 import { UNREAD } from "./terms.ts";
 
@@ -36,21 +36,24 @@ export interface FlowsForm {
 
 let nextId = 1;
 
-/** A new row: a call, an investment, its date and amount to come. */
-export function newRow(): FlowRow {
-  return { id: nextId++, date: "", type: "call", kind: "investment", amount: "" };
+/**
+ * A new row, its date and amount to come, of the type and kind of the row above it: a GP enters calls in a run and
+ * distributions in a run (f01j review, answer 2). The first is a call, an investment.
+ */
+export function newRow(above?: FlowRow): FlowRow {
+  return { id: nextId++, date: "", type: above?.type ?? "call", kind: above?.kind ?? "investment", amount: "" };
 }
 
-/** The form for a fund the engine read: its cash flows in the order entered (FA12), amounts as the X box writes them. */
+/** The form for a fund the engine read: its cash flows in the order entered (FA12), every amount with all its places. */
 export function flowsFrom(fund: Fund): FlowsForm {
   return {
     asOf: fund.asOf,
     distributionDate: fund.distributionDate === fund.asOf ? "" : fund.distributionDate,
     final: fund.final,
-    nav: fund.nav ? xText(fund.nav) : "",
+    nav: fund.nav ? exactDollars(fund.nav) : "",
     rows: [...fund.cashFlows]
       .sort((a, b) => a.index - b.index)
-      .map((f) => ({ id: nextId++, date: f.date, type: f.type, kind: f.kind ?? "investment", amount: xText(f.amount) })),
+      .map((f) => ({ id: nextId++, date: f.date, type: f.type, kind: f.kind ?? "investment", amount: exactDollars(f.amount) })),
   };
 }
 
