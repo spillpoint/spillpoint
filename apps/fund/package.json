@@ -1,5 +1,5 @@
 {
-  "name": "@spillpoint/fund-page",
+  "name": "@spillpoint/fund",
   "private": true,
   "version": "0.0.0",
   "description": "The fund page: how a fund's distribution splits between LPs and GP, in the browser. Not deployed until spillpoint-fund 0.1.0's release step.",

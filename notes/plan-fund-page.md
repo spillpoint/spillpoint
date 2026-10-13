@@ -180,7 +180,7 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
   - **The fund page would sit in a bundle that imports `spillpoint`.** The fund workstream keeps the two apart until engine 1.0.
   - **Keeping it off the site** needs a build flag in the dashboard's config: an entry that exists in source but is left out of the built site until the release turns it on.
 
-**(b) Its own app, `apps/fund`, the package `@spillpoint/fund-page`, private.** The package name stays distinct from the engine's, `spillpoint-fund`, so `pnpm --filter` can't mix them up.
+**(b) Its own app, `apps/fund`, the package `@spillpoint/fund`, private,** named as `@spillpoint/dashboard` is in `apps/dashboard` (f01g). `pnpm --filter @spillpoint/fund` names it exactly, so it never selects the engine, `spillpoint-fund`.
 - **What it has:**
   - its own Vite config
   - React and Recharts at the dashboard's versions
@@ -241,7 +241,7 @@ The main page computes in a Web Worker because Millrace's breakpoints take about
 
 **Every merge to main deploys** `apps/dashboard/dist`, and only that.
 - **Before the release step,** `apps/fund` lands step by step on main. CI builds it and runs its tests and privacy test on every PR and push, through the workspace's `pnpm -r`, and `pages.yml` never uploads it. There's no flag, no hidden route, and no unlinked page on the site to find.
-- **You check each step** with `pnpm --filter @spillpoint/fund-page dev`, or its `preview` of the built page, on your machine.
+- **You check each step** with `pnpm --filter @spillpoint/fund dev`, or its `preview` of the built page, on your machine.
 
 **What the release step, f01n, switches on,** with npm 0.1.0, the package's README, licence and pack check:
 1. **`pages.yml`:** the copy step above, so the next deploy publishes `/fund/`. A change to `.github/workflows/`, flagged in its review (hard rule 9).
@@ -262,7 +262,7 @@ Each is one branch, one PR and one evening, with a review note and what to check
 
 1. **f01f: the app, and the split at one X.**
    - **What it adds:**
-     - `apps/fund` (`@spillpoint/fund-page`) with the CSP and its test against the dashboard's, the privacy test, the masthead and caveat, the title "spillpoint: fund waterfall", and the footer (spillpoint-fund's version and the commit)
+     - `apps/fund` (`@spillpoint/fund`) with the CSP and its test against the dashboard's, the privacy test, the masthead and caveat, the title "spillpoint: fund waterfall", and the footer (spillpoint-fund's version and the commit)
      - the three example funds from the cases: 8, 13 and 12
      - the X box and the split table, X alone and to date, with the paid-in, the pref to D and the LP multiple
      - the line under the table saying why amounts are to the cent
@@ -328,6 +328,8 @@ Each is one branch, one PR and one evening, with a review note and what to check
 The plan above follows them.
 
 1. **Its own app,** in `apps/fund`, not `apps/fund-page`. The package name stays `@spillpoint/fund-page`, distinct from the engine's, so `pnpm --filter` can't mix them up. `CLAUDE.md`'s fund rule is amended for `apps/fund` in the first page step.
+
+   **Renamed in f01g:** `@spillpoint/fund`, to match `@spillpoint/dashboard` in `apps/dashboard` (your answer during f01g).
 2. **To the cent, not as paid,** for the reason given. The page's line under the table says so.
 3. **No Worker at first.**
 4. **The page goes live with 0.1.0,** and the naming review comes first. The order:
