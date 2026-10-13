@@ -361,9 +361,10 @@ function Payouts({ fund, state, onX, onTypeX, onTop }: { fund: Fund; state: Open
         top={top}
         at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
         hasCommitment={fund.terms.gpCommitment !== null}
+        onX={onX}
       />
       <SplitTable fund={fund} split={split} />
-      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} />}
+      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} onX={onX} />}
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={onX} />
     </>
   );

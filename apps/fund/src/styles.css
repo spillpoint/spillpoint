@@ -140,6 +140,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* The chart */
 /* Clipped: a chart drawn while its tab was hidden has its first width until it's shown, and never widens the page. */
 .chart { position: relative; margin-top: 12px; user-select: none; overflow: hidden; }
+/* A click or tap sets X (f01m). */
+.chart--pick { cursor: crosshair; }
 .chart :focus:not(:focus-visible) { outline: none; }
 .chart__hint { color: var(--muted); font-size: 0.8125rem; margin: 6px 0 0; }
 .legend { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 12px; }
@@ -241,4 +243,34 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Each tier's label on one line, held in view while the figures scroll sideways inside the card, as the main page's
      shares grid does. f01m's narrow-screen pass looks at the whole page again. */
   .split th[scope="row"] { white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+}
+
+/* Under 480 pixels each cash flow is a card (f01m): date and type on one line, kind and amount on the next, its
+   number and "Remove" at its end, so the table never scrolls sideways on a phone. Each field keeps its own label
+   ("Row 3's amount"), so the column headings can go. */
+@media (max-width: 479px) {
+  .flows__scroll { overflow-x: visible; }
+  .flows, .flows tbody { display: block; }
+  .flows thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+  .flows tbody tr:not(.flows__problem) {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "date type" "kind amount" "n remove";
+    gap: 8px; align-items: start; padding: 8px; margin-top: 8px; border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  .flows tbody th, .flows tbody td { padding: 0; border: 0; font-size: 1rem; }
+  .flows th.flows__n { grid-area: n; position: static; padding-top: 6px; white-space: nowrap; }
+  .flows th.flows__n::before { content: "Row "; }
+  .flows .flows__date { grid-area: date; }
+  .flows .flows__type { grid-area: type; }
+  .flows .flows__kind { grid-area: kind; }
+  .flows .flows__amount-cell { grid-area: amount; text-align: left; }
+  .flows .flows__remove { grid-area: remove; justify-self: end; }
+  /* Two to a line at 320 pixels: the fields' own padding is trimmed so a date and "Distribution" fit whole. */
+  .flows input, .flows select, .flows input.flows__amount { width: 100%; min-width: 0; padding: 6px 6px; }
+  .flows input[type="date"] { padding: 6px 4px; }
+  .flows input[type="date"]::-webkit-calendar-picker-indicator { margin: 0; padding: 0 0 0 2px; }
+  .flows .muted { padding-top: 6px; }
+  /* A cash flow's own problem, under its card. */
+  .flows tr.flows__problem { display: block; }
+  .flows tr.flows__problem td { display: block; padding: 4px 10px 0; }
+  .flows tr.flows__problem td:empty { display: none; }
 }

@@ -381,9 +381,10 @@ Each is one branch, one PR and one evening, with a review note and what to check
      - **A file with `hurdle_irr`** is refused in plain words.
 8. **f01m: the keyboard, narrow screens and screenshots,** as M3e did for the main page.
    - **What it adds:**
-     - **Clicking or tapping the chart sets X there,** in place of a hover readout (f01g review, answer 3).
+     - **Clicking or tapping the chart sets X there,** in place of a hover readout (f01g review, answer 3). As built: the nearest 1/1000 of the range, in whole dollars; within 8 pixels of a breakpoint, the breakpoint exactly. The clawback's small chart does the same, onto its bends.
      - **The keyboard:** every control reachable and labelled, and the chart's values in its legend.
-     - **Narrow screens:** the cash-flow table on a phone, one row a card under 480 pixels.
+     - **Narrow screens:** the cash-flow table on a phone, one row a card under 480 pixels. As built: date and type on one line, kind and amount on the next, the row's number and "Remove" at its end.
+     - **Escape** closes the paste box as "Cancel" does, and the focus goes back to its button.
      - **Screenshots** for the review, from a copy of the screenshot script.
    - **You check:** the page at 320 pixels, and by keyboard alone.
 

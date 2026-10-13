@@ -13,7 +13,7 @@ import { D, toCents } from "spillpoint-fund";
 import type { Clawback as ClawbackAmounts, Fund } from "spillpoint-fund";
 
 import type { BreakpointView, OwedPoint } from "./analysis.ts";
-import { ACCENT, BADGE_ROW, Badge, INK_MUTED, LINE_HAIR, MARGIN_SIDE, MarkLabel, X_AXIS_HEIGHT, Y_AXIS_WIDTH, badgeRows, niceScale, useWidth } from "./Chart.tsx";
+import { ACCENT, BADGE_ROW, Badge, INK_MUTED, LINE_HAIR, MARGIN_SIDE, MarkLabel, X_AXIS_HEIGHT, Y_AXIS_WIDTH, badgeRows, niceScale, useWidth, xAtPixel } from "./Chart.tsx";
 import { cents, dateText, short } from "./format.ts";
 
 type Decimal = D;
@@ -43,9 +43,10 @@ interface Props {
   breakpoints: readonly BreakpointView[];
   x: Decimal;
   top: Decimal;
+  onX: (x: Decimal) => void;
 }
 
-export function Clawback({ fund, clawback, points, breakpoints, x, top }: Props) {
+export function Clawback({ fund, clawback, points, breakpoints, x, top, onX }: Props) {
   return (
     <section className="card" aria-labelledby="clawback-heading">
       <h2 id="clawback-heading">The clawback</h2>
@@ -61,7 +62,7 @@ export function Clawback({ fund, clawback, points, breakpoints, x, top }: Props)
         // FA9: what's owed never rises with X, so nothing owed at $0 is nothing owed at any X.
         <p className="clawback__none">Nothing is owed at any X: even at $0, the GP has been paid no more carry than it has earned on the fund's totals, and more X never adds to what's owed.</p>
       ) : (
-        <OwedChart points={points} breakpoints={breakpoints} x={x} top={top} owed={clawback.owed} />
+        <OwedChart points={points} breakpoints={breakpoints} x={x} top={top} owed={clawback.owed} onX={onX} />
       )}
     </section>
   );
@@ -73,10 +74,11 @@ interface ChartProps {
   x: Decimal;
   top: Decimal;
   owed: Decimal;
+  onX: (x: Decimal) => void;
 }
 
 /** What's owed against X, from $0 to the range's top, with the breakpoints where it bends and X marked. */
-function OwedChart({ points, breakpoints, x, top, owed }: ChartProps) {
+function OwedChart({ points, breakpoints, x, top, owed, onX }: ChartProps) {
   const [ref, width] = useWidth(960);
   const rows = points.map((p) => ({ x: p.x.toNumber(), owed: p.owed.toNumber() }));
   const to = top.toNumber();
@@ -93,7 +95,9 @@ function OwedChart({ points, breakpoints, x, top, owed }: ChartProps) {
     <>
       <div
         ref={ref}
-        className="chart"
+        className="chart chart--pick"
+        // As the main chart: a click or tap sets X there, onto a bend within a few pixels of one.
+        onClick={(e) => onX(xAtPixel(e.clientX - e.currentTarget.getBoundingClientRect().left, width, top, breakpoints))}
         role="img"
         aria-label={`The clawback owed against X, from $0 to ${short(top)}, with ${inView.length} breakpoint${inView.length === 1 ? "" : "s"} marked.`}
       >

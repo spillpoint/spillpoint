@@ -3,7 +3,7 @@
 // cash flow's own in its row, and at the top of the tab with "Show me". Rows can be pasted from a spreadsheet (f01k),
 // into the box under the table, or into a cell, which sends a paste of more than one cell to the same box.
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { CallKind } from "spillpoint-fund";
 
 import type { FlowRow, FlowsForm } from "./flows.ts";
@@ -55,6 +55,12 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
   }, [focusing, form]);
   const at = (i: number) => `cash_flows[${i}]`;
   const [paste, setPaste] = useState<PasteState | null>(null);
+  const pasteButton = useRef<HTMLButtonElement>(null);
+  /** "Cancel", or Escape: the box closes, the table as it was, and the focus goes back to the button that opened it. */
+  const cancelPaste = () => {
+    setPaste(null);
+    pasteButton.current?.focus();
+  };
   /** More than one cell pasted into a cell goes to the paste box, not into the cell. */
   const pasteIntoCell = (e: React.ClipboardEvent) => {
     const text = e.clipboardData.getData("text/plain");
@@ -110,7 +116,7 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
         </label>
       </div>
 
-      <div className="table-scroll">
+      <div className="table-scroll flows__scroll">
         <table className="split flows">
           <thead>
             <tr>
@@ -130,8 +136,8 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
             {form.rows.map((r, i) => (
               <Fragment key={r.id}>
                 <tr>
-                  <th scope="row">{i + 1}</th>
-                  <td>
+                  <th scope="row" className="flows__n">{i + 1}</th>
+                  <td className="flows__date">
                     <input
                       id={`${at(i)}.date`}
                       type="date"
@@ -143,13 +149,13 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
                     />
                     <ProblemText problem={problem} path={`${at(i)}.date`} />
                   </td>
-                  <td>
+                  <td className="flows__type">
                     <select id={`${at(i)}.type`} value={r.type} onChange={(e) => setRow(i, { ...r, type: e.target.value as FlowRow["type"] })} aria-label={`Row ${i + 1}'s type`}>
                       <option value="call">Call</option>
                       <option value="distribution">Distribution</option>
                     </select>
                   </td>
-                  <td>
+                  <td className="flows__kind">
                     {r.type === "call" ? (
                       <select id={`${at(i)}.kind`} value={r.kind} onChange={(e) => setRow(i, { ...r, kind: e.target.value as CallKind })} aria-label={`Row ${i + 1}'s kind`}>
                         {KINDS.map((k) => (
@@ -163,7 +169,7 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
                       <span className="muted">—</span>
                     )}
                   </td>
-                  <td className="num">
+                  <td className="num flows__amount-cell">
                     <input
                       id={`${at(i)}.amount`}
                       className="flows__amount"
@@ -177,7 +183,7 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
                     />
                     <ProblemText problem={problem} path={`${at(i)}.amount`} />
                   </td>
-                  <td>
+                  <td className="flows__remove">
                     <button type="button" className="link-button" aria-label={`Remove row ${i + 1}`} onClick={() => onForm({ ...form, rows: form.rows.filter((_, j) => j !== i) })}>
                       Remove
                     </button>
@@ -217,11 +223,11 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
         <button type="button" className="button" onClick={() => onForm(sortByDate(form))}>
           Sort by date
         </button>
-        <button type="button" className="button" aria-expanded={paste !== null} onClick={() => setPaste(paste ?? { text: "", order: "month-first" })}>
+        <button ref={pasteButton} type="button" className="button" aria-expanded={paste !== null} onClick={() => setPaste(paste ?? { text: "", order: "month-first" })}>
           Paste rows from a spreadsheet
         </button>
       </div>
-      {paste && <PasteBox paste={paste} onPaste={setPaste} here={form.rows.filter((r) => !isEmptyRow(r)).length} onAdd={add} onCancel={() => setPaste(null)} />}
+      {paste && <PasteBox paste={paste} onPaste={setPaste} here={form.rows.filter((r) => !isEmptyRow(r)).length} onAdd={add} onCancel={cancelPaste} />}
     </section>
   );
 }

@@ -32,7 +32,16 @@ export function PasteBox({ paste, onPaste, here, onAdd, onCancel }: Props) {
   }, []);
   const pasted = paste.text.trim() !== "";
   return (
-    <section className="paste" aria-labelledby="paste-heading">
+    <section
+      className="paste"
+      aria-labelledby="paste-heading"
+      // Escape closes the box as "Cancel" does (f01m).
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.preventDefault();
+        onCancel();
+      }}
+    >
       <h3 id="paste-heading">Paste rows from a spreadsheet</h3>
       <p className="paste__how">
         Copy the rows in your spreadsheet, its columns date, type, kind and amount in that order, and paste them here. A header row
