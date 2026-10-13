@@ -8,6 +8,7 @@
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { FundRefusal } from "./errors.ts";
+import { wasRead } from "./input.ts";
 import type { CarryStep, Fund } from "./model.ts";
 
 /** One carry step's share of a split (F16): the GP's carry at this rate. */
@@ -233,7 +234,10 @@ function after(ledger: Ledger, tiers: Tiers): Ledger {
 
 const ledgers = new WeakMap<Fund, Ledger>();
 
-/** The ledger X runs against (F14): every cash flow in F4's order, the pref accrued to D. Worked once per fund. */
+/**
+ * The ledger X runs against (F14): every cash flow in F4's order, the pref accrued to D. Kept for a fund readFund
+ * returned, which is frozen; worked from scratch on every call for one built by hand, which can change after use.
+ */
 function ledgerAtD(fund: Fund): Ledger {
   const known = ledgers.get(fund);
   if (known) return known;
@@ -267,7 +271,7 @@ function ledgerAtD(fund: Fund): Ledger {
     }
   }
   advance(dayNumber(fund.distributionDate)!);
-  ledgers.set(fund, ledger);
+  if (wasRead(fund)) ledgers.set(fund, ledger);
   return ledger;
 }
 
