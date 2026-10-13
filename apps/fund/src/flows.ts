@@ -57,6 +57,11 @@ export function flowsFrom(fund: Fund): FlowsForm {
   };
 }
 
+/** A row with nothing in it yet: a blank fund's first, or one just added. A paste replaces these. */
+export function isEmptyRow(row: FlowRow): boolean {
+  return row.date === "" && row.amount.trim() === "";
+}
+
 /** A blank fund's form: no dates yet, one call to fill in. */
 export function blankFlows(): FlowsForm {
   return { asOf: "", distributionDate: "", final: false, nav: "", rows: [newRow()] };
