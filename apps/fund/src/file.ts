@@ -42,7 +42,19 @@ export function fileName(name: string): string {
   return `${slug || "fund"}.json`;
 }
 
-export type OpenedFile = { ok: true; name: string; fund: Fund; x: D | null } | { ok: false; message: string };
+export type OpenedFile = { ok: true; name: string; fund: Fund; x: D | null; fraction: string | null } | { ok: false; message: string };
+
+/**
+ * The first exact fraction in a file, "10000000/3" (FC1), or null. The engine reads one to 40 digits, and the form
+ * holds that decimal, so the fund in the form isn't quite the fund in the file: the page says so when it opens (f01l
+ * review, answer 2).
+ */
+function firstFraction(value: unknown): string | null {
+  if (typeof value === "string") return /^-?[0-9]+\/[0-9]+$/.test(value) ? value : null;
+  if (Array.isArray(value)) return value.map(firstFraction).find((f) => f !== null) ?? null;
+  if (isObject(value)) return Object.values(value).map(firstFraction).find((f) => f !== null) ?? null;
+  return null;
+}
 
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -97,13 +109,14 @@ export function readFile(text: string): OpenedFile {
     if (!(e instanceof FundRefusal)) throw e;
     return { ok: false, message: fileProblem(e) };
   }
-  if (x === undefined || x === null) return { ok: true, name, fund, x: null };
+  const fraction = firstFraction(input) ?? firstFraction(x);
+  if (x === undefined || x === null) return { ok: true, name, fund, x: null, fraction };
   const badX = 'Its X isn\'t readable: it should be an amount from 0 up, written as a string, like "15000000".';
   // A string, as every number in the input is (FC1): a JSON number could already have lost its digits.
   if (typeof x !== "string") return { ok: false, message: badX };
   try {
     // X as the engine takes it (FA13): an exact amount from 0 up.
-    return { ok: true, name, fund, x: splitAt(fund, x).x };
+    return { ok: true, name, fund, x: splitAt(fund, x).x, fraction };
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
     return { ok: false, message: badX };

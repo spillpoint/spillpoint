@@ -223,7 +223,8 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
 - **The name** is a field at the top of the Terms tab, as the main page has the cap table's. It starts as the example's label, or "My fund" for a blank fund or a bare input. A case's `inputs.json` is named by its case id.
 - **Only a fund the engine accepts is saved:** "Not saved: the cash flows have a problem to fix first. …" (or the terms), so a saved file always opens.
 - **The fund in the form is the fund in the file.** A save writes the input the two tabs write, and an opened file goes into them. A file opened and saved with no change has the same values, as the engine reads them, for every case's `inputs.json`.
-- **X** comes back from `view`, or $0 without one. Moving X isn't a change, but a save keeps it.
+- **X** comes back from `view`, or $0 without one. Moving X isn't a change, but a save keeps it, with every digit, so a breakpoint chosen from the list reopens on the breakpoint, not a hair below it (f01l review, answer 1).
+- **A file with fractions** ("10000000/3", which the engine reads to 40 digits) says so when it opens: "Opened frac.json. Its fractions, like 10000000/3, are kept to 40 digits, and a save writes them that way." (f01l review, answer 2)
 - **"Open a file"** asks first if there are unsaved changes, as does picking another fund. So does leaving or reloading the page.
 - **The picker** shows "<name>, opened from <file>".
 - **Refused in one line under the masthead,** the current fund kept:

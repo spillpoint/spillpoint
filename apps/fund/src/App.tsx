@@ -195,7 +195,9 @@ export function App() {
     setFileLabel(`${result.name}, opened from ${file.name}`);
     setState(fromFund(result.fund, result.name, result.x ?? new D(0)));
     setUnsaved(false);
-    setFileStatus({ kind: "done", text: `Opened ${file.name}.` });
+    // A fraction is kept to the engine's 40 digits, and a save writes it so: said, not silent (f01l review, answer 2).
+    const fractions = result.fraction ? ` Its fractions, like ${result.fraction}, are kept to 40 digits, and a save writes them that way.` : "";
+    setFileStatus({ kind: "done", text: `Opened ${file.name}.${fractions}` });
   };
 
   /** X set exactly, by the slider, a mark or a breakpoint: the box shows it. */
