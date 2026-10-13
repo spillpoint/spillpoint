@@ -56,7 +56,7 @@ A table by tier, for X alone and for the fund to date:
 - **Rows:**
   - capital and pref, to the LPs
   - the catch-up, with the GP's share and the LPs'
-  - the carry tier at each step, with the GP's share and the LPs', both from the engine's `StepCarry` (f01f review, answer 2)
+  - the carry tier at each step, with the GP's share and the LPs', both from the engine's `StepCarry` (f01f review, answer 2). Each step is labelled as a band of the LPs' multiple, one carry, not carry on top of carry: "Carry at 20% (up to 3.0x)", "Carry at 25% (3.0x to 5.0x)", "Carry at 30% (above 5.0x)"; a flat fund's row is "Carry at 20%" (f01g, from your look at the page).
   - the GP commitment's line, set apart
   - totals
 - **Columns:** "This distribution" (LPs, GP) and "The fund to date" (LPs, GP).
@@ -152,7 +152,8 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
 ### The example funds, and open and save
 
 **The examples** are read at build time from the locked fund cases, as the main page reads Millrace, so they can't drift from the tests (your answer 5):
-- **"A VC fund: carry steps and a 1% GP commitment",** case 8, the default. It has a NAV.
+- **"A fund: 20% carry and a 2% GP commitment",** case 3, the default, at $20,000,000. Most VC funds have flat 20%, so the page opens on one (f01g, from your look at the page).
+- **"A VC fund with premium carry: 20%, then 25% from 3x and 30% from 5x",** case 8, second. It has a NAV.
 - **"A late call and a clawback",** case 13, final.
 - **"An SPV: one company, the exit as its last distribution",** case 12, final, with a NAV. Many emerging managers run SPVs, and it's the shortest example.
 

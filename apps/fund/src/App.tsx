@@ -168,9 +168,13 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
   const all = split.toDate;
   const pair = (f: (t: Tiers) => D): [D, D] => [f(now), f(all)];
   const steps = fund.terms.carry;
+  // Each step is a band of the LPs' net multiple, one carry, not carry on top of carry (f01g, from Jordan's look at the
+  // page): "Carry at 20% (up to 3.0x)", "Carry at 25% (3.0x to 5.0x)", "Carry at 30% (above 5.0x)". Flat: "Carry at 20%".
   const stepLabel = (i: number) => {
-    const s = steps[i]!;
-    return s.fromLpMultiple ? `at ${percentText(s.rate)}, from ${stepMultiple(s.fromLpMultiple)}` : `at ${percentText(s.rate)}`;
+    const from = steps[i]!.fromLpMultiple;
+    const to = steps[i + 1]?.fromLpMultiple;
+    const band = from && to ? `${stepMultiple(from)} to ${stepMultiple(to)}` : to ? `up to ${stepMultiple(to)}` : from ? `above ${stepMultiple(from)}` : null;
+    return `at ${percentText(steps[i]!.rate)}${band ? ` (${band})` : ""}`;
   };
   return (
     <section className="card" aria-labelledby="split-heading">
