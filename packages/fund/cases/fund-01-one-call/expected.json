@@ -1,0 +1,146 @@
+{
+  "case": "fund-01-one-call",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2026-03-01",
+  "final": false,
+  "lps_paid_in": "5000000.00",
+  "breakpoints": [
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "5000000",
+          "text": "LPs have their $5,000,000 of paid-in capital back"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "2000000.00",
+      "exact": "2000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "2000000.00",
+        "lps": {
+          "capital": "2000000.00",
+          "carry_tier": "0.00",
+          "total": "2000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "2000000.00",
+        "lps": {
+          "capital": "2000000.00",
+          "carry_tier": "0.00",
+          "total": "2000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5000000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "carry_tier": "0.00",
+          "total": "5000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "5000000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "carry_tier": "0.00",
+          "total": "5000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "12500000.00",
+      "exact": "12500000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "12500000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "carry_tier": "6000000.00",
+          "total": "11000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1500000.00"
+            }
+          ],
+          "total": "1500000.00"
+        }
+      },
+      "to_date": {
+        "amount": "12500000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "carry_tier": "6000000.00",
+          "total": "11000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1500000.00"
+            }
+          ],
+          "total": "1500000.00"
+        }
+      }
+    }
+  ]
+}

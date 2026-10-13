@@ -1,0 +1,51 @@
+{
+  "case": "fund-09-interim-pref",
+  "description": "8% pref and full catch-up with two interim distributions and a fee call between them: the pref accrues on a balance that rises and falls.",
+  "xs": [
+    "500000",
+    "1000000",
+    "3000000"
+  ],
+  "fund": {
+    "as_of": "2025-07-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "6000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "4000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "distribution",
+        "amount": "3000000"
+      },
+      {
+        "date": "2023-07-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "500000"
+      },
+      {
+        "date": "2024-07-01",
+        "type": "distribution",
+        "amount": "9000000"
+      }
+    ]
+  }
+}

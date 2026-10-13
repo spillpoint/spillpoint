@@ -1,0 +1,16 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "A call of the kind \"carry\", which isn't investment, fee or expense.",
+  "change": {
+    "set": {
+      "cash_flows": [
+        {
+          "date": "2020-01-01",
+          "type": "call",
+          "kind": "carry",
+          "amount": "5000"
+        }
+      ]
+    }
+  }
+}

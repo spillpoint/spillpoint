@@ -1,0 +1,31 @@
+{
+  "case": "fund-12-spv",
+  "description": "An SPV: one company, one investment and a setup fee, 20% carry, the exit as its final distribution. NAV given.",
+  "xs": [
+    "1000000",
+    "2040000",
+    "10000000"
+  ],
+  "fund": {
+    "as_of": "2026-05-01",
+    "terms": {
+      "carry": "0.20"
+    },
+    "cash_flows": [
+      {
+        "date": "2023-05-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      },
+      {
+        "date": "2023-05-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "40000"
+      }
+    ],
+    "final": true,
+    "nav": "6000000"
+  }
+}

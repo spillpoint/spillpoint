@@ -1,0 +1,152 @@
+{
+  "case": "fund-03-gp-commitment",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2026-04-01",
+  "final": false,
+  "lps_paid_in": "10449000.00",
+  "gp_commitment_paid_in": "201000.00",
+  "breakpoints": [
+    {
+      "x": "10662244.90",
+      "exact": "522450000/49",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "10449000",
+          "text": "LPs have their $10,449,000 of paid-in capital back"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "5000000.00",
+        "gp_commitment": "100000.00",
+        "lps": {
+          "capital": "4900000.00",
+          "carry_tier": "0.00",
+          "total": "4900000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "5000000.00",
+        "gp_commitment": "100000.00",
+        "lps": {
+          "capital": "4900000.00",
+          "carry_tier": "0.00",
+          "total": "4900000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "10662244.90",
+      "exact": "522450000/49",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "10662244.90",
+        "gp_commitment": "213244.90",
+        "lps": {
+          "capital": "10449000.00",
+          "carry_tier": "0.00",
+          "total": "10449000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10662244.90",
+        "gp_commitment": "213244.90",
+        "lps": {
+          "capital": "10449000.00",
+          "carry_tier": "0.00",
+          "total": "10449000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "20000000.00",
+      "exact": "20000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "20000000.00",
+        "gp_commitment": "400000.00",
+        "lps": {
+          "capital": "10449000.00",
+          "carry_tier": "7320800.00",
+          "total": "17769800.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1830200.00"
+            }
+          ],
+          "total": "1830200.00"
+        }
+      },
+      "to_date": {
+        "amount": "20000000.00",
+        "gp_commitment": "400000.00",
+        "lps": {
+          "capital": "10449000.00",
+          "carry_tier": "7320800.00",
+          "total": "17769800.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1830200.00"
+            }
+          ],
+          "total": "1830200.00"
+        }
+      }
+    }
+  ]
+}

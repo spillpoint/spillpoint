@@ -1,0 +1,21 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "A distribution the day before the fund's first call.",
+  "change": {
+    "set": {
+      "cash_flows": [
+        {
+          "date": "2019-12-31",
+          "type": "distribution",
+          "amount": "1"
+        },
+        {
+          "date": "2020-01-01",
+          "type": "call",
+          "kind": "investment",
+          "amount": "10000000"
+        }
+      ]
+    }
+  }
+}

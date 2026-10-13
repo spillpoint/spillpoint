@@ -1,0 +1,29 @@
+{
+  "case": "fund-06-full-catch-up",
+  "description": "Spec example B: 8% pref over 1,827 days (two leap days), full catch-up.",
+  "xs": [
+    "12000000",
+    "14500000",
+    "20000000"
+  ],
+  "fund": {
+    "as_of": "2025-01-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2020-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ]
+  }
+}

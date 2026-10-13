@@ -1,0 +1,26 @@
+{
+  "case": "fund-05-hard-hurdle",
+  "description": "An 8% simple pref with no catch-up: carry only on profit above the pref.",
+  "xs": [
+    "11000000",
+    "12400000",
+    "20000000"
+  ],
+  "fund": {
+    "as_of": "2024-01-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ]
+  }
+}

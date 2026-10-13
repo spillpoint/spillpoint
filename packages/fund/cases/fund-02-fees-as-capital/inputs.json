@@ -1,0 +1,52 @@
+{
+  "case": "fund-02-fees-as-capital",
+  "description": "Investment, fee and expense calls all count as capital; an interim distribution returns part of it.",
+  "xs": [
+    "1000000",
+    "4500000",
+    "10000000"
+  ],
+  "fund": {
+    "as_of": "2026-06-30",
+    "terms": {
+      "carry": "0.20"
+    },
+    "cash_flows": [
+      {
+        "date": "2022-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "4000000"
+      },
+      {
+        "date": "2022-01-10",
+        "type": "call",
+        "kind": "fee",
+        "amount": "250000"
+      },
+      {
+        "date": "2023-01-10",
+        "type": "call",
+        "kind": "fee",
+        "amount": "250000"
+      },
+      {
+        "date": "2023-01-10",
+        "type": "call",
+        "kind": "expense",
+        "amount": "100000"
+      },
+      {
+        "date": "2023-07-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "1400000"
+      },
+      {
+        "date": "2025-02-01",
+        "type": "distribution",
+        "amount": "1500000"
+      }
+    ]
+  }
+}

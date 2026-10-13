@@ -1,0 +1,48 @@
+{
+  "case": "fund-13-clawback-steps",
+  "description": "A late call against a carry step: the step was reached on the day's paid-in, which the later call raises. Final; the clawback falls, holds, falls again and then holds for good.",
+  "xs": [
+    "0",
+    "10000000",
+    "12000000",
+    "15000000",
+    "15937500",
+    "25000000"
+  ],
+  "fund": {
+    "as_of": "2025-01-01",
+    "terms": {
+      "carry": {
+        "steps": [
+          {
+            "rate": "0.20"
+          },
+          {
+            "rate": "0.30",
+            "from_lp_multiple": "2"
+          }
+        ]
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2020-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "distribution",
+        "amount": "30000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ],
+    "final": true
+  }
+}

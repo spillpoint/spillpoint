@@ -1,0 +1,416 @@
+{
+  "case": "fund-11-clawback-pref",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-01-01",
+  "final": true,
+  "lps_paid_in": "15000000.00",
+  "pref_accrued_to_d": "2403287.67",
+  "pref_on_fund_totals": "1602191.78",
+  "breakpoints": [
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "15000000",
+          "text": "LPs have their $15,000,000 of paid-in capital back"
+        },
+        {
+          "code": "clawback_cleared",
+          "text": "from here the GP has earned all the carry it was paid earlier"
+        }
+      ]
+    },
+    {
+      "x": "5801095.89",
+      "exact": "423480000/73",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "rate": "0.08",
+          "amount": "175440000/73",
+          "text": "LPs have their 8% pref, $2,403,287.67"
+        }
+      ]
+    },
+    {
+      "x": "6001369.86",
+      "exact": "438100000/73",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "carry": "0.2",
+          "text": "the GP has 20% of the profit"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "20000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "pref": "1602191.78",
+          "catch_up": "0.00",
+          "carry_tier": "6397808.22",
+          "total": "18000000.00"
+        },
+        "gp": {
+          "catch_up": "400547.95",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1599452.05"
+            }
+          ],
+          "total": "2000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2000000.00",
+        "entitlement": "1000000.00",
+        "owed": "1000000.00"
+      }
+    },
+    {
+      "x": "2000000.00",
+      "exact": "2000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "2000000.00",
+        "lps": {
+          "capital": "2000000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "2000000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "22000000.00",
+        "lps": {
+          "capital": "12000000.00",
+          "pref": "1602191.78",
+          "catch_up": "0.00",
+          "carry_tier": "6397808.22",
+          "total": "20000000.00"
+        },
+        "gp": {
+          "catch_up": "400547.95",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1599452.05"
+            }
+          ],
+          "total": "2000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2000000.00",
+        "entitlement": "1400000.00",
+        "owed": "600000.00"
+      }
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5000000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "5000000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "25000000.00",
+        "lps": {
+          "capital": "15000000.00",
+          "pref": "1602191.78",
+          "catch_up": "0.00",
+          "carry_tier": "6397808.22",
+          "total": "23000000.00"
+        },
+        "gp": {
+          "catch_up": "400547.95",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1599452.05"
+            }
+          ],
+          "total": "2000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2000000.00",
+        "entitlement": "2000000.00",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "5801095.89",
+      "exact": "423480000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5801095.89",
+        "lps": {
+          "capital": "5000000.00",
+          "pref": "801095.89",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "5801095.89"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "25801095.89",
+        "lps": {
+          "capital": "15000000.00",
+          "pref": "2403287.67",
+          "catch_up": "0.00",
+          "carry_tier": "6397808.22",
+          "total": "23801095.89"
+        },
+        "gp": {
+          "catch_up": "400547.95",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1599452.05"
+            }
+          ],
+          "total": "2000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2000000.00",
+        "entitlement": "2160219.18",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "5900000.00",
+      "exact": "5900000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "5900000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "pref": "801095.89",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "5801095.89"
+        },
+        "gp": {
+          "catch_up": "98904.11",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "98904.11"
+        }
+      },
+      "to_date": {
+        "amount": "25900000.00",
+        "lps": {
+          "capital": "15000000.00",
+          "pref": "2403287.67",
+          "catch_up": "0.00",
+          "carry_tier": "6397808.22",
+          "total": "23801095.89"
+        },
+        "gp": {
+          "catch_up": "499452.05",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1599452.05"
+            }
+          ],
+          "total": "2098904.11"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2098904.11",
+        "entitlement": "2180000.00",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "6001369.86",
+      "exact": "438100000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "6001369.86",
+        "lps": {
+          "capital": "5000000.00",
+          "pref": "801095.89",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "5801095.89"
+        },
+        "gp": {
+          "catch_up": "200273.97",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "200273.97"
+        }
+      },
+      "to_date": {
+        "amount": "26001369.86",
+        "lps": {
+          "capital": "15000000.00",
+          "pref": "2403287.67",
+          "catch_up": "0.00",
+          "carry_tier": "6397808.22",
+          "total": "23801095.89"
+        },
+        "gp": {
+          "catch_up": "600821.92",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1599452.05"
+            }
+          ],
+          "total": "2200273.97"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2200273.97",
+        "entitlement": "2200273.97",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "8000000.00",
+      "exact": "8000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "8000000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "pref": "801095.89",
+          "catch_up": "0.00",
+          "carry_tier": "1598904.11",
+          "total": "7400000.00"
+        },
+        "gp": {
+          "catch_up": "200273.97",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "399726.03"
+            }
+          ],
+          "total": "600000.00"
+        }
+      },
+      "to_date": {
+        "amount": "28000000.00",
+        "lps": {
+          "capital": "15000000.00",
+          "pref": "2403287.67",
+          "catch_up": "0.00",
+          "carry_tier": "7996712.33",
+          "total": "25400000.00"
+        },
+        "gp": {
+          "catch_up": "600821.92",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1999178.08"
+            }
+          ],
+          "total": "2600000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2600000.00",
+        "entitlement": "2600000.00",
+        "owed": "0.00"
+      }
+    }
+  ]
+}

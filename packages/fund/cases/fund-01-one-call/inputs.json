@@ -1,0 +1,23 @@
+{
+  "case": "fund-01-one-call",
+  "description": "One investment call, 20% carry, nothing else.",
+  "xs": [
+    "2000000",
+    "5000000",
+    "12500000"
+  ],
+  "fund": {
+    "as_of": "2026-03-01",
+    "terms": {
+      "carry": "0.20"
+    },
+    "cash_flows": [
+      {
+        "date": "2022-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "5000000"
+      }
+    ]
+  }
+}

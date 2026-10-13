@@ -1,0 +1,7 @@
+{
+  "base": "fund-06-full-catch-up",
+  "about": "The pref removed, so the full catch-up has no hurdle to catch up to.",
+  "change": {
+    "del": "terms.pref"
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "case": "fund-10-clawback",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-03-01",
+  "final": true,
+  "lps_paid_in": "12000000.00",
+  "breakpoints": [
+    {
+      "x": "2000000.00",
+      "exact": "2000000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "12000000",
+          "text": "LPs have their $12,000,000 of paid-in capital back"
+        },
+        {
+          "code": "clawback_cleared",
+          "text": "from here the GP has earned all the carry it was paid earlier"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "15000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "4000000.00",
+          "total": "14000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1000000.00"
+            }
+          ],
+          "total": "1000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1000000.00",
+        "entitlement": "600000.00",
+        "owed": "400000.00"
+      }
+    },
+    {
+      "x": "1000000.00",
+      "exact": "1000000",
+      "tags": [
+        "listed",
+        "nav"
+      ],
+      "distribution": {
+        "amount": "1000000.00",
+        "lps": {
+          "capital": "1000000.00",
+          "carry_tier": "0.00",
+          "total": "1000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "16000000.00",
+        "lps": {
+          "capital": "11000000.00",
+          "carry_tier": "4000000.00",
+          "total": "15000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1000000.00"
+            }
+          ],
+          "total": "1000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1000000.00",
+        "entitlement": "800000.00",
+        "owed": "200000.00"
+      }
+    },
+    {
+      "x": "2000000.00",
+      "exact": "2000000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "2000000.00",
+        "lps": {
+          "capital": "2000000.00",
+          "carry_tier": "0.00",
+          "total": "2000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "17000000.00",
+        "lps": {
+          "capital": "12000000.00",
+          "carry_tier": "4000000.00",
+          "total": "16000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1000000.00"
+            }
+          ],
+          "total": "1000000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1000000.00",
+        "entitlement": "1000000.00",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "5000000.00",
+        "lps": {
+          "capital": "2000000.00",
+          "carry_tier": "2400000.00",
+          "total": "4400000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "600000.00"
+            }
+          ],
+          "total": "600000.00"
+        }
+      },
+      "to_date": {
+        "amount": "20000000.00",
+        "lps": {
+          "capital": "12000000.00",
+          "carry_tier": "6400000.00",
+          "total": "18400000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1600000.00"
+            }
+          ],
+          "total": "1600000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1600000.00",
+        "entitlement": "1600000.00",
+        "owed": "0.00"
+      }
+    }
+  ]
+}

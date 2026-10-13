@@ -1,0 +1,111 @@
+{
+  "case": "fund-14-refused",
+  "generated_by": "packages/fund/reference/generate.py",
+  "fixtures": {
+    "amount-not-a-string.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "cash_flows[0].amount"
+      }
+    },
+    "bad-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_date",
+        "field": "cash_flows[0].date"
+      }
+    },
+    "bad-kind.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "cash_flows[0].kind"
+      }
+    },
+    "carry-rate-one.json": {
+      "refused": {
+        "kind": "input",
+        "term": "carry_rate_not_below_one",
+        "field": "terms.carry"
+      }
+    },
+    "catch-up-share-at-carry.json": {
+      "refused": {
+        "kind": "input",
+        "term": "catch_up_share_not_above_carry",
+        "field": "terms.catch_up.gp_share"
+      }
+    },
+    "catch-up-without-pref.json": {
+      "refused": {
+        "kind": "input",
+        "term": "catch_up_without_pref",
+        "field": "terms.catch_up"
+      }
+    },
+    "compounded-pref.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "compounded_pref",
+        "field": "terms.pref.compounding"
+      }
+    },
+    "distribution-first.json": {
+      "refused": {
+        "kind": "input",
+        "term": "distribution_before_call",
+        "field": "cash_flows[0]"
+      }
+    },
+    "flow-after-d.json": {
+      "refused": {
+        "kind": "input",
+        "term": "cash_flow_after_distribution_date",
+        "field": "cash_flows[0]"
+      }
+    },
+    "gp-commitment-whole.json": {
+      "refused": {
+        "kind": "input",
+        "term": "gp_commitment_not_below_one",
+        "field": "terms.gp_commitment.share"
+      }
+    },
+    "negative-amount.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "cash_flows[0].amount"
+      }
+    },
+    "no-calls.json": {
+      "refused": {
+        "kind": "input",
+        "term": "no_calls",
+        "field": "cash_flows"
+      }
+    },
+    "steps-multiple-one.json": {
+      "refused": {
+        "kind": "input",
+        "term": "steps_out_of_order",
+        "field": "terms.carry.steps[1]"
+      }
+    },
+    "steps-rates-fall.json": {
+      "refused": {
+        "kind": "input",
+        "term": "steps_out_of_order",
+        "field": "terms.carry.steps[1]"
+      }
+    },
+    "unknown-term.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "hurdle_irr",
+        "field": "terms.hurdle_irr"
+      }
+    }
+  }
+}
