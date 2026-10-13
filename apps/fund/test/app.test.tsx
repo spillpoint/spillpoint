@@ -8,6 +8,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import examples from "virtual:fund-examples";
 import { describe, expect, it } from "vitest";
 
+import { D, readFund, splitAt, toCents } from "spillpoint-fund";
+
 import { App } from "../src/App.tsx";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
@@ -56,15 +58,21 @@ function expectSplit(dir: string, x: string) {
   if (now.lps.pref) expect(row("Pref")).toEqual([money(now.lps.pref), NONE, money(all.lps.pref!), NONE]);
   else expect(within(screen.getByRole("table")).queryByRole("rowheader", { name: "Pref" })).toBeNull();
   if (now.gp.catch_up) expect(row("Catch-up")).toEqual([money(now.lps.catch_up!), money(now.gp.catch_up), money(all.lps.catch_up!), money(all.gp.catch_up!)]);
-  if (now.gp.carry.length === 1) {
-    expect(row(/^Carry, at/)).toEqual([money(now.lps.carry_tier), money(now.gp.carry[0]!.amount), money(all.lps.carry_tier), money(all.gp.carry[0]!.amount)]);
-  } else {
-    expect(row("Carry tier")).toEqual([money(now.lps.carry_tier), NONE, money(all.lps.carry_tier), NONE]);
-    now.gp.carry.forEach((s, i) => {
-      const rate = inputs.terms.carry.steps[i].rate;
-      expect(row(new RegExp(`^GP's carry at ${Number(rate) * 100}%`))).toEqual([NONE, money(s.amount), NONE, money(all.gp.carry[i]!.amount)]);
-    });
-  }
+  // One row a carry step (f01f review, answer 2). The GP's carry at each step is the case's. The cases don't record the
+  // LPs' share by step, so it's the engine's, and the steps' LP shares add up to the case's carry tier, to a cent each.
+  const engine = splitAt(readFund(inputs), x.replace(/\.00$/, ""));
+  const lpSum = [new D(0), new D(0)];
+  now.gp.carry.forEach((s, i) => {
+    const step = inputs.terms.carry.steps?.[i] ?? { rate: inputs.terms.carry };
+    const label = `Carry at ${new D(step.rate).times(100).toString()}%${step.from_lp_multiple ? `, from ${Number(step.from_lp_multiple).toFixed(1)}x` : ""}`;
+    const lps = [engine.distribution.gp.carry[i]!.lps, engine.toDate.gp.carry[i]!.lps];
+    expect(row(label), label).toEqual([money(toCents(lps[0]!)), money(s.amount), money(toCents(lps[1]!)), money(all.gp.carry[i]!.amount)]);
+    lpSum[0] = lpSum[0]!.plus(toCents(lps[0]!));
+    lpSum[1] = lpSum[1]!.plus(toCents(lps[1]!));
+  });
+  const tolerance = new D("0.005").times(now.gp.carry.length);
+  expect(lpSum[0]!.minus(now.lps.carry_tier).abs().lte(tolerance)).toBe(true);
+  expect(lpSum[1]!.minus(all.lps.carry_tier).abs().lte(tolerance)).toBe(true);
   expect(row("Total")).toEqual([money(now.lps.total), money(now.gp.total), money(all.lps.total), money(all.gp.total)]);
   if (now.gp_commitment) {
     expect(screen.getByText(/The GP commitment's line, outside the tiers/).textContent).toBe(
@@ -104,8 +112,9 @@ describe("the fund page", () => {
     expectSplit("fund-08-carry-steps", "40000000.00");
     // The figures the review note asks Jordan to check, written out.
     expect(row("Total")).toEqual(["$32,793,750.00", "$6,806,250.00", "$36,753,750.00", "$6,806,250.00"]);
-    expect(row(/^GP's carry at 20%/)).toEqual(["—", "$5,445,000.00", "—", "$5,445,000.00"]);
-    expect(row(/^GP's carry at 25%, from 3.0x/)).toEqual(["—", "$1,361,250.00", "—", "$1,361,250.00"]);
+    expect(row("Carry at 20%")).toEqual(["$21,780,000.00", "$5,445,000.00", "$21,780,000.00", "$5,445,000.00"]);
+    expect(row("Carry at 25%, from 3.0x")).toEqual(["$4,083,750.00", "$1,361,250.00", "$4,083,750.00", "$1,361,250.00"]);
+    expect(row("Carry at 30%, from 5.0x")).toEqual(["$0.00", "$0.00", "$0.00", "$0.00"]);
   });
 
   it("gives the paid-in, the pref accrued and the LPs' net multiple under the split, from the engine", () => {
@@ -113,8 +122,8 @@ describe("the fund page", () => {
     expect(fact("Distributed")).toBe("$40,000,000.00 now, $44,000,000.00 to date");
     expect(fact("The LPs' paid-in")).toBe("$10,890,000.00");
     expect(fact("The GP commitment's paid-in")).toBe("$100,000.00");
-    // $36,753,750 to date on $10,890,000 paid in: 3.375, to two places.
-    expect(fact("The LPs' net multiple to date")).toBe("3.38x");
+    // $36,753,750 to date on $10,890,000 paid in: 3.375, to two places rounded down (f01f review, answer 4).
+    expect(fact("The LPs' net multiple to date")).toBe("3.37x");
     // Case 8 has no pref, so no pref accrued.
     expect(screen.queryByText(/The pref accrued/)).toBeNull();
   });
@@ -132,6 +141,13 @@ describe("the fund page", () => {
     expect(screen.getByRole("heading", { name: "The split at $34,500,000" })).toBeDefined();
     expectSplit("fund-08-carry-steps", "34500000.00");
     expect(fact("The LPs' net multiple to date")).toBe("3.00x");
+  });
+
+  it("rounds the multiple down, so a fraction of a cent below the 5.0x step reads 4.99x, not a step the LPs haven't reached", () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "63833333.33" } });
+    expect(fact("The LPs' net multiple to date")).toBe("4.99x");
+    expect(row("Carry at 30%, from 5.0x")).toEqual(["$0.00", "$0.00", "$0.00", "$0.00"]);
   });
 
   it("says beside the box when the text isn't an amount, and keeps the last split that worked", () => {

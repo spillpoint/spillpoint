@@ -38,6 +38,8 @@ describe("format", () => {
     expect(dateText("2025-01-01")).toBe("1 Jan 2025");
     expect([percentText(new D("0.2")), percentText(new D("0.075"))]).toEqual(["20%", "7.5%"]);
     expect([stepMultiple(new D("3")), stepMultiple(new D("2.25"))]).toEqual(["3.0x", "2.25x"]);
-    expect([lpMultipleText(new D("3.375")), lpMultipleText(new D("1.9625")), lpMultipleText(new D("3"))]).toEqual(["3.38x", "1.96x", "3.00x"]);
+    // Rounded down, after 20 places (f01f review, answer 4): never a step the LPs haven't reached, and exactly 5 is 5.00x.
+    expect([lpMultipleText(new D("3.375")), lpMultipleText(new D("1.9625")), lpMultipleText(new D("3"))]).toEqual(["3.37x", "1.96x", "3.00x"]);
+    expect([lpMultipleText(new D("4.99999999977")), lpMultipleText(new D("4.999999999999999999999999999999999999999"))]).toEqual(["4.99x", "5.00x"]);
   });
 });

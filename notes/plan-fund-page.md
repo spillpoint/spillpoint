@@ -56,7 +56,7 @@ A table by tier, for X alone and for the fund to date:
 - **Rows:**
   - capital and pref, to the LPs
   - the catch-up, with the GP's share and the LPs'
-  - the carry tier at each step, with the GP's share and the LPs'
+  - the carry tier at each step, with the GP's share and the LPs', both from the engine's `StepCarry` (f01f review, answer 2)
   - the GP commitment's line, set apart
   - totals
 - **Columns:** "This distribution" (LPs, GP) and "The fund to date" (LPs, GP).
@@ -64,7 +64,7 @@ A table by tier, for X alone and for the fund to date:
 - **Under the table:**
   - the LPs' paid-in and the GP commitment's paid-in
   - the pref accrued to D
-  - the LPs' net multiple to date, F10's, which tells a GP where the next step is. It comes from the engine's split (f01e), not the page's own arithmetic (your answer 9).
+  - the LPs' net multiple to date, F10's, which tells a GP where the next step is. It comes from the engine's split (f01e), not the page's own arithmetic (your answer 9). It shows to two places, rounded down after FA14's first rounding, so it never shows a step the LPs haven't reached (f01f review, answer 4).
 
 ### The NAV point
 

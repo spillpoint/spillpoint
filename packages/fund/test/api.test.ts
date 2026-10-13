@@ -34,7 +34,8 @@ it("names a split's fields as the naming review settled", () => {
   expect(keys(split.distribution)).toEqual(["amount", "gp", "gpCommitment", "lps"]);
   expect(keys(split.distribution.lps)).toEqual(["capital", "carryTier", "catchUp", "pref", "total"]);
   expect(keys(split.distribution.gp)).toEqual(["carry", "catchUp", "total"]);
-  expect(keys(split.distribution.gp.carry[0]!)).toEqual(["amount", "fromLpMultiple", "rate"]);
+  // The LPs' share at each step, added before 0.1.0 (f01f review, answer 2).
+  expect(keys(split.distribution.gp.carry[0]!)).toEqual(["amount", "fromLpMultiple", "lps", "rate"]);
   expect(keys(split.clawback!)).toEqual(["carryPaid", "entitlement", "owed", "prefOnFundTotals"]);
 });
 

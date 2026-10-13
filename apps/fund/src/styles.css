@@ -69,7 +69,6 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .split .split__group { border-left: 1px solid var(--line); }
 .split tbody th { font-weight: 500; }
 .split .num { text-align: right; white-space: nowrap; }
-.split tr.split__sub th { padding-left: 28px; color: var(--muted); font-weight: 400; }
 .split tfoot th, .split tfoot td { font-weight: 600; border-bottom: 0; }
 .split__commitment { margin: 12px 0 0; }
 

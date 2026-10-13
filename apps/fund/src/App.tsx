@@ -150,9 +150,9 @@ function XBox({ fund, x, onType }: { fund: Fund; x: XState; onType: (text: strin
 const NONE = "—";
 
 /** One row of the split: X's amount and the fund to date's, for the LPs and the GP. */
-function Row({ label, lps, gp, sub }: { label: string; lps: [D, D] | null; gp: [D, D] | null; sub?: boolean }) {
+function Row({ label, lps, gp }: { label: string; lps: [D, D] | null; gp: [D, D] | null }) {
   return (
-    <tr className={sub ? "split__sub" : undefined}>
+    <tr>
       <th scope="row">{label}</th>
       <td className="num">{lps ? cents(lps[0]) : NONE}</td>
       <td className="num">{gp ? cents(gp[0]) : NONE}</td>
@@ -207,16 +207,10 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
             <Row label="Capital" lps={pair((t) => t.lps.capital)} gp={null} />
             {fund.terms.pref && <Row label="Pref" lps={pair((t) => t.lps.pref)} gp={null} />}
             {fund.terms.catchUp && <Row label="Catch-up" lps={pair((t) => t.lps.catchUp)} gp={pair((t) => t.gp.catchUp)} />}
-            {steps.length === 1 ? (
-              <Row label={`Carry, ${stepLabel(0)}`} lps={pair((t) => t.lps.carryTier)} gp={pair((t) => t.gp.carry[0]!.amount)} />
-            ) : (
-              <>
-                <Row label="Carry tier" lps={pair((t) => t.lps.carryTier)} gp={null} />
-                {steps.map((_, i) => (
-                  <Row key={i} label={`GP's carry ${stepLabel(i)}`} lps={null} gp={pair((t) => t.gp.carry[i]!.amount)} sub />
-                ))}
-              </>
-            )}
+            {/* One row a carry step, each side's share of it (f01f review, answer 2). */}
+            {steps.map((_, i) => (
+              <Row key={i} label={`Carry ${stepLabel(i)}`} lps={pair((t) => t.gp.carry[i]!.lps)} gp={pair((t) => t.gp.carry[i]!.amount)} />
+            ))}
           </tbody>
           <tfoot>
             <Row label="Total" lps={pair((t) => t.lps.total)} gp={pair((t) => t.gp.total)} />
