@@ -9,7 +9,7 @@ Every modeling choice for the fund waterfall, with its default.
 
 Status:
 - **Settled (S0)**: in the spec Jordan settled on 2026-10-12. Those he decided himself say so; the rest he took on Claude's recommendation or as drafted.
-- **Confirmed (f01a review)**: added in f01a and agreed by Jordan in his answers to its review.
+- **Confirmed (f01a review)**: added in f01a and agreed by Jordan in his answers to its review. **Confirmed (f01b review)** likewise for f01b's.
 - **New**: added while building, not yet reviewed. Each one is listed in its step's review note.
 
 Nothing from ILPA's model LPA, law-firm templates or any other published waterfall material is in the repo: no text, examples, templates or models. The same rule as the engine's O12 for OCF and OCX (hard rule 10).
@@ -58,8 +58,14 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 
 | ID | Question | Default | Toggle? | Status |
 |---|---|---|---|---|
-| FA13 | What X can be | An exact amount from 0 up: an exact string (FC1) or a Decimal. Anything else is refused as `bad_number` at the field `x`, through the same FundRefusal. X = 0 is a distribution of nothing, as cases 10, 11 and 13 report. | Fixed | New |
-| FA14 | Showing an amount to the cent (FC8) | Round to 20 places first, then half away from zero to the cent. 40-digit arithmetic can land a hair below an amount that is exactly half a cent: 699,291.385 worked out as 699,291.38499…9, which would show a cent low. The first rounding puts it back. An amount whose exact denominator is under about 10^18 can't sit within 10^-20 of a half cent without being on it, so only true ties move. Amounts themselves stay at 40 digits; this is for showing only. No fund case has such a tie. Comparing with the reference on 300 random funds found 3 in 77,785 amounts. | Fixed | New |
+| FA13 | What X can be | An exact amount from 0 up: an exact string (FC1) or a Decimal. Anything else is refused as `bad_number` at the field `x`, through the same FundRefusal. X = 0 is a distribution of nothing, as cases 10, 11 and 13 report. | Fixed | Confirmed (f01b review) |
+| FA14 | Showing an amount to the cent (FC8) | Round to 20 places first, then half away from zero to the cent. 40-digit arithmetic can land a hair below an amount that is exactly half a cent: 699,291.385 worked out as 699,291.38499…9, which would show a cent low. The first rounding puts it back. An amount whose exact denominator is under about 10^18 can't sit within 10^-20 of a half cent without being on it, so only true ties move. Amounts themselves stay at 40 digits; this is for showing only. No fund case has such a tie. Comparing with the reference on 300 random funds found 3 in 77,785 amounts. | Fixed | Confirmed (f01b review) |
+
+## Added in f01c
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA15 | How close is the same point (F15) | Within 10^-18 of a dollar. Two breakpoints that close are one, with all their reasons. A tier smaller than that has nothing to pay, so it has no end of its own (FA7). Carry paid less entitlement that close to zero is zero. At 40 digits, two ways of working out one exact amount agree to about 10^-30. Two different breakpoints are fractions whose difference is at least 1 over the product of their denominators, so they can't come within 10^-18 while that product is under 10^18. Spillpoint's engine uses 10^-12 for its ties (E14); this is finer, since nothing here is a choice between equals. | Fixed | New |
 
 ## Later
 

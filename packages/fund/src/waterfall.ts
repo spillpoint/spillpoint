@@ -8,6 +8,7 @@
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { FundRefusal } from "./errors.ts";
+import { wasRead } from "./input.ts";
 import type { CarryStep, Fund } from "./model.ts";
 
 /** One carry step's share of a split (F16): the GP's carry at this rate. */
@@ -99,7 +100,7 @@ function addTiers(a: Tiers, b: Tiers): Tiers {
 }
 
 /** Where a run of the tiers starts: what's still owed, and the fund's standing so far. */
-interface Start {
+export interface Start {
   capitalDue: D;
   prefDue: D;
   /** The LPs' distributions to date from the tiers (F10's numerator). */
@@ -112,7 +113,7 @@ interface Start {
 }
 
 /** F10, F11: the step whose multiple the LPs have reached. A step applies from its multiple on. */
-function stepReached(carry: CarryStep[], lps: D, paidIn: D): number {
+export function stepReached(carry: CarryStep[], lps: D, paidIn: D): number {
   let k = 0;
   carry.forEach((s, i) => {
     if (s.fromLpMultiple && lps.gte(s.fromLpMultiple.times(paidIn))) k = i;
@@ -210,15 +211,20 @@ function gpCommitmentPart(fund: Fund, kind: string | null, amount: D): D {
 /** F3 and the tiers: g of the distribution to the GP commitment, the rest down the tiers from where the fund stands. */
 function distribute(fund: Fund, ledger: Ledger, amount: D): Tiers {
   const gpCommitment = (fund.gpCommitment?.share ?? ZERO).times(amount);
-  const tiers = runTiers(fund, amount.minus(gpCommitment), {
+  const tiers = runTiers(fund, amount.minus(gpCommitment), startOf(fund, ledger));
+  return { ...tiers, amount, gpCommitment };
+}
+
+/** Where the next distribution's run of the tiers starts, from the running balances. */
+function startOf(fund: Fund, ledger: Ledger): Start {
+  return {
     capitalDue: ledger.lpsPaidIn.minus(ledger.capitalReturned),
     prefDue: prefOn(fund, ledger.unreturnedDays).minus(ledger.prefPaid),
     lps: ledger.toDate.lps.total,
     gp: ledger.toDate.gp.total,
     profit: ledger.throughTiers.minus(ledger.capitalReturned),
     paidIn: ledger.lpsPaidIn,
-  });
-  return { ...tiers, amount, gpCommitment };
+  };
 }
 
 function after(ledger: Ledger, tiers: Tiers): Ledger {
@@ -233,7 +239,10 @@ function after(ledger: Ledger, tiers: Tiers): Ledger {
 
 const ledgers = new WeakMap<Fund, Ledger>();
 
-/** The ledger X runs against (F14): every cash flow in F4's order, the pref accrued to D. Worked once per fund. */
+/**
+ * The ledger X runs against (F14): every cash flow in F4's order, the pref accrued to D. Kept for a fund readFund
+ * returned, which is frozen; worked from scratch on every call for one built by hand, which can change after use.
+ */
 function ledgerAtD(fund: Fund): Ledger {
   const known = ledgers.get(fund);
   if (known) return known;
@@ -267,8 +276,33 @@ function ledgerAtD(fund: Fund): Ledger {
     }
   }
   advance(dayNumber(fund.distributionDate)!);
-  ledgers.set(fund, ledger);
+  if (wasRead(fund)) ledgers.set(fund, ledger);
   return ledger;
+}
+
+/**
+ * Where the fund stands at D, before X (F14): where X's tiers start, and where the run on the fund's totals starts
+ * once X is added to it (F12). For the breakpoints; not exported from the package.
+ */
+export interface StandingAtD {
+  /** X's run of the tiers starts here. */
+  start: Start;
+  /** Everything that ran the tiers before X: where the totals' run is before X adds to it. */
+  throughTiers: D;
+  /** F6's pref accrued to D, paid or not: what `pref_met` names (FA4). */
+  prefToD: D;
+  /** F12's pref, on the hurdle balance: the totals' run's pref tier. */
+  prefOnFundTotals: D;
+}
+
+export function standingAtD(fund: Fund): StandingAtD {
+  const ledger = ledgerAtD(fund);
+  return {
+    start: startOf(fund, ledger),
+    throughTiers: ledger.throughTiers,
+    prefToD: prefOn(fund, ledger.unreturnedDays),
+    prefOnFundTotals: prefOn(fund, ledger.hurdleDays),
+  };
 }
 
 /**

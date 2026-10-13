@@ -252,7 +252,17 @@ export function readFund(input: unknown): Fund {
   const cashFlows = [...flows].sort(
     (a, b) => dayNumber(a.date)! - dayNumber(b.date)! || (a.type === b.type ? 0 : a.type === "call" ? -1 : 1) || a.index - b.index,
   );
-  return deepFreeze({ asOf, distributionDate, final, nav, ...terms, cashFlows });
+  const fund: Fund = deepFreeze({ asOf, distributionDate, final, nav, ...terms, cashFlows });
+  readFunds.add(fund);
+  return fund;
+}
+
+/** The funds readFund returned: frozen, so what's worked out for one can be kept. */
+const readFunds = new WeakSet<Fund>();
+
+/** Whether readFund returned this fund. A fund built by hand can change after use, so nothing is kept for it. */
+export function wasRead(fund: Fund): boolean {
+  return readFunds.has(fund);
 }
 
 /** A fund is read once and never changed, so the split can keep what it has worked out for it. Decimals are immutable. */
