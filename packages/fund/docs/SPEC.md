@@ -97,7 +97,7 @@ When no capital is called after the LPs first have all their capital back, the e
 
 When final, there are also breakpoints where the clawback owed bends:
 - `clawback_cleared`: "from here the GP has earned all the carry it was paid earlier"
-- `clawback_starts`: "from here the GP has been paid more carry than it has earned"
+- `clawback_starts`: "from here the GP has been paid more carry than it has earned". v1's terms can't produce it (FA9); it's kept for later terms.
 - `clawback_changes`: where the clawback starts to fall, stops falling, or falls faster or more slowly.
   - **When a tier of the fund-total run ending causes it,** the reason says so: "the clawback owed starts to fall: on the fund's totals, LPs have their pref".
   - **When one of this distribution's tiers causes it,** that tier's own reason sits beside it.
