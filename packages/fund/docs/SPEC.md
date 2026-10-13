@@ -111,7 +111,7 @@ One X can carry several reasons: capital returned and clawback cleared together,
 
 **F17, numbers.** The engine uses decimal.js at 40 digits, as spillpoint does. The reference uses exact fractions. Day counts are whole days. Cases are compared as spillpoint's are.
 
-**F18, refusals.** Each names a kind, a term and the field (as a path).
+**F18, refusals.** Each names a kind, a term and the path to what it's about in the input: `terms.carry.steps[1]`, `cash_flows[0].amount`.
 - **Unsupported,** a term v1 doesn't model:
   - any key under `terms` (or inside a term) that isn't listed above, named by the key itself (`hurdle_irr`)
   - `compounded_pref`, for any `compounding` but `"simple"`
