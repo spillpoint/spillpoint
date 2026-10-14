@@ -21,3 +21,20 @@ Started in 10c. The release step finishes it.
      - A prepared table's `capTable` is a copy of the table you passed: equal to it, but not the same object.
    - **What to change:** code that changed a table after preparing it should prepare it again after the change. Until now it was getting wrong payouts.
    - **Changed answers:** none, for code that doesn't change a table after preparing it. Every exit case gives the same breakpoints, reasons, answers and payment takes as 0.7.0, to every digit.
+2. **`toCents` can't show an amount that's exactly a half cent a cent low** (10d).
+   - **What was wrong:** 40-digit arithmetic can leave an amount that's exactly a half cent in exact arithmetic a hair under it, and `toCents`, rounding half-up straight to the cent, then showed it a cent low. On 0.7.0, two holders of common, A and B, each paid exit value × shares ÷ total:
+
+     | Exit value | A's shares | B's shares | A's exact amount | `toCents` on 0.7.0 | Now |
+     |---|---:|---:|---|---|---|
+     | $203,850,394.65 | 45 | 117 | $56,625,109.625 | 56625109.62 | 56625109.63 |
+     | $534,108,039.85 | 459 | 3 | $530,639,805.825 | 530639805.82 | 530639805.83 |
+     | $21,408,024.33 | 33 | 129 | $4,360,893.845 | 4360893.84 | 4360893.85 |
+     | $21,408,024.33 | 45 | 117 | $5,946,673.425 | 5946673.42 | 5946673.43 |
+
+     The first comes out of the engine as 56625109.62499999999999999999999999999998.
+   - **Now:** `toCents` rounds to 20 places, half-up, then to the cent, half-up. An amount whose exact denominator is under about 10^18 can't sit within 10^-20 of a half cent without being on it, so only true ties move. The engine's reasons and messages round the same way. So does the page: every amount, percentage and price it shows half-up, and a price it shows to the cent when it's exact.
+   - **Rounding down, too:** a round's refusal of a pro-rata investment above the entitlement says what to mark as pro-rata, the entitlement rounded down to the cent. It now treats an amount within 10^-20 under a cent as that cent. Before, an investor with a third of the shares before a $3,000,000 round was told to mark $999,999.99, a cent less than its $1,000,000.00 entitlement.
+   - **TypeScript reports:** nothing. No type changed.
+   - **JavaScript sees:** `toCents` gives the cent above where it gave the cent below, for an amount that's exactly a half cent and came out a hair under. Nothing else it gives changes. The pro-rata refusal's message can say a cent more, the whole entitlement.
+   - **What to change:** nothing.
+   - **Changed answers:** none in the locked cases. Of the 9,322 amounts the exit cases give, none rounds differently, and every case matches the reference as before. The amounts themselves are unchanged: only how they're shown.

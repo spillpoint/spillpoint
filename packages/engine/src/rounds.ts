@@ -17,7 +17,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ONE, ZERO, strikeInName } from "./decimal.ts";
+import { D, ONE, ZERO, halfUp, roundDown, strikeInName } from "./decimal.ts";
 import { InputError, NoAnswerError, unsupportedTerm } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
 import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
@@ -544,14 +544,14 @@ export function roundHalfUp(price: Decimal, step: Decimal): Decimal {
   return (nearlyEqual(steps, half) ? half : steps).toDecimalPlaces(0, D.ROUND_HALF_UP).times(step);
 }
 
-/** "1,100,000": a share count, for messages. */
+/** "1,100,000": a share count, for messages. Half-up, 20 places first (E10). */
 function count(shares: Decimal): string {
-  return shares.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return halfUp(shares, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-/** "$1,234,567.89", for messages. */
+/** "$1,234,567.89", for messages. Half-up, 20 places first (E10). */
 function usd(amount: Decimal): string {
-  const [whole, cents] = amount.toFixed(2).split(".") as [string, string];
+  const [whole, cents] = halfUp(amount, 2).toFixed(2).split(".") as [string, string];
   return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${cents}`;
 }
 
@@ -1121,12 +1121,13 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       const share = held.div(base);
       const entitlement = share.times(money);
       if (amount.gt(entitlement) && !nearlyEqual(amount, entitlement)) {
-        const allowed = entitlement.toDecimalPlaces(2, D.ROUND_DOWN);
+        // What it may mark as pro-rata, to the cent, never more than it may (R6): down, but a hair under a cent is that cent (E14).
+        const allowed = roundDown(entitlement, 2);
         const name = company.holders.find((h) => h.id === holder)!.name;
         throw new InputError(
           `${path}.investments[${line}]`,
           `${name}'s pro-rata investment of ${usd(amount)} is more than its pro-rata entitlement of ${usd(allowed)} ` +
-            `(${share.times(100).toFixed(6)}% of the ${usd(money)} round). Mark ${usd(allowed)} as pro-rata and enter the other ` +
+            `(${halfUp(share.times(100), 6).toFixed(6)}% of the ${usd(money)} round). Mark ${usd(allowed)} as pro-rata and enter the other ` +
             `${usd(amount.minus(allowed))} as an ordinary investment in the same round.`,
         );
       }

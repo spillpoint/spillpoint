@@ -21,7 +21,7 @@ import { D } from "spillpoint";
 import type { CapTableAfterEvent } from "spillpoint";
 
 import { EventForm, RoundsHolders } from "./RoundsEditor.tsx";
-import { percent } from "./format.ts";
+import { halfUp, percent } from "./format.ts";
 import { dateText } from "./rounds.ts";
 import type { EventView } from "./rounds.ts";
 import { EVENT_TYPES, addEvent, draftTitle, eventFieldId, moveEvent, outstandingAtSale, removeEvent } from "./roundsDraft.ts";
@@ -49,7 +49,7 @@ interface Props {
   onAddRound: (() => void) | null;
 }
 
-const count = (n: D) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const count = (n: D) => halfUp(n, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const ZERO = new D(0);
 const ADD_TYPE = "rounds-add-type";
 
@@ -392,7 +392,7 @@ function Built({ view: e, previous, you, atSale }: { view: EventView; previous: 
 function forYou(before: D, after: D) {
   if (before.eq(after)) return null;
   let places = 1;
-  const shown = (x: D) => `${x.times(100).toDecimalPlaces(places, D.ROUND_HALF_UP).toFixed(places)}%`;
+  const shown = (x: D) => `${halfUp(x.times(100), places).toFixed(places)}%`;
   while (places < 4 && shown(before) === shown(after)) places++;
   return <p className="rounds__yours">For you: {shown(before)} → {shown(after)} fully diluted.</p>;
 }

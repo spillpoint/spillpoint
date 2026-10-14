@@ -6,7 +6,7 @@ It can also build the cap table from the company's history: shares issued, the o
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
-**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. One behavior changes in 1.0, a fix: `prepare` works on its own frozen copy of the cap table (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
+**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Two behaviors change in 1.0, both fixes: `prepare` works on its own frozen copy of the cap table, and `toCents` can't show an amount that's exactly a half cent a cent low (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
 
 > **The charter and the signed documents govern, not this tool.** spillpoint models common terms with documented defaults. Your documents may differ, and where they do, they win.
 
@@ -649,7 +649,7 @@ Every modeling choice the engine makes is written down, with its default, in the
 
 ## Numbers
 
-All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js) at 40 significant digits, never floating point. Amounts are reported as Decimals: use `toCents` to round half-up to the cent, or `new D("20000000")` to make one. The engine is checked against an independent calculator that uses exact fractions, and agrees with it to the cent.
+All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js) at 40 significant digits, never floating point. Amounts are reported as Decimals: use `toCents` to round half-up to the cent, or `new D("20000000")` to make one. `toCents` rounds to 20 places first *(1.0)*: 40-digit arithmetic can leave an amount that's exactly a half cent a hair under it, and before 1.0 that showed a cent low. The engine is checked against an independent calculator that uses exact fractions, and agrees with it to the cent.
 
 **`D` is decimal.js's `Decimal`,** at 40 significant digits with half-up rounding *(0.7.0: said here)*. Every amount, price and share count the API takes or returns is one, so it's part of the API: a major decimal.js release that changes `Decimal` would be a major spillpoint release. spillpoint stays on decimal.js 10 (`^10.6.0`), and moves to a new major only with a new major of its own.
 

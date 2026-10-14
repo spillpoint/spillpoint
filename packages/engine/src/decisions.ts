@@ -45,7 +45,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, TIE, ZERO, moreThan, sameAmount } from "./decimal.ts";
+import { D, TIE, ZERO, moreThan, sameAmount, toCents } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
 import { money } from "./reasons.ts";
 import { EVERYWHERE, inside, meet, pastZero, payoutWithLines, signHolds } from "./lines.ts";
@@ -443,7 +443,7 @@ class AtExit {
   }
 
   private get where(): string {
-    return `At $${this.x.toFixed(2)}`;
+    return `At $${toCents(this.x)}`;
   }
 
   solve(): Solution {

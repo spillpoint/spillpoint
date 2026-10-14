@@ -11,7 +11,7 @@ import type { AntiDilutionAdjustment, CapTable, CapTableAfterEvent, RoundDetails
 
 import { NotShownYet, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
-import { dollars, dollarsAndCents, percent, strikeText, withoutCodes } from "./format.ts";
+import { dollars, dollarsAndCents, halfUp, percent, strikeText, withoutCodes } from "./format.ts";
 
 type Decimal = D;
 type Json = Record<string, unknown>;
@@ -209,14 +209,14 @@ export function dateText(date: string | null): string | null {
   return m ? `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}` : date;
 }
 
-const count = (n: Decimal) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const count = (n: Decimal) => halfUp(n, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 /**
  * A per-share price as a founder reads it: to the cent when that's exact ("$4.00"), otherwise to six places, as the
  * editor shows them ("$0.384930") (0.5.0 plan, 05e; Jordan, after #69).
  */
-const price = (p: Decimal) => (p.eq(p.toFixed(2)) ? `$${p.toFixed(2)}` : `$${p.toFixed(6, D.ROUND_HALF_UP)}`);
+const price = (p: Decimal) => (halfUp(p, 20).decimalPlaces() <= 2 ? `$${halfUp(p, 2).toFixed(2)}` : `$${halfUp(p, 6).toFixed(6)}`);
 /** A percentage as written in the input: "6%", "12.5%". */
-const pct = (fraction: Decimal) => `${fraction.times(100).toDecimalPlaces(4, D.ROUND_HALF_UP).toFixed()}%`;
+const pct = (fraction: Decimal) => `${halfUp(fraction.times(100), 4).toFixed()}%`;
 const money = (v: unknown) => dollars(new D(String(v)));
 const list = (items: string[]) => (items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
 
@@ -422,7 +422,7 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name, sta
   for (const a of d.antiDilution) {
     const text =
       `${security(a.series)}'s anti-dilution (${RULES[a.rule]}) lowers its conversion price from ${price(a.cp1)} to ${price(a.cp2)}, ` +
-      `so each share converts into ${a.newConversionRatio.toFixed(6, D.ROUND_HALF_UP)} common. Its preference doesn't change.`;
+      `so each share converts into ${halfUp(a.newConversionRatio, 6).toFixed(6)} common. Its preference doesn't change.`;
     // With conversions, each piece's line goes under it, as its explanation; and for a starting series, how the
     // order its SAFEs and notes were issued in was read (R31).
     const details = [...pieceLines(a, ev, d, holder, security), ...orderLines(a, d, security, starting)];
@@ -519,8 +519,8 @@ function pieceLines(a: AntiDilutionAdjustment, ev: Json, d: RoundDetails, holder
       return `${owner(p.id!)} ${why}, so it counts in the starting share count instead.`;
     }
     // To the cent, as a founder reads a price, unless that would show it equal to the conversion price it's compared with.
-    const close = p.price.toFixed(2, D.ROUND_HALF_UP) === a.cp1.toFixed(2, D.ROUND_HALF_UP) && !p.price.eq(a.cp1);
-    const show = (x: Decimal) => `$${x.toFixed(close ? 6 : 2, D.ROUND_HALF_UP)}`;
+    const close = halfUp(p.price, 2).eq(halfUp(a.cp1, 2)) && !p.price.eq(a.cp1);
+    const show = (x: Decimal) => `$${halfUp(x, close ? 6 : 2).toFixed(close ? 6 : 2)}`;
     const where = p.price.lt(a.cp1) ? "below" : p.price.eq(a.cp1) ? "at" : "above";
     const verdict = p.counted ? `so it counts against ${series}` : "so it doesn't count";
     return p.kind === "new_money"

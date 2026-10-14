@@ -8,6 +8,8 @@
 import { D } from "spillpoint";
 import type { PayoutLine } from "spillpoint";
 
+import { halfUp } from "./format.ts";
+
 /**
  * 40-digit arithmetic can leave an amount that's a whole number of cents in exact arithmetic a hair under it (E14),
  * which rounding down would cost a cent. Within this, it's on the cent: far below any real fraction of a cent, far
@@ -47,5 +49,5 @@ export function paid(lines: readonly PayoutLine[]): Paid {
  * fraction of a cent, as only an exact breakpoint does.
  */
 export function leftOver(exitValue: D, payments: Paid): D {
-  return exitValue.toDecimalPlaces(2, D.ROUND_HALF_UP).minus(payments.total);
+  return halfUp(exitValue, 2).minus(payments.total);
 }

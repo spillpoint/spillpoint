@@ -10,7 +10,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { ZERO } from "./decimal.ts";
+import { ZERO, toCents } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
 import { solveWorking } from "./decisions.ts";
 import type { PaymentSchedule } from "./model.ts";
@@ -50,7 +50,7 @@ export function paySchedule(pc: PreparedCapTable, schedule: PaymentSchedule): Pa
     if (answers.length !== 1) {
       // E8: the takes need one answer at each cumulative amount.
       throw new NoAnswerError(
-        `Schedule ${schedule.id}: at the cumulative $${cumulative.toFixed(2)} after ${payment.label} there is more than one stable answer, so its takes aren't settled.`,
+        `Schedule ${schedule.id}: at the cumulative $${toCents(cumulative)} after ${payment.label} there is more than one stable answer, so its takes aren't settled.`,
       );
     }
     const answer = answers[0]!;

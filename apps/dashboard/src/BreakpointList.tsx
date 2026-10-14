@@ -7,7 +7,7 @@ import { D } from "spillpoint";
 
 import type { BreakpointView } from "./analysis.ts";
 import type { Change } from "./curves.ts";
-import { dollars, dollarsAndCents, shortDollars } from "./format.ts";
+import { dollars, dollarsAndCents, halfUp, shortDollars } from "./format.ts";
 
 type Decimal = D;
 
@@ -34,7 +34,7 @@ export function BreakpointList({ breakpoints, changes, yourName, exitValue, onEx
         <ol className="breakpoints">
           {breakpoints.map((b, i) => {
             const x = new D(b.exitValue);
-            const here = x.toDecimalPlaces(2).eq(exitValue.toDecimalPlaces(2));
+            const here = halfUp(x, 2).eq(halfUp(exitValue, 2));
             const change = changes[i] ?? null;
             return (
               <li key={b.exitValue} className={here ? "is-here" : undefined}>

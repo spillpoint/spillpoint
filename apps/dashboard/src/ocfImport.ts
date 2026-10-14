@@ -7,7 +7,7 @@
 import { D, ImportRefusal, readOcf } from "spillpoint";
 import type { CapTableImport, ImportBlank, OcfFile } from "spillpoint";
 
-import { shortDollars, strikeText } from "./format.ts";
+import { halfUp, shortDollars, strikeText } from "./format.ts";
 import { MOST_BYTES, ZipError, readZip } from "./zip.ts";
 
 type Json = Record<string, unknown>;
@@ -155,7 +155,8 @@ function count(value: unknown): string {
 
 /** A price: "$0.80", "$1.00", or to six places when written longer ("$0.384930"). */
 export function price(amount: D): string {
-  return `$${amount.decimalPlaces() <= 2 ? amount.toFixed(2) : amount.toFixed(Math.min(amount.decimalPlaces(), 6), D.ROUND_HALF_UP)}`;
+  const places = Math.max(2, Math.min(amount.decimalPlaces(), 6));
+  return `$${halfUp(amount, places).toFixed(places)}`;
 }
 
 const amountOf = (o: Json | undefined, field: string): D | null => {
