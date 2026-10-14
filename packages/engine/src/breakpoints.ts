@@ -25,7 +25,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D } from "./decimal.ts";
+import { D, toCents } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
 import { StabilityWatch, snapshotAt } from "./decisions.ts";
 import type { Snapshot } from "./decisions.ts";
@@ -95,7 +95,7 @@ function stretchAbove(pc: Prepared, x: Decimal): Stretch {
     const then = snapshotAt(pc, b);
     if (sameState(at, then)) return { start: x, a, b, at, then, curved: at.answer.payout.curved };
   }
-  throw new NoAnswerError(`Just above $${x.toFixed(2)} the decisions change too often to read the payout curve.`);
+  throw new NoAnswerError(`Just above $${toCents(x)} the decisions change too often to read the payout curve.`);
 }
 
 /** A straight line through the two readings, evaluated at x. */
@@ -141,7 +141,7 @@ function exactlyAt(pc: Prepared, decisions: Decisions, x: Decimal, side: -1 | 1)
 
 function curveGuard(s: Stretch, end: Decimal): NoAnswerError {
   return new NoAnswerError(
-    `Between $${s.start.toFixed(2)} and $${end.toFixed(2)} payouts curve, and a decision changes there. The breakpoint finder places ` +
+    `Between $${toCents(s.start)} and $${toCents(end)} payouts curve, and a decision changes there. The breakpoint finder places ` +
       "a change on a curve only where the carve-out's tier ends, the tier it shares is paid in full, or one holder's gain from " +
       "switching is one straight line over another and payouts meet there, so it stops rather than guess.",
   );
@@ -249,7 +249,7 @@ function checkStretch(pc: Prepared, s: Stretch, end: Decimal): void {
   const off = reading.answer.payout.lines.findIndex((l, i) => l.amount.minus(expected[i]!).abs().gt(JUMP_TIE));
   if (!sameState(s.at, reading) || off >= 0) {
     throw new NoAnswerError(
-      `Between $${s.start.toFixed(2)} and $${end.toFixed(2)} something changed that the breakpoint finder didn't predict; it stops rather than miss a breakpoint.`,
+      `Between $${toCents(s.start)} and $${toCents(end)} something changed that the breakpoint finder didn't predict; it stops rather than miss a breakpoint.`,
     );
   }
 }

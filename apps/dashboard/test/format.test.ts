@@ -1,7 +1,43 @@
-import { D, buildCapTables } from "spillpoint";
+import { D, buildCapTables, prepare, readCapTable, solve } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
-import { dollars, parseDollars, percent, priceText, shortDollars, strikeText, withoutCodes } from "../src/format.ts";
+import { dollars, dollarsAndCents, exitValueText, halfUp, halfUpSignificant, parseDollars, percent, priceText, shortDollars, strikeText, withoutCodes } from "../src/format.ts";
+
+describe("half-up for reading, 20 places first (ASSUMPTIONS E10, P2; 10d)", () => {
+  // Two holders of common, A and B, each paid exit value × shares ÷ total. Each of A's amounts is exactly a half cent,
+  // and 40-digit arithmetic leaves it a hair under: on 0.7.0 the page showed each a cent low.
+  const twoHolders = (a: number, b: number) =>
+    readCapTable({
+      holders: [{ id: "a", name: "A" }, { id: "b", name: "B" }],
+      securities: [{ id: "common", name: "Common Stock", kind: "common" }],
+      seniority: [],
+      positions: [{ holder: "a", security: "common", shares: a }, { holder: "b", security: "common", shares: b }],
+      unissued_pool: "0",
+    });
+  it.each([
+    ["203850394.65", 45, 117, "$56,625,109.63"],
+    ["534108039.85", 459, 3, "$530,639,805.83"],
+    ["21408024.33", 33, 129, "$4,360,893.85"],
+    ["21408024.33", 45, 117, "$5,946,673.43"],
+  ])("shows an exact half cent rounded up: $%s, A %i and B %i", (x, a, b, shown) => {
+    const amount = solve(prepare(twoHolders(a, b)), new D(x)).answers[0]!.payout.holderTotals.get("a")!;
+    expect(dollarsAndCents(amount)).toBe(shown);
+    expect(exitValueText(amount)).toBe(shown);
+    const cents = new D(shown.replace(/[$,]/g, ""));
+    expect(amount.toDecimalPlaces(2, D.ROUND_HALF_UP).eq(cents.minus("0.01")), "a hair under: half-up straight to the cent is a cent low").toBe(true);
+  });
+
+  it("rounds to 20 places, then as shown, whatever it shows", () => {
+    const hair = new D("1e-30");
+    expect(halfUp(new D("0.005").minus(hair), 2).toFixed(2)).toBe("0.01");
+    expect(halfUp(new D("0.005").minus("1e-19"), 2).toFixed(2)).toBe("0.00");
+    expect(halfUp(new D("-0.005").plus(hair), 2).toFixed(2)).toBe("-0.01");
+    expect(dollars(new D("1234.5").minus(hair))).toBe("$1,235");
+    expect(shortDollars(new D("9745000").minus(hair))).toBe("$9.75M");
+    expect(halfUpSignificant(new D("9.745").minus(hair), 3).toString()).toBe("9.75");
+    expect(percent(new D("0.1235").minus(hair))).toBe("12.4%");
+  });
+});
 
 describe("money for founders", () => {
   it("writes a strike as the engine's class names do: to the cent at least, every further place kept, never rounded", () => {

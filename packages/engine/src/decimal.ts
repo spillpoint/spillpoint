@@ -66,9 +66,20 @@ export function parseExact(value: unknown, where = "value"): Decimal {
   throw new InputError(where, `"${value}" is not an exact number (an integer, a decimal, or "a/b")`);
 }
 
-/** Rounds half-up (away from zero) to the cent, as amounts are reported (E10). */
+/**
+ * Half-up (away from zero) to `places`, for reading (E10, 10d): to 20 places first, half-up, then to the places shown,
+ * half-up. 40-digit arithmetic can leave an amount that's exactly a half cent in exact arithmetic a hair under it
+ * ($56,625,109.625 comes out 56625109.62499999999999999999999999999998), and half-up straight to the cent would show
+ * it a cent low. No real amount sits within 10^-20 of a half cent without being one, as no real share count sits that
+ * close to a whole number without being one (E19).
+ */
+export function halfUp(amount: Decimal, places: number): Decimal {
+  return amount.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(places, D.ROUND_HALF_UP);
+}
+
+/** Rounds half-up (away from zero) to the cent, as amounts are reported (E10): to 20 places first, then to the cent. */
 export function toCents(amount: Decimal): string {
-  return amount.toDecimalPlaces(2, D.ROUND_HALF_UP).toFixed(2);
+  return halfUp(amount, 2).toFixed(2);
 }
 
 /**

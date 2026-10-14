@@ -99,7 +99,9 @@ it("builds the README's rounds example by hand, from a blank company, and gets t
   expect(within(panel()).queryAllByRole("alert")).toEqual([]);
   const said = [...round.querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
   expect(said[0]).toBe("$5,000,000 at a $20,000,000 pre-money valuation, $25,000,000 post-money: $1.730769 a share.");
-  expect(said).toContain("Seed Fund's SAFE converts at its cap price, $0.900000 a share, into 1,111,111 shares of Series A Preferred (from SAFEs).");
+  // Exactly 90 cents, $10M ÷ (10,000,000 ÷ 0.9), though 40 digits leave it a hair under: to the cent (10d). The README
+  // prints it to six places, as its own code formats it.
+  expect(said).toContain("Seed Fund's SAFE converts at its cap price, $0.90 a share, into 1,111,111 shares of Series A Preferred (from SAFEs).");
   expect(said).toContain("Series A Fund invests $5,000,000 for 2,888,888 shares of Series A Preferred.");
 
   // The same three breakpoints, with the same reasons, on the Payouts tab.

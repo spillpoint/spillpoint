@@ -39,11 +39,18 @@ describe("a round's price, to the cent when that's exact", () => {
     const lines = eventViews(rounds, built.tables).at(-1)!.lines.map(text);
     expect(lines[0]).toBe("$4,000,000 at a $40,000,000 pre-money valuation, $44,000,000 post-money: $4.00 a share.");
 
-    // The SAFE's $20M post-money cap over the 10,000,000 shares and its own: not a whole number of cents.
-    const withSafe = fromRounds(company(), ["0", "100000000"]);
-    if (!withSafe.ok) throw withSafe.error;
-    const said = eventViews(company(), withSafe.tables).at(-1)!.lines.map(text);
-    expect(said.find((l) => l.startsWith("Investor X's SAFE"))).toMatch(/^Investor X's SAFE converts at its cap price, \$\d\.\d{6} a share,/);
+    // The SAFE's $20M post-money cap over the 10,000,000 shares and its own: ($20,000,000 − $500,000) ÷ 10,000,000,
+    // exactly $1.95, though 40 digits leave it a hair under. To the cent, as an exact price is (10d; ASSUMPTIONS P2).
+    const capPrice = (purchase: string) => {
+      const safe = (e: Json) => (e.id === "safe" ? { ...e, safes: [{ id: "safe_x", holder: "x", purchase_amount: purchase, post_money_cap: "20000000" }] } : e);
+      const rounds = { ...company(), events: company().events.map(safe) };
+      const built = fromRounds(rounds, ["0", "100000000"]);
+      if (!built.ok) throw built.error;
+      return eventViews(rounds, built.tables).at(-1)!.lines.map(text).find((l) => l.startsWith("Investor X's SAFE"));
+    };
+    expect(capPrice("500000")).toMatch(/^Investor X's SAFE converts at its cap price, \$1\.95 a share,/);
+    // $512,345: ($20,000,000 − $512,345) ÷ 10,000,000 is $1.9487655, not a whole number of cents. Six places, half-up.
+    expect(capPrice("512345")).toMatch(/^Investor X's SAFE converts at its cap price, \$1\.948766 a share,/);
   });
 });
 

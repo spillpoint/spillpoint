@@ -8,7 +8,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ONE, ZERO, moreThan } from "./decimal.ts";
+import { D, ONE, ZERO, halfUp, moreThan } from "./decimal.ts";
 import type { Snapshot } from "./decisions.ts";
 import type { ReasonCode } from "./stable-names.ts";
 import { CARVE_OUT, carveOutAt, settle } from "./waterfall.ts";
@@ -32,23 +32,24 @@ function grouped(whole: string): string {
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-/** Dollars for founders: $26,000,000 for a whole amount, $19,999,999.79 otherwise. */
+/** Dollars for founders: $26,000,000 for a whole amount, $19,999,999.79 otherwise. Half-up, 20 places first (E10). */
 export function money(amount: Decimal): string {
-  const [whole, cents] = amount.toDecimalPlaces(2, 4).toFixed(2).split(".") as [string, string];
+  const [whole, cents] = halfUp(amount, 2).toFixed(2).split(".") as [string, string];
   return cents === "00" ? `$${grouped(whole)}` : `$${grouped(whole)}.${cents}`;
 }
 
-/** A price per share: up to six places, at least two. */
+/** A price per share: up to six places, at least two. Half-up, 20 places first (E10). */
 export function perShare(amount: Decimal): string {
-  let s = amount.toDecimalPlaces(6, 4).toFixed(6).replace(/0+$/, "");
-  if (/\.\d?$/.test(s)) s = amount.toFixed(2);
+  const rounded = halfUp(amount, 6);
+  let s = rounded.toFixed(6).replace(/0+$/, "");
+  if (/\.\d?$/.test(s)) s = rounded.toFixed(2);
   const [whole, frac] = s.split(".") as [string, string];
   return `$${grouped(whole)}.${frac}`;
 }
 
 function shares(n: Decimal): string {
   if (n.isInteger()) return grouped(n.toFixed(0));
-  const [whole, frac] = n.toDecimalPlaces(2, 4).toFixed(2).split(".") as [string, string];
+  const [whole, frac] = halfUp(n, 2).toFixed(2).split(".") as [string, string];
   return `${grouped(whole)}.${frac}`;
 }
 

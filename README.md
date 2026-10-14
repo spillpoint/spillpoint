@@ -42,7 +42,7 @@ Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open
 
 OCX is developed by the Open Cap Table Coalition: https://github.com/Open-Cap-Table-Coalition/ocx. spillpoint reads files in that format.
 
-Coming next: **1.0,** with the same API as 0.7.0, at its own domain. One behavior changes, a fix: `prepare` works on its own frozen copy of the cap table (see [`notes/release-1.0.md`](notes/release-1.0.md)). It waits on an outside waterfall that matches spillpoint's, and a few outside users.
+Coming next: **1.0,** with the same API as 0.7.0, at its own domain. Two behaviors change, both fixes: `prepare` works on its own frozen copy of the cap table, and `toCents` can't show an amount that's exactly a half cent a cent low (see [`notes/release-1.0.md`](notes/release-1.0.md)). It waits on an outside waterfall that matches spillpoint's, and a few outside users.
 
 ## The fund waterfall
 

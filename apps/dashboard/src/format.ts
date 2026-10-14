@@ -7,7 +7,8 @@
 //   "you get" headline is the short form of such a total. Anything else to the
 //   cent, such as each breakpoint's exit value, the exit value once it has cents,
 //   or what a series is owed, is rounded half-up here, as the engine's toCents
-//   and the locked cases round
+//   and the locked cases round. Every half-up rounding for reading goes through
+//   halfUp: to 20 places first, then as shown (ASSUMPTIONS E10, P2)
 // - whole dollars elsewhere, such as the approximate per-$1M rates ("$250,000")
 // Amounts are engine Decimals throughout; nothing here uses floating point.
 
@@ -20,16 +21,31 @@ function grouped(whole: string): string {
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+/**
+ * Half-up (away from zero) to `places`, for reading (ASSUMPTIONS E10, P2; 10d): to 20 places first, half-up, then to
+ * the places shown, half-up, as the engine's toCents rounds. 40-digit arithmetic can leave an amount that's exactly a
+ * half cent a hair under it ($56,625,109.625 comes out 56625109.62499999999999999999999999999998), and half-up straight
+ * to the cent would show it a cent low. No real amount sits within 10^-20 of a half cent without being one.
+ */
+export function halfUp(amount: Decimal, places: number): Decimal {
+  return amount.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(places, D.ROUND_HALF_UP);
+}
+
+/** The same rule to significant digits, as a short amount ("$9.75M") or a fraction typed as a price shows them. */
+export function halfUpSignificant(amount: Decimal, digits: number): Decimal {
+  return halfUp(amount, 20).toSignificantDigits(digits, D.ROUND_HALF_UP);
+}
+
 /** "$9,750,990": to the dollar, for an approximate amount. */
 export function dollars(amount: Decimal): string {
-  const rounded = amount.toDecimalPlaces(0, D.ROUND_HALF_UP);
+  const rounded = halfUp(amount, 0);
   const sign = rounded.isNegative() ? "-" : "";
   return `${sign}$${grouped(rounded.abs().toFixed(0))}`;
 }
 
 /** "$204,114.37": to the cent, half-up. A payment comes already rounded down to the cent (paid.ts), so it's written as it is; anything else, a breakpoint or what a series is owed, rounds half-up. */
 export function dollarsAndCents(amount: Decimal): string {
-  const rounded = amount.toDecimalPlaces(2, D.ROUND_HALF_UP);
+  const rounded = halfUp(amount, 2);
   const sign = rounded.isNegative() ? "-" : "";
   const [whole, cents] = rounded.abs().toFixed(2).split(".");
   return `${sign}$${grouped(whole!)}.${cents}`;
@@ -37,7 +53,7 @@ export function dollarsAndCents(amount: Decimal): string {
 
 /** An exit value as typed or chosen: to the cent when it has cents, as a breakpoint usually does; else whole dollars. */
 export function exitValueText(amount: Decimal): string {
-  return amount.toDecimalPlaces(2, D.ROUND_HALF_UP).isInteger() ? dollars(amount) : dollarsAndCents(amount);
+  return halfUp(amount, 2).isInteger() ? dollars(amount) : dollarsAndCents(amount);
 }
 
 /** "$9.75M", "$39.4M", "$100M", "$450K", "$812": three significant digits, for headlines. */
@@ -51,11 +67,11 @@ export function shortDollars(amount: Decimal): string {
   ];
   for (const [size, suffix] of units) {
     if (a.gte(size)) {
-      const scaled = a.div(size).toSignificantDigits(3, D.ROUND_HALF_UP);
+      const scaled = halfUpSignificant(a.div(size), 3);
       return `${sign}$${scaled.toString()}${suffix}`;
     }
   }
-  return `${sign}$${a.toDecimalPlaces(0, D.ROUND_HALF_UP).toFixed(0)}`;
+  return `${sign}$${halfUp(a, 0).toFixed(0)}`;
 }
 
 /**
@@ -70,7 +86,7 @@ export function strikeText(strike: Decimal | string | number): string {
 
 /** "9.8%": a fraction as a percentage to one place. */
 export function percent(fraction: Decimal): string {
-  return `${fraction.times(100).toDecimalPlaces(1, D.ROUND_HALF_UP).toFixed(1)}%`;
+  return `${halfUp(fraction.times(100), 1).toFixed(1)}%`;
 }
 
 /**
@@ -94,9 +110,9 @@ export function priceText(text: string): string {
   const fraction = /^(\d+)\/(\d+)$/.exec(text);
   if (fraction && !/^0+$/.test(fraction[2]!)) {
     const value = new D(fraction[1]!).div(fraction[2]!);
-    return value.decimalPlaces() <= 6 ? value.toFixed() : value.toFixed(6, D.ROUND_HALF_UP);
+    return value.decimalPlaces() <= 6 ? value.toFixed() : halfUp(value, 6).toFixed(6);
   }
-  if (/^\d+\.\d{7,}$/.test(text)) return new D(text).toFixed(6, D.ROUND_HALF_UP);
+  if (/^\d+\.\d{7,}$/.test(text)) return halfUp(new D(text), 6).toFixed(6);
   return text;
 }
 
@@ -104,7 +120,7 @@ export function priceText(text: string): string {
 export function fractionValue(text: string): string | null {
   const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(text);
   if (!m || /^0+$/.test(m[2]!)) return null;
-  return new D(m[1]!).div(m[2]!).toSignificantDigits(6, D.ROUND_HALF_UP).toFixed();
+  return halfUpSignificant(new D(m[1]!).div(m[2]!), 6).toFixed();
 }
 
 /**

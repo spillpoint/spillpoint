@@ -4,6 +4,8 @@
 import { D, solve } from "spillpoint";
 import type { CapTable, PreparedCapTable } from "spillpoint";
 
+import { halfUp } from "./format.ts";
+
 /** The engine's 40-digit Decimal. */
 type Decimal = D;
 
@@ -59,7 +61,7 @@ export function classShares(pc: PreparedCapTable, security: string): Decimal {
 export function outstandingNames(pc: PreparedCapTable): Map<string, string> {
   const { holders, unconvertedSafes = [], unconvertedNotes = [] } = pc.capTable;
   const holder = (id: string) => holders.find((h) => h.id === id)?.name ?? id;
-  const money = (v: Decimal) => `$${v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  const money = (v: Decimal) => `$${halfUp(v, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
   const names = new Map<string, string>();
   const name = (rows: { id: string; holder: string; amount: Decimal }[], kind: string) => {
     for (const r of rows) {
