@@ -190,6 +190,45 @@ Branch `10d-half-up-rounding`, from main at `56efe30` (10c). One commit. Nothing
 
 1. **`rounds.ts` line 1124 rounds a pro-rata entitlement down to the cent with no hair.** In the error that refuses too large a pro-rata investment, a whole-cent entitlement a hair under would be stated a cent low: "Mark $X as pro-rata". The fix would be P1's and E19's hair, 10^-20, as `paidCents` adds. It's a round-down, not half-up, so it's not in this step. Shall I fold it into a later step?
 
+## After your review: one more commit on #113
+
+**Decisions 1, 2 and 3:** agreed. **The open question:** fixed here, as you asked.
+
+**The pro-rata refusal's "Mark $X as pro-rata"** now rounds the entitlement down with paidCents' guard. An amount within 10^-20 under a cent is on that cent (E14).
+- **The helper:** `decimal.ts` has a new internal `roundDown(amount, places)`. It adds 10^-20 and then floors, as `paidCents` does on the page.
+- **Where it's used:** `rounds.ts` line 1124 now calls it.
+- **ASSUMPTIONS:** E14 says so, and R6's line on the refusal points to it.
+- **The release note:** its second entry, which is about rounding, gets a line on this too. A third entry would have made the READMEs' "two behaviors change" wrong, and this is only the text of an error.
+
+**The test,** in `test/rounds.test.ts`:
+- **The setup:** Investor X holds 1,000,000 of the 3,000,000 shares before a $3,000,000 round, and marks $1,000,000.01 as pro-rata. Its entitlement is exactly $1,000,000.00, which 40 digits leave a hair under.
+- **Now:** the message says "…more than its pro-rata entitlement of $1,000,000.00 (33.333333% of the $3,000,000.00 round). Mark $1,000,000.00 as pro-rata and enter the other $0.01 as an ordinary investment in the same round."
+- **Before this commit:** it said $999,999.99, and $0.02 for the rest.
+
+**Every round-down or floor in the engine and the page, after this commit:**
+
+| Where | What it does | Guarded? |
+|---|---|---|
+| Engine, `rounds.ts` line 1124 | The most a pro-rata investor may mark, for the refusal's message | Yes, now (`roundDown`) |
+| Engine, `rounds.ts` line 202, `roundDownShares` | A round's share counts, down to whole shares (R3) | Yes, its own: within 10^-20 of a whole number is that number (E19) |
+| Engine, `rounds.ts` line 543, `roundHalfUp` | Finds the halfway point for R9's conversion price | Yes, its own: within one part in 10^30 of halfway is halfway |
+| Engine, `breakpoints.ts` lines 206 and 207 | Picks readings out of a list by position | No amount |
+| Engine, `ocx-cells.ts` line 242 | A spreadsheet date's day count, dropping the time of day | No amount: a date |
+| Page, `paid.ts`, `paidCents` | Every payment, down to the cent (P1) | Yes, the same 10^-20 |
+| Page, `ocfImport.ts` line 407 | A round number for the default range's top, from a power of ten | No amount is read from it. A logarithm a hair low gives the power of ten below, and the step to 10 times it gives the same top. |
+| Page, `curves.ts` lines 114 and 116, and `PayoffChart.tsx` lines 75, 130 and 167 | Chart axis steps, tick positions, the chart's width and label lines | No amount: drawing, in plain numbers |
+| Page, `xlsx.ts` line 67 | A spreadsheet column's letters | No amount |
+
+**Nothing else rounds down or floors an amount for reading.** I searched both packages' sources for `ROUND_DOWN`, `ROUND_FLOOR`, `ROUND_CEIL`, `ROUND_UP`, `floor`, `ceil`, `trunc`, `Math.floor`, `Math.ceil` and `Math.trunc`. I also searched for every `toDecimalPlaces` and `toFixed` given a rounding mode by its number.
+
+**Checked again:**
+- **CI:** the full command passes.
+  - **Engine:** 3,177 tests, 3,176 before plus this one.
+  - **Page:** 679 tests.
+  - **The reference:** 73 tests, and all 83 cases matching it.
+  - **The fund:** unchanged.
+- **The exit cases:** all 48 still dump byte-identically to main.
+
 ## Next
 
 I'm stopping here.

@@ -33,7 +33,8 @@ Started in 10c. The release step finishes it.
 
      The first comes out of the engine as 56625109.62499999999999999999999999999998.
    - **Now:** `toCents` rounds to 20 places, half-up, then to the cent, half-up. An amount whose exact denominator is under about 10^18 can't sit within 10^-20 of a half cent without being on it, so only true ties move. The engine's reasons and messages round the same way. So does the page: every amount, percentage and price it shows half-up, and a price it shows to the cent when it's exact.
+   - **Rounding down, too:** a round's refusal of a pro-rata investment above the entitlement says what to mark as pro-rata, the entitlement rounded down to the cent. It now treats an amount within 10^-20 under a cent as that cent. Before, an investor with a third of the shares before a $3,000,000 round was told to mark $999,999.99, a cent less than its $1,000,000.00 entitlement.
    - **TypeScript reports:** nothing. No type changed.
-   - **JavaScript sees:** `toCents` gives the cent above where it gave the cent below, for an amount that's exactly a half cent and came out a hair under. Nothing else it gives changes.
+   - **JavaScript sees:** `toCents` gives the cent above where it gave the cent below, for an amount that's exactly a half cent and came out a hair under. Nothing else it gives changes. The pro-rata refusal's message can say a cent more, the whole entitlement.
    - **What to change:** nothing.
    - **Changed answers:** none in the locked cases. Of the 9,322 amounts the exit cases give, none rounds differently, and every case matches the reference as before. The amounts themselves are unchanged: only how they're shown.

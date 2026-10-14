@@ -420,6 +420,29 @@ describe("what M4d refuses", () => {
     );
   });
 
+  it("says to mark the whole entitlement when it's whole cents, though 40 digits leave it a hair under (R6, E14; 10d)", () => {
+    // Investor X holds 1 of the 3,000,000 shares before a $3,000,000 round: its entitlement is exactly $1,000,000.00, which
+    // 40 digits leave a hair under. Rounded straight down, the message said $999,999.99, a cent less than it may mark.
+    const inputs = {
+      holders: [{ id: "founder", name: "Founder" }, { id: "investor_x", name: "Investor X" }, { id: "investor_y", name: "Investor Y" }],
+      events: [
+        {
+          id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" },
+          issues: [{ holder: "founder", shares: 2000000 }, { holder: "investor_x", shares: 1000000 }],
+        },
+        {
+          id: "series_a", date: null, type: "priced_round", pre_money: "3000000", pool_target_unissued_percent_post: "0", seniority: [["series_a"]],
+          series: { id: "series_a", name: "Series A Preferred", kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
+          investments: [{ holder: "investor_x", amount: "1000000.01", pro_rata: true }, { holder: "investor_y", amount: "1999999.99" }],
+        },
+      ],
+    };
+    expect(() => buildCapTables(inputs)).toThrow(
+      "inputs.events[1].investments[0]: Investor X's pro-rata investment of $1,000,000.01 is more than its pro-rata entitlement of $1,000,000.00 " +
+        "(33.333333% of the $3,000,000.00 round). Mark $1,000,000.00 as pro-rata and enter the other $0.01 as an ordinary investment in the same round.",
+    );
+  });
+
   it("a pro-rata round with a SAFE that stays outstanding (R6)", () => {
     const inputs = case18();
     inputs.events.at(-1)!.convert_safes = false;

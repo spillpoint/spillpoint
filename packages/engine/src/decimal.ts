@@ -77,6 +77,19 @@ export function halfUp(amount: Decimal, places: number): Decimal {
   return amount.toDecimalPlaces(20, D.ROUND_HALF_UP).toDecimalPlaces(places, D.ROUND_HALF_UP);
 }
 
+/** Within this under a whole number of cents, an amount is on that cent (E14): far below any real fraction of a cent. */
+const HAIR = new D("1e-20");
+
+/**
+ * Down to `places`, for reading, as a payment is rounded down (E14; the page's paidCents, P1): an amount within 10^-20
+ * under a whole number of cents is on that cent. 40-digit arithmetic can leave an amount that's whole cents in exact
+ * arithmetic a hair under them (a third of $3,000,000 comes out 999999.99999…), and rounding straight down would cost
+ * it a cent.
+ */
+export function roundDown(amount: Decimal, places: number): Decimal {
+  return amount.plus(HAIR).toDecimalPlaces(places, D.ROUND_FLOOR);
+}
+
 /** Rounds half-up (away from zero) to the cent, as amounts are reported (E10): to 20 places first, then to the cent. */
 export function toCents(amount: Decimal): string {
   return halfUp(amount, 2).toFixed(2);

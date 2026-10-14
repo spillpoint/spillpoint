@@ -17,7 +17,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ONE, ZERO, halfUp, strikeInName } from "./decimal.ts";
+import { D, ONE, ZERO, halfUp, roundDown, strikeInName } from "./decimal.ts";
 import { InputError, NoAnswerError, unsupportedTerm } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
 import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
@@ -1121,7 +1121,8 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       const share = held.div(base);
       const entitlement = share.times(money);
       if (amount.gt(entitlement) && !nearlyEqual(amount, entitlement)) {
-        const allowed = entitlement.toDecimalPlaces(2, D.ROUND_DOWN);
+        // What it may mark as pro-rata, to the cent, never more than it may (R6): down, but a hair under a cent is that cent (E14).
+        const allowed = roundDown(entitlement, 2);
         const name = company.holders.find((h) => h.id === holder)!.name;
         throw new InputError(
           `${path}.investments[${line}]`,
