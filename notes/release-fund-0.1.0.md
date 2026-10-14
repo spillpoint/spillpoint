@@ -57,7 +57,7 @@ Code can match on these, and none is renamed or reused from 0.1.0. The package's
   - **Open and save:** each case's `inputs.json` opened and saved has the same values.
   - **Privacy:** the built page, and the site with it under `fund/`, load nothing from elsewhere.
   - **Checked independently, on the built page in headless Chromium:**
-    - random funds typed, pasted and opened, against his checker
+    - random funds typed, pasted and opened, against that checker
     - taps on the charts
     - the keyboard alone
     - every width from 320 to 1400 pixels
