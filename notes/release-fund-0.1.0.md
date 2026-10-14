@@ -45,9 +45,9 @@ Code can match on these, and none is renamed or reused from 0.1.0. The package's
 
 ## How it's tested
 
-- **Fifteen worked cases and fifteen refusals** (`packages/fund/cases`), each with a plain-English derivation. Their expected values come from an independent calculator in exact fractions (`packages/fund/reference`), which finds breakpoints by search, not from tier sizes. The engine meets every amount to the cent and every breakpoint exactly. Jordan re-derived the cases with his own checker.
+- **Fifteen worked cases and fifteen refusals** (`packages/fund/cases`), each with a plain-English derivation. Their expected values come from an independent calculator in exact fractions (`packages/fund/reference`), which finds breakpoints by search, not from tier sizes. The engine meets every amount to the cent and every breakpoint exactly. Each was re-derived independently before it was locked: by hand, and by a separate checker in exact fractions written from SPEC.md alone.
 - **Beyond the cases:**
-  - **Random funds:** Jordan's checker agreed with the engine's breakpoints on 6,026 random funds (f01c).
+  - **Checked independently, on the packed 0.1.0:** that checker agrees with the engine on 1,515 funds, the 15 cases among them: 905,630 amounts, each to the cent and within 1e-24 of exact, and 3,918 single-fault refusals, kind, term and path. On 4,030 more, every breakpoint is exact, with every reason and its wording.
   - **The clawback** never rises as X grows, on the reference's random funds too.
 - **The names:** a test fails if the engine can give a name or a wording `docs/STABLE.md` and the package's README don't list, or a list has one the engine doesn't give.
 - **The page:**
@@ -56,7 +56,7 @@ Code can match on these, and none is renamed or reused from 0.1.0. The package's
   - **The forms** write every case's terms and cash flows back exactly.
   - **Open and save:** each case's `inputs.json` opened and saved has the same values.
   - **Privacy:** the built page, and the site with it under `fund/`, load nothing from elsewhere.
-  - **By Jordan, on the built page in headless Chromium:**
+  - **Checked independently, on the built page in headless Chromium:**
     - random funds typed, pasted and opened, against his checker
     - taps on the charts
     - the keyboard alone
