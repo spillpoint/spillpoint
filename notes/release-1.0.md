@@ -13,7 +13,9 @@ Started in 10c. The release step finishes it.
      - **`prepare` copies the cap table it's given and freezes the copy,** down to every Decimal, and freezes the table it returns. Your table is never frozen or changed, and changing it changes nothing a prepared table gives. To run a changed table, edit yours and prepare it again.
      - **A table written by hand still works,** worked out afresh on each call, so a change between calls is always seen.
      - **Each answer's decisions are its own copies.** On 0.7.0 an answer could hand back a set the solver kept for the next exit value, so adding to one answer's `exercised` changed the next answer.
-   - **TypeScript reports:** nothing. No type changed.
+   - **TypeScript reports:** an assignment to a prepared table's `capTable` or `exitDate`: "Cannot assign to 'capTable' because it is a read-only property" (TS2540). `PreparedCapTable`'s two fields are now `readonly`.
+     - **Nothing deeper is marked.** A deeply readonly cap table couldn't be passed where a `CapTable` is expected, so `pc.capTable` still can be.
+     - **An assignment inside the table still compiles,** to a position's shares for example, and throws when it runs.
    - **JavaScript sees:**
      - Assigning to a prepared table, or to anything in it, throws a `TypeError`.
      - A prepared table's `capTable` is a copy of the table you passed: equal to it, but not the same object.

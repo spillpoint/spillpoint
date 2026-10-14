@@ -191,6 +191,44 @@ None. This step has no modeling choices.
 1. **Should `PreparedCapTable`'s fields be `readonly` in its type?** Then TypeScript would catch the assignment that now throws at run time. It's a type change, though only code that assigns to a prepared table would notice. I haven't made it, since 1.0 has no API changes.
 2. **The README's opening says** "1.0 has the same API". Names and types are unchanged. The one behavior change is for code that changed a table after preparing it. The release note says so; does the README line need saying so too?
 
+## After your review: one more commit on #112
+
+**Agreed as they were:** decisions 1, 3, 4 and 5.
+
+**Decision 2: the digit arrays are no longer frozen.**
+- **Each copied Decimal is still frozen,** so its sign, exponent and digit array can't be reassigned. `frozenCopy`'s comment says why the digits aren't frozen, with your measurement.
+- **The per-case test** checks four things:
+  - every object, list and Decimal in the copy is frozen
+  - the digit arrays are left unfrozen
+  - nothing in the caller's table is frozen
+  - the copy shares nothing with the caller's table, digit arrays included
+- **The assignment test** checks that a Decimal's sign, exponent and digit array can't be reassigned, in place of writing one digit.
+
+**Open question 1: `PreparedCapTable`'s two fields are `readonly`,** and nothing deeper.
+- **TypeScript now reports TS2540,** "Cannot assign to 'capTable' because it is a read-only property", and the same for `exitDate`.
+- **Still compiles:** an assignment inside the table, and passing `pc.capTable` where a `CapTable` is expected. I checked both with a scratch file.
+- **The test's two assignments** carry `@ts-expect-error`, so `pnpm typecheck` fails if the fields stop being readonly.
+- **The release note's "TypeScript reports" line** now says what it catches, and what it doesn't.
+
+**Open question 2:** both READMEs now say one behavior changes in 1.0, a fix: `prepare` works on its own frozen copy. Each points to `notes/release-1.0.md`. The engine README links it on GitHub, as it does `docs/ASSUMPTIONS.md`, since npm shows that README too.
+
+**Checked again:**
+- **CI:** the full command passes, with the same counts as section 6's.
+- **All 48 exit cases** still dump byte-identically to main's, to every digit.
+
+**Timing, after this change, alternating with main:**
+
+| | Run 1 | Run 2 | Run 3 |
+|---|---:|---:|---:|
+| The timing test, main | 3.09s | 2.33s | 2.68s |
+| The timing test, #112 | 2.91s | 2.39s | 2.78s |
+| `findBreakpoints` over all 48 exit cases, main | 1.20, 1.28, 1.08s | 1.14, 1.06, 1.01s | 1.09, 1.02, 0.99s |
+| `findBreakpoints` over all 48 exit cases, #112 | 1.34, 1.09, 1.09s | 1.28, 1.03, 1.03s | 1.12, 1.01, 1.00s |
+
+- **The machine was busy for these,** with load averages 6 to 9.
+- **The 48 cases** ran three times in each process: the first time includes warming up, the second and third don't.
+- **#112 is now level with main** within the noise.
+
 ## Next
 
 I'm stopping here.

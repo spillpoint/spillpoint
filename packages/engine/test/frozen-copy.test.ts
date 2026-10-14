@@ -51,32 +51,39 @@ describe("edge-02, with Founder A's common multiplied by 10 after prepare (10c)"
     expect(findBreakpoints(prepare(exit.capTable, exit.exitDate), exit.range).map((b) => toCents(b.exitValue))).toEqual(["3000000.00"]);
   });
 
-  it("refuses an assignment to the prepared table, or to anything in it, down to a Decimal's digits", () => {
+  it("refuses an assignment to the prepared table, or to anything in it, down to a Decimal", () => {
     const exit = edge02();
     const pc = prepare(exit.capTable, exit.exitDate);
-    const writable = pc as { capTable: CapTable; exitDate: string | null };
-    expect(() => (writable.capTable = exit.capTable)).toThrow(TypeError);
-    expect(() => (writable.exitDate = "2030-01-01")).toThrow(TypeError);
+    // The two fields are readonly in the type (1.0), so TypeScript refuses these; run anyway, they throw.
+    // @ts-expect-error: capTable is readonly.
+    expect(() => (pc.capTable = exit.capTable)).toThrow(TypeError);
+    // @ts-expect-error: exitDate is readonly.
+    expect(() => (pc.exitDate = "2030-01-01")).toThrow(TypeError);
     expect(() => (pc.capTable.positions[0]!.shares = new D(1))).toThrow(TypeError);
     expect(() => pc.capTable.holders.push({ id: "someone", name: "Someone" })).toThrow(TypeError);
     expect(() => pc.capTable.seniority[0]!.push("seed")).toThrow(TypeError);
     expect(() => ((pc.capTable as { unissuedPool: Decimal }).unissuedPool = new D(1))).toThrow(TypeError);
-    const shares = pc.capTable.positions[0]!.shares as unknown as { s: number; d: number[] };
+    const shares = pc.capTable.positions[0]!.shares as unknown as { s: number; e: number; d: number[] };
     expect(() => (shares.s = -1)).toThrow(TypeError);
-    expect(() => (shares.d[0] = 1)).toThrow(TypeError);
+    expect(() => (shares.e = 0)).toThrow(TypeError);
+    expect(() => (shares.d = [1])).toThrow(TypeError);
     expect(at(pc, "5000000").commonPrice.toString()).toBe("0.25");
   });
 });
 
 describe("prepare's copy (10c)", () => {
-  it.each(EXIT_CASES)("%s: freezes everything in its copy, and nothing in the caller's table", (name) => {
+  it.each(EXIT_CASES)("%s: freezes every object, list and Decimal in its copy, and nothing in the caller's table", (name) => {
     const exit = readInputs(readCaseFile(name, "inputs.json"));
     const pc = prepare(exit.capTable, exit.exitDate);
     expect(Object.isFrozen(pc)).toBe(true);
     const copy = objectsIn(pc.capTable);
-    expect(copy.filter(([, o]) => !Object.isFrozen(o)).map(([where]) => where)).toEqual([]);
+    // Every object, list and Decimal frozen. A Decimal's digit array is left as it is: no decimal.js method writes to
+    // it, and a frozen one slows the arithmetic (Jordan, on #112).
+    const digits = (where: string) => where.endsWith("'s digits");
+    expect(copy.filter(([where, o]) => !digits(where) && !Object.isFrozen(o)).map(([where]) => where)).toEqual([]);
+    expect(copy.filter(([where, o]) => digits(where) && Object.isFrozen(o)).map(([where]) => where)).toEqual([]);
     expect(objectsIn(exit.capTable).filter(([, o]) => Object.isFrozen(o)).map(([where]) => where)).toEqual([]);
-    // The copy holds none of the caller's objects, and keeps every Decimal's own constructor.
+    // The copy holds none of the caller's objects, digit arrays included, and keeps every Decimal's own constructor.
     const theirs = new Set(objectsIn(exit.capTable).map(([, o]) => o));
     expect(copy.filter(([, o]) => theirs.has(o)).map(([where]) => where)).toEqual([]);
     for (const [where, o] of copy) if (D.isDecimal(o)) expect(o.constructor, where).toBe(D);

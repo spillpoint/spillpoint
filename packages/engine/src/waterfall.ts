@@ -233,9 +233,13 @@ export interface Slack {
  * them is on the payout: each series' preference, accrued dividends, cap and as-converted shares on payout.series.
  */
 export interface PreparedCapTable {
-  capTable: CapTable;
+  /**
+   * The cap table: prepare's own frozen copy, when prepare made the table (1.0). Only the two fields are readonly, not
+   * the cap table's type, so it can be passed wherever a CapTable is expected; assigning inside prepare's copy throws.
+   */
+  readonly capTable: CapTable;
   /** The day dividends and a note's interest accrue to, if the exit has one. */
-  exitDate: string | null;
+  readonly exitDate: string | null;
 }
 
 /** The cap table with the quantities every waterfall run needs, worked out once. Internal: the engine's own. */
@@ -294,17 +298,15 @@ export function working(pc: PreparedCapTable): Prepared {
 }
 
 /**
- * A copy nothing can change: every object and list in it frozen, and each Decimal copied and frozen with its digits,
- * the caller's own left as they are. A cap table holds only plain objects, lists, strings, numbers, booleans, nulls
- * and Decimals (model.ts). A Decimal is copied with its own constructor, so it keeps its precision and rounding.
+ * A copy nothing can change: every object and list in it frozen, and each Decimal copied and frozen, the caller's own
+ * left as they are. A cap table holds only plain objects, lists, strings, numbers, booleans, nulls and Decimals
+ * (model.ts). A Decimal is copied with its own constructor, so it keeps its precision and rounding. Its digit array
+ * isn't frozen: no decimal.js method writes to it, the copy keeps the caller's own out of reach, and a frozen one
+ * slows every sum the engine does with it, by a fifth across the exit cases' breakpoints (Jordan, on #112).
  */
 function frozenCopy<T>(value: T): T {
   if (value === null || typeof value !== "object") return value;
-  if (D.isDecimal(value)) {
-    const copy = new (value.constructor as typeof D)(value);
-    Object.freeze(copy.d);
-    return Object.freeze(copy) as T;
-  }
+  if (D.isDecimal(value)) return Object.freeze(new (value.constructor as typeof D)(value)) as T;
   if (Array.isArray(value)) return Object.freeze(value.map(frozenCopy)) as T;
   const copy: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value)) copy[k] = frozenCopy(v);
