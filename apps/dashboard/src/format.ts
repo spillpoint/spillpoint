@@ -56,22 +56,19 @@ export function exitValueText(amount: Decimal): string {
   return halfUp(amount, 2).isInteger() ? dollars(amount) : dollarsAndCents(amount);
 }
 
-/** "$9.75M", "$39.4M", "$100M", "$450K", "$812": three significant digits, for headlines. */
+/**
+ * "$9.75M", "$39.4M", "$100M", "$450K", "$812": three significant digits, for headlines; under $1,000, whole dollars.
+ * Rounded first, then the unit picked from the rounded amount (10e), so $999,999.99 reads "$1M", not "$1000K", and
+ * $999.50 reads "$1K", not "$1000". The fund page's short() does the same.
+ */
 export function shortDollars(amount: Decimal): string {
   const a = amount.abs();
   const sign = amount.isNegative() ? "-" : "";
-  const units: [Decimal, string][] = [
-    [new D("1e9"), "B"],
-    [new D("1e6"), "M"],
-    [new D("1e3"), "K"],
-  ];
-  for (const [size, suffix] of units) {
-    if (a.gte(size)) {
-      const scaled = halfUpSignificant(a.div(size), 3);
-      return `${sign}$${scaled.toString()}${suffix}`;
-    }
+  const rounded = a.gte(1000) ? halfUpSignificant(a, 3) : halfUp(a, 0);
+  for (const [size, suffix] of [["1e9", "B"], ["1e6", "M"], ["1e3", "K"]] as const) {
+    if (rounded.gte(size)) return `${sign}$${rounded.div(size).toString()}${suffix}`;
   }
-  return `${sign}$${halfUp(a, 0).toFixed(0)}`;
+  return `${sign}$${rounded.toFixed(0)}`;
 }
 
 /**
