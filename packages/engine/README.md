@@ -6,7 +6,7 @@ It can also build the cap table from the company's history: shares issued, the o
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
-**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
+**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. One behavior changes in 1.0, a fix: `prepare` works on its own frozen copy of the cap table (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
 
 > **The charter and the signed documents govern, not this tool.** spillpoint models common terms with documented defaults. Your documents may differ, and where they do, they win.
 
@@ -499,7 +499,7 @@ seed_fund on seed_preferred: $4000000.00
 
 ## What it covers
 
-Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)* or *(0.7.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)*, *(0.7.0)* or *(1.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -662,7 +662,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
 | `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
 | `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |
-| `prepare(capTable, exitDate)` | Prepare a cap table for exit values, to pass to `solve`, `payout`, `findBreakpoints` and `paySchedule`. The engine works out the fixed quantities once, and keeps them inside: what you get back shows `capTable` and `exitDate` *(0.7.0: before, 13 working quantities besides)*. Each series' preference, accrued dividends, cap and as-converted shares are on a payout's `series`. `exitDate` is needed only for dividends and notes. |
+| `prepare(capTable, exitDate)` | Prepare a cap table for exit values, to pass to `solve`, `payout`, `findBreakpoints` and `paySchedule`. The engine works out the fixed quantities once, and keeps them inside: what you get back shows `capTable` and `exitDate` *(0.7.0: before, 13 working quantities besides)*. Each series' preference, accrued dividends, cap and as-converted shares are on a payout's `series`. `exitDate` is needed only for dividends and notes. It works on its own frozen copy of the cap table *(1.0)*: changing your table afterwards changes nothing it gives, and assigning to anything in what it returns throws a `TypeError`. To change a table, edit yours and prepare it again. A table you write yourself, `{ capTable, exitDate }`, works too, worked out afresh on each call. |
 | `solve(table, exitValue)` | Decide who converts and who exercises, and pay out. Returns `{ exitValue, answers }`, where `answers` holds the one stable answer: its `decisions` and its `payout`, with its lines, holder totals and class totals. Where a second stable answer pays holders differently, it stops with a `NoAnswerError` instead. *(0.7.0: no `complete` field, and no third argument.)* |
 | `payout(table, exitValue, decisions)` | Pay out with decisions you choose. A payout has its `lines`, `holderTotals` and `classTotals`, each series as it stands (`series`), each SAFE and note, the tiers, and what's held at a cap. *(0.7.0: no `bySecurity`, which `classTotals` gives to the cent, and none of the breakpoint finder's workings: `structure`, `capRoom`, and a SAFE's or note's `room`.)* |
 | `paySchedule(table, schedule)` *(0.2.0)* | Each payment's take: `cumulative`, the `decisions` there, the take per holder × security in `lines`, holder and class totals, and `lowered`, the holders whose running total falls. |

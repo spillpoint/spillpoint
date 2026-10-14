@@ -90,7 +90,12 @@ const SHARE_TIE = new D("1e-30");
 
 /** Who converts, who exercises, and what each holder gets at one exit value. */
 export function solve(pc: PreparedCapTable, exitValue: Decimal): Solution {
-  return new AtExit(working(pc), exitValue, {}).solve();
+  return solveWorking(working(pc), exitValue);
+}
+
+/** solve on a table's working quantities: for a caller in the engine that works them out once for many exit values. Internal. */
+export function solveWorking(pc: Prepared, exitValue: Decimal): Solution {
+  return new AtExit(pc, exitValue, {}).solve();
 }
 
 /** solve, checking every combination even where the two ends agree: the tests' check that both routes agree. Internal. */
@@ -450,9 +455,14 @@ class AtExit {
     return { exitValue: this.x, answers: [this.exact(this.groupVotes(converting, staying) ? converting : staying)] };
   }
 
-  /** An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. */
+  /**
+   * An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. Its decisions are
+   * its own copies: the solver keeps the sets it settled on across exit values, and a caller changing an answer must
+   * not change the next one (10c).
+   */
   private exact(a: Worked): Answer {
-    return { decisions: a.decisions, payout: publicPayout(settle(this.pc, this.x, a.decisions)) };
+    const decisions = { converted: new Set(a.decisions.converted), exercised: new Set(a.decisions.exercised) };
+    return { decisions, payout: publicPayout(settle(this.pc, this.x, decisions)) };
   }
 
   /** The same, as the breakpoint finder works with it: the settlement, with its workings. */
