@@ -26,7 +26,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { ONE, TIE, ZERO, moreThan } from "./decimal.ts";
+import { D, ONE, TIE, ZERO, moreThan } from "./decimal.ts";
 import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
@@ -246,6 +246,8 @@ export interface Prepared extends PreparedCapTable {
   warrants: Map<string, WarrantClass>;
   /** SAFEs still outstanding at the sale (C8). */
   safes: Map<string, Safe>;
+  /** Each post-money SAFE's purchase amount ÷ its cap: the share of the Liquidity Capitalization it buys (X1). */
+  bought: Map<string, Decimal>;
   /** Convertible notes still outstanding at the sale (C9), with what accrues to the exit date. */
   notes: Map<string, NoteTerms>;
   /** All issued stock as converted, options and warrants included, without the unissued pool: what a SAFE's Liquidity Capitalization starts from (X1, X14). */
@@ -261,27 +263,52 @@ export interface Prepared extends PreparedCapTable {
   asConverted: Map<string, Decimal>;
 }
 
-/** Each prepared table's working quantities, kept with it but out of sight (item 11). */
+/**
+ * The working quantities of each table prepare returned, kept with it but out of sight (item 11). Only prepare's own
+ * are kept: each is frozen, and so is the copy of the cap table it holds, so the quantities worked out from it can
+ * never go stale (10c). A table built by hand is never kept here.
+ */
 const WORKING = new WeakMap<PreparedCapTable, Prepared>();
 
 /**
  * The exit date is needed only when a series accrues cumulative dividends (X2) or a note is outstanding (X3): they
  * accrue to it. What it gives has exactly PreparedCapTable's fields; the rest stays inside.
+ *
+ * It works on its own copy of the cap table, frozen, and the table it gives is frozen too (10c). The caller's cap
+ * table is never frozen or changed, and changing it afterwards changes nothing here: to run a changed table, prepare
+ * it again.
  */
 export function prepare(capTable: CapTable, exitDate: string | null = null): PreparedCapTable {
-  const table: PreparedCapTable = { capTable, exitDate };
-  WORKING.set(table, prepareWorking(capTable, exitDate));
+  const table: PreparedCapTable = Object.freeze({ capTable: frozenCopy(capTable), exitDate });
+  WORKING.set(table, prepareWorking(table.capTable, exitDate));
   return table;
 }
 
 /**
- * The working quantities of a prepared table. One built by hand, not by prepare, is prepared on first use, so the
- * public type is all a caller needs to write.
+ * The working quantities of a prepared table. One built by hand, not by prepare, still works, so the public type is
+ * all a caller needs to write; but it isn't kept, since its caller can still change it: it's worked out afresh on
+ * each call, so a change between calls is always seen (10c).
  */
 export function working(pc: PreparedCapTable): Prepared {
-  let w = WORKING.get(pc);
-  if (!w) WORKING.set(pc, (w = prepareWorking(pc.capTable, pc.exitDate)));
-  return w;
+  return WORKING.get(pc) ?? prepareWorking(pc.capTable, pc.exitDate);
+}
+
+/**
+ * A copy nothing can change: every object and list in it frozen, and each Decimal copied and frozen with its digits,
+ * the caller's own left as they are. A cap table holds only plain objects, lists, strings, numbers, booleans, nulls
+ * and Decimals (model.ts). A Decimal is copied with its own constructor, so it keeps its precision and rounding.
+ */
+function frozenCopy<T>(value: T): T {
+  if (value === null || typeof value !== "object") return value;
+  if (D.isDecimal(value)) {
+    const copy = new (value.constructor as typeof D)(value);
+    Object.freeze(copy.d);
+    return Object.freeze(copy) as T;
+  }
+  if (Array.isArray(value)) return Object.freeze(value.map(frozenCopy)) as T;
+  const copy: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value)) copy[k] = frozenCopy(v);
+  return Object.freeze(copy) as T;
 }
 
 function prepareWorking(capTable: CapTable, exitDate: string | null): Prepared {
@@ -310,6 +337,7 @@ function prepareWorking(capTable: CapTable, exitDate: string | null): Prepared {
     asConverted.set(s.id, n.times(s.conversionRatio));
   }
   const safes = new Map((capTable.unconvertedSafes ?? []).map((f) => [f.id, f]));
+  const bought = new Map([...safes.values()].filter((f) => f.postMoneyCap).map((f) => [f.id, f.purchaseAmount.div(f.postMoneyCap!)]));
   // Warrants count as converted, as options do (R29): a warrant for a series at the series' ratio.
   const outstanding = capTable.securities.reduce((sum, s) => {
     const n = shares.get(s.id)!;
@@ -322,7 +350,7 @@ function prepareWorking(capTable: CapTable, exitDate: string | null): Prepared {
     if (exitDate == null) throw new InputError("exit_date", `${n.id} accrues interest, so the exit needs an exit date`);
     notes.set(n.id, noteTerms(n, exitDate, { outstanding, unissuedPool: capTable.unissuedPool, common: commonIds.reduce((sum, id) => sum.plus(shares.get(id)!), ZERO) }));
   }
-  return { capTable, shares, preferred, options, warrants, safes, notes, outstanding, commonIds, preference, dividends, exitDate, capTotal, asConverted };
+  return { capTable, shares, preferred, options, warrants, safes, bought, notes, outstanding, commonIds, preference, dividends, exitDate, capTotal, asConverted };
 }
 
 /**
@@ -398,17 +426,8 @@ export function liquidityCapitalization(pc: Prepared, f: Safe, converted: Readon
   // X18: only a note with a cap is read beside a SAFE, so a converting one always has its shares.
   for (const t of pc.notes.values()) if (converted.has(t.note.id) && t.shares) others = others.plus(t.shares);
   let own = ZERO;
-  for (const g of pc.safes.values()) if (g.postMoneyCap && (g.id === f.id || converted.has(g.id))) own = own.plus(bought(g));
+  for (const g of pc.safes.values()) if (g.postMoneyCap && (g.id === f.id || converted.has(g.id))) own = own.plus(pc.bought.get(g.id)!);
   return others.div(ONE.minus(own));
-}
-
-const BOUGHT = new WeakMap<Safe, Decimal>();
-
-/** A post-money SAFE's purchase amount ÷ its cap: the share of the Liquidity Capitalization it buys, worked out once. */
-function bought(f: Safe): Decimal {
-  let share = BOUGHT.get(f);
-  if (!share) BOUGHT.set(f, (share = f.purchaseAmount.div(f.postMoneyCap!)));
-  return share;
 }
 
 /** The tier a SAFE's Cash-Out Amount ranks in: the series it names, or the most junior (X9). */
@@ -603,7 +622,7 @@ export function settle(pc: Prepared, exitValue: Decimal, decisions: Decisions): 
       : liquidityCapitalization(pc, f, decisions.converted, decisions.exercised);
     const lp = cap.div(lc);
     // Purchase amount ÷ Liquidity Price: a post-money SAFE's fixed share of the count (X13).
-    const n = f.postMoneyCap ? bought(f).times(lc) : f.purchaseAmount.div(lp);
+    const n = f.postMoneyCap ? pc.bought.get(f.id)!.times(lc) : f.purchaseAmount.div(lp);
     sharing.set(f.id, n);
     safes.set(f.id, { converts: true, liquidityCapitalization: lc, liquidityPrice: lp, shares: n, room: null });
   }

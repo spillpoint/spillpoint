@@ -12,8 +12,9 @@ import type { Decimal } from "decimal.js";
 
 import { ZERO } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
-import { solve } from "./decisions.ts";
+import { solveWorking } from "./decisions.ts";
 import type { PaymentSchedule } from "./model.ts";
+import { working } from "./waterfall.ts";
 import type { Decisions, PayoutLine, PreparedCapTable } from "./waterfall.ts";
 
 /** One payment's takes. */
@@ -39,11 +40,13 @@ export interface PaymentTake {
 
 /** The takes of each payment in a schedule, in order. */
 export function paySchedule(pc: PreparedCapTable, schedule: PaymentSchedule): PaymentTake[] {
+  // Worked out once for every payment: a table built by hand is worked out afresh on each call, not each payment (10c).
+  const w = working(pc);
   let cumulative = ZERO;
   let before: PayoutLine[] | null = null;
   return schedule.payments.map((payment) => {
     cumulative = cumulative.plus(payment.amount);
-    const { answers } = solve(pc, cumulative);
+    const { answers } = solveWorking(w, cumulative);
     if (answers.length !== 1) {
       // E8: the takes need one answer at each cumulative amount.
       throw new NoAnswerError(
