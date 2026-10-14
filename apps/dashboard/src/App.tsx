@@ -500,6 +500,8 @@ export function App() {
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
       <footer className="page-footer">
         spillpoint {build.engineVersion} ({build.commit})
+        {/* The fund page, on the same site (spillpoint-fund 0.1.0): the one thing the fund work adds here. */} ·{" "}
+        <a href="./fund/">Fund waterfall</a>
       </footer>
     </div>
   );

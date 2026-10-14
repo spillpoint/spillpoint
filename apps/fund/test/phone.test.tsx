@@ -30,7 +30,10 @@ function windowWidth(narrow: boolean) {
     },
   };
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 /** A phone table's rows: each tier's name, then its two amounts. */
 const halves = () =>
@@ -44,6 +47,40 @@ const money = (s: string) => {
   const [whole, part] = s.split(".") as [string, string];
   return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${part}`;
 };
+
+describe("the split by its card's width (f01n)", () => {
+  it("is two tables wherever the one table wouldn't fit its card, at any window width, and one where it would", () => {
+    // A 500-pixel card, and a table that needs 700; the card's observer is the test's to fire.
+    let room = 500;
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => room);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.tagName === "TABLE" ? Math.max(room, 700) : room;
+    });
+    const watchers: (() => void)[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(f: (entries: { contentRect: { width: number } }[]) => void) {
+          // Every observer on the page hears the new width: the split's card, and the charts'.
+          watchers.push(() => f([{ contentRect: { width: room } }]));
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
+    expect(halves().map((h) => h.caption)).toEqual(["This distribution", "The fund to date"]);
+    // The card grows past what the table needs: one table, and nothing measured out of sight.
+    room = 800;
+    act(() => watchers.forEach((w) => w()));
+    expect(halves()).toEqual([]);
+    expect(document.querySelector(".split__measure")).toBeNull();
+    room = 650;
+    act(() => watchers.forEach((w) => w()));
+    expect(halves()).toHaveLength(2);
+  });
+});
 
 describe("the split on a phone", () => {
   it("is two tables for case 8 at $40,000,000, one above the other, with the case's amounts", () => {
@@ -62,8 +99,11 @@ describe("the split on a phone", () => {
     expect([now!.rows[1]![2], toDate!.rows[4]![2]]).toEqual(["$5,445,000.00", "$6,806,250.00"]);
     expect(now!.rows[0]).toEqual(["Capital", money(p.distribution.lps.capital), "—"]);
     expect(toDate!.rows[0]).toEqual(["Capital", money(p.to_date.lps.capital), "—"]);
-    // No wide table with it.
-    expect(document.querySelectorAll("table.split:not(.split--narrow):not(.flows)")).toHaveLength(0);
+    // The one table is there only to be measured: out of sight, and hidden from assistive technology.
+    const measured = [...document.querySelectorAll("table.split:not(.split--narrow):not(.flows)")];
+    expect(measured).toHaveLength(1);
+    expect(measured[0]!.closest("[aria-hidden=true]")).not.toBeNull();
+    expect(screen.getAllByRole("table").filter((table) => !table.classList.contains("flows"))).toHaveLength(2);
   });
 
   it("shows a pref's and a catch-up's rows too, and turns back into one table as the window widens", () => {
@@ -77,6 +117,7 @@ describe("the split on a phone", () => {
     window.turn(false);
     expect(halves()).toEqual([]);
     expect(screen.getByRole("table")).toBeDefined();
+    expect(document.querySelector(".split__measure")).toBeNull();
     window.turn(true);
     expect(halves()).toHaveLength(2);
   });

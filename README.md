@@ -44,9 +44,15 @@ OCX is developed by the Open Cap Table Coalition: https://github.com/Open-Cap-Ta
 
 Coming next: **1.0,** with the same API as 0.7.0, at its own domain. It waits on an outside waterfall that matches spillpoint's, and a few outside users.
 
+## The fund waterfall
+
+**[spillpoint.github.io/spillpoint/fund](https://spillpoint.github.io/spillpoint/fund/)** does the same for a fund: how a distribution splits between its LPs and its GP, tier by tier, with every breakpoint explained and, at the fund's last distribution, any clawback the GP owes. Its engine is on npm as [`spillpoint-fund`](packages/fund/README.md) *(0.1.0)*. It runs in your browser too, and the fund's documents govern, not the tool.
+
 ## In this repository
 
 - [`packages/engine`](packages/engine): the `spillpoint` npm package.
+- [`packages/fund`](packages/fund): the `spillpoint-fund` npm package, with its own rules, cases and reference.
+- [`apps/fund`](apps/fund): the fund page. Run it locally with `pnpm --filter @spillpoint/fund dev`.
 - [`apps/dashboard`](apps/dashboard): the page above. Run it locally with `pnpm install && pnpm dev`.
 - [`cases`](cases): the locked test cases, each with its inputs, expected values and a plain-English derivation.
 - [`reference`](reference): an independent calculator, using exact fractions and a different method, that produced the expected values.

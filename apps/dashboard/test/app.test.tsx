@@ -75,8 +75,13 @@ describe("the footer", () => {
     render(<App />);
     const engine = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../packages/engine/package.json"), "utf8"));
     const footer = screen.getByRole("contentinfo").textContent!;
-    // e.g. "spillpoint 0.0.1 (abc1234)"; a build from uncommitted changes adds ", modified".
-    expect(footer).toMatch(new RegExp(`^spillpoint ${engine.version.replaceAll(".", "\\.")} \\([0-9a-f]{7}(, modified)?\\)$`));
+    // e.g. "spillpoint 0.0.1 (abc1234)"; a build from uncommitted changes adds ", modified". Then the fund page's link.
+    expect(footer).toMatch(new RegExp(`^spillpoint ${engine.version.replaceAll(".", "\\.")} \\([0-9a-f]{7}(, modified)?\\) · Fund waterfall$`));
+  });
+
+  it("links to the fund page beside it on the site", () => {
+    render(<App />);
+    expect(screen.getByRole("link", { name: "Fund waterfall" }).getAttribute("href")).toBe("./fund/");
   });
 });
 

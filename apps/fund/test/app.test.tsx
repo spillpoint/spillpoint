@@ -245,8 +245,12 @@ describe("the fund page", () => {
     expect(cards()).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $0", "The clawback", "Breakpoints"]);
   });
 
-  it("names spillpoint-fund's version and the commit in the footer", () => {
+  it("names spillpoint-fund's version and the commit in the footer, and links back to the main page", () => {
     render(<App />);
-    expect(screen.getByRole("contentinfo").textContent).toMatch(/^spillpoint-fund 0\.0\.0 \([0-9a-f]{7}(, modified)?\)$/);
+    const fund = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../packages/fund/package.json"), "utf8"));
+    expect(screen.getByRole("contentinfo").textContent).toMatch(
+      new RegExp(`^spillpoint-fund ${fund.version.replaceAll(".", "\\.")} \\([0-9a-f]{7}(, modified)?\\) · Exit waterfall$`),
+    );
+    expect(screen.getByRole("link", { name: "Exit waterfall" }).getAttribute("href")).toBe("../");
   });
 });

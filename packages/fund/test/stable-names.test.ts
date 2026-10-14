@@ -27,6 +27,52 @@ function section(heading: string): string {
 /** The names listed under a heading: each "- `name`" line. */
 const listed = (heading: string) => [...section(heading).matchAll(/^- `([a-z_]+)`/gm)].map((m) => m[1]!);
 
+describe("the README's \"Stable from 0.1.0\", which the package carries since STABLE.md doesn't go with it", () => {
+  const readme = readFileSync(resolve(import.meta.dirname, "../README.md"), "utf8");
+  const stableHalf = readme.slice(readme.indexOf("\n## Stable from 0.1.0\n"), readme.indexOf("\n## How it's tested\n"));
+  /** The text under one "###" heading of that section. */
+  const part = (heading: string) => {
+    const from = stableHalf.indexOf(`\n### ${heading}\n`);
+    expect(from, `the README has "${heading}"`).toBeGreaterThan(0);
+    const to = stableHalf.indexOf("\n### ", from + 1);
+    return stableHalf.slice(from, to < 0 ? undefined : to);
+  };
+
+  it.each([
+    ["`FundRefusal`'s kinds", ["unsupported", "input"]],
+    ["`FundRefusal`'s input terms", INPUT_TERMS],
+    ["`FundRefusal`'s unsupported terms", UNSUPPORTED_TERMS],
+    ["`ReasonCode`", REASON_CODES],
+  ] as const)("lists %s exactly as the engine has them", (heading, names) => {
+    expect([...part(heading).matchAll(/^- `([a-z_]+)`/gm)].map((m) => m[1]!)).toEqual([...names]);
+  });
+
+  it("names every ClawbackChange, in order", () => {
+    expect([...part("`ClawbackChange`").matchAll(/`([a-z_]+)`/g)].map((m) => m[1]!).filter((n) => n !== "ClawbackChange")).toEqual([...CLAWBACK_CHANGES]);
+  });
+
+  it("gives every wording the engine writes, and no other", () => {
+    const quoted = new Set([...part("The wordings").matchAll(/"([^"]+)"/g)].map((m) => m[1]!));
+    const examples = ["$10,890,000", "$4,004,383.56", "8%", "7.5%", "3.0x", "2.25x"];
+    const engine = new Set([
+      WORDINGS.capital_returned("{amount}"),
+      WORDINGS.pref_met("{rate}", "{amount}"),
+      WORDINGS.catch_up_done("{carry}"),
+      WORDINGS.carry_step("{multiple}", "{rate}"),
+      WORDINGS.clawback_cleared(),
+      WORDINGS.clawback_starts(),
+      WORDINGS.clawback_changes("{change}"),
+      WORDINGS.clawback_changes_on_totals("{change}", "{tier}"),
+      ...CLAWBACK_CHANGES.map((c) => CHANGE_WORDS[c]),
+      TOTALS_WORDINGS.capital_returned(),
+      TOTALS_WORDINGS.pref_met(),
+      TOTALS_WORDINGS.catch_up_done("{carry}"),
+      TOTALS_WORDINGS.carry_step("{multiple}", "{rate}"),
+    ]);
+    expect([...quoted].filter((q) => !examples.includes(q)).sort()).toEqual([...engine].sort());
+  });
+});
+
 describe("STABLE.md", () => {
   it.each([
     ["`FundRefusal`'s kinds", ["unsupported", "input"]],
