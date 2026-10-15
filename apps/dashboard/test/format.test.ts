@@ -76,6 +76,25 @@ describe("money for founders", () => {
     expect(shortDollars(new D("812.4"))).toBe("$812");
   });
 
+  it("rounds first, then picks the unit, so it never reads $1000K or $1000 (10e)", () => {
+    const cases: [string, string][] = [
+      ["999999.99", "$1M"],
+      ["999.50", "$1K"],
+      ["999499", "$999K"],
+      ["999500", "$1M"],
+      ["999500000", "$1B"],
+      ["9750000", "$9.75M"],
+      ["812", "$812"],
+      ["-999999.99", "-$1M"],
+    ];
+    for (const [amount, shown] of cases) expect(shortDollars(new D(amount)), amount).toBe(shown);
+    // Just under a unit's edge it stays in the unit below, and an amount whole in exact arithmetic a hair under rounds
+    // as the whole amount (10d).
+    expect(shortDollars(new D("999.49"))).toBe("$999");
+    expect(shortDollars(new D("999499.99"))).toBe("$999K");
+    expect(shortDollars(new D("999500").minus("1e-30"))).toBe("$1M");
+  });
+
   it("writes a share to one decimal place", () => {
     expect(percent(new D("0.0975099"))).toBe("9.8%");
     expect(percent(new D("1"))).toBe("100.0%");
