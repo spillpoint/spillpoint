@@ -1,0 +1,79 @@
+{
+  "case": "fund-17-lps-three",
+  "description": "Case 8 with three LPs on the same terms, committing $5M, $3.5M and $1.5M: each gets its commitment's share of the LPs' amounts. The commitments add up to $10M, not the LPs' $10,890,000 paid in: they only divide.",
+  "xs": [
+    "20000000",
+    "34500000",
+    "50000000",
+    "80000000"
+  ],
+  "fund": {
+    "as_of": "2026-09-30",
+    "terms": {
+      "carry": {
+        "steps": [
+          {
+            "rate": "0.20"
+          },
+          {
+            "rate": "0.25",
+            "from_lp_multiple": "3"
+          },
+          {
+            "rate": "0.30",
+            "from_lp_multiple": "5"
+          }
+        ]
+      },
+      "gp_commitment": {
+        "share": "0.01"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "8000000"
+      },
+      {
+        "date": "2021-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "495000"
+      },
+      {
+        "date": "2022-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "495000"
+      },
+      {
+        "date": "2022-06-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      },
+      {
+        "date": "2024-05-01",
+        "type": "distribution",
+        "amount": "4000000"
+      }
+    ],
+    "nav": "40000000",
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "5000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "3500000"
+      },
+      {
+        "name": "Cedar Fund of Funds",
+        "commitment": "1500000"
+      }
+    ]
+  }
+}

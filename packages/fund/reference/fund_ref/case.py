@@ -1,10 +1,11 @@
-"""Turns a fund case's inputs.json into its expected.json (FC2 to FC5), and a refusal fixture into its refusal (FC7)."""
+"""Turns a fund case's inputs.json into its expected.json (FC2 to FC5, FC9), and a refusal fixture into its refusal (FC7)."""
 
 import copy
 import re
 
 from . import breakpoints
 from .inputs import Refusal, read
+from .lps import each_lp, shares
 from .num import exact, money, parse_exact
 from .waterfall import Waterfall
 
@@ -38,6 +39,21 @@ def _block(fund, pot, amount):
     return out
 
 
+def _lp_amount(x):
+    """FC9: an LP's amount to the cent, half away from zero as every amount in a case is, and exact, as F20 gives it."""
+    return {"amount": money(x), "exact": exact(x)}
+
+
+def _by_lp(fund, out, final):
+    """F20: each LP's share of the LPs' total from X and to date, and, when final, of the clawback owed (FC9)."""
+    rows = zip(fund.lps, each_lp(fund, out.this.lps), each_lp(fund, out.ledger.to_date.lps))
+    entries = [{"name": lp.name, "distribution": _lp_amount(d), "to_date": _lp_amount(t)} for lp, d, t in rows]
+    if final:
+        for entry, owed in zip(entries, each_lp(fund, out.clawback)):
+            entry["clawback"] = _lp_amount(owed)
+    return entries
+
+
 def _point(wf, x, tags):
     fund = wf.fund
     final = fund.final or "nav" in tags  # F14: the NAV point is final by definition
@@ -55,6 +71,8 @@ def _point(wf, x, tags):
             "entitlement": money(out.entitlement),
             "owed": money(out.clawback),
         }
+    if fund.lps:
+        entry["by_lp"] = _by_lp(fund, out, final)
     return entry
 
 
@@ -83,6 +101,13 @@ def run_case(case):
         out["pref_accrued_to_d"] = money(before.pref_accrued)
         if fund.final or fund.nav is not None:
             out["pref_on_fund_totals"] = money(before.hurdle_pref)
+    if fund.lps:
+        # FC9: an LP's commitment, share and paid-in don't change with X, so they're given once.
+        paid_in = each_lp(fund, before.lps_paid_in)
+        out["lps"] = [
+            {"name": lp.name, "commitment": exact(lp.commitment), "share": exact(share), "paid_in": _lp_amount(p)}
+            for lp, share, p in zip(fund.lps, shares(fund), paid_in)
+        ]
     out["breakpoints"] = [{"x": money(x), "exact": exact(x), "reasons": rs} for x, rs in found]
     out["points"] = [_point(wf, x, tags) for x, tags in sorted(points.items())]
     return out

@@ -2,7 +2,7 @@
 // in the file; only a fund the engine accepts is saved; a file the page can't use is refused in one line, the current
 // fund kept; and unsaved changes are asked about before they're lost.
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
@@ -11,11 +11,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
 import { fileName, readFile } from "../src/file.ts";
+import { RUN_CASES } from "./support/cases.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseText = (dir: string) => readFileSync(resolve(casesDir, dir, "inputs.json"), "utf8");
 const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
-const RUN_CASES = readdirSync(casesDir).filter((d) => d.startsWith("fund-") && !d.endsWith("refused"));
 
 /** A fund's values as the engine reads them, every amount as its exact string, and its breakpoints. */
 const valuesOf = (input: unknown) => {

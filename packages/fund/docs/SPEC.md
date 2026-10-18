@@ -1,6 +1,6 @@
 # spillpoint fund waterfall: spec
 
-The fund-level waterfall, `spillpoint-fund`. Each rule has a code (F1, F2, …) and a default. Jordan settled them on 2026-10-12 (S0); his decisions are listed at the end. `ASSUMPTIONS.md` has each rule's default in one table, the choices these rules don't settle (FA1 onward), the case-file conventions (FC1 onward), and each rule's later work.
+The fund-level waterfall, `spillpoint-fund`. Each rule has a code (F1, F2, …) and a default. Jordan settled F1 to F18 on 2026-10-12 (S0), and F19 to F21, the LPs, on 2026-10-18 for 0.2.0 (S1); his decisions are listed at the end. `ASSUMPTIONS.md` has each rule's default in one table, the choices these rules don't settle (FA1 onward), the case-file conventions (FC1 onward), and each rule's later work.
 
 ## What it answers
 
@@ -9,6 +9,7 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
 - where the fund stands to date
 - every X where the split changes, with a reason
 - if X is the fund's last distribution, any clawback the GP owes
+- for a fund whose LPs are all on the same terms: what each LP gets from X, what it has received to date, what it has paid in, and its share of any clawback the GP owes back (F19 to F21)
 
 ## Inputs
 
@@ -28,7 +29,12 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
   ],
   "distribution_date": "2026-09-30",
   "final": false,
-  "nav": "40000000"
+  "nav": "40000000",
+  "lps": [
+    { "name": "Alder Endowment", "commitment": "5000000" },
+    { "name": "Birchwood Family Office", "commitment": "3500000" },
+    { "name": "Cedar Fund of Funds", "commitment": "1500000" }
+  ]
 }
 ```
 
@@ -38,6 +44,12 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
 - **`gp_commitment`:** `share`, plus `pays_fees` (default false) and `pays_expenses` (default true).
 - **`kind` on a call:** `investment`, `fee` or `expense`.
 - **`distribution_date`** defaults to `as_of`. **`final`** (default false) marks X as the fund's last distribution. **`nav`** is optional.
+- **`lps`** is optional: the fund's LPs in the order the GP lists them, each a `name` and a `commitment` (F19 to F21).
+  - **`name`:** text, not blank. No two LPs share a name, compared exactly as written.
+  - **`commitment`:** an exact number above 0, a string as every number is (F17).
+  - **No LPs:** leaving `lps` out, `null`, or an empty list all mean the same thing: no per-LP amounts.
+  - **Commitments only divide.** They aren't checked against the calls: the waterfall runs on the whole fund's amounts as before (F2), and the list divides the LPs' amounts between them. Commitments in dollars are usual, but any amounts in the right proportions give the same shares.
+  - **The GP commitment** (F3) isn't an LP and isn't in the list. Its own line stays as it is.
 - **Numbers** are exact strings, as in spillpoint. **Dates** are ISO.
 
 ## The rules
@@ -129,6 +141,29 @@ One X can carry several reasons: capital returned and clawback cleared together,
   - `no_calls`
   - `distribution_before_call`
   - `cash_flow_after_distribution_date`
+  - `lp_name_repeated` (F21)
+
+**F19, the LPs.** Every LP is on the same terms: the same fees, the same carry, and every call made pro rata to commitments. LP *i*'s share is its commitment over the sum of all the LPs' commitments, exactly. *Later: per-LP accounts, where LPs differ: later closes and equalization, side-letter fee or carry breaks, defaulted or excused LPs.*
+
+**F20, each LP's amounts.** At each X, and at the NAV point, for each LP in the input's order:
+- **Its commitment and share.**
+- **Paid in:** its share of the LPs' paid-in (F5).
+- **This distribution:** its share of the LPs' total from X.
+- **To date:** its share of the LPs' total to date, X included.
+- **Clawback,** when final (F12): its share of the clawback owed, which comes back to the LPs. Zero when nothing is owed.
+
+All exact; nothing is rounded. Nothing else changes: the GP commitment's line, the GP's carry and the breakpoints are as before. Each LP's amounts are the LPs' amounts scaled, so they bend exactly where the LPs' do (F15).
+
+**F21, refusals,** added to F18, each with a path into `lps`:
+- **`lps` not a list:** `bad_field` at `lps`.
+- **An LP that isn't an object:** `bad_field` at `lps[i]`.
+- **An LP with a field other than `name` and `commitment`:** *unsupported*, named by the field, as for terms: a per-LP term v1 doesn't model. A side letter's carry is `carry` at `lps[i].carry`.
+- **A missing or `null` name or commitment:** `missing_field`.
+- **A name that isn't text, or is blank:** `bad_field`.
+- **A commitment that isn't an exact string, or isn't above 0:** `bad_number`.
+- **A name an earlier LP already has:** `lp_name_repeated`, at the later LP's `name`. A new input term, stable from 0.2.0.
+
+The LPs are checked after everything else, one LP at a time in order. Within an LP: its shape and its fields, then that the name and commitment are there, then the name, then the commitment, then whether the name repeats.
 
 ## Worked examples (exact, to the cent)
 
@@ -166,7 +201,7 @@ One X can carry several reasons: capital returned and clawback cleared together,
 
 ## Cases
 
-Fifteen cases and a set of refusals, in `packages/fund/cases/` (FC2):
+Nineteen cases and two sets of refusals, in `packages/fund/cases/` (FC2):
 
 1. One investment call, 20% carry.
 2. Investment, fee and expense calls all count as capital; an interim distribution returns part of it.
@@ -184,6 +219,11 @@ Fifteen cases and a set of refusals, in `packages/fund/cases/` (FC2):
 14. Fifteen refusals, each one change to case 6.
 15. A late call leaves the fund's totals short of capital: the clawback holds until the totals' run has the LPs' capital back, then falls (f01e).
 16. A pref and full catch-up with a late call: the clawback falls through the totals' pref and catch-up, a dollar a dollar, then 20 cents (f01e).
+17. Case 8 with three LPs at $5M, $3.5M and $1.5M: the commitments add up to $10M, not the LPs' $10,890,000 paid in (f02a).
+18. Case 1 with three equal LPs, so each LP's amount is a fraction of a cent: at X = $2,000,000 each is $666,666.66 rounded down, with $0.02 left over (f02a).
+19. Case 13 with two LPs, 70% and 30%: each one's share of the clawback, $1,925,000 and $825,000 at X = $0 (f02a).
+20. Case 12, the SPV, with three LPs whose shares don't terminate: 1/3, 11/21 and 1/7. Final, with a NAV (f02a).
+21. Eleven refusals on case 1, at least one for each line of F21 (f02a).
 
 ## Decided
 
@@ -196,3 +236,9 @@ Fifteen cases and a set of refusals, in `packages/fund/cases/` (FC2):
 - **2026-10-12, on Claude's recommendation:**
   - compounded pref leaves v1 (F7)
   - the clawback test is one run of the tiers on the fund's totals, with the pref on paid-in minus distributions, gross of tax and one way only (F12)
+- **2026-10-18 (Jordan), for spillpoint-fund 0.2.0:**
+  - F19 to F21: each LP's share of what the LPs get, for LPs all on the same terms
+  - each LP's share is worked out in the engine, so the page does no fund math, and it's part of the npm API
+  - each LP's amount on the page is rounded down to the cent, with a "Left over from rounding down" line
+  - when the GP owes a clawback, the page shows each LP's share of it
+  - the LPs' table downloads as a CSV

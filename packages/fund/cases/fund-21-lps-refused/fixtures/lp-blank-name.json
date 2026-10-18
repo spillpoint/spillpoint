@@ -1,0 +1,14 @@
+{
+  "base": "fund-01-one-call",
+  "about": "An LP whose name is two spaces.",
+  "change": {
+    "set": {
+      "lps": [
+        {
+          "name": "  ",
+          "commitment": "1000000"
+        }
+      ]
+    }
+  }
+}

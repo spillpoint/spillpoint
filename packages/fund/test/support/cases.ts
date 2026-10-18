@@ -7,14 +7,23 @@ import { D, toCents } from "../../src/index.ts";
 import type { Fund, Split, Tiers } from "../../src/index.ts";
 
 export const CASES_DIR = resolve(import.meta.dirname, "../../cases");
-const ALL = readdirSync(CASES_DIR, { withFileTypes: true })
+/** Every fund case folder. */
+export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .filter((d) => d.isDirectory() && d.name.startsWith("fund-"))
   .map((d) => d.name)
   .sort();
+/**
+ * Pending: spillpoint-fund 0.2.0's cases, the LPs (F19 to F21), added in f02a before the engine reads them. The
+ * engine's case tests skip them until f02b, which empties this list. test/pending.test.ts fails if a case folder is
+ * neither run nor pending, or if this list names a folder that doesn't exist. test/cases.test.ts checks the pending
+ * cases' files meanwhile.
+ */
+export const PENDING: readonly string[] = ["fund-17-lps-three", "fund-18-lps-thirds", "fund-19-lps-clawback", "fund-20-lps-spv", "fund-21-lps-refused"];
+const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */
-export const RUN_CASES = ALL.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));
+export const RUN_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));
 /** The refusal cases: fixtures each changing a run case's inputs (FC7). */
-export const REFUSAL_CASES = ALL.filter((n) => existsSync(join(CASES_DIR, n, "fixtures")));
+export const REFUSAL_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "fixtures")));
 
 export function readCaseFile<T>(...path: string[]): T {
   return JSON.parse(readFileSync(join(CASES_DIR, ...path), "utf8")) as T;

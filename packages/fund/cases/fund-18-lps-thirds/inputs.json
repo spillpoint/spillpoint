@@ -1,0 +1,38 @@
+{
+  "case": "fund-18-lps-thirds",
+  "description": "Case 1 with three equal LPs: each a third of the LPs' amounts, which are fractions of a cent.",
+  "xs": [
+    "2000000",
+    "5000000",
+    "10000000.01",
+    "12500000"
+  ],
+  "fund": {
+    "as_of": "2026-03-01",
+    "terms": {
+      "carry": "0.20"
+    },
+    "cash_flows": [
+      {
+        "date": "2022-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "5000000"
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder",
+        "commitment": "1000000"
+      },
+      {
+        "name": "Birch",
+        "commitment": "1000000"
+      },
+      {
+        "name": "Cedar",
+        "commitment": "1000000"
+      }
+    ]
+  }
+}

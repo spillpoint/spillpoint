@@ -12,6 +12,10 @@ more than one problem:
    other); each cash flow in the list's order; `distribution_date`; `final`;
    `nav`.
 3. The cash flows against each other and against D.
+4. The LPs (F21, FA19): `lps` itself, then each LP in the list's order, each
+   checked through before the next: its shape and its fields, that the name
+   and commitment are there, the name, the commitment, then whether the name
+   repeats.
 
 null is the same as leaving an optional field out (FA3), except `carry`: a null
 carry could mean "none" or "the default 20%", so it's refused.
@@ -29,10 +33,16 @@ TERM_KEYS = {
     "gp_commitment": ("share", "pays_fees", "pays_expenses"),
 }
 STEP_KEYS = ("rate", "from_lp_multiple")
-TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav")
+TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps")
 REQUIRED_TOP = ("as_of", "terms", "cash_flows")
 FLOW_KEYS = ("date", "type", "kind", "amount")
 CALL_KINDS = ("investment", "fee", "expense")
+LP_KEYS = ("name", "commitment")
+# FA17: whitespace as JavaScript's String.prototype.trim takes it off, listed so the reference and the engine agree on
+# what a blank name is. Python's str.isspace differs: it counts U+001C to U+001F and U+0085, and not U+FEFF.
+WHITESPACE = frozenset(
+    "\t\n\v\f\r \u00a0\u1680\u2028\u2029\u202f\u205f\u3000\ufeff" + "".join(chr(c) for c in range(0x2000, 0x200B))
+)
 DEFAULT_CARRY = Fraction(1, 5)  # F9
 
 
@@ -65,6 +75,12 @@ class Flow:
 
 
 @dataclass
+class LP:
+    name: str  # as written (FA17)
+    commitment: Fraction
+
+
+@dataclass
 class Fund:
     as_of: object
     distribution_date: object  # D (F14)
@@ -78,6 +94,7 @@ class Fund:
     pays_fees: bool
     pays_expenses: bool
     flows: list = field(default_factory=list)
+    lps: list = field(default_factory=list)  # F19: in the input's order; empty when the input has none
 
     @property
     def first_rate(self):
@@ -281,6 +298,42 @@ def _flows(raw):
     return flows
 
 
+def _blank(name):
+    return all(ch in WHITESPACE for ch in name)
+
+
+def _lps(raw):
+    """Stage 4 (F21, FA19): the fund's LPs, each a name and a commitment (F19). Left out, null or an empty list: none."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise _input("bad_field", "lps")
+    lps, names = [], set()
+    for i, lp in enumerate(raw):
+        path = f"lps[{i}]"
+        if not isinstance(lp, dict):
+            raise _input("bad_field", path)
+        # F21, FA18: a per-LP term v1 doesn't model, such as a side letter's carry, named by its own key.
+        for key in lp:
+            if key not in LP_KEYS:
+                raise Refusal("unsupported", key, f"{path}.{key}")
+        for key in LP_KEYS:
+            if lp.get(key) is None:
+                raise _input("missing_field", f"{path}.{key}")
+        name = lp["name"]
+        if not isinstance(name, str) or _blank(name):
+            raise _input("bad_field", f"{path}.name")
+        commitment = _number(lp["commitment"], f"{path}.commitment")
+        if commitment <= 0:
+            raise _input("bad_number", f"{path}.commitment")
+        # F19: no two LPs share a name, compared exactly as written (FA17).
+        if name in names:
+            raise _input("lp_name_repeated", f"{path}.name")
+        names.add(name)
+        lps.append(LP(name, commitment))
+    return lps
+
+
 def read(inputs):
     """The fund's inputs, read, or a Refusal raised (F18)."""
     if not isinstance(inputs, dict):
@@ -315,6 +368,8 @@ def read(inputs):
         if f.date > d:
             raise _input("cash_flow_after_distribution_date", f"cash_flows[{f.index}]")
 
+    lps = _lps(inputs.get("lps"))
+
     # F4: on one date, calls come before distributions; same-day distributions go in the order listed.
     ordered = sorted(flows, key=lambda f: (f.date, 0 if f.type == "call" else 1, f.index))
-    return Fund(as_of=as_of, distribution_date=d, final=final, nav=nav, flows=ordered, **terms)
+    return Fund(as_of=as_of, distribution_date=d, final=final, nav=nav, flows=ordered, lps=lps, **terms)

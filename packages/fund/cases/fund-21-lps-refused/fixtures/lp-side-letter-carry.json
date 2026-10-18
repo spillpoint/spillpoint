@@ -1,0 +1,15 @@
+{
+  "base": "fund-01-one-call",
+  "about": "An LP with a side letter's carry of 15%, a per-LP term v1 doesn't model.",
+  "change": {
+    "set": {
+      "lps": [
+        {
+          "name": "Alder",
+          "commitment": "1000000",
+          "carry": "0.15"
+        }
+      ]
+    }
+  }
+}

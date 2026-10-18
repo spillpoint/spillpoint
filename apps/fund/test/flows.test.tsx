@@ -3,7 +3,7 @@
 // stay on the last fund the engine accepted; and the problems come one at a time in the engine's order (FA2), on
 // either tab.
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
@@ -13,10 +13,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
 import { flowsFrom, flowsInput, sortByDate } from "../src/flows.ts";
+import { RUN_CASES } from "./support/cases.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
-const RUN_CASES = readdirSync(casesDir).filter((d) => d.startsWith("fund-") && !d.endsWith("refused"));
 
 afterEach(() => vi.restoreAllMocks());
 

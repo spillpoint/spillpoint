@@ -2,6 +2,7 @@
 
 Every modeling choice for the fund waterfall, with its default.
 - **F1 to F18** are the rules in `SPEC.md`, settled with Jordan on 2026-10-12 (S0).
+- **F19 to F21** are the LPs' rules in `SPEC.md`, settled with Jordan on 2026-10-18 for 0.2.0 (S1).
 - **FA1 onward** are choices the rules don't settle.
 - **FC1 onward** are the case-file conventions.
 
@@ -9,6 +10,7 @@ Every modeling choice for the fund waterfall, with its default.
 
 Status:
 - **Settled (S0)**: in the spec Jordan settled on 2026-10-12. Those he decided himself say so; the rest he took on Claude's recommendation or as drafted.
+- **Settled (S1)**: in the LPs' spec Jordan settled on 2026-10-18, for 0.2.0.
 - **Confirmed (f01a review)**: added in f01a and agreed by Jordan in his answers to its review. **Confirmed (f01b review)** and **Confirmed (f01c review)** likewise for f01b's and f01c's.
 - **New**: added while building, not yet reviewed. Each one is listed in its step's review note.
 
@@ -36,6 +38,14 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | F16 | Outputs at each X | This distribution and the fund to date, each by tier; the GP commitment's line; when final, the entitlement and the clawback owed. Also the LPs' and GP commitment's paid-in, and the pref accrued to D. | Fixed | Settled (S0) |
 | F17 | Numbers | The engine at 40 digits with decimal.js; the reference in exact fractions. Whole days. Cases compared as spillpoint's are. | Fixed | Settled (S0) |
 | F18 | Refusals | A kind (unsupported or input), a term and the path into the input. The terms are listed in `SPEC.md`. | Fixed | Settled (S0) |
+
+## The LPs (S1)
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| F19 | The LPs | Optional, in the order the GP lists them, each a name and a commitment. Every LP is on the same terms: the same fees, the same carry, every call pro rata to commitments. LP *i*'s share is its commitment over the sum of all the LPs' commitments, exactly. Commitments only divide: they aren't checked against the calls. The GP commitment isn't an LP. Left out, `null` or an empty list: no per-LP amounts. | Input (`lps`) | Settled (S1; Jordan) |
+| F20 | Each LP's amounts | At each X and at the NAV point, in the input's order: its commitment and share; its share of the LPs' paid-in, of the LPs' total from X and of their total to date; when final, its share of the clawback owed, zero when nothing is. All exact. Nothing else changes. | Fixed | Settled (S1; Jordan) |
+| F21 | The LPs' refusals | `lps` not a list, or an LP not an object: `bad_field`. A field other than `name` and `commitment`: unsupported, named by the field. A name or commitment missing or null: `missing_field`. A name not text, or blank: `bad_field`. A commitment not an exact string, or not above 0: `bad_number`. A name an earlier LP has: `lp_name_repeated`, at the later LP's `name`. Checked after everything else, one LP at a time in order: its shape and fields, that the name and commitment are there, the name, the commitment, then whether the name repeats. | Fixed | Settled (S1; Jordan) |
 
 ## Added in f01a
 
@@ -73,12 +83,20 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 |---|---|---|---|---|
 | FA16 | The LPs' multiple in the split | The split gives F10's LP multiple: the LPs' distributions to date, X's included, after carry, over their paid-in to date. The page shows it under the split and does no fund arithmetic of its own (f01d review, answer 9). The case files don't record it (FC4 unchanged): the tests hold it to each case's LPs to date over their paid-in, to the cent. | Fixed | New |
 
+## Added in f02a
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA17 | What a blank name is, and how names compare (F19, F21) | Blank is empty or nothing but whitespace, as JavaScript's `trim` takes it off: tab, line feed, vertical tab, form feed, carriage return, the line and paragraph separators (U+2028, U+2029), U+FEFF, and every space separator (U+0020, U+00A0, U+1680, U+2000 to U+200A, U+202F, U+205F, U+3000). The reference lists exactly these, so it and the engine agree where Python's own idea of whitespace differs (U+001C to U+001F and U+0085 are whitespace to Python, not to `trim`; U+FEFF the other way round). A name that isn't blank is kept as written, not trimmed, case-folded or Unicode-normalized, and compared as written (F19): "Alder" and "Alder " are two LPs, and so are "Alder" and "alder". | Fixed | New |
+| FA18 | An LP's other fields (F21) | Any key but `name` and `commitment` is unsupported, named by the key, whatever its value, null included, as an unknown key under `terms` is. With two, the first in the file's order, as FA2 takes a term's own keys. A commitment is read as every number is (F17, FC1): an integer, a terminating decimal, or `"a/b"`. | Fixed | New |
+| FA19 | The order of checks with LPs (F21, FA2) | A fourth stage after FA2's three, so a fund with any other problem is refused for that first, even when an LP has a field v1 doesn't model: an unsupported term comes before everything (FA2 stage 1), an unsupported LP field after everything. The stage opens with `lps` itself (not a list), then takes each LP in F21's order. Where F21 leaves a tie: a missing name comes before a missing commitment, and of two unknown fields the first in the file's order (FA18). An LP is checked through before the next one starts, so a repeated name at `lps[1]` comes before a bad commitment at `lps[2]`. | Fixed | New |
+
 ## Later
 
 Each rule's later work, as the spec gives it. None is refused today unless F18 says so.
 
 - **American (deal-by-deal) carry (F1).**
-- **Per-LP accounts (F3):** closes, equalization, side-letter fee or carry breaks.
+- **Per-LP accounts, where LPs differ (F3, F19):** later closes and equalization, side-letter fee or carry breaks, defaulted or excused LPs.
 - **Capital in tier 1 (F5):** invested capital only; committed capital.
 - **Compounding pref (F7):** per call or as an IRR hurdle, built to a real fund's wording and checked against its model. Refused as `compounded_pref` until then.
 - **A step's higher rate on all profit, with a GP catch-up (F11),** since terms vary.
@@ -90,10 +108,12 @@ Each rule's later work, as the spec gives it. None is refused today unless F18 s
 | ID | Question | Default | Status |
 |---|---|---|---|
 | FC1 | Exact numbers in JSON | Strings: an integer, a terminating decimal, or `"a/b"` when the decimal repeats, as spillpoint's C1. An amount in `expected.json` is to the cent; `exact` fields are exact. | Confirmed (f01a review) |
-| FC2 | Fund case folders | `packages/fund/cases/fund-NN-<name>/`, numbered from 01. They sit in the fund package, not `cases/`, so the engine's tests, the page's and spillpoint's reference never see them (Jordan, f01a). They're locked as `cases/` is (hard rule 1): `cases-locked.yml` fails a PR that touches them without Jordan's label, and `.claude/settings.json` denies `Edit(packages/fund/cases/**)`. `inputs.json` is `{case, description, xs, fund}`: `fund` is the input `SPEC.md` describes, and `xs` the distributions on D to report. `expected.json` comes from the fund reference, `packages/fund/reference/generate.py`. `DERIVATION.md` works the case by hand. The refusals are one case, `fund-14-refused` (FC7). | Confirmed (f01a review) |
+| FC2 | Fund case folders | `packages/fund/cases/fund-NN-<name>/`, numbered from 01. They sit in the fund package, not `cases/`, so the engine's tests, the page's and spillpoint's reference never see them (Jordan, f01a). They're locked as `cases/` is (hard rule 1): `cases-locked.yml` fails a PR that touches them without Jordan's label, and `.claude/settings.json` denies `Edit(packages/fund/cases/**)`. `inputs.json` is `{case, description, xs, fund}`: `fund` is the input `SPEC.md` describes, and `xs` the distributions on D to report. `expected.json` comes from the fund reference, `packages/fund/reference/generate.py`. `DERIVATION.md` works the case by hand. The refusals are a case each set: `fund-14-refused` for F18's, and `fund-21-lps-refused` for F21's (FC7, FC10). | Confirmed (f01a review; the LPs' refusals added in f02a) |
 | FC3 | `expected.json`, at the top | `case`, `generated_by`, `distribution_date` (D), `final`, and `lps_paid_in`. With a GP commitment, `gp_commitment_paid_in`. With a pref, `pref_accrued_to_d` (F6's, paid or not), and, when final or with a NAV, `pref_on_fund_totals` (F12's hurdle pref). F16's paid-in and pref to D don't change with X, so they're given once here. Then `breakpoints` and `points`. | Confirmed (f01a review) |
 | FC4 | A point | `x` to the cent, `exact`, and `tags`: `listed` (from `xs`), `breakpoint` and `nav`, in that order. Then `distribution` (X) and `to_date` (every distribution, X included), each a block: `amount`; `gp_commitment`, with one; `lps`: `capital`, `pref` with one, `catch_up` with one (the LPs' share of the catch-up tier), `carry_tier`, `total`; `gp`: `catch_up` with one, `carry` by step (`rate`, `from_lp_multiple` on later steps, `amount`), `total`. A tier the terms don't have isn't listed. When final, and at the NAV point, `clawback`: `carry_paid`, `entitlement`, `owed`. | Confirmed (f01a review) |
 | FC5 | A breakpoint | `x` to the cent, `exact`, and `reasons`: X's own tier first, then the clawback's. Each reason has its `code` and `text`, and: `capital_returned`: `amount`, the LPs' paid-in. `pref_met`: `rate` and `amount` (FA4). `catch_up_done`: `carry`, c. `carry_step`: `lp_multiple` and `rate`. `clawback_changes`: `change` (`starts_to_fall`, `stops_falling`, `falls_faster` or `falls_more_slowly`), and `fund_totals`, the code of the totals' tier that ended, when that run is the cause. | Confirmed (f01a review) |
 | FC6 | Reasons' text | F15's wording. Dollars without cents when whole ("$10,890,000"), to the cent otherwise ("$4,004,383.56"). Rates as percents ("8%", "7.5%"). Multiples to at least one place ("3.0x", "2.25x"). A `clawback_changes` caused by the run on the fund's totals reads "the clawback owed <change>: on the fund's totals, <tier>", where the tier that ended reads "LPs have their capital back", "LPs have their pref", "the GP has 25% of the profit" (c, the first carry rate) or "LPs reach 2.0x: carry is 30% from here" (the step reached). No amounts: the totals' run isn't a distribution. Case 15 pins the capital wording, case 16 the pref and catch-up wordings, and case 13 the step's (f01c review; cases 15 and 16 in f01e). | Confirmed (f01a review; the totals' tiers added after the f01c review) |
 | FC7 | Refusal fixtures | `fixtures/<id>.json`, each `{base, about, change}`: a base fund case, a sentence saying what's changed, and the change to its `fund` input. `set` replaces the value at each path; `del` removes the value at a path. Paths are dotted with list places in brackets: `terms.catch_up.gp_share`, `cash_flows[0].amount`. `expected.json` is `{case, generated_by, fixtures}`, each fixture's file name giving `{refused: {kind, term, field}}`. A case file's `field` is the error's `path`: `FundRefusal` uses the engine's word (f01e review), and the case files keep `field`, as case files keep their own names. | Confirmed (f01a review) |
 | FC8 | How the engine is held to a case (F17) | Every amount to the cent, rounded half away from zero, as `expected.json` gives it, and every breakpoint at its exact value: the engine's 40-digit amounts round the same. | Confirmed (f01a review) |
+| FC9 | The LPs in `expected.json` (F20) | Only when the input has LPs, so cases 01 to 16 are as they were. **At the top,** after FC3's paid-in and pref and before `breakpoints`, `lps`: one entry an LP, in the input's order, with `name` as written, `commitment` and `share` exact (FC1), and `paid_in`; these don't change with X, as FC3's don't. **At each point,** after `clawback` (or `to_date` without one), `by_lp`: one entry an LP, in the same order, with `name`, `distribution` (its share of the LPs' total from X), `to_date`, and, at a point that has FC4's `clawback`, `clawback` (its share of the owed). Each amount is `{amount, exact}`: `amount` to the cent, half away from zero, as every amount in a case is (FC1, FC8), and `exact` the exact value, since F20's amounts are exact and a share like 1/3 rarely gives whole cents. The page rounds down to the cent (f02c), which `amount` alone can't give. | New |
+| FC10 | The LPs' refusals | `fund-21-lps-refused`, in FC7's shape: eleven fixtures, each one change to case 1's input (which has no LPs) setting `lps`. Each line of F21 has at least one: two for a missing name or commitment, two for a name (not text, blank), and three for a commitment (zero, negative, a JSON number). A `null` name or commitment is refused as missing, as the line says; the reference's unit tests cover it, not a fixture. | New |
