@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from fund_ref import breakpoints  # noqa: E402
 from fund_ref.case import apply_change, run_case  # noqa: E402
 from fund_ref.inputs import Refusal, read  # noqa: E402
+from fund_ref.lps import each_lp, shares  # noqa: E402
 from fund_ref.num import days, exact, money, multiple, percent, usd  # noqa: E402
 from fund_ref.waterfall import Waterfall  # noqa: E402
 
@@ -290,6 +291,161 @@ class Refusals(unittest.TestCase):
         f = read(apply_change(BASE, {"set": {"terms.gp_commitment": None, "nav": None}, "del": "terms.catch_up"}))
         self.assertEqual((f.has_gp_commitment, f.nav, f.catch_up), (False, None, None))
         self.assertEqual(read({"as_of": "2025-01-01", "terms": {}, "cash_flows": EXAMPLE_B["flows"]}).steps[0].rate, F(1, 5))
+
+
+ONE_CALL = {"as_of": "2026-03-01", "terms": {"carry": "0.20"}, "cash_flows": [call("2022-03-01", "5000000")]}
+THREE = [{"name": "Alder", "commitment": "1000000"}, {"name": "Birch", "commitment": "1000000"}, {"name": "Cedar", "commitment": "1000000"}]
+
+
+def lp_case(inputs, lps, xs):
+    return run_case({"case": "lps", "xs": xs, "fund": {**inputs, "lps": lps}})
+
+
+def by_lp(point, key):
+    return [e[key]["exact"] for e in point["by_lp"]]
+
+
+class Lps(unittest.TestCase):
+    """F19, F20: each LP's share of what the LPs get."""
+
+    def test_a_share_is_the_commitment_over_all_the_commitments_exactly(self):
+        # 700,000 + 1,100,000 + 300,000 = 2,100,000: 1/3, 11/21 and 1/7, which add up to exactly 1.
+        f = read({**ONE_CALL, "lps": [{"name": "A", "commitment": "700000"}, {"name": "B", "commitment": "1100000"}, {"name": "C", "commitment": "300000"}]})
+        self.assertEqual(shares(f), [F(1, 3), F(11, 21), F(1, 7)])
+        self.assertEqual(sum(shares(f)), 1)
+
+    def test_commitments_only_divide(self):
+        # F19: $5M, $3.5M and $1.5M add up to $10M, whatever the calls: halves, 7/20 and 3/20. Any amounts in the same
+        # proportions give the same shares, an "a/b" commitment included (FA18).
+        dollars = [{"name": "A", "commitment": "5000000"}, {"name": "B", "commitment": "3500000"}, {"name": "C", "commitment": "1500000"}]
+        tenths = [{"name": "A", "commitment": "10/2"}, {"name": "B", "commitment": "3.5"}, {"name": "C", "commitment": "1.5"}]
+        self.assertEqual(shares(read({**ONE_CALL, "lps": dollars})), [F(1, 2), F(7, 20), F(3, 20)])
+        self.assertEqual(shares(read({**ONE_CALL, "lps": tenths})), [F(1, 2), F(7, 20), F(3, 20)])
+
+    def test_each_lp_gets_its_share_of_the_lps_amounts_exactly(self):
+        # Case 1's fund: $5,000,000 called, 20% carry. Three equal LPs: each has paid in $5,000,000 / 3.
+        # X = $2,000,000 is all capital: each LP gets $2,000,000 / 3 = $666,666.666…, to the cent $666,666.67.
+        # X = $12,500,000: LPs get $5,000,000 + 80% of $7,500,000 = $11,000,000, so each $11,000,000 / 3.
+        out = lp_case(ONE_CALL, THREE, ["2000000", "12500000"])
+        self.assertEqual([lp["paid_in"]["exact"] for lp in out["lps"]], ["5000000/3"] * 3)
+        self.assertEqual([lp["share"] for lp in out["lps"]], ["1/3"] * 3)
+        at = {p["x"]: p for p in out["points"]}
+        self.assertEqual(by_lp(at["2000000.00"], "distribution"), ["2000000/3"] * 3)
+        self.assertEqual([e["distribution"]["amount"] for e in at["2000000.00"]["by_lp"]], ["666666.67"] * 3)
+        self.assertEqual(by_lp(at["12500000.00"], "distribution"), ["11000000/3"] * 3)
+        # Nothing was distributed before X, so to date is X's; not final, so no clawback.
+        self.assertEqual(by_lp(at["12500000.00"], "to_date"), ["11000000/3"] * 3)
+        self.assertNotIn("clawback", at["12500000.00"]["by_lp"][0])
+
+    def test_each_lp_gets_its_share_of_the_clawback_owed_back(self):
+        # Example C, final, with LPs at 70% and 30%. X = 0: the GP owes $400,000 back, $280,000 and $120,000.
+        # X = $1,000,000: $200,000 owed, $140,000 and $60,000. X = $2,000,000: nothing owed, so zero each (F20).
+        lps = [{"name": "Alder", "commitment": "7"}, {"name": "Birch", "commitment": "3"}]
+        inputs = {"as_of": EXAMPLE_C["as_of"], "terms": EXAMPLE_C["terms"], "cash_flows": EXAMPLE_C["flows"], "final": True}
+        at = {p["x"]: p for p in lp_case(inputs, lps, ["0", "1000000", "2000000"])["points"]}
+        self.assertEqual(by_lp(at["0.00"], "clawback"), ["280000", "120000"])
+        self.assertEqual(by_lp(at["1000000.00"], "clawback"), ["140000", "60000"])
+        self.assertEqual(by_lp(at["2000000.00"], "clawback"), ["0", "0"])
+        # To date: the earlier $15,000,000 gave the LPs $14,000,000, and X = $1,000,000 returns the late call.
+        self.assertEqual(by_lp(at["1000000.00"], "to_date"), ["10500000", "4500000"])
+
+    def test_the_nav_point_has_each_lps_clawback_though_x_is_not_final(self):
+        # F14, F20: the NAV point is final by definition. Example C at NAV $1,000,000 owes $200,000: halves, $100,000.
+        lps = [{"name": "Alder", "commitment": "1"}, {"name": "Birch", "commitment": "1"}]
+        inputs = {"as_of": EXAMPLE_C["as_of"], "terms": EXAMPLE_C["terms"], "cash_flows": EXAMPLE_C["flows"], "nav": "1000000"}
+        at = {p["x"]: p for p in lp_case(inputs, lps, ["1"])["points"]}
+        self.assertEqual(by_lp(at["1000000.00"], "clawback"), ["100000", "100000"])
+        self.assertNotIn("clawback", at["1.00"]["by_lp"][0])
+
+    def test_the_lps_change_nothing_else(self):
+        # F20: the waterfall, the GP commitment's line, the clawback and the breakpoints are as without LPs.
+        inputs = {"as_of": EXAMPLE_A["as_of"], "terms": EXAMPLE_A["terms"], "cash_flows": EXAMPLE_A["flows"], "nav": "40000000", "final": True}
+        without = run_case({"case": "lps", "xs": ["20000000", "50000000"], "fund": inputs})
+        with_lps = lp_case(inputs, THREE, ["20000000", "50000000"])
+        del with_lps["lps"]
+        for p in with_lps["points"]:
+            del p["by_lp"]
+        self.assertEqual(with_lps, without)
+
+    def test_left_out_null_or_empty_are_no_lps(self):
+        for lps in (None, []):
+            out = lp_case(ONE_CALL, lps, ["1"])
+            self.assertNotIn("lps", out)
+            self.assertNotIn("by_lp", out["points"][0])
+        self.assertEqual(read(ONE_CALL).lps, [])
+
+    def test_the_lps_amounts_add_up_to_theirs_exactly(self):
+        # Shares add up to exactly 1, so the LPs' amounts do too, whatever the commitments.
+        rng = random.Random(20261018)
+        f = read(ONE_CALL)
+        for _ in range(50):
+            f.lps = read({**ONE_CALL, "lps": [{"name": str(i), "commitment": str(rng.randint(1, 10**7))} for i in range(rng.randint(1, 9))]}).lps
+            amount = F(rng.randint(0, 10**9), rng.randint(1, 10**4))
+            self.assertEqual(sum(each_lp(f, amount)), amount)
+
+
+class LpRefusals(unittest.TestCase):
+    """F21 beyond the fixtures in packages/fund/cases/fund-21-lps-refused, and FA17 to FA19."""
+
+    def refused(self, inputs):
+        with self.assertRaises(Refusal) as ctx:
+            read(inputs)
+        return (ctx.exception.kind, ctx.exception.term, ctx.exception.path)
+
+    def lps(self, lps):
+        return self.refused({**ONE_CALL, "lps": lps})
+
+    def test_the_shape(self):
+        self.assertEqual(self.lps({}), ("input", "bad_field", "lps"))
+        self.assertEqual(self.lps("Alder"), ("input", "bad_field", "lps"))
+        self.assertEqual(self.lps([{"name": "Alder", "commitment": "1"}, None]), ("input", "bad_field", "lps[1]"))
+
+    def test_missing_or_null(self):
+        # F21: null is missing. With both missing, the name comes first (FA19).
+        self.assertEqual(self.lps([{"name": None, "commitment": "1"}]), ("input", "missing_field", "lps[0].name"))
+        self.assertEqual(self.lps([{"name": "Alder", "commitment": None}]), ("input", "missing_field", "lps[0].commitment"))
+        self.assertEqual(self.lps([{}]), ("input", "missing_field", "lps[0].name"))
+
+    def test_other_fields_whatever_their_value(self):
+        # FA18: unsupported even when null, and of two the first in the file's order; before a missing name (F21).
+        self.assertEqual(self.lps([{"name": "Alder", "commitment": "1", "carry": None}]), ("unsupported", "carry", "lps[0].carry"))
+        self.assertEqual(self.lps([{"mgmt_fee": "0.015", "carry": "0.15"}]), ("unsupported", "mgmt_fee", "lps[0].mgmt_fee"))
+
+    def test_a_blank_name_is_whitespace_as_javascripts_trim_takes_it(self):
+        # FA17: blank names, then names that aren't: U+001C is whitespace to Python, not to trim.
+        for name in ["", " ", "\u00a0", "\ufeff\t", "\u2003\u3000\n"]:
+            self.assertEqual(self.lps([{"name": name, "commitment": "1"}]), ("input", "bad_field", "lps[0].name"), repr(name))
+        for name in ["\x1c", "\u0085", "\u200b"]:
+            self.assertEqual(read({**ONE_CALL, "lps": [{"name": name, "commitment": "1"}]}).lps[0].name, name)
+
+    def test_names_are_kept_and_compared_as_written(self):
+        # FA17: not trimmed or case-folded, so these are three LPs.
+        names = ["Alder", "Alder ", "alder"]
+        f = read({**ONE_CALL, "lps": [{"name": n, "commitment": "1"} for n in names]})
+        self.assertEqual([lp.name for lp in f.lps], names)
+        self.assertEqual(self.lps([{"name": n, "commitment": "1"} for n in ["Alder", "Birch", "Birch"]]), ("input", "lp_name_repeated", "lps[2].name"))
+
+    def test_names_and_commitments_of_the_wrong_kind(self):
+        for name in [True, ["Alder"], {"en": "Alder"}]:
+            self.assertEqual(self.lps([{"name": name, "commitment": "1"}]), ("input", "bad_field", "lps[0].name"))
+        for commitment in ["1e6", "", "1,000,000", "1/0", True]:
+            self.assertEqual(self.lps([{"name": "Alder", "commitment": commitment}]), ("input", "bad_number", "lps[0].commitment"))
+
+    def test_the_lps_come_after_everything_else(self):
+        # FA19: a fourth stage. A bad as_of, a flow after D and an unsupported term each come before the LPs' problems.
+        bad = [{"name": "Alder", "commitment": "1", "carry": "0.15"}]
+        self.assertEqual(self.refused({**ONE_CALL, "as_of": "soon", "lps": bad}), ("input", "bad_date", "as_of"))
+        self.assertEqual(self.refused({**ONE_CALL, "distribution_date": "2020-01-01", "lps": "x"}), ("input", "cash_flow_after_distribution_date", "cash_flows[0]"))
+        self.assertEqual(self.refused({**ONE_CALL, "terms": {"carry": "0.2", "hurdle_irr": "0.08"}, "lps": bad}), ("unsupported", "hurdle_irr", "terms.hurdle_irr"))
+
+    def test_one_lp_at_a_time_in_f21s_order(self):
+        # An LP is checked through before the next: lps[1]'s repeated name before lps[2]'s bad commitment.
+        lps = [{"name": "Alder", "commitment": "1"}, {"name": "Alder", "commitment": "1"}, {"name": "Birch", "commitment": "0"}]
+        self.assertEqual(self.lps(lps), ("input", "lp_name_repeated", "lps[1].name"))
+        # Within an LP: fields, then presence, then the name, then the commitment, then the repeat.
+        self.assertEqual(self.lps([{"name": "", "commitment": "0", "carry": "0.15"}]), ("unsupported", "carry", "lps[0].carry"))
+        self.assertEqual(self.lps([{"name": "", "commitment": "0"}]), ("input", "bad_field", "lps[0].name"))
+        self.assertEqual(self.lps([{"name": "Alder", "commitment": "1"}, {"name": "Alder", "commitment": "0"}]), ("input", "bad_number", "lps[1].commitment"))
 
 
 def random_fund(rng):

@@ -32,14 +32,15 @@ python3 packages/fund/reference/generate.py fund-06-full-catch-up     # regenera
     3. Fit a line to every amount on each side and intersect them, which gives the exact breakpoint.
     4. Check every amount is a straight line between breakpoints.
   - **The grid's offset:** every sample point is offset by 1/1000003, a prime no breakpoint's denominator has, so no sample lands on a breakpoint.
-- **Refusals** (`inputs.py`). F18's refusals, in FA2's order of checks.
+- **The LPs** (`lps.py`). Each LP's share is its commitment over the sum of the LPs' commitments, exactly (F19). Its amounts are the LPs' paid-in, total from X, total to date and the clawback owed, each times its share (F20). Nothing in the waterfall reads them.
+- **Refusals** (`inputs.py`). F18's refusals, in FA2's order of checks, then F21's for the LPs, after everything else (FA19).
 
 The engine will work out where each tier ends from its size: a different method from this search, so the two can check each other.
 
 ## Cases
 
 `generate.py` reads `packages/fund/cases/fund-*`:
-- **A folder with `inputs.json`** is run as a fund (FC2 to FC5).
+- **A folder with `inputs.json`** is run as a fund (FC2 to FC5), with each LP's amounts when it has LPs (FC9).
 - **A folder with `fixtures/`** is a set of refusals, each a change to a base case's inputs (FC7).
 
 `tests/test_fund_ref.py` also runs 60 random funds, checking that every breakpoint is found and that the clawback never rises as X grows (FA9).
