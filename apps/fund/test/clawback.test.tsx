@@ -3,7 +3,7 @@
 // the headline never shows carry without the clawback beside it; and the NAV button sets X to NAV, where a fund that
 // isn't final has its clawback too.
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
@@ -13,10 +13,10 @@ import { describe, expect, it } from "vitest";
 import { breakpointViews, defaultTop, owedPoints } from "../src/analysis.ts";
 import { answerText, App } from "../src/App.tsx";
 import { clawbackSentence } from "../src/Clawback.tsx";
+import { RUN_CASES } from "./support/cases.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
-const RUN_CASES = readdirSync(casesDir).filter((d) => d.startsWith("fund-") && !d.endsWith("refused"));
 const FINAL_CASES = RUN_CASES.filter((d) => caseFile(d, "inputs.json").fund.final === true);
 const fundOf = (dir: string) => readFund(caseFile(dir, "inputs.json").fund);
 const CLOSE = new D("1e-20");

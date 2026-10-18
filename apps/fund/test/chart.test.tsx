@@ -2,7 +2,7 @@
 // every breakpoint; every breakpoint is listed in the engine's words, numbered as on the chart and the slider; and the
 // slider, its marks and the range's top move X.
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
@@ -12,10 +12,10 @@ import { describe, expect, it } from "vitest";
 
 import { breakpointViews, chartPoints, defaultTop } from "../src/analysis.ts";
 import { App } from "../src/App.tsx";
+import { RUN_CASES } from "./support/cases.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
-const RUN_CASES = readdirSync(casesDir).filter((d) => d.startsWith("fund-") && !d.endsWith("refused"));
 const fundOf = (dir: string) => readFund(caseFile(dir, "inputs.json").fund);
 const CLOSE = new D("1e-20");
 
