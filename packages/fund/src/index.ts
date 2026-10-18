@@ -5,6 +5,7 @@
 //   const fund = readFund(json);                 // check the input (F18)
 //   const split = splitAt(fund, "20000000");     // X on D, by tier (F16)
 //   const nav = splitAtNav(fund);                // the NAV point, final (F14)
+//   split.byLp                                   // each LP's amounts, when the fund lists LPs (F20)
 //   const breakpoints = findBreakpoints(fund);   // every X where it bends, and why (F15)
 //
 // Everything runs locally: no I/O, no network. Rules are in docs/SPEC.md and
@@ -19,16 +20,16 @@ export type { RefusalKind } from "./errors.ts";
 
 // Reading a fund's input.
 export { readFund } from "./input.ts";
-export type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment } from "./model.ts";
+export type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment, Lp } from "./model.ts";
 
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";
-export type { Clawback, Split, StepCarry, Tiers } from "./waterfall.ts";
+export type { Clawback, LpAmounts, Split, StepCarry, Tiers } from "./waterfall.ts";
 
 // Every X where the split bends, with its reasons (F15).
 export { findBreakpoints } from "./breakpoints.ts";
 export type { Breakpoint } from "./breakpoints.ts";
 export type { Reason } from "./reasons.ts";
 
-// The names and words code can match on, stable from 0.1.0 (docs/STABLE.md).
+// The names and words code can match on, stable from 0.1.0 or the version that added them (docs/STABLE.md).
 export type { ClawbackChange, InputTerm, ReasonCode, TierReasonCode, UnsupportedTerm } from "./stable-names.ts";

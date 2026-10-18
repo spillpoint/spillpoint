@@ -43,6 +43,7 @@ const MESSAGES: Record<InputTerm, string> = {
   no_calls: "a fund needs at least one call",
   distribution_before_call: "a distribution comes before the fund's first call",
   cash_flow_after_distribution_date: "a cash flow comes after the distribution date",
+  lp_name_repeated: "an earlier LP has this name; no two LPs share one",
 };
 
 /** An input refusal: only with a term the stable list has (stable-names.ts). */

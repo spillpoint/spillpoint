@@ -40,6 +40,13 @@ export interface CashFlow {
   amount: D;
 }
 
+/** One LP (F19). Every LP is on the same terms; its commitment only divides the LPs' amounts between them. */
+export interface Lp {
+  /** As written in the input: not trimmed, case-folded or normalized (FA17). */
+  name: string;
+  commitment: D;
+}
+
 export interface Fund {
   asOf: string;
   terms: FundTerms;
@@ -50,4 +57,6 @@ export interface Fund {
   /** X is the fund's last distribution (F12). */
   final: boolean;
   nav: D | null;
+  /** The input's LPs in its order (F19); empty when it has none. */
+  lps: Lp[];
 }

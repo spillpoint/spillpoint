@@ -179,7 +179,11 @@ The checks run in a fixed order, and the first problem is the one refused.
   ],
   "distribution_date": "2026-09-30",
   "final": false,
-  "nav": "40000000"
+  "nav": "40000000",
+  "lps": [
+    { "name": "Alder Endowment", "commitment": "5000000" },
+    { "name": "Birchwood Family Office", "commitment": "3500000" }
+  ]
 }
 ```
 
@@ -191,17 +195,19 @@ The checks run in a fixed order, and the first problem is the one refused.
 - **`distribution_date`,** D, defaults to `as_of`. Every cash flow is on or before it.
 - **`final`** (default false) makes the distribution on D the fund's last, with its clawback.
 - **`nav`,** optional: the fund's net asset value on D.
+- **`lps`,** optional, from 0.2.0: the fund's LPs, each a `name` and a `commitment`, in the order you list them. Every LP is on the same terms, so each gets its commitment's share of what the LPs get. The commitments only divide: they aren't checked against the calls, and any amounts in the right proportions give the same shares. Names are kept exactly as written, and no two LPs can share one. The GP commitment isn't an LP.
 - **Numbers** are exact strings: an integer, a decimal, or `"a/b"`. **Dates** are `YYYY-MM-DD`.
 
 ## API
 
-- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`.
+- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs).
 - **`splitAt(fund, x, { final? })`:** X, one more distribution on D, split by tier. It returns a `Split`:
   - `distribution`, X itself, and `toDate`, the fund to date with X, each a `Tiers`: `amount`, `gpCommitment`, `lps` (`capital`, `pref`, `catchUp`, `carryTier`, `total`) and `gp` (`catchUp`, `carry` by step, `total`)
   - `lpsPaidIn` and `gpCommitmentPaidIn`
   - `prefAccrued`, to D (null without a pref)
   - `lpMultiple`, the LPs' net multiple to date
   - `clawback`, when final: `carryPaid`, `entitlement`, `owed`, `prefOnFundTotals`
+  - `byLp`, from 0.2.0, each LP's amounts in the input's order (empty without LPs): `name`, `commitment`, `share`, `paidIn`, `distribution` (its share of the LPs' total from X), `toDate`, and `clawback` (its share of what's owed back, null when not final)
 
   `final` overrides the fund's own for this X.
 - **`splitAtNav(fund)`:** the split at NAV as if the fund were liquidated there, final, with its clawback; null without a NAV.
@@ -214,7 +220,7 @@ X is an exact string or a `D`, from 0 up. Every amount the API hands back is a `
 
 ## Stable from 0.1.0
 
-Code can match on these names and words. From 0.1.0 none is renamed or reused for something else. A new one can be added, and one stops being given when the engine comes to model what it refuses.
+Code can match on these names and words. From 0.1.0, or the version that added it, none is renamed or reused for something else. A new one can be added, and one stops being given when the engine comes to model what it refuses.
 
 ### `FundRefusal`'s kinds
 
@@ -223,9 +229,9 @@ Code can match on these names and words. From 0.1.0 none is renamed or reused fo
 
 ### `FundRefusal`'s input terms
 
-- `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share; a zero amount or pref rate; a catch-up share above 1; or an X below 0, whose path is `x`.
+- `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share; a zero amount or pref rate; a catch-up share above 1; an LP's commitment of 0 or less; or an X below 0, whose path is `x`.
 - `bad_date`: not a date written YYYY-MM-DD that exists.
-- `bad_field`: an unknown call kind or flow type, a non-boolean flag, or a value of the wrong shape.
+- `bad_field`: an unknown call kind or flow type, a non-boolean flag, a blank LP name, or a value of the wrong shape.
 - `missing_field`: a field the input needs, left out.
 - `unknown_field`: a field outside `terms` that a fund input doesn't have, a distribution's `kind` included.
 - `carry_rate_not_below_one`: a carry rate of 1 or more.
@@ -236,12 +242,13 @@ Code can match on these names and words. From 0.1.0 none is renamed or reused fo
 - `no_calls`: no calls at all.
 - `distribution_before_call`: a distribution before the fund's first call.
 - `cash_flow_after_distribution_date`: a cash flow after D.
+- `lp_name_repeated`: an LP's name that an earlier LP already has, at the later LP's `name`. From 0.2.0.
 
 ### `FundRefusal`'s unsupported terms
 
 - `compounded_pref`: a pref compounding other than simple.
 
-Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path.
+Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`.
 
 ### `ReasonCode`
 

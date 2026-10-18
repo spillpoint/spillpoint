@@ -7,6 +7,10 @@
 //    (carry, pref, catch-up, GP commitment, then the terms against each other);
 //    each cash flow in the list's order; `distribution_date`; `final`; `nav`.
 // 3. The cash flows against each other and against D.
+// 4. The LPs (F21, FA19): `lps` itself, then each LP in the list's order,
+//    checked through before the next: its shape and its fields, that the name
+//    and commitment are there, the name, the commitment, then whether the name
+//    repeats.
 //
 // null is the same as leaving an optional field out (FA3), except `carry`,
 // whose null could mean "none" or "the default", so it's refused.
@@ -14,7 +18,7 @@
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { refuse, unsupported } from "./errors.ts";
-import type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment } from "./model.ts";
+import type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment, Lp } from "./model.ts";
 
 type Json = Record<string, unknown>;
 
@@ -25,10 +29,11 @@ const TERM_KEYS: Record<string, readonly string[] | null> = {
   gp_commitment: ["share", "pays_fees", "pays_expenses"],
 };
 const STEP_KEYS = ["rate", "from_lp_multiple"];
-const TOP_KEYS = ["as_of", "terms", "cash_flows", "distribution_date", "final", "nav"];
+const TOP_KEYS = ["as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps"];
 const REQUIRED = ["as_of", "terms", "cash_flows"];
 const FLOW_KEYS = ["date", "type", "kind", "amount"];
 const CALL_KINDS: readonly CallKind[] = ["investment", "fee", "expense"];
+const LP_KEYS = ["name", "commitment"];
 /** F9: carry is 20% when the terms don't give it. */
 const DEFAULT_CARRY = "0.2";
 
@@ -197,6 +202,37 @@ function readFlows(raw: unknown): CashFlow[] {
 }
 
 /**
+ * FA17: a blank name is empty or nothing but whitespace, as `trim` takes it off. The reference lists the same characters
+ * one by one, so the two agree on every name.
+ */
+function blank(name: string): boolean {
+  return name.trim() === "";
+}
+
+/** Stage 4 (F21, FA19): the fund's LPs, each a name and a commitment (F19). Left out, null or an empty list: none. */
+function readLps(raw: unknown): Lp[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw refuse("bad_field", "lps");
+  const names = new Set<string>();
+  return raw.map((lp: unknown, i): Lp => {
+    const field = `lps[${i}]`;
+    if (!isObject(lp)) throw refuse("bad_field", field);
+    // F21, FA18: a per-LP term v1 doesn't model, such as a side letter's carry, named by its own key, whatever its value.
+    for (const key of Object.keys(lp)) {
+      if (!LP_KEYS.includes(key)) throw unsupported({ key }, `${field}.${key}`, `"${key}" is a per-LP term v1 doesn't model: every LP is on the same terms (F19)`);
+    }
+    for (const key of LP_KEYS) if (!given(lp, key)) throw refuse("missing_field", `${field}.${key}`);
+    if (typeof lp.name !== "string" || blank(lp.name)) throw refuse("bad_field", `${field}.name`);
+    const commitment = exact(lp.commitment, `${field}.commitment`);
+    if (!commitment.gt(ZERO)) throw refuse("bad_number", `${field}.commitment`);
+    // F19: no two LPs share a name, compared exactly as written (FA17).
+    if (names.has(lp.name)) throw refuse("lp_name_repeated", `${field}.name`);
+    names.add(lp.name);
+    return { name: lp.name, commitment };
+  });
+}
+
+/**
  * Reads a fund's input as SPEC.md describes it, or throws a FundRefusal naming the kind, the term and the field (F18).
  * The input is parsed JSON: numbers are exact strings, dates ISO.
  */
@@ -227,11 +263,14 @@ export function readFund(input: unknown): Fund {
   const late = flows.find((f) => dayNumber(f.date)! > d);
   if (late) throw refuse("cash_flow_after_distribution_date", `cash_flows[${late.index}]`);
 
+  // Stage 4: the LPs, after everything else (FA19).
+  const lps = readLps(input.lps);
+
   // F4: on one date, calls come before distributions; same-day distributions go in the order listed.
   const cashFlows = [...flows].sort(
     (a, b) => dayNumber(a.date)! - dayNumber(b.date)! || (a.type === b.type ? 0 : a.type === "call" ? -1 : 1) || a.index - b.index,
   );
-  const fund: Fund = deepFreeze({ asOf, terms, cashFlows, distributionDate, final, nav });
+  const fund: Fund = deepFreeze({ asOf, terms, cashFlows, distributionDate, final, nav, lps });
   readFunds.add(fund);
   return fund;
 }

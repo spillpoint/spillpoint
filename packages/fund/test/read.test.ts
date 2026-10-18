@@ -131,6 +131,75 @@ describe("refusing beyond the fixtures (F18, FA2)", () => {
   });
 });
 
+describe("the LPs (F19, F21, FA17 to FA19)", () => {
+  const lps = (list: unknown) => ({ ...BASE, lps: list });
+  const lp = (name: unknown, commitment: unknown = "1000000") => ({ name, commitment });
+
+  it("reads them in the input's order, names as written, commitments exact, frozen with the rest", () => {
+    const fund = readFund(lps([lp("Alder ", "5000000"), lp("alder", "3.5"), lp("Alder", "10/3")]));
+    expect(fund.lps.map((l) => [l.name, l.commitment.toString()])).toEqual([
+      ["Alder ", "5000000"],
+      ["alder", "3.5"],
+      ["Alder", new D(10).div(3).toString()],
+    ]);
+    expect([Object.isFrozen(fund.lps), Object.isFrozen(fund.lps[0])]).toEqual([true, true]);
+  });
+
+  it("reads none when they're left out, null or an empty list", () => {
+    for (const fund of [readFund(BASE), readFund(lps(null)), readFund(lps([]))]) expect(fund.lps).toEqual([]);
+  });
+
+  it.each([
+    ["a list that's an object", {}, "bad_field", "lps"],
+    ["an LP that's null", [lp("Alder"), null], "bad_field", "lps[1]"],
+    ["a null name", [lp(null)], "missing_field", "lps[0].name"],
+    ["a null commitment", [lp("Alder", null)], "missing_field", "lps[0].commitment"],
+    ["neither, the name first", [{}], "missing_field", "lps[0].name"],
+    ["a name of true", [lp(true)], "bad_field", "lps[0].name"],
+    ["a name that's a list", [lp(["Alder"])], "bad_field", "lps[0].name"],
+    ["a commitment in exponent form", [lp("Alder", "1e6")], "bad_number", "lps[0].commitment"],
+    ["a commitment with commas", [lp("Alder", "1,000,000")], "bad_number", "lps[0].commitment"],
+    ["a commitment divided by zero", [lp("Alder", "1/0")], "bad_number", "lps[0].commitment"],
+    ["a blank commitment", [lp("Alder", "")], "bad_number", "lps[0].commitment"],
+  ] as const)("refuses %s", (_, list, term, field) => {
+    expect(refusal(lps(list))).toEqual({ kind: "input", term, field });
+  });
+
+  it("refuses any other field as unsupported, null included, the first in the file's order (FA18)", () => {
+    expect(refusal(lps([{ ...lp("Alder"), carry: null }]))).toEqual({ kind: "unsupported", term: "carry", field: "lps[0].carry" });
+    expect(refusal(lps([{ mgmt_fee: "0.015", carry: "0.15" }]))).toEqual({ kind: "unsupported", term: "mgmt_fee", field: "lps[0].mgmt_fee" });
+  });
+
+  it.each([["", "empty"], [" ", "a space"], ["\u00a0", "a no-break space"], ["\ufeff\t", "a byte-order mark and a tab"], ["\u2003\u3000\n", "wide spaces and a line feed"]])(
+    "refuses a name of %j, blank (FA17)",
+    (name) => {
+      expect(refusal(lps([lp(name)]))).toEqual({ kind: "input", term: "bad_field", field: "lps[0].name" });
+    },
+  );
+
+  it.each([["\u001c"], ["\u0085"], ["\u200b"]])("reads a name of %j, which trim doesn't take off, though Python's isspace may (FA17)", (name) => {
+    expect(readFund(lps([lp(name)])).lps[0]!.name).toBe(name);
+  });
+
+  it("refuses a name an earlier LP has, compared exactly as written (F19, FA17)", () => {
+    expect(refusal(lps([lp("Alder"), lp("Birch"), lp("Birch")]))).toEqual({ kind: "input", term: "lp_name_repeated", field: "lps[2].name" });
+  });
+
+  it("checks the LPs after everything else in the input (FA19)", () => {
+    const sideLetter = [{ ...lp("Alder"), carry: "0.15" }];
+    expect(refusal({ ...BASE, as_of: "soon", lps: sideLetter })).toEqual({ kind: "input", term: "bad_date", field: "as_of" });
+    expect(refusal({ ...BASE, distribution_date: "2019-01-01", lps: "x" })).toEqual({ kind: "input", term: "cash_flow_after_distribution_date", field: "cash_flows[0]" });
+    expect(refusal(change({ set: { "terms.hurdle_irr": "0.08", lps: sideLetter } }))).toEqual({ kind: "unsupported", term: "hurdle_irr", field: "terms.hurdle_irr" });
+  });
+
+  it("checks one LP through before the next, in F21's order (FA19)", () => {
+    expect(refusal(lps([lp("Alder"), lp("Alder"), lp("Birch", "0")]))).toEqual({ kind: "input", term: "lp_name_repeated", field: "lps[1].name" });
+    expect(refusal(lps([{ name: "", commitment: "0", carry: "0.15" }]))).toEqual({ kind: "unsupported", term: "carry", field: "lps[0].carry" });
+    expect(refusal(lps([lp("", "0")]))).toEqual({ kind: "input", term: "bad_field", field: "lps[0].name" });
+    expect(refusal(lps([lp("Alder"), lp("Alder", "0")]))).toEqual({ kind: "input", term: "bad_number", field: "lps[1].commitment" });
+  });
+});
+
 describe("X (FA13)", () => {
   const fund = readFund(BASE);
 

@@ -1,5 +1,6 @@
 // The split of a distribution X on D (F14): this distribution and the fund to
 // date by tier, and, when X is final or at the NAV point, the clawback (F12).
+// With LPs, each one's share of the LPs' amounts (F20).
 //
 // European, cumulative (F1): every earlier distribution has run the same tiers
 // in date order against the fund's running balances, and X runs them last.
@@ -9,7 +10,7 @@ import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { refuse } from "./errors.ts";
 import { wasRead } from "./input.ts";
-import type { CarryStep, Fund } from "./model.ts";
+import type { CarryStep, Fund, Lp } from "./model.ts";
 
 /** One carry step's part of a split (F16): the GP's carry at this rate, and the LPs' share of the carry tier beside it. */
 export interface StepCarry {
@@ -57,6 +58,26 @@ export interface Clawback {
   prefOnFundTotals: D | null;
 }
 
+/**
+ * One LP's amounts in a split (F20): its share of the LPs' paid-in, of their total from X and to date, and of the
+ * clawback owed back to them. Every LP is on the same terms (F19), so these are the LPs' amounts divided by
+ * commitment, and they bend exactly where the LPs' do.
+ */
+export interface LpAmounts {
+  name: string;
+  commitment: D;
+  /** Its commitment over all the LPs' commitments (F19). */
+  share: D;
+  /** Its share of the LPs' paid-in, `lpsPaidIn`. */
+  paidIn: D;
+  /** Its share of the LPs' total from X, `distribution.lps.total`. */
+  distribution: D;
+  /** Its share of the LPs' total to date, X included, `toDate.lps.total`. */
+  toDate: D;
+  /** Its share of the clawback owed, which comes back to the LPs: zero when nothing is; null without a clawback. */
+  clawback: D | null;
+}
+
 export interface Split {
   x: D;
   /** X itself, by tier. */
@@ -75,6 +96,8 @@ export interface Split {
   lpMultiple: D;
   /** Null unless X is final or at the NAV point. */
   clawback: Clawback | null;
+  /** Each LP's amounts, in the input's order (F20); empty when the fund has no LPs. */
+  byLp: LpAmounts[];
 }
 
 const YEAR = 365; // Actual/365 (F6)
@@ -315,6 +338,24 @@ export function standingAtD(fund: Fund): StandingAtD {
 }
 
 /**
+ * F20: each LP's share of the LPs' amounts. Each is the LPs' amount times the LP's commitment, divided by all the LPs'
+ * commitments: multiplied first, so a share like 11/21 is never rounded before it's used.
+ */
+function byLp(lps: Lp[], paidIn: D, distribution: Tiers, toDate: Tiers, clawback: Clawback | null): LpAmounts[] {
+  const all = lps.reduce((sum, lp) => sum.plus(lp.commitment), ZERO);
+  const part = (amount: D, lp: Lp) => amount.times(lp.commitment).div(all);
+  return lps.map((lp) => ({
+    name: lp.name,
+    commitment: lp.commitment,
+    share: lp.commitment.div(all),
+    paidIn: part(paidIn, lp),
+    distribution: part(distribution.lps.total, lp),
+    toDate: part(toDate.lps.total, lp),
+    clawback: clawback && part(clawback.owed, lp),
+  }));
+}
+
+/**
  * The split of X, one more distribution on D after every earlier cash flow (F14, F16). `final` defaults to the fund's
  * own: with it, the clawback is worked out too (F12). The NAV point is final by definition: `splitAtNav`.
  */
@@ -358,6 +399,8 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
     prefAccrued: fund.terms.pref ? prefOn(fund, ledger.unreturnedDays) : null,
     lpMultiple: now.toDate.lps.total.div(now.lpsPaidIn),
     clawback,
+    // A fund built by hand the way 0.1.0 built one has no `lps`: it has no LPs, as an empty list.
+    byLp: byLp(fund.lps ?? [], now.lpsPaidIn, distribution, now.toDate, clawback),
   };
 }
 

@@ -13,12 +13,11 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 /**
- * Pending: spillpoint-fund 0.2.0's cases, the LPs (F19 to F21), added in f02a before the engine reads them. The
- * engine's case tests skip them until f02b, which empties this list. test/pending.test.ts fails if a case folder is
- * neither run nor pending, or if this list names a folder that doesn't exist. test/cases.test.ts checks the pending
- * cases' files meanwhile.
+ * Pending: cases added before the engine reads what they need, which its case tests skip until then. Empty since f02b,
+ * which runs 0.2.0's LP cases (F19 to F21). test/pending.test.ts fails if a case folder is neither run nor pending, or
+ * if this list names a folder that doesn't exist.
  */
-export const PENDING: readonly string[] = ["fund-17-lps-three", "fund-18-lps-thirds", "fund-19-lps-clawback", "fund-20-lps-spv", "fund-21-lps-refused"];
+export const PENDING: readonly string[] = [];
 const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */
 export const RUN_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));
@@ -50,6 +49,12 @@ export interface CaseBlock {
   gp: { catch_up?: string; carry: { rate: string; from_lp_multiple?: string; amount: string }[]; total: string };
 }
 
+/** FC9: an LP's amount, to the cent and exact. */
+export interface CaseLpAmount {
+  amount: string;
+  exact: string;
+}
+
 export interface CasePoint {
   x: string;
   exact: string;
@@ -57,6 +62,8 @@ export interface CasePoint {
   distribution: CaseBlock;
   to_date: CaseBlock;
   clawback?: { carry_paid: string; entitlement: string; owed: string };
+  /** FC9: each LP's amounts at this point, when the fund has LPs. */
+  by_lp?: { name: string; distribution: CaseLpAmount; to_date: CaseLpAmount; clawback?: CaseLpAmount }[];
 }
 
 export interface CaseExpected {
@@ -66,6 +73,8 @@ export interface CaseExpected {
   gp_commitment_paid_in?: string;
   pref_accrued_to_d?: string;
   pref_on_fund_totals?: string;
+  /** FC9: each LP's commitment, share and paid-in, when the fund has LPs. */
+  lps?: { name: string; commitment: string; share: string; paid_in: CaseLpAmount }[];
   points: CasePoint[];
 }
 
