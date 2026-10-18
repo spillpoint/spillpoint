@@ -1,0 +1,11 @@
+{
+  "base": "fund-01-one-call",
+  "about": "An LP given as its name alone, not an object.",
+  "change": {
+    "set": {
+      "lps": [
+        "Alder"
+      ]
+    }
+  }
+}

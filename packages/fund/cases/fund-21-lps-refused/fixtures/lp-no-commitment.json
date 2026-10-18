@@ -1,0 +1,17 @@
+{
+  "base": "fund-01-one-call",
+  "about": "Two LPs, the second with a name and no commitment.",
+  "change": {
+    "set": {
+      "lps": [
+        {
+          "name": "Alder",
+          "commitment": "1000000"
+        },
+        {
+          "name": "Birch"
+        }
+      ]
+    }
+  }
+}

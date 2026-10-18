@@ -1,0 +1,14 @@
+{
+  "base": "fund-01-one-call",
+  "about": "An LP's commitment as the JSON number 1000000, not an exact string.",
+  "change": {
+    "set": {
+      "lps": [
+        {
+          "name": "Alder",
+          "commitment": 1000000
+        }
+      ]
+    }
+  }
+}

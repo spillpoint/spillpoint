@@ -1,0 +1,12 @@
+{
+  "base": "fund-01-one-call",
+  "about": "One LP's object as lps, not a list of LPs.",
+  "change": {
+    "set": {
+      "lps": {
+        "name": "Alder",
+        "commitment": "1000000"
+      }
+    }
+  }
+}

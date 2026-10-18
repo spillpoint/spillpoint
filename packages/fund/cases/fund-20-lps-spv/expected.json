@@ -1,0 +1,424 @@
+{
+  "case": "fund-20-lps-spv",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2026-05-01",
+  "final": true,
+  "lps_paid_in": "2040000.00",
+  "lps": [
+    {
+      "name": "Alder",
+      "commitment": "700000",
+      "share": "1/3",
+      "paid_in": {
+        "amount": "680000.00",
+        "exact": "680000"
+      }
+    },
+    {
+      "name": "Birch",
+      "commitment": "1100000",
+      "share": "11/21",
+      "paid_in": {
+        "amount": "1068571.43",
+        "exact": "7480000/7"
+      }
+    },
+    {
+      "name": "Cedar",
+      "commitment": "300000",
+      "share": "1/7",
+      "paid_in": {
+        "amount": "291428.57",
+        "exact": "2040000/7"
+      }
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "2040000.00",
+      "exact": "2040000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "2040000",
+          "text": "LPs have their $2,040,000 of paid-in capital back"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "1000000.00",
+      "exact": "1000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "1000000.00",
+        "lps": {
+          "capital": "1000000.00",
+          "carry_tier": "0.00",
+          "total": "1000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "1000000.00",
+        "lps": {
+          "capital": "1000000.00",
+          "carry_tier": "0.00",
+          "total": "1000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "0.00",
+        "entitlement": "0.00",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder",
+          "distribution": {
+            "amount": "333333.33",
+            "exact": "1000000/3"
+          },
+          "to_date": {
+            "amount": "333333.33",
+            "exact": "1000000/3"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birch",
+          "distribution": {
+            "amount": "523809.52",
+            "exact": "11000000/21"
+          },
+          "to_date": {
+            "amount": "523809.52",
+            "exact": "11000000/21"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Cedar",
+          "distribution": {
+            "amount": "142857.14",
+            "exact": "1000000/7"
+          },
+          "to_date": {
+            "amount": "142857.14",
+            "exact": "1000000/7"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "2040000.00",
+      "exact": "2040000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "2040000.00",
+        "lps": {
+          "capital": "2040000.00",
+          "carry_tier": "0.00",
+          "total": "2040000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "2040000.00",
+        "lps": {
+          "capital": "2040000.00",
+          "carry_tier": "0.00",
+          "total": "2040000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "0.00",
+        "entitlement": "0.00",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder",
+          "distribution": {
+            "amount": "680000.00",
+            "exact": "680000"
+          },
+          "to_date": {
+            "amount": "680000.00",
+            "exact": "680000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birch",
+          "distribution": {
+            "amount": "1068571.43",
+            "exact": "7480000/7"
+          },
+          "to_date": {
+            "amount": "1068571.43",
+            "exact": "7480000/7"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Cedar",
+          "distribution": {
+            "amount": "291428.57",
+            "exact": "2040000/7"
+          },
+          "to_date": {
+            "amount": "291428.57",
+            "exact": "2040000/7"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "6000000.00",
+      "exact": "6000000",
+      "tags": [
+        "nav"
+      ],
+      "distribution": {
+        "amount": "6000000.00",
+        "lps": {
+          "capital": "2040000.00",
+          "carry_tier": "3168000.00",
+          "total": "5208000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "792000.00"
+            }
+          ],
+          "total": "792000.00"
+        }
+      },
+      "to_date": {
+        "amount": "6000000.00",
+        "lps": {
+          "capital": "2040000.00",
+          "carry_tier": "3168000.00",
+          "total": "5208000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "792000.00"
+            }
+          ],
+          "total": "792000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "792000.00",
+        "entitlement": "792000.00",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder",
+          "distribution": {
+            "amount": "1736000.00",
+            "exact": "1736000"
+          },
+          "to_date": {
+            "amount": "1736000.00",
+            "exact": "1736000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birch",
+          "distribution": {
+            "amount": "2728000.00",
+            "exact": "2728000"
+          },
+          "to_date": {
+            "amount": "2728000.00",
+            "exact": "2728000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Cedar",
+          "distribution": {
+            "amount": "744000.00",
+            "exact": "744000"
+          },
+          "to_date": {
+            "amount": "744000.00",
+            "exact": "744000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "2040000.00",
+          "carry_tier": "6368000.00",
+          "total": "8408000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1592000.00"
+            }
+          ],
+          "total": "1592000.00"
+        }
+      },
+      "to_date": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "2040000.00",
+          "carry_tier": "6368000.00",
+          "total": "8408000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1592000.00"
+            }
+          ],
+          "total": "1592000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1592000.00",
+        "entitlement": "1592000.00",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder",
+          "distribution": {
+            "amount": "2802666.67",
+            "exact": "8408000/3"
+          },
+          "to_date": {
+            "amount": "2802666.67",
+            "exact": "8408000/3"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birch",
+          "distribution": {
+            "amount": "4404190.48",
+            "exact": "92488000/21"
+          },
+          "to_date": {
+            "amount": "4404190.48",
+            "exact": "92488000/21"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Cedar",
+          "distribution": {
+            "amount": "1201142.86",
+            "exact": "8408000/7"
+          },
+          "to_date": {
+            "amount": "1201142.86",
+            "exact": "8408000/7"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    }
+  ]
+}

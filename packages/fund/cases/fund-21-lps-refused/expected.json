@@ -1,0 +1,83 @@
+{
+  "case": "fund-21-lps-refused",
+  "generated_by": "packages/fund/reference/generate.py",
+  "fixtures": {
+    "lp-blank-name.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "lps[0].name"
+      }
+    },
+    "lp-commitment-a-number.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "lps[0].commitment"
+      }
+    },
+    "lp-name-not-text.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "lps[0].name"
+      }
+    },
+    "lp-name-repeated.json": {
+      "refused": {
+        "kind": "input",
+        "term": "lp_name_repeated",
+        "field": "lps[2].name"
+      }
+    },
+    "lp-negative-commitment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "lps[0].commitment"
+      }
+    },
+    "lp-no-commitment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "lps[1].commitment"
+      }
+    },
+    "lp-no-name.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "lps[0].name"
+      }
+    },
+    "lp-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "lps[0]"
+      }
+    },
+    "lp-side-letter-carry.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "carry",
+        "field": "lps[0].carry"
+      }
+    },
+    "lp-zero-commitment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "lps[0].commitment"
+      }
+    },
+    "lps-not-a-list.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "lps"
+      }
+    }
+  }
+}
