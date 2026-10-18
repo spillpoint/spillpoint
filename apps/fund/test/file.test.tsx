@@ -230,6 +230,28 @@ describe("a file the page can't use is refused in one line, the current fund kep
     expect(status()).toBe("Opened plain.json.");
   });
 
+  it("refuses a file that lists LPs, until the page shows them, and keeps the fund it had", async () => {
+    render(<App />);
+    const before = [pickerText(), answer()];
+    await openFile(JSON.stringify(caseFile("fund-17-lps-three", "inputs.json")), "fund-17-lps-three.json");
+    expect(status()).toBe("Couldn't open fund-17-lps-three.json. This file lists LPs; the page shows them from the next version.");
+    expect([pickerText(), answer()]).toEqual(before);
+  });
+
+  it("refuses a saved file or a bare input that lists LPs, in any shape, and opens one whose list is empty or null", () => {
+    const refused = (text: string) => {
+      const r = readFile(text);
+      return r.ok ? "opened" : r.message;
+    };
+    const lists = "This file lists LPs; the page shows them from the next version.";
+    const alder = [{ name: "Alder", commitment: "1000000" }];
+    expect(refused(savedFund({ ...case8(), lps: alder }))).toBe(lists);
+    expect(refused(JSON.stringify({ ...case8(), lps: alder }))).toBe(lists);
+    expect(refused(savedFund({ ...case8(), lps: { name: "Alder" } }))).toBe(lists);
+    expect(refused(savedFund({ ...case8(), lps: [] }))).toBe("opened");
+    expect(refused(savedFund({ ...case8(), lps: null }))).toBe("opened");
+  });
+
   it('opens a bare input as "My fund", and a saved file\'s X', () => {
     const bare = readFile(JSON.stringify(case8()));
     expect(bare.ok && [bare.name, bare.x]).toEqual(["My fund", null]);
