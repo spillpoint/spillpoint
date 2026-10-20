@@ -268,7 +268,7 @@ spillpoint-fund 0.2.0 gives each LP's amounts (F19 to F21), and f02c puts them o
 - **The engine checks the LPs last** (FA19), so an LP's problem shows once everything else runs.
 
 **An opened file's LP problem** reads as the others do, refused in one line under the masthead:
-- **Where it is:** "The name in row 2 of its LPs …", "The commitment in row 2 of its LPs …", "Row 2 of its LPs …" for an LP that isn't an object, "Its LPs …" for a list that isn't one.
+- **Where it is:** "The name in row 2 of its LPs …", "The commitment in row 2 of its LPs …", "Row 2 of its LPs …" for an LP that isn't an object, "Its list of LPs …" for a list that isn't one.
 - **The words:** the field words the other refusals use. For a repeat, the rule: "The name in row 3 of its LPs: an LP above already has this name; each LP needs its own."
 - **An LP field the page doesn't model** says which: "This file has a term the page doesn't model: `carry` on an LP (row 1 of its LPs). Every LP is on the same terms here." The term is set as code, as `hurdle_irr` is.
 
