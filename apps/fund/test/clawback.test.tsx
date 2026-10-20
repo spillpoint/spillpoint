@@ -53,8 +53,8 @@ const answer = () => screen.getByRole("region", { name: "The answer" }).querySel
 const owedLegend = () => within(card()).getByRole("list", { name: /^Owed at X/ }).textContent;
 
 describe("the clawback's sentence and chart", () => {
-  it("covers every final case: 10, 11, 12, 13, 15 and 16", () => {
-    expect(FINAL_CASES).toEqual(["fund-10-clawback", "fund-11-clawback-pref", "fund-12-spv", "fund-13-clawback-steps", "fund-15-clawback-capital", "fund-16-clawback-catch-up"]);
+  it("covers every final case: 10, 11, 12, 13, 15, 16, 19 and 20", () => {
+    expect(FINAL_CASES).toEqual(["fund-10-clawback", "fund-11-clawback-pref", "fund-12-spv", "fund-13-clawback-steps", "fund-15-clawback-capital", "fund-16-clawback-catch-up", "fund-19-lps-clawback", "fund-20-lps-spv"]);
   });
 
   it.each(FINAL_CASES)("%s: the sentence gives the case's carry paid, entitlement and owed at every point", (dir) => {
@@ -85,7 +85,7 @@ describe("the clawback's sentence and chart", () => {
 
 describe("case 13: a late call and a clawback", () => {
   it("opens at $0, owing $2,750,000.00: the GP has been paid $4,750,000.00 and has earned $2,000,000.00", () => {
-    open("fund-13-clawback-steps");
+    open("fund-19-lps-clawback");
     expect(xBox().value).toBe("$0");
     expect(answer()).toBe("If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M.");
     expect(sentence()).toBe(
@@ -95,7 +95,7 @@ describe("case 13: a late call and a clawback", () => {
   });
 
   it("owes $750,000.00 from $10,000,000 to $15,000,000, then $656,250.00 from $15,937,500 on", () => {
-    open("fund-13-clawback-steps");
+    open("fund-19-lps-clawback");
     const owedAt = (x: string) => {
       typeX(x);
       return owedLegend().replace("The clawback", "");
@@ -106,7 +106,7 @@ describe("case 13: a late call and a clawback", () => {
   });
 
   it("gives the GP's carry over the fund's life in the headline, with what it gets now and gives back: $0, $15M and $25M", () => {
-    open("fund-13-clawback-steps");
+    open("fund-19-lps-clawback");
     const at = (x: string) => {
       typeX(x);
       return answer();
@@ -122,7 +122,7 @@ describe("case 13: a late call and a clawback", () => {
   });
 
   it("marks the bends and X on its own chart, numbered as in the breakpoint list, which gives their reasons", () => {
-    open("fund-13-clawback-steps");
+    open("fund-19-lps-clawback");
     const chart = within(card()).getByRole("img", { name: "The clawback owed against X, from $0 to $40M, with 3 breakpoints marked." });
     const texts = [...chart.querySelectorAll("svg text")].map((t) => t.textContent);
     for (const mark of ["1", "2", "3", "X = $0"]) expect(texts).toContain(mark);
@@ -139,8 +139,8 @@ describe("case 13: a late call and a clawback", () => {
 
 describe("the NAV point", () => {
   it("case 8 opens at NAV, owing nothing: the card says so, and the headline is the fund's life, as if liquidated there", () => {
-    open("fund-08-carry-steps");
-    expect(sentence()).toBe(sentenceFor(caseFile("fund-08-carry-steps", "expected.json").points.find((p: { x: string }) => p.x === "40000000.00").clawback));
+    open("fund-17-lps-three");
+    expect(sentence()).toBe(sentenceFor(caseFile("fund-17-lps-three", "expected.json").points.find((p: { x: string }) => p.x === "40000000.00").clawback));
     expect(sentence()).toBe(
       "If this is the fund's last distribution, the GP has been paid $6,806,250.00 of carry, has earned $6,806,250.00 on the fund's totals, and owes nothing back to the LPs.",
     );
@@ -151,7 +151,7 @@ describe("the NAV point", () => {
   });
 
   it("case 8 has no clawback card away from NAV, and the NAV button sets X back to NAV", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     typeX("34500000");
     expect(screen.queryByRole("region", { name: "The clawback" })).toBeNull();
     expect(screen.queryByText("X is at NAV")).toBeNull();

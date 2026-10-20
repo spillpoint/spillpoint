@@ -33,9 +33,12 @@ const money = (s: string) => {
   return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${part}`;
 };
 
+/** The split's table: Payouts also has the LPs' card's, with LPs (f02c). */
+const splitTable = () => within(screen.getByRole("region", { name: /^The split at/ })).getByRole("table");
+
 /** A row of the split table, by its label: the four amounts, X's LPs and GP, then to date's. */
 function row(label: string | RegExp): string[] {
-  const header = within(screen.getByRole("table")).getByRole("rowheader", { name: label });
+  const header = within(splitTable()).getByRole("rowheader", { name: label });
   return within(header.closest("tr")!)
     .getAllByRole("cell")
     .map((c) => c.textContent!);
@@ -56,7 +59,7 @@ function expectSplit(dir: string, x: string) {
   const NONE = "—";
   expect(row("Capital")).toEqual([money(now.lps.capital), NONE, money(all.lps.capital), NONE]);
   if (now.lps.pref) expect(row("Pref")).toEqual([money(now.lps.pref), NONE, money(all.lps.pref!), NONE]);
-  else expect(within(screen.getByRole("table")).queryByRole("rowheader", { name: "Pref" })).toBeNull();
+  else expect(within(splitTable()).queryByRole("rowheader", { name: "Pref" })).toBeNull();
   if (now.gp.catch_up) expect(row("Catch-up")).toEqual([money(now.lps.catch_up!), money(now.gp.catch_up), money(all.lps.catch_up!), money(all.gp.catch_up!)]);
   // One row a carry step (f01f review, answer 2). The GP's carry at each step is the case's. The cases don't record the
   // LPs' share by step, so it's the engine's, and the steps' LP shares add up to the case's carry tier, to a cent each.
@@ -95,7 +98,7 @@ function stepLabel(carry: string | { steps: { rate: string; from_lp_multiple?: s
 /** The page, opened on case 8 from the list: the review note's checks use it. */
 function openCase8() {
   render(<App />);
-  fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
+  fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-17-lps-three" } });
 }
 
 /** The headline's lines: the terms, the answer, and the LPs' side when there is one. */
@@ -106,7 +109,7 @@ const fact = (label: string | RegExp) => screen.getByText(label, { selector: "dt
 
 describe("the fund page", () => {
   it("offers four examples, read from the locked cases at build time, a flat 20% fund first, then a blank fund", () => {
-    expect(examples.map((e) => e.id)).toEqual(["fund-03-gp-commitment", "fund-08-carry-steps", "fund-13-clawback-steps", "fund-12-spv"]);
+    expect(examples.map((e) => e.id)).toEqual(["fund-03-gp-commitment", "fund-17-lps-three", "fund-19-lps-clawback", "fund-12-spv"]);
     for (const e of examples) expect(e.fund).toEqual(caseFile(e.id, "inputs.json").fund);
     render(<App />);
     const picker = screen.getByLabelText("Start from") as HTMLSelectElement;
@@ -149,7 +152,7 @@ describe("the fund page", () => {
   it("splits case 8 at $40,000,000 as the case does, X alone and the fund to date, each step a band of the LPs' multiple", () => {
     openCase8();
     expect(screen.getByRole("heading", { name: "The split at $40,000,000" })).toBeDefined();
-    expectSplit("fund-08-carry-steps", "40000000.00");
+    expectSplit("fund-17-lps-three", "40000000.00");
     // The figures the review note asks Jordan to check, written out.
     expect(row("Total")).toEqual(["$32,793,750.00", "$6,806,250.00", "$36,753,750.00", "$6,806,250.00"]);
     expect(row("Carry at 20% (up to 3.0x)")).toEqual(["$21,780,000.00", "$5,445,000.00", "$21,780,000.00", "$5,445,000.00"]);
@@ -179,7 +182,7 @@ describe("the fund page", () => {
     openCase8();
     fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "$34.5M" } });
     expect(screen.getByRole("heading", { name: "The split at $34,500,000" })).toBeDefined();
-    expectSplit("fund-08-carry-steps", "34500000.00");
+    expectSplit("fund-17-lps-three", "34500000.00");
     expect(fact("The LPs' net multiple to date")).toBe("3.00x");
   });
 
@@ -198,20 +201,20 @@ describe("the fund page", () => {
       "Write an amount in dollars, 0 or more: 40000000, 40,000,000 or $40M. Showing $40,000,000, the last amount that worked.",
     );
     expect(box.getAttribute("aria-invalid")).toBe("true");
-    expectSplit("fund-08-carry-steps", "40000000.00");
+    expectSplit("fund-17-lps-three", "40000000.00");
     // A comma out of place is refused, never read as something else: "1,5M" isn't $15M.
     fireEvent.change(box, { target: { value: "1,5M" } });
     expect(screen.getByRole("alert").textContent).toMatch(/^Write an amount in dollars/);
-    expectSplit("fund-08-carry-steps", "40000000.00");
+    expectSplit("fund-17-lps-three", "40000000.00");
     fireEvent.change(box, { target: { value: "20,000,000" } });
     expect(screen.queryByRole("alert")).toBeNull();
-    expectSplit("fund-08-carry-steps", "20000000.00");
+    expectSplit("fund-17-lps-three", "20000000.00");
   });
 
   it("opens case 13 at $0, where the clawback is the story, and case 12 at its NAV, $6,000,000, each as its case splits them", () => {
     render(<App />);
     const picker = screen.getByLabelText("Start from");
-    fireEvent.change(picker, { target: { value: "fund-13-clawback-steps" } });
+    fireEvent.change(picker, { target: { value: "fund-19-lps-clawback" } });
     const box = screen.getByLabelText(/^Distribution on 1 Jan 2025/) as HTMLInputElement;
     expect(box.value).toBe("$0");
     // A final fund's headline is the GP's carry over the fund's life (f01i): at $0, there's nothing of this distribution to give.
@@ -219,14 +222,14 @@ describe("the fund page", () => {
       "Carry 20% and 30% from 2.0x; no pref; no GP commitment.",
       "If nothing more is distributed after 1 Jan 2025, the GP ends with $2M of carry: it gives back $2.75M.",
     ]);
-    expectSplit("fund-13-clawback-steps", "0.00");
+    expectSplit("fund-19-lps-clawback", "0.00");
     // The headline beside the carry, never without the clawback (f01h).
     fireEvent.change(box, { target: { value: "15000000" } });
     expect(headline().slice(1)).toEqual([
       "If $15M on 1 Jan 2025 is the last distribution, the GP ends with $5M of carry: it gets $1M now and gives back $750K.",
       "Of the $15M, the LPs get $14M.",
     ]);
-    expectSplit("fund-13-clawback-steps", "15000000.00");
+    expectSplit("fund-19-lps-clawback", "15000000.00");
     expect(fact("The LPs' net multiple to date")).toBe("1.96x");
 
     fireEvent.change(picker, { target: { value: "fund-12-spv" } });
@@ -235,14 +238,14 @@ describe("the fund page", () => {
     expect(screen.queryByText(/GP commitment's paid-in/)).toBeNull();
   });
 
-  it("puts the cards in the main page's order: the answer, X and its slider, the chart, the split, the clawback when there is one, the breakpoints", () => {
+  it("puts the cards in the main page's order: the answer, X and its slider, the chart, the split, the clawback when there is one, each LP when there are LPs, the breakpoints", () => {
     render(<App />);
     const cards = () =>
       [...screen.getByRole("tabpanel", { name: "Payouts" }).querySelectorAll(":scope > section")].map((s) => s.getAttribute("aria-label") ?? s.querySelector("h2")!.textContent);
     expect(cards()).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $20,000,000", "Breakpoints"]);
     // The chart and the split are both about this distribution; the clawback, about the fund's life, comes after them (f01i).
-    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-13-clawback-steps" } });
-    expect(cards()).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $0", "The clawback", "Breakpoints"]);
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-19-lps-clawback" } });
+    expect(cards()).toEqual(["The answer", "The distribution", "Who gets what as X grows", "The split at $0", "The clawback", "Each LP at $0", "Breakpoints"]);
   });
 
   it("names spillpoint-fund's version and the commit in the footer, and links back to the main page", () => {

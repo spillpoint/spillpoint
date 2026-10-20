@@ -72,7 +72,7 @@ describe("the fund in the form is the fund in the file", () => {
 describe("saving and opening", () => {
   it("saves the clawback example at $15,000,000; a term changed, the saved file brings back its terms and X", async () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-13-clawback-steps" } });
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-19-lps-clawback" } });
     set(/^Distribution on/, "15000000");
     // Moving X isn't a change.
     expect(notSaved()).toBe(false);
@@ -82,7 +82,7 @@ describe("saving and opening", () => {
     const text = await downloads[0]!.blob.text();
     const file = JSON.parse(text);
     expect([file.name, file.view]).toEqual(["A late call and a clawback", { x: "15000000" }]);
-    expect(valuesOf(file.fund)).toEqual(valuesOf(caseFile("fund-13-clawback-steps", "inputs.json").fund));
+    expect(valuesOf(file.fund)).toEqual(valuesOf(caseFile("fund-19-lps-clawback", "inputs.json").fund));
 
     tab("Terms");
     set("Step 1's carry rate", "25");
@@ -228,28 +228,6 @@ describe("a file the page can't use is refused in one line, the current fund kep
     // A file with none says nothing more.
     await openFile(savedFund(case8()), "plain.json");
     expect(status()).toBe("Opened plain.json.");
-  });
-
-  it("refuses a file that lists LPs, until the page shows them, and keeps the fund it had", async () => {
-    render(<App />);
-    const before = [pickerText(), answer()];
-    await openFile(JSON.stringify(caseFile("fund-17-lps-three", "inputs.json")), "fund-17-lps-three.json");
-    expect(status()).toBe("Couldn't open fund-17-lps-three.json. This file lists LPs; the page shows them from the next version.");
-    expect([pickerText(), answer()]).toEqual(before);
-  });
-
-  it("refuses a saved file or a bare input that lists LPs, in any shape, and opens one whose list is empty or null", () => {
-    const refused = (text: string) => {
-      const r = readFile(text);
-      return r.ok ? "opened" : r.message;
-    };
-    const lists = "This file lists LPs; the page shows them from the next version.";
-    const alder = [{ name: "Alder", commitment: "1000000" }];
-    expect(refused(savedFund({ ...case8(), lps: alder }))).toBe(lists);
-    expect(refused(JSON.stringify({ ...case8(), lps: alder }))).toBe(lists);
-    expect(refused(savedFund({ ...case8(), lps: { name: "Alder" } }))).toBe(lists);
-    expect(refused(savedFund({ ...case8(), lps: [] }))).toBe("opened");
-    expect(refused(savedFund({ ...case8(), lps: null }))).toBe("opened");
   });
 
   it('opens a bare input as "My fund", and a saved file\'s X', () => {

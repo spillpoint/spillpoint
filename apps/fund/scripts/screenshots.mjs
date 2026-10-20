@@ -53,17 +53,17 @@ const tabShots = (prefix, setup) =>
 
 const SHOTS = {
   // f01m: each tab at 320 and 1280 pixels, on case 13 and on a blank fund with its first refusal showing.
-  ...tabShots("f01m-case13", [choose("Start from", "fund-13-clawback-steps")]),
+  ...tabShots("f01m-case13", [choose("Start from", "fund-19-lps-clawback")]),
   ...tabShots("f01m-blank", [choose("Start from", "blank")]),
   // The longest example, its carry in three steps, at a phone's width; and its cash flows with a refusal and the
   // paste box open, each cash flow a card.
-  "f01m-case8-terms-320": { width: 320, height: 900, mobile: true, steps: [choose("Start from", "fund-08-carry-steps"), click("Terms")], quality: 50 },
+  "f01m-case8-terms-320": { width: 320, height: 900, mobile: true, steps: [choose("Start from", "fund-17-lps-three"), click("Terms")], quality: 50 },
   "f01m-case8-flows-320": {
     width: 320,
     height: 900,
     mobile: true,
     steps: [
-      choose("Start from", "fund-08-carry-steps"),
+      choose("Start from", "fund-17-lps-three"),
       click("Cash flows"),
       fill("cash_flows[4].date", "2020-06-01"),
       click("Paste rows from a spreadsheet"),
@@ -76,14 +76,14 @@ const SHOTS = {
   ...Object.fromEntries(
     [480, 600, 768, 900].map((width) => [
       `f01m2-case8-flows-${width}`,
-      { width, height: 900, mobile: width < 900, steps: [choose("Start from", "fund-08-carry-steps"), click("Cash flows")], clip: ["section[aria-labelledby=flows-heading]"], quality: 50 },
+      { width, height: 900, mobile: width < 900, steps: [choose("Start from", "fund-17-lps-three"), click("Cash flows")], clip: ["section[aria-labelledby=flows-heading]"], quality: 50 },
     ]),
   ),
   "f01m2-case8-split-320": {
     width: 320,
     height: 900,
     mobile: true,
-    steps: [choose("Start from", "fund-08-carry-steps")],
+    steps: [choose("Start from", "fund-17-lps-three")],
     clip: ["section[aria-labelledby=split-heading]"],
     quality: 50,
   },

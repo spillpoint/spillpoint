@@ -1,5 +1,5 @@
 // The page's layout, as the main page has it (f01i): the fund behind the answers in one line under the picker, then
-// three tabs, Payouts, Terms and Cash flows, with the keys screen-reader users expect.
+// four tabs, Payouts, Terms, Cash flows and LPs (f02c), with the keys screen-reader users expect.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -18,7 +18,7 @@ describe("the fund behind the answers", () => {
     render(<App />);
     expect(summary()).toBe("This fund: $10.7M paid in over 3 calls and nothing distributed before X. X isn't its last distribution.");
     const picker = screen.getByLabelText("Start from");
-    const seen = ["fund-08-carry-steps", "fund-13-clawback-steps", "fund-12-spv"].map((id) => {
+    const seen = ["fund-17-lps-three", "fund-19-lps-clawback", "fund-12-spv"].map((id) => {
       fireEvent.change(picker, { target: { value: id } });
       return summary();
     });
@@ -37,6 +37,7 @@ describe("the tabs", () => {
       ["Payouts", "true"],
       ["Terms", "false"],
       ["Cash flows", "false"],
+      ["LPs", "false"],
     ]);
     expect(screen.getByRole("tabpanel").getAttribute("id")).toBe("panel-payouts");
     fireEvent.click(screen.getByRole("tab", { name: "Cash flows" }));
@@ -51,11 +52,11 @@ describe("the tabs", () => {
     expect(screen.getByRole("tab", { name: "Terms" }).getAttribute("aria-selected")).toBe("true");
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Terms" }));
     fireEvent.keyDown(document.activeElement!, { key: "End" });
-    expect(screen.getByRole("tab", { name: "Cash flows" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "LPs" }).getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
     expect(payouts.getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(payouts, { key: "ArrowLeft" });
-    expect(screen.getByRole("tab", { name: "Cash flows" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "LPs" }).getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(document.activeElement!, { key: "Home" });
     expect(payouts.getAttribute("aria-selected")).toBe("true");
   });
@@ -63,7 +64,7 @@ describe("the tabs", () => {
 
 describe("the Cash flows tab", () => {
   it("shows case 8's cash flows as entered, and the facts about D, each in its field", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     fireEvent.click(screen.getByRole("tab", { name: "Cash flows" }));
     const panel = screen.getByRole("tabpanel", { name: "Cash flows" });
     const value = (label: string) => (within(panel).getByLabelText(label) as HTMLInputElement | HTMLSelectElement).value;
