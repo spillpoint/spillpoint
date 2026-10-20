@@ -3,15 +3,18 @@
 //
 //   {"format": "spillpoint-fund", "version": 1, "name": ..., "fund": ..., "view": {"x": ...}}
 //
-// `fund` is exactly the input the Terms and Cash flows tabs write, which is readFund's input (SPEC.md, "Inputs"), so a
-// saved file is also a fund the engine reads on its own. Only a fund the engine accepts is saved, so a saved file
-// always opens. Opening also takes a bare input, or a case's inputs.json, which has the input as `fund`.
+// `fund` is exactly the input the Terms, Cash flows and LPs tabs write, which is readFund's input (SPEC.md, "Inputs"),
+// so a saved file is also a fund the engine reads on its own. Only a fund the engine accepts is saved, so a saved file
+// always opens. Opening also takes a bare input, or a case's inputs.json, which has the input as `fund`. A file's LP
+// names are trimmed as the page reads them (FA17), so "Alder " never reaches the engine.
 
 import { D, FundRefusal, readFund, splitAt } from "spillpoint-fund";
 import type { Fund } from "spillpoint-fund";
 
 import type { FlowsForm } from "./flows.ts";
 import { flowsInput } from "./flows.ts";
+import type { LpsForm } from "./lps.ts";
+import { LP_WORDS, lpsInput, nameOf } from "./lps.ts";
 import type { TermsForm } from "./terms.ts";
 import { termsInput } from "./terms.ts";
 
@@ -21,10 +24,10 @@ const FIELDS = ["format", "version", "name", "fund", "view"];
 /** A fund with no name of its own: a blank one, or a bare input. */
 export const UNNAMED = "My fund";
 
-/** The fund's input, as the two tabs write it: what the engine reads, and what a file keeps. */
-export function inputOf(terms: TermsForm, flows: FlowsForm): Record<string, unknown> {
+/** The fund's input, as the three tabs write it: what the engine reads, and what a file keeps. No LPs: no `lps`. */
+export function inputOf(terms: TermsForm, flows: FlowsForm, lps: LpsForm): Record<string, unknown> {
   const { as_of, ...rest } = flowsInput(flows);
-  return { as_of, terms: termsInput(terms), ...rest };
+  return { as_of, terms: termsInput(terms), ...rest, ...lpsInput(lps) };
 }
 
 /** The file, with X where it was: a save keeps X, though moving it isn't a change. */
@@ -33,13 +36,19 @@ export function fileText(name: string, fund: Record<string, unknown>, x: D): str
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 
+/** "A late call and a clawback" → "a-late-call-and-a-clawback": how the page names the files it makes. */
+export function slug(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "fund"
+  );
+}
+
 /** "A late call and a clawback" → "a-late-call-and-a-clawback.json". */
 export function fileName(name: string): string {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `${slug || "fund"}.json`;
+  return `${slug(name)}.json`;
 }
 
 export type OpenedFile = { ok: true; name: string; fund: Fund; x: D | null; fraction: string | null } | { ok: false; message: string };
@@ -102,12 +111,7 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
-  // Until the page shows LPs (f02c, which removes this), a file whose fund lists them is refused, so a save can't drop
-  // them: the forms have no place for them yet. Left out, null or an empty list is no LPs (F19), and opens.
-  if (isObject(input) && input.lps !== undefined && input.lps !== null && !(Array.isArray(input.lps) && input.lps.length === 0)) {
-    return { ok: false, message: LPS_LATER };
-  }
-
+  input = trimmedNames(input);
   let fund: Fund;
   try {
     fund = readFund(input);
@@ -129,13 +133,23 @@ export function readFile(text: string): OpenedFile {
   }
 }
 
-const LPS_LATER = "This file lists LPs; the page shows them from the next version.";
+/**
+ * The input with each LP's name trimmed, as the page reads every name (FA17; f02a review, answer 2). Only a name that is
+ * text changes; anything else is left for the engine to refuse where it is (F21).
+ */
+function trimmedNames(input: unknown): unknown {
+  if (!isObject(input) || !Array.isArray(input.lps)) return input;
+  return { ...input, lps: input.lps.map((lp: unknown) => (isObject(lp) && typeof lp.name === "string" ? { ...lp, name: nameOf(lp.name) } : lp)) };
+}
+
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
 
 /** The part of a fund's input a path names, as a sentence starts: "The amount in row 3 of its cash flows". */
 function where(path: string): string {
   const flow = /^cash_flows\[(\d+)\](?:\.(\w+))?$/.exec(path);
   if (flow) return flow[2] ? `The ${flow[2]} in row ${Number(flow[1]) + 1} of its cash flows` : `Row ${Number(flow[1]) + 1} of its cash flows`;
+  const lp = /^lps\[(\d+)\](?:\.(\w+))?$/.exec(path);
+  if (lp) return lp[2] ? `The ${lp[2]} in row ${Number(lp[1]) + 1} of its LPs` : `Row ${Number(lp[1]) + 1} of its LPs`;
   const step = /^terms\.carry\.steps\[(\d+)\](?:\.(\w+))?$/.exec(path);
   if (step) return step[2] === "from_lp_multiple" ? `Carry step ${Number(step[1]) + 1}'s LP multiple` : step[2] ? `Carry step ${Number(step[1]) + 1}'s ${step[2]}` : `Carry step ${Number(step[1]) + 1}`;
   const named: Record<string, string> = {
@@ -156,6 +170,7 @@ function where(path: string): string {
     "terms.gp_commitment.pays_fees": "Whether its GP commitment pays fees",
     "terms.gp_commitment.pays_expenses": "Whether its GP commitment pays expenses",
     cash_flows: "Its cash flows",
+    lps: "Its list of LPs",
   };
   return named[path] ?? `\`${path}\``;
 }
@@ -164,9 +179,11 @@ function where(path: string): string {
 export function fileProblem(refusal: FundRefusal): string {
   const { kind, term, path } = refusal;
   if (kind === "unsupported") {
-    return term === "compounded_pref"
-      ? `This file has a term the page doesn't model: a pref compounded, not simple (\`${path}\`).`
-      : `This file has a term the page doesn't model: \`${term}\`.`;
+    if (term === "compounded_pref") return `This file has a term the page doesn't model: a pref compounded, not simple (\`${path}\`).`;
+    // F21: a per-LP term, such as a side letter's carry. Every LP is on the same terms (F19).
+    const lp = /^lps\[(\d+)\]\./.exec(path);
+    if (lp) return `This file has a term the page doesn't model: \`${term}\` on an LP (row ${Number(lp[1]) + 1} of its LPs). Every LP is on the same terms here.`;
+    return `This file has a term the page doesn't model: \`${term}\`.`;
   }
   const field: Record<string, string> = {
     bad_number: 'isn\'t a number the page can use: amounts and rates are exact strings, like "8000000" or "0.2", amounts more than zero and nothing negative',
@@ -185,6 +202,7 @@ export function fileProblem(refusal: FundRefusal): string {
     no_calls: "a fund needs at least one call",
     distribution_before_call: "this distribution is before the fund's first call",
     cash_flow_after_distribution_date: "this cash flow is after the distribution date",
+    lp_name_repeated: LP_WORDS.repeated.replace(/^A/, "a").replace(/\.$/, ""),
   };
   return `${where(path)}: ${rule[term] ?? refusal.message}.`;
 }

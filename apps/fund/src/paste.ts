@@ -111,7 +111,7 @@ function slashedIso([a, b, y]: [number, number, number], order: Order): string |
 }
 
 /** The paste's rows: tab-separated cells, each trimmed of spaces and of the quotes a spreadsheet may put round one. */
-function cellsOf(text: string): string[][] {
+export function cellsOf(text: string): string[][] {
   return text
     .replace(/\r\n?/g, "\n")
     .split("\n")
@@ -182,19 +182,29 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
     }
 
     if (amountText === undefined || amountText === "") return void unread.push(`${row}: has no amount; the columns are date, type, kind and amount`);
-    // An accounting format's zero, "$ -" or "-", is a zero, not a negative.
-    if (/^\$?\s*-$/.test(amountText)) return void unread.push(`${row}: '${amountText}' isn't an amount more than zero`);
-    // "-500,000", "-$500,000", "$-500,000", "(500,000)" and "$(500,000)": the ways a spreadsheet writes a negative.
-    if (/^-|^\$\s*-|^\$?\s*\(.*\)$/.test(amountText)) {
-      return void unread.push(`${row}: '${amountText}' is negative. Write amounts as positive; the type says which way the money goes`);
-    }
-    const amount = parseDollars(amountText);
-    if (amount === null) return void unread.push(`${row}: '${amountText}' isn't an amount`);
-    if (!amount.gt(0)) return void unread.push(`${row}: '${amountText}' isn't an amount more than zero`);
+    const read = pastedAmount(amountText, "Write amounts as positive; the type says which way the money goes");
+    if ("why" in read) return void unread.push(`${row}: ${read.why}`);
+    const amount = read.amount;
     rows.push({ line: i + 1, date, type, kind, amount });
     if (kindless) noKind++;
   });
   return { rows, unread, noKind, ambiguous, orderNote, order };
+}
+
+/**
+ * A pasted amount, as the cells take it, digits kept exactly; or why it can't be read. A cash flow's and an LP's
+ * commitment are read alike (f02c). `negative` is what to say of a negative: the cash flows' type says which way the
+ * money goes, and a commitment is more than zero.
+ */
+export function pastedAmount(text: string, negative: string): { amount: D } | { why: string } {
+  // An accounting format's zero, "$ -" or "-", is a zero, not a negative.
+  if (/^\$?\s*-$/.test(text)) return { why: `'${text}' isn't an amount more than zero` };
+  // "-500,000", "-$500,000", "$-500,000", "(500,000)" and "$(500,000)": the ways a spreadsheet writes a negative.
+  if (/^-|^\$\s*-|^\$?\s*\(.*\)$/.test(text)) return { why: `'${text}' is negative. ${negative}` };
+  const amount = parseDollars(text);
+  if (amount === null) return { why: `'${text}' isn't an amount` };
+  if (!amount.gt(0)) return { why: `'${text}' isn't an amount more than zero` };
+  return { amount };
 }
 
 /** The question when the paste can't settle the order: how its first such date reads each way. */

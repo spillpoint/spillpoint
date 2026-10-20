@@ -143,7 +143,7 @@ describe("a fund typed in from blank", () => {
 
 describe("a refusal, in the cell its path names", () => {
   it("refuses a distribution dated before the first call in its row, and the payouts keep the last good fund", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     tab("Cash flows");
     set("Row 5's date", "2020-06-01");
     expect(problemAt("Row 5's date")).toBe("This distribution is before the fund's first call.");
@@ -160,7 +160,7 @@ describe("a refusal, in the cell its path names", () => {
   });
 
   it("asks for an amount when one is blank, isn't more than zero, or has a comma out of place", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     tab("Cash flows");
     set("Row 2's amount", "");
     expect(problemAt("Row 2's amount")).toBe("Write an amount in dollars, more than zero: 250000 or 250000.50.");
@@ -175,7 +175,7 @@ describe("a refusal, in the cell its path names", () => {
   });
 
   it("refuses a cash flow after D in its row, and a NAV it can't read in its field", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     tab("Cash flows");
     set("Distribution date (D)", "2024-01-01");
     expect(problemAt("Row 5's date")).toBe("This cash flow is after the distribution date, 1 Jan 2024.");
@@ -218,7 +218,7 @@ describe("a refusal, in the cell its path names", () => {
 
 describe("the rows and the facts about D", () => {
   it("adds a row with its date focused, sorts by date, and removes a row", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     tab("Cash flows");
     fireEvent.click(screen.getByRole("button", { name: "Add a cash flow" }));
     expect(document.activeElement).toBe(screen.getByLabelText("Row 6's date"));
@@ -246,7 +246,7 @@ describe("the rows and the facts about D", () => {
   });
 
   it("makes X the last distribution when the box is ticked, as case 12 is", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     tab("Cash flows");
     fireEvent.click(screen.getByRole("checkbox", { name: "This is the fund's last distribution" }));
     expect(document.querySelector(".example-label")!.textContent).toMatch(/X is its last distribution\.Not saved$/);

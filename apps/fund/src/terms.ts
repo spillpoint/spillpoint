@@ -175,17 +175,22 @@ export function termsProblem(refusal: FundRefusal, form: TermsForm): Problem {
 }
 
 /**
- * The form control a problem's path names, on either tab: a step's own problem goes to its rate, a cash flow's to its
- * date, and the cash flows' to "Add a cash flow".
+ * The form control a problem's path names, on any tab: a step's own problem goes to its rate, a cash flow's to its
+ * date, an LP's to its name, the cash flows' to "Add a cash flow" and the LPs' to "Add an LP".
  */
 export function controlFor(path: string): string {
   if (/^terms\.carry\.steps\[\d+\]$/.test(path)) return `${path}.rate`;
   if (path === "terms.catch_up") return "terms.catch_up.gp_share";
   if (/^cash_flows\[\d+\]$/.test(path)) return `${path}.date`;
+  if (/^lps\[\d+\]$/.test(path)) return `${path}.name`;
   return path;
 }
 
-/** The tab a problem's path is on: the terms on Terms, everything else on Cash flows. */
-export function tabFor(path: string): "terms" | "flows" {
-  return path.startsWith("terms") ? "terms" : "flows";
+/** The tab a problem's path is on: the terms on Terms, the LPs on LPs (F21), everything else on Cash flows. */
+export function tabFor(path: string): "terms" | "flows" | "lps" {
+  if (path.startsWith("terms")) return "terms";
+  return path === "lps" || path.startsWith("lps[") ? "lps" : "flows";
 }
+
+/** What a tab holds, as a sentence names it: "Your last change to the LPs has a problem". */
+export const TAB_WORDS = { terms: "terms", flows: "cash flows", lps: "LPs" } as const;

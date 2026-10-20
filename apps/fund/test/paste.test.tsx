@@ -193,7 +193,7 @@ describe("the paste box", () => {
   });
 
   it("lists a 'Q3 2021' row as unreadable, adds nothing until Add them, and Cancel leaves the table as it was", () => {
-    flows("fund-08-carry-steps");
+    flows("fund-17-lps-three");
     const before = dates();
     paste("Date\tType\tKind\tAmount\nQ3 2021\tDistribution\t\t$1,000,000\n9/30/2025\tDistribution\t\t$2,000,000");
     expect(preview().textContent).toBe(
@@ -209,7 +209,7 @@ describe("the paste box", () => {
   });
 
   it("asks once which comes first when the only dates are 03/04/2021 and 05/06/2022, month first selected", () => {
-    flows("fund-08-carry-steps");
+    flows("fund-17-lps-three");
     paste("03/04/2021\tCall\tFee\t100\n05/06/2022\tCall\tFee\t200");
     const question = within(pasteBox()).getByRole("group", { name: "Which comes first in this paste's dates?" });
     expect(within(question).getAllByRole("radio").map((r) => [r.parentElement!.textContent!.trim(), (r as HTMLInputElement).checked])).toEqual([
@@ -222,7 +222,7 @@ describe("the paste box", () => {
   });
 
   it("refuses '(500,000)' with its reason, and counts the calls read with no kind", () => {
-    flows("fund-08-carry-steps");
+    flows("fund-17-lps-three");
     // The refused row has no kind either; it isn't counted, since it isn't read.
     paste("2024-06-01\tCall\t\t(500,000)\n2022-02-01\tCall\t\t100,000");
     expect(preview().textContent).toBe(
@@ -231,7 +231,7 @@ describe("the paste box", () => {
   });
 
   it("sends more than one cell pasted into a table cell to the paste box, and adds after the rows there, unsorted", () => {
-    flows("fund-08-carry-steps");
+    flows("fund-17-lps-three");
     const cell = screen.getByLabelText("Row 2's amount") as HTMLInputElement;
     // One cell, with the line break a spreadsheet adds, goes into the cell as usual.
     fireEvent.paste(cell, { clipboardData: { getData: () => "495000\r\n" } });

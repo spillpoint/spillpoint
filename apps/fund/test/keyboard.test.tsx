@@ -70,7 +70,7 @@ describe("a click or tap on the chart sets X", () => {
 
   it("gives case 8 the NAV headline when the NAV line is tapped, from X elsewhere", () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-17-lps-three" } });
     fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "20000000" } });
     const answer = () => screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent;
     expect(answer()).toBe("At a $20M distribution on 30 Sep 2026, the GP's carry is $2.57M.");
@@ -83,7 +83,7 @@ describe("a click or tap on the chart sets X", () => {
 
   it("sets X from the clawback's chart too, onto a bend near one: case 13's $15,000,000", () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-13-clawback-steps" } });
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-19-lps-clawback" } });
     const chart = within(screen.getByRole("region", { name: "The clawback" })).getByRole("img");
     fireEvent.click(chart, { clientX: pixelOf("15100000", "40000000") });
     expect(xBox()).toBe("$15,000,000");
@@ -106,7 +106,7 @@ const strayStops = () =>
   [...document.querySelectorAll<HTMLElement>("[tabindex]")].filter((el) => !el.closest("[hidden]") && Number(el.getAttribute("tabindex")) >= 0 && !el.matches("[role=tab]")).map((el) => el.outerHTML.slice(0, 80));
 
 describe("the keyboard", () => {
-  it.each(["fund-03-gp-commitment", "fund-08-carry-steps", "fund-13-clawback-steps", "fund-12-spv", "blank"])(
+  it.each(["fund-03-gp-commitment", "fund-17-lps-three", "fund-19-lps-clawback", "fund-12-spv", "blank"])(
     "%s: every control on every tab is a labelled control the Tab key reaches, and no chart is a stop",
     (id) => {
       render(<App />);

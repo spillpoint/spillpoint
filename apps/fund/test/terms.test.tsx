@@ -98,7 +98,7 @@ describe("the carry", () => {
   });
 
   it("runs case 8 at a flat 20%: one breakpoint, $7,000,000, and $6,534,000.00 of carry at $40,000,000", () => {
-    terms("fund-08-carry-steps");
+    terms("fund-17-lps-three");
     fireEvent.click(screen.getByRole("radio", { name: "Flat" }));
     expect((screen.getByLabelText("Carry rate") as HTMLInputElement).value).toBe("20");
     tab("Payouts");
@@ -117,7 +117,7 @@ describe("the carry", () => {
   });
 
   it("adds a step, words each problem with it under its row, and removes it", () => {
-    terms("fund-08-carry-steps");
+    terms("fund-17-lps-three");
     fireEvent.click(screen.getByRole("button", { name: "Add a step" }));
     expect(problemUnder("Step 4's carry rate")).toBe("Write the carry rate as a percent, 0 or more: 20 or 27.5.");
     type("Step 4's carry rate", "35");

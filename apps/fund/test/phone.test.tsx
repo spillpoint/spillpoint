@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
@@ -37,7 +37,7 @@ afterEach(() => {
 
 /** A phone table's rows: each tier's name, then its two amounts. */
 const halves = () =>
-  [...document.querySelectorAll<HTMLTableElement>("table.split--narrow")].map((table) => ({
+  [...document.querySelectorAll<HTMLTableElement>("table.split--narrow:not(.lps-card)")].map((table) => ({
     caption: table.caption!.textContent,
     columns: [...table.querySelectorAll("thead tr:last-child th")].map((th) => th.textContent),
     rows: [...table.querySelectorAll("tbody, tfoot")].map((g) => [g.querySelector("th")!.textContent, ...[...g.querySelectorAll("td")].map((td) => td.textContent)]),
@@ -69,7 +69,7 @@ describe("the split by its card's width (f01n)", () => {
       },
     );
     render(<App />);
-    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-17-lps-three" } });
     expect(halves().map((h) => h.caption)).toEqual(["This distribution", "The fund to date"]);
     // The card grows past what the table needs: one table, and nothing measured out of sight.
     room = 800;
@@ -86,8 +86,8 @@ describe("the split on a phone", () => {
   it("is two tables for case 8 at $40,000,000, one above the other, with the case's amounts", () => {
     windowWidth(true);
     render(<App />);
-    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-08-carry-steps" } });
-    const p = caseFile("fund-08-carry-steps", "expected.json").points.find((q: { x: string }) => q.x === "40000000.00");
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-17-lps-three" } });
+    const p = caseFile("fund-17-lps-three", "expected.json").points.find((q: { x: string }) => q.x === "40000000.00");
     const tiers = ["Capital", "Carry at 20% (up to 3.0x)", "Carry at 25% (3.0x to 5.0x)", "Carry at 30% (above 5.0x)", "Total"];
     const [now, toDate] = halves();
     expect([now!.caption, toDate!.caption]).toEqual(["This distribution", "The fund to date"]);
@@ -100,10 +100,12 @@ describe("the split on a phone", () => {
     expect(now!.rows[0]).toEqual(["Capital", money(p.distribution.lps.capital), "—"]);
     expect(toDate!.rows[0]).toEqual(["Capital", money(p.to_date.lps.capital), "—"]);
     // The one table is there only to be measured: out of sight, and hidden from assistive technology.
-    const measured = [...document.querySelectorAll("table.split:not(.split--narrow):not(.flows)")];
+    // The split's own card: with LPs, the LPs' card below has tables of its own (f02c).
+    const card = screen.getByRole("region", { name: /^The split at/ });
+    const measured = [...card.querySelectorAll("table.split:not(.split--narrow)")];
     expect(measured).toHaveLength(1);
     expect(measured[0]!.closest("[aria-hidden=true]")).not.toBeNull();
-    expect(screen.getAllByRole("table").filter((table) => !table.classList.contains("flows"))).toHaveLength(2);
+    expect(within(card).getAllByRole("table")).toHaveLength(2);
   });
 
   it("shows a pref's and a catch-up's rows too, and turns back into one table as the window widens", () => {
@@ -122,3 +124,25 @@ describe("the split on a phone", () => {
     expect(halves()).toHaveLength(2);
   });
 });
+
+describe("the LPs' card on a phone (f02c)", () => {
+  it("is each LP a group: its name on its own line, then each amount beside its column's name", () => {
+    windowWidth(true);
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-17-lps-three" } });
+    const card = screen.getByRole("region", { name: /^Each LP at / });
+    const narrow = card.querySelector("table.lps-card--narrow")!;
+    const groups = [...narrow.querySelectorAll("tbody, tfoot")].map((g) => [...g.querySelectorAll("tr")].map((tr) => [...tr.querySelectorAll("th, td")].map((c) => c.textContent)));
+    expect(groups.map((g) => g[0]![0])).toEqual(["Alder Endowment", "Birchwood Family Office", "Cedar Fund of Funds", "Left over from rounding down", "Total"]);
+    expect(groups[0]!.slice(1)).toEqual([
+      ["Share", "50.00%"],
+      ["Paid in", "$5,445,000.00"],
+      ["This distribution", "$16,396,875.00"],
+      ["To date", "$18,376,875.00"],
+    ]);
+    // The one table is there only to be measured: out of sight, and hidden from assistive technology.
+    expect(card.querySelector("table.lps-card:not(.lps-card--narrow)")!.closest("[aria-hidden=true]")).not.toBeNull();
+    expect(within(card).getAllByRole("table")).toHaveLength(1);
+  });
+});
+

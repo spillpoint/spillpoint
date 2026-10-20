@@ -238,6 +238,121 @@ A `FundRefusal`'s `field` is a path into the input, `cash_flows[3].amount` or `t
 
 **The rule holds:** nothing is kept in the browser, and nothing goes in the URL.
 
+## 0.2.0: the LPs
+
+spillpoint-fund 0.2.0 gives each LP's amounts (F19 to F21), and f02c puts them on the page. This section is f02c's first commit, before code builds on its words. Your words and layout from f02b's review are as you gave them; what they leave open is marked **(mine)**, and listed in `notes/review-f02c.md`.
+
+### The LPs tab, after Cash flows
+
+**Tabs:** Payouts, Terms, Cash flows, LPs.
+
+**One row an LP:** its name, and its commitment in dollars, read as the cash flows' amounts are ("5000000", "$5,000,000", "5M").
+- **"Add an LP" and "Remove,"** as the cash flows have them. An LP added has its name focused **(mine, as a cash flow's date is)**.
+- **The columns:** Row, Name, Commitment, and Remove.
+- **Under the table, one line:** "3 LPs, $10,000,000 committed. Commitments only divide what the LPs get between them; they aren't checked against the calls."
+  - **One LP:** "1 LP, $5,000,000 committed." **(mine)**
+  - **A commitment that doesn't read yet:** the line counts the LPs and leaves the total out, "3 LPs.", until every commitment reads **(mine)**.
+  - **No rows:** "No LPs: Payouts shows the LPs together. Add one to see each LP's share." **(mine)**
+- **No rows is no LPs,** and the input leaves `lps` out.
+- **The card's intro:** "Each LP's name and commitment, in the order you list them. Every LP is on the same terms, so each gets its commitment's share of what the LPs get." **(mine)**
+
+**Names:** leading and trailing whitespace, as `trim` takes it off (FA17), comes off as the page reads a name, typed, pasted or from an opened file. The engine stays exact.
+- **Typed (mine):** the box keeps what's typed, so a space typed between two words isn't eaten. The input the page hands the engine and a saved file gets the name trimmed, and the box shows it trimmed once it loses the focus.
+- **From a file (mine):** each LP's name is trimmed before the engine reads the file. So "Alder" and "Alder " in one file are refused as a repeat when it opens.
+
+**Problems** show under the cell their path names, in the page's words:
+- **A name missing or blank:** "Write the LP's name."
+- **A commitment missing, unreadable, zero or negative:** "Write a commitment in dollars, more than zero: 5000000 or 5M."
+- **`lp_name_repeated`:** "An LP above already has this name; each LP needs its own."
+- **At the top of the tab,** as Cash flows has it: "The fund can't run as it is." with the words and "Show me". On Payouts, the notice names the LPs: "Your last change to the LPs has a problem, …" **(mine, as for the terms and the cash flows)**. "Not saved: the LPs have a problem to fix first." likewise.
+- **The engine checks the LPs last** (FA19), so an LP's problem shows once everything else runs.
+
+**An opened file's LP problem** reads as the others do, refused in one line under the masthead:
+- **Where it is:** "The name in row 2 of its LPs …", "The commitment in row 2 of its LPs …", "Row 2 of its LPs …" for an LP that isn't an object, "Its list of LPs …" for a list that isn't one.
+- **The words:** the field words the other refusals use. For a repeat, the rule: "The name in row 3 of its LPs: an LP above already has this name; each LP needs its own."
+- **An LP field the page doesn't model** says which: "This file has a term the page doesn't model: `carry` on an LP (row 1 of its LPs). Every LP is on the same terms here." The term is set as code, as `hurdle_irr` is.
+
+### Pasting LPs from a spreadsheet
+
+As the cash flows paste: "Paste rows from a spreadsheet" opens a box under the table, and more than one cell pasted into a name or commitment cell goes to it.
+- **Columns:** name, then commitment. Cells past the second are ignored.
+- **A header row is skipped (mine):** a first row whose commitment cell isn't an amount, naming any of "name", "LP", "investor", "partner", "commitment", "committed" or "amount".
+- **Amounts** are read the same way as a cash flow's.
+  - "$5,000,000.00", "5000000" and "5M" read.
+  - A negative is refused, in any of a spreadsheet's ways: "Row 4: '(500,000)' is negative. A commitment is more than zero." **(mine, the cash flows' line ends "the type says which way the money goes", which LPs don't have)**
+  - "$ -" is a zero: "Row 4: '$ -' isn't an amount more than zero."
+- **Each row it can't read, and why:**
+  - "Row 2: has no name"
+  - "Row 3: has no commitment"
+  - "Row 4: 'lots' isn't an amount"
+  - **A name repeated in the paste:** "Row 5: 'Alder' is already in this paste, in row 2"
+  - **A name already in the table:** "Row 5: 'Alder' is already an LP in the table"
+  - Names are trimmed before they're compared.
+- **The preview:** "3 LPs, $10,000,000 committed; they'll be the table's first." or "…; adds them to the 2 here.", as the cash flows' does. Then the rows it can't read.
+- **Adding:** nothing is added until "Add them". The rows go after those already there, in the order pasted; empty rows give way. "Cancel" and Escape leave the table as it was.
+
+### The LPs' card, on Payouts
+
+**When:** only when the fund has LPs. **Where:** after the split and the clawback card, before the breakpoints. **Its heading (mine):** "Each LP at $40,000,000".
+
+**The table:**
+- **Columns:** LP, Share, Paid in, This distribution, To date, and "Share of the clawback" when the split is final and something is owed.
+- **Rows:** one an LP, in the input's order. Then "Left over from rounding down", then "Total".
+- **Each LP's amount** is rounded down to the cent after `toCents`'s first step (to 20 places). So an amount that's whole cents in exact math, and a hair under at 40 digits, isn't a cent short.
+- **The leftover in each column** is the LPs' amount with `toCents`, less the LPs' rounded amounts.
+  - **Never negative, and at most a cent an LP** (your correction to the spec). One LP whose amount is $0.005 gets $0.00, and $0.01 is left over.
+  - **Why it can't be more:** each LP's rounded-down amount is less than a cent under its exact one, and `toCents` is at most half a cent over the LPs' exact amount.
+- **The total row** is that `toCents` amount, so it equals the page's own figure for the LPs:
+  - the split table's LPs total, for this distribution and to date
+  - the paid-in line under it
+  - the clawback card's owed
+- **The share columns (mine):** the leftover row's share is "—". The total's is "100%", which the shares are, exactly, though each is shown rounded.
+
+**Shares** to two places, rounded half up after the 20-place step **(mine)**: "33.33%", "52.38%", "14.29%". One line under the card: "Each LP's amount is rounded down to the cent, as it would be paid; the leftover row is what rounding down leaves. Shares are rounded for display; every amount is worked from the exact share."
+
+**At the NAV point,** the card follows the NAV split, its clawback included, as the clawback card does.
+
+**Narrow screens:** nothing off the screen down to 320 pixels, long names wrapping.
+- **Mine, as the split does:** wherever the one table wouldn't fit its card, and always under 480 pixels, each LP is a group. Its name is on its own line, wrapping, with each amount under it beside its column's name.
+
+**The split table's line** says "The LPs" is every LP together. When the fund has LPs, it points to the card **(mine)**: "Amounts are to the cent. "The LPs" is every LP together; each LP's amount, rounded down as it would be paid, is in the card below. Each row here is rounded on its own and can differ from its total by a cent."
+
+### Download as CSV
+
+A button on the card: "Download as CSV".
+- **What's in it:** the card as shown. A header row of the card's columns **(mine)**, every LP with its rounded amounts, the leftover row and the total row.
+- **Numbers:** without "$" or commas, "666666.66". Shares as "33.33%".
+- **Quoting, as RFC 4180:** a name with a comma, quote or line break is in quotes, its quotes doubled. Lines end in CRLF, as RFC 4180 has them **(mine)**.
+- **A name starting with =, +, - or @** gets a leading apostrophe, so a spreadsheet shows it as text, not a formula.
+- **Encoding:** UTF-8 with a byte-order mark, so Excel reads names like "Ñandú" right.
+- **Its name:** as Save names its file, lowercase with hyphens, with X and D: "a-late-call-and-a-clawback-lps-at-15000000-on-2025-01-01.csv".
+  - **X in the name (mine):** whole dollars when it has no cents, and to the cent with its point when it has, "63833333.33".
+- **As with Save,** nothing leaves the computer. The page says where it went: "Downloaded as …, in your downloads." **(mine, as Save's line)**
+
+### Saving and opening
+
+- **Saving:** the LPs are in the saved file's `fund.lps`, names trimmed. A fund with no LPs saves without `lps`.
+- **Opening:** a file's LPs go into the LPs tab, names trimmed. f02b's guard, which refused a file with LPs, comes out.
+
+### The examples
+
+- **The VC fund with premium carry becomes case 17:** the same fund, with three LPs.
+- **The clawback example becomes case 19,** so the LPs' card and its clawback column both show from the picker.
+- **Case 3 and the SPV stay without LPs.**
+- **Labels and opening X stay (mine):** the LPs show on the LPs tab and in the card, so the labels don't need to say so.
+
+### Tests
+
+- **The page's pending list empties,** so cases 17 to 21 run through its case tests:
+  - the forms round trip with the LPs
+  - files open and save
+  - the fund-21 refusals show in the page's words: beside their cells for the six the form can make (no name, no commitment, a blank name, zero, negative, a repeat), and in one line when opened from a file for all eleven
+- **At every point of cases 17 to 20:**
+  - each LP's row is its exact amount, rounded down after the 20-place step
+  - the leftover is never negative and at most a cent an LP
+  - the total row equals the page's figure for the LPs
+- **The CSV for case 18 at $2,000,000:** 666666.66 three times, 0.02 left over, and 2000000.00 in all.
+
 ## How it's built: its own app, `apps/fund` (your answer 1)
 
 ### The two ways

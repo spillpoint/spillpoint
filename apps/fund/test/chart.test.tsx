@@ -92,7 +92,7 @@ describe("the breakpoints", () => {
   });
 
   it("gives case 8's three, at $7,000,000, $34,500,000 and $63,833,333.33, with the GP's carry per $1M at each", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     const heads = within(screen.getByRole("region", { name: "Breakpoints" })).getAllByRole("button").map((b) => b.textContent);
     expect(heads).toEqual(["1$7,000,000.00 ($7M)", "2$34,500,000.00 ($34.5M)", "3$63,833,333.33 ($63.8M)"]);
     expect(listed()).toEqual([
@@ -105,7 +105,7 @@ describe("the breakpoints", () => {
   });
 
   it("lists case 13's clawback reasons too, since it's final", () => {
-    open("fund-13-clawback-steps");
+    open("fund-19-lps-clawback");
     expect(listed()).toEqual([
       ["LPs have their $20,000,000 of paid-in capital back.", "The clawback owed stops falling.", "The GP's carry goes from $0 to $200,000 per extra $1M."],
       ["The clawback owed starts to fall: on the fund's totals, LPs reach 2.0x: carry is 30% from here.", "The GP's carry stays at $200,000 per extra $1M."],
@@ -115,7 +115,7 @@ describe("the breakpoints", () => {
   });
 
   it("moves X to a breakpoint exactly when it's chosen: case 8's third, where the LPs reach 5.0x", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     fireEvent.click(within(screen.getByRole("region", { name: "Breakpoints" })).getAllByRole("button")[2]!);
     expect((screen.getByLabelText(/^Distribution on/) as HTMLInputElement).value).toBe("$63,833,333.33");
     expect(screen.getByRole("heading", { name: "The split at $63,833,333.33" })).toBeDefined();
@@ -127,7 +127,7 @@ describe("the breakpoints", () => {
 
 describe("the slider, its marks and the range", () => {
   it("runs from $0 to the range's top, and moves X", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     const slider = screen.getByRole("slider", { name: "X, from $0 to $80M" });
     expect(slider.getAttribute("aria-valuetext")).toBe("$40,000,000");
     fireEvent.change(slider, { target: { value: "250" } });
@@ -136,7 +136,7 @@ describe("the slider, its marks and the range", () => {
   });
 
   it("marks every breakpoint and NAV under the slider in order of X, numbered as in the list; choosing one moves X there", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     const marks = screen.getAllByRole("button", { name: /^(Breakpoint \d|NAV), at/ });
     expect(marks.map((b) => b.getAttribute("aria-label"))).toEqual([
       "Breakpoint 1, at $7,000,000.00",
@@ -153,7 +153,7 @@ describe("the slider, its marks and the range", () => {
   });
 
   it("takes a typed top, says when one isn't an amount, and rises to take in an X typed past it", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     const topBox = screen.getByLabelText("The slider and the chart run up to");
     expect((topBox as HTMLInputElement).value).toBe("$80,000,000");
     fireEvent.change(topBox, { target: { value: "$50M" } });
@@ -171,7 +171,7 @@ describe("the slider, its marks and the range", () => {
 
 describe("the chart", () => {
   it("marks every breakpoint, NAV and X, and gives each line's value at X in its legend", () => {
-    open("fund-08-carry-steps");
+    open("fund-17-lps-three");
     const chart = screen.getByRole("img", { name: /lines against X, from \$0 to \$80M, with 3 breakpoints marked/ });
     const texts = [...chart.querySelectorAll("svg text")].map((t) => t.textContent);
     for (const mark of ["1", "2", "3", "NAV", "X = $40M"]) expect(texts).toContain(mark);
@@ -182,7 +182,7 @@ describe("the chart", () => {
   });
 
   it("leaves out the GP commitment's line in a fund without one", () => {
-    open("fund-13-clawback-steps");
+    open("fund-19-lps-clawback");
     fireEvent.change(screen.getByLabelText(/^Distribution on/), { target: { value: "15000000" } });
     const legend = within(screen.getByRole("list", { name: /^Values at X/ })).getAllByRole("listitem").map((li) => li.textContent);
     expect(legend).toEqual(["The GP's carry$1,000,000.00", "The LPs$14,000,000.00"]);

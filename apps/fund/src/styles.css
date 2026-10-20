@@ -288,3 +288,42 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .flows tr.flows__problem td { display: block; padding: 4px 10px 0; }
   .flows tr.flows__problem td:empty { display: none; }
 }
+
+/* The LPs tab (f02c): one row an LP, its name and its commitment. Under 480 pixels of card, each row a card of its own:
+   the name on one line, the commitment and "Remove" on the next, so nothing scrolls sideways. */
+.lps { margin-top: 12px; }
+.lps td { vertical-align: top; }
+.lps th[scope="row"] { color: var(--muted); padding-top: 14px; }
+.lps th, .lps td { padding-left: 6px; padding-right: 6px; }
+.lps .field-error { margin: 4px 0 0; white-space: normal; }
+.lps input.lps__name { width: 100%; min-width: 10rem; }
+.lps input.lps__commitment { width: 10rem; text-align: right; font-variant-numeric: tabular-nums; }
+.lps .link-button { padding-top: 6px; }
+.lps__summary { margin: 12px 0 0; color: var(--muted); }
+.lps__scroll { container-type: inline-size; }
+@container (max-width: 479px) {
+  .lps, .lps tbody { display: block; }
+  .lps thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+  .lps tbody tr {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "n name name" ". commitment remove";
+    gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--line);
+  }
+  .lps tbody th, .lps tbody td { padding: 0; border: 0; }
+  .lps th.lps__n { grid-area: n; padding-top: 6px; white-space: nowrap; }
+  .lps th.lps__n::before { content: "LP "; }
+  .lps .lps__name-cell { grid-area: name; }
+  .lps .lps__commitment-cell { grid-area: commitment; text-align: left; }
+  .lps .lps__remove { grid-area: remove; justify-self: end; }
+  .lps input.lps__name, .lps input.lps__commitment { width: 100%; min-width: 0; text-align: left; }
+}
+
+/* The LPs' card on Payouts (f02c): long names wrap; the amounts never do. */
+/* More specific than the phone rule that keeps the split's tier names on one line. */
+.split.lps-card th.lps-card__name { overflow-wrap: anywhere; white-space: normal; min-width: 8rem; position: static; }
+.lps-card .lps-card__leftover th, .lps-card .lps-card__leftover td { color: var(--muted); }
+.split.lps-card--narrow th.lps-card__name { min-width: 0; font-weight: 600; }
+.lps-card--narrow td { color: var(--muted); }
+.lps-card--narrow td.num { color: var(--text); }
+/* The card has one header row, which the split's first-row rule would centre: set it as the split's column headings are. */
+.split.lps-card thead tr:first-child th { text-align: left; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); }
+.split.lps-card thead tr:first-child th.num { text-align: right; }

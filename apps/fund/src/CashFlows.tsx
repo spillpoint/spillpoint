@@ -28,8 +28,8 @@ interface Props {
   onShow: (path: string) => void;
 }
 
-/** A refusal's words, where its path names. */
-function ProblemText({ problem, path }: { problem: Problem | null; path: string }) {
+/** A refusal's words, where its path names. The LPs tab's cells show theirs the same way. */
+export function ProblemText({ problem, path }: { problem: Problem | null; path: string }) {
   if (problem?.path !== path) return null;
   return (
     <p id={`${controlFor(path)}-problem`} className="field-error" role="alert">
@@ -39,7 +39,7 @@ function ProblemText({ problem, path }: { problem: Problem | null; path: string 
 }
 
 /** What a control needs to say it has the problem: the problem's words describe it. */
-function marks(problem: Problem | null, id: string) {
+export function marks(problem: Problem | null, id: string) {
   const mine = problem !== null && controlFor(problem.path) === id;
   return { "aria-invalid": mine, "aria-describedby": mine ? `${id}-problem` : undefined };
 }
