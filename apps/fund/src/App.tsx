@@ -1,10 +1,11 @@
 // The fund page (notes/plan-fund-page.md): an example fund from the locked cases, or a blank one, with an X box and a
-// slider, the split at X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), and the clawback
-// with the NAV button (f01h), on the Payouts tab; the fund behind them, editable, on the Terms (f01i) and Cash flows
-// (f01j) tabs. Pasting cash flows and files come in f01k to f01m.
+// slider, the split at X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), the clawback
+// with the NAV button (f01h), and, with LPs, each LP's amounts (f02c), on the Payouts tab; the fund behind them,
+// editable, on the Terms (f01i), Cash flows (f01j) and LPs (f02c) tabs. Pasting cash flows and files come in f01k to
+// f01m.
 
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Ref, RefObject } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import type { Ref } from "react";
 import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
@@ -20,7 +21,14 @@ import { Terms } from "./Terms.tsx";
 import { fileName, fileText, inputOf, readFile, UNNAMED } from "./file.ts";
 import { blankFlows, flowsFrom, flowsProblem } from "./flows.ts";
 import type { FlowsForm } from "./flows.ts";
-import { controlFor, formFrom, tabFor, termsProblem } from "./terms.ts";
+import { useNarrow, useTooWide } from "./layout.ts";
+import { Lps } from "./Lps.tsx";
+import { lpsFrom, lpsProblem, noLps } from "./lps.ts";
+import type { LpsForm } from "./lps.ts";
+import { LpsCard } from "./LpsCard.tsx";
+import { lpsCsv, lpsCsvName } from "./lpsCard.ts";
+import type { LpsTable } from "./lpsCard.ts";
+import { controlFor, formFrom, TAB_WORDS, tabFor, termsProblem } from "./terms.ts";
 import type { Problem, TermsForm } from "./terms.ts";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
@@ -48,6 +56,7 @@ interface Opened {
   input: Record<string, unknown>;
   terms: TermsForm;
   flows: FlowsForm;
+  lps: LpsForm;
   /** Null for a blank fund until the engine first runs it. */
   fund: Fund | null;
   problem: Problem | null;
@@ -72,8 +81,8 @@ function opened(id: string): Opened {
   const fresh = { problem: null, edited: false, top: { text: null, set: null, problem: null } };
   if (id === BLANK) {
     const zero = new D(0);
-    const s: Opened = { ...fresh, name: UNNAMED, input: {}, terms: formFrom(BLANK_TERMS), flows: blankFlows(), fund: null, opening: zero, x: { text: xText(zero), shown: zero, problem: null } };
-    return { ...run(s, s.terms, s.flows), edited: false };
+    const s: Opened = { ...fresh, name: UNNAMED, input: {}, terms: formFrom(BLANK_TERMS), flows: blankFlows(), lps: noLps(), fund: null, opening: zero, x: { text: xText(zero), shown: zero, problem: null } };
+    return { ...run(s, s.terms, s.flows, s.lps), edited: false };
   }
   const example = examples.find((e) => e.id === id)!;
   return fromFund(readFund(example.fund), example.label, parseDollars(example.defaultX)!);
@@ -86,14 +95,16 @@ function opened(id: string): Opened {
 function fromFund(fund: Fund, name: string, x: D): Opened {
   const terms = formFrom(fund.terms);
   const flows = flowsFrom(fund);
+  const lps = lpsFrom(fund);
   return {
     problem: null,
     edited: false,
     top: { text: null, set: null, problem: null },
     name,
-    input: inputOf(terms, flows),
+    input: inputOf(terms, flows, lps),
     terms,
     flows,
+    lps,
     fund,
     opening: x,
     x: { text: xText(x), shown: x, problem: null },
@@ -101,25 +112,27 @@ function fromFund(fund: Fund, name: string, x: D): Opened {
 }
 
 /**
- * The fund the two forms write, or the engine's refusal in the page's words, at the path it names. The engine checks
- * in its order (FA2), so the problem shown is its first, on whichever tab.
+ * The fund the three forms write, or the engine's refusal in the page's words, at the path it names. The engine checks
+ * in its order (FA2, the LPs last by FA19), so the problem shown is its first, on whichever tab.
  */
-function run(s: Opened, terms: TermsForm, flows: FlowsForm): Opened {
-  const input = inputOf(terms, flows);
+function run(s: Opened, terms: TermsForm, flows: FlowsForm, lps: LpsForm): Opened {
+  const input = inputOf(terms, flows, lps);
   try {
-    return { ...s, input, terms, flows, edited: true, fund: readFund(input), problem: null };
+    return { ...s, input, terms, flows, lps, edited: true, fund: readFund(input), problem: null };
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
-    const problem = tabFor(e.path) === "terms" ? termsProblem(e, terms) : flowsProblem(e, flows);
-    return { ...s, input, terms, flows, edited: true, problem };
+    const tab = tabFor(e.path);
+    const problem = tab === "terms" ? termsProblem(e, terms) : tab === "lps" ? lpsProblem(e) : flowsProblem(e, flows);
+    return { ...s, input, terms, flows, lps, edited: true, problem };
   }
 }
 
-type Tab = "payouts" | "terms" | "flows";
+type Tab = "payouts" | "terms" | "flows" | "lps";
 const TABS: { id: Tab; label: string }[] = [
   { id: "payouts", label: "Payouts" },
   { id: "terms", label: "Terms" },
   { id: "flows", label: "Cash flows" },
+  { id: "lps", label: "LPs" },
 ];
 
 /** The slider's positions: X moves in steps of a thousandth of the range. */
@@ -172,12 +185,12 @@ export function App() {
   /** Only a fund the engine accepts is saved, so a saved file always opens; X goes in too, so it reopens where it was. */
   const save = () => {
     if (!fund || problem) {
-      const where = problem && tabFor(problem.path) === "terms" ? "the terms have" : "the cash flows have";
+      const where = `the ${TAB_WORDS[problem ? tabFor(problem.path) : "flows"]} have`;
       setFileStatus({ kind: "problem", text: `Not saved: ${where} a problem to fix first. ${problem?.message ?? ""}`.trim() });
       return;
     }
     const name = fileName(state.name);
-    download(name, fileText(state.name, inputOf(terms, flows), x.shown));
+    download(name, fileText(state.name, inputOf(terms, flows, state.lps), x.shown), "application/json");
     setUnsaved(false);
     setFileStatus({ kind: "done", text: `Saved as ${name}, in your downloads.` });
   };
@@ -199,6 +212,14 @@ export function App() {
     // A fraction is kept to the engine's 40 digits, and a save writes it so: said, not silent (f01l review, answer 2).
     const fractions = result.fraction ? ` Its fractions, like ${result.fraction}, are kept to 40 digits, and a save writes them that way.` : "";
     setFileStatus({ kind: "done", text: `Opened ${file.name}.${fractions}` });
+  };
+
+  /** The LPs' card as a CSV, named after the fund, X and D; as with Save, nothing leaves the computer. */
+  const downloadLps = (table: LpsTable, at: D) => {
+    if (!fund) return;
+    const name = lpsCsvName(state.name, at, fund.distributionDate);
+    download(name, lpsCsv(table), "text/csv;charset=utf-8");
+    setFileStatus({ kind: "done", text: `Downloaded as ${name}, in your downloads.` });
   };
 
   /** X set exactly, by the slider, a mark or a breakpoint: the box shows it. */
@@ -292,14 +313,14 @@ export function App() {
             <>
               {problem && (
                 <div className="notice notice--problem" role="status">
-                  <strong>Your last change to the {tabFor(problem.path) === "terms" ? "terms" : "cash flows"} has a problem, so these payouts are from the fund before it.</strong>{" "}
+                  <strong>Your last change to the {TAB_WORDS[tabFor(problem.path)]} has a problem, so these payouts are from the fund before it.</strong>{" "}
                   {problem.message}{" "}
                   <button type="button" className="link-button" onClick={() => show(problem.path)}>
                     Fix it
                   </button>
                 </div>
               )}
-              <Payouts fund={fund} state={state} onX={setX} onTypeX={typeX} onTop={typeTop} />
+              <Payouts fund={fund} state={state} onX={setX} onTypeX={typeX} onTop={typeTop} onDownloadLps={downloadLps} />
             </>
           ) : (
             <div className="card" role="status">
@@ -318,12 +339,15 @@ export function App() {
             onName={(name) => change((s) => ({ ...s, name, edited: true }))}
             form={terms}
             problem={problem}
-            onForm={(next) => change((s) => run(s, next, s.flows))}
+            onForm={(next) => change((s) => run(s, next, s.flows, s.lps))}
             onShow={show}
           />
         </div>
         <div role="tabpanel" id="panel-flows" aria-labelledby="tab-flows" hidden={tab !== "flows"}>
-          <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next))} onShow={show} />
+          <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next, s.lps))} onShow={show} />
+        </div>
+        <div role="tabpanel" id="panel-lps" aria-labelledby="tab-lps" hidden={tab !== "lps"}>
+          <Lps form={state.lps} problem={problem} onForm={(next) => change((s) => run(s, s.terms, s.flows, next))} onShow={show} />
         </div>
       </main>
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. The main page is
@@ -335,8 +359,17 @@ export function App() {
   );
 }
 
+interface PayoutsProps {
+  fund: Fund;
+  state: Opened;
+  onX: (x: D) => void;
+  onTypeX: (text: string) => void;
+  onTop: (text: string) => void;
+  onDownloadLps: (table: LpsTable, x: D) => void;
+}
+
 /** Everything about X's split, for a fund the engine accepted. */
-function Payouts({ fund, state, onX, onTypeX, onTop }: { fund: Fund; state: Opened; onX: (x: D) => void; onTypeX: (text: string) => void; onTop: (text: string) => void }) {
+function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps }: PayoutsProps) {
   const { opening, x, top: topState } = state;
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
@@ -367,6 +400,8 @@ function Payouts({ fund, state, onX, onTypeX, onTop }: { fund: Fund; state: Open
       />
       <SplitTable fund={fund} split={split} />
       {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} onX={onX} />}
+      {/* Each LP's amounts (F20), only with LPs: at the NAV point, the NAV split's, its clawback included. */}
+      {fund.lps.length > 0 && <LpsCard split={clawbackAt ?? split} onDownload={(table) => onDownloadLps(table, x.shown)} />}
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={onX} />
     </>
   );
@@ -375,8 +410,8 @@ function Payouts({ fund, state, onX, onTypeX, onTop }: { fund: Fund; state: Open
 type FileStatus = { kind: "done" | "problem"; text: string } | null;
 
 /** Saving means downloading the file; nothing leaves the computer, and the link is let go straight after. */
-function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+function download(name: string, text: string, type: string) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -665,23 +700,6 @@ interface SplitRow {
   gp: [D, D] | null;
 }
 
-/** Under 480 pixels the split is always two tables, one above the other (f01m review, answer 2); above, where it must. */
-const NARROW = "(max-width: 479px)";
-
-/** Whether the window is a phone's width, following it as it changes. False where there's no window to ask. */
-function useNarrow(): boolean {
-  const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(NARROW).matches);
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const query = window.matchMedia(NARROW);
-    const follow = () => setNarrow(query.matches);
-    follow();
-    query.addEventListener("change", follow);
-    return () => query.removeEventListener("change", follow);
-  }, []);
-  return narrow;
-}
-
 /**
  * One half of the split on a phone: "This distribution" (0) or "The fund to date" (1), with each tier's name on its own
  * line above its two amounts, as the main page's payouts table puts each holder's shares under the name (M3e). Each
@@ -769,29 +787,6 @@ function WideSplit({ ref, rows, total }: { ref: Ref<HTMLTableElement>; rows: Spl
   );
 }
 
-/**
- * Whether the one table would scroll sideways in its card (f01n): measured on the card's own width, as the cash flows'
- * cards are, so it's two tables wherever one wouldn't fit, at any window width, and one wherever it does. Where
- * nothing is laid out (a hidden tab, or the tests), it keeps what it has.
- */
-function useTooWide(box: RefObject<HTMLDivElement | null>, table: RefObject<HTMLTableElement | null>, content: unknown): boolean {
-  const [tooWide, setTooWide] = useState(false);
-  useLayoutEffect(() => {
-    const check = () => {
-      const room = box.current?.clientWidth ?? 0;
-      if (!room || !table.current) return;
-      // The table is 100% wide, so it's wider than its card only when its content can't fit in it.
-      setTooWide(table.current.offsetWidth > room);
-    };
-    check();
-    if (!box.current || typeof ResizeObserver === "undefined") return;
-    const watch = new ResizeObserver(check);
-    watch.observe(box.current);
-    return () => watch.disconnect();
-  }, [box, table, content]);
-  return tooWide;
-}
-
 /** The split by tier (F16): a tier the terms don't have isn't shown, though the engine gives it as zero. */
 function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
   const box = useRef<HTMLDivElement>(null);
@@ -872,10 +867,17 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
           <dd>{lpMultipleText(split.lpMultiple)}</dd>
         </div>
       </dl>
-      <p className="footnote">
-        Amounts are to the cent. "The LPs" is every LP together, not one payment, so nothing here is rounded down as it would
-        be paid; each row is rounded on its own and can differ from its total by a cent.
-      </p>
+      {fund.lps.length > 0 ? (
+        <p className="footnote">
+          Amounts are to the cent. "The LPs" is every LP together; each LP's amount, rounded down as it would be paid, is in the
+          card below. Each row here is rounded on its own and can differ from its total by a cent.
+        </p>
+      ) : (
+        <p className="footnote">
+          Amounts are to the cent. "The LPs" is every LP together, not one payment, so nothing here is rounded down as it would
+          be paid; each row is rounded on its own and can differ from its total by a cent.
+        </p>
+      )}
     </section>
   );
 }
