@@ -49,7 +49,7 @@ A release usually goes:
 ## Where things stand
 
 - **Released through 0.7.0,** on npm and as GitHub releases. 0.7.0 is the naming review (`notes/plan-0.7.0.md`): every name in the API settled, the last release that breaks anything. 0.6.0 reads OCX in its 0.4/0.5 and 0.7 layouts; no Carta export has been tested yet.
-- **spillpoint-fund 0.1.0** (`packages/fund`, `notes/release-fund-0.1.0.md`): the fund waterfall, published from `packages/fund` and tagged `fund-v0.1.0`; its page is at `spillpoint.github.io/spillpoint/fund/`.
+- **spillpoint-fund 0.2.0** (`packages/fund`, `notes/release-fund-0.2.0.md`): the fund waterfall, and from 0.2.0 each LP's share (F19 to F21) with the page's LPs tab, card and CSV; published from `packages/fund` and tagged `fund-v<version>` (`fund-v0.1.0`, then `fund-v0.2.0`); its page is at `spillpoint.github.io/spillpoint/fund/`.
 - **Next, 1.0:** the spillpoint.io domain and the release, with no API changes. It waits on an outside waterfall that matches ours, and a few outside users.
 
 Deferred work lives in the "Later" section of `docs/ASSUMPTIONS.md`.
