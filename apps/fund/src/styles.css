@@ -67,6 +67,16 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   padding: 8px 14px; margin-bottom: -1px; cursor: pointer;
 }
 .tabs [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+/* The four tabs on one line down to 320 pixels (f02d): their words take 218 pixels at 16px, so on a phone the padding
+   and the gap give way rather than "LPs" going to a line of its own. They can still wrap, so a larger font in the
+   browser wraps them rather than scrolling the page sideways. */
+@media (max-width: 479px) {
+  .tabs { gap: 0; }
+  .tabs [role="tab"] { padding: 8px 8px; }
+}
+@media (max-width: 359px) {
+  .tabs [role="tab"] { padding: 8px 6px; }
+}
 [role="tabpanel"] { padding-top: 16px; }
 [role="tabpanel"] > :first-child { margin-top: 0; }
 
