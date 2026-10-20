@@ -1,4 +1,4 @@
-// The names and words code can match on, stable from 0.1.0 (docs/STABLE.md): every term a refusal names, every reason
+// The names and words code can match on, stable from 0.1.0 or the version that added them (docs/STABLE.md): every term a refusal names, every reason
 // code a breakpoint gives, every way a clawback changes, and FC6's wordings. From 0.1.0 none is renamed or reused for
 // something else; a new one can be added, and one stops being given when the fund engine comes to model what it
 // refuses.
@@ -21,6 +21,8 @@ export const INPUT_TERMS = [
   "no_calls",
   "distribution_before_call",
   "cash_flow_after_distribution_date",
+  // From 0.2.0 (F21).
+  "lp_name_repeated",
 ] as const;
 export type InputTerm = (typeof INPUT_TERMS)[number];
 

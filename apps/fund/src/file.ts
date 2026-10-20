@@ -102,6 +102,12 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
+  // Until the page shows LPs (f02c, which removes this), a file whose fund lists them is refused, so a save can't drop
+  // them: the forms have no place for them yet. Left out, null or an empty list is no LPs (F19), and opens.
+  if (isObject(input) && input.lps !== undefined && input.lps !== null && !(Array.isArray(input.lps) && input.lps.length === 0)) {
+    return { ok: false, message: LPS_LATER };
+  }
+
   let fund: Fund;
   try {
     fund = readFund(input);
@@ -123,6 +129,7 @@ export function readFile(text: string): OpenedFile {
   }
 }
 
+const LPS_LATER = "This file lists LPs; the page shows them from the next version.";
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
 
 /** The part of a fund's input a path names, as a sentence starts: "The amount in row 3 of its cash flows". */

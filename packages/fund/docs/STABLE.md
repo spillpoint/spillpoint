@@ -6,7 +6,7 @@ Code can match on these names and words, as the fund page will:
 - how a clawback changes
 - the words each reason reads
 
-From 0.1.0 none is renamed or reused for something else. A new one can be added, and one stops being given when the fund engine comes to model what it refuses; it stays here, marked "no longer given". A test fails if the engine can give one this list doesn't have, or this list has one the engine doesn't. The rules behind each are in `SPEC.md` and `ASSUMPTIONS.md`.
+From 0.1.0, or the version that added it, none is renamed or reused for something else. A new one can be added, marked with the version that added it. One stops being given when the fund engine comes to model what it refuses; it stays here, marked "no longer given". A test fails if the engine can give one this list doesn't have, or this list has one the engine doesn't. The rules behind each are in `SPEC.md` and `ASSUMPTIONS.md`.
 
 ## `FundRefusal`'s kinds
 
@@ -16,9 +16,9 @@ From 0.1.0 none is renamed or reused for something else. A new one can be added,
 ## `FundRefusal`'s input terms
 
 Each with the `path` it names, into the input (F18, FA2):
-- `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share; a zero amount or pref rate; a catch-up share above 1; or an X below 0 (FA13), whose path is `x`.
+- `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share; a zero amount or pref rate; a catch-up share above 1; an LP's commitment of 0 or less (F21); or an X below 0 (FA13), whose path is `x`.
 - `bad_date`: not a date written YYYY-MM-DD that exists.
-- `bad_field`: an unknown call kind or flow type, a non-boolean flag, or a value of the wrong shape.
+- `bad_field`: an unknown call kind or flow type, a non-boolean flag, a blank LP name (FA17), or a value of the wrong shape.
 - `missing_field`: a field the input needs, left out.
 - `unknown_field`: a field outside `terms` that a fund input doesn't have, a distribution's `kind` included (FA12).
 - `carry_rate_not_below_one`: a carry rate of 1 or more.
@@ -29,12 +29,13 @@ Each with the `path` it names, into the input (F18, FA2):
 - `no_calls`: no calls at all.
 - `distribution_before_call`: a distribution before the fund's first call.
 - `cash_flow_after_distribution_date`: a cash flow after D.
+- `lp_name_repeated`: an LP's name that an earlier LP already has, compared exactly as written, at the later LP's `name` (F21). From 0.2.0.
 
 ## `FundRefusal`'s unsupported terms
 
 - `compounded_pref`: a pref compounding other than simple (F7).
 
-Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path.
+Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment: a side letter's `carry` at `lps[0].carry` (F21).
 
 ## `ReasonCode`
 

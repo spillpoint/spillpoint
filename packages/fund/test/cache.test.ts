@@ -17,6 +17,7 @@ it("works a fund built by hand from scratch, so a change after a split shows in 
     distributionDate: "2026-03-01",
     final: false,
     nav: null,
+    lps: [],
   };
   expect(toCents(splitAt(fund, "12500000").distribution.gp.total)).toBe("1500000.00");
 
@@ -32,6 +33,20 @@ it("works a fund built by hand from scratch, so a change after a split shows in 
     ],
   });
   expect(toCents(splitAt(read, "12500000").distribution.gp.total)).toBe("1300000.00");
+});
+
+it("splits a fund built by hand as 0.1.0 built one, with no lps, as a fund with no LPs", () => {
+  const fund = {
+    asOf: "2026-03-01",
+    terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null },
+    cashFlows: [call(0, "2022-03-01", "5000000")],
+    distributionDate: "2026-03-01",
+    final: false,
+    nav: null,
+  } as unknown as Fund;
+  const split = splitAt(fund, "12500000");
+  expect(toCents(split.distribution.gp.total)).toBe("1500000.00");
+  expect(split.byLp).toEqual([]);
 });
 
 it("keeps what it works out for a fund readFund returned, which can't change", () => {
