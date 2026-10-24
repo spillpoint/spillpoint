@@ -115,8 +115,8 @@ describe("the fund page", () => {
     const picker = screen.getByLabelText("Start from") as HTMLSelectElement;
     expect([...picker.options].map((o) => o.textContent)).toEqual([
       "A fund: 20% carry and a 2% GP commitment (fictional)",
-      "A VC fund with premium carry: 20%, then 25% from 3x and 30% from 5x (fictional)",
-      "A late call and a clawback (fictional)",
+      "A VC fund with premium carry and three LPs: 20%, then 25% from 3x and 30% from 5x (fictional)",
+      "A late call, a clawback and two LPs (fictional)",
       "An SPV: one company, the exit as its last distribution (fictional)",
       "A blank fund",
     ]);

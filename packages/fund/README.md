@@ -7,7 +7,7 @@ How a fund's distribution splits between its LPs and its GP. Give spillpoint-fun
 - the carry, flat or in steps by the LPs' multiple
 - the GP commitment's own line beside them
 
-It finds every **breakpoint**, every distribution where the split bends, and explains each one in plain English. And when the distribution is the fund's last, it works out any **clawback** the GP owes back.
+It finds every **breakpoint**, every distribution where the split bends, and explains each one in plain English. And when the distribution is the fund's last, it works out any **clawback** the GP owes back. Given the fund's LPs, it gives **each LP's share** of what the LPs get.
 
 It runs entirely on your machine. There is no network access and no I/O; a fund's numbers never leave the process.
 
@@ -106,9 +106,56 @@ X = 2000000: carry paid 1000000.00, earned 1000000.00, owed back 0.00
 
 With nothing more distributed, the fund's total profit is $3,000,000, so the GP has earned $600,000 and owes $400,000 back. A $2,000,000 last distribution clears it.
 
+## A worked example: each LP's share
+
+Case 17 in the repository: the same fund with its third step, 30% from 5x, and three LPs on the same terms. The LPs' commitments, $10,000,000 in all, only divide what the LPs get: they aren't checked against the $10,890,000 the LPs have paid in, fees included.
+
+```js
+import { readFund, splitAt, toCents } from "spillpoint-fund";
+
+const fund = readFund({
+  as_of: "2026-09-30",
+  terms: {
+    carry: { steps: [{ rate: "0.20" }, { rate: "0.25", from_lp_multiple: "3" }, { rate: "0.30", from_lp_multiple: "5" }] },
+    gp_commitment: { share: "0.01" },
+  },
+  cash_flows: [
+    { date: "2021-01-15", type: "call", kind: "investment", amount: "8000000" },
+    { date: "2021-01-15", type: "call", kind: "fee", amount: "495000" },
+    { date: "2022-01-15", type: "call", kind: "fee", amount: "495000" },
+    { date: "2022-06-01", type: "call", kind: "investment", amount: "2000000" },
+    { date: "2024-05-01", type: "distribution", amount: "4000000" },
+  ],
+  nav: "40000000",
+  lps: [
+    { name: "Alder Endowment", commitment: "5000000" },
+    { name: "Birchwood Family Office", commitment: "3500000" },
+    { name: "Cedar Fund of Funds", commitment: "1500000" },
+  ],
+});
+
+// Each LP's part of a $40,000,000 distribution on 30 Sep 2026.
+const { distribution, byLp } = splitAt(fund, "40000000");
+console.log("LPs:", toCents(distribution.lps.total));
+for (const lp of byLp) {
+  console.log(`${lp.name}: share ${lp.share}, paid in ${toCents(lp.paidIn)}, now ${toCents(lp.distribution)}, to date ${toCents(lp.toDate)}`);
+}
+```
+
+Output:
+
+```
+LPs: 32793750.00
+Alder Endowment: share 0.5, paid in 5445000.00, now 16396875.00, to date 18376875.00
+Birchwood Family Office: share 0.35, paid in 3811500.00, now 11477812.50, to date 12863812.50
+Cedar Fund of Funds: share 0.15, paid in 1633500.00, now 4919062.50, to date 5513062.50
+```
+
+Each LP's amount is the LPs' amount times its commitment over all the commitments, worked exactly, so the three add up to the LPs' $32,793,750. When the distribution is final, each LP's `clawback` is its share of what the GP owes back. Every amount is exact; `toCents` rounds one for showing, and the page rounds each LP's amount down to the cent, as it would be paid.
+
 ## What it covers
 
-Version 0.1.0 models a European (whole-fund) waterfall, cumulative across the fund's life:
+Version 0.2.0 models a European (whole-fund) waterfall, cumulative across the fund's life:
 - **Calls** for investments, fees and expenses, all counted as the LPs' capital.
 - **Distributions** earlier in the fund's life, each run through the same tiers in date order. Carry on them is paid as they're made.
 - **A GP commitment:** a share of the fund, fee-free and paying its share of expenses by default (both can be changed). It gets its share of every distribution beside the tiers, with no carry.
@@ -119,6 +166,7 @@ Version 0.1.0 models a European (whole-fund) waterfall, cumulative across the fu
   - **Carry,** flat (20% by default) or in steps by the LPs' net multiple on distributions, each step's rate only on profit above its threshold.
 - **A clawback** when the distribution is the fund's last. It's one run of the tiers on the fund's totals, at the end, gross of tax, one way only.
 - **The NAV point:** the split if the fund were liquidated at NAV, with its clawback.
+- **Each LP's share,** from 0.2.0: for LPs all on the same terms, each LP's part of the LPs' paid-in, of the distribution, of the fund to date, and of any clawback, by commitment.
 - **Breakpoints:** every distribution where a tier ends or the clawback owed changes, each with its reasons in plain English.
 - **Exact numbers:** 40-digit decimals throughout, so every breakpoint is exact. `toCents` rounds an amount for showing.
 
@@ -127,7 +175,7 @@ The rules, each with its default, are in [`docs/SPEC.md`](https://github.com/spi
 ## What it doesn't model yet
 
 - American (deal-by-deal) carry.
-- Per-LP accounts: closes, equalization, side letters' fee or carry breaks. "The LPs" is every LP together.
+- Per-LP accounts where LPs differ: later closes and equalization, side-letter fee or carry breaks, defaulted or excused LPs. Every LP is on the same terms; a field on an LP other than its name and commitment is refused.
 - Capital as invested capital only, or committed capital.
 - A compounding pref, or an IRR hurdle. A compounded pref is refused as `compounded_pref`, and an IRR hurdle by its own key.
 - A step's higher rate on all profit, with a GP catch-up to it.
@@ -280,7 +328,7 @@ Each reason's `text` is one of these, an amount written as "$10,890,000" or "$4,
 
 ## How it's tested
 
-Fifteen worked cases and fifteen refusals, each with a plain-English derivation. Their expected values come from an independent calculator in exact fractions, which finds breakpoints by search rather than from tier sizes. The engine meets every one to the cent, and every breakpoint exactly. They're in the repository, not the package: [`packages/fund/cases`](https://github.com/spillpoint/spillpoint/tree/main/packages/fund/cases).
+Nineteen worked cases and twenty-six refusals, each with a plain-English derivation; four of the cases, and eleven of the refusals, are about the LPs. Their expected values come from an independent calculator in exact fractions, which finds breakpoints by search rather than from tier sizes. The engine meets every one to the cent, and every breakpoint exactly. They're in the repository, not the package: [`packages/fund/cases`](https://github.com/spillpoint/spillpoint/tree/main/packages/fund/cases).
 
 ## License
 

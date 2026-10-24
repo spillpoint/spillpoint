@@ -77,11 +77,11 @@ describe("saving and opening", () => {
     // Moving X isn't a change.
     expect(notSaved()).toBe(false);
     save();
-    expect(downloads.map((d) => d.name)).toEqual(["a-late-call-and-a-clawback.json"]);
-    expect(status()).toBe("Saved as a-late-call-and-a-clawback.json, in your downloads.");
+    expect(downloads.map((d) => d.name)).toEqual(["a-late-call-a-clawback-and-two-lps.json"]);
+    expect(status()).toBe("Saved as a-late-call-a-clawback-and-two-lps.json, in your downloads.");
     const text = await downloads[0]!.blob.text();
     const file = JSON.parse(text);
-    expect([file.name, file.view]).toEqual(["A late call and a clawback", { x: "15000000" }]);
+    expect([file.name, file.view]).toEqual(["A late call, a clawback and two LPs", { x: "15000000" }]);
     expect(valuesOf(file.fund)).toEqual(valuesOf(caseFile("fund-19-lps-clawback", "inputs.json").fund));
 
     tab("Terms");
@@ -93,9 +93,9 @@ describe("saving and opening", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open a file" }));
     expect(confirm).toHaveBeenCalledWith("Open a file? Your unsaved changes to this fund will be lost.");
 
-    await openFile(text, "a-late-call-and-a-clawback.json");
-    expect(status()).toBe("Opened a-late-call-and-a-clawback.json.");
-    expect(pickerText()).toBe("A late call and a clawback, opened from a-late-call-and-a-clawback.json");
+    await openFile(text, "a-late-call-a-clawback-and-two-lps.json");
+    expect(status()).toBe("Opened a-late-call-a-clawback-and-two-lps.json.");
+    expect(pickerText()).toBe("A late call, a clawback and two LPs, opened from a-late-call-a-clawback-and-two-lps.json");
     expect((screen.getByLabelText("Step 1's carry rate") as HTMLInputElement).value).toBe("20");
     expect(notSaved()).toBe(false);
     tab("Payouts");

@@ -87,6 +87,21 @@ const SHOTS = {
     clip: ["section[aria-labelledby=split-heading]"],
     quality: 50,
   },
+  // f02d: the LPs' card, with its clawback column, at a laptop's width and a phone's; the LPs tab at both; and the
+  // four tabs on one line at 320.
+  ...Object.fromEntries(
+    [1100, 320].flatMap((width) => [
+      [
+        `f02d-card-${width}`,
+        { width, height: 900, mobile: width < 768, steps: [choose("Start from", "fund-19-lps-clawback")], clip: ["section[aria-labelledby=lps-card-heading]"], quality: 60 },
+      ],
+      [
+        `f02d-lps-tab-${width}`,
+        { width, height: 900, mobile: width < 768, steps: [choose("Start from", "fund-17-lps-three"), click("LPs")], clip: ["section[aria-labelledby=lps-heading]"], quality: 60 },
+      ],
+    ]),
+  ),
+  "f02d-tabs-320": { width: 320, height: 900, mobile: true, steps: [choose("Start from", "fund-17-lps-three")], clip: [".masthead", ".tabs"], quality: 60 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

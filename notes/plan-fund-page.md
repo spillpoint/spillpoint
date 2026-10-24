@@ -339,7 +339,8 @@ A button on the card: "Download as CSV".
 - **The VC fund with premium carry becomes case 17:** the same fund, with three LPs.
 - **The clawback example becomes case 19,** so the LPs' card and its clawback column both show from the picker.
 - **Case 3 and the SPV stay without LPs.**
-- **Labels and opening X stay (mine):** the LPs show on the LPs tab and in the card, so the labels don't need to say so.
+- **The labels say so** (f02c review, answer 1), since the picker is how a GP finds the LPs: "A VC fund with premium carry and three LPs: 20%, then 25% from 3x and 30% from 5x" and "A late call, a clawback and two LPs". Each opens at the X it did.
+- **The four tabs fit on one line down to 320 pixels (f02d):** on a phone their padding and gap give way rather than "LPs" going to a second line, as it did below 375. They can still wrap, so a larger browser font doesn't scroll the page sideways.
 
 ### Tests
 
