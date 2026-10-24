@@ -25,6 +25,7 @@ export const PENDING: readonly string[] = [
   "fund-25-later-close",
   "fund-26-closes-and-classes",
   "fund-27-classes-refused",
+  "fund-28-classes-clawback-steps",
 ];
 const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */

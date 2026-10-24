@@ -157,13 +157,13 @@ function accountsOf(dir: string): (string | null)[] {
 }
 
 describe("fund cases", () => {
-  it("are twenty-four runs and three sets of refusals", () => {
-    expect(RUN).toHaveLength(24);
+  it("are twenty-five runs and three sets of refusals", () => {
+    expect(RUN).toHaveLength(25);
     expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused"]);
     expect([...RUN, ...REFUSED].sort()).toEqual(FUND);
   });
 
-  it("have LPs in cases 17 to 20 and 22 to 26 (F19)", () => {
+  it("have LPs in cases 17 to 20, 22 to 26 and 28 (F19)", () => {
     expect(LP_RUN).toEqual([
       "fund-17-lps-three",
       "fund-18-lps-thirds",
@@ -174,10 +174,11 @@ describe("fund cases", () => {
       "fund-24-classes-clawback",
       "fund-25-later-close",
       "fund-26-closes-and-classes",
+      "fund-28-classes-clawback-steps",
     ]);
   });
 
-  it("have classes or later closes in cases 22 to 26 only (F22, F25)", () => {
+  it("have classes or later closes in cases 22 to 26 and 28 only (F22, F25)", () => {
     expect(CLASS_RUN).toEqual(LP_RUN.slice(4));
   });
 
@@ -283,15 +284,18 @@ describe.each(LP_RUN)("%s, its LPs", (dir) => {
   const accounts = accountsOf(dir);
   const accountOf = inputs.fund.lps!.map((lp) => accounts.indexOf(lp.class ?? null));
   const members = accounts.map((_, a) => lps.flatMap((_lp, i) => (accountOf[i] === a ? [i] : [])));
+  // Within its account an LP's amounts are the account's times its commitment over the account's (F23).
+  const ofAccount = lps.map((lp, i) => {
+    const all = members[accountOf[i]!]!.reduce((s, j) => s.plus(exact(lps[j]!.commitment)), new D(0));
+    return exact(lp.commitment).div(all);
+  });
 
-  it("lists each LP in the input's order, its share its commitment over its account's (F19, F23, FC11)", () => {
+  it("lists each LP in the input's order, its share F19's: its commitment over all of them (F19, FC11)", () => {
     expect(lps.map((lp) => lp.name)).toEqual(inputs.fund.lps!.map((lp) => lp.name));
     lps.forEach((lp, i) => expect(exact(lp.commitment).eq(exact(inputs.fund.lps![i]!.commitment)), lp.name).toBe(true));
-    for (const idx of members) {
-      const all = idx.reduce((s, i) => s.plus(exact(lps[i]!.commitment)), new D(0));
-      for (const i of idx) expect(shares[i]!.minus(exact(lps[i]!.commitment).div(all)).abs().lte(CLOSE), lps[i]!.name).toBe(true);
-      expect(idx.reduce((s, i) => s.plus(shares[i]!), new D(0)).minus(1).abs().lte(CLOSE)).toBe(true);
-    }
+    const all = lps.reduce((s, lp) => s.plus(exact(lp.commitment)), new D(0));
+    lps.forEach((lp, i) => expect(shares[i]!.minus(exact(lp.commitment).div(all)).abs().lte(CLOSE), lp.name).toBe(true));
+    expect(shares.reduce((s, x) => s.plus(x), new D(0)).minus(1).abs().lte(CLOSE)).toBe(true);
   });
 
   it("gives each LP its class and later close as the input does (FC11)", () => {
@@ -301,24 +305,24 @@ describe.each(LP_RUN)("%s, its LPs", (dir) => {
     });
   });
 
-  /** F20, F23: each LP's amount is its share of its account's LPs' amount, given to the cent and exact (FC9). */
+  /** F20, F23: each LP's amount is its part of its account's LPs' amount, given to the cent and exact (FC9). */
   function divides(where: string, each: LpAmount[], lpsAmount: string, idx: number[]) {
     const total = idx.reduce((s, i) => s.plus(exact(each[i]!.exact)), new D(0));
     expect(cents(total), `${where}: the LPs' amounts add up to theirs`).toBe(lpsAmount);
     for (const i of idx) {
       const a = each[i]!;
       expect(a.amount, `${where}: ${lps[i]!.name} to the cent`).toBe(cents(exact(a.exact)));
-      expect(exact(a.exact).minus(shares[i]!.times(total)).abs().lte(CLOSE), `${where}: ${lps[i]!.name}'s share`).toBe(true);
+      expect(exact(a.exact).minus(ofAccount[i]!.times(total)).abs().lte(CLOSE), `${where}: ${lps[i]!.name}'s part`).toBe(true);
     }
   }
 
-  it("gives each LP its share of its account's paid-in (F20, F23)", () => {
+  it("gives each LP its part of its account's paid-in (F20, F23)", () => {
     accounts.forEach((_, a) =>
       divides("paid in", lps.map((lp) => lp.paid_in), expected.accounts?.[a]!.paid_in ?? expected.lps_paid_in, members[a]!),
     );
   });
 
-  it("gives each LP its share of its account's X, to date and any clawback, at every point (F20, F23, F24)", () => {
+  it("gives each LP its part of its account's X, to date and any clawback, at every point (F20, F23, F24)", () => {
     for (const p of expected.points) {
       const rows = p.by_lp!;
       expect(rows.map((r) => r.name), p.x).toEqual(lps.map((lp) => lp.name));

@@ -23,6 +23,7 @@ export const PENDING: readonly string[] = [
   "fund-25-later-close",
   "fund-26-closes-and-classes",
   "fund-27-classes-refused",
+  "fund-28-classes-clawback-steps",
 ];
 /** The cases the page's tests run as a fund. */
 export const RUN_CASES = CASE_FOLDERS.filter((d) => existsSync(join(CASES_DIR, d, "inputs.json")) && !PENDING.includes(d));
