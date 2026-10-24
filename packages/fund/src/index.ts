@@ -6,7 +6,9 @@
 //   const split = splitAt(fund, "20000000");     // X on D, by tier (F16)
 //   const nav = splitAtNav(fund);                // the NAV point, final (F14)
 //   split.byLp                                   // each LP's amounts, when the fund lists LPs (F20)
-//   const breakpoints = findBreakpoints(fund);   // every X where it bends, and why (F15)
+//   split.byAccount                              // each class's account, with two or more (F23, F26)
+//   const breakpoints = findBreakpoints(fund);   // every X where it bends, and why (F15, F27)
+//   const eq = equalization(fund);               // what moves between LPs at later closes (F25)
 //
 // Everything runs locally: no I/O, no network. Rules are in docs/SPEC.md and
 // choices in docs/ASSUMPTIONS.md; the fund's own documents govern, not this.
@@ -20,11 +22,15 @@ export type { RefusalKind } from "./errors.ts";
 
 // Reading a fund's input.
 export { readFund } from "./input.ts";
-export type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment, Lp } from "./model.ts";
+export type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment, Lp, LpClass } from "./model.ts";
 
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";
-export type { Clawback, LpAmounts, Split, StepCarry, Tiers } from "./waterfall.ts";
+export type { AccountSplit, Clawback, LpAmounts, Split, StepCarry, Tiers } from "./waterfall.ts";
+
+// Later closes: what the joining LPs pay in and the LPs already in get back, with interest (F25).
+export { equalization } from "./equalization.ts";
+export type { Equalization, EqualizationAmounts, LaterClose } from "./equalization.ts";
 
 // Every X where the split bends, with its reasons (F15).
 export { findBreakpoints } from "./breakpoints.ts";

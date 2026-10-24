@@ -75,7 +75,7 @@ const FILE = "file";
 const EDITED = "edited";
 
 /** A blank fund's terms: F9's 20% carry, flat, and nothing else, each to change on the Terms tab. */
-const BLANK_TERMS: FundTerms = { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null };
+const BLANK_TERMS: FundTerms = { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [] };
 
 function opened(id: string): Opened {
   const fresh = { problem: null, edited: false, top: { text: null, set: null, problem: null } };

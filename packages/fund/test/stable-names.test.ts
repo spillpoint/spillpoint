@@ -9,10 +9,10 @@ import { describe, expect, it } from "vitest";
 
 import { FundRefusal, findBreakpoints, readFund } from "../src/index.ts";
 import type { Reason } from "../src/index.ts";
-import { CHANGE_WORDS, CLAWBACK_CHANGES, INPUT_TERMS, REASON_CODES, TIER_REASON_CODES, TOTALS_WORDINGS, UNSUPPORTED_TERMS, WORDINGS } from "../src/stable-names.ts";
+import { CHANGE_WORDS, CLAWBACK_CHANGES, FUND_TERMS, INPUT_TERMS, REASON_CODES, TIER_REASON_CODES, TOTALS_WORDINGS, UNSUPPORTED_TERMS, WORDINGS } from "../src/stable-names.ts";
 import { CASES_DIR, REFUSAL_CASES, RUN_CASES, applyChange, readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
-import { randomFund, seeded } from "./support/random.ts";
+import { randomClasses, randomFund, seeded } from "./support/random.ts";
 
 const stable = readFileSync(resolve(import.meta.dirname, "../docs/STABLE.md"), "utf8");
 
@@ -63,6 +63,9 @@ describe("the README's \"Stable from 0.1.0\", which the package carries since ST
       WORDINGS.clawback_starts(),
       WORDINGS.clawback_changes("{change}"),
       WORDINGS.clawback_changes_on_totals("{change}", "{tier}"),
+      WORDINGS.clawback_changes_on_own_totals("{change}", "{tier}"),
+      WORDINGS.named("{account}", "{reason}"),
+      FUND_TERMS,
       ...CLAWBACK_CHANGES.map((c) => CHANGE_WORDS[c]),
       TOTALS_WORDINGS.capital_returned(),
       TOTALS_WORDINGS.pref_met(),
@@ -95,6 +98,9 @@ describe("STABLE.md", () => {
       WORDINGS.clawback_starts(),
       WORDINGS.clawback_changes("{change}"),
       WORDINGS.clawback_changes_on_totals("{change}", "{tier}"),
+      WORDINGS.clawback_changes_on_own_totals("{change}", "{tier}"),
+      WORDINGS.named("{account}", "{reason}"),
+      FUND_TERMS,
       ...CLAWBACK_CHANGES.map((c) => CHANGE_WORDS[c]),
       TOTALS_WORDINGS.capital_returned(),
       TOTALS_WORDINGS.pref_met(),
@@ -116,7 +122,7 @@ describe("the engine gives only what STABLE.md lists", () => {
   });
 
   it("writes a reason's words only in stable-names.ts", () => {
-    const phrases = /paid-in capital back|of the profit|carry is|from here the GP|the clawback owed|on the fund's totals|LPs have their|starts to fall|stops falling|falls faster|falls more slowly/;
+    const phrases = /paid-in capital back|of the profit|carry is|from here the GP|the clawback owed|on the fund's totals|on its own totals|Fund terms|LPs have their|starts to fall|stops falling|falls faster|falls more slowly/;
     expect(where(phrases)).toEqual(["stable-names.ts"]);
   });
 
@@ -142,24 +148,32 @@ describe("the engine gives only what STABLE.md lists", () => {
     clawback_changes: [
       new RegExp(`^${escape(WORDINGS.clawback_changes("{change}")).replace("\\{change\\}", change)}$`),
       new RegExp(`^${escape(WORDINGS.clawback_changes_on_totals("{change}", "{tier}")).replace("\\{change\\}", change).replace("\\{tier\\}", tier)}$`),
+      new RegExp(`^${escape(WORDINGS.clawback_changes_on_own_totals("{change}", "{tier}")).replace("\\{change\\}", change).replace("\\{tier\\}", tier)}$`),
     ],
   };
 
-  const checkReason = (r: Reason) => {
+  /** F27: with two or more accounts, a reason's words come after its account's name; with one, as they are. */
+  const checkReason = (r: Reason, named: boolean) => {
     expect(REASON_CODES).toContain(r.code);
-    expect(TEXT[r.code].some((re) => re.test(r.text)), r.text).toBe(true);
+    const prefix = WORDINGS.named(r.class ?? FUND_TERMS, "");
+    expect(r.text.startsWith(prefix), r.text).toBe(named);
+    const text = named ? r.text.slice(prefix.length) : r.text;
+    expect(TEXT[r.code].some((re) => re.test(text)), r.text).toBe(true);
     if (r.code === "clawback_changes") {
       expect(CLAWBACK_CHANGES).toContain(r.change);
       if (r.fundTotals !== null) expect(TIER_REASON_CODES).toContain(r.fundTotals);
-      // The cause is named in the words exactly when fundTotals says so.
-      expect(r.text.includes("on the fund's totals")).toBe(r.fundTotals !== null);
+      // The cause is named in the words exactly when fundTotals says so: the account's own totals with two or more
+      // accounts (FA29), the fund's with one.
+      expect(text.includes("on the fund's totals")).toBe(r.fundTotals !== null && !named);
+      expect(text.includes("on its own totals")).toBe(r.fundTotals !== null && named);
     }
   };
+  const namedIn = (fund: ReturnType<typeof readFund>) => new Set(fund.lps.map((lp) => lp.class)).size > 1;
 
   it("gives only listed codes, changes and wordings at every breakpoint of every case", () => {
     for (const dir of RUN_CASES) {
       const fund = readFund(readCaseFile<CaseInputs>(dir, "inputs.json").fund);
-      for (const b of findBreakpoints(fund)) b.reasons.forEach(checkReason);
+      for (const b of findBreakpoints(fund)) b.reasons.forEach((r) => checkReason(r, namedIn(fund)));
     }
   });
 
@@ -169,7 +183,7 @@ describe("the engine gives only what STABLE.md lists", () => {
     for (let i = 0; i < 300; i++) {
       for (const b of findBreakpoints(readFund(randomFund(rand)))) {
         for (const r of b.reasons) {
-          checkReason(r);
+          checkReason(r, false);
           seen.add(r.code === "clawback_changes" ? `${r.change}${r.fundTotals ? `, ${r.fundTotals}` : ""}` : r.code);
         }
       }
@@ -178,6 +192,23 @@ describe("the engine gives only what STABLE.md lists", () => {
     for (const code of [...TIER_REASON_CODES, "clawback_cleared", "starts_to_fall", "stops_falling", "falls_more_slowly"]) {
       expect([...seen].some((s) => s.startsWith(code)), code).toBe(true);
     }
+  });
+
+  it("gives only listed codes, changes and wordings, named by account, on 300 random funds with classes (F27)", () => {
+    const rand = seeded(20261024);
+    const seen = new Set<string>();
+    for (let i = 0; i < 300; i++) {
+      const fund = readFund(randomClasses(rand, randomFund(rand)));
+      for (const b of findBreakpoints(fund)) {
+        for (const r of b.reasons) {
+          checkReason(r, namedIn(fund));
+          if (namedIn(fund)) seen.add(r.code === "clawback_changes" ? `${r.change}${r.fundTotals ? `, ${r.fundTotals}` : ""}` : r.code);
+        }
+      }
+    }
+    // Named reasons of every tier, and the clawback's on an account's own totals.
+    for (const code of [...TIER_REASON_CODES, "clawback_cleared", "starts_to_fall"]) expect([...seen].some((s) => s.startsWith(code)), code).toBe(true);
+    expect([...seen].some((s) => s.includes(", ")), "a clawback change on an account's own totals").toBe(true);
   });
 
   it("refuses every fixture with a listed term, or an unsupported key named by itself", () => {

@@ -184,6 +184,34 @@ describe("a file the page can't use is refused in one line, the current fund kep
     expect([pickerText(), answer()]).toEqual(before);
   });
 
+  it("refuses a file with LP classes or later closes, until the page shows them, and keeps the fund it had", async () => {
+    render(<App />);
+    const before = [pickerText(), answer()];
+    await openFile(caseText("fund-22-classes-fee-carry"), "fund-22-classes-fee-carry.json");
+    expect(status()).toBe("Couldn't open fund-22-classes-fee-carry.json. This file has LP classes or later closes; the page shows them from the next version.");
+    expect([pickerText(), answer()]).toEqual(before);
+  });
+
+  it("refuses a saved file or a bare input with any of the classes' or closes' fields, and opens one where each is null or empty", () => {
+    const refused = (text: string) => {
+      const r = readFile(text);
+      return r.ok ? "opened" : r.message;
+    };
+    const later = "This file has LP classes or later closes; the page shows them from the next version.";
+    const terms = (more: Record<string, unknown>) => ({ ...case8(), terms: { ...case8().terms, ...more } });
+    const lps = (lp: Record<string, unknown>) => ({ ...case8(), lps: [{ name: "Alder", commitment: "1000000", ...lp }] });
+    expect(refused(savedFund(terms({ fee_rate: "0.02" })))).toBe(later);
+    expect(refused(JSON.stringify(terms({ equalization_rate: "0" })))).toBe(later);
+    expect(refused(savedFund(terms({ lp_classes: [{ name: "Anchor" }] })))).toBe(later);
+    expect(refused(savedFund(terms({ lp_classes: { name: "Anchor" } })))).toBe(later);
+    expect(refused(savedFund(lps({ class: "Anchor" })))).toBe(later);
+    expect(refused(savedFund(lps({ close: "2021-06-01" })))).toBe(later);
+    expect(refused(caseText("fund-25-later-close"))).toBe(later);
+    for (const none of [terms({ fee_rate: null, equalization_rate: null, lp_classes: null }), terms({ lp_classes: [] }), lps({ class: null, close: null })]) {
+      expect(refused(savedFund(none))).toBe("opened");
+    }
+  });
+
   it("refuses a cap table saved from the main page, and says where to open it", async () => {
     render(<App />);
     await openFile(JSON.stringify({ format: "spillpoint", version: 7, name: "Millrace Robotics", cap_table: {}, range: ["0", "1"] }), "millrace.json");
