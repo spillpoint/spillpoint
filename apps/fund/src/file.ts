@@ -111,6 +111,11 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
+  // Until the page shows classes and later closes (f03c, which removes this), a file whose fund has them is refused, so
+  // a save can't drop them: the forms have no place for them yet. Null is left out (FA24), and an empty list of classes
+  // is none, so those open.
+  if (hasClassesOrCloses(input)) return { ok: false, message: CLASSES_LATER };
+
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -140,6 +145,20 @@ export function readFile(text: string): OpenedFile {
 function trimmedNames(input: unknown): unknown {
   if (!isObject(input) || !Array.isArray(input.lps)) return input;
   return { ...input, lps: input.lps.map((lp: unknown) => (isObject(lp) && typeof lp.name === "string" ? { ...lp, name: nameOf(lp.name) } : lp)) };
+}
+
+const CLASSES_LATER = "This file has LP classes or later closes; the page shows them from the next version.";
+
+/** F22, F25: the fund's input gives a fee rate, an equalization rate or classes, or an LP gives a class or a close. */
+function hasClassesOrCloses(input: unknown): boolean {
+  if (!isObject(input)) return false;
+  const given = (o: Json, key: string) => o[key] !== undefined && o[key] !== null;
+  const terms = input.terms;
+  if (isObject(terms)) {
+    if (given(terms, "fee_rate") || given(terms, "equalization_rate")) return true;
+    if (given(terms, "lp_classes") && !(Array.isArray(terms.lp_classes) && terms.lp_classes.length === 0)) return true;
+  }
+  return Array.isArray(input.lps) && input.lps.some((lp: unknown) => isObject(lp) && (given(lp, "class") || given(lp, "close")));
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
