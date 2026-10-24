@@ -464,6 +464,8 @@ def named(found):
 class Classes(unittest.TestCase):
     """F22, F23: each class's account runs the tiers on its own."""
 
+    STEPS = {"carry": {"steps": [{"rate": "0.2"}, {"rate": "0.3", "from_lp_multiple": "2"}]}}
+
     def test_a_fee_rate_weights_the_fee_calls(self):
         # F22: A on the fund's 2%, B in a class at 1%: fee weights 1 and 1 × 1% / 2% = 1/2, so of a 90 fee call A pays
         # 60 and B 30. The 1,000 investment call is by commitment, 500 each. Paid in: 560 and 530.
@@ -511,6 +513,24 @@ class Classes(unittest.TestCase):
                 self.assertEqual(p[block]["gp"]["total"], q[block]["gp"]["total"])
                 self.assertEqual(p[block].get("gp_commitment"), q[block].get("gp_commitment"))
             self.assertEqual(p["by_lp"], q["by_lp"])
+
+    def test_an_lps_share_is_f19s_and_its_paid_in_its_accounts(self):
+        # FC11 (f03a review): A commits 3 and B 1, B in a class paying no fees. Shares are 3/4 and 1/4 of all the
+        # commitments, as in 0.2.0. Paid-in is each account's: A pays 750 of the 1,000 and all of the 100 fee call.
+        terms = {"carry": "0.2", "fee_rate": "0.02", "lp_classes": [{"name": "F&F", "fee_rate": "0"}]}
+        flows = [call("2021-01-01", "1000"), call("2021-01-01", "100", "fee")]
+        out = run_case({"case": "c", "xs": ["1"], "fund": {"as_of": "2022-01-01", "terms": terms, "cash_flows": flows,
+                                                         "lps": [{"name": "A", "commitment": "3"}, {"name": "B", "commitment": "1", "class": "F&F"}]}})
+        self.assertEqual([(lp["share"], lp["paid_in"]["exact"]) for lp in out["lps"]], [("0.75", "850"), ("0.25", "250")])
+
+    def test_an_accounts_clawback_reason_is_on_its_own_totals(self):
+        # F27, FA29: the late-call fund above at a tenth of a millionth, B in a class paying no carry. The fund terms'
+        # clawback starts to fall where the run on its own totals reaches 2x, and with two accounts it says so.
+        terms = {**self.STEPS, "lp_classes": [{"name": "F&F", "carry": "0"}]}
+        flows = [call("2020-01-01", "10"), dist("2022-01-01", "30"), call("2023-01-01", "10")]
+        m = model(terms, flows, "2025-01-01", [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "F&F"}], final=True)
+        texts = [r["text"] for _, rs in breakpoints.find(m) for r in rs if r.get("fund_totals")]
+        self.assertEqual(texts, ["Fund terms: the clawback owed starts to fall: on its own totals, LPs reach 2.0x: carry is 30% from here"])
 
     def test_a_class_no_lp_names_has_no_account(self):
         # FA22: its terms are checked (F28) and do nothing.

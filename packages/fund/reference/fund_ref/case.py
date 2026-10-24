@@ -136,19 +136,21 @@ def _point(model, x, tags):
 
 
 def _lps(model):
-    """FC9, FC11: each LP's class (when it has one), its close (when it joins at a later close), commitment, share
-    within its account and paid-in. These don't change with X, as FC3's don't."""
+    """FC9, FC11: each LP's class (when it has one), its close (when it joins at a later close), commitment, share and
+    paid-in. Its share is F19's, its commitment over all the LPs' (Jordan, f03a review); its paid-in is its part of its
+    account's, by its commitment over the account's (F23). These don't change with X, as FC3's don't."""
     fund = model.fund
+    total = sum((lp.commitment for lp in fund.lps), Fraction(0))
     rows = []
     for acct in model.accounts:
         for lp in acct.lps:
-            share = acct.lp_share(lp)
             row = {"name": lp.name}
             if lp.cls is not None:
                 row["class"] = lp.cls
             if fund.joins_later(lp):
                 row["close"] = lp.close.isoformat()
-            row.update({"commitment": exact(lp.commitment), "share": exact(share), "paid_in": _lp_amount(share * acct.run.before.lps_paid_in)})
+            paid_in = acct.lp_share(lp) * acct.run.before.lps_paid_in
+            row.update({"commitment": exact(lp.commitment), "share": exact(lp.commitment / total), "paid_in": _lp_amount(paid_in)})
             rows.append((fund.lps.index(lp), row))
     return [r for _, r in sorted(rows, key=lambda t: t[0])]
 

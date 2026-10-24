@@ -250,9 +250,10 @@ def _gp_slope(slopes, offset, steps):
     return gp_catch_up + sum(gp_carry)
 
 
-def _account_reasons(acct, at, sa, sb, left, right):
+def _account_reasons(acct, at, sa, sb, left, right, named):
     """One account's reasons at a breakpoint: its own tier's, then its clawback's (F15, FC5). `at` is where its
-    amounts start in the vector; sa and sb are its signature on either side."""
+    amounts start in the vector; sa and sb are its signature on either side; `named` when there are two or more
+    accounts (F27)."""
     wf = acct.run
     out = []
     if sa[0] != sb[0]:
@@ -274,8 +275,9 @@ def _account_reasons(acct, at, sa, sb, left, right):
         if totals_bends and sa[1] != sb[1]:
             tier, wording = _totals_wording(wf, sa[1], sb[1])
             reason["fund_totals"] = tier
-            # FA29: F15's wording after the account's name, "on the fund's totals" included.
-            reason["text"] = f"the clawback owed {words}: on the fund's totals, {wording}"
+            # F27, FA29: with two or more accounts the run is on the account's own totals, and the reason says so.
+            totals = "its own totals" if named else "the fund's totals"
+            reason["text"] = f"the clawback owed {words}: on {totals}, {wording}"
         else:
             reason["text"] = f"the clawback owed {words}"
         out.append(reason)
@@ -295,7 +297,7 @@ def reasons(view, x, sa, sb, left, right):
     """Every account's reasons at x: the fund's terms first, then the classes in the input's order (F27)."""
     out = []
     for i, acct in enumerate(view.accounts):
-        rs = _account_reasons(acct, view.offsets[i], sa[i], sb[i], left, right)
+        rs = _account_reasons(acct, view.offsets[i], sa[i], sb[i], left, right, view.named)
         out += [_named(acct, r) for r in rs] if view.named else rs
     return out
 
