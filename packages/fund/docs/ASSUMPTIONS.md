@@ -128,9 +128,20 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | FA31 | A close's limit (F25, F28) | A close must be before the first distribution in the cash flows, and before D, since X is a distribution on D. On D is refused. With no distribution in the cash flows, D is the limit. | Fixed | Confirmed (f03a review) |
 | FA32 | An account's LP multiple (F26) | As the fund's (FA16): its LPs' distributions to date, X's included, after carry, over its paid-in to date. The split will give it; the case files don't record it, and the tests hold it to each account's LPs to date over its paid-in. | Fixed | Confirmed (f03a review) |
 
+## Added in f03b
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA33 | A `Fund` built by hand without 0.3.0's fields | It splits as a fund without classes or closes, as FA20 has a hand-built fund without `lps`: no `feeRate`, `equalizationRate` or `lpClasses` on its terms, and no `class` or `close` on an LP, is none. TypeScript requires the new fields, as it does `lps` from 0.2.0. `equalization` refuses a hand-built fund with a later close and no rate as `readFund` would, `missing_field` at `terms.equalization_rate`. | Fixed | New |
+| FA34 | Working an account's part of each flow (F22, F23) | Its part of a call or distribution is the LPs' part times its weight over all the LPs', multiplied first, as FA20 works an LP's share. A fee weight is worked as the LP's commitment times its class's fee rate, or the fund's: F22's weight times the fund's rate, which divides out of every proportion. With one account nothing is scaled, so a fund without classes splits digit for digit as in 0.2.0. | Fixed | New |
+| FA35 | Working the equalization interest received (F25, FA30) | Each LP already in receives the rate on what it gets back of each call, for the call's days to the close, as FA30 shows that comes to; not the joiners' interest shared out. The reference shares it out, so the two check each other. At 40 digits paid and received balance within FA15. | Fixed | New |
+| FA36 | A reason's and a step's `class` with one account (F26, F27) | That account's class: null without classes, or the class's name when every LP is in one. Its text isn't named, as FA22 has it. The case files give `class` only with two or more accounts (FC11). | Fixed | New |
+| FA37 | `equalization` with no later close | Null, as `splitAtNav` is without a NAV, so whether a fund has an equalization is one check. | Fixed | New |
+| FA38 | An account with nothing paid in (F10, F11, F23) | Possible only for a class paying no fees in a fund whose calls are all fee calls. Every step's threshold is a multiple of its paid-in, zero, so its LPs have reached every step and its carry is at its top rate from its first dollar; the reference gives the same. Its `lpMultiple` is Infinity, so it reads as past every step, with or without distributions. | Fixed | New |
+
 ## Known edges
 
-Places where the engine and the reference can differ on an input both refuse, recorded rather than changed.
+Places where the engine and the reference can differ on an input both refuse, and an input whose result reads ambiguously, recorded rather than changed.
 
 **Keys that look like whole numbers (FA2, FA18; f02b).** `JSON.parse` lists such keys first in a parsed object, whatever their place in the file, so the engine never sees the file's order for them. With two unsupported keys, the later one like "2", the engine names "2" and the reference names the first in the file. Under `terms` this has been so since 0.1.0; under an LP it's new in 0.2.0. Both refuse the input.
 
@@ -138,6 +149,9 @@ Places where the engine and the reference can differ on an input both refuse, re
 |---|---|---|
 | `terms: {"carry": "0.2", "hurdle_irr": "x", "7": "y"}` | `7` at `terms.7` | `hurdle_irr` at `terms.hurdle_irr` |
 | an LP `{"name": "A", "commitment": "1", "carry": "x", "2": "y"}` | `2` at `lps[0].2` | `carry` at `lps[0].carry` |
+| a class `{"name": "A", "pref": "x", "3": "y"}` (from 0.3.0, f03b) | `3` at `terms.lp_classes[0].3` | `pref` at `terms.lp_classes[0].pref` |
+
+**A class named "Fund terms" (FA28; f03b).** F28 doesn't refuse it. With two or more accounts its reasons read like the fund terms' own: "Fund terms: LPs have their $4,500,000 of paid-in capital back" for each. Every reason and carry step has `class`, null for the fund's terms and "Fund terms" for the class, so code tells them apart; the words alone don't.
 
 ## Later
 
