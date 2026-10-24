@@ -235,7 +235,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 
 **F27, breakpoints.** Each account's breakpoints (F15) at the X that gives them: the X where its part of the LPs' share reaches the tier's end.
 - **With two or more accounts,** each reason's text starts with its account's name: "Friends and family: LPs have their $1,000,000 of paid-in capital back", "Fund terms: LPs reach 3.0x: carry is 25% from here". Its amounts and rates are the account's own.
-- **The clawback's reasons** (F15) come from each account's own clawback, named the same way.
+- **The clawback's reasons** (F15) come from each account's own clawback, named the same way. A reason the run on the totals causes gives the account's own totals: "Fund terms: the clawback owed starts to fall: on its own totals, LPs reach 2.0x: carry is 30% from here" (Jordan, f03a review).
 - **One X can carry reasons from several accounts:** the fund's terms first, then the classes in the input's order.
 - **With one account,** the wording is as before.
 
@@ -298,7 +298,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 
 ## Cases
 
-Twenty-four cases and three sets of refusals, in `packages/fund/cases/` (FC2):
+Twenty-five cases and three sets of refusals, in `packages/fund/cases/` (FC2):
 
 1. One investment call, 20% carry.
 2. Investment, fee and expense calls all count as capital; an interim distribution returns part of it.
@@ -327,6 +327,7 @@ Twenty-four cases and three sets of refusals, in `packages/fund/cases/` (FC2):
 25. One later close with 8% interest, and a 2% GP commitment outside the equalization. The waterfall is as if every LP were in from the start (f03a).
 26. Two later closes, the second a friends-and-family LP paying no fees (f03a).
 27. Twenty refusals on cases 22, 23 and 25, one or more for each new line of F28 (f03a).
+28. Case 19 with Birchwood in a seed class at 15% carry: each class settles its own clawback, and the fund terms' reasons say the clawback is worked on their own totals (f03a review).
 
 ## Decided
 
