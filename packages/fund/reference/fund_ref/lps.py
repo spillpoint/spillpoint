@@ -4,6 +4,9 @@ Every LP is on the same terms (F19): the same fees, the same carry, every call
 pro rata to commitments. So nothing in the waterfall changes, and each LP's
 amounts are the LPs' amounts scaled by its share, exactly. They bend where the
 LPs' do, so the breakpoints are as before (F20).
+
+From 0.3.0 this is the case of one account: with classes, each LP shares its
+account's amounts by its commitment within the account (F23, accounts.py).
 """
 
 from fractions import Fraction

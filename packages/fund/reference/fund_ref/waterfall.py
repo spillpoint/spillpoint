@@ -134,6 +134,13 @@ def pay_tiers(fund, amount, *, capital_due, pref_due, lp_before, gp_before, prof
     return pot, last
 
 
+def gp_commitment_part(fund, kind, amount):
+    """F3: the GP commitment pays g of investment calls, of expense calls if it pays expenses (default), and of fee
+    calls only if it pays fees (default not)."""
+    pays = kind == "investment" or (kind == "expense" and fund.pays_expenses) or (kind == "fee" and fund.pays_fees)
+    return fund.gp_share * Fraction(amount) if pays else Fraction(0)
+
+
 class Ledger:
     """The fund's running balances (F1), replayed flow by flow in F4's order."""
 
@@ -162,11 +169,8 @@ class Ledger:
         self.date = date
 
     def call(self, kind, amount):
-        """F3: the GP commitment pays g of investment calls, of expense calls if it pays expenses (default), and of
-        fee calls only if it pays fees (default not). The LPs pay the rest of every call."""
-        f = self.fund
-        pays = kind == "investment" or (kind == "expense" and f.pays_expenses) or (kind == "fee" and f.pays_fees)
-        gp_part = f.gp_share * amount if pays else Fraction(0)
+        """F3: the GP commitment pays its part; the LPs pay the rest of every call."""
+        gp_part = gp_commitment_part(self.fund, kind, amount)
         self.gp_commitment_paid_in += gp_part
         self.lps_paid_in += amount - gp_part
 
