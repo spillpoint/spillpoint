@@ -10,6 +10,8 @@ Branch `f03a-fund-classes-spec-and-cases`, from main. The first step of spillpoi
 
 **The reference and my hand work never disagreed, and no case contradicted the spec.** Every value in cases 22 to 26 came out the same both ways, and all twenty refusals are the ones `cases-classes.json` expects (§5).
 
+**Fixed up after your review:** the last section, "The fix-up", says what changed: an LP's share back to F19's, "on its own totals", case 26's listed X, and case 28. Where it differs from the sections before it, it's the current one.
+
 ## 1. The spec and assumptions
 
 ### `packages/fund/docs/SPEC.md`
@@ -415,3 +417,127 @@ At the second close Cedar pays a quarter of each investment call and none of the
    - Should a class named "Fund terms" be refused, which would need a new input term?
    - Should an account's clawback reason say "on its totals" rather than F15's "on the fund's totals"?
 5. **Case 26's listed X of $5,333,333.33** is a third of a cent below the fund terms' breakpoint, 16,000,000/3. So the case has two points that read the same to the cent. Was the listed one meant to be the breakpoint itself? If so, I'd change the listed X to `"16000000/3"` while the lock is lifted, and the duplicate goes.
+
+## The fix-up (your review)
+
+Your six changes, made on this branch while the lock is lifted. Your answers to questions 2, 3 and 4a, and to FA24, needed no change beyond marking them in `ASSUMPTIONS.md`.
+
+**The reference and my hand work agree on every value in all six run cases, case 28 included, and no case contradicts the spec.** Your figures for case 26 at $5,200,000 and case 28 at X = 0 are what both give.
+
+### What changed
+
+1. **An LP's share is F19's again** (your answer 1): its commitment over all the LPs' commitments, as in 0.2.0.
+   - **The reference:** `case.py` writes it.
+   - **FC11:** its text says so. Within its account an LP's amounts are its account's times its commitment over the account's commitment, both already in the file, so there's no new field.
+   - **`expected.json`** regenerated for 22, 23, 24 and 26; 25 has one account, so its shares didn't change. Only each LP's `share` moved: in case 22, Cedar's goes from 1 to 1/9 and Alder's from 0.75 to 2/3.
+   - **`cases.test.ts`:** the share is checked against all the commitments, and each LP's amounts against its part of its account.
+   - **The derivations:** 22, 24 and 26 show both, a "Share" column (F19's) and an "Of its account" column. 23 says each LP's share is 0.5.
+2. **"On its own totals"** (your answer 4b): with two or more accounts, a `clawback_changes` the run on the totals causes says "on its own totals".
+   - **The spec:** F27's clawback bullet says so, with your example.
+   - **FA29:** rewritten to it.
+   - **The reference:** `breakpoints.py` words it.
+
+   No case before 28 had such a reason, so nothing else regenerated for it.
+3. **Case 26's listed X is $5,200,000** (your answer 5), set in its `inputs.json` by script.
+   - **`expected.json`** regenerated.
+   - **The derivation** works the new point: the fund terms' part is $3,900,000, all capital; the class's $1,300,000 is $1,250,000 of capital and $50,000 at no carry; the GP gets nothing. The two-points-at-$5,333,333.33 paragraph and its exact-values table are gone.
+4. **Case 28, `fund-28-classes-clawback-steps`:** case 19's fund with Birchwood in "Seed LPs" at a flat 15%, case 19's xs, and your description.
+   - **`inputs.json`** written by script from case 19's, with your class and description.
+   - **`expected.json`** from the reference.
+   - **`DERIVATION.md`** worked by hand from tier sizes, including the clawback as straight lines between its breakpoints.
+5. **Case 28 on both pending lists,** and in `cases.test.ts`'s counts: twenty-five runs, LPs in 17 to 20, 22 to 26 and 28, classes or closes in 22 to 26 and 28.
+6. **This section.**
+
+**Also:**
+- **`SPEC.md`'s case list** has 28, and twenty-five cases.
+- **`ASSUMPTIONS.md` marks your answers** Confirmed (f03a review): FA21, FA22, FA24 and FA28; FA29 with "on its own totals"; FC11 with F19's share. FA28 says a class named "Fund terms" goes under "Known edges" with the engine in f03b.
+- **The reference has two more unit tests,** 64 in all: an LP's share with classes, and "on its own totals" on a small late-call fund.
+- **Two test titles in `cases.test.ts`** say "its part of its account's" where they had "its share", so they don't read against FC11.
+
+### How it was checked
+
+- **The whole `expected.json`, rebuilt from my hand working, against the reference's,** for cases 22 to 26 and 28: every key in order, and every value. No differences.
+- **Every table cell in the seven derivations against `expected.json`:** 1,814 cells. None differ.
+  - The first run flagged 27 cells in case 28. My checker knew only the three account names in cases 22 to 26, so it read the Seed LPs table against the fund's amounts. With the case's own names it passes, and the cells were right all along.
+  - **Case 28's clawback-as-lines table,** which the checker can't read, was checked at all six points against `expected.json`: carry paid, entitlement and owed for both accounts. They agree.
+- **`cases.test.ts`'s changed checks bite.** Three planted errors on a scratch copy of the cases each failed a test:
+  - Cedar's share in case 22 put back to 1
+  - Birchwood's clawback in case 28 given as its F19 share of the fund's
+  - case 28's own-totals reason without its account's name
+- **Cases 01 to 21 and 25, and fund-27:** `generate.py --check` matches all 28 case folders, and `git diff --stat main -- packages/fund/cases` lists only the seven new folders.
+- **What CI runs** passes:
+  - **The fund package:** 745 tests, 739 passing and 6 skipped by design
+  - **The fund page:** 328
+  - **Unchanged:** the engine's 3,177 and the main page's 680
+  - **The fund reference:** 64 unit tests, and all 28 fund cases matching it
+  - **Spillpoint's reference:** its 73 and its cases
+
+### How the files got there
+
+The same way as before, with this session still refusing the Write tool in `packages/fund/cases/`:
+- **Case 26's `inputs.json`** was rewritten by script, changing only `"5333333.33"` to `"5200000"` in its `xs`.
+- **Case 28's `inputs.json`** was written by script from case 19's.
+- **Every `expected.json`** was written by the reference.
+- **The derivations** for 22, 23, 24, 26 and 28 were edited or written in my scratch folder, checked there, and copied in byte for byte with `cp`. 25's and 27's didn't change.
+- **I didn't edit or commit `.claude/settings.json`.**
+
+Every derivation's sha256, the same in my scratch folder and the case folder:
+
+| File | Changed in the fix-up | sha256, scratch folder and case folder |
+|---|---|---|
+| `fund-22-classes-fee-carry/DERIVATION.md` | yes | `718205f5bd2b44166d7aaa36b39063dbf29a0982e3170c016700962f1436546e` |
+| `fund-23-classes-pref-catch-up/DERIVATION.md` | yes | `a16f59bebd809b714c7570b5e2d86baef11d59f4ef4bfbae4815875a86e3c110` |
+| `fund-24-classes-clawback/DERIVATION.md` | yes | `95bebdaf55bff7252c29e599006a73ddf4c6d79b8c6d86510da6b53289edeade` |
+| `fund-25-later-close/DERIVATION.md` | no | `189ac1ecf77af96485c59690989d3523fe0ee4ed033ee0d23857f7685d57c696` |
+| `fund-26-closes-and-classes/DERIVATION.md` | yes | `7f5621a113b00974657dc9526b3ed0799125278dad911175bf8db8912e31815a` |
+| `fund-27-classes-refused/DERIVATION.md` | no | `d44443406d9468c782715a4f74e8e79dece97b4d1b79ca92a79e4308b813f898` |
+| `fund-28-classes-clawback-steps/DERIVATION.md` | new | `7aceab942b311c3a145a61d7d692915f85fb8ef07f6741eb9281b267ef17241b` |
+
+### Case 28's key figures, to the cent
+
+| Account | LP | Commitment | Share of every call and distribution | Carry | Paid in |
+|---|---|---:|---:|---|---:|
+| Fund terms | Alder Endowment | 7,000,000 | 0.7 | 20%, then 30% from 2x | 14,000,000.00 |
+| Seed LPs | Birchwood Family Office | 3,000,000 | 0.3 | 15% | 6,000,000.00 |
+
+| X | Exact | Account | Reason |
+|---:|---|---|---|
+| 10,000,000.00 | 10000000 | Fund terms | `capital_returned`: LPs have their $14,000,000 of paid-in capital back |
+| | | Fund terms | `clawback_changes`: the clawback owed stops falling |
+| | | Seed LPs | `capital_returned`: LPs have their $6,000,000 of paid-in capital back |
+| | | Seed LPs | `clawback_cleared`: from here the GP has earned all the carry it was paid earlier |
+| 15,000,000.00 | 15000000 | Fund terms | `clawback_changes`: the clawback owed starts to fall: on its own totals, LPs reach 2.0x: carry is 30% from here |
+| 15,937,500.00 | 15937500 | Fund terms | `carry_step`: LPs reach 2.0x: carry is 30% from here |
+| | | Fund terms | `clawback_changes`: the clawback owed stops falling |
+
+**The clawback by account:**
+
+| X | Fund terms: carry paid | Fund terms: entitled | Fund terms: owed | Seed LPs: carry paid | Seed LPs: entitled | Seed LPs: owed | The fund owes |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.00 | 3,325,000.00 | 1,400,000.00 | 1,925,000.00 | 900,000.00 | 450,000.00 | 450,000.00 | 2,375,000.00 |
+| 10,000,000.00 | 3,325,000.00 | 2,800,000.00 | 525,000.00 | 900,000.00 | 900,000.00 | 0.00 | 525,000.00 |
+| 15,000,000.00 | 4,025,000.00 | 3,500,000.00 | 525,000.00 | 1,125,000.00 | 1,125,000.00 | 0.00 | 525,000.00 |
+| 15,937,500.00 | 4,156,250.00 | 3,696,875.00 | 459,375.00 | 1,167,187.50 | 1,167,187.50 | 0.00 | 459,375.00 |
+| 25,000,000.00 | 6,059,375.00 | 5,600,000.00 | 459,375.00 | 1,575,000.00 | 1,575,000.00 | 0.00 | 459,375.00 |
+
+**Each LP:**
+
+| LP | Class | Share | Paid in | From X = 0 | To date at 0 | Clawback at 0 | From X = 25,000,000 | To date at 25,000,000 | Clawback at 25,000,000 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Alder Endowment | | 0.7 | 14,000,000.00 | 0.00 | 17,675,000.00 | 1,925,000.00 | 14,765,625.00 | 32,440,625.00 | 459,375.00 |
+| Birchwood Family Office | Seed LPs | 0.3 | 6,000,000.00 | 0.00 | 8,100,000.00 | 450,000.00 | 6,825,000.00 | 14,925,000.00 | 0.00 |
+
+Alder, alone on the fund's terms, gets case 19's amounts and clawback to the cent. Birchwood's class has no step for the late call to catch, so its clawback clears at $10,000,000 and stays at zero.
+
+### Case 26 at its new listed X
+
+| X | Fund terms' part | Friends and family's part | Alder Endowment | Birchwood Family Office | Cedar Holdings | GP |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5,200,000.00 | 3,900,000.00 (all capital) | 1,300,000.00 (1,250,000.00 capital, 50,000.00 at no carry) | 2,600,000.00 | 1,300,000.00 | 1,300,000.00 | 0.00 |
+
+The shares in case 26 are now 0.5, 0.25 and 0.25; the paid-in, breakpoints and equalization are as in §9.
+
+### Left for f03b
+
+- **A class named "Fund terms"** under "Known edges", beside the engine (FA28).
+- **The rest as "For f03b" says.** Case 26 no longer has two points with the same `x`, so that bullet no longer applies.
