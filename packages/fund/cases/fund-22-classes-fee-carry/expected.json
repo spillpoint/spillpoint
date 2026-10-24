@@ -1,0 +1,1241 @@
+{
+  "case": "fund-22-classes-fee-carry",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2026-06-30",
+  "final": false,
+  "lps_paid_in": "9320000.00",
+  "lps": [
+    {
+      "name": "Alder Endowment",
+      "commitment": "6000000",
+      "share": "0.75",
+      "paid_in": {
+        "amount": "6240000.00",
+        "exact": "6240000"
+      }
+    },
+    {
+      "name": "Birchwood Family Office",
+      "commitment": "2000000",
+      "share": "0.25",
+      "paid_in": {
+        "amount": "2080000.00",
+        "exact": "2080000"
+      }
+    },
+    {
+      "name": "Cedar Holdings",
+      "class": "Friends and family",
+      "commitment": "1000000",
+      "share": "1",
+      "paid_in": {
+        "amount": "1000000.00",
+        "exact": "1000000"
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "class": null,
+      "commitment": "8000000",
+      "share": "8/9",
+      "fee_share": "1",
+      "paid_in": "8320000.00"
+    },
+    {
+      "class": "Friends and family",
+      "commitment": "1000000",
+      "share": "1/9",
+      "fee_share": "0",
+      "paid_in": "1000000.00"
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "4500000.00",
+      "exact": "4500000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": "Friends and family",
+          "amount": "1000000",
+          "text": "Friends and family: LPs have their $1,000,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "4860000.00",
+      "exact": "4860000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": null,
+          "amount": "8320000",
+          "text": "Fund terms: LPs have their $8,320,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "28260000.00",
+      "exact": "28260000",
+      "reasons": [
+        {
+          "code": "carry_step",
+          "class": null,
+          "lp_multiple": "3",
+          "rate": "0.25",
+          "text": "Fund terms: LPs reach 3.0x: carry is 25% from here"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "4500000.00",
+        "lps": {
+          "capital": "4500000.00",
+          "carry_tier": "0.00",
+          "total": "4500000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "4000000.00",
+            "lps": {
+              "capital": "4000000.00",
+              "carry_tier": "0.00",
+              "total": "4000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "500000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "0.00",
+              "total": "500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "3000000.00",
+            "exact": "3000000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "1000000.00",
+            "exact": "1000000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "500000.00",
+            "exact": "500000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "4500000.00",
+      "exact": "4500000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "4500000.00",
+        "lps": {
+          "capital": "4500000.00",
+          "carry_tier": "0.00",
+          "total": "4500000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "9000000.00",
+        "lps": {
+          "capital": "9000000.00",
+          "carry_tier": "0.00",
+          "total": "9000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "4000000.00",
+            "lps": {
+              "capital": "4000000.00",
+              "carry_tier": "0.00",
+              "total": "4000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "8000000.00",
+            "lps": {
+              "capital": "8000000.00",
+              "carry_tier": "0.00",
+              "total": "8000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "500000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "0.00",
+              "total": "500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1000000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "0.00",
+              "total": "1000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "3000000.00",
+            "exact": "3000000"
+          },
+          "to_date": {
+            "amount": "6000000.00",
+            "exact": "6000000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "1000000.00",
+            "exact": "1000000"
+          },
+          "to_date": {
+            "amount": "2000000.00",
+            "exact": "2000000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "500000.00",
+            "exact": "500000"
+          },
+          "to_date": {
+            "amount": "1000000.00",
+            "exact": "1000000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "4860000.00",
+      "exact": "4860000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "4860000.00",
+        "lps": {
+          "capital": "4820000.00",
+          "carry_tier": "40000.00",
+          "total": "4860000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "9360000.00",
+        "lps": {
+          "capital": "9320000.00",
+          "carry_tier": "40000.00",
+          "total": "9360000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "4320000.00",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "0.00",
+              "total": "4320000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "8320000.00",
+            "lps": {
+              "capital": "8320000.00",
+              "carry_tier": "0.00",
+              "total": "8320000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "540000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "40000.00",
+              "total": "540000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1040000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "40000.00",
+              "total": "1040000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "3240000.00",
+            "exact": "3240000"
+          },
+          "to_date": {
+            "amount": "6240000.00",
+            "exact": "6240000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "1080000.00",
+            "exact": "1080000"
+          },
+          "to_date": {
+            "amount": "2080000.00",
+            "exact": "2080000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "540000.00",
+            "exact": "540000"
+          },
+          "to_date": {
+            "amount": "1040000.00",
+            "exact": "1040000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "18000000.00",
+      "exact": "18000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "18000000.00",
+        "lps": {
+          "capital": "4820000.00",
+          "carry_tier": "10844000.00",
+          "total": "15664000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "2336000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "2336000.00"
+        }
+      },
+      "to_date": {
+        "amount": "22500000.00",
+        "lps": {
+          "capital": "9320000.00",
+          "carry_tier": "10844000.00",
+          "total": "20164000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "2336000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "2336000.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "16000000.00",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "9344000.00",
+              "total": "13664000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "2336000.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "2336000.00"
+            }
+          },
+          "to_date": {
+            "amount": "20000000.00",
+            "lps": {
+              "capital": "8320000.00",
+              "carry_tier": "9344000.00",
+              "total": "17664000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "2336000.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "2336000.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "2000000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "1500000.00",
+              "total": "2000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2500000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "1500000.00",
+              "total": "2500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "10248000.00",
+            "exact": "10248000"
+          },
+          "to_date": {
+            "amount": "13248000.00",
+            "exact": "13248000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "3416000.00",
+            "exact": "3416000"
+          },
+          "to_date": {
+            "amount": "4416000.00",
+            "exact": "4416000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "2000000.00",
+            "exact": "2000000"
+          },
+          "to_date": {
+            "amount": "2500000.00",
+            "exact": "2500000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "28260000.00",
+      "exact": "28260000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "28260000.00",
+        "lps": {
+          "capital": "4820000.00",
+          "carry_tier": "19280000.00",
+          "total": "24100000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "4160000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "4160000.00"
+        }
+      },
+      "to_date": {
+        "amount": "32760000.00",
+        "lps": {
+          "capital": "9320000.00",
+          "carry_tier": "19280000.00",
+          "total": "28600000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "4160000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "4160000.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "25120000.00",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "16640000.00",
+              "total": "20960000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "4160000.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "4160000.00"
+            }
+          },
+          "to_date": {
+            "amount": "29120000.00",
+            "lps": {
+              "capital": "8320000.00",
+              "carry_tier": "16640000.00",
+              "total": "24960000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "4160000.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "4160000.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "3140000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "2640000.00",
+              "total": "3140000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "3640000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "2640000.00",
+              "total": "3640000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "15720000.00",
+            "exact": "15720000"
+          },
+          "to_date": {
+            "amount": "18720000.00",
+            "exact": "18720000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "5240000.00",
+            "exact": "5240000"
+          },
+          "to_date": {
+            "amount": "6240000.00",
+            "exact": "6240000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "3140000.00",
+            "exact": "3140000"
+          },
+          "to_date": {
+            "amount": "3640000.00",
+            "exact": "3640000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "40000000.00",
+      "exact": "40000000",
+      "tags": [
+        "listed",
+        "nav"
+      ],
+      "distribution": {
+        "amount": "40000000.00",
+        "lps": {
+          "capital": "4820000.00",
+          "carry_tier": "28411111.11",
+          "total": "33231111.11"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "4160000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "2608888.89"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "6768888.89"
+        }
+      },
+      "to_date": {
+        "amount": "44500000.00",
+        "lps": {
+          "capital": "9320000.00",
+          "carry_tier": "28411111.11",
+          "total": "37731111.11"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "4160000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.25",
+              "from_lp_multiple": "3",
+              "amount": "2608888.89"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "6768888.89"
+        }
+      },
+      "clawback": {
+        "carry_paid": "6768888.89",
+        "entitlement": "6768888.89",
+        "owed": "0.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "35555555.56",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "24466666.67",
+              "total": "28786666.67"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "4160000.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "2608888.89"
+                }
+              ],
+              "total": "6768888.89"
+            }
+          },
+          "to_date": {
+            "amount": "39555555.56",
+            "lps": {
+              "capital": "8320000.00",
+              "carry_tier": "24466666.67",
+              "total": "32786666.67"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "4160000.00"
+                },
+                {
+                  "rate": "0.25",
+                  "from_lp_multiple": "3",
+                  "amount": "2608888.89"
+                }
+              ],
+              "total": "6768888.89"
+            }
+          },
+          "clawback": {
+            "carry_paid": "6768888.89",
+            "entitlement": "6768888.89",
+            "owed": "0.00"
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "4444444.44",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "3944444.44",
+              "total": "4444444.44"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "4944444.44",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "3944444.44",
+              "total": "4944444.44"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "0.00",
+            "entitlement": "0.00",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "21590000.00",
+            "exact": "21590000"
+          },
+          "to_date": {
+            "amount": "24590000.00",
+            "exact": "24590000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "7196666.67",
+            "exact": "21590000/3"
+          },
+          "to_date": {
+            "amount": "8196666.67",
+            "exact": "24590000/3"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "4444444.44",
+            "exact": "40000000/9"
+          },
+          "to_date": {
+            "amount": "4944444.44",
+            "exact": "44500000/9"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    }
+  ]
+}

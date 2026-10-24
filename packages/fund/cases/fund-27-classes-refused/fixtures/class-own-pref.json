@@ -1,0 +1,11 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The friends-and-family class with a 6% pref of its own, a class term 0.3.0 doesn't model.",
+  "change": {
+    "set": {
+      "terms.lp_classes[0].pref": {
+        "rate": "0.06"
+      }
+    }
+  }
+}

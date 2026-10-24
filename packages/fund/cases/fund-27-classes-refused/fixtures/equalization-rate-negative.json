@@ -1,0 +1,9 @@
+{
+  "base": "fund-25-later-close",
+  "about": "The equalization rate set to -8%.",
+  "change": {
+    "set": {
+      "terms.equalization_rate": "-0.08"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base": "fund-25-later-close",
+  "about": "Alder and Birchwood closing on 2021-02-01, after the first call on 2021-01-15, so no LP is in to pay it.",
+  "change": {
+    "set": {
+      "lps[0].close": "2021-02-01",
+      "lps[1].close": "2021-02-01"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "case": "fund-23-classes-pref-catch-up",
+  "description": "An anchor class at a 1% fee and 10% carry beside the fund's 2% and 20%, with an 8% pref and a full catch-up: each account reaches its pref and finishes its catch-up at its own X.",
+  "xs": [
+    "0",
+    "10200000",
+    "10400000",
+    "14500000",
+    "16000000",
+    "30000000"
+  ],
+  "fund": {
+    "as_of": "2025-01-01",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      },
+      "fee_rate": "0.02",
+      "lp_classes": [
+        {
+          "name": "Anchor",
+          "fee_rate": "0.01",
+          "carry": "0.10"
+        }
+      ]
+    },
+    "cash_flows": [
+      {
+        "date": "2020-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2020-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "300000"
+      }
+    ],
+    "lps": [
+      {
+        "name": "Anchor Pension",
+        "commitment": "5000000",
+        "class": "Anchor"
+      },
+      {
+        "name": "Bluebell Trust",
+        "commitment": "5000000"
+      }
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "case": "fund-26-closes-and-classes",
+  "description": "Two later closes, the second a friends-and-family LP paying no fees: at each close the LPs in by then rebalance, investment calls by commitment and fee calls only among the LPs paying fees.",
+  "xs": [
+    "0",
+    "5000000",
+    "5333333.33",
+    "12000000"
+  ],
+  "fund": {
+    "as_of": "2025-06-30",
+    "terms": {
+      "carry": "0.20",
+      "fee_rate": "0.02",
+      "equalization_rate": "0.06",
+      "lp_classes": [
+        {
+          "name": "Friends and family",
+          "fee_rate": "0",
+          "carry": "0"
+        }
+      ]
+    },
+    "cash_flows": [
+      {
+        "date": "2022-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "100000"
+      },
+      {
+        "date": "2022-07-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "3000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "150000"
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "5000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "2500000",
+        "close": "2022-04-01"
+      },
+      {
+        "name": "Cedar Holdings",
+        "commitment": "2500000",
+        "class": "Friends and family",
+        "close": "2022-10-01"
+      }
+    ]
+  }
+}

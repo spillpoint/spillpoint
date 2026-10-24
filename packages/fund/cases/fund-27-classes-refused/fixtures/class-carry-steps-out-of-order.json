@@ -1,0 +1,19 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The class's carry in steps whose rate falls: 20%, then 15% from 3x.",
+  "change": {
+    "set": {
+      "terms.lp_classes[0].carry": {
+        "steps": [
+          {
+            "rate": "0.20"
+          },
+          {
+            "rate": "0.15",
+            "from_lp_multiple": "3"
+          }
+        ]
+      }
+    }
+  }
+}

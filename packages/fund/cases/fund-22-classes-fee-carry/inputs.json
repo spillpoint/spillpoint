@@ -1,0 +1,77 @@
+{
+  "case": "fund-22-classes-fee-carry",
+  "description": "A friends-and-family class paying no fees and no carry, beside LPs on the fund's terms (20%, then 25% from 3x, a 2% fee). Fee calls fall only on the LPs paying fees. A NAV of $40,000,000 gives the NAV point, final by definition, its clawback by class.",
+  "xs": [
+    "0",
+    "4500000",
+    "4860000",
+    "18000000",
+    "28260000",
+    "40000000"
+  ],
+  "fund": {
+    "as_of": "2026-06-30",
+    "terms": {
+      "carry": {
+        "steps": [
+          {
+            "rate": "0.20"
+          },
+          {
+            "rate": "0.25",
+            "from_lp_multiple": "3"
+          }
+        ]
+      },
+      "fee_rate": "0.02",
+      "lp_classes": [
+        {
+          "name": "Friends and family",
+          "fee_rate": "0",
+          "carry": "0"
+        }
+      ]
+    },
+    "cash_flows": [
+      {
+        "date": "2022-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "9000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "160000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "160000"
+      },
+      {
+        "date": "2024-06-30",
+        "type": "distribution",
+        "amount": "4500000"
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "6000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "2000000"
+      },
+      {
+        "name": "Cedar Holdings",
+        "commitment": "1000000",
+        "class": "Friends and family"
+      }
+    ],
+    "nav": "40000000"
+  }
+}

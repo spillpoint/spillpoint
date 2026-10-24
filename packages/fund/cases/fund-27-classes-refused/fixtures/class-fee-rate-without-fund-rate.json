@@ -1,0 +1,7 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The fund's standard fee rate left out, though the class gives a fee rate of its own.",
+  "change": {
+    "del": "terms.fee_rate"
+  }
+}

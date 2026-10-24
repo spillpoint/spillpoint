@@ -1,0 +1,1837 @@
+{
+  "case": "fund-23-classes-pref-catch-up",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-01-01",
+  "final": false,
+  "lps_paid_in": "10300000.00",
+  "pref_accrued_to_d": "4124515.07",
+  "lps": [
+    {
+      "name": "Anchor Pension",
+      "class": "Anchor",
+      "commitment": "5000000",
+      "share": "1",
+      "paid_in": {
+        "amount": "5100000.00",
+        "exact": "5100000"
+      }
+    },
+    {
+      "name": "Bluebell Trust",
+      "commitment": "5000000",
+      "share": "1",
+      "paid_in": {
+        "amount": "5200000.00",
+        "exact": "5200000"
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "class": null,
+      "commitment": "5000000",
+      "share": "0.5",
+      "fee_share": "2/3",
+      "paid_in": "5200000.00",
+      "pref_accrued_to_d": "2082279.45"
+    },
+    {
+      "class": "Anchor",
+      "commitment": "5000000",
+      "share": "0.5",
+      "fee_share": "1/3",
+      "paid_in": "5100000.00",
+      "pref_accrued_to_d": "2042235.62"
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "10200000.00",
+      "exact": "10200000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": "Anchor",
+          "amount": "5100000",
+          "text": "Anchor: LPs have their $5,100,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "10400000.00",
+      "exact": "10400000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": null,
+          "amount": "5200000",
+          "text": "Fund terms: LPs have their $5,200,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "14284471.23",
+      "exact": "1042766400/73",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "class": "Anchor",
+          "rate": "0.08",
+          "amount": "149083200/73",
+          "text": "Anchor: LPs have their 8% pref, $2,042,235.62"
+        }
+      ]
+    },
+    {
+      "x": "14564558.90",
+      "exact": "1063212800/73",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "class": null,
+          "rate": "0.08",
+          "amount": "152006400/73",
+          "text": "Fund terms: LPs have their 8% pref, $2,082,279.45"
+        }
+      ]
+    },
+    {
+      "x": "14738301.37",
+      "exact": "1075896000/73",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "class": "Anchor",
+          "carry": "0.1",
+          "text": "Anchor: the GP has 10% of the profit"
+        }
+      ]
+    },
+    {
+      "x": "15605698.63",
+      "exact": "1139216000/73",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "class": null,
+          "carry": "0.2",
+          "text": "Fund terms: the GP has 20% of the profit"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "10200000.00",
+      "exact": "10200000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "10200000.00",
+        "lps": {
+          "capital": "10200000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10200000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10200000.00",
+        "lps": {
+          "capital": "10200000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10200000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "5100000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5100000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5100000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5100000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "5100000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5100000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5100000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5100000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "5100000.00",
+            "exact": "5100000"
+          },
+          "to_date": {
+            "amount": "5100000.00",
+            "exact": "5100000"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "5100000.00",
+            "exact": "5100000"
+          },
+          "to_date": {
+            "amount": "5100000.00",
+            "exact": "5100000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "10400000.00",
+      "exact": "10400000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "10400000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "100000.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10400000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10400000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "100000.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10400000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "5200000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5200000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5200000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "0.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5200000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "5200000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "100000.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5200000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5200000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "100000.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "5200000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "5200000.00",
+            "exact": "5200000"
+          },
+          "to_date": {
+            "amount": "5200000.00",
+            "exact": "5200000"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "5200000.00",
+            "exact": "5200000"
+          },
+          "to_date": {
+            "amount": "5200000.00",
+            "exact": "5200000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "14284471.23",
+      "exact": "1042766400/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "14284471.23",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "3984471.23",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14284471.23"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "14284471.23",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "3984471.23",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14284471.23"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "7142235.62",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "1942235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "1942235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "7142235.62",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          }
+        }
+      ]
+    },
+    {
+      "x": "14500000.00",
+      "exact": "14500000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "14500000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4092235.62",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14392235.62"
+        },
+        "gp": {
+          "catch_up": "107764.38",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "107764.38"
+        }
+      },
+      "to_date": {
+        "amount": "14500000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4092235.62",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14392235.62"
+        },
+        "gp": {
+          "catch_up": "107764.38",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "107764.38"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "7250000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2050000.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7250000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "7250000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2050000.00",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7250000.00"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "7250000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "107764.38",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "107764.38"
+            }
+          },
+          "to_date": {
+            "amount": "7250000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "107764.38",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "107764.38"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "7250000.00",
+            "exact": "7250000"
+          },
+          "to_date": {
+            "amount": "7250000.00",
+            "exact": "7250000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "14564558.90",
+      "exact": "1063212800/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "14564558.90",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14424515.07"
+        },
+        "gp": {
+          "catch_up": "140043.84",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "140043.84"
+        }
+      },
+      "to_date": {
+        "amount": "14564558.90",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14424515.07"
+        },
+        "gp": {
+          "catch_up": "140043.84",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "140043.84"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "7282279.45",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7282279.45"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "7282279.45",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7282279.45"
+            },
+            "gp": {
+              "catch_up": "0.00",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "7282279.45",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "140043.84",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "140043.84"
+            }
+          },
+          "to_date": {
+            "amount": "7282279.45",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "140043.84",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "140043.84"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "7282279.45",
+            "exact": "531606400/73"
+          },
+          "to_date": {
+            "amount": "7282279.45",
+            "exact": "531606400/73"
+          }
+        }
+      ]
+    },
+    {
+      "x": "14738301.37",
+      "exact": "1075896000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "14738301.37",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14424515.07"
+        },
+        "gp": {
+          "catch_up": "313786.30",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "313786.30"
+        }
+      },
+      "to_date": {
+        "amount": "14738301.37",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "14424515.07"
+        },
+        "gp": {
+          "catch_up": "313786.30",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "0.00"
+            }
+          ],
+          "total": "313786.30"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "7369150.68",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7282279.45"
+            },
+            "gp": {
+              "catch_up": "86871.23",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "86871.23"
+            }
+          },
+          "to_date": {
+            "amount": "7369150.68",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7282279.45"
+            },
+            "gp": {
+              "catch_up": "86871.23",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "86871.23"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "7369150.68",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "226915.07"
+            }
+          },
+          "to_date": {
+            "amount": "7369150.68",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7142235.62"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "226915.07"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          },
+          "to_date": {
+            "amount": "7142235.62",
+            "exact": "521383200/73"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "7282279.45",
+            "exact": "531606400/73"
+          },
+          "to_date": {
+            "amount": "7282279.45",
+            "exact": "531606400/73"
+          }
+        }
+      ]
+    },
+    {
+      "x": "15605698.63",
+      "exact": "1139216000/73",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "15605698.63",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "390328.77",
+          "total": "14814843.84"
+        },
+        "gp": {
+          "catch_up": "747484.93",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "43369.86"
+            }
+          ],
+          "total": "790854.79"
+        }
+      },
+      "to_date": {
+        "amount": "15605698.63",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "390328.77",
+          "total": "14814843.84"
+        },
+        "gp": {
+          "catch_up": "747484.93",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "43369.86"
+            }
+          ],
+          "total": "790854.79"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "7802849.32",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7282279.45"
+            },
+            "gp": {
+              "catch_up": "520569.86",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "520569.86"
+            }
+          },
+          "to_date": {
+            "amount": "7802849.32",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "0.00",
+              "total": "7282279.45"
+            },
+            "gp": {
+              "catch_up": "520569.86",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "520569.86"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "7802849.32",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "390328.77",
+              "total": "7532564.38"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "43369.86"
+                }
+              ],
+              "total": "270284.93"
+            }
+          },
+          "to_date": {
+            "amount": "7802849.32",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "390328.77",
+              "total": "7532564.38"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "43369.86"
+                }
+              ],
+              "total": "270284.93"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "7532564.38",
+            "exact": "549877200/73"
+          },
+          "to_date": {
+            "amount": "7532564.38",
+            "exact": "549877200/73"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "7282279.45",
+            "exact": "531606400/73"
+          },
+          "to_date": {
+            "amount": "7282279.45",
+            "exact": "531606400/73"
+          }
+        }
+      ]
+    },
+    {
+      "x": "16000000.00",
+      "exact": "16000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "16000000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "725484.93",
+          "total": "15150000.00"
+        },
+        "gp": {
+          "catch_up": "747484.93",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "39430.14"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "63084.93"
+            }
+          ],
+          "total": "850000.00"
+        }
+      },
+      "to_date": {
+        "amount": "16000000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "725484.93",
+          "total": "15150000.00"
+        },
+        "gp": {
+          "catch_up": "747484.93",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "39430.14"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "63084.93"
+            }
+          ],
+          "total": "850000.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "8000000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "157720.55",
+              "total": "7440000.00"
+            },
+            "gp": {
+              "catch_up": "520569.86",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "39430.14"
+                }
+              ],
+              "total": "560000.00"
+            }
+          },
+          "to_date": {
+            "amount": "8000000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "157720.55",
+              "total": "7440000.00"
+            },
+            "gp": {
+              "catch_up": "520569.86",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "39430.14"
+                }
+              ],
+              "total": "560000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "8000000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "567764.38",
+              "total": "7710000.00"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "63084.93"
+                }
+              ],
+              "total": "290000.00"
+            }
+          },
+          "to_date": {
+            "amount": "8000000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "567764.38",
+              "total": "7710000.00"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "63084.93"
+                }
+              ],
+              "total": "290000.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "7710000.00",
+            "exact": "7710000"
+          },
+          "to_date": {
+            "amount": "7710000.00",
+            "exact": "7710000"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "7440000.00",
+            "exact": "7440000"
+          },
+          "to_date": {
+            "amount": "7440000.00",
+            "exact": "7440000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "30000000.00",
+      "exact": "30000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "30000000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "12625484.93",
+          "total": "27050000.00"
+        },
+        "gp": {
+          "catch_up": "747484.93",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "1439430.14"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "763084.93"
+            }
+          ],
+          "total": "2950000.00"
+        }
+      },
+      "to_date": {
+        "amount": "30000000.00",
+        "lps": {
+          "capital": "10300000.00",
+          "pref": "4124515.07",
+          "catch_up": "0.00",
+          "carry_tier": "12625484.93",
+          "total": "27050000.00"
+        },
+        "gp": {
+          "catch_up": "747484.93",
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "1439430.14"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.1",
+              "amount": "763084.93"
+            }
+          ],
+          "total": "2950000.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "15000000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "5757720.55",
+              "total": "13040000.00"
+            },
+            "gp": {
+              "catch_up": "520569.86",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "1439430.14"
+                }
+              ],
+              "total": "1960000.00"
+            }
+          },
+          "to_date": {
+            "amount": "15000000.00",
+            "lps": {
+              "capital": "5200000.00",
+              "pref": "2082279.45",
+              "catch_up": "0.00",
+              "carry_tier": "5757720.55",
+              "total": "13040000.00"
+            },
+            "gp": {
+              "catch_up": "520569.86",
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "1439430.14"
+                }
+              ],
+              "total": "1960000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "15000000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "6867764.38",
+              "total": "14010000.00"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "763084.93"
+                }
+              ],
+              "total": "990000.00"
+            }
+          },
+          "to_date": {
+            "amount": "15000000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "pref": "2042235.62",
+              "catch_up": "0.00",
+              "carry_tier": "6867764.38",
+              "total": "14010000.00"
+            },
+            "gp": {
+              "catch_up": "226915.07",
+              "carry": [
+                {
+                  "rate": "0.1",
+                  "amount": "763084.93"
+                }
+              ],
+              "total": "990000.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Anchor Pension",
+          "distribution": {
+            "amount": "14010000.00",
+            "exact": "14010000"
+          },
+          "to_date": {
+            "amount": "14010000.00",
+            "exact": "14010000"
+          }
+        },
+        {
+          "name": "Bluebell Trust",
+          "distribution": {
+            "amount": "13040000.00",
+            "exact": "13040000"
+          },
+          "to_date": {
+            "amount": "13040000.00",
+            "exact": "13040000"
+          }
+        }
+      ]
+    }
+  ]
+}

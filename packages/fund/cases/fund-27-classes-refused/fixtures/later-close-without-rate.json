@@ -1,0 +1,7 @@
+{
+  "base": "fund-25-later-close",
+  "about": "The equalization rate left out, though Cedar joins at a later close.",
+  "change": {
+    "del": "terms.equalization_rate"
+  }
+}

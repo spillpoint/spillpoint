@@ -1,0 +1,146 @@
+{
+  "case": "fund-27-classes-refused",
+  "generated_by": "packages/fund/reference/generate.py",
+  "fixtures": {
+    "class-blank-name.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.lp_classes[0].name"
+      }
+    },
+    "class-carry-not-below-catch-up.json": {
+      "refused": {
+        "kind": "input",
+        "term": "catch_up_share_not_above_carry",
+        "field": "terms.lp_classes[0].carry"
+      }
+    },
+    "class-carry-not-below-one.json": {
+      "refused": {
+        "kind": "input",
+        "term": "carry_rate_not_below_one",
+        "field": "terms.lp_classes[0].carry"
+      }
+    },
+    "class-carry-steps-out-of-order.json": {
+      "refused": {
+        "kind": "input",
+        "term": "steps_out_of_order",
+        "field": "terms.lp_classes[0].carry.steps[1]"
+      }
+    },
+    "class-fee-rate-negative.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.lp_classes[0].fee_rate"
+      }
+    },
+    "class-fee-rate-without-fund-rate.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.fee_rate"
+      }
+    },
+    "class-name-repeated.json": {
+      "refused": {
+        "kind": "input",
+        "term": "lp_class_name_repeated",
+        "field": "terms.lp_classes[1].name"
+      }
+    },
+    "class-no-name.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.lp_classes[0].name"
+      }
+    },
+    "class-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.lp_classes[0]"
+      }
+    },
+    "class-own-pref.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "pref",
+        "field": "terms.lp_classes[0].pref"
+      }
+    },
+    "classes-not-a-list.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.lp_classes"
+      }
+    },
+    "equalization-rate-negative.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.equalization_rate"
+      }
+    },
+    "fee-call-without-payers.json": {
+      "refused": {
+        "kind": "input",
+        "term": "call_without_payers",
+        "field": "cash_flows[1]"
+      }
+    },
+    "first-call-without-payers.json": {
+      "refused": {
+        "kind": "input",
+        "term": "call_without_payers",
+        "field": "cash_flows[0]"
+      }
+    },
+    "fund-fee-rate-zero.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.fee_rate"
+      }
+    },
+    "later-close-without-rate.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.equalization_rate"
+      }
+    },
+    "lp-class-not-text.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "lps[2].class"
+      }
+    },
+    "lp-class-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "lp_class_unknown",
+        "field": "lps[2].class"
+      }
+    },
+    "lp-close-after-distribution.json": {
+      "refused": {
+        "kind": "input",
+        "term": "lp_close_after_distribution",
+        "field": "lps[2].close"
+      }
+    },
+    "lp-close-bad-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_date",
+        "field": "lps[2].close"
+      }
+    }
+  }
+}

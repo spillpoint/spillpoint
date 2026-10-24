@@ -1,0 +1,7 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The friends-and-family class without its name.",
+  "change": {
+    "del": "terms.lp_classes[0].name"
+  }
+}

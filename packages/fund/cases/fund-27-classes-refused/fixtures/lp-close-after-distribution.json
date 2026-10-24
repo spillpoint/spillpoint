@@ -1,0 +1,9 @@
+{
+  "base": "fund-25-later-close",
+  "about": "Cedar's close moved to 2024-07-01, after the fund's distribution on 2024-06-30.",
+  "change": {
+    "set": {
+      "lps[2].close": "2024-07-01"
+    }
+  }
+}

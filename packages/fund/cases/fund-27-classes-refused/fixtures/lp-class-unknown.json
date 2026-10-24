@@ -1,0 +1,9 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "Cedar's class written \"Friends & family\", which isn't the class's name.",
+  "change": {
+    "set": {
+      "lps[2].class": "Friends & family"
+    }
+  }
+}
