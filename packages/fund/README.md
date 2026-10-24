@@ -244,22 +244,43 @@ The checks run in a fixed order, and the first problem is the one refused.
 - **`final`** (default false) makes the distribution on D the fund's last, with its clawback.
 - **`nav`,** optional: the fund's net asset value on D.
 - **`lps`,** optional, from 0.2.0: the fund's LPs, each a `name` and a `commitment`, in the order you list them. Every LP is on the same terms, so each gets its commitment's share of what the LPs get. The commitments only divide: they aren't checked against the calls, and any amounts in the right proportions give the same shares. Names are kept exactly as written, and no two LPs can share one. The GP commitment isn't an LP.
+- **Classes and later closes,** from 0.3.0:
+
+  ```json
+  "terms": {
+    "carry": "0.20",
+    "fee_rate": "0.02",
+    "equalization_rate": "0.08",
+    "lp_classes": [{ "name": "Friends and family", "fee_rate": "0", "carry": "0" }]
+  },
+  "lps": [
+    { "name": "Alder Endowment", "commitment": "6000000" },
+    { "name": "Cedar Holdings", "commitment": "1000000", "class": "Friends and family", "close": "2021-07-15" }
+  ]
+  ```
+
+  - **`lp_classes`:** each class a `name`, and optionally its own `fee_rate` and `carry`, written as the fund's carry is. A class changes only the management fee and the carry; the pref, the catch-up's share and the GP commitment are the fund's.
+  - **`fee_rate`:** the fund's standard fee rate, needed when a class gives its own. Each LP pays fee calls in proportion to its commitment times its class's fee rate over the fund's.
+  - **An LP's `class`:** a class's name. Without one, it's on the fund's terms. Each class with LPs runs the waterfall as an account of its own, with its own pref, catch-up, carry and clawback, and the fund's amounts are the accounts' sums.
+  - **An LP's `close`:** the date it joined. One after the fund's first call is a later close: the LP is treated as in from the start, and at its close it catches up on the earlier calls with interest at `equalization_rate`, which must then be given ("0" for none). A close must come before the fund's first distribution.
 - **Numbers** are exact strings: an integer, a decimal, or `"a/b"`. **Dates** are `YYYY-MM-DD`.
 
 ## API
 
-- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs).
+- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs). From 0.3.0 its `terms` have `feeRate`, `equalizationRate` (each null when not given) and `lpClasses` (each a `name`, `feeRate` and `carry`, null for the fund's), and each LP its `class` and `close` (null when not given).
 - **`splitAt(fund, x, { final? })`:** X, one more distribution on D, split by tier. It returns a `Split`:
   - `distribution`, X itself, and `toDate`, the fund to date with X, each a `Tiers`: `amount`, `gpCommitment`, `lps` (`capital`, `pref`, `catchUp`, `carryTier`, `total`) and `gp` (`catchUp`, `carry` by step, `total`)
   - `lpsPaidIn` and `gpCommitmentPaidIn`
   - `prefAccrued`, to D (null without a pref)
   - `lpMultiple`, the LPs' net multiple to date
   - `clawback`, when final: `carryPaid`, `entitlement`, `owed`, `prefOnFundTotals`
-  - `byLp`, from 0.2.0, each LP's amounts in the input's order (empty without LPs): `name`, `commitment`, `share`, `paidIn`, `distribution` (its share of the LPs' total from X), `toDate`, and `clawback` (its share of what's owed back, null when not final)
+  - `byLp`, from 0.2.0, each LP's amounts in the input's order (empty without LPs): `name`, `commitment`, `share`, `paidIn`, `distribution` (its share of the LPs' total from X), `toDate`, and `clawback` (its share of what's owed back, null when not final). From 0.3.0 also its `class` and `close`; its `share` is still its commitment over all the LPs', and its amounts are its part of its class's account's, by commitment.
+  - `byAccount`, from 0.3.0, with two or more accounts (empty otherwise): each class's account, the fund's terms first, with its `class` (null for the fund's terms), `distribution` and `toDate` by tier with its own steps, `paidIn`, `prefAccrued`, `lpMultiple`, and `clawback` when final. The split's own amounts are the accounts' sums, and its carry by step lists every account's steps, each step with its `class`.
 
   `final` overrides the fund's own for this X.
 - **`splitAtNav(fund)`:** the split at NAV as if the fund were liquidated there, final, with its clawback; null without a NAV.
-- **`findBreakpoints(fund)`:** every breakpoint in order, each `{ x, reasons }`.
+- **`findBreakpoints(fund)`:** every breakpoint in order, each `{ x, reasons }`. From 0.3.0 each reason has the `class` of the account it's about, and with two or more accounts its text starts with that account's name.
+- **`equalization(fund)`,** from 0.3.0: what moves between LPs at the fund's later closes, or null when no LP joins at one. It gives the `rate`; each close in date order, its `date`, the names `joining`, and every LP in by then; and each LP over all of them. Each LP's amounts are its `capitalPaid` at its close, `capitalReturned` at later ones, `interestPaid` and `interestReceived`.
 - **`toCents(amount)`:** an amount as a string to the cent, rounded half away from zero.
 - **`D`:** the 40-digit decimal class every amount is.
 - **`FundRefusal`:** what the engine throws: `kind`, `term`, `path`.
@@ -291,16 +312,20 @@ Code can match on these names and words. From 0.1.0, or the version that added i
 - `distribution_before_call`: a distribution before the fund's first call.
 - `cash_flow_after_distribution_date`: a cash flow after D.
 - `lp_name_repeated`: an LP's name that an earlier LP already has, at the later LP's `name`. From 0.2.0.
+- `lp_class_name_repeated`: a class's name that an earlier class already has, at the later class's `name`. From 0.3.0.
+- `lp_class_unknown`: an LP's `class` that isn't the name of a class in the terms. From 0.3.0.
+- `lp_close_after_distribution`: an LP's `close` on or after the fund's first distribution, or on or after D. From 0.3.0.
+- `call_without_payers`: a call no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path. From 0.3.0.
 
 ### `FundRefusal`'s unsupported terms
 
 - `compounded_pref`: a pref compounding other than simple.
 
-Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`.
+Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`. From 0.3.0 an LP's `class` and `close` are read, and a class's field other than its name, fee rate and carry is unsupported, such as its own `pref` at `terms.lp_classes[0].pref`.
 
 ### `ReasonCode`
 
-What a breakpoint's reason is about:
+What a breakpoint's reason is about. From 0.3.0 every reason's `class` is the account it's about, null for the fund's terms:
 - `capital_returned`: the LPs have their paid-in capital back. Its `amount` is the LPs' paid-in.
 - `pref_met`: the pref tier ends. Its `rate`, and its `amount`, all the pref accrued to D.
 - `catch_up_done`: the catch-up tier ends. Its `carry` is the first carry rate.
@@ -322,9 +347,11 @@ Each reason's `text` is one of these, an amount written as "$10,890,000" or "$4,
 - `carry_step`: "LPs reach {multiple}: carry is {rate} from here"
 - `clawback_cleared`: "from here the GP has earned all the carry it was paid earlier"
 - `clawback_starts`: "from here the GP has been paid more carry than it has earned"
-- `clawback_changes`: "the clawback owed {change}", or "the clawback owed {change}: on the fund's totals, {tier}" when the run on the fund's totals is the cause
+- `clawback_changes`: "the clawback owed {change}", or "the clawback owed {change}: on the fund's totals, {tier}" when the run on the fund's totals is the cause. From 0.3.0, with two or more accounts, "the clawback owed {change}: on its own totals, {tier}", since the run is on the account's own totals.
 
 {change} is "starts to fall", "stops falling", "falls faster" or "falls more slowly". {tier} is "LPs have their capital back", "LPs have their pref", "the GP has {carry} of the profit" or "LPs reach {multiple}: carry is {rate} from here".
+
+From 0.3.0, with two or more accounts, every reason reads "{account}: {reason}", the account being the class's name, as written, or "Fund terms".
 
 ## How it's tested
 

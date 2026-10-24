@@ -50,3 +50,47 @@ export function randomFund(rand: () => number): Record<string, unknown> {
   if (rand() < 0.25) input.nav = String(int(0, 100) * 400_000);
   return input;
 }
+
+/**
+ * The same fund with LPs in classes and at later closes (F22, F25): one to three classes, each with its own fee rate,
+ * its own carry (flat or in steps, "0" among them), both or neither, and two to six LPs. The first LP is on the fund's
+ * terms and in from the start, so every call has a payer (F28); some others close at a call's date or between calls,
+ * before the first distribution.
+ */
+export function randomClasses(rand: () => number, input: Record<string, unknown>): Record<string, unknown> {
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)]!;
+  const int = (lo: number, hi: number) => lo + Math.floor(rand() * (hi - lo + 1));
+  const terms = { ...(input.terms as Record<string, unknown>) };
+  const share = (terms.catch_up as { gp_share?: string } | undefined)?.gp_share;
+  const below = (r: number) => share === undefined || r < Number(share);
+  const classes: Record<string, unknown>[] = [];
+  for (const name of ["Anchor", "Friends and family", "Seed LPs"].slice(0, int(1, 3))) {
+    const c: Record<string, unknown> = { name };
+    if (rand() < 0.6) c.fee_rate = pick(["0", "0.01", "0.015", "0.025"]);
+    if (rand() < 0.7) {
+      const lo = pick([0, 5, 10, 15, 25].filter((r) => below(r / 100)));
+      c.carry = rand() < 0.5 ? String(lo / 100) : { steps: [{ rate: String(lo / 100) }, { rate: String((lo + 10) / 100), from_lp_multiple: pick(["1.5", "2", "3"]) }] };
+    }
+    classes.push(c);
+  }
+  terms.fee_rate = "0.02";
+  terms.equalization_rate = pick(["0", "0.06", "0.08"]);
+  terms.lp_classes = classes;
+  const flows = input.cash_flows as { date: string; type: string }[];
+  const dayOf = (d: string) => Date.parse(`${d}T00:00:00Z`);
+  const first = Math.min(...flows.filter((f) => f.type === "call").map((f) => dayOf(f.date)));
+  const limit = Math.min(dayOf(input.as_of as string), ...flows.filter((f) => f.type === "distribution").map((f) => dayOf(f.date)));
+  const lps: Record<string, unknown>[] = [{ name: "LP 0", commitment: String(int(1, 9) * 1_000_000) }];
+  for (let i = 1; i < int(2, 6); i++) {
+    const lp: Record<string, unknown> = { name: `LP ${i}`, commitment: String(int(1, 9) * 1_000_000) };
+    if (rand() < 0.6) lp.class = pick(classes).name;
+    // A later close, before the first distribution: some on a call's date, some between.
+    if (rand() < 0.4 && limit - first > 86_400_000 * 2) {
+      const calls = flows.filter((f) => f.type === "call" && dayOf(f.date) > first && dayOf(f.date) < limit).map((f) => dayOf(f.date));
+      const day = calls.length && rand() < 0.5 ? pick(calls) : first + int(1, Math.floor((limit - first) / 86_400_000) - 1) * 86_400_000;
+      lp.close = new Date(day).toISOString().slice(0, 10);
+    }
+    lps.push(lp);
+  }
+  return { ...input, terms, lps };
+}

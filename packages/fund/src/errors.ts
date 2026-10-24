@@ -44,6 +44,10 @@ const MESSAGES: Record<InputTerm, string> = {
   distribution_before_call: "a distribution comes before the fund's first call",
   cash_flow_after_distribution_date: "a cash flow comes after the distribution date",
   lp_name_repeated: "an earlier LP has this name; no two LPs share one",
+  lp_class_name_repeated: "an earlier class has this name; no two classes share one",
+  lp_class_unknown: "the terms have no class of this name",
+  lp_close_after_distribution: "a close must come before the fund's first distribution, the one on the distribution date included",
+  call_without_payers: "no LP in the fund at this call's date would pay it: none had closed yet, or none of them pays fees",
 };
 
 /** An input refusal: only with a term the stable list has (stable-names.ts). */

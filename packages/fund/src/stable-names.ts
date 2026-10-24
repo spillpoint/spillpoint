@@ -23,6 +23,11 @@ export const INPUT_TERMS = [
   "cash_flow_after_distribution_date",
   // From 0.2.0 (F21).
   "lp_name_repeated",
+  // From 0.3.0 (F28).
+  "lp_class_name_repeated",
+  "lp_class_unknown",
+  "lp_close_after_distribution",
+  "call_without_payers",
 ] as const;
 export type InputTerm = (typeof INPUT_TERMS)[number];
 
@@ -60,7 +65,14 @@ export const WORDINGS = {
   clawback_changes: (change: string) => `the clawback owed ${change}`,
   /** The run on the fund's totals is the cause, its tier that ended named in TOTALS_WORDINGS's words. */
   clawback_changes_on_totals: (change: string, tier: string) => `the clawback owed ${change}: on the fund's totals, ${tier}`,
+  /** From 0.3.0, with two or more accounts: the run on the account's own totals is the cause (F27, FA29). */
+  clawback_changes_on_own_totals: (change: string, tier: string) => `the clawback owed ${change}: on its own totals, ${tier}`,
+  /** From 0.3.0, with two or more accounts: every reason's words after its account's name (F27). */
+  named: (account: string, reason: string) => `${account}: ${reason}`,
 } as const;
+
+/** F27, FA28: the account of the LPs on the fund's terms, as its reasons name it. A class's is the class's name. From 0.3.0. */
+export const FUND_TERMS = "Fund terms";
 
 /** How a clawback change reads (F15). */
 export const CHANGE_WORDS: Record<ClawbackChange, string> = {

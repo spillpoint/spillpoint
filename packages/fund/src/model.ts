@@ -25,6 +25,25 @@ export interface FundTerms {
   /** The GP's share of each catch-up dollar (F8), or null for none. */
   catchUp: { gpShare: D } | null;
   gpCommitment: GpCommitment | null;
+  /** F22: the fund's standard management fee rate, which a class's own fee rate is set against. Null when not given. */
+  feeRate: D | null;
+  /** F25: the interest a later-close LP pays on what it catches up, simple, a year. Null when not given. */
+  equalizationRate: D | null;
+  /** F22: the classes of LPs, in the input's order; empty when there are none. */
+  lpClasses: LpClass[];
+}
+
+/**
+ * A class of LPs on different terms (F22): a side letter's fee break, its carry break, or both. A class changes only
+ * the management fee and the carry; the pref, the catch-up's share and the GP commitment are the fund's.
+ */
+export interface LpClass {
+  /** As written: not trimmed, case-folded or normalized (FA27). */
+  name: string;
+  /** Its own fee rate, set against the fund's `feeRate`; null when it pays the fund's fees. */
+  feeRate: D | null;
+  /** Its own carry, as the fund's is: one step for flat. Null when it pays the fund's carry. */
+  carry: CarryStep[] | null;
 }
 
 export type CallKind = "investment" | "fee" | "expense";
@@ -40,11 +59,21 @@ export interface CashFlow {
   amount: D;
 }
 
-/** One LP (F19). Every LP is on the same terms; its commitment only divides the LPs' amounts between them. */
+/**
+ * One LP (F19). Its commitment divides the calls and distributions between the classes' accounts, and its account's
+ * amounts between the LPs in it (F23).
+ */
 export interface Lp {
   /** As written in the input: not trimmed, case-folded or normalized (FA17). */
   name: string;
   commitment: D;
+  /** F22: its class's name, or null when it's on the fund's terms. */
+  class: string | null;
+  /**
+   * F25: the date it joined, as the input gives it, or null. A close after the fund's first call is a later close;
+   * one on or before it is in from the start.
+   */
+  close: string | null;
 }
 
 export interface Fund {

@@ -218,3 +218,82 @@ describe("X (FA13)", () => {
     }
   });
 });
+
+describe("classes and later closes (F22, F25, F28, FA21 to FA31)", () => {
+  /** Case 22's input: a friends-and-family class beside the fund's terms, Cedar in it. */
+  const C22 = readCaseFile<CaseInputs>("fund-22-classes-fee-carry", "inputs.json").fund;
+  /** Case 25's input: Cedar closing after the first calls, with an 8% equalization rate. */
+  const C25 = readCaseFile<CaseInputs>("fund-25-later-close", "inputs.json").fund;
+  const refused = (base: Record<string, unknown>, c: Fixture["change"]) => refusal(applyChange(base, c));
+  const input = (term: string, field: string) => ({ kind: "input", term, field });
+
+  it("reads the classes, each LP's class and close, and the two rates, frozen with the rest", () => {
+    const fund = readFund(C22);
+    expect([fund.terms.feeRate?.toString(), fund.terms.equalizationRate]).toEqual(["0.02", null]);
+    const [ff] = fund.terms.lpClasses;
+    expect([ff!.name, ff!.feeRate?.toString(), ff!.carry!.map((s) => [s.rate.toString(), s.fromLpMultiple])]).toEqual(["Friends and family", "0", [["0", null]]]);
+    expect(fund.lps.map((lp) => lp.class)).toEqual([null, null, "Friends and family"]);
+    expect([Object.isFrozen(fund.terms.lpClasses), Object.isFrozen(ff), Object.isFrozen(ff!.carry)]).toEqual([true, true, true]);
+    // A class without terms of its own pays the fund's: null fee rate and carry.
+    const plain = readFund(applyChange(C22, { set: { "terms.lp_classes[0]": { name: "Friends and family" } } }));
+    expect([plain.terms.lpClasses[0]!.feeRate, plain.terms.lpClasses[0]!.carry]).toEqual([null, null]);
+    expect(readFund(C25).lps.map((lp) => lp.close)).toEqual([null, null, "2021-07-15"]);
+  });
+
+  it("reads null as left out for the new fields, but refuses a class's null carry (FA24)", () => {
+    const fund = readFund(applyChange(C22, { set: { "terms.equalization_rate": null, "terms.lp_classes[0].fee_rate": null, "lps[0].class": null, "lps[0].close": null } }));
+    expect([fund.terms.equalizationRate, fund.terms.lpClasses[0]!.feeRate, fund.lps[0]!.class, fund.lps[0]!.close]).toEqual([null, null, null, null]);
+    for (const none of [null, []]) expect(readFund(applyChange(C22, { set: { "terms.lp_classes": none, "lps[2].class": null } })).terms.lpClasses).toEqual([]);
+    expect(refused(C22, { set: { "terms.lp_classes[0].carry": null } })).toEqual(input("bad_number", "terms.lp_classes[0].carry"));
+    expect(refused(C22, { set: { "terms.fee_rate": null } })).toEqual(input("missing_field", "terms.fee_rate"));
+  });
+
+  it("refuses a class's unsupported key by itself, the first in the file's order, its carry's among them (FA25)", () => {
+    const steps = { name: "F&F", carry: { steps: [{ rate: "0", hurdle: "x" }] }, pref: { rate: "0.06" } };
+    expect(refused(C22, { set: { "terms.lp_classes[0]": steps } })).toEqual({ kind: "unsupported", term: "hurdle", field: "terms.lp_classes[0].carry.steps[0].hurdle" });
+    const pref = { name: "F&F", pref: { rate: "0.06" }, carry: { tiers: [] } };
+    expect(refused(C22, { set: { "terms.lp_classes[0]": pref } })).toEqual({ kind: "unsupported", term: "pref", field: "terms.lp_classes[0].pref" });
+    // Stage 1 comes first: an unsupported class key before a bad fund carry.
+    expect(refused(C22, { set: { "terms.carry": "2", "terms.lp_classes[0].mgmt_fee": "1" } })).toEqual({ kind: "unsupported", term: "mgmt_fee", field: "terms.lp_classes[0].mgmt_fee" });
+  });
+
+  it("checks each class through before the next, after the fund's own terms (F28, FA25)", () => {
+    expect(refused(C22, { set: { terms: { carry: "0.2", lp_classes: [{ name: "A", fee_rate: "-1" }] } } })).toEqual(input("bad_number", "terms.lp_classes[0].fee_rate"));
+    expect(refused(C22, { set: { "terms.lp_classes": [{ name: "A", carry: "2" }, { name: "A" }] } })).toEqual(input("carry_rate_not_below_one", "terms.lp_classes[0].carry"));
+    expect(refused(C22, { set: { "terms.lp_classes": [{ name: "A" }, { name: "A", carry: "2" }] } })).toEqual(input("lp_class_name_repeated", "terms.lp_classes[1].name"));
+    expect(refused(C22, { set: { "terms.fee_rate": "-1", "terms.lp_classes[0].name": "" } })).toEqual(input("bad_number", "terms.fee_rate"));
+    expect(refused(C22, { set: { "terms.equalization_rate": "x", "terms.lp_classes[0].name": "" } })).toEqual(input("bad_number", "terms.equalization_rate"));
+    expect(refused(C22, { set: { "terms.fee_rate": { rate: "0.02" } } })).toEqual(input("bad_number", "terms.fee_rate"));
+  });
+
+  it("compares class names exactly as written, blank as trim takes it (FA27)", () => {
+    for (const cls of ["Friends and family ", "friends and family", "Friends & family"]) expect(refused(C22, { set: { "lps[2].class": cls } })).toEqual(input("lp_class_unknown", "lps[2].class"));
+    for (const name of ["", " ", "﻿"]) expect(refused(C22, { set: { "terms.lp_classes[0].name": name } })).toEqual(input("bad_field", "terms.lp_classes[0].name"));
+    expect(refused(C22, { set: { "terms.lp_classes[0].name": ["F&F"] } })).toEqual(input("bad_field", "terms.lp_classes[0].name"));
+  });
+
+  it("checks an LP's class and close after F21's checks, each LP through before the next (F28, FA25)", () => {
+    expect(refused(C22, { set: { "lps[2].class": "X", "lps[2].commitment": "0" } })).toEqual(input("bad_number", "lps[2].commitment"));
+    expect(refused(C22, { set: { "lps[2].class": "X", "lps[2].close": "soon" } })).toEqual(input("lp_class_unknown", "lps[2].class"));
+    expect(refused(C22, { set: { "lps[0].close": "soon", "lps[2].class": "X" } })).toEqual(input("bad_date", "lps[0].close"));
+    expect(refused(C22, { set: { "lps[2].class": true } })).toEqual(input("bad_field", "lps[2].class"));
+    expect(refused(C22, { set: { "terms.lp_classes": null, "terms.fee_rate": null } })).toEqual(input("lp_class_unknown", "lps[2].class"));
+  });
+
+  it("refuses a close on D with no distribution before it (FA31), and reads one the day before", () => {
+    const noDist = applyChange(C22, { set: { cash_flows: (C22.cash_flows as unknown[]).slice(0, 3), "terms.equalization_rate": "0" } }) as Record<string, unknown>;
+    expect(refusal(applyChange(noDist, { set: { "lps[2].close": "2026-06-30" } }))).toEqual(input("lp_close_after_distribution", "lps[2].close"));
+    expect(readFund(applyChange(noDist, { set: { "lps[2].close": "2026-06-29" } })).lps[2]!.close).toBe("2026-06-29");
+  });
+
+  it("checks what the LPs need last: a later close's rate, then each call by date for a payer (F28, FA21)", () => {
+    expect(refused(C25, { del: "terms.equalization_rate", set: { "lps[0].close": "x" } })).toEqual(input("bad_date", "lps[0].close"));
+    // The first fee call by date, whatever its place in the list, when every LP pays no fees.
+    const late = { "cash_flows[1]": { date: "2023-01-01", type: "call", kind: "fee", amount: "100" }, "cash_flows[2]": { date: "2022-06-01", type: "call", kind: "fee", amount: "100" } };
+    expect(refused(C22, { set: { ...late, "lps[0].class": "Friends and family", "lps[1].class": "Friends and family" } })).toEqual(input("call_without_payers", "cash_flows[2]"));
+    // An LP closing on a call's date is in for it.
+    readFund(applyChange(C25, { set: { "lps[0].close": "2021-01-15", "lps[1].close": "2021-01-15" } }));
+    // Without listed LPs, nothing here applies: the LPs' side pays every call (F23).
+    readFund(applyChange(C22, { set: { lps: null } }));
+  });
+});
