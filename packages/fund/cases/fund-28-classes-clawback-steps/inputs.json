@@ -1,0 +1,65 @@
+{
+  "case": "fund-28-classes-clawback-steps",
+  "description": "Case 19 with Birchwood in a seed class at 15% carry: each class settles its own clawback, and the fund terms' reasons say the clawback is worked on their own totals.",
+  "xs": [
+    "0",
+    "10000000",
+    "12000000",
+    "15000000",
+    "15937500",
+    "25000000"
+  ],
+  "fund": {
+    "as_of": "2025-01-01",
+    "terms": {
+      "carry": {
+        "steps": [
+          {
+            "rate": "0.20"
+          },
+          {
+            "rate": "0.30",
+            "from_lp_multiple": "2"
+          }
+        ]
+      },
+      "lp_classes": [
+        {
+          "name": "Seed LPs",
+          "carry": "0.15"
+        }
+      ]
+    },
+    "cash_flows": [
+      {
+        "date": "2020-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-01-01",
+        "type": "distribution",
+        "amount": "30000000"
+      },
+      {
+        "date": "2023-01-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      }
+    ],
+    "final": true,
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "7000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "3000000",
+        "class": "Seed LPs"
+      }
+    ]
+  }
+}

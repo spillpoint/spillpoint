@@ -10,7 +10,7 @@
       "name": "Anchor Pension",
       "class": "Anchor",
       "commitment": "5000000",
-      "share": "1",
+      "share": "0.5",
       "paid_in": {
         "amount": "5100000.00",
         "exact": "5100000"
@@ -19,7 +19,7 @@
     {
       "name": "Bluebell Trust",
       "commitment": "5000000",
-      "share": "1",
+      "share": "0.5",
       "paid_in": {
         "amount": "5200000.00",
         "exact": "5200000"

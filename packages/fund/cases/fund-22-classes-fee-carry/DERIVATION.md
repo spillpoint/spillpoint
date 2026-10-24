@@ -24,13 +24,13 @@ The LPs on the fund's terms form one account, and the class another. Distributio
 | Friends and family | 1,000,000.00 | 0.00 | 1,000,000.00 |
 | **The fund** | 9,000,000.00 | 320,000.00 | 9,320,000.00 |
 
-Within an account its LPs share by commitment (F23): Alder has 6/8 of the fund terms' account and Birchwood 2/8; Cedar has all of its own.
+Each LP's share is F19's, its commitment over all three LPs' $9,000,000: its share of every distribution. Within an account its LPs share the account's amounts by commitment (F23): Alder has 6/8 of the fund terms' account and Birchwood 2/8, and Cedar has all of its own.
 
-| LP | Class | Commitment | Share of its account | Paid in |
-|---|---|---:|---:|---:|
-| Alder Endowment | | 6,000,000 | 0.75 | 6,240,000.00 |
-| Birchwood Family Office | | 2,000,000 | 0.25 | 2,080,000.00 |
-| Cedar Holdings | Friends and family | 1,000,000 | 1 | 1,000,000.00 |
+| LP | Class | Commitment | Share | Of its account | Paid in |
+|---|---|---:|---:|---:|---:|
+| Alder Endowment | | 6,000,000 | 2/3 | 0.75 | 6,240,000.00 |
+| Birchwood Family Office | | 2,000,000 | 2/9 | 0.25 | 2,080,000.00 |
+| Cedar Holdings | Friends and family | 1,000,000 | 1/9 | 1 | 1,000,000.00 |
 
 ## The earlier $4,500,000
 

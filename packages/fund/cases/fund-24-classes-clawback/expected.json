@@ -8,7 +8,7 @@
     {
       "name": "Alder Endowment",
       "commitment": "5000000",
-      "share": "0.625",
+      "share": "0.5",
       "paid_in": {
         "amount": "6000000.00",
         "exact": "6000000"
@@ -17,7 +17,7 @@
     {
       "name": "Birchwood Family Office",
       "commitment": "3000000",
-      "share": "0.375",
+      "share": "0.3",
       "paid_in": {
         "amount": "3600000.00",
         "exact": "3600000"
@@ -27,7 +27,7 @@
       "name": "Cedar Holdings",
       "class": "Friends and family",
       "commitment": "2000000",
-      "share": "1",
+      "share": "0.2",
       "paid_in": {
         "amount": "2400000.00",
         "exact": "2400000"

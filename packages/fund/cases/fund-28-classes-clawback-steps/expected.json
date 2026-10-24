@@ -1,0 +1,1300 @@
+{
+  "case": "fund-28-classes-clawback-steps",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-01-01",
+  "final": true,
+  "lps_paid_in": "20000000.00",
+  "lps": [
+    {
+      "name": "Alder Endowment",
+      "commitment": "7000000",
+      "share": "0.7",
+      "paid_in": {
+        "amount": "14000000.00",
+        "exact": "14000000"
+      }
+    },
+    {
+      "name": "Birchwood Family Office",
+      "class": "Seed LPs",
+      "commitment": "3000000",
+      "share": "0.3",
+      "paid_in": {
+        "amount": "6000000.00",
+        "exact": "6000000"
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "class": null,
+      "commitment": "7000000",
+      "share": "0.7",
+      "fee_share": "0.7",
+      "paid_in": "14000000.00"
+    },
+    {
+      "class": "Seed LPs",
+      "commitment": "3000000",
+      "share": "0.3",
+      "fee_share": "0.3",
+      "paid_in": "6000000.00"
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": null,
+          "amount": "14000000",
+          "text": "Fund terms: LPs have their $14,000,000 of paid-in capital back"
+        },
+        {
+          "code": "clawback_changes",
+          "class": null,
+          "change": "stops_falling",
+          "text": "Fund terms: the clawback owed stops falling"
+        },
+        {
+          "code": "capital_returned",
+          "class": "Seed LPs",
+          "amount": "6000000",
+          "text": "Seed LPs: LPs have their $6,000,000 of paid-in capital back"
+        },
+        {
+          "code": "clawback_cleared",
+          "class": "Seed LPs",
+          "text": "Seed LPs: from here the GP has earned all the carry it was paid earlier"
+        }
+      ]
+    },
+    {
+      "x": "15000000.00",
+      "exact": "15000000",
+      "reasons": [
+        {
+          "code": "clawback_changes",
+          "class": null,
+          "change": "starts_to_fall",
+          "fund_totals": "carry_step",
+          "text": "Fund terms: the clawback owed starts to fall: on its own totals, LPs reach 2.0x: carry is 30% from here"
+        }
+      ]
+    },
+    {
+      "x": "15937500.00",
+      "exact": "15937500",
+      "reasons": [
+        {
+          "code": "carry_step",
+          "class": null,
+          "lp_multiple": "2",
+          "rate": "0.3",
+          "text": "Fund terms: LPs reach 2.0x: carry is 30% from here"
+        },
+        {
+          "code": "clawback_changes",
+          "class": null,
+          "change": "stops_falling",
+          "text": "Fund terms: the clawback owed stops falling"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "30000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "15775000.00",
+          "total": "25775000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "1750000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "1575000.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "900000.00"
+            }
+          ],
+          "total": "4225000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "4225000.00",
+        "entitlement": "1850000.00",
+        "owed": "2375000.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "21000000.00",
+            "lps": {
+              "capital": "7000000.00",
+              "carry_tier": "10675000.00",
+              "total": "17675000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "1750000.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "1575000.00"
+                }
+              ],
+              "total": "3325000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "3325000.00",
+            "entitlement": "1400000.00",
+            "owed": "1925000.00"
+          }
+        },
+        {
+          "class": "Seed LPs",
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "9000000.00",
+            "lps": {
+              "capital": "3000000.00",
+              "carry_tier": "5100000.00",
+              "total": "8100000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "900000.00"
+                }
+              ],
+              "total": "900000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "900000.00",
+            "entitlement": "450000.00",
+            "owed": "450000.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "17675000.00",
+            "exact": "17675000"
+          },
+          "clawback": {
+            "amount": "1925000.00",
+            "exact": "1925000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "8100000.00",
+            "exact": "8100000"
+          },
+          "clawback": {
+            "amount": "450000.00",
+            "exact": "450000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "0.00",
+          "total": "10000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "40000000.00",
+        "lps": {
+          "capital": "20000000.00",
+          "carry_tier": "15775000.00",
+          "total": "35775000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "1750000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "1575000.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "900000.00"
+            }
+          ],
+          "total": "4225000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "4225000.00",
+        "entitlement": "3700000.00",
+        "owed": "525000.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "7000000.00",
+            "lps": {
+              "capital": "7000000.00",
+              "carry_tier": "0.00",
+              "total": "7000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "28000000.00",
+            "lps": {
+              "capital": "14000000.00",
+              "carry_tier": "10675000.00",
+              "total": "24675000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "1750000.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "1575000.00"
+                }
+              ],
+              "total": "3325000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "3325000.00",
+            "entitlement": "2800000.00",
+            "owed": "525000.00"
+          }
+        },
+        {
+          "class": "Seed LPs",
+          "distribution": {
+            "amount": "3000000.00",
+            "lps": {
+              "capital": "3000000.00",
+              "carry_tier": "0.00",
+              "total": "3000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "12000000.00",
+            "lps": {
+              "capital": "6000000.00",
+              "carry_tier": "5100000.00",
+              "total": "11100000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "900000.00"
+                }
+              ],
+              "total": "900000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "900000.00",
+            "entitlement": "900000.00",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "7000000.00",
+            "exact": "7000000"
+          },
+          "to_date": {
+            "amount": "24675000.00",
+            "exact": "24675000"
+          },
+          "clawback": {
+            "amount": "525000.00",
+            "exact": "525000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "3000000.00",
+            "exact": "3000000"
+          },
+          "to_date": {
+            "amount": "11100000.00",
+            "exact": "11100000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "12000000.00",
+      "exact": "12000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "12000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "1630000.00",
+          "total": "11630000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "280000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "90000.00"
+            }
+          ],
+          "total": "370000.00"
+        }
+      },
+      "to_date": {
+        "amount": "42000000.00",
+        "lps": {
+          "capital": "20000000.00",
+          "carry_tier": "17405000.00",
+          "total": "37405000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "2030000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "1575000.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "990000.00"
+            }
+          ],
+          "total": "4595000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "4595000.00",
+        "entitlement": "4070000.00",
+        "owed": "525000.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "8400000.00",
+            "lps": {
+              "capital": "7000000.00",
+              "carry_tier": "1120000.00",
+              "total": "8120000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "280000.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "280000.00"
+            }
+          },
+          "to_date": {
+            "amount": "29400000.00",
+            "lps": {
+              "capital": "14000000.00",
+              "carry_tier": "11795000.00",
+              "total": "25795000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "2030000.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "1575000.00"
+                }
+              ],
+              "total": "3605000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "3605000.00",
+            "entitlement": "3080000.00",
+            "owed": "525000.00"
+          }
+        },
+        {
+          "class": "Seed LPs",
+          "distribution": {
+            "amount": "3600000.00",
+            "lps": {
+              "capital": "3000000.00",
+              "carry_tier": "510000.00",
+              "total": "3510000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "90000.00"
+                }
+              ],
+              "total": "90000.00"
+            }
+          },
+          "to_date": {
+            "amount": "12600000.00",
+            "lps": {
+              "capital": "6000000.00",
+              "carry_tier": "5610000.00",
+              "total": "11610000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "990000.00"
+                }
+              ],
+              "total": "990000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "990000.00",
+            "entitlement": "990000.00",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "8120000.00",
+            "exact": "8120000"
+          },
+          "to_date": {
+            "amount": "25795000.00",
+            "exact": "25795000"
+          },
+          "clawback": {
+            "amount": "525000.00",
+            "exact": "525000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "3510000.00",
+            "exact": "3510000"
+          },
+          "to_date": {
+            "amount": "11610000.00",
+            "exact": "11610000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "15000000.00",
+      "exact": "15000000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "15000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "4075000.00",
+          "total": "14075000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "700000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "225000.00"
+            }
+          ],
+          "total": "925000.00"
+        }
+      },
+      "to_date": {
+        "amount": "45000000.00",
+        "lps": {
+          "capital": "20000000.00",
+          "carry_tier": "19850000.00",
+          "total": "39850000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "2450000.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "1575000.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "1125000.00"
+            }
+          ],
+          "total": "5150000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "5150000.00",
+        "entitlement": "4625000.00",
+        "owed": "525000.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "10500000.00",
+            "lps": {
+              "capital": "7000000.00",
+              "carry_tier": "2800000.00",
+              "total": "9800000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "700000.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "700000.00"
+            }
+          },
+          "to_date": {
+            "amount": "31500000.00",
+            "lps": {
+              "capital": "14000000.00",
+              "carry_tier": "13475000.00",
+              "total": "27475000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "2450000.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "1575000.00"
+                }
+              ],
+              "total": "4025000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "4025000.00",
+            "entitlement": "3500000.00",
+            "owed": "525000.00"
+          }
+        },
+        {
+          "class": "Seed LPs",
+          "distribution": {
+            "amount": "4500000.00",
+            "lps": {
+              "capital": "3000000.00",
+              "carry_tier": "1275000.00",
+              "total": "4275000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "225000.00"
+                }
+              ],
+              "total": "225000.00"
+            }
+          },
+          "to_date": {
+            "amount": "13500000.00",
+            "lps": {
+              "capital": "6000000.00",
+              "carry_tier": "6375000.00",
+              "total": "12375000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "1125000.00"
+                }
+              ],
+              "total": "1125000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "1125000.00",
+            "entitlement": "1125000.00",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "9800000.00",
+            "exact": "9800000"
+          },
+          "to_date": {
+            "amount": "27475000.00",
+            "exact": "27475000"
+          },
+          "clawback": {
+            "amount": "525000.00",
+            "exact": "525000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "4275000.00",
+            "exact": "4275000"
+          },
+          "to_date": {
+            "amount": "12375000.00",
+            "exact": "12375000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "15937500.00",
+      "exact": "15937500",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "15937500.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "4839062.50",
+          "total": "14839062.50"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "831250.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "267187.50"
+            }
+          ],
+          "total": "1098437.50"
+        }
+      },
+      "to_date": {
+        "amount": "45937500.00",
+        "lps": {
+          "capital": "20000000.00",
+          "carry_tier": "20614062.50",
+          "total": "40614062.50"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "2581250.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "1575000.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "1167187.50"
+            }
+          ],
+          "total": "5323437.50"
+        }
+      },
+      "clawback": {
+        "carry_paid": "5323437.50",
+        "entitlement": "4864062.50",
+        "owed": "459375.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "11156250.00",
+            "lps": {
+              "capital": "7000000.00",
+              "carry_tier": "3325000.00",
+              "total": "10325000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "831250.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "831250.00"
+            }
+          },
+          "to_date": {
+            "amount": "32156250.00",
+            "lps": {
+              "capital": "14000000.00",
+              "carry_tier": "14000000.00",
+              "total": "28000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "2581250.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "1575000.00"
+                }
+              ],
+              "total": "4156250.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "4156250.00",
+            "entitlement": "3696875.00",
+            "owed": "459375.00"
+          }
+        },
+        {
+          "class": "Seed LPs",
+          "distribution": {
+            "amount": "4781250.00",
+            "lps": {
+              "capital": "3000000.00",
+              "carry_tier": "1514062.50",
+              "total": "4514062.50"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "267187.50"
+                }
+              ],
+              "total": "267187.50"
+            }
+          },
+          "to_date": {
+            "amount": "13781250.00",
+            "lps": {
+              "capital": "6000000.00",
+              "carry_tier": "6614062.50",
+              "total": "12614062.50"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "1167187.50"
+                }
+              ],
+              "total": "1167187.50"
+            }
+          },
+          "clawback": {
+            "carry_paid": "1167187.50",
+            "entitlement": "1167187.50",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "10325000.00",
+            "exact": "10325000"
+          },
+          "to_date": {
+            "amount": "28000000.00",
+            "exact": "28000000"
+          },
+          "clawback": {
+            "amount": "459375.00",
+            "exact": "459375"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "4514062.50",
+            "exact": "4514062.5"
+          },
+          "to_date": {
+            "amount": "12614062.50",
+            "exact": "12614062.5"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "25000000.00",
+      "exact": "25000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "25000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "11590625.00",
+          "total": "21590625.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "831250.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "1903125.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "675000.00"
+            }
+          ],
+          "total": "3409375.00"
+        }
+      },
+      "to_date": {
+        "amount": "55000000.00",
+        "lps": {
+          "capital": "20000000.00",
+          "carry_tier": "27365625.00",
+          "total": "47365625.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "2581250.00"
+            },
+            {
+              "class": null,
+              "rate": "0.3",
+              "from_lp_multiple": "2",
+              "amount": "3478125.00"
+            },
+            {
+              "class": "Seed LPs",
+              "rate": "0.15",
+              "amount": "1575000.00"
+            }
+          ],
+          "total": "7634375.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "7634375.00",
+        "entitlement": "7175000.00",
+        "owed": "459375.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "17500000.00",
+            "lps": {
+              "capital": "7000000.00",
+              "carry_tier": "7765625.00",
+              "total": "14765625.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "831250.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "1903125.00"
+                }
+              ],
+              "total": "2734375.00"
+            }
+          },
+          "to_date": {
+            "amount": "38500000.00",
+            "lps": {
+              "capital": "14000000.00",
+              "carry_tier": "18440625.00",
+              "total": "32440625.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "2581250.00"
+                },
+                {
+                  "rate": "0.3",
+                  "from_lp_multiple": "2",
+                  "amount": "3478125.00"
+                }
+              ],
+              "total": "6059375.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "6059375.00",
+            "entitlement": "5600000.00",
+            "owed": "459375.00"
+          }
+        },
+        {
+          "class": "Seed LPs",
+          "distribution": {
+            "amount": "7500000.00",
+            "lps": {
+              "capital": "3000000.00",
+              "carry_tier": "3825000.00",
+              "total": "6825000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "675000.00"
+                }
+              ],
+              "total": "675000.00"
+            }
+          },
+          "to_date": {
+            "amount": "16500000.00",
+            "lps": {
+              "capital": "6000000.00",
+              "carry_tier": "8925000.00",
+              "total": "14925000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "1575000.00"
+                }
+              ],
+              "total": "1575000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "1575000.00",
+            "entitlement": "1575000.00",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "14765625.00",
+            "exact": "14765625"
+          },
+          "to_date": {
+            "amount": "32440625.00",
+            "exact": "32440625"
+          },
+          "clawback": {
+            "amount": "459375.00",
+            "exact": "459375"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "6825000.00",
+            "exact": "6825000"
+          },
+          "to_date": {
+            "amount": "14925000.00",
+            "exact": "14925000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    }
+  ]
+}

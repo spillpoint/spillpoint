@@ -16,11 +16,13 @@ No class has a fee rate of its own, so every call divides by commitment, fee cal
 | Friends and family | Cedar | 2,000,000 | 0.2 | 2,000,000 + 400,000 = 2,400,000.00 |
 | **The fund** | | 10,000,000 | 1 | 12,000,000.00 |
 
-| LP | Class | Commitment | Share of its account | Paid in |
-|---|---|---:|---:|---:|
-| Alder Endowment | | 5,000,000 | 0.625 | 6,000,000.00 |
-| Birchwood Family Office | | 3,000,000 | 0.375 | 3,600,000.00 |
-| Cedar Holdings | Friends and family | 2,000,000 | 1 | 2,400,000.00 |
+Each LP's share is F19's, its commitment over all three LPs' $10,000,000. Within an account its LPs share the account's amounts by commitment (F23): Alder has 5/8 of the fund terms' account and Birchwood 3/8, and Cedar has all of its own.
+
+| LP | Class | Commitment | Share | Of its account | Paid in |
+|---|---|---:|---:|---:|---:|
+| Alder Endowment | | 5,000,000 | 0.5 | 0.625 | 6,000,000.00 |
+| Birchwood Family Office | | 3,000,000 | 0.3 | 0.375 | 3,600,000.00 |
+| Cedar Holdings | Friends and family | 2,000,000 | 0.2 | 1 | 2,400,000.00 |
 
 ## The earlier $15,000,000
 

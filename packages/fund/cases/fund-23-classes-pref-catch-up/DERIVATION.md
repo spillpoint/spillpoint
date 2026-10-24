@@ -8,7 +8,7 @@ Two LPs on different terms. The fund charges a 2% fee and 20% carry, with an 8% 
 
 ## The accounts (F22, F23)
 
-One LP in each, so each LP is its account: its share of its account is 1.
+One LP in each, so each LP is its account and has all of its account's amounts. Each LP's share (F19), its commitment over both, is 0.5.
 - **Distributions and the investment call** divide by commitment: half each.
 - **The fee call** divides by fee weight. Bluebell's is its commitment, $5,000,000; Anchor Pension's is $5,000,000 × 1% / 2% = $2,500,000. So the fund terms' account pays 2/3 of the fee call and Anchor 1/3.
 

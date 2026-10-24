@@ -19,13 +19,13 @@ Three LPs: one in from the start, one joining at a first later close, and one in
 | Friends and family | Cedar | 2,500,000 | 0.25 | 0 | 1,250,000.00 | 0.00 | 1,250,000.00 |
 | **The fund** | | 10,000,000 | 1 | 1 | 5,000,000.00 | 250,000.00 | 5,250,000.00 |
 
-The closes don't come into it: each LP's paid-in is its share of every call as if it had been in from the start, by commitment within its account.
+The closes don't come into it: each LP's paid-in is its part of every call as if it had been in from the start, by commitment within its account. Its share is F19's, its commitment over all three.
 
-| LP | Class | Close | Commitment | Share of its account | Paid in |
-|---|---|---|---:|---:|---:|
-| Alder Endowment | | | 5,000,000 | 2/3 | 2,666,666.67 |
-| Birchwood Family Office | | 2022-04-01 | 2,500,000 | 1/3 | 1,333,333.33 |
-| Cedar Holdings | Friends and family | 2022-10-01 | 2,500,000 | 1 | 1,250,000.00 |
+| LP | Class | Close | Commitment | Share | Of its account | Paid in |
+|---|---|---|---:|---:|---:|---:|
+| Alder Endowment | | | 5,000,000 | 0.5 | 2/3 | 2,666,666.67 |
+| Birchwood Family Office | | 2022-04-01 | 2,500,000 | 0.25 | 1/3 | 1,333,333.33 |
+| Cedar Holdings | Friends and family | 2022-10-01 | 2,500,000 | 0.25 | 1 | 1,250,000.00 |
 
 Alder's paid-in is exactly 8,000,000/3 and Birchwood's 4,000,000/3.
 
@@ -40,7 +40,7 @@ Alder's paid-in is exactly 8,000,000/3 and Birchwood's 4,000,000/3.
 | 5,000,000.00 | 5000000 | `capital_returned`: "Friends and family: LPs have their $1,250,000 of paid-in capital back" |
 | 5,333,333.33 | 16000000/3 | `capital_returned`: "Fund terms: LPs have their $4,000,000 of paid-in capital back" |
 
-**Two points read $5,333,333.33.** The input lists X = $5,333,333.33 exactly, and the fund terms' breakpoint is 16,000,000/3, a third of a cent above it. They're two points, told apart by `exact`. At the listed one the fund terms' part is 0.75 × $5,333,333.33 = $3,999,999.9975, all capital, just short of its $4,000,000.
+**The listed X of $5,200,000 is between the two:** the class has its capital back, and the fund terms' LPs don't yet.
 
 ## This distribution, by account
 
@@ -52,7 +52,7 @@ Nothing came before X, so each account's amounts to date are X's.
 |---:|---|---:|---:|---:|---:|---:|---:|
 | 0.00 | listed | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
 | 5,000,000.00 | listed, breakpoint | 3,750,000.00 | 3,750,000.00 | 0.00 | 0.00 | 3,750,000.00 | 0.00 |
-| 5,333,333.33 | listed | 4,000,000.00 | 4,000,000.00 | 0.00 | 0.00 | 4,000,000.00 | 0.00 |
+| 5,200,000.00 | listed | 3,900,000.00 | 3,900,000.00 | 0.00 | 0.00 | 3,900,000.00 | 0.00 |
 | 5,333,333.33 | breakpoint | 4,000,000.00 | 4,000,000.00 | 0.00 | 0.00 | 4,000,000.00 | 0.00 |
 | 12,000,000.00 | listed | 9,000,000.00 | 4,000,000.00 | 4,000,000.00 | 1,000,000.00 | 8,000,000.00 | 1,000,000.00 |
 
@@ -62,9 +62,11 @@ Nothing came before X, so each account's amounts to date are X's.
 |---:|---|---:|---:|---:|---:|---:|---:|
 | 0.00 | listed | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
 | 5,000,000.00 | listed, breakpoint | 1,250,000.00 | 1,250,000.00 | 0.00 | 0.00 | 1,250,000.00 | 0.00 |
-| 5,333,333.33 | listed | 1,333,333.33 | 1,250,000.00 | 83,333.33 | 0.00 | 1,333,333.33 | 0.00 |
+| 5,200,000.00 | listed | 1,300,000.00 | 1,250,000.00 | 50,000.00 | 0.00 | 1,300,000.00 | 0.00 |
 | 5,333,333.33 | breakpoint | 1,333,333.33 | 1,250,000.00 | 83,333.33 | 0.00 | 1,333,333.33 | 0.00 |
 | 12,000,000.00 | listed | 3,000,000.00 | 1,250,000.00 | 1,750,000.00 | 0.00 | 3,000,000.00 | 0.00 |
+
+At $5,200,000 the fund terms' part is 0.75 × $5,200,000 = $3,900,000, all capital, $100,000 short of its $4,000,000. The class's is $1,300,000: its $1,250,000 of capital, then $50,000 at no carry. The GP gets nothing.
 
 At $12,000,000 the fund terms' part is $9,000,000: $4,000,000 of capital, then $5,000,000 at 80/20, $1,000,000 to the GP.
 
@@ -74,7 +76,7 @@ At $12,000,000 the fund terms' part is $9,000,000: $4,000,000 of capital, then $
 |---:|---|---:|---:|---:|---:|---:|---:|
 | 0.00 | listed | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
 | 5,000,000.00 | listed, breakpoint | 5,000,000.00 | 0.00 | 5,000,000.00 | 0.00 | 0.00 | 0.00 |
-| 5,333,333.33 | listed | 5,250,000.00 | 83,333.33 | 5,333,333.33 | 0.00 | 0.00 | 0.00 |
+| 5,200,000.00 | listed | 5,150,000.00 | 50,000.00 | 5,200,000.00 | 0.00 | 0.00 | 0.00 |
 | 5,333,333.33 | breakpoint | 5,250,000.00 | 83,333.33 | 5,333,333.33 | 0.00 | 0.00 | 0.00 |
 | 12,000,000.00 | listed | 5,250,000.00 | 5,750,000.00 | 11,000,000.00 | 1,000,000.00 | 0.00 | 1,000,000.00 |
 
@@ -88,16 +90,11 @@ Alder has 2/3 of the fund terms' LPs' amounts and Birchwood 1/3; Cedar has all o
 |---:|---|---:|---:|---:|
 | 0.00 | listed | 0.00 | 0.00 | 0.00 |
 | 5,000,000.00 | listed, breakpoint | 2,500,000.00 | 1,250,000.00 | 1,250,000.00 |
-| 5,333,333.33 | listed | 2,666,666.67 | 1,333,333.33 | 1,333,333.33 |
+| 5,200,000.00 | listed | 2,600,000.00 | 1,300,000.00 | 1,300,000.00 |
 | 5,333,333.33 | breakpoint | 2,666,666.67 | 1,333,333.33 | 1,333,333.33 |
 | 12,000,000.00 | listed | 5,333,333.33 | 2,666,666.67 | 3,000,000.00 |
 
-To date is the same. The two points at $5,333,333.33 differ below the cent:
-
-| Point | Alder Endowment | Birchwood Family Office | Cedar Holdings |
-|---|---|---|---|
-| listed, 5333333.33 | 2666666.665 | 1333333.3325 | 1333333.3325 |
-| breakpoint, 16000000/3 | 8000000/3 | 4000000/3 | 4000000/3 |
+To date is the same. At $5,200,000 Alder has 2/3 of the fund terms' $3,900,000, $2,600,000, and Birchwood 1/3, $1,300,000; Cedar has the class's $1,300,000.
 
 ## The equalization (F25)
 
