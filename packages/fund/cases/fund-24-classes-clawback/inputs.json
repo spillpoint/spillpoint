@@ -1,0 +1,57 @@
+{
+  "case": "fund-24-classes-clawback",
+  "description": "Example C (spec F12) with a friends-and-family class at no carry: the GP owes back only to the LPs on the fund's terms, each its share.",
+  "xs": [
+    "0",
+    "1000000",
+    "2000000",
+    "5000000"
+  ],
+  "fund": {
+    "as_of": "2025-03-01",
+    "terms": {
+      "carry": "0.20",
+      "lp_classes": [
+        {
+          "name": "Friends and family",
+          "carry": "0"
+        }
+      ]
+    },
+    "cash_flows": [
+      {
+        "date": "2020-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2022-03-01",
+        "type": "distribution",
+        "amount": "15000000"
+      },
+      {
+        "date": "2023-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      }
+    ],
+    "final": true,
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "5000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "3000000"
+      },
+      {
+        "name": "Cedar Holdings",
+        "commitment": "2000000",
+        "class": "Friends and family"
+      }
+    ]
+  }
+}

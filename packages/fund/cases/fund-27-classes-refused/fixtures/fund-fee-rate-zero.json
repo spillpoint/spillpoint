@@ -1,0 +1,9 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The fund's standard fee rate set to 0.",
+  "change": {
+    "set": {
+      "terms.fee_rate": "0"
+    }
+  }
+}

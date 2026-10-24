@@ -1,0 +1,9 @@
+{
+  "base": "fund-25-later-close",
+  "about": "Cedar's close set to 2021-02-30, a date that doesn't exist.",
+  "change": {
+    "set": {
+      "lps[2].close": "2021-02-30"
+    }
+  }
+}

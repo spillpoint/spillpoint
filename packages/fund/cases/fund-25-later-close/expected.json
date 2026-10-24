@@ -1,0 +1,572 @@
+{
+  "case": "fund-25-later-close",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2024-12-31",
+  "final": false,
+  "lps_paid_in": "7040000.00",
+  "gp_commitment_paid_in": "140000.00",
+  "lps": [
+    {
+      "name": "Alder Endowment",
+      "commitment": "6000000",
+      "share": "0.6",
+      "paid_in": {
+        "amount": "4224000.00",
+        "exact": "4224000"
+      }
+    },
+    {
+      "name": "Birchwood Family Office",
+      "commitment": "2000000",
+      "share": "0.2",
+      "paid_in": {
+        "amount": "1408000.00",
+        "exact": "1408000"
+      }
+    },
+    {
+      "name": "Cedar Holdings",
+      "close": "2021-07-15",
+      "commitment": "2000000",
+      "share": "0.2",
+      "paid_in": {
+        "amount": "1408000.00",
+        "exact": "1408000"
+      }
+    }
+  ],
+  "equalization": {
+    "rate": "0.08",
+    "closes": [
+      {
+        "date": "2021-07-15",
+        "joining": [
+          "Cedar Holdings"
+        ],
+        "lps": [
+          {
+            "name": "Alder Endowment",
+            "capital_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "capital_returned": {
+              "amount": "600000.00",
+              "exact": "600000"
+            },
+            "interest_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_received": {
+              "amount": "23802.74",
+              "exact": "1737600/73"
+            }
+          },
+          {
+            "name": "Birchwood Family Office",
+            "capital_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "capital_returned": {
+              "amount": "200000.00",
+              "exact": "200000"
+            },
+            "interest_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_received": {
+              "amount": "7934.25",
+              "exact": "579200/73"
+            }
+          },
+          {
+            "name": "Cedar Holdings",
+            "capital_paid": {
+              "amount": "800000.00",
+              "exact": "800000"
+            },
+            "capital_returned": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_paid": {
+              "amount": "31736.99",
+              "exact": "2316800/73"
+            },
+            "interest_received": {
+              "amount": "0.00",
+              "exact": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "capital_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "capital_returned": {
+          "amount": "600000.00",
+          "exact": "600000"
+        },
+        "interest_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_received": {
+          "amount": "23802.74",
+          "exact": "1737600/73"
+        }
+      },
+      {
+        "name": "Birchwood Family Office",
+        "capital_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "capital_returned": {
+          "amount": "200000.00",
+          "exact": "200000"
+        },
+        "interest_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_received": {
+          "amount": "7934.25",
+          "exact": "579200/73"
+        }
+      },
+      {
+        "name": "Cedar Holdings",
+        "capital_paid": {
+          "amount": "800000.00",
+          "exact": "800000"
+        },
+        "capital_returned": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_paid": {
+          "amount": "31736.99",
+          "exact": "2316800/73"
+        },
+        "interest_received": {
+          "amount": "0.00",
+          "exact": "0"
+        }
+      }
+    ]
+  },
+  "breakpoints": [
+    {
+      "x": "5183673.47",
+      "exact": "254000000/49",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "7040000",
+          "text": "LPs have their $7,040,000 of paid-in capital back"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "2000000.00",
+        "gp_commitment": "40000.00",
+        "lps": {
+          "capital": "1960000.00",
+          "carry_tier": "0.00",
+          "total": "1960000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "1176000.00",
+            "exact": "1176000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "392000.00",
+            "exact": "392000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "392000.00",
+            "exact": "392000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "2000000.00",
+      "exact": "2000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "2000000.00",
+        "gp_commitment": "40000.00",
+        "lps": {
+          "capital": "1960000.00",
+          "carry_tier": "0.00",
+          "total": "1960000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "4000000.00",
+        "gp_commitment": "80000.00",
+        "lps": {
+          "capital": "3920000.00",
+          "carry_tier": "0.00",
+          "total": "3920000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "1176000.00",
+            "exact": "1176000"
+          },
+          "to_date": {
+            "amount": "2352000.00",
+            "exact": "2352000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "392000.00",
+            "exact": "392000"
+          },
+          "to_date": {
+            "amount": "784000.00",
+            "exact": "784000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "392000.00",
+            "exact": "392000"
+          },
+          "to_date": {
+            "amount": "784000.00",
+            "exact": "784000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "5183673.47",
+      "exact": "254000000/49",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5183673.47",
+        "gp_commitment": "103673.47",
+        "lps": {
+          "capital": "5080000.00",
+          "carry_tier": "0.00",
+          "total": "5080000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "7183673.47",
+        "gp_commitment": "143673.47",
+        "lps": {
+          "capital": "7040000.00",
+          "carry_tier": "0.00",
+          "total": "7040000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "3048000.00",
+            "exact": "3048000"
+          },
+          "to_date": {
+            "amount": "4224000.00",
+            "exact": "4224000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "1016000.00",
+            "exact": "1016000"
+          },
+          "to_date": {
+            "amount": "1408000.00",
+            "exact": "1408000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1016000.00",
+            "exact": "1016000"
+          },
+          "to_date": {
+            "amount": "1408000.00",
+            "exact": "1408000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "5200000.00",
+      "exact": "5200000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "5200000.00",
+        "gp_commitment": "104000.00",
+        "lps": {
+          "capital": "5080000.00",
+          "carry_tier": "12800.00",
+          "total": "5092800.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "3200.00"
+            }
+          ],
+          "total": "3200.00"
+        }
+      },
+      "to_date": {
+        "amount": "7200000.00",
+        "gp_commitment": "144000.00",
+        "lps": {
+          "capital": "7040000.00",
+          "carry_tier": "12800.00",
+          "total": "7052800.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "3200.00"
+            }
+          ],
+          "total": "3200.00"
+        }
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "3055680.00",
+            "exact": "3055680"
+          },
+          "to_date": {
+            "amount": "4231680.00",
+            "exact": "4231680"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "1018560.00",
+            "exact": "1018560"
+          },
+          "to_date": {
+            "amount": "1410560.00",
+            "exact": "1410560"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1018560.00",
+            "exact": "1018560"
+          },
+          "to_date": {
+            "amount": "1410560.00",
+            "exact": "1410560"
+          }
+        }
+      ]
+    },
+    {
+      "x": "20000000.00",
+      "exact": "20000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "20000000.00",
+        "gp_commitment": "400000.00",
+        "lps": {
+          "capital": "5080000.00",
+          "carry_tier": "11616000.00",
+          "total": "16696000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2904000.00"
+            }
+          ],
+          "total": "2904000.00"
+        }
+      },
+      "to_date": {
+        "amount": "22000000.00",
+        "gp_commitment": "440000.00",
+        "lps": {
+          "capital": "7040000.00",
+          "carry_tier": "11616000.00",
+          "total": "18656000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2904000.00"
+            }
+          ],
+          "total": "2904000.00"
+        }
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "10017600.00",
+            "exact": "10017600"
+          },
+          "to_date": {
+            "amount": "11193600.00",
+            "exact": "11193600"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "3339200.00",
+            "exact": "3339200"
+          },
+          "to_date": {
+            "amount": "3731200.00",
+            "exact": "3731200"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "3339200.00",
+            "exact": "3339200"
+          },
+          "to_date": {
+            "amount": "3731200.00",
+            "exact": "3731200"
+          }
+        }
+      ]
+    }
+  ]
+}

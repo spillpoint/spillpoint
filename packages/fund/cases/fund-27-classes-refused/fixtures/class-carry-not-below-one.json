@@ -1,0 +1,9 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The class's carry set to 100%.",
+  "change": {
+    "set": {
+      "terms.lp_classes[0].carry": "1"
+    }
+  }
+}

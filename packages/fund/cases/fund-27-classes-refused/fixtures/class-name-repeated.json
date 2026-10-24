@@ -1,0 +1,12 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "A second class, at 10% carry, with the first class's name.",
+  "change": {
+    "set": {
+      "terms.lp_classes[1]": {
+        "name": "Friends and family",
+        "carry": "0.10"
+      }
+    }
+  }
+}

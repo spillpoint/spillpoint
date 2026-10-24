@@ -14,11 +14,18 @@ more than one problem:
 3. The cash flows against each other and against D.
 4. The LPs (F21, FA19): `lps` itself, then each LP in the list's order, each
    checked through before the next: its shape and its fields, that the name
-   and commitment are there, the name, the commitment, then whether the name
-   repeats.
+   and commitment are there, the name, the commitment, whether the name
+   repeats, then its class and its close (F28).
+5. What the LPs need of the rest (F28): a later close's `equalization_rate`,
+   then each call in date order for an LP to pay it.
 
-null is the same as leaving an optional field out (FA3), except `carry`: a null
-carry could mean "none" or "the default 20%", so it's refused.
+Within `terms`, stage 2 checks the carry, pref, catch-up and GP commitment, the
+terms against each other, then `fee_rate`, `equalization_rate` and each class
+in order (F28).
+
+null is the same as leaving an optional field out (FA3, FA24), except `carry`,
+the fund's or a class's: a null carry could mean "none" or "the default", so
+it's refused.
 """
 
 from dataclasses import dataclass, field
@@ -31,13 +38,18 @@ TERM_KEYS = {
     "pref": ("rate", "compounding"),
     "catch_up": ("gp_share",),
     "gp_commitment": ("share", "pays_fees", "pays_expenses"),
+    "fee_rate": None,  # a rate (F22)
+    "equalization_rate": None,  # a rate (F25)
+    "lp_classes": None,  # a list of classes (F22)
 }
 STEP_KEYS = ("rate", "from_lp_multiple")
+CLASS_KEYS = ("name", "fee_rate", "carry")
 TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps")
 REQUIRED_TOP = ("as_of", "terms", "cash_flows")
 FLOW_KEYS = ("date", "type", "kind", "amount")
 CALL_KINDS = ("investment", "fee", "expense")
-LP_KEYS = ("name", "commitment")
+LP_KEYS = ("name", "commitment", "class", "close")
+REQUIRED_LP = ("name", "commitment")
 # FA17: whitespace as JavaScript's String.prototype.trim takes it off, listed so the reference and the engine agree on
 # what a blank name is. Python's str.isspace differs: it counts U+001C to U+001F and U+0085, and not U+FEFF.
 WHITESPACE = frozenset(
@@ -75,9 +87,20 @@ class Flow:
 
 
 @dataclass
+class LpClass:
+    """F22: a class of LPs with its own fee rate, its own carry, or both. None means the fund's."""
+
+    name: str  # as written (FA27)
+    fee_rate: Fraction | None
+    steps: list | None
+
+
+@dataclass
 class LP:
     name: str  # as written (FA17)
     commitment: Fraction
+    cls: str | None = None  # its class's name; None for the fund's terms (F22)
+    close: object = None  # the date it joined, as given; None for none (F25)
 
 
 @dataclass
@@ -95,11 +118,73 @@ class Fund:
     pays_expenses: bool
     flows: list = field(default_factory=list)
     lps: list = field(default_factory=list)  # F19: in the input's order; empty when the input has none
+    fee_rate: Fraction | None = None  # F22: the fund's standard fee rate
+    equalization_rate: Fraction | None = None  # F25
+    classes: list = field(default_factory=list)  # F22: in the input's order
 
     @property
     def first_rate(self):
         """c in F8: the catch-up runs until the GP has the first carry rate of all profit."""
         return self.steps[0].rate
+
+    @property
+    def first_call(self):
+        return min(f.date for f in self.flows if f.type == "call")
+
+    def lp_class(self, lp):
+        """The LP's class, or None when it's on the fund's terms (F22)."""
+        return next((c for c in self.classes if c.name == lp.cls), None) if lp.cls is not None else None
+
+    def fee_weight(self, lp):
+        """F22: an LP pays fee calls in proportion to its commitment times its class's fee rate over the fund's. On the
+        fund's terms, or in a class without a fee rate, its weight is its commitment."""
+        c = self.lp_class(lp)
+        if c is None or c.fee_rate is None:
+            return lp.commitment
+        return lp.commitment * c.fee_rate / self.fee_rate
+
+    def weight(self, lp, kind):
+        """F23: investment and expense calls by commitment, fee calls by F22's fee weight."""
+        return self.fee_weight(lp) if kind == "fee" else lp.commitment
+
+    def joins_later(self, lp):
+        """F25: an LP whose close is after the fund's first call joins at a later close."""
+        return lp.close is not None and lp.close > self.first_call
+
+    def is_in(self, lp, date):
+        """FA21: an LP is in the fund at a date when it has no close, or its close is on or before that date."""
+        return lp.close is None or lp.close <= date
+
+
+def _unsupported_carry(carry, path):
+    """A carry's own keys, the fund's or a class's: only `steps`, and each step's `rate` and `from_lp_multiple`."""
+    if not isinstance(carry, dict):
+        return
+    for k2, steps in carry.items():
+        if k2 != "steps":
+            raise Refusal("unsupported", k2, f"{path}.{k2}")
+        if isinstance(steps, list):
+            for i, step in enumerate(steps):
+                if isinstance(step, dict):
+                    for k3 in step:
+                        if k3 not in STEP_KEYS:
+                            raise Refusal("unsupported", k3, f"{path}.steps[{i}].{k3}")
+
+
+def _unsupported_classes(classes):
+    """F28: a class's field other than its name, fee rate and carry, such as its own pref, named by its own key; its
+    carry's keys at the carry's place among them (FA25)."""
+    if not isinstance(classes, list):
+        return
+    for i, c in enumerate(classes):
+        if not isinstance(c, dict):
+            continue
+        for key, value in c.items():
+            path = f"terms.lp_classes[{i}].{key}"
+            if key not in CLASS_KEYS:
+                raise Refusal("unsupported", key, path)
+            if key == "carry":
+                _unsupported_carry(value, path)
 
 
 def _unsupported(terms):
@@ -110,18 +195,13 @@ def _unsupported(terms):
         path = f"terms.{key}"
         if key not in TERM_KEYS:
             raise Refusal("unsupported", key, path)
-        if not isinstance(value, dict):
+        if key == "lp_classes":
+            _unsupported_classes(value)
+            continue
+        if not isinstance(value, dict) or key in ("fee_rate", "equalization_rate"):
             continue
         if key == "carry":
-            for k2, steps in value.items():
-                if k2 != "steps":
-                    raise Refusal("unsupported", k2, f"{path}.{k2}")
-                if isinstance(steps, list):
-                    for i, step in enumerate(steps):
-                        if isinstance(step, dict):
-                            for k3 in step:
-                                if k3 not in STEP_KEYS:
-                                    raise Refusal("unsupported", k3, f"{path}.steps[{i}].{k3}")
+            _unsupported_carry(value, path)
             continue
         for k2, v2 in value.items():
             if k2 not in TERM_KEYS[key]:
@@ -167,17 +247,21 @@ def _rate(value, path):
 def _carry(terms):
     if "carry" not in terms:
         return [Step(DEFAULT_CARRY, None)]
-    carry = terms["carry"]
+    return _carry_at(terms["carry"], "terms.carry")
+
+
+def _carry_at(carry, at):
+    """F9: a carry, the fund's or a class's (F22), refused at its own path."""
     if not isinstance(carry, dict):
-        return [Step(_rate(carry, "terms.carry"), None)]
+        return [Step(_rate(carry, at), None)]
     if carry.get("steps") is None:
-        raise _input("missing_field", "terms.carry.steps")
+        raise _input("missing_field", f"{at}.steps")
     raw = carry["steps"]
     if not isinstance(raw, list) or not raw:
-        raise _input("bad_field", "terms.carry.steps")
+        raise _input("bad_field", f"{at}.steps")
     steps = []
     for i, s in enumerate(raw):
-        path = f"terms.carry.steps[{i}]"
+        path = f"{at}.steps[{i}]"
         if not isinstance(s, dict):
             raise _input("bad_field", path)
         if s.get("rate") is None:
@@ -254,6 +338,18 @@ def _terms(terms):
         if catch_up <= steps[0].rate:
             raise _input("catch_up_share_not_above_carry", "terms.catch_up.gp_share")
 
+    # F28: the fund's standard fee rate is above 0; equalization interest is 0 or more.
+    fee_rate = None
+    if terms.get("fee_rate") is not None:
+        fee_rate = _number(terms["fee_rate"], "terms.fee_rate")
+        if fee_rate <= 0:
+            raise _input("bad_number", "terms.fee_rate")
+    equalization_rate = None
+    if terms.get("equalization_rate") is not None:
+        equalization_rate = _number(terms["equalization_rate"], "terms.equalization_rate")
+        if equalization_rate < 0:
+            raise _input("bad_number", "terms.equalization_rate")
+
     return {
         "steps": steps,
         "pref": pref,
@@ -262,7 +358,51 @@ def _terms(terms):
         "gp_share": share,
         "pays_fees": pays_fees,
         "pays_expenses": pays_expenses,
+        "fee_rate": fee_rate,
+        "equalization_rate": equalization_rate,
+        "classes": _classes(terms.get("lp_classes"), fee_rate, catch_up),
     }
+
+
+def _classes(raw, fee_rate, catch_up):
+    """F22, F28: the classes, each checked through before the next: its shape, its name, the name repeating, its fee
+    rate, its carry, then its carry against the catch-up. Left out, null or an empty list: none (FA24)."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise _input("bad_field", "terms.lp_classes")
+    classes, names = [], set()
+    for i, c in enumerate(raw):
+        path = f"terms.lp_classes[{i}]"
+        if not isinstance(c, dict):
+            raise _input("bad_field", path)
+        if c.get("name") is None:
+            raise _input("missing_field", f"{path}.name")
+        name = c["name"]
+        if not isinstance(name, str) or _blank(name):
+            raise _input("bad_field", f"{path}.name")
+        # FA27: class names compare exactly as written, as LP names do (FA17).
+        if name in names:
+            raise _input("lp_class_name_repeated", f"{path}.name")
+        names.add(name)
+        # F22: a class's fee rate is 0 or more, against the fund's standard rate, which must then be given. Its own
+        # number is checked before the fund's rate is looked for (FA25).
+        class_fee = None
+        if c.get("fee_rate") is not None:
+            class_fee = _number(c["fee_rate"], f"{path}.fee_rate")
+            if class_fee < 0:
+                raise _input("bad_number", f"{path}.fee_rate")
+            if fee_rate is None:
+                raise _input("missing_field", "terms.fee_rate")
+        # F22: without a carry, the class pays the fund's. A null carry is refused, as the fund's is (FA3, FA24).
+        class_steps = None
+        if "carry" in c:
+            class_steps = _carry_at(c["carry"], f"{path}.carry")
+            # F8, F22: the class's catch-up runs to its own first carry rate, so the share must be above it.
+            if catch_up is not None and catch_up <= class_steps[0].rate:
+                raise _input("catch_up_share_not_above_carry", f"{path}.carry")
+        classes.append(LpClass(name, class_fee, class_steps))
+    return classes
 
 
 def _flows(raw):
@@ -302,8 +442,9 @@ def _blank(name):
     return all(ch in WHITESPACE for ch in name)
 
 
-def _lps(raw):
-    """Stage 4 (F21, FA19): the fund's LPs, each a name and a commitment (F19). Left out, null or an empty list: none."""
+def _lps(raw, classes, close_limit):
+    """Stage 4 (F21, FA19): the fund's LPs, each a name and a commitment (F19), and from 0.3.0 a class and a close
+    (F28). Left out, null or an empty list: none."""
     if raw is None:
         return []
     if not isinstance(raw, list):
@@ -317,7 +458,7 @@ def _lps(raw):
         for key in lp:
             if key not in LP_KEYS:
                 raise Refusal("unsupported", key, f"{path}.{key}")
-        for key in LP_KEYS:
+        for key in REQUIRED_LP:
             if lp.get(key) is None:
                 raise _input("missing_field", f"{path}.{key}")
         name = lp["name"]
@@ -330,8 +471,35 @@ def _lps(raw):
         if name in names:
             raise _input("lp_name_repeated", f"{path}.name")
         names.add(name)
-        lps.append(LP(name, commitment))
+        # F28: a class is a class's name, compared exactly (FA27). null is none: the fund's terms (FA24).
+        cls = lp.get("class")
+        if cls is not None:
+            if not isinstance(cls, str):
+                raise _input("bad_field", f"{path}.class")
+            if cls not in classes:
+                raise _input("lp_class_unknown", f"{path}.class")
+        # F25, F28: a close comes before the fund's first distribution, X's on D included (FA32).
+        close = None
+        if lp.get("close") is not None:
+            close = _date(lp["close"], f"{path}.close")
+            if close >= close_limit:
+                raise _input("lp_close_after_distribution", f"{path}.close")
+        lps.append(LP(name, commitment, cls, close))
     return lps
+
+
+def _what_the_lps_need(fund):
+    """Stage 5 (F28): a later close needs an equalization rate; then each call, in date order, needs an LP in the
+    fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22)."""
+    if not fund.lps:
+        return
+    if fund.equalization_rate is None and any(fund.joins_later(lp) for lp in fund.lps):
+        raise _input("missing_field", "terms.equalization_rate")
+    for f in fund.flows:
+        if f.type != "call":
+            continue
+        if not any(fund.is_in(lp, f.date) and fund.weight(lp, f.kind) > 0 for lp in fund.lps):
+            raise _input("call_without_payers", f"cash_flows[{f.index}]")
 
 
 def read(inputs):
@@ -368,8 +536,12 @@ def read(inputs):
         if f.date > d:
             raise _input("cash_flow_after_distribution_date", f"cash_flows[{f.index}]")
 
-    lps = _lps(inputs.get("lps"))
+    # FA32: a close must come before the first distribution in the cash flows, and before D, X's date.
+    close_limit = min([d] + [f.date for f in flows if f.type == "distribution"])
+    lps = _lps(inputs.get("lps"), [c.name for c in terms["classes"]], close_limit)
 
     # F4: on one date, calls come before distributions; same-day distributions go in the order listed.
     ordered = sorted(flows, key=lambda f: (f.date, 0 if f.type == "call" else 1, f.index))
-    return Fund(as_of=as_of, distribution_date=d, final=final, nav=nav, flows=ordered, lps=lps, **terms)
+    fund = Fund(as_of=as_of, distribution_date=d, final=final, nav=nav, flows=ordered, lps=lps, **terms)
+    _what_the_lps_need(fund)
+    return fund

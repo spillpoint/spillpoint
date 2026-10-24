@@ -1,0 +1,9 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The class's fee rate set to -1%.",
+  "change": {
+    "set": {
+      "terms.lp_classes[0].fee_rate": "-0.01"
+    }
+  }
+}

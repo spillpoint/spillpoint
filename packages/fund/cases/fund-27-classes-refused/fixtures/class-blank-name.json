@@ -1,0 +1,9 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The friends-and-family class named two spaces.",
+  "change": {
+    "set": {
+      "terms.lp_classes[0].name": "  "
+    }
+  }
+}

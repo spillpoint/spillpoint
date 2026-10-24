@@ -6,7 +6,9 @@ comments. The spec's worked examples A, B and C are here too, to the cent.
     python3 -m unittest discover packages/fund/reference/tests
 """
 
+import copy
 import datetime
+import json
 import random
 import sys
 import unittest
@@ -14,9 +16,12 @@ from fractions import Fraction as F
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+CASES = Path(__file__).resolve().parents[2] / "cases"
 
 from fund_ref import breakpoints  # noqa: E402
+from fund_ref.accounts import Model  # noqa: E402
 from fund_ref.case import apply_change, run_case  # noqa: E402
+from fund_ref.closes import equalization  # noqa: E402
 from fund_ref.inputs import Refusal, read  # noqa: E402
 from fund_ref.lps import each_lp, shares  # noqa: E402
 from fund_ref.num import days, exact, money, multiple, percent, usd  # noqa: E402
@@ -448,6 +453,318 @@ class LpRefusals(unittest.TestCase):
         self.assertEqual(self.lps([{"name": "Alder", "commitment": "1"}, {"name": "Alder", "commitment": "0"}]), ("input", "bad_number", "lps[1].commitment"))
 
 
+def model(terms, flows, as_of, lps, **more):
+    return Model(read({"as_of": as_of, "terms": terms, "cash_flows": flows, "lps": lps, **more}))
+
+
+def named(found):
+    return [(money(x), [r["text"] for r in rs]) for x, rs in found]
+
+
+class Classes(unittest.TestCase):
+    """F22, F23: each class's account runs the tiers on its own."""
+
+    STEPS = {"carry": {"steps": [{"rate": "0.2"}, {"rate": "0.3", "from_lp_multiple": "2"}]}}
+
+    def test_a_fee_rate_weights_the_fee_calls(self):
+        # F22: A on the fund's 2%, B in a class at 1%: fee weights 1 and 1 × 1% / 2% = 1/2, so of a 90 fee call A pays
+        # 60 and B 30. The 1,000 investment call is by commitment, 500 each. Paid in: 560 and 530.
+        terms = {"carry": "0.2", "fee_rate": "0.02", "lp_classes": [{"name": "Half", "fee_rate": "0.01"}]}
+        flows = [call("2021-01-01", "1000"), call("2021-01-01", "90", "fee")]
+        m = model(terms, flows, "2022-01-01", [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "Half"}])
+        self.assertEqual([a.fee_share for a in m.accounts], [F(2, 3), F(1, 3)])
+        self.assertEqual([a.run.before.lps_paid_in for a in m.accounts], [560, 530])
+        self.assertEqual(m.lps_paid_in(), 1090)
+        # F23, F27: each account gets half of X, so its capital is back at twice its paid-in, each reason named.
+        self.assertEqual(
+            named(breakpoints.find(m)),
+            [("1060.00", ["Half: LPs have their $530 of paid-in capital back"]), ("1120.00", ["Fund terms: LPs have their $560 of paid-in capital back"])],
+        )
+
+    def test_each_account_runs_its_own_tiers(self):
+        # 1,000 called, A and B committing equally, B's class paying no carry. X = 3,000 gives each account 1,500:
+        # A's returns its 500 and pays 20% on the other 1,000 (GP 200); B's returns its 500 and keeps the rest.
+        terms = {"carry": "0.2", "lp_classes": [{"name": "F&F", "carry": "0"}]}
+        m = model(terms, [call("2021-01-01", "1000")], "2022-01-01", [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "F&F"}])
+        out = m.evaluate(3000)
+        (a, oa), (b, ob) = out.by_account
+        self.assertEqual((oa.this.lp_capital, oa.this.gp_carry, oa.this.lps), (500, [F(200)], 1300))
+        self.assertEqual((ob.this.lp_capital, ob.this.gp_carry, ob.this.lps), (500, [F(0)], 1500))
+        # Both capitals are back at X = 1,000: one breakpoint, the fund's terms first (F27, FA15).
+        self.assertEqual(
+            named(breakpoints.find(m)),
+            [("1000.00", ["Fund terms: LPs have their $500 of paid-in capital back", "F&F: LPs have their $500 of paid-in capital back"])],
+        )
+
+    def test_a_class_on_the_funds_terms_gives_the_same_amounts_as_none(self):
+        # F23: example A's fund with three LPs, the third in a class with no terms of its own. Every amount the fund
+        # reports is the same; the breakpoints are at the same X, each now with a reason from both accounts.
+        inputs = {"as_of": EXAMPLE_A["as_of"], "terms": EXAMPLE_A["terms"], "cash_flows": EXAMPLE_A["flows"], "nav": "40000000", "final": True}
+        plain = run_case({"case": "same", "xs": ["20000000", "50000000"], "fund": {**inputs, "lps": THREE}})
+        same = [dict(THREE[0]), dict(THREE[1]), {**THREE[2], "class": "Same"}]
+        classed = run_case({"case": "same", "xs": ["20000000", "50000000"], "fund": {**inputs, "terms": {**inputs["terms"], "lp_classes": [{"name": "Same"}]}, "lps": same}})
+        self.assertEqual([b["exact"] for b in classed["breakpoints"]], [b["exact"] for b in plain["breakpoints"]])
+        self.assertEqual([len(b["reasons"]) for b in classed["breakpoints"]], [2 * len(b["reasons"]) for b in plain["breakpoints"]])
+        for p, q in zip(plain["points"], classed["points"]):
+            for key in ("x", "tags", "clawback"):
+                self.assertEqual(p.get(key), q.get(key))
+            for block in ("distribution", "to_date"):
+                self.assertEqual(p[block]["lps"], q[block]["lps"])
+                self.assertEqual(p[block]["gp"]["total"], q[block]["gp"]["total"])
+                self.assertEqual(p[block].get("gp_commitment"), q[block].get("gp_commitment"))
+            self.assertEqual(p["by_lp"], q["by_lp"])
+
+    def test_an_lps_share_is_f19s_and_its_paid_in_its_accounts(self):
+        # FC11 (f03a review): A commits 3 and B 1, B in a class paying no fees. Shares are 3/4 and 1/4 of all the
+        # commitments, as in 0.2.0. Paid-in is each account's: A pays 750 of the 1,000 and all of the 100 fee call.
+        terms = {"carry": "0.2", "fee_rate": "0.02", "lp_classes": [{"name": "F&F", "fee_rate": "0"}]}
+        flows = [call("2021-01-01", "1000"), call("2021-01-01", "100", "fee")]
+        out = run_case({"case": "c", "xs": ["1"], "fund": {"as_of": "2022-01-01", "terms": terms, "cash_flows": flows,
+                                                         "lps": [{"name": "A", "commitment": "3"}, {"name": "B", "commitment": "1", "class": "F&F"}]}})
+        self.assertEqual([(lp["share"], lp["paid_in"]["exact"]) for lp in out["lps"]], [("0.75", "850"), ("0.25", "250")])
+
+    def test_an_accounts_clawback_reason_is_on_its_own_totals(self):
+        # F27, FA29: the late-call fund above at a tenth of a millionth, B in a class paying no carry. The fund terms'
+        # clawback starts to fall where the run on its own totals reaches 2x, and with two accounts it says so.
+        terms = {**self.STEPS, "lp_classes": [{"name": "F&F", "carry": "0"}]}
+        flows = [call("2020-01-01", "10"), dist("2022-01-01", "30"), call("2023-01-01", "10")]
+        m = model(terms, flows, "2025-01-01", [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "F&F"}], final=True)
+        texts = [r["text"] for _, rs in breakpoints.find(m) for r in rs if r.get("fund_totals")]
+        self.assertEqual(texts, ["Fund terms: the clawback owed starts to fall: on its own totals, LPs reach 2.0x: carry is 30% from here"])
+
+    def test_a_class_no_lp_names_has_no_account(self):
+        # FA22: its terms are checked (F28) and do nothing.
+        terms = {"carry": "0.2", "lp_classes": [{"name": "Empty", "carry": "0.1"}]}
+        m = model(terms, [call("2021-01-01", "1000")], "2022-01-01", [{"name": "A", "commitment": "1"}])
+        self.assertEqual([a.class_name for a in m.accounts], [None])
+        self.assertFalse(m.named)
+
+    def test_one_accounts_surplus_never_offsets_anothers_clawback(self):
+        # F24, FA23: case 11's fund, half its LPs in a class whose carry steps to 30% from 1.5x. At X = $5,500,000,
+        # the fund's-terms account has been paid $50,000 less carry than it's entitled to, and the class's GP owes
+        # $81,250 back. The fund owes $81,250, not the $31,250 of carry paid less entitlement.
+        f = json.loads((CASES / "fund-11-clawback-pref" / "inputs.json").read_text())["fund"]
+        f["terms"]["lp_classes"] = [{"name": "Stepped", "carry": {"steps": [{"rate": "0.2"}, {"rate": "0.3", "from_lp_multiple": "1.5"}]}}]
+        f["lps"] = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "Stepped"}]
+        out = Model(read(f)).evaluate(5500000)
+        self.assertEqual([o.owed_before_floor for _, o in out.by_account], [-50000, 81250])
+        self.assertEqual((out.carry_paid - out.entitlement, out.clawback), (31250, 81250))
+
+    def test_without_lps_the_classes_change_nothing(self):
+        # F23: no listed LPs is one account, the whole LPs' side, whatever classes the terms list.
+        terms = {**EXAMPLE_A["terms"], "fee_rate": "0.02", "lp_classes": [{"name": "Half", "fee_rate": "0.01", "carry": "0.1"}]}
+        with_classes = run_case({"case": "c", "xs": ["20000000"], "fund": {"as_of": EXAMPLE_A["as_of"], "terms": terms, "cash_flows": EXAMPLE_A["flows"]}})
+        without = run_case({"case": "c", "xs": ["20000000"], "fund": {"as_of": EXAMPLE_A["as_of"], "terms": EXAMPLE_A["terms"], "cash_flows": EXAMPLE_A["flows"]}})
+        self.assertEqual(with_classes, without)
+
+
+def eq_moves(e):
+    return [(m.capital_paid, m.capital_returned, m.interest_paid, m.interest_received) for m in e.totals]
+
+
+class Closes(unittest.TestCase):
+    """F25: later closes and their equalization."""
+
+    def test_one_later_close(self):
+        # 1,000 called on 2021-01-01 and paid by A alone. B, committing as much, joins on 2021-07-01, 181 days later:
+        # it pays in 500 and A gets 500 back. B pays 10% on 500 for 181 days, 9,050 / 365, all to A.
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-07-01"}]
+        f = read({"as_of": "2022-01-01", "terms": {"equalization_rate": "0.1"}, "cash_flows": [call("2021-01-01", "1000")], "lps": lps})
+        e = equalization(f)
+        self.assertEqual([c.date.isoformat() for c in e.closes], ["2021-07-01"])
+        self.assertEqual(eq_moves(e), [(0, 500, 0, F(9050, 365)), (500, 0, F(9050, 365), 0)])
+
+    def test_a_call_on_the_close_date_is_paid_by_the_joining_lps(self):
+        # FA21: B is in on its close's date, so it pays half of that day's 200 as it's made; only the earlier call is
+        # caught up on, with interest.
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-07-01"}]
+        flows = [call("2021-01-01", "1000"), call("2021-07-01", "200")]
+        e = equalization(read({"as_of": "2022-01-01", "terms": {"equalization_rate": "0.1"}, "cash_flows": flows, "lps": lps}))
+        self.assertEqual(eq_moves(e), [(0, 500, 0, F(9050, 365)), (500, 0, F(9050, 365), 0)])
+
+    def test_lps_closing_on_one_date_join_together(self):
+        # F25: B and C join on one date: one close, each paying a third of the 1,000, A getting 2,000/3 back.
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-07-01"}, {"name": "C", "commitment": "1", "close": "2021-07-01"}]
+        e = equalization(read({"as_of": "2022-01-01", "terms": {"equalization_rate": "0"}, "cash_flows": [call("2021-01-01", "1000")], "lps": lps}))
+        self.assertEqual(len(e.closes), 1)
+        self.assertEqual([lp.name for lp in e.closes[0].joining], ["B", "C"])
+        self.assertEqual(eq_moves(e), [(0, F(2000, 3), 0, 0), (F(1000, 3), 0, 0, 0), (F(1000, 3), 0, 0, 0)])
+
+    def test_a_close_rebalances_fee_calls_by_fee_weight(self):
+        # F22, F25: a 90 fee call A paid alone. B joins in a class paying no fees, so its fee weight is 0: nothing
+        # moves for the fee call, and B pays interest only on its half of the 1,000.
+        terms = {"fee_rate": "0.02", "equalization_rate": "0.1", "lp_classes": [{"name": "F&F", "fee_rate": "0"}]}
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "F&F", "close": "2021-07-01"}]
+        flows = [call("2021-01-01", "1000"), call("2021-01-01", "90", "fee")]
+        e = equalization(read({"as_of": "2022-01-01", "terms": terms, "cash_flows": flows, "lps": lps}))
+        self.assertEqual(eq_moves(e), [(0, 500, 0, F(9050, 365)), (500, 0, F(9050, 365), 0)])
+
+    def test_the_gp_commitment_is_outside_the_equalization(self):
+        # F25: a 2% GP commitment pays 20 of the 1,000 as it's made. The LPs' part is 980, so B pays in 490.
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-07-01"}]
+        terms = {"gp_commitment": {"share": "0.02"}, "equalization_rate": "0"}
+        e = equalization(read({"as_of": "2022-01-01", "terms": terms, "cash_flows": [call("2021-01-01", "1000")], "lps": lps}))
+        self.assertEqual(eq_moves(e), [(0, 490, 0, 0), (490, 0, 0, 0)])
+
+    def test_two_closes_rebalance_in_date_order(self):
+        # A pays 1,200 on 2021-01-01. B joins on 2021-04-01: halves, so B pays 600 and A gets 600 back. C joins on
+        # 2021-07-01: thirds, so C pays 400, and A and B each get 200 back. At 0% interest only capital moves.
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-04-01"}, {"name": "C", "commitment": "1", "close": "2021-07-01"}]
+        e = equalization(read({"as_of": "2022-01-01", "terms": {"equalization_rate": "0"}, "cash_flows": [call("2021-01-01", "1200")], "lps": lps}))
+        self.assertEqual([c.date.isoformat() for c in e.closes], ["2021-04-01", "2021-07-01"])
+        self.assertEqual(eq_moves(e), [(0, 800, 0, 0), (600, 200, 0, 0), (400, 0, 0, 0)])
+
+    def test_each_lp_already_in_receives_the_rate_on_what_it_gets_back(self):
+        # FA30: the interest on a call goes to the LPs already in pro rata to what each gets back of it, which comes to
+        # each receiving the rate on what it gets back for the same days. Paid and received balance at every close.
+        rng = random.Random(20261023)
+        for _ in range(40):
+            n = rng.randint(2, 5)
+            start = datetime.date(2021, 1, 1)
+            lps = [{"name": "LP 0", "commitment": str(rng.randint(1, 9))}]
+            for i in range(1, n):
+                lp = {"name": f"LP {i}", "commitment": str(rng.randint(1, 9))}
+                if rng.random() < 0.7:
+                    lp["close"] = (start + datetime.timedelta(days=rng.randint(1, 400))).isoformat()
+                lps.append(lp)
+            flows = [call(start.isoformat(), str(rng.randint(1, 50) * 100))]
+            for _ in range(rng.randint(0, 3)):
+                flows.append(call((start + datetime.timedelta(days=rng.randint(0, 400))).isoformat(), str(rng.randint(1, 50) * 100)))
+            f = read({"as_of": "2023-01-01", "terms": {"equalization_rate": "0.07"}, "cash_flows": flows, "lps": lps})
+            e = equalization(f)
+            if e is None:
+                continue
+            for close in e.closes:
+                moves = close.moves.values()
+                self.assertEqual(sum(m.capital_paid for m in moves), sum(m.capital_returned for m in moves))
+                self.assertEqual(sum(m.interest_paid for m in moves), sum(m.interest_received for m in moves))
+                for i, m in close.moves.items():
+                    if f.lps[i].close == close.date:
+                        continue
+                    want = sum(
+                        F(7, 100) * (part(f, c, i, close.date, before=True) - part(f, c, i, close.date)) * days(c.date, close.date) / 365
+                        for c in f.flows
+                        if c.date < close.date
+                    )
+                    self.assertEqual(m.interest_received, want)
+            # F25: after the last close every LP holds its share of every call, as if in from the start.
+            last = e.closes[-1].date
+            held = {i: sum(part(f, c, i, max(last, c.date)) for c in f.flows) for i in range(len(f.lps))}
+            total = sum(c.amount for c in f.flows)
+            for i, lp in enumerate(f.lps):
+                self.assertEqual(held[i], total * lp.commitment / sum(x.commitment for x in f.lps))
+
+    def test_the_waterfall_is_as_if_every_lp_were_in_from_the_start(self):
+        # F25: case 25 with Cedar's close taken out gives every amount, breakpoint and paid-in the same.
+        inputs = json.loads((CASES / "fund-25-later-close" / "inputs.json").read_text())
+        late = run_case(inputs)
+        fund = copy.deepcopy(inputs["fund"])
+        del fund["lps"][2]["close"]
+        start = run_case({**inputs, "fund": fund})
+        del late["equalization"]
+        del late["lps"][2]["close"]
+        self.assertNotIn("equalization", start)
+        self.assertEqual(late, start)
+
+    def test_a_close_on_or_before_the_first_call_is_in_from_the_start(self):
+        # F25: no later close, so no equalization rate is needed and none is worked out.
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-01-01"}, {"name": "C", "commitment": "1", "close": "2020-06-30"}]
+        f = read({"as_of": "2022-01-01", "terms": {}, "cash_flows": [call("2021-01-01", "1000")], "lps": lps})
+        self.assertIsNone(equalization(f))
+        self.assertNotIn("close", json.dumps(run_case({"case": "c", "xs": ["1"], "fund": {"as_of": "2022-01-01", "terms": {}, "cash_flows": [call("2021-01-01", "1000")], "lps": lps}})["lps"]))
+
+
+def part(f, c, i, date, before=False):
+    """LP i's part of call c among the LPs in by `date`, or with `before` the LPs in just before it: the call times its
+    weight over theirs (F25). No GP commitment here, so the LPs' part is the call."""
+    members = [j for j, lp in enumerate(f.lps) if lp.close is None or (lp.close < date if before else lp.close <= date)]
+    if i not in members:
+        return F(0)
+    w = {j: f.weight(f.lps[j], c.kind) for j in members}
+    return c.amount * w[i] / sum(w.values())
+
+
+CLASSED = {
+    "as_of": "2026-06-30",
+    "terms": {"carry": "0.2", "fee_rate": "0.02", "equalization_rate": "0.08", "lp_classes": [{"name": "F&F", "fee_rate": "0", "carry": "0"}]},
+    "cash_flows": [call("2022-01-01", "9000000"), call("2022-01-01", "160000", "fee")],
+    "lps": [{"name": "Alder", "commitment": "6"}, {"name": "Cedar", "commitment": "1", "class": "F&F"}],
+}
+
+
+class ClassRefusals(unittest.TestCase):
+    """F28 beyond the fixtures in packages/fund/cases/fund-27-classes-refused, and FA24 to FA27."""
+
+    def refused(self, change, base=CLASSED):
+        with self.assertRaises(Refusal) as ctx:
+            read(apply_change(base, change))
+        return (ctx.exception.kind, ctx.exception.term, ctx.exception.path)
+
+    def test_null_is_left_out_but_for_a_carry(self):
+        # FA24: null fee rates, classes, an LP's class and close are left out; a null class carry is refused.
+        read(apply_change(CLASSED, {"set": {"terms.equalization_rate": None, "terms.lp_classes[0].fee_rate": None, "lps[1].class": None, "lps[0].close": None}}))
+        self.assertEqual(read(apply_change(CLASSED, {"set": {"terms.lp_classes": None, "lps[1].class": None}})).classes, [])
+        self.assertEqual(read(apply_change(CLASSED, {"set": {"terms.lp_classes": [], "lps[1].class": None}})).classes, [])
+        self.assertEqual(self.refused({"set": {"terms.lp_classes[0].carry": None}}), ("input", "bad_number", "terms.lp_classes[0].carry"))
+        self.assertEqual(self.refused({"set": {"terms.fee_rate": None}}), ("input", "missing_field", "terms.fee_rate"))
+
+    def test_a_classs_keys_in_the_files_order_its_carrys_among_them(self):
+        # FA25: the first unsupported key in the class, its carry's own keys at the carry's place.
+        cls = {"name": "F&F", "carry": {"steps": [{"rate": "0", "hurdle": "x"}]}, "pref": {"rate": "0.06"}}
+        self.assertEqual(self.refused({"set": {"terms.lp_classes[0]": cls}}), ("unsupported", "hurdle", "terms.lp_classes[0].carry.steps[0].hurdle"))
+        cls = {"name": "F&F", "pref": {"rate": "0.06"}, "carry": {"tiers": []}}
+        self.assertEqual(self.refused({"set": {"terms.lp_classes[0]": cls}}), ("unsupported", "pref", "terms.lp_classes[0].pref"))
+        # Stage 1 comes first: an unsupported class key before a bad fund carry.
+        self.assertEqual(self.refused({"set": {"terms.carry": "2", "terms.lp_classes[0].mgmt_fee": "1"}}), ("unsupported", "mgmt_fee", "terms.lp_classes[0].mgmt_fee"))
+
+    def test_the_order_within_and_between_classes(self):
+        # F28, FA25: shape, name, repeat, fee rate (its own number before the fund's rate), carry, carry against the
+        # catch-up; each class through before the next.
+        no_rate = {"carry": "0.2", "lp_classes": [{"name": "A", "fee_rate": "-1"}]}
+        self.assertEqual(self.refused({"set": {"terms": no_rate}}), ("input", "bad_number", "terms.lp_classes[0].fee_rate"))
+        two = [{"name": "A", "carry": "2"}, {"name": "A"}]
+        self.assertEqual(self.refused({"set": {"terms.lp_classes": two}}), ("input", "carry_rate_not_below_one", "terms.lp_classes[0].carry"))
+        two = [{"name": "A"}, {"name": "A", "carry": "2"}]
+        self.assertEqual(self.refused({"set": {"terms.lp_classes": two}}), ("input", "lp_class_name_repeated", "terms.lp_classes[1].name"))
+        # The fund's own terms come first: a bad fee rate before a bad class, a bad fund carry before both.
+        self.assertEqual(self.refused({"set": {"terms.fee_rate": "-1", "terms.lp_classes[0].name": ""}}), ("input", "bad_number", "terms.fee_rate"))
+        self.assertEqual(self.refused({"set": {"terms.equalization_rate": "x", "terms.lp_classes[0].name": ""}}), ("input", "bad_number", "terms.equalization_rate"))
+
+    def test_class_names_compare_as_written(self):
+        # FA27: as LP names do (FA17): "F&F " and "f&f" aren't "F&F"; a blank name is JavaScript trim's whitespace.
+        for cls in ["F&F ", "f&f", " F&F"]:
+            self.assertEqual(self.refused({"set": {"lps[1].class": cls}}), ("input", "lp_class_unknown", "lps[1].class"))
+        for name in ["", " ", "﻿"]:
+            self.assertEqual(self.refused({"set": {"terms.lp_classes[0].name": name}}), ("input", "bad_field", "terms.lp_classes[0].name"))
+        self.assertEqual(self.refused({"set": {"terms.lp_classes[0].name": ["F&F"]}}), ("input", "bad_field", "terms.lp_classes[0].name"))
+
+    def test_an_lps_class_and_close_come_after_its_other_checks(self):
+        # F28: within an LP, F21's checks first, then its class, then its close; each LP through before the next.
+        self.assertEqual(self.refused({"set": {"lps[1].class": "X", "lps[1].commitment": "0"}}), ("input", "bad_number", "lps[1].commitment"))
+        self.assertEqual(self.refused({"set": {"lps[1].class": "X", "lps[1].close": "soon"}}), ("input", "lp_class_unknown", "lps[1].class"))
+        self.assertEqual(self.refused({"set": {"lps[0].close": "soon", "lps[1].class": "X"}}), ("input", "bad_date", "lps[0].close"))
+        self.assertEqual(self.refused({"set": {"lps[1].class": True}}), ("input", "bad_field", "lps[1].class"))
+        # A class the terms don't have, when they have none at all.
+        self.assertEqual(self.refused({"set": {"terms.lp_classes": None, "terms.fee_rate": None}}), ("input", "lp_class_unknown", "lps[1].class"))
+
+    def test_a_close_must_come_before_d(self):
+        # FA32: with no distribution in the cash flows, D is the limit: X is a distribution on D.
+        self.assertEqual(self.refused({"set": {"lps[1].close": "2026-06-30"}}), ("input", "lp_close_after_distribution", "lps[1].close"))
+        read(apply_change(CLASSED, {"set": {"lps[1].close": "2026-06-29"}}))
+
+    def test_what_the_lps_need_comes_last(self):
+        # F28's fifth stage: after every LP is read. An LP's bad close comes before a missing equalization rate.
+        change = {"del": "terms.equalization_rate", "set": {"lps[1].close": "2023-01-01", "lps[0].close": "x"}}
+        self.assertEqual(self.refused(change), ("input", "bad_date", "lps[0].close"))
+        change = {"del": "terms.equalization_rate", "set": {"lps[1].close": "2023-01-01"}}
+        self.assertEqual(self.refused(change), ("input", "missing_field", "terms.equalization_rate"))
+        # Fee calls no LP pays, as every LP pays no fees: the first by date, whatever its place in the list.
+        late = {"cash_flows[1]": call("2023-01-01", "100", "fee"), "cash_flows[2]": call("2022-06-01", "100", "fee"), "lps[0].class": "F&F"}
+        self.assertEqual(self.refused({"set": late}), ("input", "call_without_payers", "cash_flows[2]"))
+        # Without listed LPs, nothing here applies: the LPs' side pays every call (F23).
+        read(apply_change(CLASSED, {"set": {"lps": None}}))
+
+
 def random_fund(rng):
     """A small fund with a pref or not, a catch-up or not, one to three carry steps, a GP commitment or not, and calls
     and distributions in any order after the first call: its X final."""
@@ -474,6 +791,38 @@ def random_fund(rng):
     return {"as_of": d.isoformat(), "terms": terms, "cash_flows": flows, "final": True}
 
 
+def random_classes(rng, inputs):
+    """The same fund with two to four LPs, some in classes with their own fee rate or carry, some at later closes."""
+    first = inputs["terms"]["carry"]["steps"][0]["rate"]
+    s = F(inputs["terms"].get("catch_up", {}).get("gp_share", "1"))
+    classes = []
+    for name in ("Anchor", "F&F", "Stepped"):
+        if rng.random() < 0.6:
+            c = {"name": name}
+            if rng.random() < 0.6:
+                c["fee_rate"] = rng.choice(["0", "0.01", "0.025"])
+            if rng.random() < 0.7:
+                rates = [r for r in (F(0), F(1, 20), F(1, 10), F(1, 4)) if r < s]
+                lo = rng.choice(rates)
+                c["carry"] = str(lo) if rng.random() < 0.5 else {"steps": [{"rate": str(lo)}, {"rate": str(lo + F(1, 10)), "from_lp_multiple": rng.choice(["1.5", "2"])}]}
+            classes.append(c)
+    terms = {**inputs["terms"], "fee_rate": "0.02", "equalization_rate": rng.choice(["0", "0.06"]), "lp_classes": classes}
+    calls = sorted(f["date"] for f in inputs["cash_flows"] if f["type"] == "call")
+    dists = sorted(f["date"] for f in inputs["cash_flows"] if f["type"] == "distribution") + [inputs["as_of"]]
+    lps = [{"name": "LP 0", "commitment": str(rng.randint(1, 9))}]
+    if classes and rng.random() < 0.3:
+        lps[0]["class"] = rng.choice(classes)["name"]
+    for i in range(1, rng.randint(2, 4)):
+        lp = {"name": f"LP {i}", "commitment": str(rng.randint(1, 9))}
+        if classes and rng.random() < 0.6:
+            lp["class"] = rng.choice(classes)["name"]
+        later = [d for d in calls if d < dists[0]]
+        if rng.random() < 0.4 and len(later) > 1:
+            lp["close"] = later[-1]
+        lps.append(lp)
+    return {**inputs, "terms": terms, "lps": lps}
+
+
 class RandomFunds(unittest.TestCase):
     def test_breakpoints_are_found_and_the_clawback_never_rises(self):
         # Every random fund's breakpoints are found and checked straight between (breakpoints.find raises if not).
@@ -489,6 +838,37 @@ class RandomFunds(unittest.TestCase):
             xs = sorted({F(0)} | {x for x, _ in found})
             owed = [wf.evaluate(x).clawback for x in xs + [xs[-1] + 10**7]]
             self.assertEqual(owed, sorted(owed, reverse=True), (i, inputs))
+
+
+
+    def test_with_classes_and_closes(self):
+        # The same random funds with LPs in classes and at later closes: every account's breakpoints are found and
+        # checked straight between, no account's clawback ever rises (FA9), the fund's amounts are the accounts' sums
+        # (F23), and on the fund's terms alone the accounts give exactly 0.2.0's amounts.
+        rng = random.Random(20261024)
+        for i in range(40):
+            inputs = random_classes(rng, random_fund(rng))
+            try:
+                f = read(inputs)
+            except Refusal as r:
+                self.assertEqual(r.term, "call_without_payers", (i, inputs))
+                continue
+            m = Model(f)
+            found = breakpoints.find(m)
+            # The case file's shapes (FC11) are written for it too.
+            run_case({"case": "random", "xs": ["0"], "fund": inputs})
+            xs = sorted({F(0)} | {x for x, _ in found})
+            for a_i in range(len(m.accounts)):
+                owed = [m.evaluate(x).by_account[a_i][1].clawback for x in xs + [xs[-1] + 10**7]]
+                self.assertEqual(owed, sorted(owed, reverse=True), (i, inputs))
+            for x in xs[1:] + [xs[-1] + 1]:
+                out = m.evaluate(x)
+                self.assertEqual(sum(o.this.lps + o.this.gp for _, o in out.by_account) + out.gp_commitment, x)
+            plain = {**inputs, "lps": [{"name": lp["name"], "commitment": lp["commitment"]} for lp in inputs["lps"]]}
+            one, wf = Model(read(plain)), Waterfall(read(plain))
+            for x in xs + [xs[-1] + 1]:
+                (_, o), w = one.evaluate(x).by_account[0], wf.evaluate(x)
+                self.assertEqual((o.this.vector()[:-1], o.ledger.to_date.lps, o.clawback), (w.this.vector()[:-1], w.ledger.to_date.lps, w.clawback))
 
 
 if __name__ == "__main__":

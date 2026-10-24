@@ -1,0 +1,10 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "Alder and Birchwood moved into the friends-and-family class too, so no LP pays fees.",
+  "change": {
+    "set": {
+      "lps[0].class": "Friends and family",
+      "lps[1].class": "Friends and family"
+    }
+  }
+}

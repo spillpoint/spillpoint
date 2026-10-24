@@ -1,0 +1,11 @@
+{
+  "base": "fund-22-classes-fee-carry",
+  "about": "The classes given as one class's object, not a list.",
+  "change": {
+    "set": {
+      "terms.lp_classes": {
+        "name": "Friends and family"
+      }
+    }
+  }
+}

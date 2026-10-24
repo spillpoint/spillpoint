@@ -1,0 +1,10 @@
+{
+  "base": "fund-23-classes-pref-catch-up",
+  "about": "Case 23 with a 50% catch-up and the anchor class's carry raised to 50%, so the catch-up's share isn't above the class's carry.",
+  "change": {
+    "set": {
+      "terms.catch_up.gp_share": "0.5",
+      "terms.lp_classes[0].carry": "0.5"
+    }
+  }
+}

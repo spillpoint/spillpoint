@@ -1,0 +1,66 @@
+{
+  "case": "fund-25-later-close",
+  "description": "One later close: Cedar joins six months after the first call, pays in its share of the LPs' part of the earlier calls with 8% equalization interest, and Alder and Birchwood get back what they paid over their shares. A 2% GP commitment, fee-free, pays its part of the investment calls and isn't in the equalization. The waterfall is the fund's as if all three were in from the start.",
+  "xs": [
+    "0",
+    "2000000",
+    "5200000",
+    "20000000"
+  ],
+  "fund": {
+    "as_of": "2024-12-31",
+    "terms": {
+      "carry": "0.20",
+      "gp_commitment": {
+        "share": "0.02"
+      },
+      "equalization_rate": "0.08"
+    },
+    "cash_flows": [
+      {
+        "date": "2021-01-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "4000000"
+      },
+      {
+        "date": "2021-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "80000"
+      },
+      {
+        "date": "2022-01-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "3000000"
+      },
+      {
+        "date": "2022-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "100000"
+      },
+      {
+        "date": "2024-06-30",
+        "type": "distribution",
+        "amount": "2000000"
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "6000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "2000000"
+      },
+      {
+        "name": "Cedar Holdings",
+        "commitment": "2000000",
+        "close": "2021-07-15"
+      }
+    ]
+  }
+}
