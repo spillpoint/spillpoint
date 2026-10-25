@@ -148,7 +148,7 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | FA35 | Working the equalization interest received (F25, FA30) | Each LP already in receives the rate on what it gets back of each call, for the call's days to the close, as FA30 shows that comes to; not the joiners' interest shared out. The reference shares it out, so the two check each other. At 40 digits paid and received balance within FA15. | Fixed | Confirmed (f03b review) |
 | FA36 | A reason's and a step's `class` with one account (F26, F27) | That account's class: null without classes, or the class's name when every LP is in one. Its text isn't named, as FA22 has it. The case files give `class` only with two or more accounts (FC11). | Fixed | Confirmed (f03b review) |
 | FA37 | `equalization` with no later close | Null, as `splitAtNav` is without a NAV, so whether a fund has an equalization is one check. | Fixed | Confirmed (f03b review) |
-| FA38 | An account with nothing paid in (F10, F11, F23) | Kept, not refused (Jordan, f03b review): possible only for a class paying no fees in a fund whose calls are all fee calls, as in a young fund that has called only management fees so far. Every step's threshold is a multiple of its paid-in, zero, so its LPs have reached every step and its carry is at its top rate from its first dollar; the reference gives the same. With nothing paid in there's no multiple to give, so its `AccountSplit.lpMultiple` is null, exactly when its paid-in is zero. The split's own `lpMultiple` is always a number: `call_without_payers` sees that the LPs together pay part of every call. | Fixed | Confirmed (f03b review, with no multiple) |
+| FA38 | An account with nothing paid in (F10, F11, F23) | Kept, not refused (Jordan, f03b review): possible only for a class paying no fees in a fund whose calls are all fee calls, as in a young fund that has called only management fees so far. Every step's threshold is a multiple of its paid-in, zero, so its LPs have reached every step and its carry is at its top rate from its first dollar; the reference gives the same. With nothing paid in there's no multiple to give, so its `AccountSplit.lpMultiple` is null, exactly when its paid-in is zero. The split's own `lpMultiple` is always a number: `call_without_payers` sees that the LPs together pay part of every call. From 0.4.0 not always: a schedule's calls have no payers to check (FA47). | Fixed | Confirmed (f03b review, with no multiple) |
 
 ## Added in f04a
 
@@ -163,6 +163,13 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | FA45 | The equalization without a rate (F29, F31) | A fund whose later closes have only fee calls before them needs no `equalization_rate`. Its equalization is still worked out, for the back fees, with no interest anywhere, and the case file's `rate` is null (FC13). A rate given there is checked and unused (FA26). | Fixed | Confirmed (f04a review) |
 | FA46 | A schedule's later rates (F30) | Any rate from 0 up to, not including, 1, in any order: a later step can be higher than the one before it, as F32 orders the steps only by date. A rate of 0 ends fees until a later step's date. A step dated after D changes nothing to D. | Fixed | Confirmed (f04a review) |
 
+## Added in f04b
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA47 | The split's own LP multiple with nothing paid in (F10, FA38, FA40) | Null, as FA38 has an account's. A schedule's calls have no payers to check (F32), and with every listed LP in a class at a fee rate of 0 each is $0 and stays a call (FA40), so a fund with no investment or expense call can read with the LPs having paid in nothing. Its multiple would be 0 over 0, or more than 0 over 0, so `Split.lpMultiple` is `D \| null`, null exactly when the LPs' paid-in is zero. That changes a type stable from 0.1.0; the other choice is to refuse such a fund, with a new term (review-f04b, open question 1). Every step's threshold is a multiple of nothing, so the carry is at its top rate from the first dollar, as FA38 has it. | Fixed | New |
+| FA48 | A `Fund` built by hand without 0.4.0's field (F30) | As FA33 has one without 0.3.0's: no `managementFee` on its terms is no schedule, so its fee calls are the entered ones, and F29 applies to them: a later close's back fees, and each fee call at its full size. TypeScript requires the new field. An entered fee call that no LP in at its date pays, which `readFund` refuses as `call_without_payers`, counts as entered, as 0.3.0 counted it, rather than dividing by nothing. | Fixed | New |
+
 ## Known edges
 
 Places where the engine and the reference can differ on an input both refuse, and an input whose result reads ambiguously, recorded rather than changed.
@@ -174,6 +181,7 @@ Places where the engine and the reference can differ on an input both refuse, an
 | `terms: {"carry": "0.2", "hurdle_irr": "x", "7": "y"}` | `7` at `terms.7` | `hurdle_irr` at `terms.hurdle_irr` |
 | an LP `{"name": "A", "commitment": "1", "carry": "x", "2": "y"}` | `2` at `lps[0].2` | `carry` at `lps[0].carry` |
 | a class `{"name": "A", "pref": "x", "3": "y"}` (from 0.3.0, f03b) | `3` at `terms.lp_classes[0].3` | `pref` at `terms.lp_classes[0].pref` |
+| a schedule `{"start": "2021-01-01", "steps": [{"rate": "0.02"}], "offset": "x", "4": "y"}` (from 0.4.0, f04b) | `4` at `terms.management_fee.4` | `offset` at `terms.management_fee.offset` |
 
 **A class named "Fund terms" (FA28; f03b).** F28 doesn't refuse it. With two or more accounts its reasons read like the fund terms' own: "Fund terms: LPs have their $4,500,000 of paid-in capital back" for each. Every reason and carry step has `class`, null for the fund's terms and "Fund terms" for the class, so code tells them apart; the words alone don't. The page refuses the name, typed or in a file (f03c review, answer 3; f03d), since its picker, its paste and its cards couldn't tell the class from the fund's terms; the engine still takes it.
 
