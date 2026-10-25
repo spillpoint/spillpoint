@@ -368,6 +368,27 @@ describe("the fund-27 refusals, in the page's words", () => {
   });
 });
 
+describe("a class's carry in steps, refused as a whole", () => {
+  it("marks its first step's rate with the words, and Fix it goes there (F8, F22)", async () => {
+    const fund = {
+      as_of: "2025-06-30",
+      terms: { carry: "0.20", pref: { rate: "0.08" }, catch_up: { gp_share: "0.5" }, lp_classes: [{ name: "Anchor", carry: { steps: [{ rate: "0.10" }, { rate: "0.15", from_lp_multiple: "2" }] } }] },
+      cash_flows: [{ date: "2021-01-01", type: "call", kind: "investment", amount: "1000000" }],
+      lps: [{ name: "Alder", commitment: "1" }, { name: "Birch", commitment: "1", class: "Anchor" }],
+    };
+    render(<App />);
+    await openFile(JSON.stringify(fund));
+    tab("LPs");
+    type("Class 1, step 2's carry rate", "60");
+    type("Class 1, step 1's carry rate", "50");
+    const words = "This class's carry rate must be below the GP's share of the catch-up, 50%, or its catch-up never ends.";
+    expect(problemUnder("Class 1, step 1's carry rate")).toBe(words);
+    tab("Payouts");
+    fireEvent.click(within(screen.getByText(/^Your last change to the LPs/).closest(".notice") as HTMLElement).getByRole("button", { name: "Fix it" }));
+    expect(document.activeElement).toBe(screen.getByLabelText("Class 1, step 1's carry rate"));
+  });
+});
+
 describe("pasting LPs with a class and a close", () => {
   const paste = (text: string) => {
     fireEvent.click(screen.getByRole("button", { name: "Paste rows from a spreadsheet" }));

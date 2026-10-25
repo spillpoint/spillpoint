@@ -310,9 +310,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .lps, .classes { margin-top: 12px; }
 .lps td, .classes td { vertical-align: top; }
 .lps th[scope="row"], .classes th[scope="row"] { color: var(--muted); padding-top: 14px; vertical-align: top; }
-/* One header row each, set as the LPs' card's column headings are, over the boxes they name. */
-.split.lps thead tr:first-child th, .split.classes thead tr:first-child th { text-align: left; vertical-align: bottom; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); }
-.split.lps thead tr:first-child th.num { text-align: right; }
 .lps th, .lps td, .classes th, .classes td { padding-left: 6px; padding-right: 6px; }
 .lps .field-error, .classes .field-error { margin: 4px 0 0; white-space: normal; }
 .lps input.lps__name, .classes input.lps__name { width: 100%; min-width: 10rem; }
@@ -348,7 +345,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .lps .lps__class-cell::before { content: "Class"; }
   .lps .lps__close-cell::before { content: "Close (blank: in from the start)"; }
   .classes .classes__fee-cell::before { content: "Fee rate (blank: the fund's fees)"; }
-  .lps .lps__class-cell::before, .lps .lps__close-cell::before, .classes .classes__fee-cell::before { display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 2px; }
+  .classes .classes__carry-cell::before { content: "Carry"; }
+  .lps .lps__class-cell::before, .lps .lps__close-cell::before, .classes .classes__fee-cell::before, .classes .classes__carry-cell::before {
+    display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 2px;
+  }
   .lps input.lps__name, .lps input.lps__commitment, .classes input.lps__name { width: 100%; min-width: 0; text-align: left; }
 }
 
