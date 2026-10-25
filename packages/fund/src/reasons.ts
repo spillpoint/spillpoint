@@ -6,19 +6,24 @@ import type { D } from "./decimal.ts";
 import { toCents } from "./decimal.ts";
 import type { ClawbackChange, ReasonCode, TierReasonCode } from "./stable-names.ts";
 
-export type Reason =
-  /** The LPs' paid-in capital to date. */
+/**
+ * Every reason's `class` (F27, from 0.3.0) is the account whose tier or clawback it's about: its class's name, or null
+ * for the fund's terms. Its amounts and rates are that account's own.
+ */
+export type Reason = { class: string | null } & (
+  /** The account's LPs' paid-in capital to date. */
   | { code: "capital_returned"; amount: D; text: string }
-  /** The pref rate, and all the pref accrued to D, paid or not (FA4). */
+  /** The pref rate, and all the account's pref accrued to D, paid or not (FA4). */
   | { code: "pref_met"; rate: D; amount: D; text: string }
-  /** c, the first carry rate, that the GP now has of the profit. */
+  /** c, the account's first carry rate, that the GP now has of its profit. */
   | { code: "catch_up_done"; carry: D; text: string }
-  /** The step the LPs reach: its multiple and rate. */
+  /** The step the account's LPs reach: its multiple and rate. */
   | { code: "carry_step"; lpMultiple: D; rate: D; text: string }
   | { code: "clawback_cleared"; text: string }
   | { code: "clawback_starts"; text: string }
   /** `fundTotals` names the totals' tier that ended when that run is the cause; null when X's own tier is. */
-  | { code: "clawback_changes"; change: ClawbackChange; fundTotals: TierReasonCode | null; text: string };
+  | { code: "clawback_changes"; change: ClawbackChange; fundTotals: TierReasonCode | null; text: string }
+);
 
 // Every code a Reason can have is on the stable list, and every code on it is a Reason's: the compiler checks both
 // ways, so a new reason can't be added without the list, nor the list grow without a reason.
