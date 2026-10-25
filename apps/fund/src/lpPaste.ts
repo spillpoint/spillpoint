@@ -18,7 +18,7 @@
 import { D } from "spillpoint-fund";
 
 import { exactDollars } from "./format.ts";
-import { nameOf } from "./lps.ts";
+import { FUND_TERMS, nameOf } from "./lps.ts";
 import type { DateOrder, Order } from "./paste.ts";
 import { cellsOf, pastedAmount, readDate, settleOrder } from "./paste.ts";
 
@@ -39,9 +39,6 @@ export interface LpPasteRead extends DateOrder {
   /** Each row it can't read, with why: "Row 4: 'lots' isn't an amount". */
   unread: string[];
 }
-
-/** The picker's word for the fund's terms. */
-const FUND_TERMS = "Fund terms";
 
 const HEADER_WORD = /\b(name|lps?|investors?|partners?|commitments?|committed|amounts?|class(es)?|close)\b/i;
 

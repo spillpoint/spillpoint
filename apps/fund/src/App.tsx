@@ -1,13 +1,13 @@
 // The fund page (notes/plan-fund-page.md): an example fund from the locked cases, or a blank one, with an X box and a
 // slider, the split at X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), the clawback
-// with the NAV button (f01h), and, with LPs, each LP's amounts (f02c), on the Payouts tab; the fund behind them,
-// editable, on the Terms (f01i), Cash flows (f01j) and LPs (f02c) tabs. Pasting cash flows and files come in f01k to
-// f01m.
+// with the NAV button (f01h), with LPs each LP's amounts (f02c), and with classes each class's, and with later closes
+// the equalization (f03c), on the Payouts tab; the fund behind them, editable, on the Terms (f01i), Cash flows (f01j)
+// and LPs (f02c, f03c) tabs. Pasting cash flows and files come in f01k to f01m.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
-import { D, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
-import type { Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
+import { D, equalization, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
+import type { CarryStep, Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
@@ -16,14 +16,18 @@ import type { BreakpointView } from "./analysis.ts";
 import { Breakpoints } from "./Breakpoints.tsx";
 import { CashFlows } from "./CashFlows.tsx";
 import { Chart } from "./Chart.tsx";
+import { ClassesCard } from "./ClassesCard.tsx";
 import { Clawback, owesSomething } from "./Clawback.tsx";
+import { EqualizationCard } from "./EqualizationCard.tsx";
+import { equalizationCsv, equalizationCsvName } from "./equalizationCard.ts";
+import type { EqualizationBlock } from "./equalizationCard.ts";
 import { Terms } from "./Terms.tsx";
 import { fileName, fileText, inputOf, readFile, UNNAMED } from "./file.ts";
 import { blankFlows, flowsFrom, flowsProblem } from "./flows.ts";
 import type { FlowsForm } from "./flows.ts";
 import { useNarrow, useTooWide } from "./layout.ts";
 import { Lps } from "./Lps.tsx";
-import { lpsFrom, lpsProblem, noLps } from "./lps.ts";
+import { FUND_TERMS, lpsFrom, lpsProblem, noLps } from "./lps.ts";
 import type { LpsForm } from "./lps.ts";
 import { LpsCard } from "./LpsCard.tsx";
 import { lpsCsv, lpsCsvName } from "./lpsCard.ts";
@@ -222,6 +226,12 @@ export function App() {
     download(name, lpsCsv(table), "text/csv;charset=utf-8");
     setFileStatus({ kind: "done", text: `Downloaded as ${name}, in your downloads.` });
   };
+  /** The equalization card as a CSV, named after the fund: it has no X or D. */
+  const downloadEqualization = (blocks: EqualizationBlock[]) => {
+    const name = equalizationCsvName(state.name);
+    download(name, equalizationCsv(blocks), "text/csv;charset=utf-8");
+    setFileStatus({ kind: "done", text: `Downloaded as ${name}, in your downloads.` });
+  };
 
   /** X set exactly, by the slider, a mark or a breakpoint: the box shows it. */
   const setX = (v: D) => setState((s) => ({ ...s, x: { text: xText(v), shown: v, problem: null } }));
@@ -321,7 +331,7 @@ export function App() {
                   </button>
                 </div>
               )}
-              <Payouts fund={fund} state={state} onX={setX} onTypeX={typeX} onTop={typeTop} onDownloadLps={downloadLps} />
+              <Payouts fund={fund} state={state} onX={setX} onTypeX={typeX} onTop={typeTop} onDownloadLps={downloadLps} onDownloadEqualization={downloadEqualization} />
             </>
           ) : (
             <div className="card" role="status">
@@ -367,10 +377,11 @@ interface PayoutsProps {
   onTypeX: (text: string) => void;
   onTop: (text: string) => void;
   onDownloadLps: (table: LpsTable, x: D) => void;
+  onDownloadEqualization: (blocks: EqualizationBlock[]) => void;
 }
 
 /** Everything about X's split, for a fund the engine accepted. */
-function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps }: PayoutsProps) {
+function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps, onDownloadEqualization }: PayoutsProps) {
   const { opening, x, top: topState } = state;
   const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
@@ -384,6 +395,10 @@ function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps }: PayoutsPro
   const clawbackAt = fund.final ? split : atNav ? splitAtNav(fund) : null;
   const owed = useMemo(() => (fund.final ? owedPoints(fund, breakpoints, top) : null), [fund, breakpoints, top]);
   const bends = useMemo(() => breakpoints.filter(bendsClawback), [breakpoints]);
+  // F25: once for the fund, not by X; null without a later close.
+  const moves = useMemo(() => equalization(fund), [fund]);
+  // The cards after the split follow the NAV split at the NAV point, its clawback included, as the clawback card does.
+  const shown = clawbackAt ?? split;
   return (
     <>
       <Headline fund={fund} split={split} clawback={clawbackAt?.clawback ?? null} />
@@ -400,9 +415,14 @@ function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps }: PayoutsPro
         onX={onX}
       />
       <SplitTable fund={fund} split={split} />
-      {clawbackAt?.clawback && <Clawback fund={fund} clawback={clawbackAt.clawback} points={owed} breakpoints={bends} x={x.shown} top={top} onX={onX} />}
+      {/* Each class's own split (F26), only with two or more accounts. */}
+      {shown.byAccount.length > 1 && <ClassesCard split={shown} />}
+      {clawbackAt?.clawback && (
+        <Clawback fund={fund} clawback={clawbackAt.clawback} accounts={clawbackAt.byAccount} points={owed} breakpoints={bends} x={x.shown} top={top} onX={onX} />
+      )}
       {/* Each LP's amounts (F20), only with LPs: at the NAV point, the NAV split's, its clawback included. */}
-      {fund.lps.length > 0 && <LpsCard split={clawbackAt ?? split} onDownload={(table) => onDownloadLps(table, x.shown)} />}
+      {fund.lps.length > 0 && <LpsCard split={shown} onDownload={(table) => onDownloadLps(table, x.shown)} />}
+      {moves && <EqualizationCard equalization={moves} onDownload={onDownloadEqualization} />}
       <Breakpoints fund={fund} breakpoints={breakpoints} x={x.shown} onX={onX} />
     </>
   );
@@ -506,10 +526,18 @@ function listed(items: string[]): string {
   return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }
 
-/** The fund's terms in one line: "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free." */
+/** A carry in words: "20%, 25% from 3.0x and 30% from 5.0x". */
+function carryText(carry: readonly CarryStep[]): string {
+  return listed(carry.map((s) => (s.fromLpMultiple ? `${percentText(s.rate)} from ${stepMultiple(s.fromLpMultiple)}` : percentText(s.rate))));
+}
+
+/**
+ * The fund's terms in one line: "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free."
+ * Then each class with LPs, by what it changes (F22): "Friends and family: carry 0%, no fees."
+ */
 function termsText(fund: Fund): string {
   const t = fund.terms;
-  const carry = `Carry ${listed(t.carry.map((s) => (s.fromLpMultiple ? `${percentText(s.rate)} from ${stepMultiple(s.fromLpMultiple)}` : percentText(s.rate))))}`;
+  const carry = `Carry ${carryText(t.carry)}`;
   const pref = !t.pref
     ? "no pref"
     : `pref ${percentText(t.pref.rate)}, ${!t.catchUp ? "no catch-up" : t.catchUp.gpShare.eq(1) ? "full catch-up" : `${percentText(t.catchUp.gpShare)} catch-up`}`;
@@ -517,7 +545,12 @@ function termsText(fund: Fund): string {
   const gp = !g
     ? "no GP commitment"
     : `GP commitment ${percentText(g.share)}, ${g.paysFees ? "paying its share of fees" : "fee-free"}${g.paysExpenses ? "" : ", not paying its share of expenses"}`;
-  return `${carry}; ${pref}; ${gp}.`;
+  const classes = (t.lpClasses ?? []).filter((c) => fund.lps.some((lp) => lp.class === c.name));
+  const classText = (c: (typeof classes)[number]) => {
+    const parts = [...(c.carry ? [`carry ${carryText(c.carry)}`] : []), ...(c.feeRate === null ? [] : [c.feeRate.isZero() ? "no fees" : `fees at ${percentText(c.feeRate)}`])];
+    return `${c.name}: ${parts.length > 0 ? parts.join(", ") : "the fund's terms"}.`;
+  };
+  return [`${carry}; ${pref}; ${gp}.`, ...classes.map(classText)].join(" ");
 }
 
 /**
@@ -799,21 +832,27 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
   const now = split.distribution;
   const all = split.toDate;
   const pair = (f: (t: Tiers) => D): [D, D] => [f(now), f(all)];
-  const steps = fund.terms.carry;
+  // The split's own steps: each account's, in order, the fund's terms first (F26). With one account they're its own,
+  // the fund's or, when every LP is in one class, that class's (FA36).
+  const steps = now.gp.carry;
+  const named = split.byAccount.length > 1;
   // Each step is a band of the LPs' net multiple, one carry, not carry on top of carry (f01g, from Jordan's look at the
   // page): "Carry at 20% (up to 3.0x)", "Carry at 25% (3.0x to 5.0x)", "Carry at 30% (above 5.0x)". Flat: "Carry at 20%".
+  // With two or more accounts, each names its class: "Fund terms: carry at 20% (up to 3.0x)" (f03c).
   const stepLabel = (i: number) => {
-    const from = steps[i]!.fromLpMultiple;
-    const to = steps[i + 1]?.fromLpMultiple;
+    const step = steps[i]!;
+    const next = steps[i + 1]?.class === step.class ? steps[i + 1] : undefined;
+    const [from, to] = [step.fromLpMultiple, next?.fromLpMultiple];
     const band = from && to ? `${stepMultiple(from)} to ${stepMultiple(to)}` : to ? `up to ${stepMultiple(to)}` : from ? `above ${stepMultiple(from)}` : null;
-    return `at ${percentText(steps[i]!.rate)}${band ? ` (${band})` : ""}`;
+    const words = `at ${percentText(step.rate)}${band ? ` (${band})` : ""}`;
+    return named ? `${step.class ?? FUND_TERMS}: carry ${words}` : `Carry ${words}`;
   };
   const rows: SplitRow[] = [
     { label: "Capital", lps: pair((t) => t.lps.capital), gp: null },
     ...(fund.terms.pref ? [{ label: "Pref", lps: pair((t) => t.lps.pref), gp: null }] : []),
     ...(fund.terms.catchUp ? [{ label: "Catch-up", lps: pair((t) => t.lps.catchUp), gp: pair((t) => t.gp.catchUp) }] : []),
     // One row a carry step, each side's share of it (f01f review, answer 2).
-    ...steps.map((_, i) => ({ label: `Carry ${stepLabel(i)}`, lps: pair((t) => t.gp.carry[i]!.lps), gp: pair((t) => t.gp.carry[i]!.amount) })),
+    ...steps.map((_, i) => ({ label: stepLabel(i), lps: pair((t) => t.gp.carry[i]!.lps), gp: pair((t) => t.gp.carry[i]!.amount) })),
   ];
   const total: SplitRow = { label: "Total", lps: pair((t) => t.lps.total), gp: pair((t) => t.gp.total) };
   return (

@@ -241,6 +241,8 @@ export function fileProblem(refusal: FundRefusal): string {
   // F28: a rate the classes or the closes need says why it's needed.
   if (term === "missing_field" && path === "terms.fee_rate") return "Its management fee rate is missing: it's needed when a class has its own fee rate.";
   if (term === "missing_field" && path === "terms.equalization_rate") return "Its equalization interest rate is missing: it's needed when an LP joins at a later close.";
+  // F28: the standard fee rate is the one rate that must be above 0, which the amounts' line doesn't say.
+  if (term === "bad_number" && path === "terms.fee_rate") return 'Its management fee rate isn\'t a number the page can use: it\'s a rate above 0, written as an exact string like "0.02".';
   if (term in field) return `${where(path)} ${field[term]}.`;
   const rule: Record<string, string> = {
     carry_rate_not_below_one: "a carry rate must be below 100%",

@@ -50,6 +50,9 @@ export interface LpsForm {
   rows: LpRow[];
 }
 
+/** The LPs on the fund's terms, as the picker and the cards name them: their account's name in the engine's reasons (FA28). */
+export const FUND_TERMS = "Fund terms";
+
 let nextId = 1;
 
 export function newLp(): LpRow {
@@ -148,7 +151,7 @@ export function removeClass(form: LpsForm, i: number): { form: LpsForm; moved: s
 /** The line under the classes when a removed class had LPs: "Removed Friends and family: Cedar Holdings moves to Fund terms." */
 export function removedLine(name: string, moved: readonly string[]): string {
   const who = moved.length < 2 ? moved.join("") : `${moved.slice(0, -1).join(", ")} and ${moved.at(-1)}`;
-  return `Removed ${name}: ${who} ${moved.length === 1 ? "moves" : "move"} to Fund terms.`;
+  return `Removed ${name}: ${who} ${moved.length === 1 ? "moves" : "move"} to ${FUND_TERMS}.`;
 }
 
 function count(n: number): string {

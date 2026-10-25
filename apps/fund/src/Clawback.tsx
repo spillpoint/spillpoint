@@ -10,11 +10,12 @@
 
 import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
 import { D, toCents } from "spillpoint-fund";
-import type { Clawback as ClawbackAmounts, Fund } from "spillpoint-fund";
+import type { AccountSplit, Clawback as ClawbackAmounts, Fund } from "spillpoint-fund";
 
 import type { BreakpointView, OwedPoint } from "./analysis.ts";
 import { ACCENT, BADGE_ROW, Badge, INK_MUTED, LINE_HAIR, MARGIN_SIDE, MarkLabel, X_AXIS_HEIGHT, Y_AXIS_WIDTH, badgeRows, niceScale, useWidth, xAtPixel } from "./Chart.tsx";
 import { cents, dateText, short } from "./format.ts";
+import { FUND_TERMS } from "./lps.ts";
 
 type Decimal = D;
 
@@ -37,6 +38,8 @@ interface Props {
   fund: Fund;
   /** The clawback at X: for a final fund at any X, and for a fund that isn't at the NAV point. */
   clawback: ClawbackAmounts;
+  /** Each account's own split at the same X, with two or more (F24); empty otherwise. */
+  accounts: readonly AccountSplit[];
   /** The small chart's points, for a final fund; null at a NAV point of a fund that isn't final. */
   points: readonly OwedPoint[] | null;
   /** The breakpoints where the clawback bends, numbered as in the list. */
@@ -46,16 +49,31 @@ interface Props {
   onX: (x: Decimal) => void;
 }
 
-export function Clawback({ fund, clawback, points, breakpoints, x, top, onX }: Props) {
+export function Clawback({ fund, clawback, accounts, points, breakpoints, x, top, onX }: Props) {
+  // F24: with classes, each settles its own clawback on its own totals, and the fund's owed is theirs added up.
+  const run = accounts.length > 1 ? "one run of the waterfall for each class, on its own totals" : "one run of the waterfall on everything paid in and everything distributed";
   return (
     <section className="card" aria-labelledby="clawback-heading">
       <h2 id="clawback-heading">The clawback</h2>
       <p className="card__intro">
         {fund.final
-          ? "This is the fund's last distribution, so the carry the GP has been paid to date is set against what it has earned on the fund's totals: one run of the waterfall on everything paid in and everything distributed."
-          : `At NAV, the split is as if the fund were liquidated on ${dateText(fund.distributionDate)}, so this would be its last distribution, and the carry the GP has been paid to date is set against what it has earned on the fund's totals.`}
+          ? `This is the fund's last distribution, so the carry the GP has been paid to date is set against what it has earned on the fund's totals: ${run}.`
+          : `At NAV, the split is as if the fund were liquidated on ${dateText(fund.distributionDate)}, so this would be its last distribution, and the carry the GP has been paid to date is set against what it has earned on the fund's totals${accounts.length > 1 ? `: ${run}` : ""}.`}
       </p>
       <p className={`clawback__sentence${owesSomething(clawback.owed) ? " clawback__sentence--owed" : ""}`}>{clawbackSentence(clawback)}</p>
+      {accounts.length > 1 && (
+        <table className="split clawback__accounts">
+          <caption>Owed back by class, each on its own totals</caption>
+          <tbody>
+            {accounts.map((a, i) => (
+              <tr key={i}>
+                <th scope="row">{a.class ?? FUND_TERMS}</th>
+                <td className="num">{cents(a.clawback!.owed)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       {points === null ? (
         <p className="chart__hint">The fund isn't final, so away from NAV there's no clawback, and no chart of one against X.</p>
       ) : points[0]!.owed.isZero() ? (

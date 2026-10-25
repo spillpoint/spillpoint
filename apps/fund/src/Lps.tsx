@@ -12,7 +12,7 @@ import { exactDollars } from "./format.ts";
 import { lpPasteSummary, readLpPaste } from "./lpPaste.ts";
 import type { LpPasteRead, PastedLp } from "./lpPaste.ts";
 import type { ClassRow, LpRow, LpsForm } from "./lps.ts";
-import { classLabel, isEmptyLp, lpsSummary, nameOf, newClass, newLp, removeClass, removedLine } from "./lps.ts";
+import { classLabel, FUND_TERMS, isEmptyLp, lpsSummary, nameOf, newClass, newLp, removeClass, removedLine } from "./lps.ts";
 import type { Order } from "./paste.ts";
 import { orderChoices } from "./paste.ts";
 import { isManyCells } from "./Paste.tsx";
@@ -265,7 +265,7 @@ export function Lps({ form, fundCarry, problem, onForm, onShow }: Props) {
                           aria-label={`LP ${i + 1}'s class`}
                           {...marks(problem, `${at(i)}.class`)}
                         >
-                          <option value="">Fund terms</option>
+                          <option value="">{FUND_TERMS}</option>
                           {form.classes.map((c) => (
                             <option key={c.id} value={String(c.id)}>
                               {classLabel(form, c)}

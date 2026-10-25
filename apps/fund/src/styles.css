@@ -364,3 +364,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* The card has one header row, which the split's first-row rule would centre: set it as the split's column headings are. */
 .split.card-table thead tr:first-child th { text-align: left; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); }
 .split.card-table thead tr:first-child th.num { text-align: right; }
+/* With classes (f03c): the clawback card's owed by class, under its sentence; and the equalization card's blocks, one a
+   close and then all of them, each its own heading over its table. */
+.split.clawback__accounts { width: auto; min-width: min(100%, 24rem); }
+.split.clawback__accounts caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
+.equalization__block { margin-top: 20px; }
+.equalization__block h3 { margin: 0; font-size: 1rem; }
+.equalization__outside { margin: 12px 0 0; }
