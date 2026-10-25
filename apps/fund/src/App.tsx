@@ -27,7 +27,7 @@ import { blankFlows, flowsFrom, flowsProblem } from "./flows.ts";
 import type { FlowsForm } from "./flows.ts";
 import { useNarrow, useTooWide } from "./layout.ts";
 import { Lps } from "./Lps.tsx";
-import { FUND_TERMS, lpsFrom, lpsProblem, noLps } from "./lps.ts";
+import { FUND_TERMS, fundTermsClass, LP_WORDS, lpsFrom, lpsProblem, noLps } from "./lps.ts";
 import type { LpsForm } from "./lps.ts";
 import { LpsCard } from "./LpsCard.tsx";
 import { lpsCsv, lpsCsvName } from "./lpsCard.ts";
@@ -117,12 +117,16 @@ function fromFund(fund: Fund, name: string, x: D): Opened {
 
 /**
  * The fund the three forms write, or the engine's refusal in the page's words, at the path it names. The engine checks
- * in its order (FA2, the LPs last by FA19), so the problem shown is its first, on whichever tab.
+ * in its order (FA2, the LPs last by FA19), so the problem shown is its first, on whichever tab. Then the page's own
+ * rule: no class takes "Fund terms", its name for the fund's own terms (f03c review, answer 3).
  */
 function run(s: Opened, terms: TermsForm, flows: FlowsForm, lps: LpsForm): Opened {
   const input = inputOf(terms, flows, lps);
   try {
-    return { ...s, input, terms, flows, lps, edited: true, fund: readFund(input), problem: null };
+    const fund = readFund(input);
+    const named = fundTermsClass(fund);
+    if (named >= 0) return { ...s, input, terms, flows, lps, edited: true, problem: { path: `terms.lp_classes[${named}].name`, message: LP_WORDS.classFundTerms } };
+    return { ...s, input, terms, flows, lps, edited: true, fund, problem: null };
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
     const tab = tabFor(e.path);

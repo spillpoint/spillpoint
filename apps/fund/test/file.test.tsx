@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.tsx";
 import { fileName, readFile } from "../src/file.ts";
 import { RUN_CASES } from "./support/cases.ts";
+import { openFile, status } from "./support/files.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseText = (dir: string) => readFileSync(resolve(casesDir, dir, "inputs.json"), "utf8");
@@ -41,15 +42,10 @@ afterEach(() => vi.restoreAllMocks());
 
 const saved = async () => JSON.parse(await downloads.at(-1)!.blob.text());
 const save = () => fireEvent.click(screen.getByRole("button", { name: "Save" }));
-const status = () => document.querySelector(".file-status")?.textContent;
 const pickerText = () => (screen.getByLabelText("Start from") as HTMLSelectElement).selectedOptions[0]!.textContent;
 const xBox = () => (screen.getByLabelText(/^Distribution on/) as HTMLInputElement).value;
 const notSaved = () => screen.queryByText("Not saved") !== null;
 const answer = () => screen.getByRole("region", { name: "The answer" }).querySelector(".headline__answer")!.textContent;
-async function openFile(text: string, name: string) {
-  fireEvent.change(screen.getByLabelText("Open a saved fund"), { target: { files: [new File([text], name, { type: "application/json" })] } });
-  await vi.waitFor(() => expect(status()).toMatch(/^(Opened|Couldn't open) /));
-}
 const tab = (name: string) => fireEvent.click(screen.getByRole("tab", { name }));
 const set = (label: string | RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 

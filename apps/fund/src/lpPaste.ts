@@ -11,7 +11,7 @@
 // - Names are trimmed as the page reads every name (FA17). A name already in the paste, or already in the table, is
 //   refused, since no two LPs share one (F19).
 // - A class is matched by its name, both trimmed (FA27); blank is the fund's terms, and so is "Fund terms", the picker's
-//   word, unless a class has that name. A class that isn't in the table is refused.
+//   word, which no class may take (f03c review, answer 3). A class that isn't in the table is refused.
 // - A close is read as the cash flows' dates are, the paste's slashed dates settling their order, or asking (F25);
 //   blank is in from the start.
 
@@ -75,8 +75,9 @@ export function readLpPaste(text: string, inTable: readonly string[], classes: r
     if (inTable.includes(name)) return void unread.push(`${row}: '${name}' is already an LP in the table`);
     // F22, FA27: a class by its name, trimmed.
     const classText = nameOf(cells[2] ?? "");
-    const cls = classText === "" ? null : (classes.find((c) => c.name === classText) ?? null);
-    if (classText !== "" && !cls && classText !== FUND_TERMS) return void unread.push(`${row}: '${classText}' isn't one of the fund's classes`);
+    const fundTerms = classText === "" || classText === FUND_TERMS;
+    const cls = fundTerms ? null : (classes.find((c) => c.name === classText) ?? null);
+    if (!fundTerms && !cls) return void unread.push(`${row}: '${classText}' isn't one of the fund's classes`);
     // F25: a close, as the cash flows' dates are read.
     const closeText = cells[3] ?? "";
     let close: string | null = null;

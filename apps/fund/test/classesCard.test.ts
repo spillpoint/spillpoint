@@ -1,7 +1,8 @@
 // The classes card's figures (f03c), against the fund cases with two or more accounts: at every point of cases 22, 23,
 // 24, 26 and 28, each row is the split's own account from `byAccount`, to the cent, and the case's by_account and
 // accounts give the same; the multiple is the account's, rounded down; and "Owed back" is there exactly when the split
-// is final, with each account's clawback.
+// is final and some class is owed something, with each account's clawback, $0.00 for a class owed nothing (f03c review,
+// answer 1).
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -10,6 +11,7 @@ import { readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import { describe, expect, it } from "vitest";
 
 import { classesTable } from "../src/classesCard.ts";
+import { owesSomething } from "../src/Clawback.tsx";
 import { cents, lpMultipleText } from "../src/format.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
@@ -33,6 +35,9 @@ const money = (s: string) => {
   return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${part}`;
 };
 
+/** How many points of the cases had each kind of "Owed back", so the last test can see the cases cover all of them. */
+const seen = { "not final": 0, "final, nothing owed": 0, owed: 0, "owed, a class at $0.00": 0 };
+
 describe.each(CLASS_CASES)("%s: the classes card at every point", (dir) => {
   const fund = readFund(caseFile(dir, "inputs.json").fund);
   const expected = caseFile(dir, "expected.json");
@@ -42,7 +47,10 @@ describe.each(CLASS_CASES)("%s: the classes card at every point", (dir) => {
     const split = p.tags.includes("nav") && !fund.final ? splitAtNav(fund)! : splitAt(fund, p.exact);
     const table = classesTable(split);
     const final = split.clawback !== null;
-    expect(table.headings).toEqual(["Class", "LPs, this distribution", "GP, this distribution", "LPs, to date", "GP, to date", "Paid in", "LP multiple", ...(final ? ["Owed back"] : [])]);
+    const owed = final && p.by_account.some((a) => a.clawback!.owed !== "0.00");
+    seen[final ? (owed ? (p.by_account.some((a) => a.clawback!.owed === "0.00") ? "owed, a class at $0.00" : "owed") : "final, nothing owed") : "not final"]++;
+    expect(owed).toBe(final && split.byAccount.some((a) => owesSomething(a.clawback!.owed)));
+    expect(table.headings).toEqual(["Class", "LPs, this distribution", "GP, this distribution", "LPs, to date", "GP, to date", "Paid in", "LP multiple", ...(owed ? ["Owed back"] : [])]);
     expect(split.byAccount.length).toBeGreaterThan(1);
     expect(table.rows.map((r) => r.name)).toEqual(split.byAccount.map((a) => a.class ?? "Fund terms"));
     split.byAccount.forEach((a, i) => {
@@ -57,7 +65,7 @@ describe.each(CLASS_CASES)("%s: the classes card at every point", (dir) => {
         cents(a.toDate.gp.total),
         cents(a.paidIn),
         a.lpMultiple ? lpMultipleText(a.lpMultiple) : "—",
-        ...(final ? [cents(a.clawback!.owed)] : []),
+        ...(owed ? [cents(a.clawback!.owed)] : []),
       ]);
       // And the case's, worked by the reference.
       expect(want.class, what).toBe(a.class);
@@ -68,12 +76,16 @@ describe.each(CLASS_CASES)("%s: the classes card at every point", (dir) => {
         money(want.to_date.gp.total),
         money(account.paid_in),
       ]);
-      if (final) expect(table.rows[i]!.cells[6], what).toBe(money(want.clawback!.owed));
+      if (owed) expect(table.rows[i]!.cells[6], what).toBe(money(want.clawback!.owed));
     });
   });
 });
 
 describe("the classes card", () => {
+  it("met, in the cases above, every kind of point: not final, final with nothing owed, and owed with a class at $0.00", () => {
+    expect(Object.values(seen).every((n) => n > 0), JSON.stringify(seen)).toBe(true);
+  });
+
   it("has no multiple for an account with nothing paid in (FA38): '—'", () => {
     const fund = readFund({
       as_of: "2025-01-01",

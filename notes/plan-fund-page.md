@@ -385,6 +385,9 @@ Two percents, each starting blank; blank leaves it out of the input:
 - **"Add a class"** adds a row with its name focused **(mine, as an LP's)**.
 - **Under the table, one line:** "A class changes only the fee rate and the carry; the pref, the catch-up and the GP commitment are the fund's."
 - **Class names** are trimmed as LP names are: the box keeps what's typed, and the input and a saved file get the name trimmed.
+- **No class may be named "Fund terms"** (f03c review, answer 3), or the picker, the paste and the cards couldn't tell it from the fund's own terms. The engine takes the name (FA28's known edge), so the page checks it, after everything the engine checks. Compared exactly once trimmed, as every name on the page is **(mine)**: "fund terms" is a name of its own.
+
+**Cards (f03d):** each class and each LP is a card of its own wherever its table wouldn't fit its card as one, measured on the card's own width, as the split is. What each needs changes with what's in it: with classes, the LPs' table needs about 910 pixels of window for cases 22 and 26, so an upright iPad (768) shows cards; without them, about 730. In f03c it was a fixed 640-pixel card, which the Class column outgrew.
 
 **Each LP row** gains two columns after the commitment:
 - **Class:** a picker of "Fund terms" and the classes.
@@ -396,6 +399,7 @@ Two percents, each starting blank; blank leaves it out of the input:
 
 **Problems** under the cell their path names, in the page's words:
 - **`lp_class_name_repeated`:** "A class above already has this name; each class needs its own."
+- **A class named "Fund terms":** "That's the page's name for the fund's own terms; give this class another."
 - **A class with no name (mine):** "Write the class's name."
 - **A class's fee rate that doesn't read (mine):** "Write the class's fee rate as a percent, 0 or more: 0 or 1.5; or leave it blank for the fund's fees."
 - **A class's carry,** as the Terms tab's carry problems read, under the class's carry:
@@ -418,12 +422,13 @@ Two percents, each starting blank; blank leaves it out of the input:
 - **A class term the page doesn't model (mine):** "This file has a term the page doesn't model: `pref` on an LP class (row 1 of its LP classes). A class changes only the fee rate and the carry."
 - **An LP term the page doesn't model (mine, changed):** the line ended "Every LP is on the same terms here." From 0.3.0 an LP can be in a class, so it ends "An LP's terms are its class's, or the fund's."
 - **Names in a file (mine):** each class's name and each LP's class are trimmed before the engine reads the file, as LP names are, so "Seed " and "Seed" are one class.
+- **A class named "Fund terms",** once the engine has read the file: "The name in row 1 of its LP classes: that's the page's name for the fund's own terms; give this class another."
 
 ### Pasting LPs
 
 Two optional columns after the commitment: class, then close.
 - **A class** is matched by its name after trimming. One not in the table is a row it can't read: "Row 4: 'Friends & family' isn't one of the fund's classes".
-  - **Blank is Fund terms (mine),** and so is "Fund terms" itself, the picker's word, unless a class has that name.
+  - **Blank is Fund terms (mine),** and so is "Fund terms" itself, the picker's word (f03c review, answer 3), which no class may take.
 - **Close dates** are read as the cash flows' paste reads dates. A paste that could be either order asks once, "Which comes first in this paste's dates?", and has the same day-first or month-first line under the preview. A close it can't read is a row it can't read: "Row 4: 'Q3 2021' isn't a date".
 - **A header row (mine)** may name "class" or "close" too.
 - **The preview (mine)** adds what it read of the two columns: "3 LPs, $10,000,000 committed, 1 in a class and 2 with a close; they'll be the table's first."
@@ -438,10 +443,10 @@ Two optional columns after the commitment: class, then close.
 **A classes card after the split,** only with two or more accounts:
 - **Its heading (mine):** "Each class at $5,200,000".
 - **One row an account,** Fund terms first.
-- **The columns (mine):** Class; "LPs, this distribution" and "GP, this distribution"; "LPs, to date" and "GP, to date"; "Paid in"; "LP multiple"; and, when final, "Owed back".
+- **The columns (mine):** Class; "LPs, this distribution" and "GP, this distribution"; "LPs, to date" and "GP, to date"; "Paid in"; "LP multiple"; and "Owed back" when some class is owed something.
 - **The amounts** are to the cent, as the split table's.
 - **The LP multiple:** two places, rounded down, as the split's. It's "—" when nothing is paid in (FA38).
-- **"Owed back":** the class's own clawback when the split is final, $0.00 included **(mine)**.
+- **"Owed back"** (f03c review, answer 1): shown when the split is final and some class is owed something, each class's own clawback, with $0.00 for a class owed nothing, since one class's surplus doesn't offset another's (F24). Left out when no class is owed anything, as the LPs' card leaves out its clawback column.
 - **At the NAV point (mine),** the card follows the NAV split, its "Owed back" included, as the LPs' card does.
 - **One line under it (mine):** "Each class runs the waterfall on its own part of every call and distribution, with its own fee rate and carry; the split above is their sum. Each amount is rounded on its own, so a column can differ from the split's by a cent."
 - **Narrow screens (mine):** as the LPs' card, each class a group, wherever the one table wouldn't fit.

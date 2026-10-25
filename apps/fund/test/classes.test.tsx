@@ -1,7 +1,8 @@
 // Classes and later closes on the page (f03c, notes/plan-fund-page.md, "0.3.0: classes and later closes"): the two
 // rates on Terms; the classes and each LP's class and close on LPs, with their problems in the page's words; the
-// fund-27 refusals, beside their cells and as an opened file's one line; pasting the two new columns; saving and
-// opening; and Payouts' classes card, clawback by class, the LPs' Class column and the equalization card.
+// fund-27 refusals, beside their cells and as an opened file's one line; the page's own refusal of a class named "Fund
+// terms" (f03d); pasting the two new columns; saving and opening; and Payouts' classes card, clawback by class, the LPs'
+// Class column and the equalization card.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -12,9 +13,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
 import { readFile } from "../src/file.ts";
+import { readLpPaste } from "../src/lpPaste.ts";
 import { classesInput, lpsFrom, lpsInput } from "../src/lps.ts";
 import { controlFor } from "../src/terms.ts";
 import { RUN_CASES } from "./support/cases.ts";
+import { openFile, status } from "./support/files.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseText = (dir: string) => readFileSync(resolve(casesDir, dir, "inputs.json"), "utf8");
@@ -45,7 +48,6 @@ const choose = (label: string | RegExp, text: string) => {
 };
 const chosen = (label: string | RegExp) => (screen.getByLabelText(label) as HTMLSelectElement).selectedOptions[0]!.textContent;
 const value = (label: string | RegExp) => (screen.getByLabelText(label) as HTMLInputElement).value;
-const status = () => document.querySelector(".file-status")?.textContent;
 const save = () => fireEvent.click(screen.getByRole("button", { name: "Save" }));
 const saved = async () => JSON.parse(await downloads.at(-1)!.blob.text());
 /** The problem under a field: its words, read through the field's own description. */
@@ -54,10 +56,6 @@ const problemUnder = (label: string | RegExp) => {
   expect(field.getAttribute("aria-invalid"), `${label} is marked`).toBe("true");
   return document.getElementById(field.getAttribute("aria-describedby")!)!.textContent;
 };
-async function openFile(text: string, name = "inputs.json") {
-  fireEvent.change(screen.getByLabelText("Open a saved fund"), { target: { files: [new File([text], name, { type: "application/json" })] } });
-  await vi.waitFor(() => expect(status()).toMatch(/^(Opened|Couldn't open) /));
-}
 /** A card's table, as shown: each row's header and cells. The one table, not the copy measured out of sight. */
 const rowsOf = (table: Element) => [...table.querySelectorAll("tr")].map((tr) => [...tr.querySelectorAll("th, td")].map((c) => c.textContent));
 const card = (name: string | RegExp) => screen.queryByRole("region", { name });
@@ -196,6 +194,51 @@ describe("the LPs tab's classes", () => {
     save();
     const fund = (await saved()).fund;
     expect([fund.terms.lp_classes, fund.lps[1].class]).toEqual([[{ name: "Seed" }], "Seed"]);
+  });
+});
+
+describe("a class named as the page names the fund's own terms (f03c review, answer 3)", () => {
+  it("won't take 'Fund terms', trimmed, as a class's name: it says why under the name, and won't save", () => {
+    render(<App />);
+    pick("fund-26-closes-and-classes");
+    tab("LPs");
+    type("Class 1's name", " Fund terms ");
+    expect(problemUnder("Class 1's name")).toBe("That's the page's name for the fund's own terms; give this class another.");
+    expect(document.querySelector("#panel-lps .notice--problem")!.textContent).toBe(
+      "The fund can't run as it is. That's the page's name for the fund's own terms; give this class another. Show me",
+    );
+    save();
+    expect(status()).toBe("Not saved: the LPs have a problem to fix first. That's the page's name for the fund's own terms; give this class another.");
+    // Compared exactly, as every name on the page is: "Fund terms 2019" and "fund terms" are names of their own.
+    for (const name of ["Fund terms 2019", "fund terms"]) {
+      type("Class 1's name", name);
+      expect(screen.getByLabelText("Class 1's name").getAttribute("aria-invalid"), name).not.toBe("true");
+    }
+  });
+
+  it("refuses a file with a class named 'Fund terms', trimmed, in one line, though the engine takes it", async () => {
+    const base = caseFile("fund-26-closes-and-classes", "inputs.json").fund;
+    /** Case 26 with its class named so, and Cedar Holdings's class written so. */
+    const named = (name: string, cedars: string) => ({
+      ...base,
+      terms: { ...base.terms, lp_classes: [{ ...base.terms.lp_classes[0], name }] },
+      lps: base.lps.map((lp: { class?: string }) => (lp.class ? { ...lp, class: cedars } : lp)),
+    });
+    // The engine takes the name (FA28's known edge): the refusal is the page's.
+    expect(readFund(named("Fund terms", "Fund terms")).terms.lpClasses[0]!.name).toBe("Fund terms");
+    render(<App />);
+    await openFile(JSON.stringify(named("Fund terms ", " Fund terms")), "named.json");
+    expect(status()).toBe("Couldn't open named.json. The name in row 1 of its LP classes: that's the page's name for the fund's own terms; give this class another.");
+    expect((screen.getByLabelText("Start from") as HTMLSelectElement).value).toBe("fund-03-gp-commitment");
+  });
+
+  it("reads 'Fund terms' in a paste's class column as the fund's own terms, as a blank cell is, and only that exactly", () => {
+    const read = readLpPaste("Alder\t5M\tFund terms\nBirch\t1M\t Fund terms \nCedar\t1M\tfund terms", [], [{ id: 4, name: "Fund terms" }]);
+    expect(read.rows.map((r) => [r.name, r.class])).toEqual([
+      ["Alder", null],
+      ["Birch", null],
+    ]);
+    expect(read.unread).toEqual(["Row 3: 'fund terms' isn't one of the fund's classes"]);
   });
 });
 
@@ -542,12 +585,26 @@ describe("Payouts with classes and later closes", () => {
     ]);
   });
 
-  it("follows the NAV split at NAV in the classes card, its Owed back with it: case 22", async () => {
+  it("follows the NAV split at NAV in the classes card, with no Owed back where no class is owed anything: case 22", async () => {
     render(<App />);
     await openFile(caseText("fund-22-classes-fee-carry"));
     expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("LP multiple");
     fireEvent.click(screen.getByRole("button", { name: "Set X to NAV" }));
-    expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("Owed back");
+    expect(screen.getByRole("region", { name: "The clawback" }).querySelector(".clawback__sentence")!.textContent).toMatch(/owes nothing back to the LPs\.$/);
+    expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("LP multiple");
+  });
+
+  it("gives Owed back at NAV when a class is owed something: case 28 not yet final, its NAV $5,000,000", async () => {
+    const { final: _, ...base } = caseFile("fund-28-classes-clawback-steps", "inputs.json").fund;
+    render(<App />);
+    await openFile(JSON.stringify({ ...base, nav: "5000000" }));
+    expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("LP multiple");
+    fireEvent.click(screen.getByRole("button", { name: "Set X to NAV" }));
+    expect(cardTable(/^Each class at/).map((r) => [r[0], r.at(-1)])).toEqual([
+      ["Class", "Owed back"],
+      ["Fund terms", "$1,225,000.00"],
+      ["Seed LPs", "$225,000.00"],
+    ]);
   });
 
   it("has a Class column in the LPs' card, blank for Fund terms, and in its CSV after the name: case 26", async () => {

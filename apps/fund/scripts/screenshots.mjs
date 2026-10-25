@@ -102,6 +102,18 @@ const SHOTS = {
     ]),
   ),
   "f02d-tabs-320": { width: 320, height: 900, mobile: true, steps: [choose("Start from", "fund-17-lps-three")], clip: [".masthead", ".tabs"], quality: 60 },
+  // f03d: case 26 at a laptop's width and a phone's: the LPs tab with its class and its closes, and Payouts' classes
+  // and equalization cards.
+  ...Object.fromEntries(
+    [1100, 320].flatMap((width) => {
+      const shot = (steps, clip) => ({ width, height: 900, mobile: width < 768, steps: [choose("Start from", "fund-26-closes-and-classes"), ...steps], clip: [clip], quality: 60 });
+      return [
+        [`f03d-lps-tab-${width}`, shot([click("LPs")], "section[aria-labelledby=lps-heading]")],
+        [`f03d-classes-card-${width}`, shot([], "section[aria-labelledby=classes-card-heading]")],
+        [`f03d-equalization-${width}`, shot([], "section[aria-labelledby=equalization-heading]")],
+      ];
+    }),
+  ),
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

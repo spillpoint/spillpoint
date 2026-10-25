@@ -179,7 +179,18 @@ export const LP_WORDS = {
   className: "Write the class's name.",
   classRepeated: "A class above already has this name; each class needs its own.",
   classFeeRate: "Write the class's fee rate as a percent, 0 or more: 0 or 1.5; or leave it blank for the fund's fees.",
+  classFundTerms: "That's the page's name for the fund's own terms; give this class another.",
 };
+
+/**
+ * The first class named as the page names the fund's own terms, "Fund terms", or -1 (f03c review, answer 3). The engine
+ * takes the name (FA28's known edge); the page doesn't, or its picker, its paste and its cards couldn't tell the class
+ * from the fund's terms. Checked after everything the engine checks, and compared exactly once trimmed, as every name on
+ * the page is (FA17, FA27).
+ */
+export function fundTermsClass(fund: Fund): number {
+  return fund.terms.lpClasses.findIndex((c) => c.name === FUND_TERMS);
+}
 
 /** The GP's share of the catch-up as the Terms tab has it, for a sentence: "100%" for a full one. */
 function catchUpShare(terms: TermsForm): string {

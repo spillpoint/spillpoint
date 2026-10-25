@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { marks, ProblemText } from "./CashFlows.tsx";
 import { Carry } from "./Fields.tsx";
 import { exactDollars } from "./format.ts";
+import { useCards } from "./layout.ts";
 import { lpPasteSummary, readLpPaste } from "./lpPaste.ts";
 import type { LpPasteRead, PastedLp } from "./lpPaste.ts";
 import type { ClassRow, LpRow, LpsForm } from "./lps.ts";
@@ -77,6 +78,13 @@ export function Lps({ form, fundCarry, problem, onForm, onShow }: Props) {
     setPaste(null);
   };
   const hasClasses = form.classes.length > 0;
+  // Each table is cards, one a row, wherever it wouldn't fit its card as one (f03d).
+  const classesBox = useRef<HTMLDivElement>(null);
+  const classesTable = useRef<HTMLTableElement>(null);
+  const classesCards = useCards(classesBox, classesTable, "classes--cards", form.classes);
+  const lpsBox = useRef<HTMLDivElement>(null);
+  const lpsTable = useRef<HTMLTableElement>(null);
+  const lpsCards = useCards(lpsBox, lpsTable, "lps--cards", form);
   return (
     <section className="card" aria-labelledby="lps-heading">
       <h2 id="lps-heading">LPs</h2>
@@ -97,8 +105,8 @@ export function Lps({ form, fundCarry, problem, onForm, onShow }: Props) {
       <section className="lps__section" aria-labelledby="classes-heading">
         <h3 id="classes-heading">Classes</h3>
         {hasClasses && (
-          <div className="table-scroll classes__scroll">
-            <table className="split classes">
+          <div ref={classesBox} className="table-scroll classes__scroll">
+            <table ref={classesTable} className={`split classes${classesCards ? " classes--cards" : ""}`}>
               <thead>
                 <tr>
                   <th scope="col">Row</th>
@@ -203,8 +211,8 @@ export function Lps({ form, fundCarry, problem, onForm, onShow }: Props) {
       <section className="lps__section" aria-labelledby="each-lp-heading">
         <h3 id="each-lp-heading">Each LP</h3>
         {form.rows.length > 0 && (
-          <div className="table-scroll lps__scroll">
-            <table className={`split lps${hasClasses ? " lps--classes" : ""}`}>
+          <div ref={lpsBox} className="table-scroll lps__scroll">
+            <table ref={lpsTable} className={`split lps${hasClasses ? " lps--classes" : ""}${lpsCards ? " lps--cards" : ""}`}>
               <thead>
                 <tr>
                   <th scope="col">Row</th>
