@@ -1,12 +1,13 @@
-// The Terms tab (plan, "The terms: a form", f01i): carry flat or in steps, the pref, the catch-up with a pref, and the
-// GP commitment with F3's two flags. Each change runs the engine again; a refusal shows under the field its path names,
-// and at the top of the form with "Show me".
+// The Terms tab (plan, "The terms: a form", f01i): carry flat or in steps, the pref, the catch-up with a pref, the
+// GP commitment with F3's two flags, and from 0.3.0 the two rates classes and later closes need (F22, F25). Each change
+// runs the engine again; a refusal shows under the field its path names, and at the top of the form with "Show me".
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import type { Problem, StepText, TermsForm } from "./terms.ts";
-import { controlFor, toFlat, toSteps } from "./terms.ts";
+import { Carry, FieldProblem, Percent } from "./Fields.tsx";
+import type { Problem, TermsForm } from "./terms.ts";
+import { toFlat, toSteps } from "./terms.ts";
 
 interface Props {
   /** The fund's name, as the main page has the cap table's: a saved file is named after it. */
@@ -16,40 +17,6 @@ interface Props {
   problem: Problem | null;
   onForm: (form: TermsForm) => void;
   onShow: (path: string) => void;
-}
-
-/** A refusal's words, under the control it names. */
-function FieldProblem({ path, problem }: { path: string | ((p: string) => boolean); problem: Problem | null }) {
-  if (!problem || !(typeof path === "string" ? problem.path === path : path(problem.path))) return null;
-  return (
-    <p id={`${controlFor(problem.path)}-problem`} className="field-error" role="alert">
-      {problem.message}
-    </p>
-  );
-}
-
-/** A percent box: the rate typed as a percent, "%" after it. */
-function Percent({ id, label, value, problem, onChange, hiddenLabel }: { id: string; label: string; value: string; problem: Problem | null; onChange: (v: string) => void; hiddenLabel?: boolean }) {
-  const mine = problem !== null && controlFor(problem.path) === id;
-  return (
-    <span className="terms__field">
-      <label htmlFor={id} className={hiddenLabel ? "visually-hidden" : undefined}>
-        {label}
-      </label>
-      <span className="terms__percent">
-        <input
-          id={id}
-          type="text"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          aria-invalid={mine}
-          aria-describedby={mine ? `${id}-problem` : undefined}
-        />
-        <span aria-hidden="true">%</span>
-      </span>
-    </span>
-  );
 }
 
 function Fieldset({ legend, children }: { legend: string; children: ReactNode }) {
@@ -78,8 +45,6 @@ export function Terms({ name, onName, form, problem, onForm, onShow }: Props) {
     onForm(next);
     setSelecting(field);
   };
-  const setStep = (i: number, step: StepText) => onForm({ ...form, carry: { ...carry, steps: carry.steps.map((s, j) => (j === i ? step : s)) } });
-  const stepPath = (i: number) => `terms.carry.steps[${i}]`;
   return (
     <section className="card terms" aria-labelledby="terms-heading">
       <h2 id="terms-heading">Terms</h2>
@@ -103,63 +68,13 @@ export function Terms({ name, onName, form, problem, onForm, onShow }: Props) {
       <Fieldset legend="Carry">
         <div className="terms__choice" role="radiogroup" aria-label="Carry">
           <label>
-            <input type="radio" name="carry-mode" checked={carry.mode === "flat"} onChange={() => onForm(toFlat(form))} /> Flat
+            <input type="radio" name="carry-mode" checked={carry.mode === "flat"} onChange={() => onForm({ ...form, carry: toFlat(carry) })} /> Flat
           </label>
           <label>
-            <input type="radio" name="carry-mode" checked={carry.mode === "steps"} onChange={() => onForm(toSteps(form))} /> In steps
+            <input type="radio" name="carry-mode" checked={carry.mode === "steps"} onChange={() => onForm({ ...form, carry: toSteps(carry) })} /> In steps
           </label>
         </div>
-        {carry.mode === "flat" ? (
-          <>
-            <Percent id="terms.carry" label="Carry rate" value={carry.flat} problem={problem} onChange={(flat) => onForm({ ...form, carry: { ...carry, flat } })} />
-            <FieldProblem path="terms.carry" problem={problem} />
-          </>
-        ) : (
-          <>
-            <ol className="terms__steps">
-              {carry.steps.map((s, i) => (
-                <li key={i}>
-                  <span className="terms__step-name">Step {i + 1}</span>
-                  <Percent id={`${stepPath(i)}.rate`} label={`Step ${i + 1}'s carry rate`} hiddenLabel value={s.rate} problem={problem} onChange={(rate) => setStep(i, { ...s, rate })} />
-                  {i === 0 ? (
-                    <span className="muted">from the start</span>
-                  ) : (
-                    <span className="terms__field">
-                      <label htmlFor={`${stepPath(i)}.from_lp_multiple`}>from an LP multiple of</label>
-                      <span className="terms__percent">
-                        <input
-                          id={`${stepPath(i)}.from_lp_multiple`}
-                          type="text"
-                          inputMode="decimal"
-                          value={s.from}
-                          onChange={(e) => setStep(i, { ...s, from: e.target.value })}
-                          aria-label={`Step ${i + 1} starts from an LP multiple of`}
-                          aria-invalid={problem !== null && controlFor(problem.path) === `${stepPath(i)}.from_lp_multiple`}
-                          aria-describedby={problem !== null && controlFor(problem.path) === `${stepPath(i)}.from_lp_multiple` ? `${stepPath(i)}.from_lp_multiple-problem` : undefined}
-                        />
-                        <span aria-hidden="true">x</span>
-                      </span>
-                    </span>
-                  )}
-                  {i > 0 && (
-                    <button
-                      type="button"
-                      className="link-button"
-                      aria-label={`Remove step ${i + 1}`}
-                      onClick={() => onForm({ ...form, carry: { ...carry, steps: carry.steps.filter((_, j) => j !== i) } })}
-                    >
-                      Remove
-                    </button>
-                  )}
-                  <FieldProblem path={(p) => p === stepPath(i) || p.startsWith(`${stepPath(i)}.`)} problem={problem} />
-                </li>
-              ))}
-            </ol>
-            <button type="button" className="button" onClick={() => onForm({ ...form, carry: { ...carry, steps: [...carry.steps, { rate: "", from: "" }] } })}>
-              Add a step
-            </button>
-          </>
-        )}
+        <Carry at="terms.carry" owner={null} carry={carry} problem={problem} onCarry={(next) => onForm({ ...form, carry: next })} />
       </Fieldset>
 
       <Fieldset legend="Pref">
@@ -229,6 +144,26 @@ export function Terms({ name, onName, form, problem, onForm, onShow }: Props) {
             </label>
           </>
         )}
+      </Fieldset>
+
+      {/* F22, F25: what the LPs tab's classes and closes need. Blank is none, left out of the input. */}
+      <Fieldset legend="For LP classes and later closes">
+        <div className="terms__rate">
+          <Percent id="terms.fee_rate" label="Management fee rate" value={form.feeRate} problem={problem} onChange={(feeRate) => onForm({ ...form, feeRate })} />
+          <span className="flows__hint">Needed only when a class has its own fee rate. It divides the fee calls between the classes.</span>
+          <FieldProblem path="terms.fee_rate" problem={problem} />
+        </div>
+        <div className="terms__rate">
+          <Percent
+            id="terms.equalization_rate"
+            label="Equalization interest rate"
+            value={form.equalizationRate}
+            problem={problem}
+            onChange={(equalizationRate) => onForm({ ...form, equalizationRate })}
+          />
+          <span className="flows__hint">Needed when an LP joins at a later close; 0 for none.</span>
+          <FieldProblem path="terms.equalization_rate" problem={problem} />
+        </div>
       </Fieldset>
     </section>
   );

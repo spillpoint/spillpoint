@@ -53,8 +53,9 @@ export function Breakpoints({ fund, breakpoints, x, onX }: Props) {
                   </span>
                   {here && <span className="tag tag--quiet">X is here</span>}
                 </button>
-                {b.reasons.map((r) => (
-                  <p key={r.code} className="breakpoints__reason">
+                {/* With classes, two accounts' reasons can share a code at one X (F27). */}
+                {b.reasons.map((r, i) => (
+                  <p key={i} className="breakpoints__reason">
                     {sentence(r.text)}
                   </p>
                 ))}

@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { D, equalization, readFund, splitAt, splitAtNav, toCents } from "../src/index.ts";
-import type { LpAmounts, Split } from "../src/index.ts";
+import type { AccountSplit, LpAmounts, Split } from "../src/index.ts";
 import { RUN_CASES, absentTiersAreZero, asCaseBlock, exact, readCaseFile } from "./support/cases.ts";
 import type { CaseExpected, CaseInputs, CaseLpAmount, CasePoint } from "./support/cases.ts";
 import { randomClasses, randomFund, seeded } from "./support/random.ts";
@@ -108,8 +108,9 @@ describe.each(RUN_CASES)("%s", (dir) => {
       expect(a.distribution.gp.carry.every((s) => s.class === a.class) && a.distribution.gpCommitment.isZero(), what).toBe(true);
       expect(toCents(a.paidIn), `${what} paid in`).toBe(want.paid_in);
       expect(a.prefAccrued && toCents(a.prefAccrued), `${what} pref`).toBe(want.pref_accrued_to_d ?? null);
-      // F10: its own multiple, its LPs' to date over its paid-in.
-      expect(a.lpMultiple.times(a.paidIn).minus(a.toDate.lps.total).abs().lte("1e-25"), `${what} multiple`).toBe(true);
+      // F10: its own multiple, its LPs' to date over its paid-in; none with nothing paid in (FA38).
+      expect(a.lpMultiple === null, `${what} multiple`).toBe(a.paidIn.isZero());
+      if (a.lpMultiple) expect(a.lpMultiple.times(a.paidIn).minus(a.toDate.lps.total).abs().lte("1e-25"), `${what} multiple`).toBe(true);
       if (!at.clawback) {
         expect(a.clawback, what).toBeNull();
         return;
@@ -143,6 +144,44 @@ describe.each(RUN_CASES)("%s", (dir) => {
       expect(splitAtNav(fund)).toBeNull();
     });
   }
+});
+
+describe("an account with nothing paid in (FA38)", () => {
+  // A young fund that has called only management fees so far, with a class paying none: the class has nothing paid in.
+  const fund = readFund({
+    as_of: "2025-01-01",
+    terms: { carry: { steps: [{ rate: "0.20" }, { rate: "0.30", from_lp_multiple: "2" }] }, fee_rate: "0.02", lp_classes: [{ name: "Friends and family", fee_rate: "0" }] },
+    cash_flows: [
+      { date: "2023-01-01", type: "call", kind: "fee", amount: "200000" },
+      { date: "2024-01-01", type: "call", kind: "fee", amount: "200000" },
+    ],
+    lps: [
+      { name: "Alder Endowment", commitment: "8000000" },
+      { name: "Cedar Holdings", commitment: "2000000", class: "Friends and family" },
+    ],
+  });
+
+  it("has no multiple, while the fund's and the other account's have theirs", () => {
+    for (const x of ["0", "1000000"]) {
+      const split = splitAt(fund, x);
+      const [terms, friends] = split.byAccount as [AccountSplit, AccountSplit];
+      expect([friends.class, toCents(friends.paidIn), friends.lpMultiple], x).toEqual(["Friends and family", "0.00", null]);
+      expect(toCents(terms.paidIn), x).toBe("400000.00");
+      expect(terms.lpMultiple!.times(terms.paidIn).minus(terms.toDate.lps.total).abs().lte("1e-25"), x).toBe(true);
+      // The fund's LPs always have something paid in (call_without_payers), so its multiple is always a number.
+      expect(split.lpMultiple.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25"), x).toBe(true);
+    }
+  });
+
+  it("takes its carry at its top rate from its first dollar, each step's threshold a multiple of nothing (F10, F11)", () => {
+    // Its part of X is its commitment's, 2/10 of $1,000,000: no capital to return, so all of it is carry at 30%.
+    const friends = splitAt(fund, "1000000").byAccount[1]!;
+    expect(friends.distribution.gp.carry.map((s) => [s.rate.toString(), toCents(s.amount)])).toEqual([
+      ["0.2", "0.00"],
+      ["0.3", "60000.00"],
+    ]);
+    expect([toCents(friends.distribution.lps.capital), toCents(friends.distribution.lps.total)]).toEqual(["0.00", "140000.00"]);
+  });
 });
 
 describe("each LP's amounts on random funds (F20)", () => {

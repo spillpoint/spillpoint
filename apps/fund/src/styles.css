@@ -220,6 +220,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .terms__steps li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .terms__steps .field-error { flex-basis: 100%; margin: 0; }
 .terms__step-name { font-weight: 600; min-width: 4rem; }
+/* The management fee and equalization rates: each box with its hint beside it, and its problem under both. */
+.terms__rate { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.terms__rate .field-error { flex-basis: 100%; margin: 0; }
 
 /* The clawback */
 .clawback__sentence { font-size: 1.125rem; margin: 12px 0 0; font-variant-numeric: tabular-nums; }
@@ -299,41 +302,72 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .flows tr.flows__problem td:empty { display: none; }
 }
 
-/* The LPs tab (f02c): one row an LP, its name and its commitment. Under 480 pixels of card, each row a card of its own:
-   the name on one line, the commitment and "Remove" on the next, so nothing scrolls sideways. */
-.lps { margin-top: 12px; }
-.lps td { vertical-align: top; }
-.lps th[scope="row"] { color: var(--muted); padding-top: 14px; }
-.lps th, .lps td { padding-left: 6px; padding-right: 6px; }
-.lps .field-error { margin: 4px 0 0; white-space: normal; }
-.lps input.lps__name { width: 100%; min-width: 10rem; }
+/* The LPs tab (f02c, f03c): the classes, then one row an LP, its name, its commitment, its class and its close. Under
+   640 pixels of card, each row a card of its own: the name on one line, the commitment and "Remove" on the next, then
+   the class and the close, each with its column's name, so nothing scrolls sideways. */
+.lps__section { margin-top: 20px; }
+.lps__section h3 { margin: 0; font-size: 1rem; }
+.lps, .classes { margin-top: 12px; }
+.lps td, .classes td { vertical-align: top; }
+.lps th[scope="row"], .classes th[scope="row"] { color: var(--muted); padding-top: 14px; vertical-align: top; }
+.lps th, .lps td, .classes th, .classes td { padding-left: 6px; padding-right: 6px; }
+.lps .field-error, .classes .field-error { margin: 4px 0 0; white-space: normal; }
+.lps input.lps__name, .classes input.lps__name { width: 100%; min-width: 10rem; }
 .lps input.lps__commitment { width: 10rem; text-align: right; font-variant-numeric: tabular-nums; }
-.lps .link-button { padding-top: 6px; }
-.lps__summary { margin: 12px 0 0; color: var(--muted); }
-.lps__scroll { container-type: inline-size; }
-@container (max-width: 479px) {
-  .lps, .lps tbody { display: block; }
-  .lps thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
-  .lps tbody tr {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "n name name" ". commitment remove";
-    gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--line);
+.lps .link-button, .classes .link-button { padding-top: 6px; }
+.lps thead .flows__hint, .classes thead .flows__hint { display: block; font-weight: 400; }
+.lps__summary, .classes__line { margin: 12px 0 0; color: var(--muted); }
+/* A class's own carry, flat or in steps, under its choice. */
+.classes__carry { margin-top: 8px; display: grid; gap: 8px; justify-items: start; }
+.classes__carry .terms__steps li { gap: 6px 10px; }
+.classes .terms__percent input { width: 6rem; }
+.lps__scroll, .classes__scroll { container-type: inline-size; }
+@container (max-width: 639px) {
+  .lps, .lps tbody, .classes, .classes tbody { display: block; }
+  .lps thead, .classes thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+  .lps tbody tr, .classes tbody tr {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--line);
   }
-  .lps tbody th, .lps tbody td { padding: 0; border: 0; }
-  .lps th.lps__n { grid-area: n; padding-top: 6px; white-space: nowrap; }
+  .lps tbody tr { grid-template-areas: "n name name" ". commitment remove" ". class class" ". close close"; }
+  .classes tbody tr { grid-template-areas: "n name name" ". fee remove" ". carry carry"; }
+  .lps tbody th, .lps tbody td, .classes tbody th, .classes tbody td { padding: 0; border: 0; }
+  .lps th.lps__n, .classes th.classes__n { grid-area: n; padding-top: 6px; white-space: nowrap; }
   .lps th.lps__n::before { content: "LP "; }
-  .lps .lps__name-cell { grid-area: name; }
+  .classes th.classes__n::before { content: "Class "; }
+  .lps .lps__name-cell, .classes .classes__name-cell { grid-area: name; }
   .lps .lps__commitment-cell { grid-area: commitment; text-align: left; }
-  .lps .lps__remove { grid-area: remove; justify-self: end; }
-  .lps input.lps__name, .lps input.lps__commitment { width: 100%; min-width: 0; text-align: left; }
+  .lps .lps__class-cell { grid-area: class; }
+  .lps .lps__close-cell { grid-area: close; }
+  .classes .classes__fee-cell { grid-area: fee; }
+  .classes .classes__carry-cell { grid-area: carry; }
+  .lps .lps__remove, .classes .lps__remove { grid-area: remove; justify-self: end; }
+  /* The column's name, which the hidden headings give on a wide card. */
+  .lps .lps__class-cell::before { content: "Class"; }
+  .lps .lps__close-cell::before { content: "Close (blank: in from the start)"; }
+  .classes .classes__fee-cell::before { content: "Fee rate (blank: the fund's fees)"; }
+  .classes .classes__carry-cell::before { content: "Carry"; }
+  .lps .lps__class-cell::before, .lps .lps__close-cell::before, .classes .classes__fee-cell::before, .classes .classes__carry-cell::before {
+    display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 2px;
+  }
+  .lps input.lps__name, .lps input.lps__commitment, .classes input.lps__name { width: 100%; min-width: 0; text-align: left; }
 }
 
-/* The LPs' card on Payouts (f02c): long names wrap; the amounts never do. */
-/* More specific than the phone rule that keeps the split's tier names on one line. */
-.split.lps-card th.lps-card__name { overflow-wrap: anywhere; white-space: normal; min-width: 8rem; position: static; }
-.lps-card .lps-card__leftover th, .lps-card .lps-card__leftover td { color: var(--muted); }
-.split.lps-card--narrow th.lps-card__name { min-width: 0; font-weight: 600; }
-.lps-card--narrow td { color: var(--muted); }
-.lps-card--narrow td.num { color: var(--text); }
+/* The tables of Payouts' cards after the split (f02c, f03c): the LPs', the classes' and the equalization's. Long names
+   wrap; the amounts never do. More specific than the phone rule that keeps the split's tier names on one line. */
+.split.card-table th.card-table__name { overflow-wrap: anywhere; white-space: normal; min-width: 8rem; position: static; }
+.card-table .card-table__leftover th, .card-table .card-table__leftover td { color: var(--muted); }
+.split.card-table--narrow th.card-table__name { min-width: 0; font-weight: 600; }
+.card-table--narrow td { color: var(--muted); }
+.card-table--narrow td.num, .card-table--narrow td.card-table__word { color: var(--text); }
+.card-table--narrow td.card-table__word { text-align: right; }
+.split.card-table caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
 /* The card has one header row, which the split's first-row rule would centre: set it as the split's column headings are. */
-.split.lps-card thead tr:first-child th { text-align: left; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); }
-.split.lps-card thead tr:first-child th.num { text-align: right; }
+.split.card-table thead tr:first-child th { text-align: left; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); }
+.split.card-table thead tr:first-child th.num { text-align: right; }
+/* With classes (f03c): the clawback card's owed by class, under its sentence; and the equalization card's blocks, one a
+   close and then all of them, each its own heading over its table. */
+.split.clawback__accounts { width: auto; min-width: min(100%, 24rem); }
+.split.clawback__accounts caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
+.equalization__block { margin-top: 20px; }
+.equalization__block h3 { margin: 0; font-size: 1rem; }
+.equalization__outside { margin: 12px 0 0; }

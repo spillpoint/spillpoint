@@ -37,7 +37,7 @@ afterEach(() => {
 
 /** A phone table's rows: each tier's name, then its two amounts. */
 const halves = () =>
-  [...document.querySelectorAll<HTMLTableElement>("table.split--narrow:not(.lps-card)")].map((table) => ({
+  [...document.querySelectorAll<HTMLTableElement>("table.split--narrow:not(.card-table)")].map((table) => ({
     caption: table.caption!.textContent,
     columns: [...table.querySelectorAll("thead tr:last-child th")].map((th) => th.textContent),
     rows: [...table.querySelectorAll("tbody, tfoot")].map((g) => [g.querySelector("th")!.textContent, ...[...g.querySelectorAll("td")].map((td) => td.textContent)]),
@@ -131,7 +131,7 @@ describe("the LPs' card on a phone (f02c)", () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-17-lps-three" } });
     const card = screen.getByRole("region", { name: /^Each LP at / });
-    const narrow = card.querySelector("table.lps-card--narrow")!;
+    const narrow = card.querySelector("table.card-table--narrow")!;
     const groups = [...narrow.querySelectorAll("tbody, tfoot")].map((g) => [...g.querySelectorAll("tr")].map((tr) => [...tr.querySelectorAll("th, td")].map((c) => c.textContent)));
     expect(groups.map((g) => g[0]![0])).toEqual(["Alder Endowment", "Birchwood Family Office", "Cedar Fund of Funds", "Left over from rounding down", "Total"]);
     expect(groups[0]!.slice(1)).toEqual([
@@ -141,7 +141,7 @@ describe("the LPs' card on a phone (f02c)", () => {
       ["To date", "$18,376,875.00"],
     ]);
     // The one table is there only to be measured: out of sight, and hidden from assistive technology.
-    expect(card.querySelector("table.lps-card:not(.lps-card--narrow)")!.closest("[aria-hidden=true]")).not.toBeNull();
+    expect(card.querySelector("table.card-table:not(.card-table--narrow)")!.closest("[aria-hidden=true]")).not.toBeNull();
     expect(within(card).getAllByRole("table")).toHaveLength(1);
   });
 });

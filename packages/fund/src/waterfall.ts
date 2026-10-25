@@ -110,8 +110,8 @@ export interface AccountSplit {
   paidIn: D;
   /** F6's pref accrued to D on its own unreturned capital, paid or not. Null without a pref. */
   prefAccrued: D | null;
-  /** F10: its LPs' distributions to date after carry, over its paid-in. */
-  lpMultiple: D;
+  /** F10: its LPs' distributions to date after carry, over its paid-in. Null when it has nothing paid in (FA38). */
+  lpMultiple: D | null;
   /** F24: its own clawback, when X is final or at the NAV point; null otherwise. */
   clawback: Clawback | null;
 }
@@ -510,12 +510,13 @@ export function perDollarOfX(fund: Fund, account: Account): D {
 }
 
 /**
- * F10: the LPs' distributions to date after carry, over their paid-in. FA38: an account with nothing paid in (a class
- * paying no fees, in a fund whose calls are all fee calls) has reached every step, each a multiple of nothing, so its
- * multiple is Infinity, with or without distributions.
+ * F10: an account's LPs' distributions to date after carry, over its paid-in. FA38: an account with nothing paid in (a
+ * class paying no fees, in a fund whose calls are all fee calls) has no multiple to give, so null; its carry is still
+ * at its top rate from its first dollar, every step's threshold being a multiple of nothing (F11). The fund's own
+ * multiple always has one: `call_without_payers` sees that the LPs together pay part of every call.
  */
-function multipleOf(lps: D, paidIn: D): D {
-  return paidIn.isZero() ? new D(Infinity) : lps.div(paidIn);
+function multipleOf(lps: D, paidIn: D): D | null {
+  return paidIn.isZero() ? null : lps.div(paidIn);
 }
 
 /** One account's split of X: its part, by tier, its to date, and its clawback when final. */

@@ -28,7 +28,8 @@ describe("the form writes the cash flows exactly", () => {
   it.each(RUN_CASES)("%s: as the case has them, with the same breakpoints", (dir) => {
     const input = caseFile(dir, "inputs.json").fund;
     const fund = readFund(input);
-    const again = readFund({ ...flowsInput(flowsFrom(fund)), terms: input.terms });
+    // The LPs as the case has them: their classes and closes change the breakpoints (F23, F25).
+    const again = readFund({ ...flowsInput(flowsFrom(fund)), terms: input.terms, ...(input.lps ? { lps: input.lps } : {}) });
     expect(flowsOf(again)).toEqual(flowsOf(fund));
     expect(findBreakpoints(again).map((b) => b.x.toString())).toEqual(findBreakpoints(fund).map((b) => b.x.toString()));
   });
