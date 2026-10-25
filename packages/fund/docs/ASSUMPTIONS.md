@@ -151,7 +151,7 @@ Places where the engine and the reference can differ on an input both refuse, an
 | an LP `{"name": "A", "commitment": "1", "carry": "x", "2": "y"}` | `2` at `lps[0].2` | `carry` at `lps[0].carry` |
 | a class `{"name": "A", "pref": "x", "3": "y"}` (from 0.3.0, f03b) | `3` at `terms.lp_classes[0].3` | `pref` at `terms.lp_classes[0].pref` |
 
-**A class named "Fund terms" (FA28; f03b).** F28 doesn't refuse it. With two or more accounts its reasons read like the fund terms' own: "Fund terms: LPs have their $4,500,000 of paid-in capital back" for each. Every reason and carry step has `class`, null for the fund's terms and "Fund terms" for the class, so code tells them apart; the words alone don't.
+**A class named "Fund terms" (FA28; f03b).** F28 doesn't refuse it. With two or more accounts its reasons read like the fund terms' own: "Fund terms: LPs have their $4,500,000 of paid-in capital back" for each. Every reason and carry step has `class`, null for the fund's terms and "Fund terms" for the class, so code tells them apart; the words alone don't. The page refuses the name, typed or in a file (f03c review, answer 3; f03d), since its picker, its paste and its cards couldn't tell the class from the fund's terms; the engine still takes it.
 
 ## Later
 

@@ -15,7 +15,7 @@ import type { Fund } from "spillpoint-fund";
 import type { FlowsForm } from "./flows.ts";
 import { flowsInput } from "./flows.ts";
 import type { LpsForm } from "./lps.ts";
-import { classesInput, LP_WORDS, lpsInput, nameOf } from "./lps.ts";
+import { classesInput, fundTermsClass, LP_WORDS, lpsInput, nameOf } from "./lps.ts";
 import type { TermsForm } from "./terms.ts";
 import { termsInput } from "./terms.ts";
 
@@ -123,6 +123,9 @@ export function readFile(text: string): OpenedFile {
     if (!(e instanceof FundRefusal)) throw e;
     return { ok: false, message: fileProblem(e) };
   }
+  // The page's own rule, after the engine's: no class takes the page's name for the fund's terms (f03c review, answer 3).
+  const named = fundTermsClass(fund);
+  if (named >= 0) return { ok: false, message: `${where(`terms.lp_classes[${named}].name`)}: ${sentencePart(LP_WORDS.classFundTerms)}.` };
   const fraction = firstFraction(input) ?? firstFraction(x);
   if (x === undefined || x === null) return { ok: true, name, fund, x: null, fraction };
   const badX = 'Its X isn\'t readable: it should be an amount from 0 up, written as a string, like "15000000".';

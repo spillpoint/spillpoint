@@ -7,7 +7,7 @@ How a fund's distribution splits between its LPs and its GP. Give spillpoint-fun
 - the carry, flat or in steps by the LPs' multiple
 - the GP commitment's own line beside them
 
-It finds every **breakpoint**, every distribution where the split bends, and explains each one in plain English. And when the distribution is the fund's last, it works out any **clawback** the GP owes back. Given the fund's LPs, it gives **each LP's share** of what the LPs get.
+It finds every **breakpoint**, every distribution where the split bends, and explains each one in plain English. And when the distribution is the fund's last, it works out any **clawback** the GP owes back. Given the fund's LPs, it gives **each LP's share** of what the LPs get. From 0.3.0 LPs can be in **classes** with their own fee rate and carry, each class running the waterfall on its own, and can join at **later closes**, with the equalization between them worked out.
 
 It runs entirely on your machine. There is no network access and no I/O; a fund's numbers never leave the process.
 
@@ -153,9 +153,70 @@ Cedar Fund of Funds: share 0.15, paid in 1633500.00, now 4919062.50, to date 551
 
 Each LP's amount is the LPs' amount times its commitment over all the commitments, worked exactly, so the three add up to the LPs' $32,793,750. When the distribution is final, each LP's `clawback` is its share of what the GP owes back. Every amount is exact; `toCents` rounds one for showing, and the page rounds each LP's amount down to the cent, as it would be paid.
 
+## A worked example: classes and later closes
+
+Case 26 in the repository: a fund with 20% carry and a 2% standard fee rate, and three LPs. Alder Endowment is in from the start. Birchwood Family Office joins at a later close on 1 Apr 2022, and Cedar Holdings at another on 1 Oct 2022, in a friends-and-family class that pays no fees and no carry. Equalization interest is 6% a year.
+
+```js
+import { equalization, readFund, splitAt, toCents } from "spillpoint-fund";
+
+const fund = readFund({
+  as_of: "2025-06-30",
+  terms: {
+    carry: "0.20",
+    fee_rate: "0.02",
+    equalization_rate: "0.06",
+    lp_classes: [{ name: "Friends and family", fee_rate: "0", carry: "0" }],
+  },
+  cash_flows: [
+    { date: "2022-01-01", type: "call", kind: "investment", amount: "2000000" },
+    { date: "2022-01-01", type: "call", kind: "fee", amount: "100000" },
+    { date: "2022-07-01", type: "call", kind: "investment", amount: "3000000" },
+    { date: "2023-01-01", type: "call", kind: "fee", amount: "150000" },
+  ],
+  lps: [
+    { name: "Alder Endowment", commitment: "5000000" },
+    { name: "Birchwood Family Office", commitment: "2500000", close: "2022-04-01" },
+    { name: "Cedar Holdings", commitment: "2500000", class: "Friends and family", close: "2022-10-01" },
+  ],
+});
+
+// Each class's part of a $5,200,000 distribution, the fund's terms first.
+for (const account of splitAt(fund, "5200000").byAccount) {
+  const { distribution } = account;
+  console.log(`${account.class ?? "Fund terms"}: paid in ${toCents(account.paidIn)}, LPs ${toCents(distribution.lps.total)}, GP ${toCents(distribution.gp.total)}`);
+}
+
+// What the LPs settle between them at the two later closes.
+for (const close of equalization(fund).closes) {
+  console.log(`${close.date}: ${close.joining.join(", ")} joins`);
+  for (const lp of close.lps) {
+    console.log(`  ${lp.name}: pays ${toCents(lp.capitalPaid)} + ${toCents(lp.interestPaid)}, gets back ${toCents(lp.capitalReturned)} + ${toCents(lp.interestReceived)}`);
+  }
+}
+```
+
+Output:
+
+```
+Fund terms: paid in 4000000.00, LPs 3900000.00, GP 0.00
+Friends and family: paid in 1250000.00, LPs 1300000.00, GP 0.00
+2022-04-01: Birchwood Family Office joins
+  Alder Endowment: pays 0.00 + 0.00, gets back 700000.00 + 10356.16
+  Birchwood Family Office: pays 700000.00 + 10356.16, gets back 0.00 + 0.00
+2022-10-01: Cedar Holdings joins
+  Alder Endowment: pays 0.00 + 0.00, gets back 833333.33 + 22520.55
+  Birchwood Family Office: pays 0.00 + 0.00, gets back 416666.67 + 11260.27
+  Cedar Holdings: pays 1250000.00 + 33780.82, gets back 0.00 + 0.00
+```
+
+Each class with LPs is an account of its own, running the tiers on its own part of every call and distribution. Investment calls and distributions divide by commitment, 75/25. The fee calls fall on the fund's terms alone, since Cedar's class pays none. So the class has its $1,250,000 back once X is $5,000,000, and its LP keeps all of its part beyond that, with no carry. The fund's terms need an X of $5,333,333.33 to return their $4,000,000. The split's own amounts are the two accounts' sums.
+
+The waterfall treats every LP as in from the start. At each later close, the LP joining pays in its part of the earlier calls, with 6% simple interest from each call's date to the close, and the LPs already in get back what they'd paid over their parts, with that interest. Equalization is outside the waterfall, so it changes no split. Every amount is exact. `toCents` rounds one half up for showing, and the page rounds each down to the cent, as it would be paid: Alder's 22520.55 here is $22,520.54 there.
+
 ## What it covers
 
-Version 0.2.0 models a European (whole-fund) waterfall, cumulative across the fund's life:
+Version 0.3.0 models a European (whole-fund) waterfall, cumulative across the fund's life:
 - **Calls** for investments, fees and expenses, all counted as the LPs' capital.
 - **Distributions** earlier in the fund's life, each run through the same tiers in date order. Carry on them is paid as they're made.
 - **A GP commitment:** a share of the fund, fee-free and paying its share of expenses by default (both can be changed). It gets its share of every distribution beside the tiers, with no carry.
@@ -166,8 +227,11 @@ Version 0.2.0 models a European (whole-fund) waterfall, cumulative across the fu
   - **Carry,** flat (20% by default) or in steps by the LPs' net multiple on distributions, each step's rate only on profit above its threshold.
 - **A clawback** when the distribution is the fund's last. It's one run of the tiers on the fund's totals, at the end, gross of tax, one way only.
 - **The NAV point:** the split if the fund were liquidated at NAV, with its clawback.
-- **Each LP's share,** from 0.2.0: for LPs all on the same terms, each LP's part of the LPs' paid-in, of the distribution, of the fund to date, and of any clawback, by commitment.
-- **Breakpoints:** every distribution where a tier ends or the clawback owed changes, each with its reasons in plain English.
+- **Each LP's share,** from 0.2.0: each LP's part of the LPs' paid-in, of the distribution, of the fund to date, and of any clawback, by commitment. From 0.3.0 it's by commitment within its class's account.
+- **Classes,** from 0.3.0: a side letter's terms for a class of LPs, its own management fee rate and its own carry, flat or in steps. Each class with LPs, and the LPs on the fund's terms, is an account running the tiers on its own part of every call and distribution, its own paid-in as capital, with its own catch-up and carry steps. The fund's amounts are the accounts' sums.
+- **The clawback by class,** from 0.3.0: when final, and at the NAV point, each account settles its own clawback on its own totals, and the fund's owed is theirs added up. One class's surplus never offsets another's.
+- **Later closes and equalization,** from 0.3.0: an LP joining after the fund's first call is treated as in from the start. At its close it pays in its part of the earlier calls, with simple interest at the fund's equalization rate, Actual/365, to the LPs already in, who get back what they'd paid over theirs. `equalization(fund)` gives each close, and each LP over all of them.
+- **Breakpoints:** every distribution where a tier ends or the clawback owed changes, each with its reasons in plain English. With classes, each account's, named by its class.
 - **Exact numbers:** 40-digit decimals throughout, so every breakpoint is exact. `toCents` rounds an amount for showing.
 
 The rules, each with its default, are in [`docs/SPEC.md`](https://github.com/spillpoint/spillpoint/blob/main/packages/fund/docs/SPEC.md), and every modeling choice in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/packages/fund/docs/ASSUMPTIONS.md).
@@ -175,7 +239,9 @@ The rules, each with its default, are in [`docs/SPEC.md`](https://github.com/spi
 ## What it doesn't model yet
 
 - American (deal-by-deal) carry.
-- Per-LP accounts where LPs differ: later closes and equalization, side-letter fee or carry breaks, defaulted or excused LPs. Every LP is on the same terms; a field on an LP other than its name and commitment is refused.
+- **A class's own terms beyond the fee rate and the carry:** its own pref or catch-up, a fee break that isn't proportional (a different step-down, a fee offset), or its own expenses. A field on a class other than its name, fee rate and carry is refused.
+- **Later closes beyond these:** a close after a distribution, refused as `lp_close_after_distribution`; a fund that keeps a joining LP's catch-up to reduce its next call; equalization interest treated as capital; and the GP commitment in the equalization.
+- Defaulted or excused LPs. A field on an LP other than its name, commitment, class and close is refused.
 - Capital as invested capital only, or committed capital.
 - A compounding pref, or an IRR hurdle. A compounded pref is refused as `compounded_pref`, and an IRR hurdle by its own key.
 - A step's higher rate on all profit, with a GP catch-up to it.
@@ -243,7 +309,7 @@ The checks run in a fixed order, and the first problem is the one refused.
 - **`distribution_date`,** D, defaults to `as_of`. Every cash flow is on or before it.
 - **`final`** (default false) makes the distribution on D the fund's last, with its clawback.
 - **`nav`,** optional: the fund's net asset value on D.
-- **`lps`,** optional, from 0.2.0: the fund's LPs, each a `name` and a `commitment`, in the order you list them. Every LP is on the same terms, so each gets its commitment's share of what the LPs get. The commitments only divide: they aren't checked against the calls, and any amounts in the right proportions give the same shares. Names are kept exactly as written, and no two LPs can share one. The GP commitment isn't an LP.
+- **`lps`,** optional, from 0.2.0: the fund's LPs, each a `name` and a `commitment`, in the order you list them. Without classes every LP is on the same terms, so each gets its commitment's share of what the LPs get. The commitments only divide: they aren't checked against the calls, and any amounts in the right proportions give the same shares. Names are kept exactly as written, and no two LPs can share one. The GP commitment isn't an LP.
 - **Classes and later closes,** from 0.3.0:
 
   ```json
@@ -355,7 +421,7 @@ From 0.3.0, with two or more accounts, every reason reads "{account}: {reason}",
 
 ## How it's tested
 
-Nineteen worked cases and twenty-six refusals, each with a plain-English derivation; four of the cases, and eleven of the refusals, are about the LPs. Their expected values come from an independent calculator in exact fractions, which finds breakpoints by search rather than from tier sizes. The engine meets every one to the cent, and every breakpoint exactly. They're in the repository, not the package: [`packages/fund/cases`](https://github.com/spillpoint/spillpoint/tree/main/packages/fund/cases).
+Twenty-five worked cases and forty-six refusals, each with a plain-English derivation. Four of the cases and eleven of the refusals are about the LPs; six of the cases and twenty of the refusals, from 0.3.0, about classes and later closes. Their expected values come from an independent calculator in exact fractions, which finds breakpoints by search rather than from tier sizes. The engine meets every one to the cent, and every breakpoint exactly. They're in the repository, not the package: [`packages/fund/cases`](https://github.com/spillpoint/spillpoint/tree/main/packages/fund/cases).
 
 ## License
 

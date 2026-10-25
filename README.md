@@ -46,7 +46,7 @@ Coming next: **1.0,** with the same API as 0.7.0, at its own domain. Two behavio
 
 ## The fund waterfall
 
-**[spillpoint.github.io/spillpoint/fund](https://spillpoint.github.io/spillpoint/fund/)** does the same for a fund: how a distribution splits between its LPs and its GP, tier by tier, with every breakpoint explained and, at the fund's last distribution, any clawback the GP owes. From 0.2.0, with the fund's LPs listed, it gives each LP's share: rounded down to the cent as it would be paid, and downloadable as a CSV. Its engine is on npm as [`spillpoint-fund`](packages/fund/README.md) *(0.2.0)*. It runs in your browser too, and the fund's documents govern, not the tool.
+**[spillpoint.github.io/spillpoint/fund](https://spillpoint.github.io/spillpoint/fund/)** does the same for a fund: how a distribution splits between its LPs and its GP, tier by tier, with every breakpoint explained and, at the fund's last distribution, any clawback the GP owes. From 0.2.0, with the fund's LPs listed, it gives each LP's share: rounded down to the cent as it would be paid, and downloadable as a CSV. From 0.3.0 LPs can be in classes, each with its own fee rate and carry and running the waterfall on its own, with its own clawback; and can join at later closes, with the equalization between the LPs at each close worked out and downloadable too. Its engine is on npm as [`spillpoint-fund`](packages/fund/README.md) *(0.3.0)*. It runs in your browser too, and the fund's documents govern, not the tool.
 
 ## In this repository
 

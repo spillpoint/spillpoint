@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
 import { SNAP, xAtPixel } from "../src/Chart.tsx";
+import { openFile, status } from "./support/files.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 
@@ -19,9 +20,8 @@ afterEach(() => vi.restoreAllMocks());
 const xBox = () => (screen.getByLabelText(/^Distribution on/) as HTMLInputElement).value;
 const tab = (name: string) => fireEvent.click(screen.getByRole("tab", { name }));
 async function openCase(dir: string) {
-  const text = readFileSync(resolve(casesDir, dir, "inputs.json"), "utf8");
-  fireEvent.change(screen.getByLabelText("Open a saved fund"), { target: { files: [new File([text], "inputs.json", { type: "application/json" })] } });
-  await vi.waitFor(() => expect(document.querySelector(".file-status")?.textContent).toBe("Opened inputs.json."));
+  await openFile(readFileSync(resolve(casesDir, dir, "inputs.json"), "utf8"));
+  expect(status()).toBe("Opened inputs.json.");
 }
 
 // The charts are drawn 960 pixels wide where nothing is laid out, as here: the plot runs from 80 to 944.

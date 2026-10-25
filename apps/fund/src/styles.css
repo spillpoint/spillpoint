@@ -302,9 +302,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .flows tr.flows__problem td:empty { display: none; }
 }
 
-/* The LPs tab (f02c, f03c): the classes, then one row an LP, its name, its commitment, its class and its close. Under
-   640 pixels of card, each row a card of its own: the name on one line, the commitment and "Remove" on the next, then
-   the class and the close, each with its column's name, so nothing scrolls sideways. */
+/* The LPs tab (f02c, f03c): the classes, then one row an LP, its name, its commitment, its class and its close. Wherever
+   a table wouldn't fit its card as one (f03d: measured, in Lps.tsx, since what it needs changes with the classes), each
+   row is a card of its own: the name on one line, the commitment and "Remove" on the next, then the class and the
+   close, each with its column's name, so nothing scrolls sideways. */
 .lps__section { margin-top: 20px; }
 .lps__section h3 { margin: 0; font-size: 1rem; }
 .lps, .classes { margin-top: 12px; }
@@ -321,36 +322,35 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .classes__carry { margin-top: 8px; display: grid; gap: 8px; justify-items: start; }
 .classes__carry .terms__steps li { gap: 6px 10px; }
 .classes .terms__percent input { width: 6rem; }
-.lps__scroll, .classes__scroll { container-type: inline-size; }
-@container (max-width: 639px) {
-  .lps, .lps tbody, .classes, .classes tbody { display: block; }
-  .lps thead, .classes thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
-  .lps tbody tr, .classes tbody tr {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--line);
-  }
-  .lps tbody tr { grid-template-areas: "n name name" ". commitment remove" ". class class" ". close close"; }
-  .classes tbody tr { grid-template-areas: "n name name" ". fee remove" ". carry carry"; }
-  .lps tbody th, .lps tbody td, .classes tbody th, .classes tbody td { padding: 0; border: 0; }
-  .lps th.lps__n, .classes th.classes__n { grid-area: n; padding-top: 6px; white-space: nowrap; }
-  .lps th.lps__n::before { content: "LP "; }
-  .classes th.classes__n::before { content: "Class "; }
-  .lps .lps__name-cell, .classes .classes__name-cell { grid-area: name; }
-  .lps .lps__commitment-cell { grid-area: commitment; text-align: left; }
-  .lps .lps__class-cell { grid-area: class; }
-  .lps .lps__close-cell { grid-area: close; }
-  .classes .classes__fee-cell { grid-area: fee; }
-  .classes .classes__carry-cell { grid-area: carry; }
-  .lps .lps__remove, .classes .lps__remove { grid-area: remove; justify-self: end; }
-  /* The column's name, which the hidden headings give on a wide card. */
-  .lps .lps__class-cell::before { content: "Class"; }
-  .lps .lps__close-cell::before { content: "Close (blank: in from the start)"; }
-  .classes .classes__fee-cell::before { content: "Fee rate (blank: the fund's fees)"; }
-  .classes .classes__carry-cell::before { content: "Carry"; }
-  .lps .lps__class-cell::before, .lps .lps__close-cell::before, .classes .classes__fee-cell::before, .classes .classes__carry-cell::before {
-    display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 2px;
-  }
-  .lps input.lps__name, .lps input.lps__commitment, .classes input.lps__name { width: 100%; min-width: 0; text-align: left; }
+.lps--cards, .lps--cards tbody, .classes--cards, .classes--cards tbody { display: block; }
+.lps--cards thead, .classes--cards thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+.lps--cards tbody tr, .classes--cards tbody tr {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--line);
 }
+.lps--cards tbody tr { grid-template-areas: "n name name" ". commitment remove" ". class class" ". close close"; }
+.classes--cards tbody tr { grid-template-areas: "n name name" ". fee remove" ". carry carry"; }
+.lps--cards tbody th, .lps--cards tbody td, .classes--cards tbody th, .classes--cards tbody td { padding: 0; border: 0; }
+.lps--cards th.lps__n, .classes--cards th.classes__n { grid-area: n; padding-top: 6px; white-space: nowrap; }
+.lps--cards th.lps__n::before { content: "LP "; }
+.classes--cards th.classes__n::before { content: "Class "; }
+.lps--cards .lps__name-cell, .classes--cards .classes__name-cell { grid-area: name; }
+.lps--cards .lps__commitment-cell { grid-area: commitment; text-align: left; }
+.lps--cards .lps__class-cell { grid-area: class; }
+.lps--cards .lps__close-cell { grid-area: close; }
+.classes--cards .classes__fee-cell { grid-area: fee; }
+.classes--cards .classes__carry-cell { grid-area: carry; }
+.lps--cards .lps__remove, .classes--cards .lps__remove { grid-area: remove; justify-self: end; }
+/* The column's name, which the hidden headings give on a wide card. */
+.lps--cards .lps__class-cell::before { content: "Class"; }
+.lps--cards .lps__close-cell::before { content: "Close (blank: in from the start)"; }
+.classes--cards .classes__fee-cell::before { content: "Fee rate (blank: the fund's fees)"; }
+.classes--cards .classes__carry-cell::before { content: "Carry"; }
+.lps--cards .lps__class-cell::before, .lps--cards .lps__close-cell::before, .classes--cards .classes__fee-cell::before, .classes--cards .classes__carry-cell::before {
+  display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 2px;
+}
+.lps--cards input.lps__name, .lps--cards input.lps__commitment, .classes--cards input.lps__name { width: 100%; min-width: 0; text-align: left; }
+/* A long class name widens its picker: within its card, it gives way. */
+.lps--cards select, .classes--cards select { max-width: 100%; }
 
 /* The tables of Payouts' cards after the split (f02c, f03c): the LPs', the classes' and the equalization's. Long names
    wrap; the amounts never do. More specific than the phone rule that keeps the split's tier names on one line. */

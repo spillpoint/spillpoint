@@ -1,6 +1,7 @@
 // The split on a phone (f01m2): under 480 pixels it's two tables, one above the other, "This distribution" then "The
 // fund to date", each tier's name on its own line above its two amounts, so nothing scrolls sideways. Where nothing is
-// laid out, as here, the window's width is the media query's answer, set by the test.
+// laid out, as here, the window's width is the media query's answer, set by the test. And the tables that switch by
+// their card's own width, the split's (f01n) and the LPs tab's (f03d), with the widths faked.
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -79,6 +80,57 @@ describe("the split by its card's width (f01n)", () => {
     room = 650;
     act(() => watchers.forEach((w) => w()));
     expect(halves()).toHaveLength(2);
+  });
+});
+
+describe("the LPs tab by its card's width (f03d)", () => {
+  it("makes each LP and each class a card wherever its table wouldn't fit its card as one, measured as one table", () => {
+    // What each table needs as one: the LPs' 910 pixels with a Class column and 730 without, the classes' 620. Measured
+    // while it's still cards, a table would seem to fit any card, so the switch would only flip back and forth.
+    let room = 800;
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => room);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+      if (this.tagName !== "TABLE" || /--cards\b/.test(this.className)) return room;
+      if (this.classList.contains("lps")) return Math.max(room, this.querySelectorAll("thead th").length > 5 ? 910 : 730);
+      if (this.classList.contains("classes")) return Math.max(room, 620);
+      return room;
+    });
+    const watchers: (() => void)[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(f: (entries: { contentRect: { width: number } }[]) => void) {
+          // Every observer on the page hears the new width: the LPs tab's cards, and the charts'.
+          watchers.push(() => f([{ contentRect: { width: room } }]));
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const widen = (to: number) => {
+      room = to;
+      act(() => watchers.forEach((w) => w()));
+    };
+    const shapes = () => ["classes", "lps"].map((t) => (document.querySelector(`table.${t}`)!.classList.contains(`${t}--cards`) ? "cards" : "table"));
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Start from"), { target: { value: "fund-26-closes-and-classes" } });
+    fireEvent.click(screen.getByRole("tab", { name: "LPs" }));
+    // An upright iPad's card: the classes fit as a table, the LPs with their Class column don't.
+    expect(shapes()).toEqual(["table", "cards"]);
+    // A card a little wider is still too narrow for the LPs as one table: they stay cards.
+    widen(850);
+    expect(shapes()).toEqual(["table", "cards"]);
+    widen(950);
+    expect(shapes()).toEqual(["table", "table"]);
+    widen(600);
+    expect(shapes()).toEqual(["cards", "cards"]);
+    // What a table needs changes with what's in it: without a class, the LPs fit 800 as one table.
+    widen(800);
+    fireEvent.click(screen.getByRole("button", { name: "Remove class 1" }));
+    expect(document.querySelector("table.classes")).toBeNull();
+    expect(document.querySelector("table.lps")!.classList.contains("lps--cards")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Add a class" }));
+    expect(shapes()).toEqual(["table", "cards"]);
   });
 });
 
