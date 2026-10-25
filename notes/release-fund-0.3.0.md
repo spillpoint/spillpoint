@@ -109,3 +109,7 @@ The package's README lists each stable name with what it means.
 - An after-tax clawback cap, a carry holdback or escrow, and interim clawback tests.
 
 A term the engine doesn't model is refused, never quietly ignored.
+
+## Known limitation, found after release
+
+A fee call made before a later close is rebalanced between the LPs as a capital call is: the joining LP pays its share of it to the LPs already in, with equalization interest. In practice a joining LP owes its own management fees from the initial close, paid to the manager, and fees aren't rebalanced between LPs. So for a fund with a fee call before a later close, the LPs' paid-in, each LP's amounts and the equalization are off by the joining LP's back fees. Funds without a later close, and investment and expense calls, aren't affected. It's fixed in 0.4.0.
