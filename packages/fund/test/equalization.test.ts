@@ -1,6 +1,6 @@
 // The engine's equalization against every fund case with a later close (F25, F26, FC11): each close in date order,
-// the LPs joining and in by then, and every amount each paid in or got back, with the interest, to the cent and within
-// FA15 of exact. A fund without a later close has none.
+// the LPs joining and in by then, and every amount each paid in or got back, with the interest and, from 0.4.0, the back
+// fees (F29, F31, FC13), to the cent and within FA15 of exact. A fund without a later close has none.
 
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +17,7 @@ const KEYS = [
   ["capitalReturned", "capital_returned"],
   ["interestPaid", "interest_paid"],
   ["interestReceived", "interest_received"],
+  ["backFees", "back_fees"],
 ] as const;
 
 function sameMoves(got: EqualizationAmounts[], want: CaseMoves[], where: string) {
@@ -43,7 +44,10 @@ describe.each(RUN_CASES)("%s", (dir) => {
   }
 
   it("has each later close in date order, with the LPs joining and every LP in by then (F25, FA21)", () => {
-    expect(eq!.rate.eq(exact(expected.equalization!.rate))).toBe(true);
+    // FA45: null when no rate is given, which only fee calls before the closes allow.
+    const rate = expected.equalization!.rate;
+    if (rate === null) expect(eq!.rate).toBeNull();
+    else expect(eq!.rate?.eq(exact(rate))).toBe(true);
     expect(eq!.closes.map((c) => c.date)).toEqual(expected.equalization!.closes.map((c) => c.date));
     eq!.closes.forEach((c, i) => expect(c.joining, c.date).toEqual(expected.equalization!.closes[i]!.joining));
   });

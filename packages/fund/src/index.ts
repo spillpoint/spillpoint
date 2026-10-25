@@ -9,6 +9,7 @@
 //   split.byAccount                              // each class's account, with two or more (F23, F26)
 //   const breakpoints = findBreakpoints(fund);   // every X where it bends, and why (F15, F27)
 //   const eq = equalization(fund);               // what moves between LPs at later closes (F25)
+//   const fees = feeCalls(fund);                 // a fee schedule's calls, from 0.4.0 (F30)
 //
 // Everything runs locally: no I/O, no network. Rules are in docs/SPEC.md and
 // choices in docs/ASSUMPTIONS.md; the fund's own documents govern, not this.
@@ -22,15 +23,20 @@ export type { RefusalKind } from "./errors.ts";
 
 // Reading a fund's input.
 export { readFund } from "./input.ts";
-export type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment, Lp, LpClass } from "./model.ts";
+export type { CallKind, CarryStep, CashFlow, FeeFrequency, FeeStep, Fund, FundTerms, GpCommitment, Lp, LpClass, ManagementFee } from "./model.ts";
 
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";
 export type { AccountSplit, Clawback, LpAmounts, Split, StepCarry, Tiers } from "./waterfall.ts";
 
-// Later closes: what the joining LPs pay in and the LPs already in get back, with interest (F25).
+// Later closes: what the joining LPs pay in and the LPs already in get back, with interest (F25), and from 0.4.0 the
+// back fees each joiner pays the manager (F29).
 export { equalization } from "./equalization.ts";
 export type { Equalization, EqualizationAmounts, LaterClose } from "./equalization.ts";
+
+// A management fee schedule's calls, once for the fund, from 0.4.0 (F30, F31).
+export { feeCalls } from "./fees.ts";
+export type { FeeCall, LpFee } from "./fees.ts";
 
 // Every X where the split bends, with its reasons (F15).
 export { findBreakpoints } from "./breakpoints.ts";

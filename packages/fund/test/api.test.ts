@@ -1,17 +1,18 @@
 // The fund package's exports, and the names of their fields, are deliberate: these lists change only on purpose. f01e's
-// naming review settled them for 0.1.0 (notes/review-f01e.md), f02b added the LPs' for 0.2.0 (notes/review-f02b.md), and
-// f03b the classes' and later closes' for 0.3.0 (notes/review-f03b.md).
+// naming review settled them for 0.1.0 (notes/review-f01e.md), f02b added the LPs' for 0.2.0 (notes/review-f02b.md),
+// f03b the classes' and later closes' for 0.3.0 (notes/review-f03b.md), and f04b the management fees' for 0.4.0
+// (notes/review-f04b.md).
 
 import { expect, it } from "vitest";
 
 import * as fund from "../src/index.ts";
-import { FundRefusal, equalization, findBreakpoints, readFund, splitAt } from "../src/index.ts";
+import { FundRefusal, equalization, feeCalls, findBreakpoints, readFund, splitAt } from "../src/index.ts";
 import { RUN_CASES, readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
 
 it("exports exactly the fund engine's API", () => {
-  // From 0.3.0: equalization (F25).
-  expect(Object.keys(fund).sort()).toEqual(["D", "FundRefusal", "equalization", "findBreakpoints", "readFund", "splitAt", "splitAtNav", "toCents"]);
+  // From 0.3.0: equalization (F25). From 0.4.0: feeCalls (F31).
+  expect(Object.keys(fund).sort()).toEqual(["D", "FundRefusal", "equalization", "feeCalls", "findBreakpoints", "readFund", "splitAt", "splitAtNav", "toCents"]);
 });
 
 const keys = (o: object) => Object.keys(o).sort();
@@ -22,7 +23,7 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
   const f8 = read("fund-08-carry-steps");
   const f6 = read("fund-06-full-catch-up");
   expect(keys(f8)).toEqual(["asOf", "cashFlows", "distributionDate", "final", "lps", "nav", "terms"]);
-  expect(keys(f8.terms)).toEqual(["carry", "catchUp", "equalizationRate", "feeRate", "gpCommitment", "lpClasses", "pref"]);
+  expect(keys(f8.terms)).toEqual(["carry", "catchUp", "equalizationRate", "feeRate", "gpCommitment", "lpClasses", "managementFee", "pref"]);
   expect(keys(f8.terms.carry[1]!)).toEqual(["fromLpMultiple", "rate"]);
   expect(keys(f8.terms.gpCommitment!)).toEqual(["paysExpenses", "paysFees", "share"]);
   expect(keys(f6.terms.pref!)).toEqual(["rate"]);
@@ -38,6 +39,15 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
   expect(keys(f22.terms.lpClasses[0]!.carry![0]!)).toEqual(["fromLpMultiple", "rate"]);
   expect(f22.lps.map((lp) => [lp.class, lp.close])).toEqual([[null, null], [null, null], ["Friends and family", null]]);
   expect(read("fund-26-closes-and-classes").lps.map((lp) => lp.close)).toEqual([null, "2022-04-01", "2022-10-01"]);
+  // From 0.4.0: the schedule, null without one, its default frequency filled in and the first step's date null (F30).
+  expect(f8.terms.managementFee).toBeNull();
+  const f29 = read("fund-29-fee-schedule").terms.managementFee!;
+  expect(keys(f29)).toEqual(["commitments", "frequency", "start", "steps"]);
+  expect([f29.start, f29.commitments?.toString(), keys(f29.steps[0]!), f29.steps.map((s) => [s.rate.toString(), s.from])]).toEqual(["2021-02-15", "40000000", ["from", "rate"], [["0.02", null], ["0.015", "2026-02-15"]]]);
+  const f30 = read("fund-30-fee-step-down").terms.managementFee!;
+  expect([f30.frequency, f30.commitments]).toEqual(["semiannual", null]);
+  // Case 31 gives no frequency: quarterly.
+  expect(read("fund-31-fee-schedule-classes-closes").terms.managementFee!.frequency).toBe("quarterly");
 });
 
 it("names a split's fields as the naming review settled", () => {
@@ -66,7 +76,16 @@ it("names the equalization's fields as f03b settled", () => {
   const eq = equalization(read("fund-26-closes-and-classes"))!;
   expect(keys(eq)).toEqual(["closes", "lps", "rate"]);
   expect(keys(eq.closes[0]!)).toEqual(["date", "joining", "lps"]);
-  expect(keys(eq.lps[0]!)).toEqual(["capitalPaid", "capitalReturned", "interestPaid", "interestReceived", "name"]);
+  // From 0.4.0: each LP's back fees (F31).
+  expect(keys(eq.lps[0]!)).toEqual(["backFees", "capitalPaid", "capitalReturned", "interestPaid", "interestReceived", "name"]);
+});
+
+it("names the fee calls' fields as f04b proposes", () => {
+  expect(feeCalls(read("fund-26-closes-and-classes"))).toBeNull();
+  const calls = feeCalls(read("fund-31-fee-schedule-classes-closes"))!;
+  expect(keys(calls[0]!)).toEqual(["byLp", "call", "date", "firstDay", "gpCommitment", "lastDay", "lps"]);
+  expect(keys(calls[0]!.byLp[0]!)).toEqual(["fee", "name"]);
+  expect(feeCalls(read("fund-29-fee-schedule"))![0]!.byLp).toEqual([]);
 });
 
 it("names a breakpoint's and a refusal's fields as the naming review settled", () => {

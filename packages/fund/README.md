@@ -328,17 +328,36 @@ The checks run in a fixed order, and the first problem is the one refused.
   - **`lp_classes`:** each class a `name`, and optionally its own `fee_rate` and `carry`, written as the fund's carry is. A class changes only the management fee and the carry; the pref, the catch-up's share and the GP commitment are the fund's.
   - **`fee_rate`:** the fund's standard fee rate, needed when a class gives its own. Each LP pays fee calls in proportion to its commitment times its class's fee rate over the fund's.
   - **An LP's `class`:** a class's name. Without one, it's on the fund's terms. Each class with LPs runs the waterfall as an account of its own, with its own pref, catch-up, carry and clawback, and the fund's amounts are the accounts' sums.
-  - **An LP's `close`:** the date it joined. One after the fund's first call is a later close: the LP is treated as in from the start, and at its close it catches up on the earlier calls with interest at `equalization_rate`, which must then be given ("0" for none). A close must come before the fund's first distribution.
+  - **An LP's `close`:** the date it joined. One after the fund's first call is a later close: the LP is treated as in from the start, and at its close it catches up on the earlier investment and expense calls with interest at `equalization_rate`, which must then be given ("0" for none). From 0.4.0 it pays its own back fees for the earlier fee calls to the manager, with no interest, and the rate is needed only when an investment or expense call comes before its close. A close must come before the fund's first distribution.
+- **A management fee schedule,** from 0.4.0, works out the fee calls instead of entering them:
+
+  ```json
+  "terms": {
+    "carry": "0.20",
+    "management_fee": {
+      "start": "2021-02-15",
+      "frequency": "quarterly",
+      "steps": [{ "rate": "0.02" }, { "rate": "0.015", "from": "2026-02-15" }],
+      "commitments": "40000000"
+    }
+  }
+  ```
+
+  - **`start`:** the date fees start. One call each calendar period from `start`'s to D's, in advance, the first pro rata by its days from `start`.
+  - **`frequency`:** `"quarterly"` (the default), `"semiannual"` or `"annual"`, on calendar quarters, half-years or years.
+  - **`steps`:** the annual rate on commitments, the first from `start` and above 0, each later one from its `from` date. `"0"` ends fees from its date.
+  - **`commitments`:** the fee's base for a fund that doesn't list its LPs. A fund that lists them uses their commitments, and `commitments`, if given, must be their total.
+  - **With a schedule** no fee call is entered and `fee_rate` isn't given: the schedule's first rate is the fund's, and a class's `fee_rate` is set against it. Each LP pays its own fee on its own commitment, whatever its close.
 - **Numbers** are exact strings: an integer, a decimal, or `"a/b"`. **Dates** are `YYYY-MM-DD`.
 
 ## API
 
-- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs). From 0.3.0 its `terms` have `feeRate`, `equalizationRate` (each null when not given) and `lpClasses` (each a `name`, `feeRate` and `carry`, null for the fund's), and each LP its `class` and `close` (null when not given).
+- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs). From 0.3.0 its `terms` have `feeRate`, `equalizationRate` (each null when not given) and `lpClasses` (each a `name`, `feeRate` and `carry`, null for the fund's), and each LP its `class` and `close` (null when not given). From 0.4.0 its `terms` have `managementFee`, the schedule as read (null without one): `start`, `frequency`, `steps` (each a `rate` and a `from`, the first's null) and `commitments` (null when not given). The schedule's calls aren't in `cashFlows`, which stays the input's.
 - **`splitAt(fund, x, { final? })`:** X, one more distribution on D, split by tier. It returns a `Split`:
   - `distribution`, X itself, and `toDate`, the fund to date with X, each a `Tiers`: `amount`, `gpCommitment`, `lps` (`capital`, `pref`, `catchUp`, `carryTier`, `total`) and `gp` (`catchUp`, `carry` by step, `total`)
   - `lpsPaidIn` and `gpCommitmentPaidIn`
   - `prefAccrued`, to D (null without a pref)
-  - `lpMultiple`, the LPs' net multiple to date
+  - `lpMultiple`, the LPs' net multiple to date; from 0.4.0, null when the LPs have paid in nothing
   - `clawback`, when final: `carryPaid`, `entitlement`, `owed`, `prefOnFundTotals`
   - `byLp`, from 0.2.0, each LP's amounts in the input's order (empty without LPs): `name`, `commitment`, `share`, `paidIn`, `distribution` (its share of the LPs' total from X), `toDate`, and `clawback` (its share of what's owed back, null when not final). From 0.3.0 also its `class` and `close`; its `share` is still its commitment over all the LPs', and its amounts are its part of its class's account's, by commitment.
   - `byAccount`, from 0.3.0, with two or more accounts (empty otherwise): each class's account, the fund's terms first, with its `class` (null for the fund's terms), `distribution` and `toDate` by tier with its own steps, `paidIn`, `prefAccrued`, `lpMultiple` (null when it has nothing paid in), and `clawback` when final. The split's own amounts are the accounts' sums, and its carry by step lists every account's steps, each step with its `class`.
@@ -346,7 +365,8 @@ The checks run in a fixed order, and the first problem is the one refused.
   `final` overrides the fund's own for this X.
 - **`splitAtNav(fund)`:** the split at NAV as if the fund were liquidated there, final, with its clawback; null without a NAV.
 - **`findBreakpoints(fund)`:** every breakpoint in order, each `{ x, reasons }`. From 0.3.0 each reason has the `class` of the account it's about, and with two or more accounts its text starts with that account's name.
-- **`equalization(fund)`,** from 0.3.0: what moves between LPs at the fund's later closes, or null when no LP joins at one. It gives the `rate`; each close in date order, its `date`, the names `joining`, and every LP in by then; and each LP over all of them. Each LP's amounts are its `capitalPaid` at its close, `capitalReturned` at later ones, `interestPaid` and `interestReceived`.
+- **`equalization(fund)`,** from 0.3.0: what moves between LPs at the fund's later closes, or null when no LP joins at one. It gives the `rate`; each close in date order, its `date`, the names `joining`, and every LP in by then; and each LP over all of them. Each LP's amounts are its `capitalPaid` at its close, `capitalReturned` at later ones, `interestPaid` and `interestReceived`, and from 0.4.0 its `backFees`, its own part of the fee calls before its close, paid to the manager. From 0.4.0 the `rate` is null when none is given, as only fee calls before the later closes allow.
+- **`feeCalls(fund)`,** from 0.4.0: the management fee schedule's calls in date order, or null without a schedule. Each has its `date`, the `firstDay` and `lastDay` it covers, the `call`, the LPs' part (`lps`), the GP commitment's (`gpCommitment`, zero when it doesn't pay fees), and `byLp`, each listed LP's `name` and `fee` (empty without listed LPs).
 - **`toCents(amount)`:** an amount as a string to the cent, rounded half away from zero.
 - **`D`:** the 40-digit decimal class every amount is.
 - **`FundRefusal`:** what the engine throws: `kind`, `term`, `path`.
@@ -381,13 +401,16 @@ Code can match on these names and words. From 0.1.0, or the version that added i
 - `lp_class_name_repeated`: a class's name that an earlier class already has, at the later class's `name`. From 0.3.0.
 - `lp_class_unknown`: an LP's `class` that isn't the name of a class in the terms. From 0.3.0.
 - `lp_close_after_distribution`: an LP's `close` on or after the fund's first distribution, or on or after D. From 0.3.0.
-- `call_without_payers`: a call no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path. From 0.3.0.
+- `call_without_payers`: a call no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path. From 0.3.0; from 0.4.0 an entered call only.
+- `fee_rate_with_schedule`: a `fee_rate` given beside a management fee schedule, at `terms.fee_rate`. From 0.4.0.
+- `fee_call_with_schedule`: a fee call entered beside a management fee schedule, at the first in the input's order. From 0.4.0.
+- `fee_commitments_mismatch`: a schedule's `commitments` that isn't the listed LPs' total, at `terms.management_fee.commitments`. From 0.4.0.
 
 ### `FundRefusal`'s unsupported terms
 
 - `compounded_pref`: a pref compounding other than simple.
 
-Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`. From 0.3.0 an LP's `class` and `close` are read, and a class's field other than its name, fee rate and carry is unsupported, such as its own `pref` at `terms.lp_classes[0].pref`.
+Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`. From 0.3.0 an LP's `class` and `close` are read, and a class's field other than its name, fee rate and carry is unsupported, such as its own `pref` at `terms.lp_classes[0].pref`. From 0.4.0 a schedule's field other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate` and `from`, is unsupported, such as an `offset` at `terms.management_fee.offset`.
 
 ### `ReasonCode`
 
@@ -418,6 +441,11 @@ Each reason's `text` is one of these, an amount written as "$10,890,000" or "$4,
 {change} is "starts to fall", "stops falling", "falls faster" or "falls more slowly". {tier} is "LPs have their capital back", "LPs have their pref", "the GP has {carry} of the profit" or "LPs reach {multiple}: carry is {rate} from here".
 
 From 0.3.0, with two or more accounts, every reason reads "{account}: {reason}", the account being the class's name, as written, or "Fund terms".
+
+### Types that can be null from 0.4.0
+
+- `Equalization.rate`, stable from 0.3.0, is `D | null`: null when no `equalization_rate` is given, as only fee calls before the later closes allow.
+- `Split.lpMultiple`, stable from 0.1.0, is `D | null`: null only when the LPs have paid in nothing, a schedule whose LPs all pay no fees and no other call.
 
 ## How it's tested
 

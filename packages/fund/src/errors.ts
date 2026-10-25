@@ -48,6 +48,9 @@ const MESSAGES: Record<InputTerm, string> = {
   lp_class_unknown: "the terms have no class of this name",
   lp_close_after_distribution: "a close must come before the fund's first distribution, the one on the distribution date included",
   call_without_payers: "no LP in the fund at this call's date would pay it: none had closed yet, or none of them pays fees",
+  fee_rate_with_schedule: "with a management fee schedule, its first rate is the fund's: no fee_rate is given beside it",
+  fee_call_with_schedule: "with a management fee schedule, the schedule works out the fee calls: none is entered as well",
+  fee_commitments_mismatch: "the schedule's commitments must be the listed LPs' commitments added up",
 };
 
 /** An input refusal: only with a term the stable list has (stable-names.ts). */

@@ -71,8 +71,10 @@ describe.each(RUN_CASES)("%s", (dir) => {
     expect(split.prefAccrued && toCents(split.prefAccrued)).toBe(expected.pref_accrued_to_d ?? null);
     // F10: the LP multiple is the LPs' to date over their paid-in, exactly, and reproduces the case's LP total to the
     // cent. The cases don't record the multiple itself (FC4).
-    expect(split.lpMultiple.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25")).toBe(true);
-    expect(split.lpMultiple.times(expected.lps_paid_in).minus(p.to_date.lps.total!).abs().lte("0.005")).toBe(true);
+    // Every case's LPs have paid in something, so its multiple is a number (FA47).
+    expect(split.lpMultiple).not.toBeNull();
+    expect(split.lpMultiple!.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25")).toBe(true);
+    expect(split.lpMultiple!.times(expected.lps_paid_in).minus(p.to_date.lps.total!).abs().lte("0.005")).toBe(true);
     // Each step's LP share is the GP's × (1 − rate) ÷ rate, and the steps' add up to the carry tier, for X and to date
     // (f01f review, answer 2).
     for (const t of [split.distribution, split.toDate]) {
@@ -168,8 +170,8 @@ describe("an account with nothing paid in (FA38)", () => {
       expect([friends.class, toCents(friends.paidIn), friends.lpMultiple], x).toEqual(["Friends and family", "0.00", null]);
       expect(toCents(terms.paidIn), x).toBe("400000.00");
       expect(terms.lpMultiple!.times(terms.paidIn).minus(terms.toDate.lps.total).abs().lte("1e-25"), x).toBe(true);
-      // The fund's LPs always have something paid in (call_without_payers), so its multiple is always a number.
-      expect(split.lpMultiple.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25"), x).toBe(true);
+      // The fund's LPs have something paid in (call_without_payers sees to it for entered calls), so its multiple is a number.
+      expect(split.lpMultiple!.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25"), x).toBe(true);
     }
   });
 

@@ -5,7 +5,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { D, FundRefusal, readFund, splitAt } from "../src/index.ts";
+import { D, FundRefusal, equalization, readFund, splitAt } from "../src/index.ts";
 import { CASES_DIR, REFUSAL_CASES, applyChange, readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
 
@@ -295,5 +295,79 @@ describe("classes and later closes (F22, F25, F28, FA21 to FA31)", () => {
     readFund(applyChange(C25, { set: { "lps[0].close": "2021-01-15", "lps[1].close": "2021-01-15" } }));
     // Without listed LPs, nothing here applies: the LPs' side pays every call (F23).
     readFund(applyChange(C22, { set: { lps: null } }));
+  });
+});
+
+describe("the management fee schedule (F29, F30, F32, FA39 to FA41)", () => {
+  // Case 29: a schedule without listed LPs. Case 30: two LPs, half-yearly, a step. Case 25: entered fee calls, a later close.
+  const C25 = readCaseFile<CaseInputs>("fund-25-later-close", "inputs.json").fund;
+  const C29 = readCaseFile<CaseInputs>("fund-29-fee-schedule", "inputs.json").fund;
+  const C30 = readCaseFile<CaseInputs>("fund-30-fee-step-down", "inputs.json").fund;
+  const refused = (base: Record<string, unknown>, c: Fixture["change"]) => refusal(applyChange(base, c));
+  const input = (term: string, field: string) => ({ kind: "input", term, field });
+  const read = (base: Record<string, unknown>, c: Fixture["change"]) => readFund(applyChange(base, c));
+
+  it("reads it as given, frozen with the rest, and none without it", () => {
+    const fee = readFund(C30).terms.managementFee!;
+    expect([fee.start, fee.frequency, fee.commitments, fee.steps.map((s) => [s.rate.toString(), s.from])]).toEqual(["2020-07-01", "semiannual", null, [["0.02", null], ["0.015", "2022-03-01"]]]);
+    expect([Object.isFrozen(fee), Object.isFrozen(fee.steps), Object.isFrozen(fee.steps[1])]).toEqual([true, true, true]);
+    expect(readFund(C25).terms.managementFee).toBeNull();
+    // It isn't in the cash flows, which stay the input's (FA42).
+    expect(readFund(C30).cashFlows.map((f) => f.kind)).toEqual(["investment", "investment", null, null]);
+  });
+
+  it("reads null as left out for the schedule, the frequency, commitments and the first step's date (FA41)", () => {
+    expect(read(C30, { set: { "terms.management_fee": null } }).terms.managementFee).toBeNull();
+    expect(read(C30, { set: { "terms.management_fee.frequency": null } }).terms.managementFee!.frequency).toBe("quarterly");
+    expect(read(C30, { set: { "terms.management_fee.commitments": null, "terms.management_fee.steps[0].from": null } }).terms.managementFee!.commitments).toBeNull();
+    for (const path of ["start", "steps", "steps[0].rate", "steps[1].from"]) {
+      expect(refused(C30, { set: { [`terms.management_fee.${path}`]: null } })).toEqual(input("missing_field", `terms.management_fee.${path}`));
+    }
+  });
+
+  it("takes the frequency as one of its three words exactly (FA41)", () => {
+    for (const word of ["Quarterly", "quarterly ", "semi-annual", 4]) expect(refused(C30, { set: { "terms.management_fee.frequency": word } })).toEqual(input("bad_field", "terms.management_fee.frequency"));
+    expect(read(C30, { set: { "terms.management_fee.frequency": "annual" } }).terms.managementFee!.frequency).toBe("annual");
+  });
+
+  it("compares commitments with the LPs' total as a number, exactly as the input writes them (F32, FA41)", () => {
+    expect(read(C30, { set: { "terms.management_fee.commitments": "25000000.00" } }).terms.managementFee!.commitments!.toString()).toBe("25000000");
+    // Thirds total 1 exactly, though each is rounded at 40 digits; a 1 short in the 40th digit isn't their total.
+    const thirds = { lps: [0, 1, 2].map((i) => ({ name: `LP ${i}`, commitment: "1/3" })) };
+    read(C30, { set: { ...thirds, "terms.management_fee.commitments": "1" } });
+    expect(refused(C30, { set: { ...thirds, "terms.management_fee.commitments": "0.9999999999999999999999999999999999999999" } })).toEqual(input("fee_commitments_mismatch", "terms.management_fee.commitments"));
+    expect(refused(C30, { set: { "terms.management_fee.commitments": 25000000 } })).toEqual(input("bad_number", "terms.management_fee.commitments"));
+  });
+
+  it("takes later rates in any order, a step up after a step to 0 included, but no rate of 1 or more (FA46)", () => {
+    const steps = [{ rate: "0.02" }, { rate: "0", from: "2021-01-01" }, { rate: "0.025", from: "2022-01-01" }];
+    expect(read(C30, { set: { "terms.management_fee.steps": steps } }).terms.managementFee!.steps.map((s) => s.rate.toString())).toEqual(["0.02", "0", "0.025"]);
+    expect(refused(C30, { set: { "terms.management_fee.steps[1].rate": "1.5" } })).toEqual(input("bad_number", "terms.management_fee.steps[1].rate"));
+    expect(refused(C30, { set: { "terms.management_fee.steps[1].rate": 0.015 } })).toEqual(input("bad_number", "terms.management_fee.steps[1].rate"));
+  });
+
+  it("counts the schedule's calls as the fund's calls, and refuses a fund with none when it starts after D (F4, FA39)", () => {
+    const fund = read(C29, { set: { cash_flows: [] } });
+    expect(fund.cashFlows).toEqual([]);
+    // One step, so a later start keeps the steps in order.
+    const later = { "terms.management_fee.start": "2031-01-01", "terms.management_fee.steps": [{ rate: "0.02" }] };
+    expect(refused(C29, { set: { ...later, cash_flows: [] } })).toEqual(input("no_calls", "cash_flows"));
+    // A start after D, with entered calls, isn't refused: nothing to call yet.
+    expect(read(C29, { set: later }).terms.managementFee!.start).toBe("2031-01-01");
+  });
+
+  it("needs an equalization rate only when an investment or expense call comes before a later close (F29, FA26)", () => {
+    // Case 25 with its first investment call moved to Cedar's close: only the fee call is before it, so no rate is needed.
+    const feeOnly = { "cash_flows[0].date": "2021-07-15" };
+    expect(read(C25, { set: feeOnly, del: "terms.equalization_rate" }).terms.equalizationRate).toBeNull();
+    expect(refused(C25, { set: { ...feeOnly, "cash_flows[1].kind": "expense" }, del: "terms.equalization_rate" })).toEqual(input("missing_field", "terms.equalization_rate"));
+    // With a schedule, Birchwood joining after its first call owes back fees but needs no rate.
+    expect(read(C30, { set: { "lps[1].close": "2020-08-01", "cash_flows[0].date": "2020-08-01" } }).terms.equalizationRate).toBeNull();
+  });
+
+  it("decides who joins later by the fund's first call, the schedule's included (F25, F30)", () => {
+    // Case 30's first entered call moved after Birchwood's close: the schedule's first call, on start, comes before it.
+    const fund = read(C30, { set: { "lps[1].close": "2020-08-01", "cash_flows[0].date": "2020-09-01" } });
+    expect(equalization(fund)!.closes.map((c) => [c.date, c.joining])).toEqual([["2020-08-01", ["Birchwood Family Office"]]]);
   });
 });

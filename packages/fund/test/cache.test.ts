@@ -3,7 +3,7 @@
 
 import { expect, it } from "vitest";
 
-import { D, equalization, readFund, splitAt, toCents } from "../src/index.ts";
+import { D, equalization, feeCalls, readFund, splitAt, toCents } from "../src/index.ts";
 import type { CashFlow, Fund } from "../src/index.ts";
 
 const call = (index: number, date: string, amount: string): CashFlow => ({ index, date, type: "call", kind: "investment", amount: new D(amount) });
@@ -12,7 +12,7 @@ it("works a fund built by hand from scratch, so a change after a split shows in 
   // One $5,000,000 call and 20% carry: at $12,500,000 the GP has 20% of $7,500,000.
   const fund: Fund = {
     asOf: "2026-03-01",
-    terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [] },
+    terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [], managementFee: null },
     cashFlows: [call(0, "2022-03-01", "5000000")],
     distributionDate: "2026-03-01",
     final: false,
@@ -67,6 +67,27 @@ it("splits a fund built by hand as 0.2.0 built one, without the classes' and clo
   expect(split.byLp.map((l) => [toCents(l.distribution), l.class, l.close])).toEqual([["7700000.00", null, null], ["3300000.00", null, null]]);
   expect(split.byAccount).toEqual([]);
   expect(equalization(fund)).toBeNull();
+});
+
+it("splits a fund built by hand as 0.3.0 built one, without managementFee, as one without a schedule", () => {
+  // FA33's rule from 0.4.0: a later close in a fund built without the schedule's field. A $5,000,000 investment call and
+  // a $100,000 fee call before Birch joins, 20% carry. Alder, the only LP in, paid all $100,000 of the fee call: $100,000
+  // over its weight of 7. Birch's back fees are that times its 3, $42,857.14, and the call counts at $142,857.14 (F29),
+  // so the LPs' paid-in is $5,142,857.14.
+  const lp = (name: string, commitment: string, close: string | null) => ({ name, commitment: new D(commitment), class: null, close });
+  const fee: CashFlow = { index: 1, date: "2022-03-01", type: "call", kind: "fee", amount: new D("100000") };
+  const fund = {
+    asOf: "2026-03-01",
+    terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: new D("0.08"), lpClasses: [] },
+    cashFlows: [call(0, "2022-03-01", "5000000"), fee],
+    distributionDate: "2026-03-01",
+    final: false,
+    nav: null,
+    lps: [lp("Alder", "7", null), lp("Birch", "3", "2022-09-01")],
+  } as unknown as Fund;
+  expect(toCents(splitAt(fund, "12500000").lpsPaidIn)).toBe("5142857.14");
+  expect(feeCalls(fund)).toBeNull();
+  expect(equalization(fund)!.lps.map((m) => [m.name, toCents(m.capitalPaid), toCents(m.backFees)])).toEqual([["Alder", "0.00", "0.00"], ["Birch", "1500000.00", "42857.14"]]);
 });
 
 it("keeps what it works out for a fund readFund returned, which can't change", () => {

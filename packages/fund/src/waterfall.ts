@@ -18,13 +18,21 @@
 // LP is in from the start (F25); equalization.ts works out what moves between
 // LPs at each close.
 //
+// From 0.4.0 the calls are the entered ones and a management fee schedule's
+// (F30), in F4's order (fees.ts, FA42), and each fee call counts at its full
+// size, every LP's own fee in it (F29): one entered before a later close grows
+// by the joiners' back fees, and each account's part is its LPs' fee weights
+// times the call's rate per unit of weight (FA43).
+//
 // Amounts are decimal.js at 40 digits throughout; nothing is rounded here.
 
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { refuse } from "./errors.ts";
+import { gpCommitmentPart, runFlows } from "./fees.ts";
+import type { RunFlow } from "./fees.ts";
 import { callWeight, wasRead } from "./input.ts";
-import type { CallKind, CarryStep, Fund, Lp } from "./model.ts";
+import type { CarryStep, Fund, Lp } from "./model.ts";
 
 /** One carry step's part of a split (F16): the GP's carry at this rate, and the LPs' share of the carry tier beside it. */
 export interface StepCarry {
@@ -129,9 +137,11 @@ export interface Split {
   prefAccrued: D | null;
   /**
    * F10's LP multiple, net DPI: the LPs' distributions to date, X's included, after carry, over their paid-in capital
-   * to date. The multiple carry steps are measured on; with accounts, each measures its own (`byAccount`).
+   * to date. The multiple carry steps are measured on; with accounts, each measures its own (`byAccount`). From 0.4.0,
+   * null when the LPs have paid in nothing (FA47): a schedule's calls of $0, with every listed LP paying no fees (FA40),
+   * and no other call.
    */
-  lpMultiple: D;
+  lpMultiple: D | null;
   /** Null unless X is final or at the NAV point. */
   clawback: Clawback | null;
   /** Each LP's amounts, in the input's order (F20); empty when the fund has no LPs. */
@@ -205,14 +215,23 @@ export function accountsOf(fund: Fund): Account[] {
   return out;
 }
 
-/** F23: an account's part of the LPs' part of a call (by its kind) or a distribution (kind null: by commitment). */
-function partOf(account: Account, amount: D, kind: CallKind | null): D {
-  if (account.whole) return amount;
-  return kind === "fee"
-    ? account.allFeeWeights.isZero()
-      ? ZERO // no LP pays fees, so there's no fee call: F28 refuses one with no payer
-      : amount.times(account.feeWeight).div(account.allFeeWeights)
-    : amount.times(account.commitment).div(account.allCommitments);
+/** F23: an account's part of the LPs' part of a distribution, by commitment. */
+function distributionPart(account: Account, amount: D): D {
+  return account.whole ? amount : amount.times(account.commitment).div(account.allCommitments);
+}
+
+/**
+ * F23, F29: an account's part of a call's LPs' part, every LP in from the start. Investment and expense calls by
+ * commitment. A fee call by fee weight: the call's rate per unit of weight, what the LPs who paid it as made paid over
+ * their weights, times the account's LPs' weights, multiplied first (FA43).
+ */
+function callPart(account: Account, flow: RunFlow): D {
+  if (account.whole) return flow.lps;
+  if (flow.kind !== "fee") return flow.lps.times(account.commitment).div(account.allCommitments);
+  if (!flow.paidBy.isZero()) return flow.paid.times(account.feeWeight).div(flow.paidBy);
+  // No LP pays fees: a schedule's call of $0 (FA40), or, in a fund built by hand that readFund would refuse
+  // (call_without_payers, F28), an entered one, which counts as 0.3.0 counted it.
+  return account.allFeeWeights.isZero() ? ZERO : flow.lps.times(account.feeWeight).div(account.allFeeWeights);
 }
 
 function emptyTiers(terms: RunTerms): Tiers {
@@ -370,14 +389,6 @@ function prefOn(terms: RunTerms, balanceDays: D): D {
   return terms.pref ? terms.pref.rate.times(balanceDays).div(YEAR) : ZERO;
 }
 
-/** F3: the GP commitment's part of a call, by its kind. For equalization.ts too; not exported from the package. */
-export function gpCommitmentPart(fund: Fund, kind: string | null, amount: D): D {
-  const g = fund.terms.gpCommitment;
-  if (!g) return ZERO;
-  const pays = kind === "investment" || (kind === "expense" && g.paysExpenses) || (kind === "fee" && g.paysFees);
-  return pays ? g.share.times(amount) : ZERO;
-}
-
 /** F3: the GP commitment's share of a distribution, outside the tiers. */
 function gpCommitmentShare(fund: Fund, amount: D): D {
   return (fund.terms.gpCommitment?.share ?? ZERO).times(amount);
@@ -407,13 +418,14 @@ function after(ledger: Ledger, tiers: Tiers): Ledger {
 
 /** F23: the account's part of a distribution's LPs' part, down its own tiers from where it stands. */
 function distribute(account: Account, ledger: Ledger, lpsPart: D): Tiers {
-  return runTiers(account.terms, partOf(account, lpsPart, null), startOf(account.terms, ledger));
+  return runTiers(account.terms, distributionPart(account, lpsPart), startOf(account.terms, ledger));
 }
 
 const ledgers = new WeakMap<Fund, FundLedger>();
 
 /**
- * The ledgers X runs against (F14): every cash flow in F4's order, the pref accrued to D. Kept for a fund readFund
+ * The ledgers X runs against (F14): every cash flow in F4's order, the schedule's calls among them (FA42), the pref
+ * accrued to D. Kept for a fund readFund
  * returned, which is frozen; worked from scratch on every call for one built by hand, which can change after use.
  */
 function ledgerAtD(fund: Fund): FundLedger {
@@ -444,13 +456,11 @@ function ledgerAtD(fund: Fund): FundLedger {
     }
     day = to;
   };
-  for (const flow of fund.cashFlows) {
-    advance(dayNumber(flow.date)!);
+  for (const flow of runFlows(fund)) {
+    advance(flow.day);
     if (flow.type === "call") {
-      const gp = gpCommitmentPart(fund, flow.kind, flow.amount);
-      gpCommitmentPaidIn = gpCommitmentPaidIn.plus(gp);
-      const lpsPart = flow.amount.minus(gp);
-      books = books.map((b, i) => ({ ...b, lpsPaidIn: b.lpsPaidIn.plus(partOf(accounts[i]!, lpsPart, flow.kind)) }));
+      gpCommitmentPaidIn = gpCommitmentPaidIn.plus(flow.gpCommitment);
+      books = books.map((b, i) => ({ ...b, lpsPaidIn: b.lpsPaidIn.plus(callPart(accounts[i]!, flow)) }));
     } else {
       const gpc = gpCommitmentShare(fund, flow.amount);
       distributed = distributed.plus(flow.amount);
@@ -512,8 +522,9 @@ export function perDollarOfX(fund: Fund, account: Account): D {
 /**
  * F10: an account's LPs' distributions to date after carry, over its paid-in. FA38: an account with nothing paid in (a
  * class paying no fees, in a fund whose calls are all fee calls) has no multiple to give, so null; its carry is still
- * at its top rate from its first dollar, every step's threshold being a multiple of nothing (F11). The fund's own
- * multiple always has one: `call_without_payers` sees that the LPs together pay part of every call.
+ * at its top rate from its first dollar, every step's threshold being a multiple of nothing (F11). The fund's own is
+ * null the same way (FA47), which only a schedule can give: `call_without_payers` sees that the LPs pay part of every
+ * entered call, but a schedule's calls have no payers to check, and with every LP paying no fees they're $0 (FA40).
  */
 function multipleOf(lps: D, paidIn: D): D | null {
   return paidIn.isZero() ? null : lps.div(paidIn);
@@ -627,7 +638,7 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
     lpsPaidIn,
     gpCommitmentPaidIn: ledger.gpCommitmentPaidIn,
     prefAccrued: fund.terms.pref ? runs.reduce((s, r) => s.plus(r.prefAccrued), ZERO) : null,
-    lpMultiple: toDate.lps.total.div(lpsPaidIn),
+    lpMultiple: multipleOf(toDate.lps.total, lpsPaidIn),
     clawback: fundClawback(fund, runs),
     byLp: byLp(fund, runs),
     byAccount:
