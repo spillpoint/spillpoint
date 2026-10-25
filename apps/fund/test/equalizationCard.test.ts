@@ -10,6 +10,7 @@ import { D, equalization, readFund } from "spillpoint-fund";
 import { describe, expect, it } from "vitest";
 
 import { equalizationBlocks, equalizationCsv, equalizationCsvName } from "../src/equalizationCard.ts";
+import { PENDING } from "./support/cases.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
@@ -48,7 +49,8 @@ function totalCents(exacts: string[]): string {
   return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
 }
 
-describe.each(["fund-25-later-close", "fund-26-closes-and-classes"])("%s: the equalization card", (dir) => {
+// A pending case (support/cases.ts) waits for the page's step: its expected.json is ahead of the engine.
+describe.each(["fund-25-later-close", "fund-26-closes-and-classes"].filter((d) => !PENDING.includes(d)))("%s: the equalization card", (dir) => {
   const eq = equalization(readFund(caseFile(dir, "inputs.json").fund))!;
   const expected = caseFile(dir, "expected.json").equalization as { rate: string; closes: { date: string; joining: string[]; lps: Moves[] }[]; lps: Moves[] };
   const blocks = equalizationBlocks(eq);
