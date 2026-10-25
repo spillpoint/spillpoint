@@ -354,6 +354,154 @@ A button on the card: "Download as CSV".
   - the total row equals the page's figure for the LPs
 - **The CSV for case 18 at $2,000,000:** 666666.66 three times, 0.02 left over, and 2000000.00 in all.
 
+## 0.3.0: classes and later closes
+
+spillpoint-fund 0.3.0 runs each LP class as its own account and works out the equalization at later closes (F22 to F28), and f03c puts them on the page. This section is f03c's first commit, before code builds on its words. Your words and layout from f03b's review are as you gave them; what they leave open is marked **(mine)**, and listed in `notes/review-f03c.md`.
+
+### The Terms tab
+
+Two percents, each starting blank; blank leaves it out of the input:
+- **"Management fee rate":** "Needed only when a class has its own fee rate. It divides the fee calls between the classes."
+- **"Equalization interest rate":** "Needed when an LP joins at a later close; 0 for none."
+- **Where (mine):** after the GP commitment, in one group of their own, "For LP classes and later closes", each hint under its field.
+
+**Problems under them:**
+- **A class's fee rate without the fund's:** "Needed: a class has its own fee rate."
+- **A later close without the rate:** "Needed: an LP joins at a later close. Write 0 for none."
+- **A fee rate that doesn't read, or 0 (mine):** "Write the management fee rate as a percent, above 0: 2 or 1.5."
+- **An equalization rate that doesn't read (mine):** "Write the equalization interest rate as a percent a year, 0 or more: 8 or 0." A typed "-8" doesn't read as a percent, so it's this.
+
+### The LPs tab
+
+**The card's intro (mine):** with no classes, as now. With classes: "Each LP's name and commitment, in the order you list them, with its class and its close. The LPs in a class, or on the fund's terms, share what it gets by commitment."
+
+**The classes, above the LPs:**
+- **A heading (mine), "Classes",** then the table, if there are any, and "Add a class". The LPs' table follows under "Each LP" **(mine)**.
+- **The columns:** Name; Fee rate, blank for the fund's fees; Carry; and "Remove".
+- **The carry,** written as the Terms tab writes it, or the fund's:
+  - **A choice (mine):** "The fund's carry", "Flat" or "In steps". A new class starts on the fund's carry.
+  - **Flat and steps as on Terms:** a rate, or steps each with its rate and the LP multiple it starts from, "Add a step" and "Remove".
+  - **Starting values (mine):** choosing Flat or In steps starts from the fund's carry, its first rate or its steps, in the fields to be changed. Switching between flat and steps keeps what was typed, as on Terms.
+- **"Add a class"** adds a row with its name focused **(mine, as an LP's)**.
+- **Under the table, one line:** "A class changes only the fee rate and the carry; the pref, the catch-up and the GP commitment are the fund's."
+- **Class names** are trimmed as LP names are: the box keeps what's typed, and the input and a saved file get the name trimmed.
+
+**Each LP row** gains two columns after the commitment:
+- **Class:** a picker of "Fund terms" and the classes.
+  - **Shown only when the fund has classes (mine):** with none, the picker would have one choice.
+  - **A class with no name yet (mine)** shows in the picker as "Class 2", its row in the table.
+  - **Renaming a class** keeps its LPs in it.
+  - **Removing a class that LPs are in** moves them to Fund terms. One line under the classes table says so **(mine)**: "Removed Friends and family: Cedar Holdings moves to Fund terms." With more than one: "Cedar Holdings and Delta Trust move to Fund terms." The line goes at the next change.
+- **Close:** a date, blank for in from the start. **Its header's hint (mine):** "Blank: in from the start."
+
+**Problems** under the cell their path names, in the page's words:
+- **`lp_class_name_repeated`:** "A class above already has this name; each class needs its own."
+- **A class with no name (mine):** "Write the class's name."
+- **A class's fee rate that doesn't read (mine):** "Write the class's fee rate as a percent, 0 or more: 0 or 1.5; or leave it blank for the fund's fees."
+- **A class's carry,** as the Terms tab's carry problems read, under the class's carry:
+  - "Write the carry rate as a percent, 0 or more: 20 or 27.5."
+  - "A carry rate must be below 100%."
+  - a step out of order, in the Terms tab's two sentences
+  - **The catch-up's share not above the class's carry (mine):** "This class's carry rate must be below the GP's share of the catch-up, 50%, or its catch-up never ends." The engine names the class's carry, so it's under that, not under the catch-up on Terms.
+- **`lp_close_after_distribution`:** "An LP's close must come before the fund's first distribution."
+- **`lp_class_unknown`:** "This LP's class isn't one of the fund's classes." Only a file can name a class that isn't there, and a file is refused as it opens, below.
+- **At the top of the tab,** as now. A class's problem is the LPs tab's, so on Payouts it's "Your last change to the LPs has a problem, …" **(mine)**.
+
+**On Cash flows,** under the call's row, as a cash flow's own problem is shown: `call_without_payers`, "No LP in the fund on this date pays this call: none had closed yet, or none of them pays fees."
+
+**An opened file's problem,** in one line under the masthead, as now:
+- **Where it is (mine):** "The name in row 2 of its LP classes", "The fee rate in row 2 …", "The carry in row 2 …", "Carry step 2's rate in row 1 of its LP classes", "Row 2 of its LP classes", "Its list of LP classes", "Its management fee rate", "Its equalization interest rate", "The class in row 3 of its LPs", "The close in row 3 of its LPs".
+- **The rules,** in the words above, after the place: "The class in row 3 of its LPs: this LP's class isn't one of the fund's classes."
+- **A rate missing (mine)** says why it's needed: "Its management fee rate is missing: it's needed when a class has its own fee rate." "Its equalization interest rate is missing: it's needed when an LP joins at a later close."
+- **`call_without_payers` (mine):** "Row 2 of its cash flows: no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees."
+- **A class term the page doesn't model (mine):** "This file has a term the page doesn't model: `pref` on an LP class (row 1 of its LP classes). A class changes only the fee rate and the carry."
+- **An LP term the page doesn't model (mine, changed):** the line ended "Every LP is on the same terms here." From 0.3.0 an LP can be in a class, so it ends "An LP's terms are its class's, or the fund's."
+- **Names in a file (mine):** each class's name and each LP's class are trimmed before the engine reads the file, as LP names are, so "Seed " and "Seed" are one class.
+
+### Pasting LPs
+
+Two optional columns after the commitment: class, then close.
+- **A class** is matched by its name after trimming. One not in the table is a row it can't read: "Row 4: 'Friends & family' isn't one of the fund's classes".
+  - **Blank is Fund terms (mine),** and so is "Fund terms" itself, the picker's word, unless a class has that name.
+- **Close dates** are read as the cash flows' paste reads dates. A paste that could be either order asks once, "Which comes first in this paste's dates?", and has the same day-first or month-first line under the preview. A close it can't read is a row it can't read: "Row 4: 'Q3 2021' isn't a date".
+- **A header row (mine)** may name "class" or "close" too.
+- **The preview (mine)** adds what it read of the two columns: "3 LPs, $10,000,000 committed, 1 in a class and 2 with a close; they'll be the table's first."
+
+### Payouts
+
+**The split table stays the fund's.** Each carry row is labelled from the split's own steps **(mine)**, so a fund whose LPs are all in one class shows that class's carry.
+- **With two or more accounts,** each carry row names its class: "Fund terms: carry at 20% (up to 3.0x)", "Friends and family: carry at 0%".
+
+**The headline's terms line (mine)** adds each class that has LPs, after the fund's terms: "Carry 20% and 25% from 3.0x; no pref; no GP commitment. Friends and family: carry 0%, no fees." A class's fee rate reads "fees at 1%", or "no fees" at 0; its carry as the fund's; a class with neither, "the fund's terms".
+
+**A classes card after the split,** only with two or more accounts:
+- **Its heading (mine):** "Each class at $5,200,000".
+- **One row an account,** Fund terms first.
+- **The columns (mine):** Class; "LPs, this distribution" and "GP, this distribution"; "LPs, to date" and "GP, to date"; "Paid in"; "LP multiple"; and, when final, "Owed back".
+- **The amounts** are to the cent, as the split table's.
+- **The LP multiple:** two places, rounded down, as the split's. It's "—" when nothing is paid in (FA38).
+- **"Owed back":** the class's own clawback when the split is final, $0.00 included **(mine)**.
+- **At the NAV point (mine),** the card follows the NAV split, its "Owed back" included, as the LPs' card does.
+- **One line under it (mine):** "Each class runs the waterfall on its own part of every call and distribution, with its own fee rate and carry; the split above is their sum. Each amount is rounded on its own, so a column can differ from the split's by a cent."
+- **Narrow screens (mine):** as the LPs' card, each class a group, wherever the one table wouldn't fit.
+
+**The clawback card,** with two or more accounts:
+- **Each class's owed** under the fund's, in a small table **(mine)**: "Owed back by class, each on its own totals", one row a class.
+- **Its sentence stays the fund's.**
+- **Its intro (mine)** ends "…one run of the waterfall for each class, on its own totals." in place of "one run of the waterfall on everything paid in and everything distributed".
+
+**The LPs' card** gains a Class column after the LP's name, blank for Fund terms, and its CSV a Class column after the name.
+- **Only when an LP is in a class (mine),** so a fund without classes keeps its card and CSV as they are.
+- **Its line under the card (mine),** with classes: "Shares are of all the LPs' commitments, rounded for display; an LP in a class gets its commitment's part of its class's amounts." in place of "Shares are rounded for display; every amount is worked from the exact share."
+
+**The breakpoints** stay in the engine's words, which name the account with two or more.
+
+**An equalization card,** only with a later close, after the LPs' card:
+- **Its heading (mine):** "Equalization at the later closes".
+- **The rate (mine):** "Interest at 6% a year, simple, on the days from each call to the close (Actual/365)."
+- **Each close:**
+  - **Its heading (mine):** "1 Apr 2022: Birchwood Family Office joins". With more than one: "A and B join".
+  - **One row for each LP in by then:** what it paid in or got back, and the interest it paid or received.
+- **Then the same for all the closes together,** under "All the closes together" **(mine)**, every LP.
+- **The columns (mine):** LP, "Paid in", "Got back", "Interest paid", "Interest received".
+- **Rounding:**
+  - **Each amount** is rounded down to the cent.
+  - **A leftover row in each block,** as the LPs' card has it: each column's exact total with `toCents`, less its rounded amounts. A Total row after it, as the LPs' card has **(mine)**.
+  - **The all-closes block** rounds each LP's exact total, as `equalization(fund).lps` gives it. So a row there can be a cent more than its rows above added up: Alder's interest is 10,356.16 and 22,520.54 at the two closes, and 32,876.71 in all.
+- **One line under it:** "Equalization is outside the waterfall: it moves money between LPs at each close and changes nothing above."
+- **"Download as CSV,"** as the LPs' card's:
+  - **Its name:** "<fund name> equalization.csv", the fund's name as Save writes it **(mine)**: "two-later-closes-and-a-friends-and-family-class-equalization.csv". It has no X or D, as the equalization has neither.
+  - **Its columns (mine):** Close, LP, Paid in, Got back, Interest paid, Interest received.
+  - **Its rows (mine):** each close's block, its date as YYYY-MM-DD in the first column, then "All closes". Each block has its leftover and total rows.
+
+### Saving and opening
+
+- **Saving** keeps the two rates, the classes, and each LP's class and close. A fund without them saves without them.
+- **Opening:** f03b's guard comes out, so a file with classes or later closes opens into the tabs.
+
+### The examples
+
+- **Case 26 joins the picker** as "Two later closes and a friends-and-family class", after the clawback example.
+- **It opens at $5,200,000 (mine),** its listed X, between its two breakpoints: the class has its capital back, and the fund terms' LPs don't yet.
+- **The others stay.**
+
+### Tests
+
+- **The page's pending list empties,** so cases 22 to 28 run through its case tests:
+  - the forms round trip with classes and closes
+  - files open and save
+  - the fund-27 refusals show in the page's words: beside their cells for those the form can make, and in one line when opened from a file for all twenty
+- **The classes card** matches the split's `byAccount` at every point of cases 22, 23, 24, 26 and 28.
+- **Case 26's equalization card,** over both closes:
+
+  | LP | Paid in | Got back | Interest paid | Interest received |
+  |---|---:|---:|---:|---:|
+  | Alder | 0.00 | 1,533,333.33 | 0.00 | 32,876.71 |
+  | Birchwood | 700,000.00 | 416,666.66 | 10,356.16 | 11,260.27 |
+  | Cedar | 1,250,000.00 | 0.00 | 33,780.82 | 0.00 |
+
+  0.01 is left over in each of the last three columns, and its CSV says the same.
+
 ## How it's built: its own app, `apps/fund` (your answer 1)
 
 ### The two ways
