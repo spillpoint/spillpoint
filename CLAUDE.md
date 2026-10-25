@@ -56,14 +56,14 @@ Deferred work lives in the "Later" section of `docs/ASSUMPTIONS.md`.
 
 ## The fund workstream
 
-A second package, `packages/fund` (`spillpoint-fund`): the fund-level waterfall, how a distribution splits between LPs and GP. Its rules are `packages/fund/docs/SPEC.md` (F1 to F28) and `ASSUMPTIONS.md` beside it.
+A second package, `packages/fund` (`spillpoint-fund`): the fund-level waterfall, how a distribution splits between LPs and GP. Its rules are `packages/fund/docs/SPEC.md` (F1 to F32) and `ASSUMPTIONS.md` beside it.
 
 - **The engine comes first.** If an engine step comes up, Jordan says whether to finish or park the fund step. The two never have PRs open at once.
 - **On npm from 0.1.0, and on the site** (f01n). Its releases are checked as the engine's are ("Checking the packed build", above), from `packages/fund`, and Jordan publishes and tags them `fund-v<version>`.
   - **Its page is `apps/fund`** (`@spillpoint/fund`, a private app; `notes/plan-fund-page.md`). Pages copies its build into the dashboard's as `fund/` before the upload, so it's at `spillpoint.github.io/spillpoint/fund/`. `apps/fund/test/site.test.ts` checks the two together.
   - **Nothing in `apps/dashboard` but the footer link** to `./fund/`. The fund page links back with `../`.
 - **No `spillpoint` import** until engine 1.0.
-- **Steps** are named f01a, f01b and so on for its 0.1.0, f02a, f02b and so on for its 0.2.0 (each LP's share, F19 to F21: f02a the spec, reference and cases; f02b the engine; f02c the page; f02d the release), and f03a, f03b and so on for its 0.3.0 (LPs in classes and later closes, F22 to F28: f03a the spec, reference and cases; f03b the engine; f03c the page; f03d the release; f03b or f03c may split in two). The same hard rules: one branch and one PR each, a review note, then stop.
+- **Steps** are named f01a, f01b and so on for its 0.1.0, f02a, f02b and so on for its 0.2.0 (each LP's share, F19 to F21: f02a the spec, reference and cases; f02b the engine; f02c the page; f02d the release), f03a, f03b and so on for its 0.3.0 (LPs in classes and later closes, F22 to F28: f03a the spec, reference and cases; f03b the engine; f03c the page; f03d the release; f03b or f03c may split in two), and f04a, f04b and so on for its 0.4.0 (management fees, F29 to F32: f04a the spec, reference and cases; f04b the engine; f04c the page; f04d the release; f04b or f04c may split in two). The same hard rules: one branch and one PR each, a review note, then stop.
 - **Everything fund lives under `packages/fund`:**
   - its docs in `docs/`
   - its cases in `cases/`
