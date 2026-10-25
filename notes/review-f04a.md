@@ -39,7 +39,8 @@ No engine or page code.
 | `f5b829d` | the cases: 25 and 26 worked again, 29 to 31, and the 36 refusals (§6, §7) |
 | `ac3a5a3` | the pending lists, the case-file checks, and the three page tests (§8) |
 | `fb1f00e` | `CLAUDE.md` names the 0.4.0 steps and F1 to F32 |
-| the last | this note |
+| `5eef030` | this note |
+| the fix-up | cases 25 and 26's descriptions, F30's and F25's lines in `SPEC.md`, and §11 of this note |
 
 ## 1. The release note (your step 1)
 
@@ -576,6 +577,37 @@ Quarterly fees at 2% from 2022-01-01. Alder Endowment ($10,000,000) on the fund'
 | 2022-08-15 | Cedar Holdings | 0.00 | 266,666.67 | 0.00 | 11,397.26 | 0.00 |
 | 2022-08-15 | Dogwood Pension (joins) | 1,600,000.00 | 0.00 | 68,383.56 | 0.00 | 60,000.00 |
 
+## 11. The fix-up, after your checks (2026-10-25)
+
+One more commit, on your answers to the open questions, with the fund cases' lock still lifted on your machine:
+- **Cases 25 and 26's descriptions** (question 4): each `inputs.json`'s `description` is now yours, written by a script as before. The script replaces line 3 and nothing else. It checks that no other line changed, and that the file read as JSON is the same apart from the description.
+  - **Unchanged:** their `expected.json` and `DERIVATION.md`. Neither holds the description, and the hand working still rebuilds both `expected.json` files byte for byte.
+- **`SPEC.md`, F30** (question 2): "A period with nothing to call, every LP's fee 0, isn't a call." now reads "A period with nothing to call, every day of it at a rate of 0, isn't a call (FA40)."
+  - **Already the same:** FA40 and the reference, `fees.py`, said this.
+  - **Left as it is:** `ASSUMPTIONS.md`'s F30 row says only "a period with nothing to call isn't a call", which is the same rule.
+- **`SPEC.md`, F25's equalization interest:** the 2026-10-23 decision is now only that it must be entered, "0" for none. The narrower rule reads as 0.4.0's: "from 0.4.0, only when an investment or expense call comes before a later close, F29".
+
+The two inputs' sha256s, after the change:
+
+| File | sha256 |
+|---|---|
+| `fund-25-later-close/inputs.json` | `758d0751fd8072262b3ba09f56d61d670c3759a9ef1eb1c022d29a0cd5074a3c` |
+| `fund-26-closes-and-classes/inputs.json` | `d8ea1a794e53f57e8f57285b3127a93e7241104bfcc2243f76e97126f16558d3` |
+
+The six `DERIVATION.md` sha256s in §7 are unchanged. Nothing else in `packages/fund/cases` changed, and `.claude/settings.json` still isn't committed.
+
+**Checked again, here:** CI's commands pass with the same counts as before the fix-up: fund 1,092 (9 skipped), engine 3,177, fund page 475 and main page 680, and both references, 73 and 91 tests, with `generate.py --check` matching every case folder.
+
+**Your answers, for the record:**
+1. **FC13:** as proposed.
+2. **FA40:** keep the $0 calls. A period's call is decided from the schedule alone, so stage 3, and who joins at a later close, don't turn on the classes. F30's line now says so.
+3. **FA39:** fine. Fees that start after D have nothing to call yet.
+4. **The descriptions:** replaced, above.
+5. **FA46:** fine. A rate can rise after a step to 0, and F32 orders steps by date only.
+6. **FA45:** fine. Two things are carried forward, both because `Equalization.rate` becomes `D | null`, which changes a type that's stable from 0.3.0:
+   - **f04b** says so where the stable names are listed (`packages/fund/docs/STABLE.md`).
+   - **f04d** says so in the release note's "Upgrading" section.
+
 ## How to check it by behavior
 
 1. **Run what CI runs:**
@@ -640,6 +672,9 @@ Quarterly fees at 2% from 2022-01-01. Alder Endowment ($10,000,000) on the fund'
 - **FC2:** names the fourth refusal set.
 
 ## Open questions
+
+All six were answered on 2026-10-25 (§11).
+
 
 1. **FC13's shape.** It's what f04b's engine will be held to once the cases are locked:
    - `fee_calls` at the top, each call with its days, its parts and each LP's fee as `{amount, exact}`
