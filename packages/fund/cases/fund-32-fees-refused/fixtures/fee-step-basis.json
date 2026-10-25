@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The second fee step given a basis of invested capital, a term F30 doesn't model.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].basis": "invested_capital"
+    }
+  }
+}

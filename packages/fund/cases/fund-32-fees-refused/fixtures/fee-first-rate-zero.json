@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The first rate 0: a fee holiday is a later start.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[0].rate": "0"
+    }
+  }
+}

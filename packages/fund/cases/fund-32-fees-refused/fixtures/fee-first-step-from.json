@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The first step given a date of its own, though it's in force from the start.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[0].from": "2021-02-15"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "base": "fund-30-fee-step-down",
+  "about": "A fee call entered beside a schedule, which would count fees twice.",
+  "change": {
+    "set": {
+      "cash_flows[4]": {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "250000"
+      }
+    }
+  }
+}

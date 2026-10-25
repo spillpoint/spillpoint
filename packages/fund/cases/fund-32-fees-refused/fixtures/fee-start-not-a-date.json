@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The schedule starting on 30 February, a date that doesn't exist.",
+  "change": {
+    "set": {
+      "terms.management_fee.start": "2021-02-30"
+    }
+  }
+}

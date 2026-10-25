@@ -13,11 +13,19 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 /**
- * Pending: cases added before the engine reads what they need, which its case tests skip until then. Empty since f03b,
- * which runs 0.3.0's cases, the classes and later closes (F22 to F28). test/pending.test.ts fails if a case folder is
- * neither run nor pending, or if this list names a folder that doesn't exist.
+ * Pending: cases added before the engine reads what they need, which its case tests skip until then. From f04a, 0.4.0's
+ * management fees (F29 to F32): cases 25 and 26 worked again under F29, which today's engine doesn't give, and the new
+ * fee cases 29 to 32. f04b empties it. test/pending.test.ts fails if a case folder is neither run nor pending, or if this
+ * list names a folder that doesn't exist.
  */
-export const PENDING: readonly string[] = [];
+export const PENDING: readonly string[] = [
+  "fund-25-later-close",
+  "fund-26-closes-and-classes",
+  "fund-29-fee-schedule",
+  "fund-30-fee-step-down",
+  "fund-31-fee-schedule-classes-closes",
+  "fund-32-fees-refused",
+];
 const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */
 export const RUN_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));

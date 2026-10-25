@@ -1,7 +1,8 @@
 // Checks that every fund case is consistent with itself (FC2 to FC12). No engine code is involved: these tests guard
 // the case files, and the engine's own case tests arrive in f01b. The LPs' cases are also held to the cases they add
 // LPs to, since the engine reads LPs only from f02b. The classes' and later closes' cases (f03a) are held to their
-// accounts and their equalization, since the engine reads them only from f03b.
+// accounts and their equalization, since the engine reads them only from f03b. The management fees' cases (f04a) are
+// held to their fee calls, their back fees and the paid-in they make, since the engine reads them only from f04b.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -40,6 +41,9 @@ const TERMS = [
   "lp_class_unknown",
   "lp_close_after_distribution",
   "call_without_payers",
+  "fee_rate_with_schedule",
+  "fee_call_with_schedule",
+  "fee_commitments_mismatch",
 ];
 
 interface Step {
@@ -90,13 +94,27 @@ interface InputClass {
   fee_rate?: string | null;
   carry?: unknown;
 }
+interface InputSchedule {
+  start: string;
+  frequency?: string | null;
+  steps: { rate: string; from?: string | null }[];
+  commitments?: string | null;
+}
 interface Inputs {
   case: string;
   xs: string[];
   fund: {
+    as_of: string;
+    distribution_date?: string;
     nav?: string;
     final?: boolean;
-    terms: { fee_rate?: string | null; equalization_rate?: string | null; lp_classes?: InputClass[] | null };
+    terms: {
+      fee_rate?: string | null;
+      equalization_rate?: string | null;
+      lp_classes?: InputClass[] | null;
+      gp_commitment?: { share: string; pays_fees?: boolean; pays_expenses?: boolean } | null;
+      management_fee?: InputSchedule | null;
+    };
     cash_flows: { date: string; type: string; kind?: string; amount: string }[];
     lps?: InputLp[] | null;
   };
@@ -114,13 +132,25 @@ interface Moves {
   capital_returned: LpAmount;
   interest_paid: LpAmount;
   interest_received: LpAmount;
+  back_fees: LpAmount;
+}
+/** FC13: one of a schedule's fee calls. */
+interface FeeCall {
+  date: string;
+  first_day: string;
+  last_day: string;
+  call: LpAmount;
+  lps: LpAmount;
+  gp_commitment?: LpAmount;
+  by_lp?: { name: string; fee: LpAmount }[];
 }
 interface LpExpected extends Omit<Expected, "points"> {
   lps_paid_in: string;
   pref_accrued_to_d?: string;
   lps?: { name: string; class?: string; close?: string; commitment: string; share: string; paid_in: LpAmount }[];
   accounts?: { class: string | null; commitment: string; share: string; fee_share: string; paid_in: string; pref_accrued_to_d?: string }[];
-  equalization?: { rate: string; closes: { date: string; joining: string[]; lps: Moves[] }[]; lps: Moves[] };
+  equalization?: { rate: string | null; closes: { date: string; joining: string[]; lps: Moves[] }[]; lps: Moves[] };
+  fee_calls?: FeeCall[];
   points: LpPoint[];
 }
 
@@ -137,11 +167,13 @@ const CLOSE = new D("1e-25");
 const lpsOf = (dir: string) => readJson<Inputs>(dir, "inputs.json").fund.lps ?? [];
 const hasLps = (dir: string) => lpsOf(dir).length > 0;
 const LP_RUN = RUN.filter(hasLps);
-const firstCall = (dir: string) =>
-  readJson<Inputs>(dir, "inputs.json")
-    .fund.cash_flows.filter((f) => f.type === "call")
-    .map((f) => f.date)
-    .sort()[0]!;
+const scheduleOf = (dir: string) => readJson<Inputs>(dir, "inputs.json").fund.terms.management_fee ?? null;
+/** F30: the fund's first call, entered or the schedule's, whose first call is dated `start`. */
+const firstCall = (dir: string) => {
+  const fund = readJson<Inputs>(dir, "inputs.json").fund;
+  const start = fund.terms.management_fee?.start;
+  return [...fund.cash_flows.filter((f) => f.type === "call").map((f) => f.date), ...(start ? [start] : [])].sort()[0]!;
+};
 /** F25: an LP whose close is after the fund's first call joins at a later close. */
 const joinsLater = (dir: string, lp: InputLp) => lp.close != null && lp.close > firstCall(dir);
 /** F22, F25: a case whose LPs aren't all on the fund's terms and in from the start. */
@@ -157,13 +189,13 @@ function accountsOf(dir: string): (string | null)[] {
 }
 
 describe("fund cases", () => {
-  it("are twenty-five runs and three sets of refusals", () => {
-    expect(RUN).toHaveLength(25);
-    expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused"]);
+  it("are twenty-eight runs and four sets of refusals", () => {
+    expect(RUN).toHaveLength(28);
+    expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused", "fund-32-fees-refused"]);
     expect([...RUN, ...REFUSED].sort()).toEqual(FUND);
   });
 
-  it("have LPs in cases 17 to 20, 22 to 26 and 28 (F19)", () => {
+  it("have LPs in cases 17 to 20, 22 to 26, 28, 30 and 31 (F19)", () => {
     expect(LP_RUN).toEqual([
       "fund-17-lps-three",
       "fund-18-lps-thirds",
@@ -175,11 +207,17 @@ describe("fund cases", () => {
       "fund-25-later-close",
       "fund-26-closes-and-classes",
       "fund-28-classes-clawback-steps",
+      "fund-30-fee-step-down",
+      "fund-31-fee-schedule-classes-closes",
     ]);
   });
 
-  it("have classes or later closes in cases 22 to 26 and 28 only (F22, F25)", () => {
-    expect(CLASS_RUN).toEqual(LP_RUN.slice(4));
+  it("have classes or later closes in cases 22 to 26, 28 and 31 only (F22, F25)", () => {
+    expect(CLASS_RUN).toEqual([...LP_RUN.slice(4, 10), "fund-31-fee-schedule-classes-closes"]);
+  });
+
+  it("have a fee schedule in cases 29 to 31 only (F30)", () => {
+    expect(RUN.filter((d) => scheduleOf(d) !== null)).toEqual(["fund-29-fee-schedule", "fund-30-fee-step-down", "fund-31-fee-schedule-classes-closes"]);
   });
 
   it("use 40 significant digits (F17)", () => {
@@ -337,7 +375,7 @@ describe.each(LP_RUN)("%s, its LPs", (dir) => {
     }
   });
 
-  it.runIf(!classesOrCloses(dir))("is the case it adds LPs to, the LPs aside (F20)", () => {
+  it.runIf(!classesOrCloses(dir) && scheduleOf(dir) === null)("is the case it adds LPs to, the LPs aside (F20)", () => {
     const { lps: _, ...fund } = inputs.fund;
     const base = RUN.filter((d) => !hasLps(d)).find((d) => isDeepStrictEqual(readJson<Inputs>(d, "inputs.json").fund, fund));
     expect(base, "a case with the same fund and no LPs").toBeDefined();
@@ -388,11 +426,13 @@ describe.each(RUN.filter((d) => accountsOf(d).length > 1))("%s, its accounts", (
   it("lists each account, the fund's terms first, its shares of the distributions and the fee calls (F22, F23)", () => {
     expect(expected.accounts!.map((a) => a.class)).toEqual(accounts);
     const all = lps.reduce((s, lp) => s.plus(exact(lp.commitment)), new D(0));
-    // F22: an LP's fee weight is its commitment times its class's fee rate over the fund's, or its commitment.
+    // F22: an LP's fee weight is its commitment times its class's fee rate over the fund's, or its commitment. With a
+    // schedule, the fund's rate is its first (F30).
     const feeRate = (lp: InputLp) => (inputs.terms.lp_classes ?? []).find((c) => c.name === lp.class)?.fee_rate;
+    const fundRate = inputs.terms.fee_rate ?? inputs.terms.management_fee?.steps[0]!.rate;
     const weight = (lp: InputLp) => {
       const r = feeRate(lp);
-      return r == null ? exact(lp.commitment) : exact(lp.commitment).times(exact(r)).div(exact(inputs.terms.fee_rate!));
+      return r == null ? exact(lp.commitment) : exact(lp.commitment).times(exact(r)).div(exact(fundRate!));
     };
     const allFees = lps.reduce((s, lp) => s.plus(weight(lp)), new D(0));
     expected.accounts!.forEach((a, i) => {
@@ -450,10 +490,10 @@ describe.each(RUN.filter((d) => lpsOf(d).some((lp) => joinsLater(d, lp))))("%s, 
   const lps = inputs.lps!;
   const eq = readJson<LpExpected>(dir, "expected.json").equalization!;
   const amount = (m: Moves, k: keyof Omit<Moves, "name">) => exact(m[k].exact);
-  const KEYS = ["capital_paid", "capital_returned", "interest_paid", "interest_received"] as const;
+  const KEYS = ["capital_paid", "capital_returned", "interest_paid", "interest_received", "back_fees"] as const;
 
   it("has each later close in date order, the LPs joining at it, and every LP in by then (F25, FA21)", () => {
-    expect(eq.rate).toBe(inputs.terms.equalization_rate);
+    expect(eq.rate).toBe(inputs.terms.equalization_rate ?? null);
     const dates = [...new Set(lps.filter((lp) => joinsLater(dir, lp)).map((lp) => lp.close!))].sort();
     expect(eq.closes.map((c) => c.date)).toEqual(dates);
     for (const c of eq.closes) {
@@ -473,6 +513,8 @@ describe.each(RUN.filter((d) => lpsOf(d).some((lp) => joinsLater(d, lp))))("%s, 
         const joining = c.joining.includes(m.name);
         expect(amount(m, joining ? "capital_returned" : "capital_paid").isZero(), `${c.date} ${m.name}`).toBe(true);
         expect(amount(m, joining ? "interest_received" : "interest_paid").isZero(), `${c.date} ${m.name}`).toBe(true);
+        // F29: back fees are a joiner's, paid to the manager; the LPs already in pay and get back nothing for fees.
+        if (!joining) expect(amount(m, "back_fees").isZero(), `${c.date} ${m.name}`).toBe(true);
         for (const k of KEYS) expect(m[k].amount, `${c.date} ${m.name} ${k}`).toBe(cents(amount(m, k)));
       }
     }
@@ -487,5 +529,107 @@ describe.each(RUN.filter((d) => lpsOf(d).some((lp) => joinsLater(d, lp))))("%s, 
         expect(m[k].amount, `${m.name} ${k}`).toBe(cents(amount(m, k)));
       }
     }
+  });
+});
+
+/** F22, F30: an LP's fee weight, its commitment times its class's fee rate over the fund's (a schedule's first rate). */
+function feeWeight(fund: Inputs["fund"], lp: InputLp): D {
+  const rate = (fund.terms.lp_classes ?? []).find((c) => c.name === lp.class)?.fee_rate;
+  const fundRate = fund.terms.fee_rate ?? fund.terms.management_fee?.steps[0]!.rate;
+  return rate == null ? exact(lp.commitment) : exact(lp.commitment).times(exact(rate)).div(exact(fundRate!));
+}
+/** F3: the GP commitment's part of a call of this kind. */
+function gpPart(fund: Inputs["fund"], kind: string, amount: D): D {
+  const g = fund.terms.gp_commitment;
+  if (!g) return new D(0);
+  const pays = kind === "investment" || (kind === "expense" && g.pays_expenses !== false) || (kind === "fee" && g.pays_fees === true);
+  return pays ? amount.times(exact(g.share)) : new D(0);
+}
+/** FA21: an LP is in at a date when it has no close, or its close is on or before it. */
+const isIn = (lp: InputLp, date: string) => lp.close == null || lp.close <= date;
+
+describe.each(RUN.filter((d) => scheduleOf(d) !== null))("%s, its fee calls", (dir) => {
+  const inputs = readJson<Inputs>(dir, "inputs.json").fund;
+  const schedule = inputs.terms.management_fee!;
+  const expected = readJson<LpExpected>(dir, "expected.json");
+  const calls = expected.fee_calls!;
+  const lps = inputs.lps ?? [];
+  const d = inputs.distribution_date ?? inputs.as_of;
+
+  it("are one a calendar period from start's to D's, in advance, the first dated start (F30, FA39)", () => {
+    const months = { quarterly: 3, semiannual: 6, annual: 12 }[schedule.frequency ?? "quarterly"]!;
+    expect(calls[0]!.date).toBe(schedule.start);
+    expect(calls[0]!.first_day).toBe(schedule.start);
+    calls.forEach((c, i) => {
+      const [y, m, day] = c.first_day.split("-").map(Number) as [number, number, number];
+      if (i > 0) expect([day, (m - 1) % months], c.date).toEqual([1, 0]);
+      expect(c.date, c.date).toBe(c.first_day);
+      expect(c.date <= d, c.date).toBe(true);
+      const end = new Date(Date.UTC(y, Math.floor((m - 1) / months) * months + months, 0)).toISOString().slice(0, 10);
+      expect(c.last_day, c.date).toBe(end);
+      if (i > 0) expect(new Date(`${calls[i - 1]!.last_day}T00:00:00Z`).getTime() + 86_400_000, c.date).toBe(new Date(`${c.date}T00:00:00Z`).getTime());
+    });
+    const next = new Date(`${calls.at(-1)!.last_day}T00:00:00Z`).getTime() + 86_400_000;
+    expect(new Date(next).toISOString().slice(0, 10) > d).toBe(true);
+  });
+
+  it("are the LPs' fees, with the GP commitment's g when it pays fees, every amount to the cent and exact (F3, F30, FC13)", () => {
+    const g = inputs.terms.gp_commitment;
+    for (const c of calls) {
+      for (const a of [c.call, c.lps, ...(c.gp_commitment ? [c.gp_commitment] : []), ...(c.by_lp ?? []).map((x) => x.fee)]) expect(a.amount, c.date).toBe(cents(exact(a.exact)));
+      expect(c.gp_commitment !== undefined, c.date).toBe(!!g);
+      const gp = c.gp_commitment ? exact(c.gp_commitment.exact) : new D(0);
+      expect(exact(c.lps.exact).plus(gp).minus(exact(c.call.exact)).abs().lte(CLOSE), c.date).toBe(true);
+      expect(gp.minus(g?.pays_fees ? exact(c.call.exact).times(exact(g.share)) : 0).abs().lte(CLOSE), c.date).toBe(true);
+    }
+  });
+
+  it.runIf(lps.length > 0)("give each LP its own fee, by its fee weight, adding up to the LPs' part (F22, F30)", () => {
+    const weights = lps.map((lp) => feeWeight(inputs, lp));
+    const all = weights.reduce((s, w) => s.plus(w), new D(0));
+    for (const c of calls) {
+      expect(c.by_lp!.map((x) => x.name), c.date).toEqual(lps.map((lp) => lp.name));
+      c.by_lp!.forEach((x, i) => expect(exact(x.fee.exact).minus(exact(c.lps.exact).times(weights[i]!).div(all)).abs().lte(CLOSE), `${c.date} ${x.name}`).toBe(true));
+    }
+  });
+
+  it("count in the LPs' paid-in with the investment and expense calls (F5, F30)", () => {
+    const others = inputs.cash_flows.filter((f) => f.type === "call").map((f) => exact(f.amount).minus(gpPart(inputs, f.kind!, exact(f.amount))));
+    const paidIn = [...others, ...calls.map((c) => exact(c.lps.exact))].reduce((s, x) => s.plus(x), new D(0));
+    expect(cents(paidIn)).toBe(expected.lps_paid_in);
+  });
+});
+
+describe.each(RUN.filter((d) => lpsOf(d).some((lp) => joinsLater(d, lp))))("%s, its fees at the later closes", (dir) => {
+  const inputs = readJson<Inputs>(dir, "inputs.json").fund;
+  const expected = readJson<LpExpected>(dir, "expected.json");
+  const lps = inputs.lps!;
+  // Every fee call's charge per unit of fee weight (F29): an entered one's LPs' part over the weights of the LPs in at its
+  // date; a schedule's, its LPs' part over every LP's weight, since it's every LP's own fee (F30).
+  const all = lps.reduce((s, lp) => s.plus(feeWeight(inputs, lp)), new D(0));
+  const entered = inputs.cash_flows
+    .filter((f) => f.type === "call" && f.kind === "fee")
+    .map((f) => {
+      const part = exact(f.amount).minus(gpPart(inputs, "fee", exact(f.amount)));
+      const w = lps.filter((lp) => isIn(lp, f.date)).reduce((s, lp) => s.plus(feeWeight(inputs, lp)), new D(0));
+      return { date: f.date, rate: part.div(w) };
+    });
+  const scheduled = (expected.fee_calls ?? []).map((c) => ({ date: c.date, rate: exact(c.lps.exact).div(all) }));
+  const fees = [...entered, ...scheduled];
+
+  it("gives each joiner its back fees: its own part of each fee call before its close (F29, FA44)", () => {
+    for (const c of expected.equalization!.closes) {
+      for (const m of c.lps.filter((x) => c.joining.includes(x.name))) {
+        const lp = lps.find((x) => x.name === m.name)!;
+        const owed = fees.filter((f) => f.date < c.date).reduce((s, f) => s.plus(f.rate.times(feeWeight(inputs, lp))), new D(0));
+        expect(exact(m.back_fees.exact).minus(owed).abs().lte(CLOSE), `${c.date} ${m.name}`).toBe(true);
+      }
+    }
+  });
+
+  it("counts each fee call at its full size in the LPs' paid-in, the back fees in it (F29)", () => {
+    const others = inputs.cash_flows.filter((f) => f.type === "call" && f.kind !== "fee").map((f) => exact(f.amount).minus(gpPart(inputs, f.kind!, exact(f.amount))));
+    const paidIn = [...others, ...fees.map((f) => f.rate.times(all))].reduce((s, x) => s.plus(x), new D(0));
+    expect(cents(paidIn)).toBe(expected.lps_paid_in);
   });
 });

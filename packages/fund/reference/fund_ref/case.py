@@ -1,11 +1,11 @@
-"""Turns a fund case's inputs.json into its expected.json (FC2 to FC5, FC9, FC11), and a refusal fixture into its
-refusal (FC7, FC12)."""
+"""Turns a fund case's inputs.json into its expected.json (FC2 to FC5, FC9, FC11, FC13), and a refusal fixture into its
+refusal (FC7, FC12, FC14)."""
 
 import copy
 import re
 from fractions import Fraction
 
-from . import breakpoints
+from . import breakpoints, fees
 from .accounts import Model
 from .closes import equalization
 from .inputs import Refusal, read
@@ -184,12 +184,14 @@ def _moves(name, m):
         "capital_returned": _lp_amount(m.capital_returned),
         "interest_paid": _lp_amount(m.interest_paid),
         "interest_received": _lp_amount(m.interest_received),
+        "back_fees": _lp_amount(m.back_fees),
     }
 
 
 def _equalization(fund, eq):
-    """F25, F26, FC11: each later close in date order, with what each LP in by then paid in or got back and the interest
-    it paid or received; then each LP's equalization over all of them."""
+    """F25, F26, F31, FC11, FC13: each later close in date order, with what each LP in by then paid in or got back, the
+    interest it paid or received, and its back fees; then each LP's equalization over all of them. The rate is null when
+    none was given, which F29 allows only when no investment or expense call comes before a later close."""
     closes = []
     for close in eq.closes:
         closes.append(
@@ -199,7 +201,24 @@ def _equalization(fund, eq):
                 "lps": [_moves(fund.lps[i].name, m) for i, m in sorted(close.moves.items())],
             }
         )
-    return {"rate": exact(eq.rate), "closes": closes, "lps": [_moves(lp.name, m) for lp, m in zip(fund.lps, eq.totals)]}
+    return {"rate": None if eq.rate is None else exact(eq.rate), "closes": closes, "lps": [_moves(lp.name, m) for lp, m in zip(fund.lps, eq.totals)]}
+
+
+def _fee_calls(fund):
+    """F31, FC13: the schedule's fee calls, once for the fund: each its date, the first and last day it covers, the
+    call, the LPs' part, the GP commitment's (with one), and with listed LPs each LP's fee, as if in from the start."""
+    out = []
+    for f in fund.flows:
+        if not f.scheduled:
+            continue
+        lps = fees.lps_fee(fund, f.factor)
+        entry = {"date": f.date.isoformat(), "first_day": f.period.first_day.isoformat(), "last_day": f.period.last_day.isoformat(), "call": _lp_amount(f.amount), "lps": _lp_amount(lps)}
+        if fund.has_gp_commitment:
+            entry["gp_commitment"] = _lp_amount(f.amount - lps)
+        if fund.lps:
+            entry["by_lp"] = [{"name": lp.name, "fee": _lp_amount(fees.lp_fee(fund, lp, f.factor))} for lp in fund.lps]
+        out.append(entry)
+    return out
 
 
 def run_case(case):
@@ -226,6 +245,8 @@ def run_case(case):
         out["pref_accrued_to_d"] = money(model.pref_accrued())
         if fund.final or fund.nav is not None:
             out["pref_on_fund_totals"] = money(model.hurdle_pref())
+    if fund.schedule is not None:
+        out["fee_calls"] = _fee_calls(fund)
     if fund.lps:
         out["lps"] = _lps(model)
     if model.named:

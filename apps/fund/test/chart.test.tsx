@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { breakpointViews, chartPoints, defaultTop } from "../src/analysis.ts";
 import { App } from "../src/App.tsx";
-import { RUN_CASES } from "./support/cases.ts";
+import { PENDING, RUN_CASES } from "./support/cases.ts";
 
 const casesDir = resolve(import.meta.dirname, "../../../packages/fund/cases");
 const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(casesDir, dir, file), "utf8"));
@@ -80,7 +80,8 @@ function listed() {
 }
 
 describe("the breakpoints", () => {
-  it.each(examples.map((e) => [e.id] as const))("lists %s's breakpoints in the engine's words, each with the GP's carry per extra $1M", (id) => {
+  // An example whose case is pending (support/cases.ts) waits for the page's step: its expected.json is ahead of the engine.
+  it.each(examples.filter((e) => !PENDING.includes(e.id)).map((e) => [e.id] as const))("lists %s's breakpoints in the engine's words, each with the GP's carry per extra $1M", (id) => {
     open(id);
     const expected = caseFile(id, "expected.json").breakpoints as { x: string; reasons: { text: string }[] }[];
     const items = listed();

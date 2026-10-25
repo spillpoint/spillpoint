@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The first rate at 100% of commitments a year.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[0].rate": "1"
+    }
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "case": "fund-32-fees-refused",
+  "generated_by": "packages/fund/reference/generate.py",
+  "fixtures": {
+    "class-fee-rate-without-fee-terms.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.fee_rate"
+      }
+    },
+    "distribution-before-schedule.json": {
+      "refused": {
+        "kind": "input",
+        "term": "distribution_before_call",
+        "field": "cash_flows[5]"
+      }
+    },
+    "fee-call-with-schedule.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_call_with_schedule",
+        "field": "cash_flows[4]"
+      }
+    },
+    "fee-commitments-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.management_fee.commitments"
+      }
+    },
+    "fee-commitments-not-a-number.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.commitments"
+      }
+    },
+    "fee-commitments-not-the-lps-total.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_commitments_mismatch",
+        "field": "terms.management_fee.commitments"
+      }
+    },
+    "fee-commitments-zero.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.commitments"
+      }
+    },
+    "fee-first-rate-zero.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.steps[0].rate"
+      }
+    },
+    "fee-first-step-from.json": {
+      "refused": {
+        "kind": "input",
+        "term": "steps_out_of_order",
+        "field": "terms.management_fee.steps[0]"
+      }
+    },
+    "fee-frequency-monthly.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.frequency"
+      }
+    },
+    "fee-rate-with-schedule.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_rate_with_schedule",
+        "field": "terms.fee_rate"
+      }
+    },
+    "fee-schedule-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee"
+      }
+    },
+    "fee-schedule-offset.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "offset",
+        "field": "terms.management_fee.offset"
+      }
+    },
+    "fee-start-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.management_fee.start"
+      }
+    },
+    "fee-start-not-a-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_date",
+        "field": "terms.management_fee.start"
+      }
+    },
+    "fee-step-basis.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "basis",
+        "field": "terms.management_fee.steps[1].basis"
+      }
+    },
+    "fee-step-from-at-start.json": {
+      "refused": {
+        "kind": "input",
+        "term": "steps_out_of_order",
+        "field": "terms.management_fee.steps[1]"
+      }
+    },
+    "fee-step-from-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.management_fee.steps[1].from"
+      }
+    },
+    "fee-step-from-not-a-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_date",
+        "field": "terms.management_fee.steps[1].from"
+      }
+    },
+    "fee-step-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps[0]"
+      }
+    },
+    "fee-step-rate-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.management_fee.steps[1].rate"
+      }
+    },
+    "fee-step-rate-negative.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.steps[1].rate"
+      }
+    },
+    "fee-step-rate-not-a-number.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.steps[0].rate"
+      }
+    },
+    "fee-step-rate-one.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.steps[0].rate"
+      }
+    },
+    "fee-steps-empty.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps"
+      }
+    },
+    "fee-steps-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.management_fee.steps"
+      }
+    },
+    "fee-steps-not-a-list.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps"
+      }
+    },
+    "fee-steps-out-of-order.json": {
+      "refused": {
+        "kind": "input",
+        "term": "steps_out_of_order",
+        "field": "terms.management_fee.steps[2]"
+      }
+    },
+    "later-close-without-rate.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.equalization_rate"
+      }
+    },
+    "order-commitments-after-lps.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_date",
+        "field": "lps[1].close"
+      }
+    },
+    "order-fee-call-before-lps.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_call_with_schedule",
+        "field": "cash_flows[4]"
+      }
+    },
+    "order-fee-call-first-in-cash-flows.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_call_with_schedule",
+        "field": "cash_flows[5]"
+      }
+    },
+    "order-fee-rate-before-classes.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_rate_with_schedule",
+        "field": "terms.fee_rate"
+      }
+    },
+    "order-rate-before-commitments.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.equalization_rate"
+      }
+    },
+    "order-schedule-before-fee-rate.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.frequency"
+      }
+    },
+    "order-unsupported-before-fields.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "offset",
+        "field": "terms.management_fee.offset"
+      }
+    }
+  }
+}

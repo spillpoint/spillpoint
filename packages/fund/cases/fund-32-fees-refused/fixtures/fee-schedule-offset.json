@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The schedule given a fee offset, a term F30 doesn't model.",
+  "change": {
+    "set": {
+      "terms.management_fee.offset": "0.5"
+    }
+  }
+}

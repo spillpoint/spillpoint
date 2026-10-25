@@ -1,0 +1,13 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "A distribution on 31 January 2021, before the schedule's first call on 15 February, the fund's first call.",
+  "change": {
+    "set": {
+      "cash_flows[5]": {
+        "date": "2021-01-31",
+        "type": "distribution",
+        "amount": "1000000"
+      }
+    }
+  }
+}

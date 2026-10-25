@@ -1,6 +1,6 @@
 {
   "case": "fund-26-closes-and-classes",
-  "description": "Two later closes, the second a friends-and-family LP paying no fees: at each close the LPs in by then rebalance, investment calls by commitment and fee calls only among the LPs paying fees.",
+  "description": "Two later closes, the second a friends-and-family LP paying no fees: at each close the LPs in by then rebalance the investment calls by commitment, and each joiner pays its own back fees for the earlier fee calls to the manager (F29): Birchwood $50,000, Cedar none.",
   "xs": [
     "0",
     "5000000",

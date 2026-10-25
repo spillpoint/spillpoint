@@ -1,0 +1,74 @@
+{
+  "case": "fund-30-fee-step-down",
+  "description": "Two LPs, fees called half-yearly, 2% stepping down to 1.5% on 1 Mar 2022, inside a half-year; a 2% GP commitment that pays fees; an 8% pref with a full catch-up; final. The fees called after the last distribution are paid-in the final distribution returns first, so below $765,306.12 the GP owes back carry.",
+  "xs": [
+    "0",
+    "500000",
+    "1000000",
+    "10000000"
+  ],
+  "fund": {
+    "as_of": "2027-03-31",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      },
+      "gp_commitment": {
+        "share": "0.02",
+        "pays_fees": true
+      },
+      "management_fee": {
+        "start": "2020-07-01",
+        "frequency": "semiannual",
+        "steps": [
+          {
+            "rate": "0.02"
+          },
+          {
+            "rate": "0.015",
+            "from": "2022-03-01"
+          }
+        ]
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2020-07-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2021-09-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "8000000"
+      },
+      {
+        "date": "2023-06-30",
+        "type": "distribution",
+        "amount": "12000000"
+      },
+      {
+        "date": "2025-03-31",
+        "type": "distribution",
+        "amount": "20000000"
+      }
+    ],
+    "final": true,
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "15000000"
+      },
+      {
+        "name": "Birchwood Family Office",
+        "commitment": "10000000"
+      }
+    ]
+  }
+}

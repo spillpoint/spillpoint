@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The schedule's commitments 0.",
+  "change": {
+    "set": {
+      "terms.management_fee.commitments": "0"
+    }
+  }
+}

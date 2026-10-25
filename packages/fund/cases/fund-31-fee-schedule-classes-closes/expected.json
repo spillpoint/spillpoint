@@ -1,0 +1,1891 @@
+{
+  "case": "fund-31-fee-schedule-classes-closes",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-12-31",
+  "final": false,
+  "lps_paid_in": "11120000.00",
+  "fee_calls": [
+    {
+      "date": "2022-01-01",
+      "first_day": "2022-01-01",
+      "last_day": "2022-03-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-04-01",
+      "first_day": "2022-04-01",
+      "last_day": "2022-06-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-07-01",
+      "first_day": "2022-07-01",
+      "last_day": "2022-09-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-10-01",
+      "first_day": "2022-10-01",
+      "last_day": "2022-12-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-01-01",
+      "first_day": "2023-01-01",
+      "last_day": "2023-03-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-04-01",
+      "first_day": "2023-04-01",
+      "last_day": "2023-06-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-07-01",
+      "first_day": "2023-07-01",
+      "last_day": "2023-09-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-10-01",
+      "first_day": "2023-10-01",
+      "last_day": "2023-12-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-01-01",
+      "first_day": "2024-01-01",
+      "last_day": "2024-03-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-04-01",
+      "first_day": "2024-04-01",
+      "last_day": "2024-06-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-07-01",
+      "first_day": "2024-07-01",
+      "last_day": "2024-09-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-10-01",
+      "first_day": "2024-10-01",
+      "last_day": "2024-12-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2025-01-01",
+      "first_day": "2025-01-01",
+      "last_day": "2025-03-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2025-04-01",
+      "first_day": "2025-04-01",
+      "last_day": "2025-06-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2025-07-01",
+      "first_day": "2025-07-01",
+      "last_day": "2025-09-30",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2025-10-01",
+      "first_day": "2025-10-01",
+      "last_day": "2025-12-31",
+      "call": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "lps": {
+        "amount": "70000.00",
+        "exact": "70000"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "fee": {
+            "amount": "20000.00",
+            "exact": "20000"
+          }
+        }
+      ]
+    }
+  ],
+  "lps": [
+    {
+      "name": "Alder Endowment",
+      "commitment": "10000000",
+      "share": "0.5",
+      "paid_in": {
+        "amount": "5800000.00",
+        "exact": "5800000"
+      }
+    },
+    {
+      "name": "Cedar Holdings",
+      "class": "Friends and family",
+      "commitment": "2000000",
+      "share": "0.1",
+      "paid_in": {
+        "amount": "1000000.00",
+        "exact": "1000000"
+      }
+    },
+    {
+      "name": "Dogwood Pension",
+      "class": "Anchor",
+      "close": "2022-08-15",
+      "commitment": "8000000",
+      "share": "0.4",
+      "paid_in": {
+        "amount": "4320000.00",
+        "exact": "4320000"
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "class": null,
+      "commitment": "10000000",
+      "share": "0.5",
+      "fee_share": "5/7",
+      "paid_in": "5800000.00"
+    },
+    {
+      "class": "Anchor",
+      "commitment": "8000000",
+      "share": "0.4",
+      "fee_share": "2/7",
+      "paid_in": "4320000.00"
+    },
+    {
+      "class": "Friends and family",
+      "commitment": "2000000",
+      "share": "0.1",
+      "fee_share": "0",
+      "paid_in": "1000000.00"
+    }
+  ],
+  "equalization": {
+    "rate": "0.08",
+    "closes": [
+      {
+        "date": "2022-08-15",
+        "joining": [
+          "Dogwood Pension"
+        ],
+        "lps": [
+          {
+            "name": "Alder Endowment",
+            "capital_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "capital_returned": {
+              "amount": "1333333.33",
+              "exact": "4000000/3"
+            },
+            "interest_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_received": {
+              "amount": "56986.30",
+              "exact": "4160000/73"
+            },
+            "back_fees": {
+              "amount": "0.00",
+              "exact": "0"
+            }
+          },
+          {
+            "name": "Cedar Holdings",
+            "capital_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "capital_returned": {
+              "amount": "266666.67",
+              "exact": "800000/3"
+            },
+            "interest_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_received": {
+              "amount": "11397.26",
+              "exact": "832000/73"
+            },
+            "back_fees": {
+              "amount": "0.00",
+              "exact": "0"
+            }
+          },
+          {
+            "name": "Dogwood Pension",
+            "capital_paid": {
+              "amount": "1600000.00",
+              "exact": "1600000"
+            },
+            "capital_returned": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_paid": {
+              "amount": "68383.56",
+              "exact": "4992000/73"
+            },
+            "interest_received": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "back_fees": {
+              "amount": "60000.00",
+              "exact": "60000"
+            }
+          }
+        ]
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "capital_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "capital_returned": {
+          "amount": "1333333.33",
+          "exact": "4000000/3"
+        },
+        "interest_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_received": {
+          "amount": "56986.30",
+          "exact": "4160000/73"
+        },
+        "back_fees": {
+          "amount": "0.00",
+          "exact": "0"
+        }
+      },
+      {
+        "name": "Cedar Holdings",
+        "capital_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "capital_returned": {
+          "amount": "266666.67",
+          "exact": "800000/3"
+        },
+        "interest_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_received": {
+          "amount": "11397.26",
+          "exact": "832000/73"
+        },
+        "back_fees": {
+          "amount": "0.00",
+          "exact": "0"
+        }
+      },
+      {
+        "name": "Dogwood Pension",
+        "capital_paid": {
+          "amount": "1600000.00",
+          "exact": "1600000"
+        },
+        "capital_returned": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_paid": {
+          "amount": "68383.56",
+          "exact": "4992000/73"
+        },
+        "interest_received": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "back_fees": {
+          "amount": "60000.00",
+          "exact": "60000"
+        }
+      }
+    ]
+  },
+  "breakpoints": [
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": "Friends and family",
+          "amount": "1000000",
+          "text": "Friends and family: LPs have their $1,000,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "5800000.00",
+      "exact": "5800000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": "Anchor",
+          "amount": "4320000",
+          "text": "Anchor: LPs have their $4,320,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "6600000.00",
+      "exact": "6600000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": null,
+          "amount": "5800000",
+          "text": "Fund terms: LPs have their $5,800,000 of paid-in capital back"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "5000000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "carry_tier": "0.00",
+          "total": "5000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2500000.00",
+            "lps": {
+              "capital": "2500000.00",
+              "carry_tier": "0.00",
+              "total": "2500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2000000.00",
+            "lps": {
+              "capital": "2000000.00",
+              "carry_tier": "0.00",
+              "total": "2000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "500000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "0.00",
+              "total": "500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "2500000.00",
+            "exact": "2500000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "500000.00",
+            "exact": "500000"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "2000000.00",
+            "exact": "2000000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5000000.00",
+        "lps": {
+          "capital": "5000000.00",
+          "carry_tier": "0.00",
+          "total": "5000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "10000000.00",
+          "carry_tier": "0.00",
+          "total": "10000000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "2500000.00",
+            "lps": {
+              "capital": "2500000.00",
+              "carry_tier": "0.00",
+              "total": "2500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5000000.00",
+            "lps": {
+              "capital": "5000000.00",
+              "carry_tier": "0.00",
+              "total": "5000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "2000000.00",
+            "lps": {
+              "capital": "2000000.00",
+              "carry_tier": "0.00",
+              "total": "2000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "4000000.00",
+            "lps": {
+              "capital": "4000000.00",
+              "carry_tier": "0.00",
+              "total": "4000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "500000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "0.00",
+              "total": "500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1000000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "0.00",
+              "total": "1000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "2500000.00",
+            "exact": "2500000"
+          },
+          "to_date": {
+            "amount": "5000000.00",
+            "exact": "5000000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "500000.00",
+            "exact": "500000"
+          },
+          "to_date": {
+            "amount": "1000000.00",
+            "exact": "1000000"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "distribution": {
+            "amount": "2000000.00",
+            "exact": "2000000"
+          },
+          "to_date": {
+            "amount": "4000000.00",
+            "exact": "4000000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "5800000.00",
+      "exact": "5800000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5800000.00",
+        "lps": {
+          "capital": "5720000.00",
+          "carry_tier": "80000.00",
+          "total": "5800000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10800000.00",
+        "lps": {
+          "capital": "10720000.00",
+          "carry_tier": "80000.00",
+          "total": "10800000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "2900000.00",
+            "lps": {
+              "capital": "2900000.00",
+              "carry_tier": "0.00",
+              "total": "2900000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5400000.00",
+            "lps": {
+              "capital": "5400000.00",
+              "carry_tier": "0.00",
+              "total": "5400000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "2320000.00",
+            "lps": {
+              "capital": "2320000.00",
+              "carry_tier": "0.00",
+              "total": "2320000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "4320000.00",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "0.00",
+              "total": "4320000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "580000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "80000.00",
+              "total": "580000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1080000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "80000.00",
+              "total": "1080000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "2900000.00",
+            "exact": "2900000"
+          },
+          "to_date": {
+            "amount": "5400000.00",
+            "exact": "5400000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "580000.00",
+            "exact": "580000"
+          },
+          "to_date": {
+            "amount": "1080000.00",
+            "exact": "1080000"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "distribution": {
+            "amount": "2320000.00",
+            "exact": "2320000"
+          },
+          "to_date": {
+            "amount": "4320000.00",
+            "exact": "4320000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "6600000.00",
+      "exact": "6600000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "6600000.00",
+        "lps": {
+          "capital": "6120000.00",
+          "carry_tier": "432000.00",
+          "total": "6552000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "48000.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "48000.00"
+        }
+      },
+      "to_date": {
+        "amount": "11600000.00",
+        "lps": {
+          "capital": "11120000.00",
+          "carry_tier": "432000.00",
+          "total": "11552000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "48000.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "48000.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "3300000.00",
+            "lps": {
+              "capital": "3300000.00",
+              "carry_tier": "0.00",
+              "total": "3300000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "5800000.00",
+            "lps": {
+              "capital": "5800000.00",
+              "carry_tier": "0.00",
+              "total": "5800000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "2640000.00",
+            "lps": {
+              "capital": "2320000.00",
+              "carry_tier": "272000.00",
+              "total": "2592000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "48000.00"
+                }
+              ],
+              "total": "48000.00"
+            }
+          },
+          "to_date": {
+            "amount": "4640000.00",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "272000.00",
+              "total": "4592000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "48000.00"
+                }
+              ],
+              "total": "48000.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "660000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "160000.00",
+              "total": "660000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1160000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "160000.00",
+              "total": "1160000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "3300000.00",
+            "exact": "3300000"
+          },
+          "to_date": {
+            "amount": "5800000.00",
+            "exact": "5800000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "660000.00",
+            "exact": "660000"
+          },
+          "to_date": {
+            "amount": "1160000.00",
+            "exact": "1160000"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "distribution": {
+            "amount": "2592000.00",
+            "exact": "2592000"
+          },
+          "to_date": {
+            "amount": "4592000.00",
+            "exact": "4592000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "10000000.00",
+        "lps": {
+          "capital": "6120000.00",
+          "carry_tier": "3288000.00",
+          "total": "9408000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "340000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "252000.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "592000.00"
+        }
+      },
+      "to_date": {
+        "amount": "15000000.00",
+        "lps": {
+          "capital": "11120000.00",
+          "carry_tier": "3288000.00",
+          "total": "14408000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "340000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "252000.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "592000.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "distribution": {
+            "amount": "5000000.00",
+            "lps": {
+              "capital": "3300000.00",
+              "carry_tier": "1360000.00",
+              "total": "4660000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "340000.00"
+                }
+              ],
+              "total": "340000.00"
+            }
+          },
+          "to_date": {
+            "amount": "7500000.00",
+            "lps": {
+              "capital": "5800000.00",
+              "carry_tier": "1360000.00",
+              "total": "7160000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "340000.00"
+                }
+              ],
+              "total": "340000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "distribution": {
+            "amount": "4000000.00",
+            "lps": {
+              "capital": "2320000.00",
+              "carry_tier": "1428000.00",
+              "total": "3748000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "252000.00"
+                }
+              ],
+              "total": "252000.00"
+            }
+          },
+          "to_date": {
+            "amount": "6000000.00",
+            "lps": {
+              "capital": "4320000.00",
+              "carry_tier": "1428000.00",
+              "total": "5748000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "252000.00"
+                }
+              ],
+              "total": "252000.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "distribution": {
+            "amount": "1000000.00",
+            "lps": {
+              "capital": "500000.00",
+              "carry_tier": "500000.00",
+              "total": "1000000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1500000.00",
+            "lps": {
+              "capital": "1000000.00",
+              "carry_tier": "500000.00",
+              "total": "1500000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "4660000.00",
+            "exact": "4660000"
+          },
+          "to_date": {
+            "amount": "7160000.00",
+            "exact": "7160000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1000000.00",
+            "exact": "1000000"
+          },
+          "to_date": {
+            "amount": "1500000.00",
+            "exact": "1500000"
+          }
+        },
+        {
+          "name": "Dogwood Pension",
+          "distribution": {
+            "amount": "3748000.00",
+            "exact": "3748000"
+          },
+          "to_date": {
+            "amount": "5748000.00",
+            "exact": "5748000"
+          }
+        }
+      ]
+    }
+  ]
+}

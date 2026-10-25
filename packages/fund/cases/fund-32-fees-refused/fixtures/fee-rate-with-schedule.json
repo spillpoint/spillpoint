@@ -1,0 +1,9 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "The fund's fee rate given beside a schedule, whose first rate is the fund's.",
+  "change": {
+    "set": {
+      "terms.fee_rate": "0.02"
+    }
+  }
+}

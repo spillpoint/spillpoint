@@ -1,6 +1,6 @@
 {
   "case": "fund-25-later-close",
-  "description": "One later close: Cedar joins six months after the first call, pays in its share of the LPs' part of the earlier calls with 8% equalization interest, and Alder and Birchwood get back what they paid over their shares. A 2% GP commitment, fee-free, pays its part of the investment calls and isn't in the equalization. The waterfall is the fund's as if all three were in from the start.",
+  "description": "One later close: Cedar joins six months after the first calls. It pays in its share of the LPs' part of the earlier investment call with 8% equalization interest, and Alder and Birchwood get back what they paid over their shares. It pays its own $20,000 of back fees for the earlier fee call to the manager, and nothing about fees moves between the LPs (F29). A 2% GP commitment, fee-free, pays its part of the investment calls and isn't in the equalization. The waterfall is the fund's as if all three were in from the start.",
   "xs": [
     "0",
     "2000000",

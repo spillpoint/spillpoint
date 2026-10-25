@@ -1,0 +1,7 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "The schedule taken out, leaving the Anchor class's fee rate with nothing to be set against.",
+  "change": {
+    "del": "terms.management_fee"
+  }
+}

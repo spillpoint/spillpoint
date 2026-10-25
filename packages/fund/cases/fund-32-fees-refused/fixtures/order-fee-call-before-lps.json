@@ -1,0 +1,15 @@
+{
+  "base": "fund-30-fee-step-down",
+  "about": "An entered fee call beside the schedule, and an LP's commitment below 0: the cash flows come before the LPs.",
+  "change": {
+    "set": {
+      "cash_flows[4]": {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "250000"
+      },
+      "lps[1].commitment": "-1"
+    }
+  }
+}

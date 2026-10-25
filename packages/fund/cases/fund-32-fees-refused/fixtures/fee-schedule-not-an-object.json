@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The management fee given as a bare rate, not a schedule.",
+  "change": {
+    "set": {
+      "terms.management_fee": "0.02"
+    }
+  }
+}

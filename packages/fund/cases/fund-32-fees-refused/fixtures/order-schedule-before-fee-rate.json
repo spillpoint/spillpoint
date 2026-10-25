@@ -1,0 +1,10 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "A fee rate beside the schedule, and a monthly frequency: the schedule's own fields come first.",
+  "change": {
+    "set": {
+      "terms.fee_rate": "0.02",
+      "terms.management_fee.frequency": "monthly"
+    }
+  }
+}
