@@ -244,7 +244,7 @@ The LPs are checked after everything else, one LP at a time in order. Within an 
 - **It's treated as in from the start** (Jordan, 2026-10-23): its share of every call, by F23, from each call's own date, so its pref accrues from the original calls. Later closes change no account and no tier.
 - **The cash flows are the fund's calls as it made them,** each its total from the LPs in at the time. Equalization isn't entered: it's worked out.
 - **At each later close,** the LPs in by then rebalance: for each investment and expense call before the close, every LP's part becomes its share among them by commitment. The joining LPs pay in their parts, and the LPs already in get back what they had paid over theirs. Fee calls aren't rebalanced: each joining LP pays its own back fees to the manager (F29, from 0.4.0; 0.3.0 rebalanced them by F22's weights).
-- **Equalization interest:** each joining LP pays interest at `equalization_rate` (Jordan, 2026-10-23: it must be entered, "0" for none, when an investment or expense call comes before a later close, F29), simple, Actual/365, on its part of each earlier investment and expense call, from that call's date to its close. It goes to the LPs already in, in proportion to what each gets back of that call.
+- **Equalization interest:** each joining LP pays interest at `equalization_rate` (Jordan, 2026-10-23: it must be entered, "0" for none; from 0.4.0, only when an investment or expense call comes before a later close, F29), simple, Actual/365, on its part of each earlier investment and expense call, from that call's date to its close. It goes to the LPs already in, in proportion to what each gets back of that call.
 - **Outside the waterfall:** equalization capital and interest, and back fees, aren't distributions and don't run the tiers. An LP's paid-in is its share of every call, as if from the start: the catch-up included, and what it got back left out.
 - **Several later closes** rebalance in date order, each among the LPs in by then. LPs closing on the same date join together.
 - **A close must come before the fund's first distribution,** X's included.
@@ -309,7 +309,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - **Without listed LPs,** the LPs' fee is `commitments` times the fee factor.
 - **The call:** the LPs' fees added up. When the GP commitment pays fees (F3), the call is that over (1 − g), so the GP commitment pays g of it.
 - **As if in from the start** (F25, F29): a schedule's calls are every LP's own fee, whatever its close. A joiner's part of those before its close is its back fees.
-- **A period with nothing to call,** every LP's fee 0, isn't a call.
+- **A period with nothing to call,** every day of it at a rate of 0, isn't a call (FA40).
 - **With a schedule,** no fee call is entered and `fee_rate` isn't given: the schedule's rate is the fund's. A class's `fee_rate` is against the schedule's first rate.
 - **The schedule's calls are calls:** they run as entered fee calls do (F3, F5, F6, F23), come before distributions on one date (F4), and count for `no_calls` and `distribution_before_call`. The fund's first call, entered or the schedule's, decides who joins at a later close (F25): an LP whose close is after it, so after `start` at the latest, owes back fees.
 - **Defaults (Claude's, settled with the spec):**
