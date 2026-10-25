@@ -453,6 +453,7 @@ Two optional columns after the commitment: class, then close.
 
 **The clawback card,** with two or more accounts:
 - **Each class's owed** under the fund's, in a small table **(mine)**: "Owed back by class, each on its own totals", one row a class.
+  - **Only when some class is owed something** (f03d review, answer 1), with $0.00 for a class owed nothing. Left out when no class is owed anything, as the classes card leaves out its "Owed back".
 - **Its sentence stays the fund's.**
 - **Its intro (mine)** ends "…one run of the waterfall for each class, on its own totals." in place of "one run of the waterfall on everything paid in and everything distributed".
 

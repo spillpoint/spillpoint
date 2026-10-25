@@ -585,12 +585,29 @@ describe("Payouts with classes and later closes", () => {
     ]);
   });
 
+  it("gives the clawback card's owed by class only while some class is owed something: case 24 at $0 and $2,500,000", async () => {
+    const byClass = () => within(card("The clawback")!).queryByRole("table", { name: "Owed back by class, each on its own totals" });
+    render(<App />);
+    await openFile(caseText("fund-24-classes-clawback"));
+    type(/^Distribution on/, "0");
+    expect(rowsOf(byClass()!)).toEqual([
+      ["Fund terms", "$320,000.00"],
+      ["Friends and family", "$0.00"],
+    ]);
+    type(/^Distribution on/, "2500000");
+    expect(card("The clawback")!.querySelector(".clawback__sentence")!.textContent).toMatch(/owes nothing back to the LPs\.$/);
+    expect(byClass()).toBeNull();
+    expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("LP multiple");
+  });
+
   it("follows the NAV split at NAV in the classes card, with no Owed back where no class is owed anything: case 22", async () => {
     render(<App />);
     await openFile(caseText("fund-22-classes-fee-carry"));
     expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("LP multiple");
     fireEvent.click(screen.getByRole("button", { name: "Set X to NAV" }));
-    expect(screen.getByRole("region", { name: "The clawback" }).querySelector(".clawback__sentence")!.textContent).toMatch(/owes nothing back to the LPs\.$/);
+    const clawback = screen.getByRole("region", { name: "The clawback" });
+    expect(clawback.querySelector(".clawback__sentence")!.textContent).toMatch(/owes nothing back to the LPs\.$/);
+    expect(within(clawback).queryByRole("table", { name: "Owed back by class, each on its own totals" })).toBeNull();
     expect(cardTable(/^Each class at/)[0]!.at(-1)).toBe("LP multiple");
   });
 

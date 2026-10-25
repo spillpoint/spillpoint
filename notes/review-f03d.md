@@ -7,7 +7,8 @@ Branch `f03d-fund-release-0.3.0`, from main after #121. The release step for 0.3
 | Commit | What |
 |---|---|
 | `cc5dc34` | the first commit (§1): the page, the plan, one line of ASSUMPTIONS, the screenshots |
-| the last | the release (§2) and this note |
+| `5ee1e38` | the release (§2) and this note |
+| the last | your answers to this note's questions (§6) |
 
 ## 1. The first commit
 
@@ -63,7 +64,7 @@ The classes' table fits again from 618 to 640 because the page's side padding is
 - **At every point of cases 22, 23, 24, 26 and 28,** the column is there exactly when some class is owed something.
 - **Every kind of point is among them:** not final, final with nothing owed, owed, and owed with a class at $0.00.
 
-**The clawback card's own "Owed back by class" table is unchanged:** it shows every class at $0.00 when nothing is owed. Open question 1.
+**The clawback card's own "Owed back by class" table** follows the same rule from the last commit (§6).
 
 ### "Fund terms" as a class's name (your answer 3)
 
@@ -206,7 +207,7 @@ What CI runs, `pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm
 
 | Suite | Before | Now | Changed |
 |---|---:|---:|---|
-| Fund page | 489 | 495 | the LPs tab's cards by width; "Owed back" when some class is owed, at NAV and across the cases; "Fund terms" typed, in a file and in a paste. Four files open files through one helper |
+| Fund page | 489 | 496 | the LPs tab's cards by width; "Owed back" when some class is owed, at NAV and across the cases, on the classes card and the clawback card; "Fund terms" typed, in a file and in a paste. Four files open files through one helper |
 | Fund package | 1,042 (6 skipped) | 1,042 (6 skipped) | |
 | Engine | 3,177 | 3,177 | |
 | Main page | 680 | 680 | |
@@ -218,6 +219,22 @@ What CI runs, `pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm
 ## 5. CI and permissions (hard rule 9)
 
 Nothing in `.github/workflows/` or `.claude/`.
+
+## 6. Your answers to this note's questions
+
+**1. The clawback card's "Owed back by class" table follows answer 1.** It's there when some class is owed something, every class in it, $0.00 for one owed nothing. With nothing owed to any class it's left out, and the sentence above it says "owes nothing back to the LPs". The plan says so under the clawback card.
+- **A new test, case 24:**
+  - **At $0** the table is Fund terms $320,000.00 and Friends and family $0.00.
+  - **At $2,500,000** the sentence says "owes nothing back to the LPs", and neither the table nor the classes card's "Owed back" is there.
+- **Case 22 at NAV,** in the classes card's test, now checks the table is gone too.
+- **With the old rule put back,** both tests fail.
+- **Case 28 at $0** still shows $1,925,000.00 and $450,000.00, as before.
+
+**2. The release note:** the engine's line reads "on 1,200 more", your count of the random funds made. Nothing else in it changed.
+
+**3. The README's example** stays on `toCents`. Nothing changed.
+
+**Nothing in `packages/fund`** changed in this commit, so the tarball is the one in §3: `04b4649a1555663b539424ff46fc455adf0b012a`, packed again after the commit.
 
 ## How to check it on your machine
 
@@ -240,6 +257,7 @@ pnpm --filter @spillpoint/fund dev
 - **Case 24 at $0:** "Owed back" is $320,000.00 for Fund terms and $0.00 for Friends and family. From $2,000,000 nothing is owed, and the column goes. I checked $0 and $2,500,000 on the built page.
 - **Case 28 at $0:** $1,925,000.00 and $450,000.00. From $10,000,000, Seed LPs is owed $0.00 beside Fund terms' $459,375.00 or more, which more distributions never clear, so the column stays at every X.
 - **Case 22 at NAV** ("Set X to NAV") has no "Owed back": no class is owed anything there.
+- **The clawback card,** on the same funds: its "Owed back by class" table is there exactly when the classes card's "Owed back" is. Case 24 at $0 shows it; at $2,500,000 it's gone.
 
 **"Fund terms," case 26.** On the LPs tab:
 - **Rename "Friends and family" to "Fund terms":** your sentence is under the name and at the top of the tab.
@@ -292,6 +310,6 @@ It prints Fund terms 4000000.00 3900000.00, Friends and family 1250000.00 130000
 
 ## Open questions
 
-1. **The clawback card's "Owed back by class" table** still shows when no class is owed anything, every row $0.00, under the sentence "owes nothing back to the LPs". Should it follow answer 1 too, and go when nothing is owed?
-2. **The release note's "How it's tested"** uses your checks' numbers as you gave them, and calls the checker "a separate checker in exact fractions written from SPEC.md alone", as 0.2.0's did. Fine to publish so?
-3. **The README's new example** prints `toCents`, which rounds half up, so Alder's interest at the second close is 22520.55 there and $22,520.54 on the page, which rounds down as paid. The paragraph under it says so. Fine, or print it rounded down?
+The three from this note's first version are answered in §6. One small one from the last commit:
+
+1. **The release note's line on the clawback card,** "gives each class's owed, each on its own totals", doesn't say the table now goes when no class is owed anything, as the classes card's line just above it does. I left the note as you approved it, apart from the number. Add "when some class is owed something", or leave it?

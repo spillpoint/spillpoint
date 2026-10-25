@@ -52,6 +52,9 @@ interface Props {
 export function Clawback({ fund, clawback, accounts, points, breakpoints, x, top, onX }: Props) {
   // F24: with classes, each settles its own clawback on its own totals, and the fund's owed is theirs added up.
   const run = accounts.length > 1 ? "one run of the waterfall for each class, on its own totals" : "one run of the waterfall on everything paid in and everything distributed";
+  // Each class's owed, when some class is owed something, $0.00 for one owed nothing; with nothing owed to any, the
+  // sentence says so and the table is left out, as the classes card leaves out its column (f03d review, answer 1).
+  const byClass = accounts.length > 1 && accounts.some((a) => owesSomething(a.clawback!.owed));
   return (
     <section className="card" aria-labelledby="clawback-heading">
       <h2 id="clawback-heading">The clawback</h2>
@@ -61,7 +64,7 @@ export function Clawback({ fund, clawback, accounts, points, breakpoints, x, top
           : `At NAV, the split is as if the fund were liquidated on ${dateText(fund.distributionDate)}, so this would be its last distribution, and the carry the GP has been paid to date is set against what it has earned on the fund's totals${accounts.length > 1 ? `: ${run}` : ""}.`}
       </p>
       <p className={`clawback__sentence${owesSomething(clawback.owed) ? " clawback__sentence--owed" : ""}`}>{clawbackSentence(clawback)}</p>
-      {accounts.length > 1 && (
+      {byClass && (
         <table className="split clawback__accounts">
           <caption>Owed back by class, each on its own totals</caption>
           <tbody>

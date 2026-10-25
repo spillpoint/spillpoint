@@ -84,7 +84,7 @@ The package's README lists each stable name with what it means.
 
 **Checked independently, beyond the cases:**
 - **The reference,** against that checker on 1,800 random funds with classes and closes: 59,441 LP rows, each exact, and 6,272 single-fault inputs refused the same.
-- **The engine,** on 1,190 more:
+- **The engine,** on 1,200 more:
   - 4,957,681 amounts, each to the cent and within 1e-24 of exact
   - 244,043 LP rows, 4,007 breakpoints and 33,624 equalization amounts
   - 4,168 single-fault inputs, refused the same, kind, term and path
