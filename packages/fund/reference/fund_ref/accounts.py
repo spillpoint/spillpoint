@@ -6,7 +6,8 @@ account is a fund of its own, run by waterfall.py exactly as a fund with one
 kind of LP is:
 - its terms are the fund's, with its class's carry (F22);
 - its calls are its part of the LPs' part of each call: investment and expense
-  calls by commitment, fee calls by F22's fee weight (F23);
+  calls by commitment, fee calls by F22's fee weight (F23). A fee call's LPs'
+  part is every LP's own fee, as if in from the start (F29, fees.py);
 - its distributions are its part, by commitment, of the LPs' part of each
   distribution, X's included (F23);
 - it has no GP commitment: the GP commitment's line is the fund's, beside the
@@ -22,6 +23,7 @@ import dataclasses
 from dataclasses import dataclass
 from fractions import Fraction
 
+from . import fees
 from .waterfall import Waterfall, gp_commitment_part
 
 FUND_TERMS = "Fund terms"  # F27: the account of the LPs on the fund's terms, as its reasons name it
@@ -59,8 +61,7 @@ def _account_fund(fund, steps, share, fee_share):
     flows = []
     for f in fund.flows:
         if f.type == "call":
-            lps_part = f.amount - gp_commitment_part(fund, f.kind, f.amount)
-            amount = lps_part * (fee_share if f.kind == "fee" else share)
+            amount = fees.lps_part(fund, f) * (fee_share if f.kind == "fee" else share)
         else:
             amount = f.amount * (1 - fund.gp_share) * share
         flows.append(dataclasses.replace(f, amount=amount))

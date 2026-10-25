@@ -16,12 +16,16 @@ more than one problem:
    checked through before the next: its shape and its fields, that the name
    and commitment are there, the name, the commitment, whether the name
    repeats, then its class and its close (F28).
-5. What the LPs need of the rest (F28): a later close's `equalization_rate`,
-   then each call in date order for an LP to pay it.
+5. What the LPs need of the rest (F28, F32): `equalization_rate` when an
+   investment or expense call comes before a later close (F29); a schedule's
+   `commitments`, missing without listed LPs or not their total; then each
+   entered call in date order for an LP to pay it.
 
 Within `terms`, stage 2 checks the carry, pref, catch-up and GP commitment, the
-terms against each other, then `fee_rate`, `equalization_rate` and each class
-in order (F28).
+terms against each other, then `fee_rate`, `equalization_rate`, the management
+fee schedule (F30, F32), `fee_rate_with_schedule`, and each class in order
+(F28). Stage 3 starts with `fee_call_with_schedule`, and counts the schedule's
+calls among the calls (F30).
 
 null is the same as leaving an optional field out (FA3, FA24), except `carry`,
 the fund's or a class's: a null carry could mean "none" or "the default", so
@@ -31,6 +35,7 @@ it's refused.
 from dataclasses import dataclass, field
 from fractions import Fraction
 
+from . import fees
 from .num import parse_exact, parse_date
 
 TERM_KEYS = {
@@ -41,8 +46,10 @@ TERM_KEYS = {
     "fee_rate": None,  # a rate (F22)
     "equalization_rate": None,  # a rate (F25)
     "lp_classes": None,  # a list of classes (F22)
+    "management_fee": ("start", "frequency", "steps", "commitments"),  # the schedule (F30)
 }
 STEP_KEYS = ("rate", "from_lp_multiple")
+FEE_STEP_KEYS = ("rate", "from")  # a schedule's step (F30)
 CLASS_KEYS = ("name", "fee_rate", "carry")
 TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps")
 REQUIRED_TOP = ("as_of", "terms", "cash_flows")
@@ -79,11 +86,17 @@ class Step:
 
 @dataclass
 class Flow:
-    index: int  # its place in the input's list
+    index: int | None  # its place in the input's list; None for a schedule's call (F30)
     date: object
     type: str  # "call" or "distribution"
     kind: str | None  # a call's kind (F3)
-    amount: Fraction
+    amount: Fraction | None  # a schedule's call has its amount once the LPs are read (F30)
+    scheduled: bool = False  # a schedule's fee call, not an entered one (F30)
+    period: object = None  # fees.Period, for a schedule's call
+
+    @property
+    def factor(self):
+        return self.period.factor
 
 
 @dataclass
@@ -121,6 +134,7 @@ class Fund:
     fee_rate: Fraction | None = None  # F22: the fund's standard fee rate
     equalization_rate: Fraction | None = None  # F25
     classes: list = field(default_factory=list)  # F22: in the input's order
+    schedule: object = None  # F30: fees.Schedule, or None when fee calls are entered
 
     @property
     def first_rate(self):
@@ -135,13 +149,19 @@ class Fund:
         """The LP's class, or None when it's on the fund's terms (F22)."""
         return next((c for c in self.classes if c.name == lp.cls), None) if lp.cls is not None else None
 
+    @property
+    def standard_fee_rate(self):
+        """F22, F30: the fund's fee rate a class's own is set against: `fee_rate`, or with a schedule its first rate."""
+        return self.schedule.first_rate if self.schedule is not None else self.fee_rate
+
     def fee_weight(self, lp):
         """F22: an LP pays fee calls in proportion to its commitment times its class's fee rate over the fund's. On the
-        fund's terms, or in a class without a fee rate, its weight is its commitment."""
+        fund's terms, or in a class without a fee rate, its weight is its commitment. With a schedule, the fund's rate is
+        its first (F30), so a class's fee steps down with the fund's."""
         c = self.lp_class(lp)
         if c is None or c.fee_rate is None:
             return lp.commitment
-        return lp.commitment * c.fee_rate / self.fee_rate
+        return lp.commitment * c.fee_rate / self.standard_fee_rate
 
     def weight(self, lp, kind):
         """F23: investment and expense calls by commitment, fee calls by F22's fee weight."""
@@ -187,6 +207,21 @@ def _unsupported_classes(classes):
                 _unsupported_carry(value, path)
 
 
+def _unsupported_schedule(schedule):
+    """F32: a schedule's key other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate` and
+    `from`, named by its own key (an `offset`, a `basis`); its steps' keys at the steps' place among them."""
+    for key, value in schedule.items():
+        path = f"terms.management_fee.{key}"
+        if key not in TERM_KEYS["management_fee"]:
+            raise Refusal("unsupported", key, path)
+        if key == "steps" and isinstance(value, list):
+            for i, step in enumerate(value):
+                if isinstance(step, dict):
+                    for k in step:
+                        if k not in FEE_STEP_KEYS:
+                            raise Refusal("unsupported", k, f"{path}[{i}].{k}")
+
+
 def _unsupported(terms):
     """Step 1 (F18, unsupported): a term v1 doesn't model, named by its own key."""
     if not isinstance(terms, dict):
@@ -202,6 +237,9 @@ def _unsupported(terms):
             continue
         if key == "carry":
             _unsupported_carry(value, path)
+            continue
+        if key == "management_fee":
+            _unsupported_schedule(value)
             continue
         for k2, v2 in value.items():
             if k2 not in TERM_KEYS[key]:
@@ -350,6 +388,11 @@ def _terms(terms):
         if equalization_rate < 0:
             raise _input("bad_number", "terms.equalization_rate")
 
+    # F30, F32: the management fee schedule; with one, the fund's rate is the schedule's, so `fee_rate` isn't given.
+    schedule = _schedule(terms.get("management_fee"))
+    if schedule is not None and fee_rate is not None:
+        raise _input("fee_rate_with_schedule", "terms.fee_rate")
+
     return {
         "steps": steps,
         "pref": pref,
@@ -360,11 +403,67 @@ def _terms(terms):
         "pays_expenses": pays_expenses,
         "fee_rate": fee_rate,
         "equalization_rate": equalization_rate,
-        "classes": _classes(terms.get("lp_classes"), fee_rate, catch_up),
+        "schedule": schedule,
+        "classes": _classes(terms.get("lp_classes"), fee_rate is not None or schedule is not None, catch_up),
     }
 
 
-def _classes(raw, fee_rate, catch_up):
+def _schedule(raw):
+    """F30, F32: the schedule, checked in order: its shape, `start`, `frequency`, `steps` in order (each its shape, its
+    rate, then its `from`), then `commitments`. null is the same as leaving it out, as for each of its optional fields
+    (FA41)."""
+    if raw is None:
+        return None
+    at = "terms.management_fee"
+    if not isinstance(raw, dict):
+        raise _input("bad_field", at)
+    if raw.get("start") is None:
+        raise _input("missing_field", f"{at}.start")
+    start = _date(raw["start"], f"{at}.start")
+    frequency = raw.get("frequency")
+    if frequency is None:
+        frequency = "quarterly"  # F30's default
+    elif not isinstance(frequency, str) or frequency not in fees.PERIODS:
+        raise _input("bad_field", f"{at}.frequency")
+    if raw.get("steps") is None:
+        raise _input("missing_field", f"{at}.steps")
+    raw_steps = raw["steps"]
+    if not isinstance(raw_steps, list) or not raw_steps:
+        raise _input("bad_field", f"{at}.steps")
+    steps = []
+    for i, s in enumerate(raw_steps):
+        path = f"{at}.steps[{i}]"
+        if not isinstance(s, dict):
+            raise _input("bad_field", path)
+        if s.get("rate") is None:
+            raise _input("missing_field", f"{path}.rate")
+        rate = _number(s["rate"], f"{path}.rate")
+        # F30: a rate on commitments, from 0 up to, not including, 1; the first above 0, since a fee holiday is a later
+        # `start`. A later rate of 0 ends fees from its date.
+        if rate < 0 or rate >= 1 or (i == 0 and rate == 0):
+            raise _input("bad_number", f"{path}.rate")
+        if i == 0:
+            # The first step is in force from `start`, so it isn't given a date of its own.
+            if s.get("from") is not None:
+                raise _input("steps_out_of_order", path)
+            steps.append(fees.FeeStep(rate, start))
+            continue
+        if s.get("from") is None:
+            raise _input("missing_field", f"{path}.from")
+        frm = _date(s["from"], f"{path}.from")
+        # Each step after the one before it; the first's date is `start`.
+        if frm <= steps[-1].start:
+            raise _input("steps_out_of_order", path)
+        steps.append(fees.FeeStep(rate, frm))
+    commitments = None
+    if raw.get("commitments") is not None:
+        commitments = _number(raw["commitments"], f"{at}.commitments")
+        if commitments <= 0:
+            raise _input("bad_number", f"{at}.commitments")
+    return fees.Schedule(start, frequency, steps, commitments)
+
+
+def _classes(raw, has_fee_rate, catch_up):
     """F22, F28: the classes, each checked through before the next: its shape, its name, the name repeating, its fee
     rate, its carry, then its carry against the catch-up. Left out, null or an empty list: none (FA24)."""
     if raw is None:
@@ -385,14 +484,14 @@ def _classes(raw, fee_rate, catch_up):
         if name in names:
             raise _input("lp_class_name_repeated", f"{path}.name")
         names.add(name)
-        # F22: a class's fee rate is 0 or more, against the fund's standard rate, which must then be given. Its own
-        # number is checked before the fund's rate is looked for (FA25).
+        # F22: a class's fee rate is 0 or more, against the fund's standard rate, which must then be given: `fee_rate`,
+        # or a schedule's first rate (F32). Its own number is checked before the fund's rate is looked for (FA25).
         class_fee = None
         if c.get("fee_rate") is not None:
             class_fee = _number(c["fee_rate"], f"{path}.fee_rate")
             if class_fee < 0:
                 raise _input("bad_number", f"{path}.fee_rate")
-            if fee_rate is None:
+            if not has_fee_rate:
                 raise _input("missing_field", "terms.fee_rate")
         # F22: without a carry, the class pays the fund's. A null carry is refused, as the fund's is (FA3, FA24).
         class_steps = None
@@ -489,14 +588,23 @@ def _lps(raw, classes, close_limit):
 
 
 def _what_the_lps_need(fund):
-    """Stage 5 (F28): a later close needs an equalization rate; then each call, in date order, needs an LP in the
-    fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22)."""
-    if not fund.lps:
-        return
-    if fund.equalization_rate is None and any(fund.joins_later(lp) for lp in fund.lps):
-        raise _input("missing_field", "terms.equalization_rate")
+    """Stage 5 (F28, F32): an equalization rate when an investment or expense call comes before a later close (F29);
+    a schedule's `commitments`, needed without listed LPs and their total with them; then each entered call, in date
+    order, needs an LP in the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22). A
+    schedule's calls have no payers to check: they're every LP's own fee (F32)."""
+    if fund.lps and fund.equalization_rate is None:
+        rebalanced = [f for f in fund.flows if f.type == "call" and f.kind != "fee"]
+        if any(fund.joins_later(lp) and any(f.date < lp.close for f in rebalanced) for lp in fund.lps):
+            raise _input("missing_field", "terms.equalization_rate")
+    if fund.schedule is not None:
+        at = "terms.management_fee.commitments"
+        if not fund.lps and fund.schedule.commitments is None:
+            raise _input("missing_field", at)
+        total = sum((lp.commitment for lp in fund.lps), Fraction(0))
+        if fund.lps and fund.schedule.commitments is not None and fund.schedule.commitments != total:
+            raise _input("fee_commitments_mismatch", at)
     for f in fund.flows:
-        if f.type != "call":
+        if f.type != "call" or f.scheduled or not fund.lps:
             continue
         if not any(fund.is_in(lp, f.date) and fund.weight(lp, f.kind) > 0 for lp in fund.lps):
             raise _input("call_without_payers", f"cash_flows[{f.index}]")
@@ -515,7 +623,8 @@ def read(inputs):
             raise _input("missing_field", key)
     as_of = _date(inputs["as_of"], "as_of")
     terms = _terms(inputs["terms"])
-    flows = _flows(inputs["cash_flows"])
+    raw_flows = inputs["cash_flows"]
+    flows = _flows(raw_flows)
     d = as_of if inputs.get("distribution_date") is None else _date(inputs["distribution_date"], "distribution_date")
     final = _flag(inputs, "final", "final", False)
     nav = None
@@ -523,6 +632,15 @@ def read(inputs):
         nav = _number(inputs["nav"], "nav")
         if nav < 0:
             raise _input("bad_number", "nav")
+
+    # F32: with a schedule, no fee call is entered, so nothing is counted twice: the first such call in the input's order.
+    schedule = terms["schedule"]
+    if schedule is not None:
+        for f in flows:
+            if f.type == "call" and f.kind == "fee":
+                raise _input("fee_call_with_schedule", f"cash_flows[{f.index}]")
+        # F30: the schedule's calls are calls, dated from the schedule alone, none after D (FA39, FA40).
+        flows = flows + [Flow(None, p.date, "call", "fee", None, True, p) for p in fees.periods(schedule, d)]
 
     # F4: refused, no calls at all, or a distribution before the first call; D on or after every cash flow.
     calls = [f for f in flows if f.type == "call"]
@@ -533,15 +651,21 @@ def read(inputs):
         if f.type == "distribution" and f.date < first_call:
             raise _input("distribution_before_call", f"cash_flows[{f.index}]")
     for f in flows:
-        if f.date > d:
+        if not f.scheduled and f.date > d:
             raise _input("cash_flow_after_distribution_date", f"cash_flows[{f.index}]")
 
     # FA32: a close must come before the first distribution in the cash flows, and before D, X's date.
     close_limit = min([d] + [f.date for f in flows if f.type == "distribution"])
     lps = _lps(inputs.get("lps"), [c.name for c in terms["classes"]], close_limit)
 
-    # F4: on one date, calls come before distributions; same-day distributions go in the order listed.
-    ordered = sorted(flows, key=lambda f: (f.date, 0 if f.type == "call" else 1, f.index))
+    # F4: on one date, calls come before distributions; same-day distributions go in the order listed. A schedule's
+    # call has no place in the list: it comes after the entered calls of its date, which changes nothing, since calls
+    # on one date only add up.
+    ordered = sorted(flows, key=lambda f: (f.date, 0 if f.type == "call" else 1, len(raw_flows) if f.index is None else f.index))
     fund = Fund(as_of=as_of, distribution_date=d, final=final, nav=nav, flows=ordered, lps=lps, **terms)
     _what_the_lps_need(fund)
+    # F30: each of the schedule's calls is the LPs' fees, as if every LP were in from the start, once the LPs are read.
+    for f in fund.flows:
+        if f.scheduled:
+            f.amount = fees.call_amount(fund, f.factor)
     return fund
