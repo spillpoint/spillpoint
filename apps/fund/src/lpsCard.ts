@@ -1,7 +1,7 @@
 // The LPs' card's figures (plan, "The LPs' card, on Payouts", f02c): each LP's amounts as it would be paid, rounded
 // down to the cent; what rounding down leaves; and the LPs' own amounts, as the rest of the page shows them. Nothing
 // here is fund arithmetic: each LP's amount is the engine's (F20), and this only rounds it and adds the rounded ones up.
-// Also the card as a CSV file.
+// With classes, each LP's class beside its name (f03c). Also the card as a CSV file.
 
 import { D, toCents } from "spillpoint-fund";
 import type { Split } from "spillpoint-fund";
@@ -18,7 +18,10 @@ interface Column {
 
 export interface LpsTable {
   headings: string[];
-  rows: { name: string; share: string; amounts: D[] }[];
+  /** Whether the card has a Class column: when an LP is in a class (F22). */
+  classes: boolean;
+  /** Each LP: its class's name, or null for the fund's terms. */
+  rows: { name: string; class: string | null; share: string; amounts: D[] }[];
   /** In each column, the LPs' amount to the cent less the LPs' rounded-down amounts: never negative, at most a cent an LP. */
   leftover: D[];
   /** In each column, the LPs' amount with `toCents`: the page's own figure for the LPs. */
@@ -50,10 +53,11 @@ export function lpsTable(split: Split): LpsTable {
   ];
   const owed = split.clawback?.owed;
   if (owed && owesSomething(owed)) columns.push({ heading: "Share of the clawback", each: (lp) => lp.clawback!, lps: owed });
-  const rows = split.byLp.map((lp) => ({ name: lp.name, share: shareText(lp.share), amounts: columns.map((c) => downToCent(c.each(lp))) }));
+  const rows = split.byLp.map((lp) => ({ name: lp.name, class: lp.class ?? null, share: shareText(lp.share), amounts: columns.map((c) => downToCent(c.each(lp))) }));
   const total = columns.map((c) => new D(toCents(c.lps)));
   const leftover = columns.map((_, i) => rows.reduce((left, r) => left.minus(r.amounts[i]!), total[i]!));
-  return { headings: ["LP", "Share", ...columns.map((c) => c.heading)], rows, leftover, total };
+  const classes = rows.some((r) => r.class !== null);
+  return { headings: ["LP", ...(classes ? ["Class"] : []), "Share", ...columns.map((c) => c.heading)], classes, rows, leftover, total };
 }
 
 export const LEFTOVER = "Left over from rounding down";
@@ -68,21 +72,24 @@ export function csvField(text: string): string {
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
+/** Lines as a CSV file: UTF-8 with a byte-order mark, so Excel reads names like "Ñandú" right; CRLF, as RFC 4180 has them. */
+export function csvText(lines: readonly (readonly string[])[]): string {
+  return `﻿${lines.map((cells) => cells.map(csvField).join(",")).join("\r\n")}\r\n`;
+}
+
 /**
- * The card as a CSV file: its columns, every LP with its rounded amounts, the leftover row and the total row. Numbers
- * without "$" or commas, shares as "33.33%". UTF-8 with a byte-order mark, so Excel reads names like "Ñandú" right;
- * lines end in CRLF, as RFC 4180 has them.
+ * The card as a CSV file: its columns, every LP with its class when the card has one and its rounded amounts, the
+ * leftover row and the total row. Numbers without "$" or commas, shares as "33.33%".
  */
 export function lpsCsv(table: LpsTable): string {
-  const line = (cells: string[]) => cells.map(csvField).join(",");
   const amounts = (xs: D[]) => xs.map((x) => x.toFixed(2));
-  const lines = [
-    line(table.headings),
-    ...table.rows.map((r) => line([r.name, r.share, ...amounts(r.amounts)])),
-    line([LEFTOVER, "", ...amounts(table.leftover)]),
-    line([TOTAL, "100%", ...amounts(table.total)]),
-  ];
-  return `﻿${lines.join("\r\n")}\r\n`;
+  const cls = (c: string | null) => (table.classes ? [c ?? ""] : []);
+  return csvText([
+    table.headings,
+    ...table.rows.map((r) => [r.name, ...cls(r.class), r.share, ...amounts(r.amounts)]),
+    [LEFTOVER, ...cls(null), "", ...amounts(table.leftover)],
+    [TOTAL, ...cls(null), "100%", ...amounts(table.total)],
+  ]);
 }
 
 /**

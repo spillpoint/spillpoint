@@ -149,7 +149,7 @@ describe("pasting LPs from a spreadsheet", () => {
         "Name\tCommitment",
         "Alder\t$5,000,000.00",
         "Birch\t3.5M",
-        " Cedar \t1500000\textra",
+        " Cedar \t1500000\t\t\textra",
         "Birch\t1",
         "Delta\t(500,000)",
         "Echo\t$ -",
@@ -213,7 +213,7 @@ describe("the fund-21 refusals, in the page's words", () => {
     "lp-no-commitment.json": "The commitment in row 2 of its LPs is missing.",
     "lp-no-name.json": "The name in row 1 of its LPs is missing.",
     "lp-not-an-object.json": "Row 1 of its LPs isn't a value it can take.",
-    "lp-side-letter-carry.json": "This file has a term the page doesn't model: `carry` on an LP (row 1 of its LPs). Every LP is on the same terms here.",
+    "lp-side-letter-carry.json": "This file has a term the page doesn't model: `carry` on an LP (row 1 of its LPs). An LP's terms are its class's, or the fund's.",
     "lp-zero-commitment.json": `The commitment in row 1 of its LPs ${amounts}`,
     "lps-not-a-list.json": "Its list of LPs isn't a value it can take.",
   };

@@ -6,7 +6,8 @@
 // `fund` is exactly the input the Terms, Cash flows and LPs tabs write, which is readFund's input (SPEC.md, "Inputs"),
 // so a saved file is also a fund the engine reads on its own. Only a fund the engine accepts is saved, so a saved file
 // always opens. Opening also takes a bare input, or a case's inputs.json, which has the input as `fund`. A file's LP
-// names are trimmed as the page reads them (FA17), so "Alder " never reaches the engine.
+// names, class names and LPs' classes are trimmed as the page reads them (FA17, FA27), so "Alder " never reaches the
+// engine.
 
 import { D, FundRefusal, readFund, splitAt } from "spillpoint-fund";
 import type { Fund } from "spillpoint-fund";
@@ -14,7 +15,7 @@ import type { Fund } from "spillpoint-fund";
 import type { FlowsForm } from "./flows.ts";
 import { flowsInput } from "./flows.ts";
 import type { LpsForm } from "./lps.ts";
-import { LP_WORDS, lpsInput, nameOf } from "./lps.ts";
+import { classesInput, LP_WORDS, lpsInput, nameOf } from "./lps.ts";
 import type { TermsForm } from "./terms.ts";
 import { termsInput } from "./terms.ts";
 
@@ -24,10 +25,13 @@ const FIELDS = ["format", "version", "name", "fund", "view"];
 /** A fund with no name of its own: a blank one, or a bare input. */
 export const UNNAMED = "My fund";
 
-/** The fund's input, as the three tabs write it: what the engine reads, and what a file keeps. No LPs: no `lps`. */
+/**
+ * The fund's input, as the three tabs write it: what the engine reads, and what a file keeps. The classes, on the LPs
+ * tab, go in the terms (F22). No LPs: no `lps`; no classes: no `lp_classes`.
+ */
 export function inputOf(terms: TermsForm, flows: FlowsForm, lps: LpsForm): Record<string, unknown> {
   const { as_of, ...rest } = flowsInput(flows);
-  return { as_of, terms: termsInput(terms), ...rest, ...lpsInput(lps) };
+  return { as_of, terms: { ...termsInput(terms), ...classesInput(lps) }, ...rest, ...lpsInput(lps) };
 }
 
 /** The file, with X where it was: a save keeps X, though moving it isn't a change. */
@@ -111,11 +115,6 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
-  // Until the page shows classes and later closes (f03c, which removes this), a file whose fund has them is refused, so
-  // a save can't drop them: the forms have no place for them yet. Null is left out (FA24), and an empty list of classes
-  // is none, so those open.
-  if (hasClassesOrCloses(input)) return { ok: false, message: CLASSES_LATER };
-
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -139,26 +138,24 @@ export function readFile(text: string): OpenedFile {
 }
 
 /**
- * The input with each LP's name trimmed, as the page reads every name (FA17; f02a review, answer 2). Only a name that is
- * text changes; anything else is left for the engine to refuse where it is (F21).
+ * The input with each name trimmed, as the page reads every name (FA17, FA27; f02a review, answer 2): each LP's, each
+ * class's, and each LP's class, so "Seed " and "Seed" are one class. Only a name that is text changes; anything else is
+ * left for the engine to refuse where it is (F21, F28).
  */
 function trimmedNames(input: unknown): unknown {
-  if (!isObject(input) || !Array.isArray(input.lps)) return input;
-  return { ...input, lps: input.lps.map((lp: unknown) => (isObject(lp) && typeof lp.name === "string" ? { ...lp, name: nameOf(lp.name) } : lp)) };
-}
-
-const CLASSES_LATER = "This file has LP classes or later closes; the page shows them from the next version.";
-
-/** F22, F25: the fund's input gives a fee rate, an equalization rate or classes, or an LP gives a class or a close. */
-function hasClassesOrCloses(input: unknown): boolean {
-  if (!isObject(input)) return false;
-  const given = (o: Json, key: string) => o[key] !== undefined && o[key] !== null;
-  const terms = input.terms;
-  if (isObject(terms)) {
-    if (given(terms, "fee_rate") || given(terms, "equalization_rate")) return true;
-    if (given(terms, "lp_classes") && !(Array.isArray(terms.lp_classes) && terms.lp_classes.length === 0)) return true;
+  if (!isObject(input)) return input;
+  const trimmed = (o: unknown, keys: string[]) => {
+    if (!isObject(o)) return o;
+    const out: Json = { ...o };
+    for (const k of keys) if (typeof out[k] === "string") out[k] = nameOf(out[k] as string);
+    return out;
+  };
+  let out: Json = input;
+  if (isObject(input.terms) && Array.isArray(input.terms.lp_classes)) {
+    out = { ...out, terms: { ...input.terms, lp_classes: input.terms.lp_classes.map((c: unknown) => trimmed(c, ["name"])) } };
   }
-  return Array.isArray(input.lps) && input.lps.some((lp: unknown) => isObject(lp) && (given(lp, "class") || given(lp, "close")));
+  if (Array.isArray(input.lps)) out = { ...out, lps: input.lps.map((lp: unknown) => trimmed(lp, ["name", "class"])) };
+  return out;
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
@@ -170,7 +167,18 @@ function where(path: string): string {
   const lp = /^lps\[(\d+)\](?:\.(\w+))?$/.exec(path);
   if (lp) return lp[2] ? `The ${lp[2]} in row ${Number(lp[1]) + 1} of its LPs` : `Row ${Number(lp[1]) + 1} of its LPs`;
   const step = /^terms\.carry\.steps\[(\d+)\](?:\.(\w+))?$/.exec(path);
-  if (step) return step[2] === "from_lp_multiple" ? `Carry step ${Number(step[1]) + 1}'s LP multiple` : step[2] ? `Carry step ${Number(step[1]) + 1}'s ${step[2]}` : `Carry step ${Number(step[1]) + 1}`;
+  if (step) return stepPlace(step);
+  // A class (F22): "The fee rate in row 2 of its LP classes", "Carry step 2's rate in row 1 of its LP classes".
+  const cls = /^terms\.lp_classes\[(\d+)\](?:\.(.+))?$/.exec(path);
+  if (cls) {
+    const row = `row ${Number(cls[1]) + 1} of its LP classes`;
+    const field = cls[2];
+    if (!field) return `Row ${Number(cls[1]) + 1} of its LP classes`;
+    const classStep = /^carry\.steps\[(\d+)\](?:\.(\w+))?$/.exec(field);
+    if (classStep) return `${stepPlace(classStep)} in ${row}`;
+    const fields: Record<string, string> = { name: "The name", fee_rate: "The fee rate", carry: "The carry", "carry.steps": "The carry steps" };
+    return `${fields[field] ?? `\`${field}\``} in ${row}`;
+  }
   const named: Record<string, string> = {
     "": "The fund",
     as_of: "Its as-of date",
@@ -188,10 +196,24 @@ function where(path: string): string {
     "terms.gp_commitment.share": "Its GP commitment's share",
     "terms.gp_commitment.pays_fees": "Whether its GP commitment pays fees",
     "terms.gp_commitment.pays_expenses": "Whether its GP commitment pays expenses",
+    "terms.fee_rate": "Its management fee rate",
+    "terms.equalization_rate": "Its equalization interest rate",
+    "terms.lp_classes": "Its list of LP classes",
     cash_flows: "Its cash flows",
     lps: "Its list of LPs",
   };
   return named[path] ?? `\`${path}\``;
+}
+
+/** A carry step's place, from its match: "Carry step 2", "Carry step 2's rate", "Carry step 2's LP multiple". */
+function stepPlace(step: RegExpExecArray): string {
+  const n = `Carry step ${Number(step[1]) + 1}`;
+  return step[2] === "from_lp_multiple" ? `${n}'s LP multiple` : step[2] ? `${n}'s ${step[2]}` : n;
+}
+
+/** A sentence of the page's, after a place and a colon: its first letter down, its full stop off. */
+function sentencePart(words: string): string {
+  return `${words.charAt(0).toLowerCase()}${words.slice(1).replace(/\.$/, "")}`;
 }
 
 /** The engine's refusal of an opened file, in the page's words, naming the row or term (F18). */
@@ -199,9 +221,14 @@ export function fileProblem(refusal: FundRefusal): string {
   const { kind, term, path } = refusal;
   if (kind === "unsupported") {
     if (term === "compounded_pref") return `This file has a term the page doesn't model: a pref compounded, not simple (\`${path}\`).`;
-    // F21: a per-LP term, such as a side letter's carry. Every LP is on the same terms (F19).
+    // F21: a per-LP term, such as a side letter's carry. From 0.3.0 an LP's own terms are its class's (F22).
     const lp = /^lps\[(\d+)\]\./.exec(path);
-    if (lp) return `This file has a term the page doesn't model: \`${term}\` on an LP (row ${Number(lp[1]) + 1} of its LPs). Every LP is on the same terms here.`;
+    if (lp) return `This file has a term the page doesn't model: \`${term}\` on an LP (row ${Number(lp[1]) + 1} of its LPs). An LP's terms are its class's, or the fund's.`;
+    // F22: a class term beyond the fee rate and the carry, such as a pref of its own.
+    const cls = /^terms\.lp_classes\[(\d+)\]\./.exec(path);
+    if (cls) {
+      return `This file has a term the page doesn't model: \`${term}\` on an LP class (row ${Number(cls[1]) + 1} of its LP classes). A class changes only the fee rate and the carry.`;
+    }
     return `This file has a term the page doesn't model: \`${term}\`.`;
   }
   const field: Record<string, string> = {
@@ -211,6 +238,9 @@ export function fileProblem(refusal: FundRefusal): string {
     missing_field: "is missing",
     unknown_field: "isn't part of a fund's input",
   };
+  // F28: a rate the classes or the closes need says why it's needed.
+  if (term === "missing_field" && path === "terms.fee_rate") return "Its management fee rate is missing: it's needed when a class has its own fee rate.";
+  if (term === "missing_field" && path === "terms.equalization_rate") return "Its equalization interest rate is missing: it's needed when an LP joins at a later close.";
   if (term in field) return `${where(path)} ${field[term]}.`;
   const rule: Record<string, string> = {
     carry_rate_not_below_one: "a carry rate must be below 100%",
@@ -221,7 +251,11 @@ export function fileProblem(refusal: FundRefusal): string {
     no_calls: "a fund needs at least one call",
     distribution_before_call: "this distribution is before the fund's first call",
     cash_flow_after_distribution_date: "this cash flow is after the distribution date",
-    lp_name_repeated: LP_WORDS.repeated.replace(/^A/, "a").replace(/\.$/, ""),
+    lp_name_repeated: sentencePart(LP_WORDS.repeated),
+    lp_class_name_repeated: sentencePart(LP_WORDS.classRepeated),
+    lp_class_unknown: sentencePart(LP_WORDS.classUnknown),
+    lp_close_after_distribution: sentencePart(LP_WORDS.closeAfterDistribution),
+    call_without_payers: "no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees",
   };
   return `${where(path)}: ${rule[term] ?? refusal.message}.`;
 }

@@ -120,29 +120,64 @@ export function cellsOf(text: string): string[][] {
 
 const HEADER_WORD = /\b(date|type|kind|amount)\b/i;
 
+/** The order a paste's slashed dates are read in, and what the page asks or says about it. */
+export interface DateOrder {
+  order: Order;
+  /** The first date that could be read either way, when nothing in the paste settles which: the page asks once. */
+  ambiguous: string | null;
+  /** When any date could be read either way, which way they were read and why. */
+  orderNote: string | null;
+}
+
+/**
+ * Which comes first in a paste's slashed dates, from the column of them (each cell with its row, counting from 1):
+ * the first with a number above 12 settles it for the paste; if none does, `chosen`. The cash flows' dates and the
+ * LPs' closes are read alike (f03c).
+ */
+export function settleOrder(column: readonly { row: number; text: string }[], chosen: Order): DateOrder {
+  const slashed = column
+    .map((c) => ({ ...c, cell: dateCell(c.text) }))
+    .filter((r): r is { row: number; text: string; cell: { slashed: [number, number, number] } } => r.cell !== null && "slashed" in r.cell);
+  const implied = ([a]: [number, number, number]): Order => (a > 12 ? "day-first" : "month-first");
+  const settler = slashed.find(({ cell: { slashed: s } }) => (s[0] > 12) !== (s[1] > 12) && slashedIso(s, implied(s)) !== null);
+  const order: Order = settler ? implied(settler.cell.slashed) : chosen;
+  const either = settler ? undefined : slashed.find(({ cell: { slashed: [a, b] } }) => a <= 12 && b <= 12 && a !== b);
+  const anyEither = slashed.some(({ cell: { slashed: [a, b] } }) => a <= 12 && b <= 12 && a !== b);
+  const way = order === "day-first" ? "day first" : "month first";
+  const orderNote = !anyEither
+    ? null
+    : settler
+      ? `Dates read ${way}, as ${settler.text} in row ${settler.row} can only be read that way.`
+      : `Dates read ${way}, as chosen above.`;
+  return { order, ambiguous: either ? either.text : null, orderNote };
+}
+
+/** A cell as a date, in the paste's order: its YYYY-MM-DD, or why it can't be read. */
+export function readDate(text: string, order: Order): { date: string } | { why: string } {
+  const cell = dateCell(text);
+  let date: string | null = null;
+  if (cell && "slashed" in cell) {
+    date = slashedIso(cell.slashed, order);
+    // A date that reads only the other way disagrees with the paste's order.
+    if (!date && slashedIso(cell.slashed, order === "month-first" ? "day-first" : "month-first")) {
+      return { why: `'${text}' isn't ${order === "month-first" ? "month/day/year" : "day/month/year"}, as this paste's dates are` };
+    }
+  } else if (cell) {
+    date = cell.iso;
+  }
+  return date ? { date } : { why: `'${text}' isn't a date` };
+}
+
 /** Reads a paste. `chosen` is the order the GP picked when the paste can't settle it; month first until then. */
 export function readPaste(text: string, chosen: Order = "month-first"): PasteRead {
   const lines = cellsOf(text);
   const filled = (cells: string[]) => cells.some((c) => c !== "");
   const first = lines.findIndex(filled);
   const header = first >= 0 && dateCell(lines[first]![0] ?? "") === null && lines[first]!.some((c) => HEADER_WORD.test(c));
-
-  // Which comes first in slashed dates: the first one with a number above 12 settles it for the paste.
-  const slashed = lines
-    .map((cells, i) => ({ i, cell: dateCell(cells[0] ?? "") }))
-    .filter((r): r is { i: number; cell: { slashed: [number, number, number] } } => r.cell !== null && "slashed" in r.cell && !(header && r.i === first));
-  const implied = ([a]: [number, number, number]): Order => (a > 12 ? "day-first" : "month-first");
-  const settler = slashed.find(({ cell: { slashed: s } }) => (s[0] > 12) !== (s[1] > 12) && slashedIso(s, implied(s)) !== null);
-  const order: Order = settler ? implied(settler.cell.slashed) : chosen;
-  const either = settler ? undefined : slashed.find(({ cell: { slashed: [a, b] } }) => a <= 12 && b <= 12 && a !== b);
-  const ambiguous = either ? lines[either.i]![0]! : null;
-  const anyEither = slashed.some(({ cell: { slashed: [a, b] } }) => a <= 12 && b <= 12 && a !== b);
-  const way = order === "day-first" ? "day first" : "month first";
-  const orderNote = !anyEither
-    ? null
-    : settler
-      ? `Dates read ${way}, as ${lines[settler.i]![0]} in row ${settler.i + 1} can only be read that way.`
-      : `Dates read ${way}, as chosen above.`;
+  const { order, ambiguous, orderNote } = settleOrder(
+    lines.map((cells, i) => ({ row: i + 1, text: cells[0] ?? "" })).filter((_, i) => !(header && i === first)),
+    chosen,
+  );
 
   const rows: PastedRow[] = [];
   const unread: string[] = [];
@@ -153,18 +188,9 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
     const [when = "", what = "", kindText = "", amountText] = cells;
 
     if (when === "") return void unread.push(`${row}: has no date`);
-    const cell = dateCell(when);
-    let date: string | null = null;
-    if (cell && "slashed" in cell) {
-      date = slashedIso(cell.slashed, order);
-      // A date that reads only the other way disagrees with the paste's order.
-      if (!date && slashedIso(cell.slashed, order === "month-first" ? "day-first" : "month-first")) {
-        return void unread.push(`${row}: '${when}' isn't ${order === "month-first" ? "month/day/year" : "day/month/year"}, as this paste's dates are`);
-      }
-    } else if (cell) {
-      date = cell.iso;
-    }
-    if (!date) return void unread.push(`${row}: '${when}' isn't a date`);
+    const read = readDate(when, order);
+    if ("why" in read) return void unread.push(`${row}: ${read.why}`);
+    const date = read.date;
 
     if (what === "") return void unread.push(`${row}: has no type`);
     const type = TYPES[what.toLowerCase().replace(/\s+/g, " ")];
@@ -182,9 +208,9 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
     }
 
     if (amountText === undefined || amountText === "") return void unread.push(`${row}: has no amount; the columns are date, type, kind and amount`);
-    const read = pastedAmount(amountText, "Write amounts as positive; the type says which way the money goes");
-    if ("why" in read) return void unread.push(`${row}: ${read.why}`);
-    const amount = read.amount;
+    const pasted = pastedAmount(amountText, "Write amounts as positive; the type says which way the money goes");
+    if ("why" in pasted) return void unread.push(`${row}: ${pasted.why}`);
+    const amount = pasted.amount;
     rows.push({ line: i + 1, date, type, kind, amount });
     if (kindless) noKind++;
   });

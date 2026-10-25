@@ -61,8 +61,9 @@ describe("the chart's lines are exact", () => {
       const fund = readFund(e.fund);
       return defaultTop(fund, breakpointViews(fund), new D(e.defaultX)).toString();
     });
-    // Case 3: 1.25 x its opening $20,000,000; case 8: 1.25 x $63,833,333.33; case 13: 2 x $20,000,000; case 12: 1.5 x $6,000,000.
-    expect(tops).toEqual(["25000000", "80000000", "40000000", "9000000"]);
+    // Case 3: 1.25 x its opening $20,000,000; case 8: 1.25 x $63,833,333.33; case 13: 2 x $20,000,000; case 26: 2 x its
+    // $5,250,000 paid in, up to two digits; case 12: 1.5 x $6,000,000.
+    expect(tops).toEqual(["25000000", "80000000", "40000000", "11000000", "9000000"]);
   });
 
   it("opens case 3 on a range that takes in its opening X with room to spare", () => {

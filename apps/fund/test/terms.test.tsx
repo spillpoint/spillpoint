@@ -11,6 +11,7 @@ import type { Fund } from "spillpoint-fund";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
+import { classesInput, lpsFrom } from "../src/lps.ts";
 import { formFrom, multipleFrom, percentOf, rateFrom, termsInput } from "../src/terms.ts";
 import { RUN_CASES } from "./support/cases.ts";
 
@@ -38,7 +39,8 @@ describe("rates as percents, exactly", () => {
   it.each(RUN_CASES)("%s: the form writes the case's terms back exactly, with the same breakpoints", (dir) => {
     const input = caseFile(dir, "inputs.json").fund;
     const fund = readFund(input);
-    const again = readFund({ ...input, terms: termsInput(formFrom(fund.terms)) });
+    // The classes are on the LPs tab, and go in the terms (F22).
+    const again = readFund({ ...input, terms: { ...termsInput(formFrom(fund.terms)), ...classesInput(lpsFrom(fund)) } });
     expect(termsOf(again)).toEqual(termsOf(fund));
     expect(findBreakpoints(again).map((b) => b.x.toString())).toEqual(findBreakpoints(fund).map((b) => b.x.toString()));
   });

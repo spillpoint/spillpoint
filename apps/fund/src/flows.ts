@@ -103,6 +103,8 @@ export function flowsProblem(refusal: FundRefusal, form: FlowsForm): Problem {
     if (term === "no_calls") return "A fund needs at least one call. Add one with “Add a cash flow”.";
     if (cell) {
       if (term === "distribution_before_call") return "This distribution is before the fund's first call.";
+      // F28: every call needs an LP in on its date that pays its kind (FA21).
+      if (term === "call_without_payers") return "No LP in the fund on this date pays this call: none had closed yet, or none of them pays fees.";
       if (term === "cash_flow_after_distribution_date") return `This cash flow is after the distribution date, ${dateText(form.distributionDate || form.asOf)}.`;
       if (cell[2] === "date") return "Choose this cash flow's date.";
       if (cell[2] === "amount") return "Write an amount in dollars, more than zero: 250000 or 250000.50.";

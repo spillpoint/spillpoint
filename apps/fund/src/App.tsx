@@ -122,7 +122,7 @@ function run(s: Opened, terms: TermsForm, flows: FlowsForm, lps: LpsForm): Opene
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
     const tab = tabFor(e.path);
-    const problem = tab === "terms" ? termsProblem(e, terms) : tab === "lps" ? lpsProblem(e) : flowsProblem(e, flows);
+    const problem = tab === "terms" ? termsProblem(e, terms) : tab === "lps" ? lpsProblem(e, lps, terms) : flowsProblem(e, flows);
     return { ...s, input, terms, flows, lps, edited: true, problem };
   }
 }
@@ -151,7 +151,8 @@ export function App() {
   const [focusing, setFocusing] = useState<string | null>(null);
   useEffect(() => {
     if (focusing === null || tab === "payouts") return;
-    const el = document.getElementById(focusing);
+    // A class's carry in steps refused as a whole (F8, F22) has no box of its own: its first step's rate carries it.
+    const el = document.getElementById(focusing) ?? document.getElementById(`${focusing}.steps[0].rate`);
     el?.focus();
     el?.scrollIntoView?.({ block: "center" });
     setFocusing(null);
@@ -347,7 +348,7 @@ export function App() {
           <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next, s.lps))} onShow={show} />
         </div>
         <div role="tabpanel" id="panel-lps" aria-labelledby="tab-lps" hidden={tab !== "lps"}>
-          <Lps form={state.lps} problem={problem} onForm={(next) => change((s) => run(s, s.terms, s.flows, next))} onShow={show} />
+          <Lps form={state.lps} fundCarry={terms.carry} problem={problem} onForm={(next) => change((s) => run(s, s.terms, s.flows, next))} onShow={show} />
         </div>
       </main>
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. The main page is

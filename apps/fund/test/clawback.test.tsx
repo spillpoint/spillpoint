@@ -53,8 +53,19 @@ const answer = () => screen.getByRole("region", { name: "The answer" }).querySel
 const owedLegend = () => within(card()).getByRole("list", { name: /^Owed at X/ }).textContent;
 
 describe("the clawback's sentence and chart", () => {
-  it("covers every final case: 10, 11, 12, 13, 15, 16, 19 and 20", () => {
-    expect(FINAL_CASES).toEqual(["fund-10-clawback", "fund-11-clawback-pref", "fund-12-spv", "fund-13-clawback-steps", "fund-15-clawback-capital", "fund-16-clawback-catch-up", "fund-19-lps-clawback", "fund-20-lps-spv"]);
+  it("covers every final case: 10, 11, 12, 13, 15, 16, 19, 20, 24 and 28", () => {
+    expect(FINAL_CASES).toEqual([
+      "fund-10-clawback",
+      "fund-11-clawback-pref",
+      "fund-12-spv",
+      "fund-13-clawback-steps",
+      "fund-15-clawback-capital",
+      "fund-16-clawback-catch-up",
+      "fund-19-lps-clawback",
+      "fund-20-lps-spv",
+      "fund-24-classes-clawback",
+      "fund-28-classes-clawback-steps",
+    ]);
   });
 
   it.each(FINAL_CASES)("%s: the sentence gives the case's carry paid, entitlement and owed at every point", (dir) => {

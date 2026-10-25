@@ -30,12 +30,15 @@ const casesDir = resolve(repo, "packages/fund/cases");
  * opens on one, case 3; case 8's steps come second, labelled as premium carry, since read first they looked like extra
  * carry rather than bands of one carry (f01g, from Jordan's look at the page). From f02c the premium-carry fund is case
  * 17 and the clawback case 19, the same funds with LPs, so the LPs' card and its clawback column show from the picker;
- * their labels say so, since the picker is how a GP finds the LPs (f02c review, answer 1).
+ * their labels say so, since the picker is how a GP finds the LPs (f02c review, answer 1). From f03c case 26 follows the
+ * clawback example, so the classes card and the equalization card show from the picker, at its listed X, between its
+ * two breakpoints.
  */
 export const EXAMPLES = [
   { id: "fund-03-gp-commitment", label: "A fund: 20% carry and a 2% GP commitment", defaultX: "20000000" },
   { id: "fund-17-lps-three", label: "A VC fund with premium carry and three LPs: 20%, then 25% from 3x and 30% from 5x", defaultX: "40000000" },
   { id: "fund-19-lps-clawback", label: "A late call, a clawback and two LPs", defaultX: "0" },
+  { id: "fund-26-closes-and-classes", label: "Two later closes and a friends-and-family class", defaultX: "5200000" },
   { id: "fund-12-spv", label: "An SPV: one company, the exit as its last distribution", defaultX: "6000000" },
 ];
 
