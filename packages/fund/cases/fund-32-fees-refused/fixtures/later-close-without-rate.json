@@ -1,0 +1,7 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "No equalization rate, with an investment call before Dogwood's later close.",
+  "change": {
+    "del": "terms.equalization_rate"
+  }
+}

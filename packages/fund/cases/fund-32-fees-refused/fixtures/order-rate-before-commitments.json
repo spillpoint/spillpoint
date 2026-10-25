@@ -1,0 +1,10 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "No equalization rate, and commitments that aren't the LPs' total: the rate comes first.",
+  "change": {
+    "set": {
+      "terms.management_fee.commitments": "1"
+    },
+    "del": "terms.equalization_rate"
+  }
+}

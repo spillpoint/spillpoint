@@ -1,0 +1,10 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "A fee offset and a missing start: the unsupported term comes first.",
+  "change": {
+    "set": {
+      "terms.management_fee.offset": "0.5"
+    },
+    "del": "terms.management_fee.start"
+  }
+}

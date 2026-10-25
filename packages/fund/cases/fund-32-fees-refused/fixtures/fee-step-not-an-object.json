@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The first step given as a bare rate, not an object.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[0]": "0.02"
+    }
+  }
+}

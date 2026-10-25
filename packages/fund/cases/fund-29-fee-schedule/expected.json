@@ -1,0 +1,766 @@
+{
+  "case": "fund-29-fee-schedule",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2026-06-30",
+  "final": false,
+  "lps_paid_in": "33925000.00",
+  "gp_commitment_paid_in": "300000.00",
+  "pref_accrued_to_d": "9062634.52",
+  "fee_calls": [
+    {
+      "date": "2021-02-15",
+      "first_day": "2021-02-15",
+      "last_day": "2021-03-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-04-01",
+      "first_day": "2021-04-01",
+      "last_day": "2021-06-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-07-01",
+      "first_day": "2021-07-01",
+      "last_day": "2021-09-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-10-01",
+      "first_day": "2021-10-01",
+      "last_day": "2021-12-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-01-01",
+      "first_day": "2022-01-01",
+      "last_day": "2022-03-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-04-01",
+      "first_day": "2022-04-01",
+      "last_day": "2022-06-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-07-01",
+      "first_day": "2022-07-01",
+      "last_day": "2022-09-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-10-01",
+      "first_day": "2022-10-01",
+      "last_day": "2022-12-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-01-01",
+      "first_day": "2023-01-01",
+      "last_day": "2023-03-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-04-01",
+      "first_day": "2023-04-01",
+      "last_day": "2023-06-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-07-01",
+      "first_day": "2023-07-01",
+      "last_day": "2023-09-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-10-01",
+      "first_day": "2023-10-01",
+      "last_day": "2023-12-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2024-01-01",
+      "first_day": "2024-01-01",
+      "last_day": "2024-03-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2024-04-01",
+      "first_day": "2024-04-01",
+      "last_day": "2024-06-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2024-07-01",
+      "first_day": "2024-07-01",
+      "last_day": "2024-09-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2024-10-01",
+      "first_day": "2024-10-01",
+      "last_day": "2024-12-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2025-01-01",
+      "first_day": "2025-01-01",
+      "last_day": "2025-03-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2025-04-01",
+      "first_day": "2025-04-01",
+      "last_day": "2025-06-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2025-07-01",
+      "first_day": "2025-07-01",
+      "last_day": "2025-09-30",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2025-10-01",
+      "first_day": "2025-10-01",
+      "last_day": "2025-12-31",
+      "call": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "lps": {
+        "amount": "200000.00",
+        "exact": "200000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2026-01-01",
+      "first_day": "2026-01-01",
+      "last_day": "2026-03-31",
+      "call": {
+        "amount": "175000.00",
+        "exact": "175000"
+      },
+      "lps": {
+        "amount": "175000.00",
+        "exact": "175000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2026-04-01",
+      "first_day": "2026-04-01",
+      "last_day": "2026-06-30",
+      "call": {
+        "amount": "150000.00",
+        "exact": "150000"
+      },
+      "lps": {
+        "amount": "150000.00",
+        "exact": "150000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "10267676.77",
+      "exact": "1016500000/99",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "33925000",
+          "text": "LPs have their $33,925,000 of paid-in capital back"
+        }
+      ]
+    },
+    {
+      "x": "19421853.05",
+      "exact": "15595748000/803",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "rate": "0.08",
+          "amount": "661572320/73",
+          "text": "LPs have their 8% pref, $9,062,634.52"
+        }
+      ]
+    },
+    {
+      "x": "21710397.12",
+      "exact": "156901040000/7227",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "carry": "0.2",
+          "text": "the GP has 20% of the profit"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "24000000.00",
+        "gp_commitment": "240000.00",
+        "lps": {
+          "capital": "23760000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "23760000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "10000000.00",
+        "gp_commitment": "100000.00",
+        "lps": {
+          "capital": "9900000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "9900000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "34000000.00",
+        "gp_commitment": "340000.00",
+        "lps": {
+          "capital": "33660000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "33660000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "10267676.77",
+      "exact": "1016500000/99",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "10267676.77",
+        "gp_commitment": "102676.77",
+        "lps": {
+          "capital": "10165000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "10165000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "34267676.77",
+        "gp_commitment": "342676.77",
+        "lps": {
+          "capital": "33925000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "33925000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "19421853.05",
+      "exact": "15595748000/803",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "19421853.05",
+        "gp_commitment": "194218.53",
+        "lps": {
+          "capital": "10165000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "19227634.52"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "43421853.05",
+        "gp_commitment": "434218.53",
+        "lps": {
+          "capital": "33925000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "42987634.52"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "20000000.00",
+      "exact": "20000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "20000000.00",
+        "gp_commitment": "200000.00",
+        "lps": {
+          "capital": "10165000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "19227634.52"
+        },
+        "gp": {
+          "catch_up": "572365.48",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "572365.48"
+        }
+      },
+      "to_date": {
+        "amount": "44000000.00",
+        "gp_commitment": "440000.00",
+        "lps": {
+          "capital": "33925000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "42987634.52"
+        },
+        "gp": {
+          "catch_up": "572365.48",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "572365.48"
+        }
+      }
+    },
+    {
+      "x": "21710397.12",
+      "exact": "156901040000/7227",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "21710397.12",
+        "gp_commitment": "217103.97",
+        "lps": {
+          "capital": "10165000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "19227634.52"
+        },
+        "gp": {
+          "catch_up": "2265658.63",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "2265658.63"
+        }
+      },
+      "to_date": {
+        "amount": "45710397.12",
+        "gp_commitment": "457103.97",
+        "lps": {
+          "capital": "33925000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "42987634.52"
+        },
+        "gp": {
+          "catch_up": "2265658.63",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "2265658.63"
+        }
+      }
+    },
+    {
+      "x": "30000000.00",
+      "exact": "30000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "30000000.00",
+        "gp_commitment": "300000.00",
+        "lps": {
+          "capital": "10165000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "6565365.48",
+          "total": "25793000.00"
+        },
+        "gp": {
+          "catch_up": "2265658.63",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1641341.37"
+            }
+          ],
+          "total": "3907000.00"
+        }
+      },
+      "to_date": {
+        "amount": "54000000.00",
+        "gp_commitment": "540000.00",
+        "lps": {
+          "capital": "33925000.00",
+          "pref": "9062634.52",
+          "catch_up": "0.00",
+          "carry_tier": "6565365.48",
+          "total": "49553000.00"
+        },
+        "gp": {
+          "catch_up": "2265658.63",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1641341.37"
+            }
+          ],
+          "total": "3907000.00"
+        }
+      }
+    }
+  ]
+}

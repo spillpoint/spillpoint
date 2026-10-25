@@ -1,0 +1,10 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "A fee rate beside the schedule, and a class fee rate below 0: the fee rate with the schedule comes before the classes.",
+  "change": {
+    "set": {
+      "terms.fee_rate": "0.02",
+      "terms.lp_classes[0].fee_rate": "-0.01"
+    }
+  }
+}

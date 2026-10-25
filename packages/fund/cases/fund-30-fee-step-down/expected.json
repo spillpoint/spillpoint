@@ -1,0 +1,1138 @@
+{
+  "case": "fund-30-fee-step-down",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2027-03-31",
+  "final": true,
+  "lps_paid_in": "20472872.93",
+  "gp_commitment_paid_in": "417813.73",
+  "pref_accrued_to_d": "4800246.45",
+  "pref_on_fund_totals": "4740493.02",
+  "fee_calls": [
+    {
+      "date": "2020-07-01",
+      "first_day": "2020-07-01",
+      "last_day": "2020-12-31",
+      "call": {
+        "amount": "255102.04",
+        "exact": "12500000/49"
+      },
+      "lps": {
+        "amount": "250000.00",
+        "exact": "250000"
+      },
+      "gp_commitment": {
+        "amount": "5102.04",
+        "exact": "250000/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "150000.00",
+            "exact": "150000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "100000.00",
+            "exact": "100000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2021-01-01",
+      "first_day": "2021-01-01",
+      "last_day": "2021-06-30",
+      "call": {
+        "amount": "255102.04",
+        "exact": "12500000/49"
+      },
+      "lps": {
+        "amount": "250000.00",
+        "exact": "250000"
+      },
+      "gp_commitment": {
+        "amount": "5102.04",
+        "exact": "250000/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "150000.00",
+            "exact": "150000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "100000.00",
+            "exact": "100000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2021-07-01",
+      "first_day": "2021-07-01",
+      "last_day": "2021-12-31",
+      "call": {
+        "amount": "255102.04",
+        "exact": "12500000/49"
+      },
+      "lps": {
+        "amount": "250000.00",
+        "exact": "250000"
+      },
+      "gp_commitment": {
+        "amount": "5102.04",
+        "exact": "250000/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "150000.00",
+            "exact": "150000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "100000.00",
+            "exact": "100000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-01-01",
+      "first_day": "2022-01-01",
+      "last_day": "2022-06-30",
+      "call": {
+        "amount": "212115.23",
+        "exact": "268750000/1267"
+      },
+      "lps": {
+        "amount": "207872.93",
+        "exact": "37625000/181"
+      },
+      "gp_commitment": {
+        "amount": "4242.30",
+        "exact": "5375000/1267"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "124723.76",
+            "exact": "22575000/181"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "83149.17",
+            "exact": "15050000/181"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-07-01",
+      "first_day": "2022-07-01",
+      "last_day": "2022-12-31",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-01-01",
+      "first_day": "2023-01-01",
+      "last_day": "2023-06-30",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-07-01",
+      "first_day": "2023-07-01",
+      "last_day": "2023-12-31",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-01-01",
+      "first_day": "2024-01-01",
+      "last_day": "2024-06-30",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-07-01",
+      "first_day": "2024-07-01",
+      "last_day": "2024-12-31",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2025-01-01",
+      "first_day": "2025-01-01",
+      "last_day": "2025-06-30",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2025-07-01",
+      "first_day": "2025-07-01",
+      "last_day": "2025-12-31",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2026-01-01",
+      "first_day": "2026-01-01",
+      "last_day": "2026-06-30",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2026-07-01",
+      "first_day": "2026-07-01",
+      "last_day": "2026-12-31",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2027-01-01",
+      "first_day": "2027-01-01",
+      "last_day": "2027-06-30",
+      "call": {
+        "amount": "191326.53",
+        "exact": "9375000/49"
+      },
+      "lps": {
+        "amount": "187500.00",
+        "exact": "187500"
+      },
+      "gp_commitment": {
+        "amount": "3826.53",
+        "exact": "187500/49"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "112500.00",
+            "exact": "112500"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "fee": {
+            "amount": "75000.00",
+            "exact": "75000"
+          }
+        }
+      ]
+    }
+  ],
+  "lps": [
+    {
+      "name": "Alder Endowment",
+      "commitment": "15000000",
+      "share": "0.6",
+      "paid_in": {
+        "amount": "12283723.76",
+        "exact": "2223354000/181"
+      }
+    },
+    {
+      "name": "Birchwood Family Office",
+      "commitment": "10000000",
+      "share": "0.4",
+      "paid_in": {
+        "amount": "8189149.17",
+        "exact": "1482236000/181"
+      }
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "765306.12",
+      "exact": "37500000/49",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "3705590000/181",
+          "text": "LPs have their $20,472,872.93 of paid-in capital back"
+        },
+        {
+          "code": "clawback_cleared",
+          "text": "from here the GP has earned all the carry it was paid earlier"
+        }
+      ]
+    },
+    {
+      "x": "826279.00",
+      "exact": "2955600000/3577",
+      "reasons": [
+        {
+          "code": "pref_met",
+          "rate": "0.08",
+          "amount": "63425656320/13213",
+          "text": "LPs have their 8% pref, $4,800,246.45"
+        }
+      ]
+    },
+    {
+      "x": "841522.23",
+      "exact": "3010125000/3577",
+      "reasons": [
+        {
+          "code": "catch_up_done",
+          "carry": "0.2",
+          "text": "the GP has 20% of the profit"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "32000000.00",
+        "gp_commitment": "640000.00",
+        "lps": {
+          "capital": "19722872.93",
+          "pref": "4740493.02",
+          "catch_up": "0.00",
+          "carry_tier": "4569208.63",
+          "total": "29032574.59"
+        },
+        "gp": {
+          "catch_up": "1185123.26",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1142302.16"
+            }
+          ],
+          "total": "2327425.41"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2327425.41",
+        "entitlement": "2177425.41",
+        "owed": "150000.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "17419544.75",
+            "exact": "3152937600/181"
+          },
+          "clawback": {
+            "amount": "90000.00",
+            "exact": "90000"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "11613029.83",
+            "exact": "2101958400/181"
+          },
+          "clawback": {
+            "amount": "60000.00",
+            "exact": "60000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "500000.00",
+      "exact": "500000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "500000.00",
+        "gp_commitment": "10000.00",
+        "lps": {
+          "capital": "490000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "490000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "32500000.00",
+        "gp_commitment": "650000.00",
+        "lps": {
+          "capital": "20212872.93",
+          "pref": "4740493.02",
+          "catch_up": "0.00",
+          "carry_tier": "4569208.63",
+          "total": "29522574.59"
+        },
+        "gp": {
+          "catch_up": "1185123.26",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1142302.16"
+            }
+          ],
+          "total": "2327425.41"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2327425.41",
+        "entitlement": "2275425.41",
+        "owed": "52000.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "294000.00",
+            "exact": "294000"
+          },
+          "to_date": {
+            "amount": "17713544.75",
+            "exact": "3206151600/181"
+          },
+          "clawback": {
+            "amount": "31200.00",
+            "exact": "31200"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "196000.00",
+            "exact": "196000"
+          },
+          "to_date": {
+            "amount": "11809029.83",
+            "exact": "2137434400/181"
+          },
+          "clawback": {
+            "amount": "20800.00",
+            "exact": "20800"
+          }
+        }
+      ]
+    },
+    {
+      "x": "765306.12",
+      "exact": "37500000/49",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "765306.12",
+        "gp_commitment": "15306.12",
+        "lps": {
+          "capital": "750000.00",
+          "pref": "0.00",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "750000.00"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "32765306.12",
+        "gp_commitment": "655306.12",
+        "lps": {
+          "capital": "20472872.93",
+          "pref": "4740493.02",
+          "catch_up": "0.00",
+          "carry_tier": "4569208.63",
+          "total": "29782574.59"
+        },
+        "gp": {
+          "catch_up": "1185123.26",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1142302.16"
+            }
+          ],
+          "total": "2327425.41"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2327425.41",
+        "entitlement": "2327425.41",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "450000.00",
+            "exact": "450000"
+          },
+          "to_date": {
+            "amount": "17869544.75",
+            "exact": "3234387600/181"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "300000.00",
+            "exact": "300000"
+          },
+          "to_date": {
+            "amount": "11913029.83",
+            "exact": "2156258400/181"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "826279.00",
+      "exact": "2955600000/3577",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "826279.00",
+        "gp_commitment": "16525.58",
+        "lps": {
+          "capital": "750000.00",
+          "pref": "59753.42",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "809753.42"
+        },
+        "gp": {
+          "catch_up": "0.00",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "32826279.00",
+        "gp_commitment": "656525.58",
+        "lps": {
+          "capital": "20472872.93",
+          "pref": "4800246.45",
+          "catch_up": "0.00",
+          "carry_tier": "4569208.63",
+          "total": "29842328.01"
+        },
+        "gp": {
+          "catch_up": "1185123.26",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1142302.16"
+            }
+          ],
+          "total": "2327425.41"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2327425.41",
+        "entitlement": "2339376.10",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "485852.05",
+            "exact": "35467200/73"
+          },
+          "to_date": {
+            "amount": "17905396.81",
+            "exact": "236584008000/13213"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "323901.37",
+            "exact": "23644800/73"
+          },
+          "to_date": {
+            "amount": "11936931.20",
+            "exact": "157722672000/13213"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "841522.23",
+      "exact": "3010125000/3577",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "841522.23",
+        "gp_commitment": "16830.44",
+        "lps": {
+          "capital": "750000.00",
+          "pref": "59753.42",
+          "catch_up": "0.00",
+          "carry_tier": "0.00",
+          "total": "809753.42"
+        },
+        "gp": {
+          "catch_up": "14938.36",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "14938.36"
+        }
+      },
+      "to_date": {
+        "amount": "32841522.23",
+        "gp_commitment": "656830.44",
+        "lps": {
+          "capital": "20472872.93",
+          "pref": "4800246.45",
+          "catch_up": "0.00",
+          "carry_tier": "4569208.63",
+          "total": "29842328.01"
+        },
+        "gp": {
+          "catch_up": "1200061.61",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1142302.16"
+            }
+          ],
+          "total": "2342363.77"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2342363.77",
+        "entitlement": "2342363.77",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "485852.05",
+            "exact": "35467200/73"
+          },
+          "to_date": {
+            "amount": "17905396.81",
+            "exact": "236584008000/13213"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "323901.37",
+            "exact": "23644800/73"
+          },
+          "to_date": {
+            "amount": "11936931.20",
+            "exact": "157722672000/13213"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "1000000.00",
+      "exact": "1000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "1000000.00",
+        "gp_commitment": "20000.00",
+        "lps": {
+          "capital": "750000.00",
+          "pref": "59753.42",
+          "catch_up": "0.00",
+          "carry_tier": "124246.58",
+          "total": "934000.00"
+        },
+        "gp": {
+          "catch_up": "14938.36",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "31061.64"
+            }
+          ],
+          "total": "46000.00"
+        }
+      },
+      "to_date": {
+        "amount": "33000000.00",
+        "gp_commitment": "660000.00",
+        "lps": {
+          "capital": "20472872.93",
+          "pref": "4800246.45",
+          "catch_up": "0.00",
+          "carry_tier": "4693455.21",
+          "total": "29966574.59"
+        },
+        "gp": {
+          "catch_up": "1200061.61",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1173363.80"
+            }
+          ],
+          "total": "2373425.41"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2373425.41",
+        "entitlement": "2373425.41",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "560400.00",
+            "exact": "560400"
+          },
+          "to_date": {
+            "amount": "17979944.75",
+            "exact": "3254370000/181"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "373600.00",
+            "exact": "373600"
+          },
+          "to_date": {
+            "amount": "11986629.83",
+            "exact": "2169580000/181"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "x": "10000000.00",
+      "exact": "10000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "10000000.00",
+        "gp_commitment": "200000.00",
+        "lps": {
+          "capital": "750000.00",
+          "pref": "59753.42",
+          "catch_up": "0.00",
+          "carry_tier": "7180246.58",
+          "total": "7990000.00"
+        },
+        "gp": {
+          "catch_up": "14938.36",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1795061.64"
+            }
+          ],
+          "total": "1810000.00"
+        }
+      },
+      "to_date": {
+        "amount": "42000000.00",
+        "gp_commitment": "840000.00",
+        "lps": {
+          "capital": "20472872.93",
+          "pref": "4800246.45",
+          "catch_up": "0.00",
+          "carry_tier": "11749455.21",
+          "total": "37022574.59"
+        },
+        "gp": {
+          "catch_up": "1200061.61",
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2937363.80"
+            }
+          ],
+          "total": "4137425.41"
+        }
+      },
+      "clawback": {
+        "carry_paid": "4137425.41",
+        "entitlement": "4137425.41",
+        "owed": "0.00"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "4794000.00",
+            "exact": "4794000"
+          },
+          "to_date": {
+            "amount": "22213544.75",
+            "exact": "4020651600/181"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birchwood Family Office",
+          "distribution": {
+            "amount": "3196000.00",
+            "exact": "3196000"
+          },
+          "to_date": {
+            "amount": "14809029.83",
+            "exact": "2680434400/181"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    }
+  ]
+}

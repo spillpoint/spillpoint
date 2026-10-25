@@ -1,0 +1,12 @@
+{
+  "base": "fund-30-fee-step-down",
+  "about": "A third step dated before the second.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[2]": {
+        "rate": "0.01",
+        "from": "2021-06-30"
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base": "fund-30-fee-step-down",
+  "about": "Commitments that aren't the LPs' total, and an LP's close that isn't a date: the LPs come first.",
+  "change": {
+    "set": {
+      "terms.management_fee.commitments": "24000000",
+      "lps[1].close": "not a date"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "An entered fee call after D beside the schedule: the fee call with the schedule comes before the cash flows' dates.",
+  "change": {
+    "set": {
+      "cash_flows[5]": {
+        "date": "2027-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "200000"
+      }
+    }
+  }
+}

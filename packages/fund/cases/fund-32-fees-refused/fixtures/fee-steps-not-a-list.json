@@ -1,0 +1,11 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The steps given as one step, not a list.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps": {
+        "rate": "0.02"
+      }
+    }
+  }
+}

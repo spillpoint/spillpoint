@@ -1,0 +1,9 @@
+{
+  "base": "fund-30-fee-step-down",
+  "about": "The second step dated on the schedule's start, not after the first step.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].from": "2020-07-01"
+    }
+  }
+}

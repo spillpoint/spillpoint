@@ -1,0 +1,7 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The second step without the date it's in force from.",
+  "change": {
+    "del": "terms.management_fee.steps[1].from"
+  }
+}

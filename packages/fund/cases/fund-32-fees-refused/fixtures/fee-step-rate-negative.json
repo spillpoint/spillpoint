@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The second step's rate below 0.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].rate": "-0.005"
+    }
+  }
+}

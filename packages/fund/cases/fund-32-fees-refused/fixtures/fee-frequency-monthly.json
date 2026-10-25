@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "Fees called monthly, which isn't one of the three frequencies.",
+  "change": {
+    "set": {
+      "terms.management_fee.frequency": "monthly"
+    }
+  }
+}

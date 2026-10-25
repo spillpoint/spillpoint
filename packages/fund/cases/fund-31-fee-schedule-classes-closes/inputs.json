@@ -1,0 +1,74 @@
+{
+  "case": "fund-31-fee-schedule-classes-closes",
+  "description": "Quarterly fees at 2% from 1 Jan 2022; an Anchor class at a 1% fee joining at a later close in the middle of a quarter, and a friends-and-family class paying no fees. At its close Dogwood pays $60,000 of back fees to the manager, beside its share of the February 2022 investment call and interest on it to the LPs already in.",
+  "xs": [
+    "0",
+    "5000000",
+    "5800000",
+    "6600000",
+    "10000000"
+  ],
+  "fund": {
+    "as_of": "2025-12-31",
+    "terms": {
+      "carry": "0.20",
+      "equalization_rate": "0.08",
+      "management_fee": {
+        "start": "2022-01-01",
+        "steps": [
+          {
+            "rate": "0.02"
+          }
+        ]
+      },
+      "lp_classes": [
+        {
+          "name": "Anchor",
+          "fee_rate": "0.01",
+          "carry": "0.15"
+        },
+        {
+          "name": "Friends and family",
+          "fee_rate": "0",
+          "carry": "0"
+        }
+      ]
+    },
+    "cash_flows": [
+      {
+        "date": "2022-02-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "4000000"
+      },
+      {
+        "date": "2023-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "6000000"
+      },
+      {
+        "date": "2025-06-30",
+        "type": "distribution",
+        "amount": "5000000"
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "10000000"
+      },
+      {
+        "name": "Cedar Holdings",
+        "commitment": "2000000",
+        "class": "Friends and family"
+      },
+      {
+        "name": "Dogwood Pension",
+        "commitment": "8000000",
+        "class": "Anchor",
+        "close": "2022-08-15"
+      }
+    ]
+  }
+}

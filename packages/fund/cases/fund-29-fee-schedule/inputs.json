@@ -1,0 +1,69 @@
+{
+  "case": "fund-29-fee-schedule",
+  "description": "No listed LPs, $40,000,000 of commitments, 2% a year called quarterly from 15 Feb 2021 and 1.5% from 15 Feb 2026 (year six): $100,000 for the half first quarter, $200,000 a quarter, $175,000 for the quarter of the step and $150,000 after. A 1% GP commitment, fee-free; an 8% pref with a full catch-up.",
+  "xs": [
+    "0",
+    "10000000",
+    "20000000",
+    "30000000"
+  ],
+  "fund": {
+    "as_of": "2026-06-30",
+    "terms": {
+      "carry": "0.20",
+      "pref": {
+        "rate": "0.08"
+      },
+      "catch_up": {
+        "gp_share": "1"
+      },
+      "gp_commitment": {
+        "share": "0.01"
+      },
+      "management_fee": {
+        "start": "2021-02-15",
+        "frequency": "quarterly",
+        "steps": [
+          {
+            "rate": "0.02"
+          },
+          {
+            "rate": "0.015",
+            "from": "2026-02-15"
+          }
+        ],
+        "commitments": "40000000"
+      }
+    },
+    "cash_flows": [
+      {
+        "date": "2021-03-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "12000000"
+      },
+      {
+        "date": "2022-05-02",
+        "type": "call",
+        "kind": "investment",
+        "amount": "10000000"
+      },
+      {
+        "date": "2023-11-20",
+        "type": "call",
+        "kind": "investment",
+        "amount": "8000000"
+      },
+      {
+        "date": "2024-09-30",
+        "type": "distribution",
+        "amount": "9000000"
+      },
+      {
+        "date": "2025-12-15",
+        "type": "distribution",
+        "amount": "15000000"
+      }
+    ]
+  }
+}

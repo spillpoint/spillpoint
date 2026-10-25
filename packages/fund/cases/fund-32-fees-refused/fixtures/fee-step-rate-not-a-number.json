@@ -1,0 +1,9 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The first rate written as a percent, not an exact number.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[0].rate": "2%"
+    }
+  }
+}

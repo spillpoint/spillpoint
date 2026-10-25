@@ -1,0 +1,7 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The schedule without commitments, in a fund that doesn't list its LPs.",
+  "change": {
+    "del": "terms.management_fee.commitments"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "base": "fund-29-fee-schedule",
+  "about": "The schedule without its start date.",
+  "change": {
+    "del": "terms.management_fee.start"
+  }
+}
