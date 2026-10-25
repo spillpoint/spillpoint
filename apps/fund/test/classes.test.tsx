@@ -639,8 +639,8 @@ describe("Payouts with classes and later closes", () => {
     const text = (await downloads.at(-1)!.blob.text()).replace(/^﻿/, "");
     expect(text.split("\r\n").slice(0, 4)).toEqual([
       "LP,Class,Share,Paid in,This distribution,To date",
-      "Alder Endowment,,50.00%,2666666.66,2600000.00,2600000.00",
-      "Birchwood Family Office,,25.00%,1333333.33,1300000.00,1300000.00",
+      "Alder Endowment,,50.00%,2700000.00,2600000.00,2600000.00",
+      "Birchwood Family Office,,25.00%,1350000.00,1300000.00,1300000.00",
       "Cedar Holdings,Friends and family,25.00%,1250000.00,1300000.00,1300000.00",
     ]);
   });
@@ -649,16 +649,20 @@ describe("Payouts with classes and later closes", () => {
     render(<App />);
     pick("fund-26-closes-and-classes");
     const eq = card("Equalization at the later closes")!;
-    expect(eq.querySelector(".card__intro")!.textContent).toBe("Interest at 6% a year, simple, on the days from each call to the close (Actual/365).");
+    expect(eq.querySelector(".card__intro")!.textContent).toBe(
+      "Interest at 6% a year, simple, on the days from each call to the close (Actual/365). Back fees are each joining LP's own fees for the fee calls before its close, paid to the manager.",
+    );
     const blocks = within(eq).getAllByRole("region");
     expect(blocks.map((b) => b.querySelector("h3")!.textContent)).toEqual(["1 Apr 2022: Birchwood Family Office joins", "1 Oct 2022: Cedar Holdings joins", "All the closes together"]);
+    // F29: Birchwood pays in its $666,666.66 share of the investment call, rounded down, with $9,863.01 of interest, and
+    // its own $50,000.00 of back fees to the manager; Alder gets back only the investment call's.
     expect(rowsOf(within(blocks[2]!).getAllByRole("table")[0]!)).toEqual([
-      ["LP", "Paid in", "Got back", "Interest paid", "Interest received"],
-      ["Alder Endowment", "$0.00", "$1,533,333.33", "$0.00", "$32,876.71"],
-      ["Birchwood Family Office", "$700,000.00", "$416,666.66", "$10,356.16", "$11,260.27"],
-      ["Cedar Holdings", "$1,250,000.00", "$0.00", "$33,780.82", "$0.00"],
-      ["Left over from rounding down", "$0.00", "$0.01", "$0.01", "$0.01"],
-      ["Total", "$1,950,000.00", "$1,950,000.00", "$44,136.99", "$44,136.99"],
+      ["LP", "Paid in", "Got back", "Interest paid", "Interest received", "Back fees"],
+      ["Alder Endowment", "$0.00", "$1,500,000.00", "$0.00", "$32,383.56", "$0.00"],
+      ["Birchwood Family Office", "$666,666.66", "$416,666.66", "$9,863.01", "$11,260.27", "$50,000.00"],
+      ["Cedar Holdings", "$1,250,000.00", "$0.00", "$33,780.82", "$0.00", "$0.00"],
+      ["Left over from rounding down", "$0.01", "$0.01", "$0.01", "$0.01", "$0.00"],
+      ["Total", "$1,916,666.67", "$1,916,666.67", "$43,643.84", "$43,643.84", "$50,000.00"],
     ]);
     expect(eq.textContent).toContain("Equalization is outside the waterfall: it moves money between LPs at each close and changes nothing above.");
     fireEvent.click(within(eq).getByRole("button", { name: "Download as CSV" }));
@@ -667,13 +671,28 @@ describe("Payouts with classes and later closes", () => {
     expect(status()).toBe("Downloaded as two-later-closes-and-a-friends-and-family-class-equalization.csv, in your downloads.");
     const lines = (await file.blob.text()).replace(/^﻿/, "").split("\r\n");
     expect(lines.slice(-6)).toEqual([
-      "All closes,Alder Endowment,0.00,1533333.33,0.00,32876.71",
-      "All closes,Birchwood Family Office,700000.00,416666.66,10356.16,11260.27",
-      "All closes,Cedar Holdings,1250000.00,0.00,33780.82,0.00",
-      "All closes,Left over from rounding down,0.00,0.01,0.01,0.01",
-      "All closes,Total,1950000.00,1950000.00,44136.99,44136.99",
+      "All closes,Alder Endowment,0.00,1500000.00,0.00,32383.56,0.00",
+      "All closes,Birchwood Family Office,666666.66,416666.66,9863.01,11260.27,50000.00",
+      "All closes,Cedar Holdings,1250000.00,0.00,33780.82,0.00,0.00",
+      "All closes,Left over from rounding down,0.01,0.01,0.01,0.01,0.00",
+      "All closes,Total,1916666.67,1916666.67,43643.84,43643.84,50000.00",
       "",
     ]);
+  });
+
+  it("says there's no equalization interest when no rate is given, as only fee calls before the closes allow (FA45)", async () => {
+    // Case 25 with its first investment call on Cedar's close and no rate: Cedar's back fees are all that moves.
+    const base = caseFile("fund-25-later-close", "inputs.json").fund;
+    const { equalization_rate: _, ...terms } = base.terms;
+    const flows = base.cash_flows.map((f: { date: string }, i: number) => (i === 0 ? { ...f, date: "2021-07-15" } : f));
+    render(<App />);
+    await openFile(JSON.stringify({ ...base, terms, cash_flows: flows }));
+    const eq = card("Equalization at the later closes")!;
+    expect(eq.querySelector(".card__intro")!.textContent).toBe(
+      "No equalization interest: only fee calls come before the later closes. Back fees are each joining LP's own fees for the fee calls before its close, paid to the manager.",
+    );
+    const all = within(eq).getAllByRole("region").at(-1)!;
+    expect(rowsOf(within(all).getAllByRole("table")[0]!).find((r) => r[0] === "Cedar Holdings")).toEqual(["Cedar Holdings", "$0.00", "$0.00", "$0.00", "$0.00", "$20,000.00"]);
   });
 
   it("has no equalization card without a later close, and no classes card with one account: case 25's one close, case 17", async () => {

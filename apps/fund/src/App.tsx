@@ -79,7 +79,7 @@ const FILE = "file";
 const EDITED = "edited";
 
 /** A blank fund's terms: F9's 20% carry, flat, and nothing else, each to change on the Terms tab. */
-const BLANK_TERMS: FundTerms = { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [] };
+const BLANK_TERMS: FundTerms = { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [], managementFee: null };
 
 function opened(id: string): Opened {
   const fresh = { problem: null, edited: false, top: { text: null, set: null, problem: null } };
@@ -908,7 +908,7 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
         )}
         <div>
           <dt>The LPs' net multiple to date</dt>
-          <dd>{lpMultipleText(split.lpMultiple)}</dd>
+          <dd>{split.lpMultiple ? lpMultipleText(split.lpMultiple) : NONE}</dd>
         </div>
       </dl>
       {fund.lps.length > 0 ? (

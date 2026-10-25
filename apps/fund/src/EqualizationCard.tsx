@@ -1,6 +1,7 @@
-// The equalization card on Payouts (plan, "Payouts", f03c): only with a later close (F25). The rate; each close, with
-// its date and who joins, and what each LP in by then paid in or got back, with the interest; then all the closes
-// together. It's once for the fund, not by X: it changes nothing in the waterfall.
+// The equalization card on Payouts (plan, "Payouts", f03c): only with a later close (F25). The rate, or from f04b none
+// when only fee calls come before the later closes (FA45); each close, with its date and who joins, and what each LP in
+// by then paid in or got back, with the interest and a joiner's back fees (F29); then all the closes together. It's
+// once for the fund, not by X: it changes nothing in the waterfall.
 
 import type { Equalization } from "spillpoint-fund";
 
@@ -20,7 +21,12 @@ export function EqualizationCard({ equalization, onDownload }: Props) {
   return (
     <section className="card" aria-labelledby="equalization-heading">
       <h2 id="equalization-heading">Equalization at the later closes</h2>
-      <p className="card__intro">Interest at {percentText(equalization.rate)} a year, simple, on the days from each call to the close (Actual/365).</p>
+      <p className="card__intro">
+        {equalization.rate
+          ? `Interest at ${percentText(equalization.rate)} a year, simple, on the days from each call to the close (Actual/365).`
+          : "No equalization interest: only fee calls come before the later closes."}{" "}
+        Back fees are each joining LP's own fees for the fee calls before its close, paid to the manager.
+      </p>
       {blocks.map((b, i) => (
         <section key={i} className="equalization__block" aria-labelledby={`equalization-block-${i}`}>
           <h3 id={`equalization-block-${i}`}>{b.heading}</h3>
