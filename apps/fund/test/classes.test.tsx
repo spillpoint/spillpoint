@@ -664,7 +664,7 @@ describe("Payouts with classes and later closes", () => {
       ["Left over from rounding down", "$0.01", "$0.01", "$0.01", "$0.01", "$0.00"],
       ["Total", "$1,916,666.67", "$1,916,666.67", "$43,643.84", "$43,643.84", "$50,000.00"],
     ]);
-    expect(eq.textContent).toContain("Equalization is outside the waterfall: it moves money between LPs at each close and changes nothing above.");
+    expect(eq.textContent).toContain("Equalization is outside the waterfall: at each close it moves capital and interest between the LPs, and back fees to the manager. It changes nothing above.");
     fireEvent.click(within(eq).getByRole("button", { name: "Download as CSV" }));
     const file = downloads.at(-1)!;
     expect(file.name).toBe("two-later-closes-and-a-friends-and-family-class-equalization.csv");

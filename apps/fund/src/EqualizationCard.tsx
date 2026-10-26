@@ -40,7 +40,7 @@ export function EqualizationCard({ equalization, onDownload }: Props) {
           />
         </section>
       ))}
-      <p className="equalization__outside">Equalization is outside the waterfall: it moves money between LPs at each close and changes nothing above.</p>
+      <p className="equalization__outside">Equalization is outside the waterfall: at each close it moves capital and interest between the LPs, and back fees to the manager. It changes nothing above.</p>
       <div className="flows__actions">
         <button type="button" className="button" onClick={() => onDownload(blocks)}>
           Download as CSV

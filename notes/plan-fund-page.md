@@ -478,6 +478,7 @@ Two optional columns after the commitment: class, then close.
   - **A leftover row in each block,** as the LPs' card has it: each column's exact total with `toCents`, less its rounded amounts. A Total row after it, as the LPs' card has **(mine)**.
   - **The all-closes block** rounds each LP's exact total, as `equalization(fund).lps` gives it. So a row there can be a cent more than its rows above added up: Alder's interest is 10,356.16 and 22,520.54 at the two closes, and 32,876.71 in all.
 - **One line under it:** "Equalization is outside the waterfall: it moves money between LPs at each close and changes nothing above."
+  - **From f04b, in Jordan's words,** as back fees go to the manager: "Equalization is outside the waterfall: at each close it moves capital and interest between the LPs, and back fees to the manager. It changes nothing above."
 - **"Download as CSV,"** as the LPs' card's:
   - **Its name:** "<fund name> equalization.csv", the fund's name as Save writes it **(mine)**: "two-later-closes-and-a-friends-and-family-class-equalization.csv". It has no X or D, as the equalization has neither.
   - **Its columns (mine):** Close, LP, Paid in, Got back, Interest paid, Interest received; from f04b, Back fees after them.

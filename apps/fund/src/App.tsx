@@ -908,7 +908,7 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
         )}
         <div>
           <dt>The LPs' net multiple to date</dt>
-          <dd>{split.lpMultiple ? lpMultipleText(split.lpMultiple) : NONE}</dd>
+          <dd>{lpMultipleText(split.lpMultiple)}</dd>
         </div>
       </dl>
       {fund.lps.length > 0 ? (
