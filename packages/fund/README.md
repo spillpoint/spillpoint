@@ -357,7 +357,7 @@ The checks run in a fixed order, and the first problem is the one refused.
   - `distribution`, X itself, and `toDate`, the fund to date with X, each a `Tiers`: `amount`, `gpCommitment`, `lps` (`capital`, `pref`, `catchUp`, `carryTier`, `total`) and `gp` (`catchUp`, `carry` by step, `total`)
   - `lpsPaidIn` and `gpCommitmentPaidIn`
   - `prefAccrued`, to D (null without a pref)
-  - `lpMultiple`, the LPs' net multiple to date; from 0.4.0, null when the LPs have paid in nothing
+  - `lpMultiple`, the LPs' net multiple to date
   - `clawback`, when final: `carryPaid`, `entitlement`, `owed`, `prefOnFundTotals`
   - `byLp`, from 0.2.0, each LP's amounts in the input's order (empty without LPs): `name`, `commitment`, `share`, `paidIn`, `distribution` (its share of the LPs' total from X), `toDate`, and `clawback` (its share of what's owed back, null when not final). From 0.3.0 also its `class` and `close`; its `share` is still its commitment over all the LPs', and its amounts are its part of its class's account's, by commitment.
   - `byAccount`, from 0.3.0, with two or more accounts (empty otherwise): each class's account, the fund's terms first, with its `class` (null for the fund's terms), `distribution` and `toDate` by tier with its own steps, `paidIn`, `prefAccrued`, `lpMultiple` (null when it has nothing paid in), and `clawback` when final. The split's own amounts are the accounts' sums, and its carry by step lists every account's steps, each step with its `class`.
@@ -401,7 +401,7 @@ Code can match on these names and words. From 0.1.0, or the version that added i
 - `lp_class_name_repeated`: a class's name that an earlier class already has, at the later class's `name`. From 0.3.0.
 - `lp_class_unknown`: an LP's `class` that isn't the name of a class in the terms. From 0.3.0.
 - `lp_close_after_distribution`: an LP's `close` on or after the fund's first distribution, or on or after D. From 0.3.0.
-- `call_without_payers`: a call no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path. From 0.3.0; from 0.4.0 an entered call only.
+- `call_without_payers`: a call no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path. From 0.3.0; from 0.4.0 also a schedule no listed LP pays, at `terms.management_fee`.
 - `fee_rate_with_schedule`: a `fee_rate` given beside a management fee schedule, at `terms.fee_rate`. From 0.4.0.
 - `fee_call_with_schedule`: a fee call entered beside a management fee schedule, at the first in the input's order. From 0.4.0.
 - `fee_commitments_mismatch`: a schedule's `commitments` that isn't the listed LPs' total, at `terms.management_fee.commitments`. From 0.4.0.
@@ -445,7 +445,6 @@ From 0.3.0, with two or more accounts, every reason reads "{account}: {reason}",
 ### Types that can be null from 0.4.0
 
 - `Equalization.rate`, stable from 0.3.0, is `D | null`: null when no `equalization_rate` is given, as only fee calls before the later closes allow.
-- `Split.lpMultiple`, stable from 0.1.0, is `D | null`: null only when the LPs have paid in nothing, a schedule whose LPs all pay no fees and no other call.
 
 ## How it's tested
 

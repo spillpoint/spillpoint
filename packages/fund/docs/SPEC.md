@@ -279,14 +279,14 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - `close` not a date: `bad_date`. A close on or after the fund's first distribution, or D: `lp_close_after_distribution`, new.
 - **Once the LPs are read:**
   - An investment or expense call before a later close, without `equalization_rate` (F29; in 0.3.0, any later close): `missing_field` at `terms.equalization_rate`.
-  - An entered call that no LP in the fund at its date would pay, because none had closed yet or none of them pays fees: `call_without_payers`, new, at the call. A schedule's calls have no payers to check (F32).
+  - An entered call that no LP in the fund at its date would pay, because none had closed yet or none of them pays fees: `call_without_payers`, new, at the call. A schedule no listed LP pays, every one in a class at a fee rate of 0, is refused the same way, at `terms.management_fee` (F32).
 
 **The order of checks.** FA2's three stages, then F21's LPs (FA19), then one more, with the schedule in them from 0.4.0 (F32):
 1. **Unsupported terms:** the keys under `terms` in the file's order, then each term's own keys in the file's order, each class's keys and its carry's among them, and the schedule's keys and its steps' among them; a compounding that isn't simple.
 2. **The fields,** as FA2 has them. Within `terms`: the carry, pref, catch-up, GP commitment, and the terms against each other; then `fee_rate`; `equalization_rate`; the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, rate, then `from`, then `commitments`); then `fee_rate_with_schedule`; then each class in order (its shape, its name, the name repeating, its fee rate, its carry, its carry against the catch-up).
 3. **The cash flows:** first `fee_call_with_schedule`, then against each other and D, the schedule's calls among the calls.
 4. **The LPs,** as F21 checks them, each through before the next: then its class, then its close.
-5. **What the LPs need of the rest:** `equalization_rate`, when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing or not the LPs' total; then each entered call in date order for its payers.
+5. **What the LPs need of the rest:** `equalization_rate`, when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing or not the LPs' total; a schedule no listed LP pays; then each entered call in date order for its payers.
 
 **From 0.4.0, F29 to F32 are management fees:** fee calls at a later close are each LP's own, not rebalanced, which fixes 0.3.0's F25, and a schedule works out the fee calls from a rate on commitments. A fund with no schedule and no fee call before a later close is exactly as in 0.3.0.
 
@@ -338,7 +338,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - `commitments` not a number, or 0 or less: `bad_number`.
 - **The terms:** `fee_rate` given with a schedule: `fee_rate_with_schedule`, new, at `terms.fee_rate`. A class's own fee rate when the terms have neither `fee_rate` nor a schedule: `missing_field` at `terms.fee_rate` (F28, widened).
 - **The cash flows:** an entered fee call with a schedule: `fee_call_with_schedule`, new, at the first such call in the input's order.
-- **Once the LPs are read:** a schedule without `commitments` when the fund doesn't list its LPs: `missing_field` at `terms.management_fee.commitments`. `commitments` that isn't the listed LPs' total: `fee_commitments_mismatch`, new, there.
+- **Once the LPs are read:** a schedule without `commitments` when the fund doesn't list its LPs: `missing_field` at `terms.management_fee.commitments`. `commitments` that isn't the listed LPs' total: `fee_commitments_mismatch`, new, there. A schedule no listed LP pays, every one in a class at a fee rate of 0: `call_without_payers` at `terms.management_fee`, as an entered fee call nobody pays is (F28).
 - **The order of checks** is F28's five stages, with the schedule in them, as F28 lists them.
 
 ## Worked examples (exact, to the cent)
@@ -410,7 +410,7 @@ Twenty-eight cases and four sets of refusals, in `packages/fund/cases/` (FC2):
 29. A fee schedule with no listed LPs: $40,000,000 of commitments, 2% a year called quarterly from 15 Feb 2021 and 1.5% from 15 Feb 2026, $4,225,000 in all. A 1% GP commitment, fee-free; an 8% pref with a full catch-up, so the pref runs on each fee call from its date (f04a).
 30. Two LPs, fees called half-yearly, 2% stepping down to 1.5% on 1 Mar 2022, inside a half-year; a 2% GP commitment that pays fees; an 8% pref with a full catch-up; final. The fees called after the last distribution are paid-in the final distribution returns first, so at X = 0 the GP owes back $150,000 of carry (f04a).
 31. Quarterly fees at 2%; an Anchor class at a 1% fee joining at a later close in the middle of a quarter, a friends-and-family class paying no fees, and an investment call before the close: back fees and capital equalization side by side (f04a).
-32. Thirty-six refusals on cases 29 to 31: each line of F32, and the order of checks where the schedule meets the other checks (f04a).
+32. Thirty-seven refusals on cases 29 to 31: each line of F32, and the order of checks where the schedule meets the other checks (f04a; the thirty-seventh, a schedule no listed LP pays, in the f04b review).
 
 ## Decided
 
@@ -440,4 +440,5 @@ Twenty-eight cases and four sets of refusals, in `packages/fund/cases/` (FC2):
   - 0.4.0 is management fees: the page and README say where fees go, and a schedule works out the fee calls (F30)
   - 0.3.0's fee calls at a later close are fixed in 0.4.0 (F29), and noted as a known limitation on 0.3.0's GitHub release
   - the fee is on commitments, with rate steps by date; invested capital, gross or net, is later (F30)
+  - a schedule no listed LP pays is refused, as an entered fee call nobody pays is, so no call is $0 and the LPs always pay something in (F32; f04b review)
 - **2026-10-25, Claude's defaults settled with the spec:** the seven in F30, from quarterly calendar periods in advance to the GP commitment fee-free unless it pays fees

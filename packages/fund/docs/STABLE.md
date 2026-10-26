@@ -33,7 +33,7 @@ Each with the `path` it names, into the input (F18, FA2):
 - `lp_class_name_repeated`: a class's name that an earlier class already has, compared exactly as written, at the later class's `name` (F28). From 0.3.0.
 - `lp_class_unknown`: an LP's `class` that isn't the name of a class in the terms, compared exactly as written (F28, FA27). From 0.3.0.
 - `lp_close_after_distribution`: an LP's `close` on or after the fund's first distribution, or on or after D (F28, FA31). From 0.3.0.
-- `call_without_payers`: a call that no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path (F28, FA21). From 0.3.0. From 0.4.0 only an entered call: a schedule's calls have no payers to check (F32, FA40).
+- `call_without_payers`: a call that no LP in the fund at its date would pay, because none had closed yet or none of them pays fees, at the call's path (F28, FA21). From 0.3.0. From 0.4.0 also a schedule no listed LP pays, every one in a class at a fee rate of 0, at `terms.management_fee` (F32).
 - `fee_rate_with_schedule`: a `fee_rate` given beside a management fee schedule, whose first rate is the fund's, at `terms.fee_rate` (F32). From 0.4.0.
 - `fee_call_with_schedule`: a fee call entered beside a management fee schedule, which would count it twice, at the first in the input's order (F32). From 0.4.0.
 - `fee_commitments_mismatch`: a schedule's `commitments` that isn't the listed LPs' commitments added up, at `terms.management_fee.commitments` (F32, FA41). From 0.4.0.
@@ -105,6 +105,5 @@ From 0.4.0 (F29 to F31), beside the API's other names:
 
 ## Types that can be null from 0.4.0
 
-Two types stable from an earlier version can now be null, so code that reads them checks first:
+One type stable from an earlier version can now be null, so code that reads it checks first:
 - `Equalization.rate`, stable from 0.3.0: `D | null`, was `D`. Null when no `equalization_rate` is given, which is allowed when only fee calls come before the later closes: each joiner pays its own back fees, with no interest (F29, FA45).
-- `Split.lpMultiple`, stable from 0.1.0: `D | null`, was `D`. Null only when the LPs have paid in nothing: a schedule whose listed LPs all pay no fees calls $0 (FA40), and a fund with no other call has nothing paid in (FA47). An account's multiple is null the same way from 0.3.0 (FA38).
