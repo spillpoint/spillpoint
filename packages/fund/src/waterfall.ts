@@ -137,11 +137,9 @@ export interface Split {
   prefAccrued: D | null;
   /**
    * F10's LP multiple, net DPI: the LPs' distributions to date, X's included, after carry, over their paid-in capital
-   * to date. The multiple carry steps are measured on; with accounts, each measures its own (`byAccount`). From 0.4.0,
-   * null when the LPs have paid in nothing (FA47): a schedule's calls of $0, with every listed LP paying no fees (FA40),
-   * and no other call.
+   * to date. The multiple carry steps are measured on; with accounts, each measures its own (`byAccount`).
    */
-  lpMultiple: D | null;
+  lpMultiple: D;
   /** Null unless X is final or at the NAV point. */
   clawback: Clawback | null;
   /** Each LP's amounts, in the input's order (F20); empty when the fund has no LPs. */
@@ -229,8 +227,8 @@ function callPart(account: Account, flow: RunFlow): D {
   if (account.whole) return flow.lps;
   if (flow.kind !== "fee") return flow.lps.times(account.commitment).div(account.allCommitments);
   if (!flow.paidBy.isZero()) return flow.paid.times(account.feeWeight).div(flow.paidBy);
-  // No LP pays fees: a schedule's call of $0 (FA40), or, in a fund built by hand that readFund would refuse
-  // (call_without_payers, F28), an entered one, which counts as 0.3.0 counted it.
+  // No LP pays fees, in a fund built by hand that readFund would refuse (call_without_payers, F28, F32): an entered
+  // fee call counts as 0.3.0 counted it, and a schedule's calls are $0 (FA48).
   return account.allFeeWeights.isZero() ? ZERO : flow.lps.times(account.feeWeight).div(account.allFeeWeights);
 }
 
@@ -425,8 +423,8 @@ const ledgers = new WeakMap<Fund, FundLedger>();
 
 /**
  * The ledgers X runs against (F14): every cash flow in F4's order, the schedule's calls among them (FA42), the pref
- * accrued to D. Kept for a fund readFund
- * returned, which is frozen; worked from scratch on every call for one built by hand, which can change after use.
+ * accrued to D. Kept for a fund readFund returned, which is frozen; worked from scratch on every call for one built by
+ * hand, which can change after use.
  */
 function ledgerAtD(fund: Fund): FundLedger {
   const known = ledgers.get(fund);
@@ -522,9 +520,9 @@ export function perDollarOfX(fund: Fund, account: Account): D {
 /**
  * F10: an account's LPs' distributions to date after carry, over its paid-in. FA38: an account with nothing paid in (a
  * class paying no fees, in a fund whose calls are all fee calls) has no multiple to give, so null; its carry is still
- * at its top rate from its first dollar, every step's threshold being a multiple of nothing (F11). The fund's own is
- * null the same way (FA47), which only a schedule can give: `call_without_payers` sees that the LPs pay part of every
- * entered call, but a schedule's calls have no payers to check, and with every LP paying no fees they're $0 (FA40).
+ * at its top rate from its first dollar, every step's threshold being a multiple of nothing (F11). The fund's own
+ * multiple always has one: `call_without_payers` sees that the LPs together pay part of every call, from 0.4.0 a
+ * schedule's too (F32).
  */
 function multipleOf(lps: D, paidIn: D): D | null {
   return paidIn.isZero() ? null : lps.div(paidIn);
@@ -638,7 +636,7 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
     lpsPaidIn,
     gpCommitmentPaidIn: ledger.gpCommitmentPaidIn,
     prefAccrued: fund.terms.pref ? runs.reduce((s, r) => s.plus(r.prefAccrued), ZERO) : null,
-    lpMultiple: multipleOf(toDate.lps.total, lpsPaidIn),
+    lpMultiple: toDate.lps.total.div(lpsPaidIn),
     clawback: fundClawback(fund, runs),
     byLp: byLp(fund, runs),
     byAccount:

@@ -472,9 +472,9 @@ export function needsEqualizationRate(fund: Fund, firstCall: number): boolean {
 
 /**
  * Stage 5 (F28, F32): an investment or expense call before a later close needs an equalization rate (F29); a schedule
- * needs its base, `commitments` without listed LPs, and with them `commitments`, if given, is their total; then each
- * entered call, in F4's order, needs an LP in the fund at its date to pay it (FA21): for a fee call, one with a fee
- * weight above 0 (F22). A schedule's calls have no payers to check (F32, FA40).
+ * needs its base, `commitments` without listed LPs, and with them `commitments`, if given, is their total; a schedule
+ * needs a listed LP that pays it, as an entered fee call does; then each entered call, in F4's order, needs an LP in
+ * the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22).
  */
 function checkWhatTheLpsNeed(fund: Fund, firstCall: number, raw: Json): void {
   if (fund.terms.equalizationRate === null && needsEqualizationRate(fund, firstCall)) throw refuse("missing_field", "terms.equalization_rate");
@@ -484,6 +484,9 @@ function checkWhatTheLpsNeed(fund: Fund, firstCall: number, raw: Json): void {
     if (fund.lps.length === 0 && fee.commitments === null) throw refuse("missing_field", at);
     // FA41: compared as a number, exactly, with the commitments as the input writes them: "40000000.00" is 40,000,000.
     if (fund.lps.length > 0 && fee.commitments !== null && !sameTotal(raw)) throw refuse("fee_commitments_mismatch", at);
+    // F32: with every listed LP in a class at a fee rate of 0, each of the schedule's calls would be $0. Its calls are
+    // every LP's own fee, whatever its close (F29), so the fee weights alone say whether anyone pays them.
+    if (fund.lps.length > 0 && !fund.lps.some((lp) => feeWeight(fund, lp).gt(ZERO))) throw refuse("call_without_payers", "terms.management_fee");
   }
   if (fund.lps.length === 0) return;
   for (const f of fund.cashFlows) {

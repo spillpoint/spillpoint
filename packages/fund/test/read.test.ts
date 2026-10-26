@@ -365,6 +365,26 @@ describe("the management fee schedule (F29, F30, F32, FA39 to FA41)", () => {
     expect(read(C30, { set: { "lps[1].close": "2020-08-01", "cash_flows[0].date": "2020-08-01" } }).terms.equalizationRate).toBeNull();
   });
 
+  it("refuses a schedule no listed LP pays at the schedule, as an entered fee call nobody pays is at the call (F28, F32)", () => {
+    // Both LPs in a class at a fee rate of 0: each of the schedule's calls would be $0. Only the fee weights count, not
+    // who is in at each call's date, and a schedule that calls nothing yet, starting after D, is refused the same (FA39).
+    const classes = [{ name: "F&F", fee_rate: "0" }, { name: "Anchor", fee_rate: "0.01" }, { name: "Seed", carry: "0.1" }];
+    const nobody = { "terms.lp_classes": classes, "lps[0].class": "F&F", "lps[1].class": "F&F" };
+    const at = input("call_without_payers", "terms.management_fee");
+    expect(refused(C30, { set: nobody })).toEqual(at);
+    expect(refused(C30, { set: { ...nobody, "terms.management_fee.start": "2027-06-01", "terms.management_fee.steps": [{ rate: "0.02" }] } })).toEqual(at);
+    // One LP paying, on the fund's terms or in a class at a fee rate above 0 or with none of its own: it reads.
+    read(C30, { set: { "terms.lp_classes": classes, "lps[0].class": "F&F" } });
+    for (const cls of ["Anchor", "Seed"]) read(C30, { set: { ...nobody, "lps[1].class": cls } });
+    // Stage 5's order: the equalization rate, then commitments, then this, then each entered call's payers. Both LPs
+    // closing on 1 Aug 2020, after the investment call of 1 Jul, leave that call without payers too.
+    const late = { ...nobody, "lps[0].close": "2020-08-01", "lps[1].close": "2020-08-01" };
+    expect(refused(C30, { set: late })).toEqual(input("missing_field", "terms.equalization_rate"));
+    expect(refused(C30, { set: { ...nobody, "terms.management_fee.commitments": "1" } })).toEqual(input("fee_commitments_mismatch", "terms.management_fee.commitments"));
+    expect(refused(C30, { set: { ...late, "terms.equalization_rate": "0.08" } })).toEqual(at);
+    expect(refused(C30, { set: { ...late, "terms.equalization_rate": "0.08", "lps[1].class": "Anchor" } })).toEqual(input("call_without_payers", "cash_flows[0]"));
+  });
+
   it("decides who joins later by the fund's first call, the schedule's included (F25, F30)", () => {
     // Case 30's first entered call moved after Birchwood's close: the schedule's first call, on start, comes before it.
     const fund = read(C30, { set: { "lps[1].close": "2020-08-01", "cash_flows[0].date": "2020-09-01" } });

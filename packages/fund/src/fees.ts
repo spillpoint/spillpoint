@@ -18,8 +18,7 @@
 // Nothing about fees moves between the LPs. Amounts are 40-digit decimals;
 // nothing is rounded here.
 
-import { ONE, ZERO } from "./decimal.ts";
-import type { D } from "./decimal.ts";
+import { D, ONE, ZERO } from "./decimal.ts";
 import { dayNumber, isoDate } from "./dates.ts";
 import { feeWeight, isIn, wasRead } from "./input.ts";
 import type { CallKind, Fund } from "./model.ts";
@@ -90,16 +89,21 @@ function allFeeWeights(fund: Fund): D {
   return sum((fund.lps ?? []).map((lp) => feeWeight(fund, lp)));
 }
 
-const feeCallsKept = new WeakMap<Fund, FeeCall[] | null>();
-
 /**
  * The schedule's fee calls to D (F30, F31), once for the fund, in date order: each its date, the days it covers, the
  * call, the LPs' part and the GP commitment's, and each listed LP's fee. Null without a schedule; empty when it starts
- * after D (FA39). A period whose every day is at a rate of 0 isn't a call; one whose listed LPs all pay no fees is a
- * call of $0 (FA40).
+ * after D (FA39). A period whose every day is at a rate of 0 isn't a call (FA40). Fresh each time, as a split is: what
+ * a caller does to them changes nothing the waterfall keeps.
  */
 export function feeCalls(fund: Fund): FeeCall[] | null {
-  if (feeCallsKept.has(fund)) return feeCallsKept.get(fund)!;
+  return scheduleCalls(fund)?.map((c) => ({ ...c, call: new D(c.call), lps: new D(c.lps), gpCommitment: new D(c.gpCommitment), byLp: c.byLp.map((f) => ({ name: f.name, fee: new D(f.fee) })) })) ?? null;
+}
+
+const scheduleKept = new WeakMap<Fund, FeeCall[] | null>();
+
+/** The schedule's fee calls as the waterfall and the equalization run them, never handed out (feeCalls copies them). */
+function scheduleCalls(fund: Fund): FeeCall[] | null {
+  if (scheduleKept.has(fund)) return scheduleKept.get(fund)!;
   const fee = fund.terms.managementFee ?? null;
   let out: FeeCall[] | null = null;
   if (fee) {
@@ -127,7 +131,7 @@ export function feeCalls(fund: Fund): FeeCall[] | null {
       };
     });
   }
-  if (wasRead(fund)) feeCallsKept.set(fund, out);
+  if (wasRead(fund)) scheduleKept.set(fund, out);
   return out;
 }
 
@@ -158,7 +162,7 @@ export function runFlows(fund: Fund): RunFlow[] {
     const all = paidBy.eq(weightsAll) || paidBy.isZero() ? paid : paid.times(weightsAll).div(paidBy);
     return { date: f.date, day, type: f.type, kind: f.kind, amount: f.amount, gpCommitment: gp, paid, paidBy, lps: all, index: f.index, byLp: null };
   });
-  const scheduled = (feeCalls(fund) ?? []).map(
+  const scheduled = (scheduleCalls(fund) ?? []).map(
     (c): RunFlow => ({
       date: c.date,
       day: dayNumber(c.date)!,

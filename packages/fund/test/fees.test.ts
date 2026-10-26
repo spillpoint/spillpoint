@@ -1,6 +1,6 @@
 // The engine's fee calls against every fund case with a schedule (F30, F31, FC13): each call's date and the days it
 // covers, the call, the LPs' part, the GP commitment's, and each LP's fee, to the cent and within FA15 of exact. A fund
-// without a schedule has none. Then what the schedule does that the cases don't reach: FA39, FA40, FA42, FA46, FA47.
+// without a schedule has none. Then what the schedule does that the cases don't reach: FA39, FA40, FA42, FA46.
 
 import { describe, expect, it } from "vitest";
 
@@ -133,19 +133,6 @@ describe("the schedule", () => {
     const last = feeCalls(fund)!.at(-1)!;
     expect(last.call.minus(new D("10000000").times(new D("0.02").times(45).plus(new D("0.01").times(47))).div(368)).abs().lte(CLOSE)).toBe(true);
     expect(toCents(last.call)).toBe("37228.26");
-  });
-
-  it("keeps a $0 call when every listed LP pays no fees, and then the LPs may have paid in nothing (FA40, FA47)", () => {
-    const fund = schedule({
-      terms: { lp_classes: [{ name: "Friends", fee_rate: "0" }] },
-      flows: [{ date: "2022-12-31", type: "distribution", amount: "1000000" }],
-      lps: [{ name: "Alder", commitment: "6000000", class: "Friends" }],
-    });
-    expect(feeCalls(fund)!.map((c) => toCents(c.call))).toEqual(["0.00", "0.00", "0.00", "0.00"]);
-    const split = splitAt(fund, "500000");
-    expect([toCents(split.lpsPaidIn), split.lpMultiple]).toEqual(["0.00", null]);
-    // Nothing paid in, so every dollar is profit: 20% of each to the GP.
-    expect(toCents(split.distribution.gp.total)).toBe("100000.00");
   });
 
   it("puts its call after its date's entered calls and before that date's distributions (F4, FA42)", () => {
