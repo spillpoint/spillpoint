@@ -1,6 +1,6 @@
 {
   "base": "fund-30-fee-step-down",
-  "about": "The schedule's commitments ,000,000, not the two LPs' ,000,000.",
+  "about": "The schedule's commitments $24,000,000, not the two LPs' $25,000,000.",
   "change": {
     "set": {
       "terms.management_fee.commitments": "24000000"

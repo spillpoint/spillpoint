@@ -740,7 +740,7 @@ class Schedule(unittest.TestCase):
 
     def test_a_rate_of_0_ends_fees_and_a_period_all_at_0_is_no_call(self):
         # F30, FA40: 2% from 1 Apr, 0 from 16 May, 1% from 1 Oct. Q2's 91 days: 45 at 2%, 46 at 0. Q3 is all at 0, so it
-        # isn't a call. Q4 is all at 1% (FA47: a later rate can be higher).
+        # isn't a call. Q4 is all at 1% (FA46: a later rate can be higher).
         terms = {"management_fee": {"start": "2021-04-01", "steps": [{"rate": "0.02"}, {"rate": "0", "from": "2021-05-16"}, {"rate": "0.01", "from": "2021-10-01"}], "commitments": "1"}}
         calls = schedule_of({"as_of": "2021-12-31", "terms": terms, "cash_flows": []})
         self.assertEqual([(c[0], c[3]) for c in calls], [("2021-04-01", F(2, 100) * 45 / (4 * 91)), ("2021-10-01", F(1, 400))])
@@ -888,7 +888,7 @@ class FeeCallsAtCloses(unittest.TestCase):
 
 
 class FeeRefusals(unittest.TestCase):
-    """F32 beyond the fixtures in packages/fund/cases/fund-32-fees-refused, and FA39 to FA47."""
+    """F32 beyond the fixtures in packages/fund/cases/fund-32-fees-refused, and FA39 to FA46."""
 
     def refused(self, change, base=SCHEDULED):
         with self.assertRaises(Refusal) as ctx:
@@ -918,7 +918,7 @@ class FeeRefusals(unittest.TestCase):
         self.assertEqual(self.refused({"set": {"terms.management_fee.steps": steps}}), ("input", "steps_out_of_order", "terms.management_fee.steps[0]"))
         steps = [{"rate": "0.02"}, {"rate": "0.01", "from": "2021-01-01"}, "0.01"]
         self.assertEqual(self.refused({"set": {"terms.management_fee.steps": steps}}), ("input", "steps_out_of_order", "terms.management_fee.steps[1]"))
-        # A step's rate as a JSON number isn't an exact string (FC1); 0 after the first is allowed, and so is a rise (FA47).
+        # A step's rate as a JSON number isn't an exact string (FC1); 0 after the first is allowed, and so is a rise (FA46).
         self.assertEqual(self.refused({"set": {"terms.management_fee.steps[0].rate": 0.02}}), ("input", "bad_number", "terms.management_fee.steps[0].rate"))
         read(apply_change(SCHEDULED, {"set": {"terms.management_fee.steps": [{"rate": "0.01"}, {"rate": "0.03", "from": "2021-06-01"}]}}))
 
@@ -967,6 +967,29 @@ class FeeRefusals(unittest.TestCase):
         self.assertEqual(back_fees(equalization(f)), [7500, 7500])
         entered = {"set": {"lps": lps, "terms.equalization_rate": "0", "cash_flows[1]": call("2021-03-01", "10", "fee")}, "del": "terms.management_fee"}
         self.assertEqual(self.refused(entered), ("input", "call_without_payers", "cash_flows[0]"))
+
+    def test_a_schedule_no_listed_lp_pays_is_refused(self):
+        # F28, F32: with every listed LP in a class at a fee rate of 0, each of the schedule's calls would be $0, so the
+        # schedule is refused, named by itself, as an entered fee call nobody pays is named by the call. Only the fee
+        # weights count, not who is in at each call's date (above). It's refused whatever it would call: one starting
+        # after D calls nothing yet (FA39). With one LP paying, on the fund's terms, or in a class at a fee rate above 0
+        # or with none of its own, it reads.
+        classes = [{"name": "F&F", "fee_rate": "0"}, {"name": "Anchor", "fee_rate": "0.01"}, {"name": "Seed", "carry": "0.1"}]
+        lps = [{"name": "A", "commitment": "30000000", "class": "F&F"}, {"name": "B", "commitment": "10000000", "class": "F&F"}]
+        nobody = {"terms.lp_classes": classes, "lps": lps}
+        at = ("input", "call_without_payers", "terms.management_fee")
+        self.assertEqual(self.refused({"set": nobody}), at)
+        self.assertEqual(self.refused({"set": {**nobody, "terms.management_fee.start": "2022-02-15"}}), at)
+        for b in ({"name": "B", "commitment": "10000000"}, {**lps[1], "class": "Anchor"}, {**lps[1], "class": "Seed"}):
+            read(apply_change(SCHEDULED, {"set": {**nobody, "lps": [lps[0], b]}}))
+        # Stage 5's order: the equalization rate, then `commitments`, then this, then each entered call's payers. Both
+        # LPs closing on 1 Apr, after the investment call of 1 Mar, leave that call without payers too.
+        late = [{**lp, "close": "2021-04-01"} for lp in lps]
+        self.assertEqual(self.refused({"set": {**nobody, "lps": late}}), ("input", "missing_field", "terms.equalization_rate"))
+        self.assertEqual(self.refused({"set": {**nobody, "terms.management_fee.commitments": "1"}}), ("input", "fee_commitments_mismatch", "terms.management_fee.commitments"))
+        self.assertEqual(self.refused({"set": {**nobody, "lps": late, "terms.equalization_rate": "0.08"}}), at)
+        paying = [late[0], {**late[1], "class": "Anchor"}]
+        self.assertEqual(self.refused({"set": {**nobody, "lps": paying, "terms.equalization_rate": "0.08"}}), ("input", "call_without_payers", "cash_flows[0]"))
 
 
 def part(f, c, i, date, before=False):

@@ -13,19 +13,11 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 /**
- * Pending: cases added before the engine reads what they need, which its case tests skip until then. From f04a, 0.4.0's
- * management fees (F29 to F32): cases 25 and 26 worked again under F29, which today's engine doesn't give, and the new
- * fee cases 29 to 32. f04b empties it. test/pending.test.ts fails if a case folder is neither run nor pending, or if this
- * list names a folder that doesn't exist.
+ * Pending: cases added before the engine reads what they need, which its case tests skip until then. f02b, f03b and
+ * f04b each emptied it; the next release's cases go here until its engine step. test/pending.test.ts fails if a case
+ * folder is neither run nor pending, or if this list names a folder that doesn't exist.
  */
-export const PENDING: readonly string[] = [
-  "fund-25-later-close",
-  "fund-26-closes-and-classes",
-  "fund-29-fee-schedule",
-  "fund-30-fee-step-down",
-  "fund-31-fee-schedule-classes-closes",
-  "fund-32-fees-refused",
-];
+export const PENDING: readonly string[] = [];
 const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */
 export const RUN_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));
@@ -79,6 +71,19 @@ export interface CaseMoves {
   capital_returned: CaseLpAmount;
   interest_paid: CaseLpAmount;
   interest_received: CaseLpAmount;
+  /** FC13: from 0.4.0, its back fees, paid to the manager (F29). */
+  back_fees: CaseLpAmount;
+}
+
+/** FC13: one of a schedule's fee calls (F30, F31). */
+export interface CaseFeeCall {
+  date: string;
+  first_day: string;
+  last_day: string;
+  call: CaseLpAmount;
+  lps: CaseLpAmount;
+  gp_commitment?: CaseLpAmount;
+  by_lp?: { name: string; fee: CaseLpAmount }[];
 }
 
 /** FC9: an LP's amount, to the cent and exact. */
@@ -111,8 +116,10 @@ export interface CaseExpected {
   lps?: { name: string; class?: string; close?: string; commitment: string; share: string; paid_in: CaseLpAmount }[];
   /** FC11: each account, with two or more. */
   accounts?: { class: string | null; commitment: string; share: string; fee_share: string; paid_in: string; pref_accrued_to_d?: string; pref_on_fund_totals?: string }[];
-  /** FC11: with a later close. */
-  equalization?: { rate: string; closes: { date: string; joining: string[]; lps: CaseMoves[] }[]; lps: CaseMoves[] };
+  /** FC13: with a schedule, its fee calls (F31). */
+  fee_calls?: CaseFeeCall[];
+  /** FC11: with a later close; FC13: the rate null when none is given (FA45). */
+  equalization?: { rate: string | null; closes: { date: string; joining: string[]; lps: CaseMoves[] }[]; lps: CaseMoves[] };
   points: CasePoint[];
 }
 

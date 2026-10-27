@@ -11,22 +11,29 @@
 //    checked through before the next: its shape and its fields, that the name
 //    and commitment are there, the name, the commitment, whether the name
 //    repeats, then its class and its close (F28, FA25).
-// 5. What the LPs need of the rest (F28): a later close's equalization rate,
-//    then each call in date order for an LP in the fund at its date to pay it.
+// 5. What the LPs need of the rest (F28, F32): the equalization rate, when an
+//    investment or expense call comes before a later close (F29); the
+//    schedule's `commitments`, missing or not the LPs' total; then each entered
+//    call in date order for an LP in the fund at its date to pay it.
 //
 // Within `terms`, stage 1 takes each class's keys and its carry's among them,
-// and stage 2 reads the fund's own terms, then `fee_rate`, `equalization_rate`
-// and each class in order: its shape, its name, the name repeating, its fee
-// rate, its carry, its carry against the catch-up (F28).
+// and the schedule's keys and its steps' among them. Stage 2 reads the fund's
+// own terms, then `fee_rate`, `equalization_rate`, the schedule (its shape,
+// `start`, `frequency`, each step in order, `commitments`), `fee_rate` against
+// the schedule, and each class in order: its shape, its name, the name
+// repeating, its fee rate, its carry, its carry against the catch-up (F28,
+// F32). Stage 3 starts with an entered fee call beside a schedule, and counts
+// the schedule's calls among the calls (F30, FA39, FA40).
 //
-// null is the same as leaving an optional field out (FA3, FA24), except a
-// carry, the fund's or a class's, whose null could mean "none" or "the
+// null is the same as leaving an optional field out (FA3, FA24, FA41), except
+// a carry, the fund's or a class's, whose null could mean "none" or "the
 // default", so it's refused.
 
-import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
+import { D, ONE, ZERO, exactOrNull, exactRatio } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { refuse, unsupported } from "./errors.ts";
-import type { CallKind, CarryStep, CashFlow, Fund, FundTerms, GpCommitment, Lp, LpClass } from "./model.ts";
+import type { CallKind, CarryStep, CashFlow, FeeFrequency, FeeStep, Fund, FundTerms, GpCommitment, Lp, LpClass, ManagementFee } from "./model.ts";
+import { PERIODS, schedulePeriods } from "./schedule.ts";
 
 type Json = Record<string, unknown>;
 
@@ -38,8 +45,10 @@ const TERM_KEYS: Record<string, readonly string[] | null> = {
   fee_rate: null, // a rate (F22)
   equalization_rate: null, // a rate (F25)
   lp_classes: null, // a list of classes, checked below (F22)
+  management_fee: ["start", "frequency", "steps", "commitments"], // the schedule (F30)
 };
 const STEP_KEYS = ["rate", "from_lp_multiple"];
+const FEE_STEP_KEYS = ["rate", "from"];
 const CLASS_KEYS = ["name", "fee_rate", "carry"];
 const TOP_KEYS = ["as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps"];
 const REQUIRED = ["as_of", "terms", "cash_flows"];
@@ -90,6 +99,26 @@ function checkUnsupportedClasses(classes: unknown): void {
   });
 }
 
+/**
+ * F32: a schedule's fields are `start`, `frequency`, `steps` and `commitments`, and a step's `rate` and `from`: any
+ * other, an `offset` or a `basis`, is a fee term the engine doesn't model, named by its own key. The steps' keys are
+ * checked at `steps`' place among the schedule's.
+ */
+function checkUnsupportedSchedule(schedule: unknown): void {
+  if (!isObject(schedule)) return;
+  for (const [key, steps] of Object.entries(schedule)) {
+    const field = `terms.management_fee.${key}`;
+    if (!TERM_KEYS.management_fee!.includes(key)) throw unsupported({ key }, field, `"${key}" is a management fee term v1 doesn't model`);
+    if (key !== "steps" || !Array.isArray(steps)) continue;
+    steps.forEach((step: unknown, i) => {
+      if (!isObject(step)) return;
+      for (const k of Object.keys(step)) {
+        if (!FEE_STEP_KEYS.includes(k)) throw unsupported({ key: k }, `${field}[${i}].${k}`, `"${k}" is a management fee step term v1 doesn't model`);
+      }
+    });
+  }
+}
+
 /** Stage 1 (F7, F18): a term v1 doesn't model, named by its own key. */
 function checkUnsupported(terms: unknown): void {
   if (!isObject(terms)) return;
@@ -98,6 +127,10 @@ function checkUnsupported(terms: unknown): void {
     if (!(key in TERM_KEYS)) throw unsupported({ key }, field, `"${key}" is a term v1 doesn't model`);
     if (key === "lp_classes") {
       checkUnsupportedClasses(value);
+      continue;
+    }
+    if (key === "management_fee") {
+      checkUnsupportedSchedule(value);
       continue;
     }
     // A rate given as an object is stage 2's bad_number, not a term with keys of its own.
@@ -230,8 +263,67 @@ function readTerms(terms: unknown): FundTerms {
     equalizationRate = exact(terms.equalization_rate, "terms.equalization_rate");
     if (equalizationRate.lt(ZERO)) throw refuse("bad_number", "terms.equalization_rate");
   }
-  const lpClasses = readClasses(terms.lp_classes, feeRate !== null, catchUpShare);
-  return { carry, pref: prefRate && { rate: prefRate }, catchUp: catchUpShare && { gpShare: catchUpShare }, gpCommitment, feeRate, equalizationRate, lpClasses };
+  const managementFee = readSchedule(terms);
+  // F30, F32: with a schedule, the schedule's first rate is the fund's, so a `fee_rate` beside it is refused.
+  if (managementFee && feeRate !== null) throw refuse("fee_rate_with_schedule", "terms.fee_rate");
+  // F28, F32: a class's own fee rate is set against `fee_rate`, or against the schedule's first rate.
+  const lpClasses = readClasses(terms.lp_classes, feeRate !== null || managementFee !== null, catchUpShare);
+  return { carry, pref: prefRate && { rate: prefRate }, catchUp: catchUpShare && { gpShare: catchUpShare }, gpCommitment, feeRate, equalizationRate, lpClasses, managementFee };
+}
+
+/** F30: a management fee rate is from 0 up to, not including, 1, a year on commitments (F32). */
+function feeRate(value: unknown, field: string): D {
+  const r = exact(value, field);
+  if (r.lt(ZERO) || r.gte(ONE)) throw refuse("bad_number", field);
+  return r;
+}
+
+/**
+ * F30, F32: the management fee schedule, checked through in order: its shape, `start`, `frequency`, each step in turn
+ * (its shape, its rate, then its `from`), then `commitments`. Left out or null: none, and the fee calls are entered.
+ * FA41: null is the same as leaving out `frequency` (quarterly), `commitments` and the first step's `from`; a null
+ * `start`, `steps`, rate or later `from` is missing.
+ */
+function readSchedule(terms: Json): ManagementFee | null {
+  if (!given(terms, "management_fee")) return null;
+  const at = "terms.management_fee";
+  const raw = terms.management_fee;
+  if (!isObject(raw)) throw refuse("bad_field", at);
+  if (!given(raw, "start")) throw refuse("missing_field", `${at}.start`);
+  const start = date(raw.start, `${at}.start`);
+  let frequency: FeeFrequency = "quarterly";
+  if (given(raw, "frequency")) {
+    // FA41: one of the three words exactly, as written.
+    if (typeof raw.frequency !== "string" || !Object.hasOwn(PERIODS, raw.frequency)) throw refuse("bad_field", `${at}.frequency`);
+    frequency = raw.frequency as FeeFrequency;
+  }
+  if (!given(raw, "steps")) throw refuse("missing_field", `${at}.steps`);
+  if (!Array.isArray(raw.steps) || raw.steps.length === 0) throw refuse("bad_field", `${at}.steps`);
+  const steps: FeeStep[] = [];
+  raw.steps.forEach((s: unknown, i) => {
+    const field = `${at}.steps[${i}]`;
+    if (!isObject(s)) throw refuse("bad_field", field);
+    if (!given(s, "rate")) throw refuse("missing_field", `${field}.rate`);
+    const rate = feeRate(s.rate, `${field}.rate`);
+    if (i === 0) {
+      // F32: the first rate is above 0, since a fee holiday is a later `start`; and it's in force from `start`.
+      if (rate.isZero()) throw refuse("bad_number", `${field}.rate`);
+      if (given(s, "from")) throw refuse("steps_out_of_order", field);
+      steps.push({ rate, from: null });
+      return;
+    }
+    if (!given(s, "from")) throw refuse("missing_field", `${field}.from`);
+    const from = date(s.from, `${field}.from`);
+    // F32, FA46: steps in date order, each after the one before it, the first's date being `start`. Rates in any order.
+    if (dayNumber(from)! <= dayNumber(steps[i - 1]!.from ?? start)!) throw refuse("steps_out_of_order", field);
+    steps.push({ rate, from });
+  });
+  let commitments: D | null = null;
+  if (given(raw, "commitments")) {
+    commitments = exact(raw.commitments, `${at}.commitments`);
+    if (!commitments.gt(ZERO)) throw refuse("bad_number", `${at}.commitments`);
+  }
+  return { start, frequency, steps, commitments };
 }
 
 /**
@@ -343,12 +435,14 @@ function readLps(raw: unknown, classes: LpClass[], closeLimit: number): Lp[] {
 /**
  * F22: an LP's weight in the fee calls, its commitment times its class's fee rate over the fund's. Every weight here
  * is that times the fund's rate, which divides out: its commitment times its class's rate, or the fund's, or 1 when no
- * rate is given at all (and then no class has one, F28). Only the weights' proportions are used.
+ * rate is given at all (and then no class has one, F28). With a schedule the fund's rate is the schedule's first
+ * (F30), so a weight is the LP's fee at that rate, a year. Only the weights' proportions are used, except by the
+ * schedule, which divides the first rate back out (fees.ts).
  */
 export function feeWeight(fund: Fund, lp: Lp): D {
   const terms = fund.terms;
-  const cls = lp.class === null ? undefined : (terms.lpClasses ?? []).find((c) => c.name === lp.class);
-  return lp.commitment.times(cls?.feeRate ?? terms.feeRate ?? ONE);
+  const cls = lp.class == null ? undefined : (terms.lpClasses ?? []).find((c) => c.name === lp.class);
+  return lp.commitment.times(cls?.feeRate ?? terms.feeRate ?? terms.managementFee?.steps[0]?.rate ?? ONE);
 }
 
 /** F23: investment and expense calls divide by commitment, fee calls by F22's fee weight. */
@@ -367,17 +461,54 @@ export function isIn(lp: Lp, day: number): boolean {
 }
 
 /**
- * Stage 5 (F28): a later close needs an equalization rate; then each call, in F4's order, needs an LP in the fund at
- * its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22).
+ * F29: an investment or expense call before an LP's later close is rebalanced at the close, with interest, so the fund
+ * needs an equalization rate. A fee call isn't: a joiner pays its own back fees, with no interest.
  */
-function checkWhatTheLpsNeed(fund: Fund, firstCall: number): void {
+export function needsEqualizationRate(fund: Fund, firstCall: number): boolean {
+  return (fund.lps ?? []).some(
+    (lp) => joinsLater(lp, firstCall) && fund.cashFlows.some((f) => f.type === "call" && f.kind !== "fee" && dayNumber(f.date)! < dayNumber(lp.close!)!),
+  );
+}
+
+/**
+ * Stage 5 (F28, F32): an investment or expense call before a later close needs an equalization rate (F29); a schedule
+ * needs its base, `commitments` without listed LPs, and with them `commitments`, if given, is their total; a schedule
+ * needs a listed LP that pays it, as an entered fee call does; then each entered call, in F4's order, needs an LP in
+ * the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22).
+ */
+function checkWhatTheLpsNeed(fund: Fund, firstCall: number, raw: Json): void {
+  if (fund.terms.equalizationRate === null && needsEqualizationRate(fund, firstCall)) throw refuse("missing_field", "terms.equalization_rate");
+  const fee = fund.terms.managementFee;
+  if (fee) {
+    const at = "terms.management_fee.commitments";
+    if (fund.lps.length === 0 && fee.commitments === null) throw refuse("missing_field", at);
+    // FA41: compared as a number, exactly, with the commitments as the input writes them: "40000000.00" is 40,000,000.
+    if (fund.lps.length > 0 && fee.commitments !== null && !sameTotal(raw)) throw refuse("fee_commitments_mismatch", at);
+    // F32: with every listed LP in a class at a fee rate of 0, each of the schedule's calls would be $0. Its calls are
+    // every LP's own fee, whatever its close (F29), so the fee weights alone say whether anyone pays them.
+    if (fund.lps.length > 0 && !fund.lps.some((lp) => feeWeight(fund, lp).gt(ZERO))) throw refuse("call_without_payers", "terms.management_fee");
+  }
   if (fund.lps.length === 0) return;
-  if (fund.terms.equalizationRate === null && fund.lps.some((lp) => joinsLater(lp, firstCall))) throw refuse("missing_field", "terms.equalization_rate");
   for (const f of fund.cashFlows) {
     if (f.type !== "call") continue;
     const day = dayNumber(f.date)!;
     if (!fund.lps.some((lp) => isIn(lp, day) && callWeight(fund, lp, f.kind).gt(ZERO))) throw refuse("call_without_payers", `cash_flows[${f.index}]`);
   }
+}
+
+/**
+ * F32, FA41: whether the schedule's `commitments` is the LPs' total, exactly. Each is taken as the input writes it, an
+ * exact string (FC1) that stages 2 and 4 have read, so commitments written as fractions, "1/3", total exactly as they
+ * would on paper, with no rounding at 40 digits between.
+ */
+function sameTotal(raw: Json): boolean {
+  let [num, den] = [0n, 1n];
+  for (const lp of raw.lps as Json[]) {
+    const [n, d] = exactRatio(lp.commitment)!;
+    [num, den] = [num * d + n * den, den * d];
+  }
+  const [n, d] = exactRatio(((raw.terms as Json).management_fee as Json).commitments)!;
+  return num * d === n * den;
 }
 
 /**
@@ -401,13 +532,21 @@ export function readFund(input: unknown): Fund {
     if (nav.isNegative() && !nav.isZero()) throw refuse("bad_number", "nav");
   }
 
-  // F4: no calls at all, or a distribution before the first call, is refused; D is on or after every cash flow.
+  // F32: with a schedule, an entered fee call would be counted twice: the first in the input's order is refused.
+  if (terms.managementFee) {
+    const fee = flows.find((f) => f.kind === "fee");
+    if (fee) throw refuse("fee_call_with_schedule", `cash_flows[${fee.index}]`);
+  }
+  // F4: no calls at all, or a distribution before the first call, is refused; D is on or after every cash flow. The
+  // schedule's calls are calls (F30), dated to D (FA39); a period with nothing to call isn't one (FA40).
+  const d = dayNumber(distributionDate)!;
   const calls = flows.filter((f) => f.type === "call");
-  if (calls.length === 0) throw refuse("no_calls", "cash_flows");
-  const firstCall = Math.min(...calls.map((f) => dayNumber(f.date)!));
+  const scheduled = terms.managementFee ? schedulePeriods(terms.managementFee, d) : [];
+  if (calls.length === 0 && scheduled.length === 0) throw refuse("no_calls", "cash_flows");
+  const firstCall = Math.min(...calls.map((f) => dayNumber(f.date)!), ...scheduled.map((p) => p.date));
   const early = flows.find((f) => f.type === "distribution" && dayNumber(f.date)! < firstCall);
   if (early) throw refuse("distribution_before_call", `cash_flows[${early.index}]`);
-  const d = dayNumber(distributionDate)!;
+  // FA39: the schedule's calls are never after D, so this is about an entered flow.
   const late = flows.find((f) => dayNumber(f.date)! > d);
   if (late) throw refuse("cash_flow_after_distribution_date", `cash_flows[${late.index}]`);
 
@@ -420,8 +559,8 @@ export function readFund(input: unknown): Fund {
     (a, b) => dayNumber(a.date)! - dayNumber(b.date)! || (a.type === b.type ? 0 : a.type === "call" ? -1 : 1) || a.index - b.index,
   );
   const unfrozen: Fund = { asOf, terms, cashFlows, distributionDate, final, nav, lps };
-  // Stage 5: what the LPs need of the rest (F28).
-  checkWhatTheLpsNeed(unfrozen, firstCall);
+  // Stage 5: what the LPs need of the rest (F28, F32).
+  checkWhatTheLpsNeed(unfrozen, firstCall, input);
   const fund: Fund = deepFreeze(unfrozen);
   readFunds.add(fund);
   return fund;

@@ -180,6 +180,28 @@ describe("a file the page can't use is refused in one line, the current fund kep
     expect([pickerText(), answer()]).toEqual(before);
   });
 
+  it("refuses a file with a management fee schedule, until the page shows one, and keeps the fund it had", async () => {
+    render(<App />);
+    const before = [pickerText(), answer()];
+    await openFile(caseText("fund-29-fee-schedule"), "fund-29-fee-schedule.json");
+    expect(status()).toBe("Couldn't open fund-29-fee-schedule.json. This file has a management fee schedule; the page shows it from the next version.");
+    expect([pickerText(), answer()]).toEqual(before);
+  });
+
+  it("refuses a saved file or a bare input with a schedule, whatever its shape, and opens one whose schedule is null", () => {
+    const refused = (text: string) => {
+      const r = readFile(text);
+      return r.ok ? "opened" : r.message;
+    };
+    const later = "This file has a management fee schedule; the page shows it from the next version.";
+    const terms = (more: Record<string, unknown>) => ({ ...case8(), terms: { ...case8().terms, ...more } });
+    for (const dir of ["fund-29-fee-schedule", "fund-30-fee-step-down", "fund-31-fee-schedule-classes-closes"]) expect(refused(caseText(dir))).toBe(later);
+    expect(refused(savedFund(terms({ management_fee: { start: "2021-01-01", steps: [{ rate: "0.02" }], commitments: "1" } })))).toBe(later);
+    // Before the engine reads it, so a schedule the engine would refuse gets the same line.
+    expect(refused(JSON.stringify(terms({ management_fee: "quarterly" })))).toBe(later);
+    expect(refused(savedFund(terms({ management_fee: null })))).toBe("opened");
+  });
+
   it("refuses a cap table saved from the main page, and says where to open it", async () => {
     render(<App />);
     await openFile(JSON.stringify({ format: "spillpoint", version: 7, name: "Millrace Robotics", cap_table: {}, range: ["0", "1"] }), "millrace.json");

@@ -31,6 +31,32 @@ export interface FundTerms {
   equalizationRate: D | null;
   /** F22: the classes of LPs, in the input's order; empty when there are none. */
   lpClasses: LpClass[];
+  /** F30: the management fee schedule that works out the fee calls, or null when they're entered as cash flows. */
+  managementFee: ManagementFee | null;
+}
+
+/** F30: how often fees are called, on calendar quarters, half-years (January to June, July to December) or years. */
+export type FeeFrequency = "quarterly" | "semiannual" | "annual";
+
+/** F30: one step of the management fee, its annual rate on commitments, in force from its date. */
+export interface FeeStep {
+  rate: D;
+  /** The date it's in force from. The first step is in force from the schedule's `start`: null. */
+  from: string | null;
+}
+
+/**
+ * F30: the management fee schedule, as the input gives it, with the default frequency filled in. Its calls are worked
+ * out once for the fund (`feeCalls`), and aren't in `cashFlows`, which stays the input's (FA42).
+ */
+export interface ManagementFee {
+  /** The date fees start, usually the initial close, as written. */
+  start: string;
+  frequency: FeeFrequency;
+  /** In the input's order, which is date order (F32). The first rate is above 0 and is the fund's (F22, F30). */
+  steps: FeeStep[];
+  /** The LPs' total commitments, the fee's base for a fund that doesn't list its LPs; null when not given. */
+  commitments: D | null;
 }
 
 /**

@@ -115,6 +115,10 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
+  // Until the page shows a management fee schedule (f04c, which removes this), a file whose fund has one is refused, so
+  // a save can't drop it: the forms have no place for it yet. A null schedule is none (FA41), so it opens.
+  if (hasSchedule(input)) return { ok: false, message: SCHEDULE_LATER };
+
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -159,6 +163,13 @@ function trimmedNames(input: unknown): unknown {
   }
   if (Array.isArray(input.lps)) out = { ...out, lps: input.lps.map((lp: unknown) => trimmed(lp, ["name", "class"])) };
   return out;
+}
+
+const SCHEDULE_LATER = "This file has a management fee schedule; the page shows it from the next version.";
+
+/** F30: the fund's terms give a management fee schedule. */
+function hasSchedule(input: unknown): boolean {
+  return isObject(input) && isObject(input.terms) && input.terms.management_fee !== undefined && input.terms.management_fee !== null;
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';

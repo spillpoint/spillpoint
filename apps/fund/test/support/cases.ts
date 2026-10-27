@@ -11,13 +11,12 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 /**
- * Pending: cases the engine runs before the page reads them. From f04a, 0.4.0's management fees (F29 to F32): cases 25
- * and 26 worked again under F29, and the fee cases 29 to 32. f04c empties it. test/pending.test.ts fails if a case folder
- * is neither run nor pending (nor a refusal set), or if this list names a folder that doesn't exist.
+ * Pending: cases the engine runs before the page reads them. From f04a, 0.4.0's management fees (F29 to F32): the fee
+ * cases 29 to 32, which the page refuses until it shows a schedule. f04b took cases 25 and 26 off, worked again under
+ * F29, since the engine gives their back fees from then; f04c empties it. test/pending.test.ts fails if a case folder is
+ * neither run nor pending (nor a refusal set), or if this list names a folder that doesn't exist.
  */
 export const PENDING: readonly string[] = [
-  "fund-25-later-close",
-  "fund-26-closes-and-classes",
   "fund-29-fee-schedule",
   "fund-30-fee-step-down",
   "fund-31-fee-schedule-classes-closes",

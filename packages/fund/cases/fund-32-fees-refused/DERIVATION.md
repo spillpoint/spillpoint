@@ -1,18 +1,18 @@
 # Fund case 32, the fees refused: derivation
 
-Thirty-six small changes, one or more for each line of F32 and for the order of checks where the schedule meets the other checks, each to a base case named in its fixture (FC14). Each change leaves the problem it's about first in the order of checks, so each result is one refusal: its kind, its term, and the field, as a path into the input. The changes and the refusals they should give are Jordan's; each fixture's `about` sentence says what's changed.
+Thirty-seven small changes, one or more for each line of F32 and for the order of checks where the schedule meets the other checks, each to a base case named in its fixture (FC14). Each change leaves the problem it's about first in the order of checks, so each result is one refusal: its kind, its term, and the field, as a path into the input. The changes and the refusals they should give are Jordan's; each fixture's `about` sentence says what's changed.
 
 **The bases:**
 - **Case 29,** no listed LPs: the schedule's shape, `start`, `frequency`, `steps`, each step's `rate` and `from`, and `commitments` without LPs.
 - **Case 30,** two LPs, half-yearly, with a step: the steps' order, an entered fee call beside the schedule, and `commitments` against the LPs' total.
-- **Case 31,** classes and a later close: `fee_rate` beside the schedule, a class's fee rate with no fee terms, and the equalization rate.
+- **Case 31,** classes and a later close: `fee_rate` beside the schedule, a class's fee rate with no fee terms, the equalization rate, and a schedule no listed LP pays.
 
 **The order of checks** (F28, with the schedule in it, F32):
 1. **Unsupported terms,** in the file's order: the schedule's keys among each term's own keys, its steps' keys at the steps' place among them.
 2. **The fields.** Within `terms`, after `fee_rate` and `equalization_rate`: the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, its rate, then its `from`, then `commitments`); then `fee_rate_with_schedule`; then the classes. Then each cash flow's own fields.
 3. **The cash flows:** first `fee_call_with_schedule`, at the first such call in the input's order; then F18's checks against each other and D, the schedule's calls among the calls.
 4. **The LPs.**
-5. **What the LPs need of the rest:** `equalization_rate` when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing without listed LPs or not their total; then each entered call for its payers.
+5. **What the LPs need of the rest:** `equalization_rate` when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing without listed LPs or not their total; then the schedule, refused when no listed LP pays it; then each entered call for its payers.
 
 The new input terms are `fee_rate_with_schedule`, `fee_call_with_schedule` and `fee_commitments_mismatch` (F18, F32).
 
@@ -47,6 +47,7 @@ The new input terms are `fee_rate_with_schedule`, `fee_call_with_schedule` and `
 | `fee-commitments-missing` | 29 | `terms.management_fee.commitments` removed | input | `missing_field` | `terms.management_fee.commitments` | Case 29 lists no LPs, so the schedule needs `commitments` (stage 5). |
 | `fee-commitments-not-the-lps-total` | 30 | `terms.management_fee.commitments` = `"24000000"` | input | `fee_commitments_mismatch` | `terms.management_fee.commitments` | Case 30's LPs commit $25,000,000 (stage 5, new). |
 | `later-close-without-rate` | 31 | `terms.equalization_rate` removed | input | `missing_field` | `terms.equalization_rate` | The 2022-02-01 investment call comes before Dogwood's close, so the rate is needed (F29, stage 5). |
+| `schedule-without-payers` | 31 | `lps[0].class` = `"Friends and family"`; `terms.lp_classes[0].fee_rate` = `"0"` | input | `call_without_payers` | `terms.management_fee` | Alder Endowment in Friends and family, and Anchor at a fee rate of 0: no listed LP pays fees, so each of the schedule's calls would be $0. Refused at the schedule, as an entered fee call nobody pays is at the call (F28, F32, stage 5, after the commitments). |
 | `order-unsupported-before-fields` | 29 | `terms.management_fee.offset` = `"0.5"`; `terms.management_fee.start` removed | unsupported | `offset` | `terms.management_fee.offset` | Stage 1 comes before stage 2: the offset before the missing start. |
 | `order-schedule-before-fee-rate` | 31 | `terms.fee_rate` = `"0.02"`; `terms.management_fee.frequency` = `"monthly"` | input | `bad_field` | `terms.management_fee.frequency` | Within `terms`, the schedule's own fields come before `fee_rate_with_schedule`. |
 | `order-fee-rate-before-classes` | 31 | `terms.fee_rate` = `"0.02"`; `terms.lp_classes[0].fee_rate` = `"-0.01"` | input | `fee_rate_with_schedule` | `terms.fee_rate` | `fee_rate_with_schedule` comes before the classes, and Anchor's fee rate below 0. |

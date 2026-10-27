@@ -31,6 +31,21 @@ export function exactOrNull(value: unknown): Decimal | null {
 }
 
 /**
+ * An exact string (FC1) as a fraction of whole numbers, numerator and denominator, with nothing rounded: for comparing
+ * amounts exactly as the input writes them (FA41). Null for anything exactOrNull refuses.
+ */
+export function exactRatio(value: unknown): [bigint, bigint] | null {
+  if (exactOrNull(value) === null) return null;
+  const s = value as string;
+  if (s.includes("/")) {
+    const [num, den] = s.split("/") as [string, string];
+    return [BigInt(num), BigInt(den)];
+  }
+  const [whole, part = ""] = s.split(".") as [string, string?];
+  return [BigInt(whole + part), 10n ** BigInt(part.length)];
+}
+
+/**
  * Rounds half away from zero to the cent, as the fund cases give every amount (FC8). For showing only.
  *
  * FA14: first to 20 places, so an amount that is exactly half a cent in exact math, but lands a hair below it at 40

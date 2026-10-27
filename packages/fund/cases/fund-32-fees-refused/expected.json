@@ -253,6 +253,13 @@
         "term": "offset",
         "field": "terms.management_fee.offset"
       }
+    },
+    "schedule-without-payers.json": {
+      "refused": {
+        "kind": "input",
+        "term": "call_without_payers",
+        "field": "terms.management_fee"
+      }
     }
   }
 }

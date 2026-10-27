@@ -18,8 +18,9 @@ more than one problem:
    repeats, then its class and its close (F28).
 5. What the LPs need of the rest (F28, F32): `equalization_rate` when an
    investment or expense call comes before a later close (F29); a schedule's
-   `commitments`, missing without listed LPs or not their total; then each
-   entered call in date order for an LP to pay it.
+   `commitments`, missing without listed LPs or not their total; a schedule
+   no listed LP pays; then each entered call in date order for an LP to pay
+   it.
 
 Within `terms`, stage 2 checks the carry, pref, catch-up and GP commitment, the
 terms against each other, then `fee_rate`, `equalization_rate`, the management
@@ -589,9 +590,10 @@ def _lps(raw, classes, close_limit):
 
 def _what_the_lps_need(fund):
     """Stage 5 (F28, F32): an equalization rate when an investment or expense call comes before a later close (F29);
-    a schedule's `commitments`, needed without listed LPs and their total with them; then each entered call, in date
-    order, needs an LP in the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22). A
-    schedule's calls have no payers to check: they're every LP's own fee (F32)."""
+    a schedule's `commitments`, needed without listed LPs and their total with them; a schedule needs a listed LP that
+    pays it, one not in a class at a fee rate of 0, as an entered fee call does (F28, F32): its calls are every LP's own
+    fee, whatever its close, so a fee weight above 0 is all it needs; then each entered call, in date order, needs an LP
+    in the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22)."""
     if fund.lps and fund.equalization_rate is None:
         rebalanced = [f for f in fund.flows if f.type == "call" and f.kind != "fee"]
         if any(fund.joins_later(lp) and any(f.date < lp.close for f in rebalanced) for lp in fund.lps):
@@ -603,6 +605,8 @@ def _what_the_lps_need(fund):
         total = sum((lp.commitment for lp in fund.lps), Fraction(0))
         if fund.lps and fund.schedule.commitments is not None and fund.schedule.commitments != total:
             raise _input("fee_commitments_mismatch", at)
+        if fund.lps and not any(fund.fee_weight(lp) > 0 for lp in fund.lps):
+            raise _input("call_without_payers", "terms.management_fee")
     for f in fund.flows:
         if f.type != "call" or f.scheduled or not fund.lps:
             continue

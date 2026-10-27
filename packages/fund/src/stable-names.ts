@@ -28,6 +28,10 @@ export const INPUT_TERMS = [
   "lp_class_unknown",
   "lp_close_after_distribution",
   "call_without_payers",
+  // From 0.4.0 (F32).
+  "fee_rate_with_schedule",
+  "fee_call_with_schedule",
+  "fee_commitments_mismatch",
 ] as const;
 export type InputTerm = (typeof INPUT_TERMS)[number];
 

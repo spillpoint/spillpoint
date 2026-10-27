@@ -27,3 +27,33 @@ export function dayNumber(value: unknown): number | null {
   const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
   return era * 146_097 + doe - 719_468;
 }
+
+/** The ISO date of a day count, the other way from dayNumber. Days since 1970-01-01, years 1 to 9999. */
+export function isoDate(day: number): string {
+  // The civil date from days, counting years from March so the leap day falls last.
+  const z = day + 719_468;
+  const era = Math.floor(z / 146_097);
+  const doe = z - era * 146_097;
+  const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36_524) - Math.floor(doe / 146_096)) / 365);
+  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+  const mp = Math.floor((5 * doy + 2) / 153);
+  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
+  const m = mp < 10 ? mp + 3 : mp - 9;
+  const y = yoe + era * 400 + (m <= 2 ? 1 : 0);
+  return `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+/**
+ * F30: the calendar period a day is in, as its first and last day counts: a quarter (n = 4), a half-year, January to
+ * June or July to December (n = 2), or a year (n = 1).
+ */
+export function calendarPeriod(day: number, n: number): { first: number; last: number } {
+  const [y, m] = isoDate(day).split("-").map(Number) as [number, number];
+  const months = 12 / n;
+  const firstMonth = Math.floor((m - 1) / months) * months + 1;
+  const nextMonth = firstMonth + months;
+  const first = dayNumber(`${String(y).padStart(4, "0")}-${String(firstMonth).padStart(2, "0")}-01`)!;
+  const next = nextMonth > 12 ? dayNumber(`${String(y + 1).padStart(4, "0")}-01-01`) : dayNumber(`${String(y).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}-01`);
+  // The year after 9999 has no date: its period ends on 9999-12-31.
+  return { first, last: next === null ? dayNumber("9999-12-31")! : next - 1 };
+}

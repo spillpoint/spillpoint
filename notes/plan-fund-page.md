@@ -466,25 +466,29 @@ Two optional columns after the commitment: class, then close.
 **An equalization card,** only with a later close, after the LPs' card:
 - **Its heading (mine):** "Equalization at the later closes".
 - **The rate (mine):** "Interest at 6% a year, simple, on the days from each call to the close (Actual/365)."
+  - **From f04b (Jordan's words):** with no rate given, which only fee calls before the closes allow (FA45), "No equalization interest: only fee calls come before the later closes." in its place, and the interest columns are 0.00. After either, one sentence **(mine)**: "Back fees are each joining LP's own fees for the fee calls before its close, paid to the manager."
 - **Each close:**
   - **Its heading (mine):** "1 Apr 2022: Birchwood Family Office joins". With more than one: "A and B join".
   - **One row for each LP in by then:** what it paid in or got back, and the interest it paid or received.
 - **Then the same for all the closes together,** under "All the closes together" **(mine)**, every LP.
 - **The columns (mine):** LP, "Paid in", "Got back", "Interest paid", "Interest received".
+  - **From f04b, "Back fees" (Jordan's),** last: each joiner's back fees at its close, paid to the manager, and over all the closes (F29). Rounded down to the cent with a leftover, as the other columns. 0.00 for an LP already in.
 - **Rounding:**
   - **Each amount** is rounded down to the cent.
   - **A leftover row in each block,** as the LPs' card has it: each column's exact total with `toCents`, less its rounded amounts. A Total row after it, as the LPs' card has **(mine)**.
   - **The all-closes block** rounds each LP's exact total, as `equalization(fund).lps` gives it. So a row there can be a cent more than its rows above added up: Alder's interest is 10,356.16 and 22,520.54 at the two closes, and 32,876.71 in all.
 - **One line under it:** "Equalization is outside the waterfall: it moves money between LPs at each close and changes nothing above."
+  - **From f04b, in Jordan's words,** as back fees go to the manager: "Equalization is outside the waterfall: at each close it moves capital and interest between the LPs, and back fees to the manager. It changes nothing above."
 - **"Download as CSV,"** as the LPs' card's:
   - **Its name:** "<fund name> equalization.csv", the fund's name as Save writes it **(mine)**: "two-later-closes-and-a-friends-and-family-class-equalization.csv". It has no X or D, as the equalization has neither.
-  - **Its columns (mine):** Close, LP, Paid in, Got back, Interest paid, Interest received.
+  - **Its columns (mine):** Close, LP, Paid in, Got back, Interest paid, Interest received; from f04b, Back fees after them.
   - **Its rows (mine):** each close's block, its date as YYYY-MM-DD in the first column, then "All closes". Each block has its leftover and total rows.
 
 ### Saving and opening
 
 - **Saving** keeps the two rates, the classes, and each LP's class and close. A fund without them saves without them.
 - **Opening:** f03b's guard comes out, so a file with classes or later closes opens into the tabs.
+  - **From f04b until f04c,** a file whose terms have a `management_fee` is refused in one line, so a save can't drop it (Jordan's words): "This file has a management fee schedule; the page shows it from the next version." A null one is none, and opens.
 
 ### The examples
 
