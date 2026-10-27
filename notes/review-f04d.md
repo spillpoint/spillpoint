@@ -9,7 +9,8 @@ Branch `f04d-fund-release-0.4.0`, from main after #125. The release step of spil
 | `6636ee3` | the first commit: the headline's terms line names the schedule (§1) |
 | `925264f` | the release: the version, the README, the release note, the repo README and `CLAUDE.md` (§2) |
 | `94bcb12` | this note |
-| the last | outside the fund rule, with your OK: the main page's two round-trip tests get a timeout of their own (§6) |
+| `60ae5b7` | outside the fund rule, with your OK: the main page's two round-trip tests get a timeout of their own (§6) |
+| the last | the same, with your second OK, for `ocf-check`'s note-base-unreadable test (§6) |
 
 ## 1. The first commit (your answer 3)
 
@@ -157,15 +158,34 @@ Nothing in `.github/workflows/` or `.claude/`.
 
 So case 26's round trip is the slower one here, and both runs would have timed it out at 20 s. Both pass at 60.
 
-**Two things for you, both left as they are:**
-- **"Edits the starting table"** has no timeout of its own, as you said. It came to 19.0 s in run 2, a second under the default.
-- **`ocf-check.test.ts`'s "ocf-04-to-fill/note-base-unreadable.ocf.json: no name, id, amount or date"** timed out at 20 s in three of my five parallel runs here: 23.6, 23.4 and 29.3 s. It did once in f04c's run too. Your message doesn't have it on GitHub, so I didn't touch it.
+**Left as it is:** "edits the starting table" has no timeout of its own, as you said. It came to 19.0 s in run 2, a second under the default.
+
+**`ocf-check.test.ts`'s "ocf-04-to-fill/note-base-unreadable.ocf.json: no name, id, amount or date"** timed out at 20 s in three of my five parallel runs here: 23.6, 23.4 and 29.3 s. It did once in f04c's run too. I left it in the first commit, and in a second, with your second OK, it got a timeout of its own (below).
 
 **Three full `pnpm test` runs here, with the change:**
 - **Run 1** failed case 26's round trip inside it, not at its timeout: after 17.3 s, `importQuillfern`'s wait for the import's "Importing" panel ran out. That wait is the page's 15-second `asyncUtilTimeout`, so the 60-second timeout wouldn't have helped there.
 - **Run 2** passed all of every suite.
 - **Run 3** failed only `ocf-check`'s test, above.
 - **Every other suite** passed in all three: fund package 1,310 (9 skipped), engine 3,177, fund page 600.
+
+**Then, with your second OK: `ocf-check`'s note-base-unreadable test, a timeout of its own.**
+- **Why it's slow:** it's one row of the leak check's `it.each` over every OCF case and fixture, and the first of `ocf-04-to-fill`'s fixtures. So it runs the searches over Larkspur's filled table, which the fixtures after it share through `engineRuns`. Alone it takes 2.4 s, its next fixture 1.2 s and every other row under 0.6 s.
+- **The change:** the `it.each` became a `for` loop over the same rows, in the same order, with the same names and the same body, so that this one row could have a 60-second timeout. A comment says why. Every other row keeps the 20-second default.
+  - **Why not `it.each` with a third argument:** that would give every row the timeout.
+  - **Why the same order:** the searches have to stay in this row. Moved after the others, the next fixture would run them, and be the slow one.
+- **The file still has its 150 tests,** with the same names.
+- **Nothing else** in `apps/dashboard` changed.
+
+**Two more parallel runs here, with both changes,** both passing every suite:
+
+| Test | Run 3 | Run 4 |
+|---|---:|---:|
+| `ocf-check`'s note-base-unreadable | 20.6 s | 15.0 s |
+| case 26's round trip | 26.0 s | 13.5 s |
+| case 26's "edits the starting table" | 11.3 s | 10.8 s |
+| case 27's round trip | 7.0 s | 8.3 s |
+
+A full `pnpm test` then passed every suite too: fund package 1,310 (9 skipped), engine 3,177, fund page 600, main page 680.
 
 ## How to check it on your machine
 
