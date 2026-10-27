@@ -223,6 +223,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* The management fee and equalization rates: each box with its hint beside it, and its problem under both. */
 .terms__rate { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .terms__rate .field-error { flex-basis: 100%; margin: 0; }
+.terms__line { margin: 0; color: var(--muted); }
 
 /* The clawback */
 .clawback__sentence { font-size: 1.125rem; margin: 12px 0 0; font-variant-numeric: tabular-nums; }
@@ -308,6 +309,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
    close, each with its column's name, so nothing scrolls sideways. */
 .lps__section { margin-top: 20px; }
 .lps__section h3 { margin: 0; font-size: 1rem; }
+/* The schedule's fee calls (f04c), under the cash flows: a section of the card, as the LPs tab's are. */
+.flows__schedule { margin-top: 20px; }
+.flows__schedule h3 { margin: 0; font-size: 1rem; }
 .lps, .classes { margin-top: 12px; }
 .lps td, .classes td { vertical-align: top; }
 .lps th[scope="row"], .classes th[scope="row"] { color: var(--muted); padding-top: 14px; vertical-align: top; }

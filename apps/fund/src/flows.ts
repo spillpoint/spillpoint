@@ -92,10 +92,20 @@ export function sortByDate(form: FlowsForm): FlowsForm {
   return { ...form, rows: [...form.rows].sort((a, b) => (rank(a) < rank(b) ? -1 : rank(a) > rank(b) ? 1 : 0)) };
 }
 
+/** F32: with a schedule, the schedule works out the fee calls, so none is entered as well. */
+export const FEE_ROW = "This fund's fees come from its schedule. Remove this row, or set Management fee to Entered as fee calls.";
+
 /** The page's words for the engine's refusal of the cash flows or the facts about D, at the path it names (F18). */
 export function flowsProblem(refusal: FundRefusal, form: FlowsForm): Problem {
   const { term, path } = refusal;
   const cell = /^cash_flows\[(\d+)\](?:\.(\w+))?$/.exec(path);
+  // F32: the engine names the first Fee row in the table's order; every one has the problem, so each shows it, at its
+  // kind, which is what makes it one.
+  if (term === "fee_call_with_schedule" && cell) {
+    const fees = form.rows.flatMap((r, i) => (r.type === "call" && r.kind === "fee" ? [`cash_flows[${i}].kind`] : []));
+    const first = `cash_flows[${cell[1]}].kind`;
+    return { path: first, message: FEE_ROW, also: fees.filter((f) => f !== first) };
+  }
   const words = (): string => {
     if (path === "as_of") return "Choose the fund's as-of date.";
     if (path === "distribution_date") return "Choose the distribution date, or leave it empty for the as-of date.";

@@ -372,6 +372,8 @@ describe("the management fee schedule (F29, F30, F32, FA39 to FA41)", () => {
     const nobody = { "terms.lp_classes": classes, "lps[0].class": "F&F", "lps[1].class": "F&F" };
     const at = input("call_without_payers", "terms.management_fee");
     expect(refused(C30, { set: nobody })).toEqual(at);
+    // In words of its own, not an entered call's: a schedule's calls have no date at which nobody was in.
+    expect(() => read(C30, { set: nobody })).toThrow("terms.management_fee: no listed LP pays this schedule's fees: every one is in a class at a fee rate of 0");
     expect(refused(C30, { set: { ...nobody, "terms.management_fee.start": "2027-06-01", "terms.management_fee.steps": [{ rate: "0.02" }] } })).toEqual(at);
     // One LP paying, on the fund's terms or in a class at a fee rate above 0 or with none of its own: it reads.
     read(C30, { set: { "terms.lp_classes": classes, "lps[0].class": "F&F" } });

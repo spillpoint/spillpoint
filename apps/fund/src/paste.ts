@@ -14,6 +14,7 @@
 // - Kinds: Investment; Fee or Management fee; Expense or Fund expense. A call with no kind is an investment, and the
 //   preview counts them. A distribution's kind cell is ignored.
 // - Amounts as the cells take them, digits kept exactly; never negative, since the type says which way it goes.
+// - With a management fee schedule (F30), a Fee row isn't read: the schedule works out the fee calls (f04c).
 
 import { D } from "spillpoint-fund";
 import type { CallKind } from "spillpoint-fund";
@@ -168,8 +169,14 @@ export function readDate(text: string, order: Order): { date: string } | { why: 
   return date ? { date } : { why: `'${text}' isn't a date` };
 }
 
-/** Reads a paste. `chosen` is the order the GP picked when the paste can't settle it; month first until then. */
-export function readPaste(text: string, chosen: Order = "month-first"): PasteRead {
+/** Why a Fee row isn't read with a schedule: the Cash flows tab's words for a Fee row, as a paste can act on them. */
+export const SCHEDULED_FEE = "this fund's fees come from its schedule; set Management fee to Entered as fee calls to add fee calls";
+
+/**
+ * Reads a paste. `chosen` is the order the GP picked when the paste can't settle it; month first until then.
+ * `scheduled`: the fund's fees come from a schedule, so a Fee row is one it can't read (F30).
+ */
+export function readPaste(text: string, chosen: Order = "month-first", scheduled = false): PasteRead {
   const lines = cellsOf(text);
   const filled = (cells: string[]) => cells.some((c) => c !== "");
   const first = lines.findIndex(filled);
@@ -206,6 +213,7 @@ export function readPaste(text: string, chosen: Order = "month-first"): PasteRea
         kind = k;
       }
     }
+    if (scheduled && kind === "fee") return void unread.push(`${row}: ${SCHEDULED_FEE}`);
 
     if (amountText === undefined || amountText === "") return void unread.push(`${row}: has no amount; the columns are date, type, kind and amount`);
     const pasted = pastedAmount(amountText, "Write amounts as positive; the type says which way the money goes");

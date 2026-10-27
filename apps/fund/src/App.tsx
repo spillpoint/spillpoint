@@ -2,11 +2,12 @@
 // slider, the split at X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), the clawback
 // with the NAV button (f01h), with LPs each LP's amounts (f02c), and with classes each class's, and with later closes
 // the equalization (f03c), on the Payouts tab; the fund behind them, editable, on the Terms (f01i), Cash flows (f01j)
-// and LPs (f02c, f03c) tabs. Pasting cash flows and files come in f01k to f01m.
+// and LPs (f02c, f03c) tabs, with from 0.4.0 a management fee schedule on Terms and its calls on Cash flows (f04c).
+// Pasting cash flows and files come in f01k to f01m.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
-import { D, equalization, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
+import { D, equalization, feeCalls, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { CarryStep, Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
@@ -15,6 +16,7 @@ import { bendsClawback, breakpointViews, chartPoints, defaultTop, niceUp, owedPo
 import type { BreakpointView } from "./analysis.ts";
 import { Breakpoints } from "./Breakpoints.tsx";
 import { CashFlows } from "./CashFlows.tsx";
+import type { ScheduleView } from "./CashFlows.tsx";
 import { Chart } from "./Chart.tsx";
 import { ClassesCard } from "./ClassesCard.tsx";
 import { Clawback, owesSomething } from "./Clawback.tsx";
@@ -155,6 +157,13 @@ export function App() {
   const [tab, setTab] = useState<Tab>("payouts");
   const [state, setState] = useState(() => opened(examples[0]!.id));
   const { fund, terms, flows, problem, edited, x } = state;
+  // F30: with a schedule, its calls show on Cash flows once the fund runs, since they're the engine's.
+  const schedule: ScheduleView | null =
+    terms.managementFee.mode === "schedule"
+      ? { calls: !problem && fund ? feeCalls(fund) : null, start: fund?.terms.managementFee?.start ?? terms.managementFee.start, gpPart: fund?.terms.gpCommitment?.paysFees ?? false }
+      : null;
+  // Where a schedule's start starts: the fund's first call, as the Cash flows tab has it.
+  const firstCall = flows.rows.filter((r) => r.type === "call" && r.date).map((r) => r.date).sort()[0] ?? "";
   // A problem's field, to focus once its tab shows it.
   const [focusing, setFocusing] = useState<string | null>(null);
   useEffect(() => {
@@ -356,13 +365,22 @@ export function App() {
             problem={problem}
             onForm={(next) => change((s) => run(s, next, s.flows, s.lps))}
             onShow={show}
+            listsLps={state.lps.rows.length > 0}
+            firstCall={firstCall}
           />
         </div>
         <div role="tabpanel" id="panel-flows" aria-labelledby="tab-flows" hidden={tab !== "flows"}>
-          <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next, s.lps))} onShow={show} />
+          <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next, s.lps))} onShow={show} schedule={schedule} />
         </div>
         <div role="tabpanel" id="panel-lps" aria-labelledby="tab-lps" hidden={tab !== "lps"}>
-          <Lps form={state.lps} fundCarry={terms.carry} problem={problem} onForm={(next) => change((s) => run(s, s.terms, s.flows, next))} onShow={show} />
+          <Lps
+            form={state.lps}
+            fundCarry={terms.carry}
+            problem={problem}
+            onForm={(next) => change((s) => run(s, s.terms, s.flows, next))}
+            onShow={show}
+            scheduled={terms.managementFee.mode === "schedule"}
+          />
         </div>
       </main>
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. The main page is
@@ -511,14 +529,19 @@ function Tabs({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
 /**
  * The fund behind the answers, in one line under the picker, as the main page's "built from its 10 events" (f01i):
  * what's been paid in, what's been distributed before X, the NAV if there is one, and whether X is the last
- * distribution. The amounts are the cash flows' own, added up as entered.
+ * distribution. The amounts are the cash flows' own, added up as entered, with a fee schedule's calls among them.
  */
 export function summaryText(fund: Fund, edited = false): string {
   const calls = fund.cashFlows.filter((f) => f.type === "call");
   const distributions = fund.cashFlows.filter((f) => f.type === "distribution");
   const total = (flows: typeof calls) => flows.reduce((sum, f) => sum.plus(f.amount), new D(0));
+  // F30: a schedule's fee calls are calls the engine works out, so what's paid in counts them too.
+  const scheduled = feeCalls(fund) ?? [];
+  const paidIn = scheduled.reduce((sum, c) => sum.plus(c.call), total(calls));
+  const n = calls.length + scheduled.length;
+  const ofThem = scheduled.length === 0 ? "" : ` (${scheduled.length === n ? "all" : scheduled.length} from its fee schedule)`;
   const parts = [
-    `${short(total(calls))} paid in over ${calls.length === 1 ? "1 call" : `${calls.length} calls`}`,
+    `${short(paidIn)} paid in over ${n === 1 ? "1 call" : `${n} calls`}${ofThem}`,
     distributions.length === 0 ? "nothing distributed before X" : `${short(total(distributions))} distributed before X`,
     ...(fund.nav ? [`a NAV of ${short(fund.nav)} on ${dateText(fund.distributionDate)}`] : []),
   ];

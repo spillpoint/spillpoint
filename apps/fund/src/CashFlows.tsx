@@ -1,19 +1,23 @@
 // The Cash flows tab (plan, "The cash flows: a table", f01j): the facts about D above, then every call and distribution
 // before X, as entered (FA12). Each change runs the engine again; a refusal shows in the cell its path names, a
 // cash flow's own in its row, and at the top of the tab with "Show me". Rows can be pasted from a spreadsheet (f01k),
-// into the box under the table, or into a cell, which sends a paste of more than one cell to the same box.
+// into the box under the table, or into a cell, which sends a paste of more than one cell to the same box. From 0.4.0,
+// with a management fee schedule, Fee isn't a kind to choose, and the schedule's fee calls show under the table (F30,
+// F31).
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { CallKind } from "spillpoint-fund";
+import { D } from "spillpoint-fund";
+import type { CallKind, FeeCall } from "spillpoint-fund";
 
+import { CardTable } from "./CardTable.tsx";
 import type { FlowRow, FlowsForm } from "./flows.ts";
 import { isEmptyRow, newRow, sortByDate } from "./flows.ts";
-import { exactDollars } from "./format.ts";
+import { cents, dateText, exactDollars } from "./format.ts";
 import type { PasteState } from "./Paste.tsx";
 import { isManyCells, PasteBox } from "./Paste.tsx";
 import type { PastedRow } from "./paste.ts";
 import type { Problem } from "./terms.ts";
-import { controlFor } from "./terms.ts";
+import { controlFor, isAt } from "./terms.ts";
 
 const KINDS: { kind: CallKind; text: string }[] = [
   { kind: "investment", text: "Investment" },
@@ -21,30 +25,45 @@ const KINDS: { kind: CallKind; text: string }[] = [
   { kind: "expense", text: "Expense" },
 ];
 
+/** The schedule's fee calls as the tab shows them under its table (F31), or why there are none to show. */
+export interface ScheduleView {
+  /** The engine's calls, in date order; null while the fund can't run, since they're the engine's. */
+  calls: readonly FeeCall[] | null;
+  /** The schedule's start, for a schedule that starts after D. */
+  start: string;
+  /** The GP commitment pays fees, so its part of each call shows (F3). */
+  gpPart: boolean;
+}
+
 interface Props {
   form: FlowsForm;
   problem: Problem | null;
   onForm: (form: FlowsForm) => void;
   onShow: (path: string) => void;
+  /** With a management fee schedule (F30): its calls, under the table; null with fees entered as fee calls. */
+  schedule: ScheduleView | null;
 }
 
-/** A refusal's words, where its path names. The LPs tab's cells show theirs the same way. */
+/** A refusal's words, where its path names, or one of its others. The LPs tab's cells show theirs the same way. */
 export function ProblemText({ problem, path }: { problem: Problem | null; path: string }) {
-  if (problem?.path !== path) return null;
+  if (!isAt(problem, path)) return null;
   return (
     <p id={`${controlFor(path)}-problem`} className="field-error" role="alert">
-      {problem.message}
+      {problem!.message}
     </p>
   );
 }
 
 /** What a control needs to say it has the problem: the problem's words describe it. */
 export function marks(problem: Problem | null, id: string) {
-  const mine = problem !== null && controlFor(problem.path) === id;
+  const mine = problem !== null && [problem.path, ...(problem.also ?? [])].some((p) => controlFor(p) === id);
   return { "aria-invalid": mine, "aria-describedby": mine ? `${id}-problem` : undefined };
 }
 
-export function CashFlows({ form, problem, onForm, onShow }: Props) {
+export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
+  // F30: with a schedule, the schedule works out the fee calls, so Fee isn't a kind to choose. A row already of kind
+  // Fee keeps it in its own picker, to show what it is, with the problem under it.
+  const kinds = (r: FlowRow) => KINDS.filter((k) => !schedule || k.kind !== "fee" || r.kind === "fee");
   const setRow = (i: number, row: FlowRow) => onForm({ ...form, rows: form.rows.map((r, j) => (j === i ? row : r)) });
   // A row added is a row to fill in: its date takes the focus once it's there.
   const [focusing, setFocusing] = useState<string | null>(null);
@@ -157,8 +176,14 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
                   </td>
                   <td className="flows__kind">
                     {r.type === "call" ? (
-                      <select id={`${at(i)}.kind`} value={r.kind} onChange={(e) => setRow(i, { ...r, kind: e.target.value as CallKind })} aria-label={`Row ${i + 1}'s kind`}>
-                        {KINDS.map((k) => (
+                      <select
+                        id={`${at(i)}.kind`}
+                        value={r.kind}
+                        onChange={(e) => setRow(i, { ...r, kind: e.target.value as CallKind })}
+                        aria-label={`Row ${i + 1}'s kind`}
+                        {...marks(problem, `${at(i)}.kind`)}
+                      >
+                        {kinds(r).map((k) => (
                           <option key={k.kind} value={k.kind}>
                             {k.text}
                           </option>
@@ -189,15 +214,17 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
                     </button>
                   </td>
                 </tr>
-                {/* A cash flow's own problem, against the others or D, in its row. */}
-                {problem?.path === at(i) && (
-                  <tr className="flows__problem">
-                    <td />
-                    <td colSpan={5}>
-                      <ProblemText problem={problem} path={at(i)} />
-                    </td>
-                  </tr>
-                )}
+                {/* A cash flow's own problem, against the others or D, in its row; with a schedule, a Fee row's, at its kind. */}
+                {[at(i), `${at(i)}.kind`]
+                  .filter((p) => isAt(problem, p))
+                  .map((p) => (
+                    <tr key={p} className="flows__problem">
+                      <td />
+                      <td colSpan={5}>
+                        <ProblemText problem={problem} path={p} />
+                      </td>
+                    </tr>
+                  ))}
               </Fragment>
             ))}
           </tbody>
@@ -214,7 +241,9 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
           type="button"
           className="button"
           onClick={() => {
-            onForm({ ...form, rows: [...form.rows, newRow(form.rows.at(-1))] });
+            // A new row copies the kind of the one above, but with a schedule not Fee.
+            const row = newRow(form.rows.at(-1));
+            onForm({ ...form, rows: [...form.rows, schedule && row.kind === "fee" ? { ...row, kind: "investment" } : row] });
             setFocusing(`${at(form.rows.length)}.date`);
           }}
         >
@@ -227,7 +256,39 @@ export function CashFlows({ form, problem, onForm, onShow }: Props) {
           Paste rows from a spreadsheet
         </button>
       </div>
-      {paste && <PasteBox paste={paste} onPaste={setPaste} here={form.rows.filter((r) => !isEmptyRow(r)).length} onAdd={add} onCancel={cancelPaste} />}
+      {paste && <PasteBox paste={paste} onPaste={setPaste} here={form.rows.filter((r) => !isEmptyRow(r)).length} onAdd={add} onCancel={cancelPaste} scheduled={schedule !== null} />}
+      {schedule && <ScheduleCalls schedule={schedule} />}
+    </section>
+  );
+}
+
+/**
+ * The schedule's fee calls (F31), read-only, under the table: each call's date, the days it covers, the call, and the
+ * GP commitment's part when it pays fees (F3); then a total. To the cent, as the split table's amounts. One table where
+ * it fits, and on a phone each call a card, as Payouts' cards are.
+ */
+function ScheduleCalls({ schedule }: { schedule: ScheduleView }) {
+  const { calls, start, gpPart } = schedule;
+  const sum = (f: (c: FeeCall) => D) => (calls ?? []).reduce((t, c) => t.plus(f(c)), new D(0));
+  const amounts = (call: D, gp: D) => (gpPart ? [cents(call), cents(gp)] : [cents(call)]);
+  return (
+    <section className="flows__schedule" aria-labelledby="schedule-heading">
+      <h3 id="schedule-heading">The schedule's fee calls</h3>
+      <p className="classes__line">Worked out from the schedule on the Terms tab, and run as fee calls. They aren't rows of the table above.</p>
+      {calls === null ? (
+        <p className="classes__line">The schedule's fee calls show here once the fund can run.</p>
+      ) : calls.length === 0 ? (
+        <p className="classes__line">No fee call yet: fees start on {dateText(start)}.</p>
+      ) : (
+        <CardTable
+          headings={["Date", "Covers", "Call", ...(gpPart ? ["The GP commitment's part"] : [])]}
+          wordColumns={1}
+          rows={[
+            ...calls.map((c) => ({ name: dateText(c.date), cells: [`${dateText(c.firstDay)} to ${dateText(c.lastDay)}`, ...amounts(c.call, c.gpCommitment)], kind: "row" as const })),
+            { name: "Total", cells: [calls.length === 1 ? "1 call" : `${calls.length} calls`, ...amounts(sum((c) => c.call), sum((c) => c.gpCommitment))], kind: "total" as const },
+          ]}
+        />
+      )}
     </section>
   );
 }

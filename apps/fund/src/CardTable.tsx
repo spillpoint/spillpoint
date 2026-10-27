@@ -1,4 +1,5 @@
-// The tables of Payouts' cards after the split (f02c, f03c): the LPs', the classes' and the equalization's. One row a
+// The tables of Payouts' cards after the split (f02c, f03c): the LPs', the classes' and the equalization's; from f04c
+// also the schedule's fee calls on the Cash flows tab. One row a
 // name, its cells already written, then any leftover and total rows. As the split does, it's one table wherever it fits
 // its card, and on a phone, or wherever it wouldn't fit, each row is a group: its name on its own line, wrapping, each
 // cell under it beside its column's name.
