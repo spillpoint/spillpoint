@@ -15,7 +15,7 @@ Status:
 - **Settled (S1)**: in the LPs' spec Jordan settled on 2026-10-18, for 0.2.0.
 - **Settled (S2)**: in the classes' and later closes' spec Jordan settled on 2026-10-23, for 0.3.0.
 - **Settled (S3)**: in the management fees' spec Jordan settled on 2026-10-25, for 0.4.0.
-- **Confirmed (f01a review)**: added in f01a and agreed by Jordan in his answers to its review. **Confirmed (f01b review)**, **Confirmed (f01c review)**, **Confirmed (f01e review)**, **Confirmed (f02a review)**, **Confirmed (f02b review)**, **Confirmed (f03a review)**, **Confirmed (f03b review)** and **Confirmed (f04a review)** likewise for f01b's, f01c's, f01e's, f02a's, f02b's, f03a's, f03b's and f04a's.
+- **Confirmed (f01a review)**: added in f01a and agreed by Jordan in his answers to its review. **Confirmed (f01b review)**, **Confirmed (f01c review)**, **Confirmed (f01e review)**, **Confirmed (f02a review)**, **Confirmed (f02b review)**, **Confirmed (f03a review)**, **Confirmed (f03b review)**, **Confirmed (f04a review)** and **Confirmed (f04b review)** likewise for f01b's, f01c's, f01e's, f02a's, f02b's, f03a's, f03b's, f04a's and f04b's.
 - **New**: added while building, not yet reviewed. Each one is listed in its step's review note.
 - **Withdrawn (f04b review)**: added while building and withdrawn by Jordan in his answers to its review. Its ID stays, as no ID is reused.
 
@@ -169,7 +169,7 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | ID | Question | Default | Toggle? | Status |
 |---|---|---|---|---|
 | FA47 | The split's own LP multiple with nothing paid in (F10, FA38, FA40) | Withdrawn (Jordan, f04b review): a schedule no listed LP pays is refused (`call_without_payers`, F32), so the LPs always pay something in and `Split.lpMultiple` stays `D`. It had been null with nothing paid in, which only a schedule whose listed LPs all paid no fees allowed. | Fixed | Withdrawn (f04b review) |
-| FA48 | A `Fund` built by hand without 0.4.0's field (F30) | As FA33 has one without 0.3.0's: no `managementFee` on its terms is no schedule, so its fee calls are the entered ones, and F29 applies to them: a later close's back fees, and each fee call at its full size. TypeScript requires the new field. An entered fee call that no LP in at its date pays, which `readFund` refuses as `call_without_payers`, counts as entered, as 0.3.0 counted it, rather than dividing by nothing. A schedule no listed LP pays, which `readFund` refuses the same way (F32), calls $0 a period in one built by hand; with no other call its LPs have paid in nothing, and the split's multiple isn't a number (decimal.js's Infinity, or NaN with nothing to date), as in one built by hand with no calls at all, which `readFund` refuses as `no_calls`. | Fixed | New |
+| FA48 | A `Fund` built by hand without 0.4.0's field (F30) | As FA33 has one without 0.3.0's: no `managementFee` on its terms is no schedule, so its fee calls are the entered ones, and F29 applies to them: a later close's back fees, and each fee call at its full size. TypeScript requires the new field. An entered fee call that no LP in at its date pays, which `readFund` refuses as `call_without_payers`, counts as entered, as 0.3.0 counted it, rather than dividing by nothing. A schedule no listed LP pays, which `readFund` refuses the same way (F32), calls $0 a period in one built by hand; with no other call its LPs have paid in nothing, and the split's multiple isn't a number (decimal.js's Infinity, or NaN with nothing to date), as in one built by hand with no calls at all, which `readFund` refuses as `no_calls`. | Fixed | Confirmed (f04b review) |
 
 ## Known edges
 
@@ -185,6 +185,8 @@ Places where the engine and the reference can differ on an input both refuse, an
 | a schedule `{"start": "2021-01-01", "steps": [{"rate": "0.02"}], "offset": "x", "4": "y"}` (from 0.4.0, f04b) | `4` at `terms.management_fee.4` | `offset` at `terms.management_fee.offset` |
 
 **A class named "Fund terms" (FA28; f03b).** F28 doesn't refuse it. With two or more accounts its reasons read like the fund terms' own: "Fund terms: LPs have their $4,500,000 of paid-in capital back" for each. Every reason and carry step has `class`, null for the fund's terms and "Fund terms" for the class, so code tells them apart; the words alone don't. The page refuses the name, typed or in a file (f03c review, answer 3; f03d), since its picker, its paste and its cards couldn't tell the class from the fund's terms; the engine still takes it.
+
+**A result's `D` values can be the engine's own (f04b review).** What `splitAt`, `splitAtNav`, `findBreakpoints`, `equalization` and `feeCalls` return is fresh each time, every object and list in it, so a caller's edits to them change no later answer. The `D` values in them needn't be: `splitAt` can hand back the engine's own zero. decimal.js documents a Decimal's properties as read-only, so writing into one, as `split.gpCommitmentPaidIn.d[0] = 7` does, is unsupported, and it can change later answers, on any fund. Copying or freezing every `D` a result hands back would slow every split for a misuse decimal.js already rules out (Jordan). `feeCalls` happens to copy its own.
 
 ## Later
 

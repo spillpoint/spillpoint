@@ -53,6 +53,12 @@ const MESSAGES: Record<InputTerm, string> = {
   fee_commitments_mismatch: "the schedule's commitments must be the listed LPs' commitments added up",
 };
 
+/**
+ * F32's `call_without_payers` at `terms.management_fee`: the term an entered fee call nobody pays has (F28), with words
+ * of its own, since a schedule's calls are every LP's own fee and have no date at which nobody was in.
+ */
+export const SCHEDULE_WITHOUT_PAYERS = "no listed LP pays this schedule's fees: every one is in a class at a fee rate of 0";
+
 /** An input refusal: only with a term the stable list has (stable-names.ts). */
 export function refuse(term: InputTerm, path: string, message: string = MESSAGES[term]): FundRefusal {
   return new FundRefusal("input", term, path, message);

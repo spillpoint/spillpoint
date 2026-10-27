@@ -362,12 +362,15 @@ spillpoint-fund 0.3.0 runs each LP class as its own account and works out the eq
 
 Two percents, each starting blank; blank leaves it out of the input:
 - **"Management fee rate":** "Needed only when a class has its own fee rate. It divides the fee calls between the classes."
+  - **From f04c,** "…and charges nothing itself." at its end, and the field goes with a schedule ("0.4.0: management fees").
 - **"Equalization interest rate":** "Needed when an LP joins at a later close; 0 for none."
+  - **From f04c,** "Needed when an investment or expense call comes before a later close; 0 for none." (F29)
 - **Where (mine):** after the GP commitment, in one group of their own, "For LP classes and later closes", each hint under its field.
 
 **Problems under them:**
 - **A class's fee rate without the fund's:** "Needed: a class has its own fee rate."
 - **A later close without the rate:** "Needed: an LP joins at a later close. Write 0 for none."
+  - **From f04c,** "Needed: an investment or expense call comes before a later close. Write 0 for none." (F29)
 - **A fee rate that doesn't read, or 0 (mine):** "Write the management fee rate as a percent, above 0: 2 or 1.5."
 - **An equalization rate that doesn't read (mine):** "Write the equalization interest rate as a percent a year, 0 or more: 8 or 0." A typed "-8" doesn't read as a percent, so it's this.
 
@@ -416,7 +419,7 @@ Two percents, each starting blank; blank leaves it out of the input:
 **An opened file's problem,** in one line under the masthead, as now:
 - **Where it is (mine):** "The name in row 2 of its LP classes", "The fee rate in row 2 …", "The carry in row 2 …", "Carry step 2's rate in row 1 of its LP classes", "Row 2 of its LP classes", "Its list of LP classes", "Its management fee rate", "Its equalization interest rate", "The class in row 3 of its LPs", "The close in row 3 of its LPs".
 - **The rules,** in the words above, after the place: "The class in row 3 of its LPs: this LP's class isn't one of the fund's classes."
-- **A rate missing (mine)** says why it's needed: "Its management fee rate is missing: it's needed when a class has its own fee rate." "Its equalization interest rate is missing: it's needed when an LP joins at a later close."
+- **A rate missing (mine)** says why it's needed: "Its management fee rate is missing: it's needed when a class has its own fee rate." "Its equalization interest rate is missing: it's needed when an LP joins at a later close." From f04c the second ends "…when an investment or expense call comes before a later close." (F29)
 - **A management fee rate that isn't above 0 (mine, added while building):** the amounts' line says "amounts more than zero and nothing negative", which doesn't fit a rate of 0, so: 'Its management fee rate isn't a number the page can use: it's a rate above 0, written as an exact string like "0.02".'
 - **`call_without_payers` (mine):** "Row 2 of its cash flows: no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees."
 - **A class term the page doesn't model (mine):** "This file has a term the page doesn't model: `pref` on an LP class (row 1 of its LP classes). A class changes only the fee rate and the carry."
@@ -512,6 +515,109 @@ Two optional columns after the commitment: class, then close.
   | Cedar | 1,250,000.00 | 0.00 | 33,780.82 | 0.00 |
 
   0.01 is left over in each of the last three columns, and its CSV says the same.
+
+## 0.4.0: management fees
+
+spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee calls at a later close each LP's own (F29 to F32). f04c puts the schedule on the page, where a GP looks for fees: on Terms, beside the other terms, and on Cash flows, beside the calls. This section is f04c's first commit, before code builds on its words. Your words and layout from the f04c brief are as you gave them; what they leave open is marked **(mine)**, and listed in `notes/review-f04c.md`.
+
+### The Terms tab
+
+**"Management fee",** a choice of two, in a group of its own after the GP commitment **(mine)**:
+- **"Entered as fee calls"** (the default), with one line: "Enter each fee call on the Cash flows tab as a call of kind Fee. Fees are paid-in capital, returned to the LPs first."
+- **"A schedule":**
+  - **"Fees start on":** a date.
+  - **"Called":** quarterly, half-yearly or yearly, quarterly first. The picker reads "Quarterly", "Half-yearly" and "Yearly" **(mine)**, for the input's `quarterly`, `semiannual` and `annual`.
+  - **The rates by date,** a step at a time as the carry's are: the first "from the start", each later one "from" a date, with "Add a step" and "Remove".
+  - **"The LPs' total commitments,"** only when the fund lists no LPs, in dollars as the cash flows' amounts are typed.
+  - **One line under it:** "Fees are worked out from the LPs' commitments, called in advance on calendar periods; the first period runs from the start date."
+- **Starting values (mine),** in their fields to be changed, as a term turned on starts at its usual value:
+  - **The first rate:** 2%, selected in its field, so it's typed straight over.
+  - **The start:** the earliest call's date on the Cash flows tab, or blank when no call has a date.
+  - **Called:** quarterly.
+- **Switching back (mine):** "Entered as fee calls" keeps what was typed in the schedule, out of the input, for a way back, as the carry keeps its steps when it's flat.
+
+**With a schedule, the "Management fee rate" field goes:** the schedule's first rate is the fund's, and a class's fee rate is set against it.
+- **What was typed in it (mine)** is kept out of the input, and comes back with "Entered as fee calls".
+- **The classes table on the LPs tab** says so in its fee rate's hint **(mine)**: "Blank: the schedule's rates. A class's rate is set against its first rate." Without a schedule, as now: "Blank: the fund's fees."
+
+**Without a schedule the field stays.** Its hint says it divides fee calls between classes and charges nothing **(the words mine)**: "Needed only when a class has its own fee rate. It divides the fee calls between the classes and charges nothing itself."
+
+**"Equalization interest rate":**
+- **Its hint:** "Needed when an investment or expense call comes before a later close; 0 for none."
+- **Its problem line:** "Needed: an investment or expense call comes before a later close. Write 0 for none."
+- **A file's line:** "Its equalization interest rate is missing: it's needed when an investment or expense call comes before a later close."
+
+### The Cash flows tab, with a schedule
+
+- **Fee isn't offered as a kind.**
+  - **A row already of kind Fee (mine)** keeps Fee in its own picker, so it shows what it is.
+  - **A new row after a Fee row (mine)** is an investment, as it would otherwise copy the row above.
+- **A Fee row already in the table** is a problem under its row: "This fund's fees come from its schedule. Remove this row, or set Management fee to Entered as fee calls."
+  - **Under every Fee row (mine):** the engine names the first in the table's order, and the page shows the same words under each, so every row to fix shows at once. "Show me" goes to the first one's Kind.
+  - **A Fee row in an opened file (mine)** is in the table once the file is open and the schedule chosen. A file that has both a schedule and a fee call is refused as it opens, in one line, below.
+- **Under the table, "The schedule's fee calls",** read-only:
+  - **Each call:** its date, the days it covers, the call, and the GP commitment's part when it pays fees.
+  - **Then a total.**
+  - **Amounts to the cent,** as the split table's.
+  - **With a start after D:** "No fee call yet: fees start on <date>."
+  - **Its columns (mine):** "Date", "Covers" (as "15 Feb 2021 to 31 Mar 2021"), "Call", and "The GP commitment's part" when it pays fees. The total row is "Total".
+  - **A line under its heading (mine):** "Worked out from the schedule on the Terms tab, and run as fee calls. They aren't rows of the table above."
+  - **While the fund can't run (mine):** "The schedule's fee calls show here once the fund can run." in the table's place, since they're the engine's.
+- **Pasting cash flows:** a Fee row is a row the preview can't read, with the same reason **(the words mine)**: "Row 3: this fund's fees come from its schedule; set Management fee to Entered as fee calls to add fee calls".
+
+### Problems, in the page's words, under the field their path names
+
+- **The start missing or not a date (mine):** "Choose the date fees start on."
+- **A step's rate missing, not a number, below 0, or 1 or more (mine):** "Write the fee rate as a percent a year, 0 or more and below 100: 2 or 1.5."
+- **The first rate 0:** "The first rate must be above 0. To start fees later, change the start date."
+- **A later step without a date (mine):** "Choose the date this rate is in force from."
+- **A step's date not after the one before:** "Each step's date must come after the one before it."
+- **The commitments missing without LPs:** "Needed: the fund lists no LPs, so the fee is on this total."
+- **The commitments not an amount, or 0 (mine):** "Write the LPs' total commitments in dollars, more than zero: 40000000 or $40M."
+- **The schedule's `call_without_payers`, under Management fee:** "No LP pays this schedule: every LP is in a class at a fee rate of 0."
+- **At the top of the tab,** as now. The schedule is on Terms, so on Payouts it's "Your last change to the terms has a problem, …".
+- **What the form can't make:** `fee_rate_with_schedule`, since the field goes with a schedule; `fee_commitments_mismatch`, since the form writes commitments only when the fund lists no LPs; a frequency it doesn't know; the first step given a date; and the schedule's unsupported keys. Only a file has them.
+
+**An opened file's problem, in one line,** as now, its place then its words **(the places mine)**:
+- **The places:** "Its management fee schedule", "Its management fee's start date", "Its management fee's list of rates", "Fee rate step 2", "Fee rate step 2's rate", "Fee rate step 2's date" and "Its management fee's total commitments". So: "Its management fee's start date isn't a date that exists, written YYYY-MM-DD."
+- **A frequency it doesn't know (mine):** "Its management fee's frequency isn't one the page knows: it's quarterly, semiannual or annual."
+- **A step's rate (mine):** 'Fee rate step 1's rate isn't a number the page can use: it's a rate from 0 up to, not including, 1, the first above 0, written as an exact string like "0.02".'
+- **Steps out of order (mine):** "Fee rate step 2: each step's date must come after the one before it, and the first has none of its own."
+- **The commitments missing (mine):** "Its management fee's total commitments are missing: they're needed when the fund lists no LPs."
+- **`fee_rate_with_schedule` (mine):** "Its management fee rate: with a schedule, the schedule's first rate is the fund's, so there's no rate of its own."
+- **`fee_call_with_schedule` (mine):** "Row 5 of its cash flows: it's a fee call, and this fund's fees come from its schedule."
+- **`fee_commitments_mismatch`:** "Its management fee schedule: its commitments for the schedule aren't the LPs' total." The place is mine.
+- **The schedule's `call_without_payers` (mine):** "Its management fee schedule: no LP pays it, as every LP is in a class at a fee rate of 0."
+- **An unsupported key in the schedule (mine):**
+  - "This file has a term the page doesn't model: `offset` on its management fee schedule. A schedule has a start date, how often it's called, its rates by date and the LPs' total commitments."
+  - "This file has a term the page doesn't model: `basis` on a fee rate step (step 2 of its management fee schedule). A step has only its rate and the date it's in force from."
+
+### Payouts
+
+**Nothing on Payouts changes but one line (mine):** the split, the chart, the breakpoints and every card run on the schedule's calls as on entered ones (F31).
+- **The summary under the picker** counts the schedule's calls among the calls paid in, as it counts the cash flows: "This fund: $34.2M paid in over 25 calls, 22 of them its fee schedule's, …" for case 29. Without them the paid-in it gives would leave out the fees.
+
+### Saving and opening
+
+- **Saving keeps the schedule:** `start`; `frequency` written out, quarterly too; the steps, the first without `from`; and `commitments` only when the fund lists no LPs.
+- **Opening brings it back.** f04b's guard comes out, and its tests.
+- **A file's schedule with `commitments` and listed LPs (mine)** opens, since the engine has checked they're the LPs' total, and a save leaves them out, as the form has no place for them with LPs.
+
+### The examples
+
+- **Case 29 joins the picker** as "A fund with a 2% fee schedule", after case 26.
+- **It opens at $20,000,000 (mine),** its listed X, between its second and third breakpoints: the GP is catching up.
+- **The others stay.**
+
+### Tests
+
+- **The page's pending list empties,** so cases 29 to 32 run through its case tests:
+  - the forms round trip with the schedule
+  - files open and save
+  - the fund-32 refusals show in the page's words: beside their fields for those the form can make, and in one line when opened from a file for all thirty-seven
+- **Case 29's Cash flows** list 22 fee calls, $100,000.00 first, $150,000.00 last and $4,225,000.00 in all.
+- **Case 30's half-year with the step** reads $212,115.23, of it $4,242.30 the GP commitment's.
+- **Case 26 switched to a schedule** shows the problem under its two Fee rows.
 
 ## How it's built: its own app, `apps/fund` (your answer 1)
 

@@ -31,7 +31,7 @@
 
 import { D, ONE, ZERO, exactOrNull, exactRatio } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
-import { refuse, unsupported } from "./errors.ts";
+import { refuse, SCHEDULE_WITHOUT_PAYERS, unsupported } from "./errors.ts";
 import type { CallKind, CarryStep, CashFlow, FeeFrequency, FeeStep, Fund, FundTerms, GpCommitment, Lp, LpClass, ManagementFee } from "./model.ts";
 import { PERIODS, schedulePeriods } from "./schedule.ts";
 
@@ -486,7 +486,7 @@ function checkWhatTheLpsNeed(fund: Fund, firstCall: number, raw: Json): void {
     if (fund.lps.length > 0 && fee.commitments !== null && !sameTotal(raw)) throw refuse("fee_commitments_mismatch", at);
     // F32: with every listed LP in a class at a fee rate of 0, each of the schedule's calls would be $0. Its calls are
     // every LP's own fee, whatever its close (F29), so the fee weights alone say whether anyone pays them.
-    if (fund.lps.length > 0 && !fund.lps.some((lp) => feeWeight(fund, lp).gt(ZERO))) throw refuse("call_without_payers", "terms.management_fee");
+    if (fund.lps.length > 0 && !fund.lps.some((lp) => feeWeight(fund, lp).gt(ZERO))) throw refuse("call_without_payers", "terms.management_fee", SCHEDULE_WITHOUT_PAYERS);
   }
   if (fund.lps.length === 0) return;
   for (const f of fund.cashFlows) {
