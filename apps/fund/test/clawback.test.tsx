@@ -53,7 +53,7 @@ const answer = () => screen.getByRole("region", { name: "The answer" }).querySel
 const owedLegend = () => within(card()).getByRole("list", { name: /^Owed at X/ }).textContent;
 
 describe("the clawback's sentence and chart", () => {
-  it("covers every final case: 10, 11, 12, 13, 15, 16, 19, 20, 24 and 28", () => {
+  it("covers every final case: 10, 11, 12, 13, 15, 16, 19, 20, 24, 28 and 30", () => {
     expect(FINAL_CASES).toEqual([
       "fund-10-clawback",
       "fund-11-clawback-pref",
@@ -65,6 +65,7 @@ describe("the clawback's sentence and chart", () => {
       "fund-20-lps-spv",
       "fund-24-classes-clawback",
       "fund-28-classes-clawback-steps",
+      "fund-30-fee-step-down",
     ]);
   });
 

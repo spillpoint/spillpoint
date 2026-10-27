@@ -27,11 +27,13 @@ export const UNNAMED = "My fund";
 
 /**
  * The fund's input, as the three tabs write it: what the engine reads, and what a file keeps. The classes, on the LPs
- * tab, go in the terms (F22). No LPs: no `lps`; no classes: no `lp_classes`.
+ * tab, go in the terms (F22). No LPs: no `lps`; no classes: no `lp_classes`. A schedule's commitments only without
+ * LPs, since with them their commitments are its base (F30).
  */
 export function inputOf(terms: TermsForm, flows: FlowsForm, lps: LpsForm): Record<string, unknown> {
   const { as_of, ...rest } = flowsInput(flows);
-  return { as_of, terms: { ...termsInput(terms), ...classesInput(lps) }, ...rest, ...lpsInput(lps) };
+  const listed = lpsInput(lps);
+  return { as_of, terms: { ...termsInput(terms, "lps" in listed), ...classesInput(lps) }, ...rest, ...listed };
 }
 
 /** The file, with X where it was: a save keeps X, though moving it isn't a change. */
@@ -115,10 +117,6 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
-  // Until the page shows a management fee schedule (f04c, which removes this), a file whose fund has one is refused, so
-  // a save can't drop it: the forms have no place for it yet. A null schedule is none (FA41), so it opens.
-  if (hasSchedule(input)) return { ok: false, message: SCHEDULE_LATER };
-
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -165,13 +163,6 @@ function trimmedNames(input: unknown): unknown {
   return out;
 }
 
-const SCHEDULE_LATER = "This file has a management fee schedule; the page shows it from the next version.";
-
-/** F30: the fund's terms give a management fee schedule. */
-function hasSchedule(input: unknown): boolean {
-  return isObject(input) && isObject(input.terms) && input.terms.management_fee !== undefined && input.terms.management_fee !== null;
-}
-
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
 
 /** The part of a fund's input a path names, as a sentence starts: "The amount in row 3 of its cash flows". */
@@ -182,6 +173,9 @@ function where(path: string): string {
   if (lp) return lp[2] ? `The ${lp[2]} in row ${Number(lp[1]) + 1} of its LPs` : `Row ${Number(lp[1]) + 1} of its LPs`;
   const step = /^terms\.carry\.steps\[(\d+)\](?:\.(\w+))?$/.exec(path);
   if (step) return stepPlace(step);
+  // A step of the management fee schedule (F30): "Fee rate step 2", "Fee rate step 2's rate", "Fee rate step 2's date".
+  const feeStep = /^terms\.management_fee\.steps\[(\d+)\](?:\.(rate|from))?$/.exec(path);
+  if (feeStep) return `Fee rate step ${Number(feeStep[1]) + 1}${feeStep[2] === "rate" ? "'s rate" : feeStep[2] === "from" ? "'s date" : ""}`;
   // A class (F22): "The fee rate in row 2 of its LP classes", "Carry step 2's rate in row 1 of its LP classes".
   const cls = /^terms\.lp_classes\[(\d+)\](?:\.(.+))?$/.exec(path);
   if (cls) {
@@ -212,6 +206,11 @@ function where(path: string): string {
     "terms.gp_commitment.pays_expenses": "Whether its GP commitment pays expenses",
     "terms.fee_rate": "Its management fee rate",
     "terms.equalization_rate": "Its equalization interest rate",
+    "terms.management_fee": "Its management fee schedule",
+    "terms.management_fee.start": "Its management fee's start date",
+    "terms.management_fee.frequency": "Its management fee's frequency",
+    "terms.management_fee.steps": "Its management fee's list of rates",
+    "terms.management_fee.commitments": "Its management fee's total commitments",
     "terms.lp_classes": "Its list of LP classes",
     cash_flows: "Its cash flows",
     lps: "Its list of LPs",
@@ -243,6 +242,14 @@ export function fileProblem(refusal: FundRefusal): string {
     if (cls) {
       return `This file has a term the page doesn't model: \`${term}\` on an LP class (row ${Number(cls[1]) + 1} of its LP classes). A class changes only the fee rate and the carry.`;
     }
+    // F32: a term on the management fee schedule beyond what F30 has, such as an offset, or on one of its steps.
+    const feeStep = /^terms\.management_fee\.steps\[(\d+)\]\./.exec(path);
+    if (feeStep) {
+      return `This file has a term the page doesn't model: \`${term}\` on a fee rate step (step ${Number(feeStep[1]) + 1} of its management fee schedule). A step has only its rate and the date it's in force from.`;
+    }
+    if (path.startsWith("terms.management_fee.")) {
+      return `This file has a term the page doesn't model: \`${term}\` on its management fee schedule. A schedule has a start date, how often it's called, its rates by date and the LPs' total commitments.`;
+    }
     return `This file has a term the page doesn't model: \`${term}\`.`;
   }
   const field: Record<string, string> = {
@@ -254,7 +261,9 @@ export function fileProblem(refusal: FundRefusal): string {
   };
   // F28: a rate the classes or the closes need says why it's needed.
   if (term === "missing_field" && path === "terms.fee_rate") return "Its management fee rate is missing: it's needed when a class has its own fee rate.";
-  if (term === "missing_field" && path === "terms.equalization_rate") return "Its equalization interest rate is missing: it's needed when an LP joins at a later close.";
+  if (term === "missing_field" && path === "terms.equalization_rate") return "Its equalization interest rate is missing: it's needed when an investment or expense call comes before a later close.";
+  const fee = scheduleProblem(refusal);
+  if (fee) return fee;
   // F28: the standard fee rate is the one rate that must be above 0, which the amounts' line doesn't say.
   if (term === "bad_number" && path === "terms.fee_rate") return 'Its management fee rate isn\'t a number the page can use: it\'s a rate above 0, written as an exact string like "0.02".';
   if (term in field) return `${where(path)} ${field[term]}.`;
@@ -272,6 +281,25 @@ export function fileProblem(refusal: FundRefusal): string {
     lp_class_unknown: sentencePart(LP_WORDS.classUnknown),
     lp_close_after_distribution: sentencePart(LP_WORDS.closeAfterDistribution),
     call_without_payers: "no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees",
+    fee_rate_with_schedule: "with a schedule, the schedule's first rate is the fund's, so there's no rate of its own",
+    fee_call_with_schedule: "it's a fee call, and this fund's fees come from its schedule",
   };
   return `${where(path)}: ${rule[term] ?? refusal.message}.`;
+}
+
+/** The management fee schedule's lines where its words differ from the rest's (F32), or null. */
+function scheduleProblem({ term, path }: FundRefusal): string | null {
+  const at = "terms.management_fee";
+  if (term === "fee_commitments_mismatch") return "Its management fee schedule: its commitments for the schedule aren't the LPs' total.";
+  if (term === "call_without_payers" && path === at) return "Its management fee schedule: no LP pays it, as every LP is in a class at a fee rate of 0.";
+  if (term === "bad_field" && path === `${at}.frequency`) return "Its management fee's frequency isn't one the page knows: it's quarterly, semiannual or annual.";
+  if (term === "missing_field" && path === `${at}.commitments`) return "Its management fee's total commitments are missing: they're needed when the fund lists no LPs.";
+  if (term === "bad_number" && path === `${at}.commitments`) return 'Its management fee\'s total commitments aren\'t an amount the page can use: they\'re an exact string more than zero, like "40000000".';
+  const step = /^terms\.management_fee\.steps\[\d+\](\.rate)?$/.exec(path);
+  // F32: a rate from 0 up to, not including, 1, the first above 0, which the amounts' line doesn't say.
+  if (step?.[1] && term === "bad_number") {
+    return `${where(path)} isn't a number the page can use: it's a rate from 0 up to, not including, 1, the first above 0, written as an exact string like "0.02".`;
+  }
+  if (step && !step[1] && term === "steps_out_of_order") return `${where(path)}: each step's date must come after the one before it, and the first has none of its own.`;
+  return null;
 }

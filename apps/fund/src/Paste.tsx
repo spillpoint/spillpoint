@@ -20,10 +20,12 @@ interface Props {
   here: number;
   onAdd: (rows: PastedRow[]) => void;
   onCancel: () => void;
+  /** The fund's fees come from a schedule, so a Fee row is one it can't read (F30). */
+  scheduled?: boolean | undefined;
 }
 
-export function PasteBox({ paste, onPaste, here, onAdd, onCancel }: Props) {
-  const read = useMemo(() => readPaste(paste.text, paste.order), [paste.text, paste.order]);
+export function PasteBox({ paste, onPaste, here, onAdd, onCancel, scheduled = false }: Props) {
+  const read = useMemo(() => readPaste(paste.text, paste.order, scheduled), [paste.text, paste.order, scheduled]);
   const box = useRef<HTMLTextAreaElement>(null);
   // The box takes the focus when it opens, with what was pasted into a cell already in it.
   useEffect(() => {

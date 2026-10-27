@@ -563,6 +563,7 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
   - **Its columns (mine):** "Date", "Covers" (as "15 Feb 2021 to 31 Mar 2021"), "Call", and "The GP commitment's part" when it pays fees. The total row is "Total".
   - **A line under its heading (mine):** "Worked out from the schedule on the Terms tab, and run as fee calls. They aren't rows of the table above."
   - **While the fund can't run (mine):** "The schedule's fee calls show here once the fund can run." in the table's place, since they're the engine's.
+  - **On a phone (mine),** and wherever the table wouldn't fit its card, each call is a card of its own, as Payouts' cards are, so nothing scrolls sideways.
 - **Pasting cash flows:** a Fee row is a row the preview can't read, with the same reason **(the words mine)**: "Row 3: this fund's fees come from its schedule; set Management fee to Entered as fee calls to add fee calls".
 
 ### Problems, in the page's words, under the field their path names
@@ -584,6 +585,7 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
 - **A step's rate (mine):** 'Fee rate step 1's rate isn't a number the page can use: it's a rate from 0 up to, not including, 1, the first above 0, written as an exact string like "0.02".'
 - **Steps out of order (mine):** "Fee rate step 2: each step's date must come after the one before it, and the first has none of its own."
 - **The commitments missing (mine):** "Its management fee's total commitments are missing: they're needed when the fund lists no LPs."
+- **The commitments not an amount (mine):** 'Its management fee's total commitments aren't an amount the page can use: they're an exact string more than zero, like "40000000".' The amounts' line would say "isn't" of them.
 - **`fee_rate_with_schedule` (mine):** "Its management fee rate: with a schedule, the schedule's first rate is the fund's, so there's no rate of its own."
 - **`fee_call_with_schedule` (mine):** "Row 5 of its cash flows: it's a fee call, and this fund's fees come from its schedule."
 - **`fee_commitments_mismatch`:** "Its management fee schedule: its commitments for the schedule aren't the LPs' total." The place is mine.
@@ -595,7 +597,7 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
 ### Payouts
 
 **Nothing on Payouts changes but one line (mine):** the split, the chart, the breakpoints and every card run on the schedule's calls as on entered ones (F31).
-- **The summary under the picker** counts the schedule's calls among the calls paid in, as it counts the cash flows: "This fund: $34.2M paid in over 25 calls, 22 of them its fee schedule's, …" for case 29. Without them the paid-in it gives would leave out the fees.
+- **The summary under the picker** counts the schedule's calls among the calls paid in, as it counts the cash flows: "This fund: $34.2M paid in over 25 calls (22 from its fee schedule) and $24M distributed before X." for case 29. Without them the paid-in it gives would leave out the fees.
 
 ### Saving and opening
 

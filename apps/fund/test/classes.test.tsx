@@ -82,8 +82,8 @@ describe("the Terms tab's two rates", () => {
     render(<App />);
     tab("Terms");
     expect([value("Management fee rate"), value("Equalization interest rate")]).toEqual(["", ""]);
-    expect(screen.getByText("Needed only when a class has its own fee rate. It divides the fee calls between the classes.")).toBeDefined();
-    expect(screen.getByText("Needed when an LP joins at a later close; 0 for none.")).toBeDefined();
+    expect(screen.getByText("Needed only when a class has its own fee rate. It divides the fee calls between the classes and charges nothing itself.")).toBeDefined();
+    expect(screen.getByText("Needed when an investment or expense call comes before a later close; 0 for none.")).toBeDefined();
     save();
     const terms = (await saved()).fund.terms;
     expect(terms).not.toHaveProperty("fee_rate");
@@ -263,7 +263,7 @@ describe("the fund-27 refusals, in the page's words", () => {
     "fee-call-without-payers.json": "Row 2 of its cash flows: no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees.",
     "first-call-without-payers.json": "Row 1 of its cash flows: no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees.",
     "fund-fee-rate-zero.json": 'Its management fee rate isn\'t a number the page can use: it\'s a rate above 0, written as an exact string like "0.02".',
-    "later-close-without-rate.json": "Its equalization interest rate is missing: it's needed when an LP joins at a later close.",
+    "later-close-without-rate.json": "Its equalization interest rate is missing: it's needed when an investment or expense call comes before a later close.",
     "lp-class-not-text.json": "The class in row 3 of its LPs isn't a value it can take.",
     "lp-class-unknown.json": "The class in row 3 of its LPs: this LP's class isn't one of the fund's classes.",
     "lp-close-after-distribution.json": "The close in row 3 of its LPs: an LP's close must come before the fund's first distribution.",
@@ -375,7 +375,7 @@ describe("the fund-27 refusals, in the page's words", () => {
     "later-close-without-rate.json": {
       make: () => (tab("Terms"), type("Equalization interest rate", "")),
       under: "Equalization interest rate",
-      words: "Needed: an LP joins at a later close. Write 0 for none.",
+      words: "Needed: an investment or expense call comes before a later close. Write 0 for none.",
     },
     "lp-close-after-distribution.json": {
       make: () => (tab("LPs"), type("LP 3's close", "2024-07-01")),

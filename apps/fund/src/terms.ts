@@ -1,5 +1,6 @@
 // The Terms tab's form (plan, "The terms: a form", f01i): what it holds, how it's written into the fund's input for the
-// engine, and the page's words for a refusal, shown under the field the refusal's path names.
+// engine, and the page's words for a refusal, shown under the field the refusal's path names. From 0.4.0 it holds the
+// management fee too: entered as fee calls, or a schedule (plan, "0.4.0: management fees"; F30).
 //
 // Rates are typed as percents and written exactly, as strings: "7.25" is "0.0725", by moving the decimal point, so
 // nothing is rounded however many places are typed. The page reads only what it can't hand the engine (text that isn't
@@ -7,7 +8,9 @@
 // refusal says which (F18).
 
 import { D, FundRefusal } from "spillpoint-fund";
-import type { CarryStep, FundTerms } from "spillpoint-fund";
+import type { CarryStep, FeeFrequency, FundTerms } from "spillpoint-fund";
+
+import { exactDollars, parseDollars } from "./format.ts";
 
 export interface StepText {
   rate: string;
@@ -23,6 +26,26 @@ export interface CarryForm {
   steps: StepText[];
 }
 
+/** A step of the fee schedule's rates (F30): a percent a year, and the date it's in force from, "" for the first. */
+export interface FeeStepText {
+  rate: string;
+  from: string;
+}
+
+/**
+ * The management fee: entered as fee calls on the Cash flows tab, or a schedule the engine works the calls out from
+ * (F30). The schedule's fields are kept while fees are entered, out of the input, for a way back.
+ */
+export interface FeeForm {
+  mode: "entered" | "schedule";
+  /** YYYY-MM-DD, as a date picker gives it; "" until chosen. */
+  start: string;
+  frequency: FeeFrequency;
+  steps: FeeStepText[];
+  /** The LPs' total commitments in dollars, the fee's base when the fund lists no LPs; "" for none. */
+  commitments: string;
+}
+
 export interface TermsForm {
   carry: CarryForm;
   pref: { on: boolean; rate: string };
@@ -34,6 +57,8 @@ export interface TermsForm {
   feeRate: string;
   /** F25's equalization interest rate: blank is none, left out of the input; "0" is 0%. */
   equalizationRate: string;
+  /** F30: the management fee, entered as fee calls or a schedule. */
+  managementFee: FeeForm;
 }
 
 /** What the page writes for text it can't read: not a number, so the engine refuses it where it is. */
@@ -43,13 +68,23 @@ export const UNREAD = "";
 export interface Problem {
   path: string;
   message: string;
+  /**
+   * Other places with the same problem, shown with the same words: with a schedule, every Fee row, where the engine
+   * names only the first (F32).
+   */
+  also?: readonly string[];
+}
+
+/** Whether a problem is at a path, its own or one of its others. */
+export function isAt(problem: Problem | null, path: string): boolean {
+  return problem !== null && (problem.path === path || (problem.also ?? []).includes(path));
 }
 
 /**
  * What the form starts a term at when it's turned on and the example didn't have it: a pref of 8% a year, a partial
  * catch-up of 50% to the GP, a GP commitment of 1%. Each is in its field, to be changed, never applied unseen.
  */
-const STARTING = { pref: "8", catchUpShare: "50", gpCommitment: "1" };
+const STARTING = { pref: "8", catchUpShare: "50", gpCommitment: "1", feeRate: "2" };
 
 /** A rate as the form shows it, a percent with every place: 0.0725 is "7.25". */
 export function percentOf(rate: D): string {
@@ -95,7 +130,29 @@ export function formFrom(terms: FundTerms): TermsForm {
       : { on: false, share: STARTING.gpCommitment, paysFees: false, paysExpenses: true },
     feeRate: terms.feeRate ? percentOf(terms.feeRate) : "",
     equalizationRate: terms.equalizationRate ? percentOf(terms.equalizationRate) : "",
+    managementFee: feeFormFrom(terms),
   };
+}
+
+/** The management fee as the form holds it: the schedule as read, or fees entered, with a schedule's starting values. */
+function feeFormFrom(terms: FundTerms): FeeForm {
+  const m = terms.managementFee;
+  if (!m) return { mode: "entered", start: "", frequency: "quarterly", steps: [{ rate: STARTING.feeRate, from: "" }], commitments: "" };
+  return {
+    mode: "schedule",
+    start: m.start,
+    frequency: m.frequency,
+    steps: m.steps.map((s) => ({ rate: percentOf(s.rate), from: s.from ?? "" })),
+    commitments: m.commitments ? exactDollars(m.commitments) : "",
+  };
+}
+
+/**
+ * Fees entered to a schedule: what was typed comes back, and a start not yet chosen starts at the fund's first call,
+ * `firstCall`, in its field to be changed. Fees usually start when the fund first calls capital.
+ */
+export function toSchedule(fee: FeeForm, firstCall: string): FeeForm {
+  return { ...fee, mode: "schedule", start: fee.start || firstCall };
 }
 
 /** Flat to steps: the flat rate becomes the first step's, and any steps typed before come back. */
@@ -120,7 +177,17 @@ const WORDS = {
   feeRate: "Write the management fee rate as a percent, above 0: 2 or 1.5.",
   equalizationRate: "Write the equalization interest rate as a percent a year, 0 or more: 8 or 0.",
   feeRateNeeded: "Needed: a class has its own fee rate.",
-  equalizationRateNeeded: "Needed: an LP joins at a later close. Write 0 for none.",
+  // F29: only an investment or expense call before a later close is rebalanced with interest; a fee call isn't.
+  equalizationRateNeeded: "Needed: an investment or expense call comes before a later close. Write 0 for none.",
+  feeStart: "Choose the date fees start on.",
+  feeStepRate: "Write the fee rate as a percent a year, 0 or more and below 100: 2 or 1.5.",
+  feeFirstRate: "The first rate must be above 0. To start fees later, change the start date.",
+  feeStepDate: "Choose the date this rate is in force from.",
+  feeStepsOrder: "Each step's date must come after the one before it.",
+  feeCommitmentsNeeded: "Needed: the fund lists no LPs, so the fee is on this total.",
+  feeCommitments: "Write the LPs' total commitments in dollars, more than zero: 40000000 or $40M.",
+  // F32: the schedule's call_without_payers, a schedule no listed LP pays.
+  feeWithoutPayers: "No LP pays this schedule: every LP is in a class at a fee rate of 0.",
 };
 
 /** A carry as the engine reads it, the fund's or a class's: the flat rate, or the steps (F9). */
@@ -132,10 +199,26 @@ export function carryInput(carry: CarryForm): unknown {
 }
 
 /**
+ * The schedule as the engine reads it (F30): the start, the frequency written out, the steps with the first's date its
+ * start, and the LPs' total commitments only when the fund lists no LPs, since with LPs their commitments are the base.
+ * A field left blank is left out, so the engine says it's missing.
+ */
+export function feeInput(fee: FeeForm, listsLps: boolean): Record<string, unknown> {
+  const rate = (text: string) => rateFrom(text) ?? UNREAD;
+  return {
+    ...(fee.start ? { start: fee.start } : {}),
+    frequency: fee.frequency,
+    steps: fee.steps.map((s, i) => (i === 0 ? { rate: rate(s.rate) } : { rate: rate(s.rate), ...(s.from ? { from: s.from } : {}) })),
+    ...(!listsLps && fee.commitments.trim() !== "" ? { commitments: parseDollars(fee.commitments)?.toFixed() ?? UNREAD } : {}),
+  };
+}
+
+/**
  * The terms the engine reads, written from the form. Text that isn't a number goes as "", which the engine refuses
  * at that field's path, so every problem, the page's reading included, comes one at a time in the engine's order (FA2).
+ * `listsLps`: the LPs tab lists LPs, so a schedule's base is their commitments.
  */
-export function termsInput(form: TermsForm): Record<string, unknown> {
+export function termsInput(form: TermsForm, listsLps = false): Record<string, unknown> {
   const rate = (text: string) => rateFrom(text) ?? UNREAD;
   const terms: Record<string, unknown> = {};
   terms.carry = carryInput(form.carry);
@@ -147,9 +230,12 @@ export function termsInput(form: TermsForm): Record<string, unknown> {
   if (form.gpCommitment.on) {
     terms.gp_commitment = { share: rate(form.gpCommitment.share), pays_fees: form.gpCommitment.paysFees, pays_expenses: form.gpCommitment.paysExpenses };
   }
-  // F22, F25: each only when typed; blank leaves it out, which is none.
-  if (form.feeRate.trim() !== "") terms.fee_rate = rate(form.feeRate);
+  // F22, F25: each only when typed; blank leaves it out, which is none. With a schedule its first rate is the fund's
+  // (F30), so the fee rate typed is kept in the form, out of the input.
+  const scheduled = form.managementFee.mode === "schedule";
+  if (!scheduled && form.feeRate.trim() !== "") terms.fee_rate = rate(form.feeRate);
   if (form.equalizationRate.trim() !== "") terms.equalization_rate = rate(form.equalizationRate);
+  if (scheduled) terms.management_fee = feeInput(form.managementFee, listsLps);
   return terms;
 }
 
@@ -218,20 +304,42 @@ export function termsProblem(refusal: FundRefusal, form: TermsForm): Problem {
     // F28: a class's fee rate needs the fund's to be set against; a later close needs the equalization rate.
     if (term === "missing_field" && path === "terms.fee_rate") return WORDS.feeRateNeeded;
     if (term === "missing_field" && path === "terms.equalization_rate") return WORDS.equalizationRateNeeded;
+    const fee = feeWords(refusal, form.managementFee);
+    if (fee) return fee;
     // Anything else can only come from a file (f01l): the engine's own words.
     return `The engine can't run this fund: ${refusal.message}.`;
   };
   return { path, message: words() };
 }
 
+/** The page's words for the engine's refusal of the schedule the form wrote (F32), or null when it isn't about it. */
+function feeWords(refusal: FundRefusal, fee: FeeForm): string | null {
+  const { term, path } = refusal;
+  const at = "terms.management_fee";
+  if (path !== at && !path.startsWith(`${at}.`)) return null;
+  if (path === at && term === "call_without_payers") return WORDS.feeWithoutPayers;
+  if (path === `${at}.start`) return WORDS.feeStart;
+  if (path === `${at}.commitments`) return term === "missing_field" ? WORDS.feeCommitmentsNeeded : WORDS.feeCommitments;
+  const step = /^\.steps\[(\d+)\](?:\.(rate|from))?$/.exec(path.slice(at.length));
+  if (!step) return null;
+  if (term === "steps_out_of_order") return WORDS.feeStepsOrder;
+  if (step[2] === "from") return WORDS.feeStepDate;
+  if (step[2] !== "rate") return null;
+  // F32: the first rate must be above 0, since a fee holiday at the start is a later start date.
+  const typedRate = rateFrom(fee.steps[Number(step[1])]?.rate ?? "");
+  return step[1] === "0" && typedRate !== null && new D(typedRate).isZero() ? WORDS.feeFirstRate : WORDS.feeStepRate;
+}
+
 /**
- * The form control a problem's path names, on any tab: a step's own problem goes to its rate, a cash flow's to its
- * date, an LP's or a class's to its name, the cash flows' to "Add a cash flow", the LPs' to "Add an LP" and the
+ * The form control a problem's path names, on any tab: a carry step's own problem goes to its rate, a fee step's to its
+ * date, a cash flow's to its date, an LP's or a class's to its name, the cash flows' to "Add a cash flow", the LPs' to "Add an LP" and the
  * classes' to "Add a class". A class's carry in steps, refused as a whole, has no box of its own: App focuses its first
  * step's rate.
  */
 export function controlFor(path: string): string {
   if (/^terms\.(lp_classes\[\d+\]\.)?carry\.steps\[\d+\]$/.test(path)) return `${path}.rate`;
+  // A fee step out of order is about its date (F32).
+  if (/^terms\.management_fee\.steps\[\d+\]$/.test(path)) return `${path}.from`;
   if (path === "terms.catch_up") return "terms.catch_up.gp_share";
   if (/^cash_flows\[\d+\]$/.test(path)) return `${path}.date`;
   if (/^(lps|terms\.lp_classes)\[\d+\]$/.test(path)) return `${path}.name`;

@@ -27,12 +27,14 @@ interface Props {
   problem: Problem | null;
   onForm: (form: LpsForm) => void;
   onShow: (path: string) => void;
+  /** The fund's fees come from a schedule: a class's fee rate is set against its first rate (F30). */
+  scheduled?: boolean | undefined;
 }
 
 /** A class's carry, as its picker has it: the fund's, or its own, flat or in steps. */
 type CarryChoice = "fund" | "flat" | "steps";
 
-export function Lps({ form, fundCarry, problem, onForm, onShow }: Props) {
+export function Lps({ form, fundCarry, problem, onForm, onShow, scheduled }: Props) {
   const setRow = (i: number, row: LpRow) => onForm({ ...form, rows: form.rows.map((r, j) => (j === i ? row : r)) });
   const setClass = (i: number, c: ClassRow) => onForm({ ...form, classes: form.classes.map((x, j) => (j === i ? c : x)) });
   // An LP or a class added is one to fill in: its name takes the focus once it's there.
@@ -112,7 +114,8 @@ export function Lps({ form, fundCarry, problem, onForm, onShow }: Props) {
                   <th scope="col">Row</th>
                   <th scope="col">Name</th>
                   <th scope="col">
-                    Fee rate <span className="flows__hint">Blank: the fund's fees.</span>
+                    Fee rate{" "}
+                    <span className="flows__hint">{scheduled ? "Blank: the schedule's rates. A class's rate is set against its first rate." : "Blank: the fund's fees."}</span>
                   </th>
                   <th scope="col">Carry</th>
                   <th scope="col">
