@@ -1,0 +1,10 @@
+{
+  "base": "fund-31-fee-schedule-classes-closes",
+  "about": "Alder Endowment moved to Friends and family, and Anchor's fee rate set to 0: every listed LP is in a class at a fee rate of 0, so no listed LP pays the schedule.",
+  "change": {
+    "set": {
+      "lps[0].class": "Friends and family",
+      "terms.lp_classes[0].fee_rate": "0"
+    }
+  }
+}
