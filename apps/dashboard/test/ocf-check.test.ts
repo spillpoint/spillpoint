@@ -171,17 +171,28 @@ describe("what it never prints", () => {
   // runs, so it searches each table once.
   const engineRuns: EngineRuns = new Map();
 
-  it.each(runs)("%s: no name, id, amount or date", async (_, picked) => {
-    const printed = (await checkExport(picked, "0.4.0", engineRuns)).join("\n");
-    const { words, phrases } = secrets(picked);
-    expect(printed).not.toMatch(/\d{4}-\d{2}-\d{2}/);
-    for (const phrase of phrases) expect(printed.includes(phrase), phrase).toBe(false);
-    // Words as printed, a grouped number ("40,085 bytes") kept whole. A whole number under 1,000 can't be told from the
-    // counts the summary prints by design, so a quantity of 0 or 1 isn't looked for.
-    const tokens = new Set(printed.split(/[^A-Za-z0-9_.,+-]+/).map((t) => t.replace(/[.,]+$/, "")));
-    for (const word of words) if (!/^\d{1,3}$/.test(word)) expect(tokens.has(word), word).toBe(false);
-    for (const [, answer] of printed.matchAll(/#\d+ [a-z_]+=([^,:]+)/g)) expect(PRINTABLE.has(answer!), answer).toBe(true);
-  });
+  // The first of ocf-04-to-fill's fixtures runs the searches over Larkspur's filled table that the fixtures after it
+  // share, so it alone takes seconds: about 2.4 alone, but 23 to 29 beside the other suites in the workspace's parallel
+  // run (pnpm -r test), past vite.config.ts's 20-second default. It has a timeout of its own, in its place in the order,
+  // so the searches stay its; every other run keeps the default.
+  const SEARCHES_FIRST = "ocf-04-to-fill/note-base-unreadable.ocf.json";
+  for (const [name, picked] of runs) {
+    it(
+      `${name}: no name, id, amount or date`,
+      async () => {
+        const printed = (await checkExport(picked, "0.4.0", engineRuns)).join("\n");
+        const { words, phrases } = secrets(picked);
+        expect(printed).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+        for (const phrase of phrases) expect(printed.includes(phrase), phrase).toBe(false);
+        // Words as printed, a grouped number ("40,085 bytes") kept whole. A whole number under 1,000 can't be told from
+        // the counts the summary prints by design, so a quantity of 0 or 1 isn't looked for.
+        const tokens = new Set(printed.split(/[^A-Za-z0-9_.,+-]+/).map((t) => t.replace(/[.,]+$/, "")));
+        for (const word of words) if (!/^\d{1,3}$/.test(word)) expect(tokens.has(word), word).toBe(false);
+        for (const [, answer] of printed.matchAll(/#\d+ [a-z_]+=([^,:]+)/g)) expect(PRINTABLE.has(answer!), answer).toBe(true);
+      },
+      name === SEARCHES_FIRST ? 60_000 : undefined,
+    );
+  }
 });
 
 // ---------- an OCX workbook (06g) ----------

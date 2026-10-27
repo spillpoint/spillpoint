@@ -26,6 +26,12 @@ const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("butto
 const openTab = (name: "Payouts" | "Cap table" | "Rounds") => fireEvent.click(screen.getByRole("tab", { name }));
 const panel = () => document.getElementById("panel-rounds")!;
 const card = (title: RegExp) => within(panel()).getByRole("heading", { level: 3, name: title }).closest("li")!;
+/**
+ * The two round trips' own timeout, cases 26 and 27: each imports a company, builds a round, saves, opens the file again
+ * and checks every breakpoint twice. Beside the other suites in the workspace's parallel run (pnpm -r test), they take
+ * 15 to 25 seconds on GitHub's runners, past vite.config.ts's 20-second default, which stays for every other test.
+ */
+const ROUND_TRIP_TIMEOUT = 60_000;
 const titles = () => within(panel()).getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
 const choose = (select: HTMLElement, label: string) => type(select, within(select).getByRole("option", { name: label }).getAttribute("value")!);
 
@@ -115,7 +121,7 @@ describe("Quillfern imported, a Series B added, saved and opened again (case 26)
     openTab("Rounds");
     expect(titles()).toEqual(["1. The cap table it starts from", "2. Series B Preferred, a priced round"]);
     expect(paid(await save())).toEqual(case26());
-  });
+  }, ROUND_TRIP_TIMEOUT);
 
   it("edits the starting table on the Cap table tab, and builds the round again on it", async () => {
     await importQuillfern();
@@ -254,6 +260,7 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
       await screen.findByText("Opened larkspur.json.");
       expect(paidByName(await save())).toEqual(case27());
     },
+    ROUND_TRIP_TIMEOUT,
   );
 });
 

@@ -178,6 +178,32 @@ describe("the schedule's fee calls, on Cash flows", () => {
   });
 });
 
+describe("the headline's terms line", () => {
+  const termsLine = () => document.querySelector(".headline__terms")!.textContent;
+
+  it("names case 29's schedule after the GP commitment, each step with its date", () => {
+    render(<App />);
+    pick("fund-29-fee-schedule");
+    expect(termsLine()).toBe("Carry 20%; pref 8%, full catch-up; GP commitment 1%, fee-free; management fee 2% a year from 15 Feb 2021, 1.5% from 15 Feb 2026, called quarterly.");
+  });
+
+  it("names case 30's, called half-yearly, its GP commitment paying its share of fees", async () => {
+    render(<App />);
+    await openFile(caseText("fund-30-fee-step-down"));
+    expect(termsLine()).toBe(
+      "Carry 20%; pref 8%, full catch-up; GP commitment 2%, paying its share of fees; management fee 2% a year from 1 Jul 2020, 1.5% from 1 Mar 2022, called half-yearly.",
+    );
+  });
+
+  it("names a schedule of one step by its start alone, and adds nothing for fees entered as calls", async () => {
+    render(<App />);
+    await openFile(caseText("fund-31-fee-schedule-classes-closes"));
+    expect(termsLine()).toBe("Carry 20%; no pref; no GP commitment; management fee 2% a year from 1 Jan 2022, called quarterly. Anchor: carry 15%, fees at 1%. Friends and family: carry 0%, no fees.");
+    pick("fund-26-closes-and-classes");
+    expect(termsLine()).toBe("Carry 20%; no pref; no GP commitment. Friends and family: carry 0%, no fees.");
+  });
+});
+
 describe("a Fee row with a schedule", () => {
   it("is a problem under each of case 26's two Fee rows once it has a schedule, and Fee isn't offered for the others", () => {
     render(<App />);
