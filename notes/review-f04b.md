@@ -275,7 +275,8 @@ Six commits on your defect and your answers, with the fund cases' lock lifted on
 | `3d143f8` | the engine: the refusal, fresh fee calls, `Split.lpMultiple` back to `D`, and their tests |
 | `0b06c01` | the page: the line under the equalization card |
 | `602b9d2` | fund-32's new fixture, its `expected.json` and `DERIVATION.md` |
-| the last | this section |
+| `69ec1a1` | this section |
+| after your second check | fund-32's two derivation lines and one `about`, and this section's last part |
 
 **Your defect: `feeCalls` handed back what it kept.**
 - **Now:** each `feeCalls(fund)` is a new list of new calls, each with a new `byLp` list, new `LpFee`s and new `D`s. The waterfall and the equalization run on calls the engine keeps and never hands out.
@@ -366,14 +367,37 @@ Six commits on your defect and your answers, with the fund cases' lock lifted on
 **Carried to f04c:**
 - the two missing-rate lines in answer 2
 - **the page's words for `call_without_payers` at `terms.management_fee`.** Today's say "no LP in the fund on this date pays this call", which is about an entered call. The guard keeps the page from meeting the new one until f04c.
+- **the engine's message for it,** which also reads as an entered call's: "no LP in the fund at this call's date would pay it…". Messages aren't stable names, so it gets its own, beside the page's words (your second check).
+- **in f04c's first commit, a known edge in `ASSUMPTIONS.md`:** the `D` values a result hands back can be the engine's own, and writing into one is unsupported and can change later answers (your second check, answer 1).
 
-**New open questions:**
+**New open questions,** both answered after your second check (below):
 1. **A `D`'s digits** (above): leave it, since decimal.js says they're read-only, or have the API copy or freeze the `D`s it hands back?
 2. **Four lines in `fund-32-fees-refused` are stale or damaged.** I left them, as you said only the row and the counts change. Fix them at the next unlock?
    - **The bases list:** the derivation's line for case 31 doesn't list the new fixture.
    - **Stage 5:** the derivation's list of checks doesn't name the new one.
    - **Its last line,** "Every refusal here is the one `cases-fees.json` gives", isn't true of the thirty-seventh, which is from your review.
    - **`fee-commitments-not-the-lps-total.json`'s `about`** reads "The schedule's commitments ,000,000, not the two LPs' ,000,000." The shell ate "$24" and "$25" when I wrote it in f04a. My mistake. Its change and its refusal are right.
+
+**After your second check (2026-10-27).** One more commit, with the lock still lifted on your machine.
+- **`DERIVATION.md`'s two lines,** in your words:
+  - **The bases:** case 31's line now ends "the equalization rate, and a schedule no listed LP pays."
+  - **Stage 5:** "then the schedule, refused when no listed LP pays it" now comes before each entered call's payers.
+- **`fee-commitments-not-the-lps-total.json`'s `about`:** "The schedule's commitments $24,000,000, not the two LPs' $25,000,000." It was written from Python, so no shell touched the dollar signs.
+- **How they got there:** both were made in scratch and checked there, then you ran the two `cp`s. Both files are byte for byte the scratch copies.
+  - **The fixture** reads back with both amounts, its keys and change are as before, and the reference gives the refusal in `expected.json`.
+  - **The derivation's 37 rows** still each name their fixture's base and its refusal.
+- **The diff:** `DERIVATION.md` changed by those two lines only, the fixture by its `about` only. `expected.json` is unchanged, still `2424f9bf…` as above. Nothing else in `packages/fund/cases` changed.
+- **Checked:** `generate.py --check` matches all 32 folders. The fund package's tests pass (1,310, 9 skipped), and so does the fund reference (92).
+- **Left as it is,** as you said: the derivation's last line. Your `cases-fees.json` now has the thirty-seventh refusal.
+
+| File | sha256 |
+|---|---|
+| `fund-32-fees-refused/DERIVATION.md` | `4278da6cae4c21e86904c9103bf5104d296c33e589f4450c3bc0f2591008f434` (replaces `9232a169…` above) |
+| `fund-32-fees-refused/fixtures/fee-commitments-not-the-lps-total.json` | `ed020bd58769d51c6d0c01f49aa5b2ad7acbb4b6444d813427e1984e04b0479f` |
+
+**Your answers to the two new questions:**
+1. **A `D`'s digits:** leave them. decimal.js documents a Decimal's properties as read-only, and copying or freezing every `D` a result hands back would slow every split. The known edge goes into f04c's first commit (above).
+2. **The four lines:** three fixed, above. The derivation's last line stays.
 
 ## How to check it by behavior
 
@@ -415,7 +439,7 @@ pnpm test
 
 ## Open questions
 
-All five were answered on 2026-10-27 (§11), which has two new ones.
+All five were answered on 2026-10-27 (§11), which has two new ones. Both of those were answered after your second check (the end of §11).
 
 1. **`Split.lpMultiple` as `D | null` (FA47, §1).**
    - **The case:** FA40 lets a fund read with the LPs having paid in nothing: a schedule whose listed LPs all pay no fees, and no investment or expense call. Its multiple would be 0 over 0.

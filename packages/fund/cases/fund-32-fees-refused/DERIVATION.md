@@ -5,14 +5,14 @@ Thirty-seven small changes, one or more for each line of F32 and for the order o
 **The bases:**
 - **Case 29,** no listed LPs: the schedule's shape, `start`, `frequency`, `steps`, each step's `rate` and `from`, and `commitments` without LPs.
 - **Case 30,** two LPs, half-yearly, with a step: the steps' order, an entered fee call beside the schedule, and `commitments` against the LPs' total.
-- **Case 31,** classes and a later close: `fee_rate` beside the schedule, a class's fee rate with no fee terms, and the equalization rate.
+- **Case 31,** classes and a later close: `fee_rate` beside the schedule, a class's fee rate with no fee terms, the equalization rate, and a schedule no listed LP pays.
 
 **The order of checks** (F28, with the schedule in it, F32):
 1. **Unsupported terms,** in the file's order: the schedule's keys among each term's own keys, its steps' keys at the steps' place among them.
 2. **The fields.** Within `terms`, after `fee_rate` and `equalization_rate`: the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, its rate, then its `from`, then `commitments`); then `fee_rate_with_schedule`; then the classes. Then each cash flow's own fields.
 3. **The cash flows:** first `fee_call_with_schedule`, at the first such call in the input's order; then F18's checks against each other and D, the schedule's calls among the calls.
 4. **The LPs.**
-5. **What the LPs need of the rest:** `equalization_rate` when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing without listed LPs or not their total; then each entered call for its payers.
+5. **What the LPs need of the rest:** `equalization_rate` when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing without listed LPs or not their total; then the schedule, refused when no listed LP pays it; then each entered call for its payers.
 
 The new input terms are `fee_rate_with_schedule`, `fee_call_with_schedule` and `fee_commitments_mismatch` (F18, F32).
 
