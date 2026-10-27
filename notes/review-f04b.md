@@ -4,7 +4,7 @@ Branch `f04b-fund-fees-engine`, from main after #123. The second step of spillpo
 
 One PR, not split: about 600 lines of engine, 340 of its tests, and 140 on the page.
 
-**Nothing in `packages/fund/reference`, `apps/dashboard`, any cases, `reference/`, `packages/engine`, `.github` or `.claude` changed:** `git diff --stat main --` over those prints nothing. No case file changed, so this PR doesn't need the cases label.
+**Nothing in `packages/fund/reference`, `apps/dashboard`, any cases, `reference/`, `packages/engine`, `.github` or `.claude` changed:** `git diff --stat main --` over those prints nothing. No case file changed, so this PR doesn't need the cases label. *Until the fix-up (§11): it adds the reference's new refusal and one fund-32 fixture, so the PR now needs the cases label.*
 
 **Every case now runs on the engine.** The engine's pending list is empty, so cases 25, 26 and 29 to 32 run through its tests. That covers every amount within FA15 and equal to the cent, every breakpoint with its reasons, every fee call and LP fee, every equalization amount with the back fees, and the 36 fund-32 refusals. The page's list keeps only 29 to 32.
 
@@ -14,7 +14,7 @@ One PR, not split: about 600 lines of engine, 340 of its tests, and 140 on the p
 - **Against main:** a fund with no fee call before a later close gives main's output digit for digit.
 - **Planted errors:** the tests caught all twelve.
 
-**One question needs you first:** open question 1, `Split.lpMultiple` as `D | null`.
+**One question needs you first:** open question 1, `Split.lpMultiple` as `D | null`. *Answered on 2026-10-27, with the other four: a schedule no listed LP pays is refused, and FA47 is withdrawn (§11).*
 
 *§1, the names, came first, in its own commit (`7d60479`), before any code used them. The rest was added once the engine and the page were built.*
 
@@ -26,6 +26,7 @@ One PR, not split: about 600 lines of engine, 340 of its tests, and 140 on the p
 | `0924993` | FA47, FA48 and one known edge (§8) |
 | `0a2e636` | the page: the schedule's guard and the back fees on the equalization card (§9) |
 | the last | the rest of this note |
+| the fix-up | your defect and your answers, in six commits (§11) |
 
 ## 1. The names, proposed
 
@@ -60,7 +61,7 @@ Stable from 0.4.0 once you settle them. Where the idea is one the engine already
 - `fee_call_with_schedule`, at the first entered fee call
 - `fee_commitments_mismatch`, at `terms.management_fee.commitments`
 
-**One more, needed by FA40 (open question 1):**
+**One more, needed by FA40 (open question 1):** *withdrawn in the fix-up (§11). A schedule no listed LP pays is refused, so `Split.lpMultiple` stays `D`.*
 
 | Name | What it is |
 |---|---|
@@ -235,7 +236,7 @@ Scripts in my scratch folder, not in the repo, as in f03b:
 - **The pending list:** cases 25 and 26 come off, so the page's case tests run them again. The chart, the LPs', classes', clawback and equalization cards are all held to their new `expected.json`. 29 to 32 stay on until f04c.
 - **Two lines the new types need:**
   - The blank fund's terms gain `managementFee: null`.
-  - The summary's LP multiple shows "—" if it's ever null, which the guard keeps the page from meeting.
+  - The summary's LP multiple shows "—" if it's ever null, which the guard keeps the page from meeting. *Out again in the fix-up, with FA47 (§11).*
 - **Case 26's figures in the page's tests are F29's:**
   - **The equalization card and its CSV.**
   - **The LPs' card's CSV:** Alder's paid-in is $2,700,000.00 and Birchwood's $1,350,000.00, up by Birchwood's back fees, shared by commitment.
@@ -262,6 +263,117 @@ Nothing in `.github/workflows/` or `.claude/` changed. `.claude/launch.json` is 
 | fund reference | 91 |
 
 `generate.py --check` matches all 32 fund case folders.
+
+## 11. The fix-up, after your checks (2026-10-27)
+
+Six commits on your defect and your answers, with the fund cases' lock lifted on your machine for one fixture:
+
+| Commit | What |
+|---|---|
+| `5c7e7de` | `SPEC.md`, `ASSUMPTIONS.md`, `STABLE.md` and the README: the refusal, FA40, FA47 withdrawn, FC14, FA48 |
+| `957effe` | the reference: the refusal in stage 5, with a unit test |
+| `3d143f8` | the engine: the refusal, fresh fee calls, `Split.lpMultiple` back to `D`, and their tests |
+| `0b06c01` | the page: the line under the equalization card |
+| `602b9d2` | fund-32's new fixture, its `expected.json` and `DERIVATION.md` |
+| the last | this section |
+
+**Your defect: `feeCalls` handed back what it kept.**
+- **Now:** each `feeCalls(fund)` is a new list of new calls, each with a new `byLp` list, new `LpFee`s and new `D`s. The waterfall and the equalization run on calls the engine keeps and never hands out.
+- **The tests,** in `cache.test.ts`, on case 31:
+  - **What's edited:** every level of what `feeCalls` returns. The list gains and loses calls; the first call's dates and amounts change; an LP's name and fee change; a `byLp` gains, loses and reverses; a `D`'s digits change.
+  - **What's checked:** the next `feeCalls`, `splitAt` at three X's and final, `findBreakpoints` and `equalization` are as on a fresh read. That holds whether `feeCalls` was asked for before the first split or after.
+  - **A third test** checks that each `feeCalls` is a new list of new calls.
+  - **On the PR as it was,** all three fail.
+- **The other three functions, checked in scratch:**
+  - **What I did:** edited every object and list that `splitAt`, `findBreakpoints`, `equalization` and `feeCalls` return, on all 28 cases with an `inputs.json`, before the first split and after.
+  - **The result:** every later answer was as on a fresh read. On the PR as it was, cases 29 to 31 differed.
+- **One level deeper, a `D`'s own digits, is new open question 1.** decimal.js says they're read-only, and the rest of the API shares its `D`s. `splitAt` hands back the engine's own zero, so `split.gpCommitmentPaidIn.d[0] = 7` changes every later zero, in any fund. Only `feeCalls` copies its `D`s.
+
+**Answer 1: a schedule no listed LP pays is refused.**
+- **The rule** is your line, in F32 and in F28's: "A schedule no listed LP pays, every one in a class at a fee rate of 0: `call_without_payers` at `terms.management_fee`, as an entered fee call nobody pays is (F28)."
+  - **Its place:** stage 5, after the commitments and before each entered call's payers.
+  - **Where it's written:** F28's list of stages, the assumptions' F28 and F32 rows, the reference and the engine.
+- **Only the fee weights count,** not who is in on each call's date, since a schedule's calls are every LP's own fee (F29). Any such schedule is refused, even one that calls nothing yet because it starts after D.
+- **What still reads:**
+  - one LP paying: on the fund's terms, in a class at a fee rate above 0, or in a class with no fee rate of its own
+  - a schedule without listed LPs, on its `commitments`, as before
+- **FA40** says only that a period whose every day is at a rate of 0 isn't a call. It adds that no call is $0, because of the refusal.
+- **FA38 and FA42:**
+  - **FA38's last line** is back to "the split's own `lpMultiple` is always a number", now with a schedule's calls included.
+  - **FA42** no longer says `call_without_payers` is only about entered calls.
+- **FA47 is withdrawn,** and `Split.lpMultiple` is `D` again.
+  - **Its row stays,** since IDs are never reused, with a new status in the legend: "Withdrawn (f04b review)".
+  - **Back to main's:** the engine's type and line, the split test, the page's summary, and the README's `lpMultiple` line.
+  - **The null sections** in `STABLE.md` and the README give `Equalization.rate` alone.
+- **`SPEC.md`'s decisions** gain one line under 2026-10-25: a schedule no listed LP pays is refused, so no call is $0 and the LPs always pay something in.
+- **The tests:**
+  - **Two new ones,** the reference's unit test and the engine's in `read.test.ts`, check the refusal, what still reads, and stage 5's order. Each fails with the refusal taken out.
+  - **Gone:** `fees.test.ts`'s test of a $0 call.
+- **FA48 gains one sentence,** on a hand-built fund, which `readFund` never checks. There such a schedule calls $0 a period. With no other call, the split's multiple isn't a number (decimal.js's Infinity). A hand-built fund with no calls at all gives the same, on main too.
+
+**The fixture, `schedule-without-payers`,** is as you gave it: case 31 with Alder Endowment in Friends and family and Anchor's fee rate set to 0. It's refused `input`, `call_without_payers`, `terms.management_fee`.
+- **Written by shell, with your OK,** since this session kept the deny it loaded:
+  - **The fixture,** by a script, in the other 36's shape. The script first checked that its writer gives each of the 36 back byte for byte.
+  - **`expected.json`,** by `generate.py`.
+  - **`DERIVATION.md`,** edited in scratch and checked there: each of its 37 rows names its fixture's base and the refusal `expected.json` gives. The session refused the copy in, so you ran the `cp`. The file is byte for byte the scratch copy.
+- **The diff:**
+  - `expected.json` changed only by the new entry.
+  - `DERIVATION.md` changed only by the new row and "Thirty-six" to "Thirty-seven".
+  - Nothing else in `packages/fund/cases` changed. **So this PR now needs the cases label.**
+- **"37 wherever 36 is counted":** `SPEC.md`'s case 32 line, FC14 and the derivation's first line. `cases.test.ts` doesn't count the fixtures. It checks that each has a refusal in `expected.json`, and now checks 37, so it's unchanged.
+
+| File | sha256 |
+|---|---|
+| `fund-32-fees-refused/expected.json` | `2424f9bf1cc8a80a5bb65b851d1d877c799fba4c759cae9471ee8e7f94cf5b4f` |
+| `fund-32-fees-refused/DERIVATION.md` | `9232a169db99b28bb0a2307c99c0d82e939abf4b9dcb9829453dead5c9d3ee45` |
+| `fund-32-fees-refused/fixtures/schedule-without-payers.json` | `c473a9e3362609e532f5e031774ceae2ceaaa7efc84fddf838188c1b408ff6e5` |
+
+**Answer 4, the line under the card,** is now in your words: "Equalization is outside the waterfall: at each close it moves capital and interest between the LPs, and back fees to the manager. It changes nothing above."
+- **Also changed:** the page's test, and `notes/plan-fund-page.md`, marked "From f04b".
+- **Checked** on the built page, on case 26's card, with no console errors.
+
+**Outside your list:**
+- **The reference's tests cited FA47** for a later rate's rise, in two comments and a docstring, since f04a. FA46 is that rule, so they now cite it.
+- **`.claude/settings.json`** is still yours, uncommitted. Nothing in `.github/workflows/` or `.claude/` changed.
+
+**Checked again, here.** CI's commands pass: `pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm test:reference`.
+
+| Suite | Tests |
+|---|---|
+| fund package | 1,310 passed, 9 skipped (1,305 and 9 before the fix-up) |
+| fund page | 504, unchanged |
+| engine | 3,177, unchanged |
+| main page | 680, unchanged |
+| engine reference | 73 |
+| fund reference | 92 (91 before) |
+
+`generate.py --check` matches all 32 fund case folders.
+
+**Against the reference again,** with f04b's scripts (§7) and the new reference:
+- **f04b's 1,200 funds:** no differences. 1,052 read and 148 are refused the same way. That's 9 more refused than before: the schedules no listed LP pays, now refused at the schedule.
+- **1,200 new funds,** 58 of them schedule funds with every listed LP made fee-free: no differences. 993 read and 207 are refused the same way, 55 of them at the schedule.
+- **5,856 one-fault inputs:** each refused with the same kind, term and path, 157 of them at the schedule. The 909 that still read give the same output.
+
+**Your answers, for the record:**
+1. **FA47:** refuse such a fund with `call_without_payers`, and with it any schedule no listed LP pays. FA47 goes.
+2. **The page's words for a missing equalization rate** change in f04c:
+   - On Terms: "Needed: an investment or expense call comes before a later close. Write 0 for none."
+   - When a file opens: "…it's needed when an investment or expense call comes before a later close."
+3. **The back fees sentence:** fine.
+4. **The line under the card:** reworded now, above.
+5. **`STABLE.md`'s new sections:** fine in both, as long as the README has them too, which it does.
+
+**Carried to f04c:**
+- the two missing-rate lines in answer 2
+- **the page's words for `call_without_payers` at `terms.management_fee`.** Today's say "no LP in the fund on this date pays this call", which is about an entered call. The guard keeps the page from meeting the new one until f04c.
+
+**New open questions:**
+1. **A `D`'s digits** (above): leave it, since decimal.js says they're read-only, or have the API copy or freeze the `D`s it hands back?
+2. **Four lines in `fund-32-fees-refused` are stale or damaged.** I left them, as you said only the row and the counts change. Fix them at the next unlock?
+   - **The bases list:** the derivation's line for case 31 doesn't list the new fixture.
+   - **Stage 5:** the derivation's list of checks doesn't name the new one.
+   - **Its last line,** "Every refusal here is the one `cases-fees.json` gives", isn't true of the thirty-seventh, which is from your review.
+   - **`fee-commitments-not-the-lps-total.json`'s `about`** reads "The schedule's commitments ,000,000, not the two LPs' ,000,000." The shell ate "$24" and "$25" when I wrote it in f04a. My mistake. Its change and its refusal are right.
 
 ## How to check it by behavior
 
@@ -296,12 +408,14 @@ pnpm test
 
 ## Assumptions added
 
-- **FA47:** the split's own LP multiple is null when the LPs have paid in nothing, as FA38 has an account's. It's New and needs your answer (open question 1).
-- **FA48:** a `Fund` built by hand without `managementFee` has no schedule, F29 still applying to its entered fee calls. An entered fee call nobody in pays, which `readFund` refuses, counts as entered rather than dividing by nothing.
+- **FA47:** the split's own LP multiple is null when the LPs have paid in nothing, as FA38 has an account's. It's New and needs your answer (open question 1). *Withdrawn in the fix-up (§11).*
+- **FA48:** a `Fund` built by hand without `managementFee` has no schedule, F29 still applying to its entered fee calls. An entered fee call nobody in pays, which `readFund` refuses, counts as entered rather than dividing by nothing. *The fix-up adds what a hand-built schedule nobody pays gives (§11).*
 - **A known edge:** the schedule's whole-number keys (§8).
 - **FA39 to FA46, FC13 and FC14:** "Confirmed (f04a review)".
 
 ## Open questions
+
+All five were answered on 2026-10-27 (§11), which has two new ones.
 
 1. **`Split.lpMultiple` as `D | null` (FA47, §1).**
    - **The case:** FA40 lets a fund read with the LPs having paid in nothing: a schedule whose listed LPs all pay no fees, and no investment or expense call. Its multiple would be 0 over 0.
