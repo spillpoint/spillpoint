@@ -8,7 +8,8 @@ Branch `f04d-fund-release-0.4.0`, from main after #125. The release step of spil
 |---|---|
 | `6636ee3` | the first commit: the headline's terms line names the schedule (§1) |
 | `925264f` | the release: the version, the README, the release note, the repo README and `CLAUDE.md` (§2) |
-| the last | this note |
+| `94bcb12` | this note |
+| the last | outside the fund rule, with your OK: the main page's two round-trip tests get a timeout of their own (§6) |
 
 ## 1. The first commit (your answer 3)
 
@@ -135,6 +136,36 @@ What CI runs, `pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm
 ## 5. CI and permissions (hard rule 9)
 
 Nothing in `.github/workflows/` or `.claude/`.
+
+## 6. Outside the fund rule, with your OK: the main page's two round-trip tests
+
+**One change in `apps/dashboard`, to one test file,** because main's CI is red and f04d's would be too. `apps/dashboard/test/add-a-round.test.tsx`'s two round trips, case 26's ("Quillfern imported, …") and case 27's ("Larkspur imported, …"), take a timeout of 60 seconds as `it()`'s third argument.
+- **The comment says why:** each imports a company, builds a round, saves, opens the file again and checks every breakpoint twice. Beside the other suites in the workspace's parallel run they take 15 to 25 seconds on GitHub's runners.
+- **Nothing else in `apps/dashboard` changed:** no product code, no other test, no workflow. `vite.config.ts`'s 20-second default stays for every other test.
+- **Not in the package:** `apps/` isn't published, so the tarball's shasum is unchanged, `77592c7bb036e8b91a1d0f40530b20a8767a1eda`.
+
+**Your timings on GitHub:** case 27's round trip ran 21.0 s on #125's first PR run. On main after #125 merged, it timed out on both jobs on the first try, and on test-node-22 again on the re-run, the last at 23.4 s. Case 26's took 15.5 s.
+
+**Here, in the workspace's parallel run:** a full `pnpm test` doesn't print each test's time. So I ran the same four suites the same way, with `pnpm -r exec vitest run --reporter=verbose`, twice:
+
+| Test in `add-a-round.test.tsx` | Run 1 | Run 2 |
+|---|---:|---:|
+| case 26's round trip | 23.4 s | 23.5 s |
+| case 27's round trip | 10.3 s | 7.5 s |
+| case 26's "edits the starting table on the Cap table tab, …" | 14.8 s | 19.0 s |
+| case 26's "keeps the starting table first, …" | 4.6 s | 4.8 s |
+
+So case 26's round trip is the slower one here, and both runs would have timed it out at 20 s. Both pass at 60.
+
+**Two things for you, both left as they are:**
+- **"Edits the starting table"** has no timeout of its own, as you said. It came to 19.0 s in run 2, a second under the default.
+- **`ocf-check.test.ts`'s "ocf-04-to-fill/note-base-unreadable.ocf.json: no name, id, amount or date"** timed out at 20 s in three of my five parallel runs here: 23.6, 23.4 and 29.3 s. It did once in f04c's run too. Your message doesn't have it on GitHub, so I didn't touch it.
+
+**Three full `pnpm test` runs here, with the change:**
+- **Run 1** failed case 26's round trip inside it, not at its timeout: after 17.3 s, `importQuillfern`'s wait for the import's "Importing" panel ran out. That wait is the page's 15-second `asyncUtilTimeout`, so the 60-second timeout wouldn't have helped there.
+- **Run 2** passed all of every suite.
+- **Run 3** failed only `ocf-check`'s test, above.
+- **Every other suite** passed in all three: fund package 1,310 (9 skipped), engine 3,177, fund page 600.
 
 ## How to check it on your machine
 
