@@ -598,6 +598,7 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
 
 **Nothing on Payouts changes but one line (mine):** the split, the chart, the breakpoints and every card run on the schedule's calls as on entered ones (F31).
 - **The summary under the picker** counts the schedule's calls among the calls paid in, as it counts the cash flows: "This fund: $34.2M paid in over 25 calls (22 from its fee schedule) and $24M distributed before X." for case 29. Without them the paid-in it gives would leave out the fees.
+- **From f04d, the headline's terms line names the schedule** (f04c review, answer 3), after the GP commitment: "management fee 2% a year from 15 Feb 2021, 1.5% from 15 Feb 2026, called quarterly". With one step, "management fee 2% a year from 15 Feb 2021, called quarterly". "Called" reads as the Terms tab's picker does: quarterly, half-yearly or yearly. Fees entered as calls add nothing.
 
 ### Saving and opening
 

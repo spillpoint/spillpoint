@@ -548,6 +548,9 @@ export function summaryText(fund: Fund, edited = false): string {
   return `This fund${edited ? ", with your changes" : ""}: ${listed(parts)}. X ${fund.final ? "is" : "isn't"} its last distribution.`;
 }
 
+/** How often a schedule's fees are called, as the Terms tab's picker says it. */
+const CALLED = { quarterly: "quarterly", semiannual: "half-yearly", annual: "yearly" } as const;
+
 /** "a, b and c". */
 function listed(items: string[]): string {
   return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
@@ -560,7 +563,9 @@ function carryText(carry: readonly CarryStep[]): string {
 
 /**
  * The fund's terms in one line: "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free."
- * Then each class with LPs, by what it changes (F22): "Friends and family: carry 0%, no fees."
+ * With a management fee schedule (F30) it's named after the GP commitment: "management fee 2% a year from 15 Feb 2021,
+ * 1.5% from 15 Feb 2026, called quarterly". Fees entered as calls add nothing. Then each class with LPs, by what it
+ * changes (F22): "Friends and family: carry 0%, no fees."
  */
 function termsText(fund: Fund): string {
   const t = fund.terms;
@@ -572,12 +577,16 @@ function termsText(fund: Fund): string {
   const gp = !g
     ? "no GP commitment"
     : `GP commitment ${percentText(g.share)}, ${g.paysFees ? "paying its share of fees" : "fee-free"}${g.paysExpenses ? "" : ", not paying its share of expenses"}`;
+  const m = t.managementFee;
+  const fee = m
+    ? [`management fee ${m.steps.map((s) => `${percentText(s.rate)}${s.from === null ? ` a year from ${dateText(m.start)}` : ` from ${dateText(s.from)}`}`).join(", ")}, called ${CALLED[m.frequency]}`]
+    : [];
   const classes = (t.lpClasses ?? []).filter((c) => fund.lps.some((lp) => lp.class === c.name));
   const classText = (c: (typeof classes)[number]) => {
     const parts = [...(c.carry ? [`carry ${carryText(c.carry)}`] : []), ...(c.feeRate === null ? [] : [c.feeRate.isZero() ? "no fees" : `fees at ${percentText(c.feeRate)}`])];
     return `${c.name}: ${parts.length > 0 ? parts.join(", ") : "the fund's terms"}.`;
   };
-  return [`${carry}; ${pref}; ${gp}.`, ...classes.map(classText)].join(" ");
+  return [`${[carry, pref, gp, ...fee].join("; ")}.`, ...classes.map(classText)].join(" ");
 }
 
 /**
