@@ -1,6 +1,6 @@
 # spillpoint fund waterfall: spec
 
-The fund-level waterfall, `spillpoint-fund`. Each rule has a code (F1, F2, …) and a default. Jordan settled F1 to F18 on 2026-10-12 (S0), F19 to F21, the LPs, on 2026-10-18 for 0.2.0 (S1), F22 to F28, LPs in classes and later closes, on 2026-10-23 for 0.3.0 (S2), and F29 to F32, management fees, on 2026-10-25 for 0.4.0 (S3); his decisions are listed at the end. `ASSUMPTIONS.md` has each rule's default in one table, the choices these rules don't settle (FA1 onward), the case-file conventions (FC1 onward), and each rule's later work.
+The fund-level waterfall, `spillpoint-fund`. Each rule has a code (F1, F2, …) and a default. Jordan settled F1 to F18 on 2026-10-12 (S0), F19 to F21, the LPs, on 2026-10-18 for 0.2.0 (S1), F22 to F28, LPs in classes and later closes, on 2026-10-23 for 0.3.0 (S2), F29 to F32, management fees, on 2026-10-25 for 0.4.0 (S3), and F33 to F37, investments and carry deal by deal, on 2026-10-27 for 0.5.0 (S4); his decisions are listed at the end. `ASSUMPTIONS.md` has each rule's default in one table, the choices these rules don't settle (FA1 onward), the case-file conventions (FC1 onward), and each rule's later work.
 
 ## What it answers
 
@@ -17,6 +17,9 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
 - for management fees (F29 to F32):
   - for a GP who hasn't entered fee calls: from "2% of commitments, called quarterly, stepping down to 1.5% from year six", every fee call to D, each LP's share of each, and the split with them in
   - for a fund with a later close: what each joining LP owes in fees from the initial close, paid to the manager, beside the capital and interest it pays the LPs already in
+- for investments and carry deal by deal (F33 to F37):
+  - for a GP whose fund pays carry deal by deal: how a distribution from one investment splits, when the LPs get back first only what's due on the investments exited or written off so far, not all their paid-in capital. So how much carry that pays the GP earlier than the whole fund would, and what the GP owes back at the end if later investments don't cover it.
+  - for any fund: its investments, each with its cost, how much of it has been exited or written off, and what it has returned
 
 ## Inputs
 
@@ -103,11 +106,46 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
   - **`frequency`:** `"quarterly"` (the default), `"semiannual"` or `"annual"`. Periods are calendar quarters, calendar half-years (January to June, July to December) or calendar years.
   - **`steps`:** the annual rate on commitments, the first from `start`, and each after it from its `from` date. A rate of `"0"` ends fees from its date. The first rate is above 0: a fee holiday is a later `start`.
   - **`commitments`:** the LPs' total commitments, the fee's base, for a fund that doesn't list its LPs. A fund that lists them uses their commitments; `commitments`, if given, must be their total.
+- **From 0.5.0, investments and carry deal by deal** (F33 to F37): one more term, the fund's investments, a new cash flow, two fields on a distribution, and X's source.
+
+  ```json
+  {
+    "terms": { "carry": "0.20", "carry_basis": "deal_by_deal" },
+    "investments": [
+      { "name": "Alder Robotics", "checks": [{ "date": "2020-02-01", "amount": "3000000" }] },
+      { "name": "Birch Health", "checks": [{ "date": "2020-03-01", "amount": "3000000" }] },
+      { "name": "Cedar AI", "checks": [
+        { "date": "2021-02-01", "amount": "2500000" },
+        { "date": "2022-05-01", "amount": "1500000" }
+      ] }
+    ],
+    "cash_flows": [
+      { "date": "2022-06-30", "type": "distribution", "amount": "9000000", "investment": "Alder Robotics" },
+      { "date": "2023-03-31", "type": "distribution", "amount": "1500000", "investment": "Cedar AI", "share": "0.4" },
+      { "date": "2023-09-30", "type": "write_off", "investment": "Birch Health" }
+    ],
+    "distribution_from": { "investment": "Cedar AI", "share": "1" }
+  }
+  ```
+
+  - **`carry_basis`:** `"whole_fund"`, the default, F1 as before, or `"deal_by_deal"` (F35).
+  - **`investments`:** optional, a list in the order the GP shows them.
+    - **`name`:** text, not blank. No two investments share a name, compared exactly as written.
+    - **`checks`:** one or more, each with a `date` and an `amount` (an exact number above 0). A follow-on is another check.
+    - **A check is the fund's cost,** a whole-fund amount with the GP commitment's part included, as calls are (F2).
+  - **On a distribution:**
+    - **`investment`:** the investment it comes from.
+    - **`share`:** how much of what's left of that investment it sells, above 0 and at most 1, `"1"` by default.
+    - **Whole fund:** both are optional and only fill the investments table.
+    - **Deal by deal:** every distribution names an investment.
+  - **`"type": "write_off"`:** a cash flow of its own, with a `date` and an `investment` and no amount. It ends what's left of the investment at its date. Nothing is distributed.
+  - **`distribution_from`:** X's investment, and its share (`"1"` by default). Needed deal by deal. On the whole fund it's optional and changes nothing.
+  - **Checks aren't calls.** Checks are what the fund paid for its investments; calls are what the partners paid in. They aren't matched one to one, but the cost made by any check's date can't be more than the investment calls up to that date (F37).
 - **Numbers** are exact strings, as in spillpoint. **Dates** are ISO.
 
 ## The rules
 
-**F1, structure.** European (whole-fund), cumulative. Every distribution, earlier ones included, runs through the same tiers in date order, against the fund's running balances. Carry on interim distributions is paid as they're made; F12 trues it up at the end.
+**F1, structure.** European (whole-fund), cumulative. Every distribution, earlier ones included, runs through the same tiers in date order, against the fund's running balances. Carry on interim distributions is paid as they're made; F12 trues it up at the end. From 0.5.0 this is the default carry basis, `"whole_fund"`; a fund can pay carry deal by deal instead (F34, F35).
 
 **F2, whole-fund amounts.** Calls and distributions are totals for all partners, the GP commitment included.
 
@@ -116,9 +154,9 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
 - It gets g of every distribution, its share of the investments, outside the tiers, with no carry.
 - It's reported as its own line, never mixed with carry.
 
-**F4, order of events.** On one date, calls come before distributions, so capital called that day is returned first (and accrues no pref). Same-day distributions go in the order listed. D must be on or after every cash flow. Refused: no calls at all; a distribution before the first call.
+**F4, order of events.** On one date, calls come before distributions, so capital called that day is returned first (and accrues no pref). Same-day distributions go in the order listed. D must be on or after every cash flow. Refused: no calls at all; a distribution before the first call. From 0.5.0 (F33), widened for investments: on one date, calls, then checks, then write-offs, then distributions in the order listed; D must be on or after every check and every write-off too.
 
-**F5, tier 1, capital.** LPs get back all their paid-in capital to date first: investment, fee and expense calls alike.
+**F5, tier 1, capital.** LPs get back all their paid-in capital to date first: investment, fee and expense calls alike. From 0.5.0, deal by deal (F35), only what's due on the investments exited or written off so far: their cost, and their share of the fees and expenses.
 
 **F6, tier 2, pref** (default none). Rate r, accrued Actual/365 on the LPs' unreturned capital, from each call's actual date to the distribution's date, across the whole fund (Jordan, 2026-10-12). Within a distribution, capital comes before pref.
 
@@ -162,7 +200,7 @@ When no capital is called after the LPs first have all their capital back, the e
 
 When final, there are also breakpoints where the clawback owed bends:
 - `clawback_cleared`: "from here the GP has earned all the carry it was paid earlier"
-- `clawback_starts`: "from here the GP has been paid more carry than it has earned". v1's terms can't produce it (FA9); it's kept for later terms.
+- `clawback_starts`: "from here the GP has been paid more carry than it has earned". v1's terms can't produce it (FA9); it's kept for later terms. From 0.5.0, deal by deal can, with capital called and not invested by the end (FA49).
 - `clawback_changes`: where the clawback starts to fall, stops falling, or falls faster or more slowly.
   - **When a tier of the fund-total run ending causes it,** the reason says so: "the clawback owed starts to fall: on the fund's totals, LPs have their pref".
   - **When one of this distribution's tiers causes it,** that tier's own reason sits beside it.
@@ -180,6 +218,7 @@ One X can carry several reasons: capital returned and clawback cleared together,
 - **Unsupported,** a term v1 doesn't model:
   - any key under `terms` (or inside a term) that isn't listed above, named by the key itself (`hurdle_irr`)
   - `compounded_pref`, for any `compounding` but `"simple"`
+  - `deal_by_deal_pref`, a pref deal by deal (F37)
 - **Input:**
   - `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share, a zero amount or pref rate, or a catch-up share above 1.
   - `bad_date`
@@ -197,6 +236,7 @@ One X can carry several reasons: capital returned and clawback cleared together,
   - `lp_name_repeated` (F21)
   - `lp_class_name_repeated`, `lp_class_unknown`, `lp_close_after_distribution` and `call_without_payers` (F28)
   - `fee_rate_with_schedule`, `fee_call_with_schedule` and `fee_commitments_mismatch` (F32)
+  - `investment_name_repeated`, `investment_unknown`, `investment_not_made` and `investments_exceed_calls` (F37)
 
 **F19, the LPs.** Every LP is on the same terms: the same fees, the same carry, and every call made pro rata to commitments. LP *i*'s share is its commitment over the sum of all the LPs' commitments, exactly. *Later: per-LP accounts, where LPs differ: later closes and equalization, side-letter fee or carry breaks, defaulted or excused LPs.*
 
@@ -281,10 +321,12 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - An investment or expense call before a later close, without `equalization_rate` (F29; in 0.3.0, any later close): `missing_field` at `terms.equalization_rate`.
   - An entered call that no LP in the fund at its date would pay, because none had closed yet or none of them pays fees: `call_without_payers`, new, at the call. A schedule no listed LP pays, every one in a class at a fee rate of 0, is refused the same way, at `terms.management_fee` (F32).
 
-**The order of checks.** FA2's three stages, then F21's LPs (FA19), then one more, with the schedule in them from 0.4.0 (F32):
-1. **Unsupported terms:** the keys under `terms` in the file's order, then each term's own keys in the file's order, each class's keys and its carry's among them, and the schedule's keys and its steps' among them; a compounding that isn't simple.
-2. **The fields,** as FA2 has them. Within `terms`: the carry, pref, catch-up, GP commitment, and the terms against each other; then `fee_rate`; `equalization_rate`; the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, rate, then `from`, then `commitments`); then `fee_rate_with_schedule`; then each class in order (its shape, its name, the name repeating, its fee rate, its carry, its carry against the catch-up).
-3. **The cash flows:** first `fee_call_with_schedule`, then against each other and D, the schedule's calls among the calls.
+**The order of checks.** FA2's three stages, then F21's LPs (FA19), then one more, with the schedule in them from 0.4.0 (F32) and the investments from 0.5.0 (F37):
+1. **Unsupported terms:** the keys under `terms` in the file's order, then each term's own keys in the file's order, each class's keys and its carry's among them, and the schedule's keys and its steps' among them; a compounding that isn't simple; then `deal_by_deal_pref`. `carry_basis` is a term.
+2. **The fields,** as FA2 has them. Within `terms`: the carry, pref, catch-up, GP commitment, and the terms against each other; then `fee_rate`; `equalization_rate`; the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, rate, then `from`, then `commitments`); then `fee_rate_with_schedule`; then each class in order (its shape, its name, the name repeating, its fee rate, its carry, its carry against the catch-up); then `carry_basis`.
+   - **Each cash flow** as F18 has it: unknown fields (an `investment` or `share` on a call among them), then the fields it needs (`amount` not for a write-off), the date, the type, a call's kind, a write-off's own fields, the `investment`, the `share`, then the amount.
+   - **After `nav`:** the investments in order, each with its fields, its checks in order, then its name against the ones before. Then `distribution_from`.
+3. **The cash flows:** first `fee_call_with_schedule`, then against each other and D, the schedule's calls among the calls, and write-offs among the cash flows after D. Then F37's against each other and D: a check after D; deal by deal, the investments missing; each distribution and write-off in the input's order, for its investment; `distribution_from`; then `investments_exceed_calls`.
 4. **The LPs,** as F21 checks them, each through before the next: then its class, then its close.
 5. **What the LPs need of the rest:** `equalization_rate`, when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing or not the LPs' total; a schedule no listed LP pays; then each entered call in date order for its payers.
 
@@ -341,6 +383,75 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 - **Once the LPs are read:** a schedule without `commitments` when the fund doesn't list its LPs: `missing_field` at `terms.management_fee.commitments`. `commitments` that isn't the listed LPs' total: `fee_commitments_mismatch`, new, there. A schedule no listed LP pays, every one in a class at a fee rate of 0: `call_without_payers` at `terms.management_fee`, as an entered fee call nobody pays is (F28).
 - **The order of checks** is F28's five stages, with the schedule in them, as F28 lists them.
 
+**From 0.5.0, F33 to F37 are a fund's investments, and a carry basis:** the whole fund (F1, the default) or deal by deal. A fund without investments, or with them on the whole fund, gives exactly 0.4.0's numbers.
+
+**Why (Jordan, 2026-10-27).** 0.4.0 pays carry only on the whole fund: nothing until the LPs have all their paid-in capital back. Some funds pay it deal by deal instead: as each investment exits, the LPs get back what's due on the investments exited or written off so far, their cost and their share of fees and expenses, and the GP takes carry on the rest, owing back at the end whatever the whole fund doesn't earn. That needs the fund's investments, which also give every fund a portfolio view.
+
+**F33, investments.**
+- **Cost made:** an investment's checks to date. **What's left of it:** the cost made, less the cost realized so far.
+- **A distribution from an investment** realizes `share` of what's left of it at its date. That much cost is exited.
+- **A write-off** realizes all that's left of it, with no proceeds.
+- **A distribution from an investment with nothing left,** say a release from escrow after a full exit, realizes nothing more.
+- **A follow-on check** after a partial exit adds to what's left.
+- **Proceeds:** the distributions from the investment, as whole-fund amounts.
+- **On one date:** calls, then checks, then write-offs, then distributions in the order listed (F4, widened).
+- **X** realizes its share of what's left of its investment at D. When X is final, and at the NAV point, everything left of every investment is realized at D: the fund ends.
+
+**F34, the carry basis.**
+- **`whole_fund`:** F1 as before. The investments change no amount.
+- **`deal_by_deal`:** F35 changes tier 1 (F5). Everything else is as before:
+  - carry flat or in steps (F9 to F11), with the LP multiple on all paid-in (F10)
+  - each class its own account (F23)
+  - later closes as if every LP were in from the start, with their equalization (F25, F29)
+  - fees entered or worked out by a schedule (F30)
+  - the GP commitment's own line (F3)
+  - the clawback at the end (F12, F24)
+
+**F35, deal by deal: what's due before carry** (Jordan, 2026-10-27; amends F5).
+- **What's due.** At each distribution, before the GP takes carry, the LPs have back what's due on the investments realized so far (exited or written off):
+  - **The cost realized,** the LPs' part of it: (1 − g) of it, with the GP commitment's part aside (F3).
+  - **Fees and expenses to date,** the LPs' part, times the share of all cost made that's been realized: realized over made, both at the distribution, by cost (Jordan: "their share, by cost").
+- **Tier 1 (F5) becomes:** the LPs get 100% until their capital back to date, over every distribution so far, reaches what's due. The rest of the distribution goes through the carry tier.
+- **What's due can be less than what the LPs have already had back.** A new investment adds to the cost made, so the fees' share falls. Then no capital comes first, and nothing already returned is taken back.
+- **Each account (F23):** its part of the cost, by commitment; its own fees, by its fee weights (F29); its expenses, by commitment. The share is the fund's.
+- **No pref deal by deal in 0.5.0,** so no catch-up either (F8 needs a pref). It's refused as unsupported (F37).
+- **Carry is paid on each distribution as it's made, and kept until the end.** No interim clawback and no escrow (Jordan, 2026-10-27).
+- **At the end (X final, and the NAV point), the clawback is F12's,** and F24's by account. The GP's entitlement is the tiers run once on the fund's totals, with all paid-in as capital, as on the whole fund. So deal by deal, the GP keeps at most what the whole fund would give it at the end. Carry it got early on exits that later write-offs offset, it owes back.
+- **The x-axis (F14):** X comes from `distribution_from`'s investment and realizes its share (everything, when final). What's due on X doesn't change with X, so the split stays piecewise linear in X and every breakpoint is exact.
+- *Later: a pref, and a catch-up, deal by deal, on what's due, from each check's and each fee call's date; unrealized write-downs due before carry (marks below cost); an interim clawback, and carry escrow (a share of each carry payment held back); a distribution of unused capital, not from an investment; checks funded from a credit line, ahead of their calls; fees and expenses by another rule (all of them first, or by how long each investment was held); spillpoint exits feeding the investments' proceeds, after engine 1.0.*
+
+**F36, outputs.**
+- **The investments,** once, at D, before X: each with its name, cost made, cost realized (exited or written off), cost written off, and proceeds. Exact.
+- **Deal by deal, at each X and at the NAV point:** what's due before carry on X, and each class's part.
+- **Breakpoints:** deal by deal, `capital_returned` reads "LPs have their $11,100,000 back for the investments exited or written off, fees and expenses included", with the class's name in front when there are two or more accounts (F27). The code doesn't change.
+- **Everything else** is as before.
+
+**F37, refusals,** added to F18, F21, F28 and F32.
+- **The terms:**
+  - Deal by deal with a pref: *unsupported*, `deal_by_deal_pref`, new, at `terms.pref`.
+  - `carry_basis` not `"whole_fund"` or `"deal_by_deal"`: `bad_field`.
+- **A cash flow:**
+  - **A new type:** `write_off`.
+  - **On a call:** `investment` or `share`: `unknown_field`.
+  - **On a write-off:** `kind`, `amount` or `share`: `unknown_field`. `investment` missing: `missing_field`.
+  - **On a distribution or a write-off:** `investment` not text, or blank: `bad_field`. `share` not a number, 0 or less, or above 1: `bad_number`. A `share` without an `investment`: `missing_field` at the investment.
+- **The investments:**
+  - **The list:** not a list: `bad_field`.
+  - **An investment:** not an object: `bad_field`. A key other than `name` and `checks`: `unknown_field`. `name` or `checks` missing: `missing_field`. `name` not text, or blank: `bad_field`. `checks` not a list, or empty: `bad_field`.
+  - **A check:** not an object: `bad_field`. A key other than `date` and `amount`: `unknown_field`. Either missing: `missing_field`. `date` not a date: `bad_date`. `amount` not a number, or 0 or less: `bad_number`.
+  - **A name used twice:** `investment_name_repeated`, new, at the second one's name, after its checks.
+- **`distribution_from`:** not an object: `bad_field`. A key other than `investment` and `share`: `unknown_field`. `investment` missing: `missing_field`; not text, or blank: `bad_field`. `share` as a distribution's.
+- **Against each other and D:**
+  - A write-off after D: `cash_flow_after_distribution_date`, as any cash flow, among them in the input's order. Then a check after D: the same term, at the check.
+  - Deal by deal without investments: `missing_field` at `investments`.
+  - Each distribution and write-off, in the input's order:
+    - deal by deal, a distribution naming no investment: `missing_field` at its `investment`
+    - an investment not listed: `investment_unknown`, new, at its `investment`
+    - dated before the investment's first check: `investment_not_made`, new, at the cash flow
+  - `distribution_from`: deal by deal, missing: `missing_field`. An investment not listed: `investment_unknown` at `distribution_from.investment`.
+  - The cost made by a check's date more than the investment calls up to that date: `investments_exceed_calls`, new, at the first such check's `amount`. Checks go in date order; on one date, in the investments' order, then the checks'.
+- **The order of checks** is F28's five stages, with the investments in them, as F28 lists them.
+
 ## Worked examples (exact, to the cent)
 
 **A, the VC default.** Case fund-08 is this with a third step.
@@ -377,7 +488,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 
 ## Cases
 
-Twenty-eight cases and four sets of refusals, in `packages/fund/cases/` (FC2):
+Thirty-two cases and five sets of refusals, in `packages/fund/cases/` (FC2):
 
 1. One investment call, 20% carry.
 2. Investment, fee and expense calls all count as capital; an interim distribution returns part of it.
@@ -411,6 +522,11 @@ Twenty-eight cases and four sets of refusals, in `packages/fund/cases/` (FC2):
 30. Two LPs, fees called half-yearly, 2% stepping down to 1.5% on 1 Mar 2022, inside a half-year; a 2% GP commitment that pays fees; an 8% pref with a full catch-up; final. The fees called after the last distribution are paid-in the final distribution returns first, so at X = 0 the GP owes back $150,000 of carry (f04a).
 31. Quarterly fees at 2%; an Anchor class at a 1% fee joining at a later close in the middle of a quarter, a friends-and-family class paying no fees, and an investment call before the close: back fees and capital equalization side by side (f04a).
 32. Thirty-seven refusals on cases 29 to 31: each line of F32, and the order of checks where the schedule meets the other checks (f04a; the thirty-seventh, a schedule no listed LP pays, in the f04b review).
+33. Case 34's fund on the whole fund, the default: three investments, a $9,000,000 exit from Alder Robotics, Birch Health written off, X from Cedar AI. The investments change no amount: the exit returns paid-in capital with no carry, and carry starts once the LPs have all $11,100,000 back, at X = $2,212,121.21. At $12,000,000 the GP has $1,938,000, all of it from X (f05a).
+34. Deal by deal: three investments, $10,000,000 of cost, $1,200,000 of fees and a 1% GP commitment that's fee-free. Alder's exit returns the LPs' $2,970,000 of its cost and $360,000 of fees (its 30% of the cost made), then pays $1,116,000 of carry, two years before the whole fund would pay any. Birch Health is written off; X from Cedar AI realizes the rest, so $11,100,000 is due. At the NAV point, $12,000,000, the GP has $1,938,000 in all, what case 33 gives, so it owes nothing back (f05a).
+35. Deal by deal, final, a 2% GP commitment: a 40% secondary sale of Dogwood Labs after a follow-on, Elm Bio's exit and a $1,000,000 escrow release from it after, Fir Payments written off, and Hazel Cloud still held, with a follow-on after Elm's exit that lowers the fees' share due to $6,800,139.13, under the $6,879,360 already back, so the escrow release is all profit. At X = 0 the GP owes back all $2,348,128 of its carry; X from Dogwood clears it at $18,376,163.27, where the LPs have all $24,888,000 back (f05a).
+36. Deal by deal with classes, a later close and a quarterly 2% fee schedule: Alder Endowment on the fund's terms, Birch Family Office in an Anchor class (15% carry, 1% fee) joining at a later close, Cedar Holdings friends and family (no fee, no carry). At Ivy Analytics' exit a third of the cost made is realized: $2,130,000, $1,233,000 and $792,000 due by class. X sells half of Kapok Robotics, with breakpoints at $5,400,000, $5,841,919.19 and $6,283,838.38. Birch's equalization at its close: $2,376,000, $99,466.52 of interest and $45,000 of back fees (f05a).
+37. Fifty-five refusals on cases 33, 34 and 36: each line of F37, and the order of checks where the investments meet the other checks (f05a).
 
 ## Decided
 
@@ -442,3 +558,20 @@ Twenty-eight cases and four sets of refusals, in `packages/fund/cases/` (FC2):
   - the fee is on commitments, with rate steps by date; invested capital, gross or net, is later (F30)
   - a schedule no listed LP pays is refused, as an entered fee call nobody pays is, so no call is $0 and the LPs always pay something in (F32; f04b review)
 - **2026-10-25, Claude's defaults settled with the spec:** the seven in F30, from quarterly calendar periods in advance to the GP commitment fee-free unless it pays fees
+- **2026-10-27 (Jordan), for spillpoint-fund 0.5.0:**
+  - 0.5.0 is investments and carry deal by deal, with the whole fund staying the default (F34)
+  - before carry deal by deal: the cost of the investments exited or written off, with fees and expenses (F35)
+  - fees and expenses: their share, by cost (F35)
+  - a final clawback only; escrow and interim clawbacks are later (F35)
+  - partial exits: the share sold, 100% by default (F33)
+- **2026-10-27, Claude's defaults settled with the spec:**
+  - no pref deal by deal in 0.5.0: refused, not guessed; VC funds mostly have none (F35, F37)
+  - the share sold is of what's left at that moment, and follow-ons add to what's left (F33)
+  - an escrow release, a distribution from an investment with nothing left, realizes nothing more, so beyond what's due it's profit (F33)
+  - the fees' share is realized over made at the distribution; it can fall when a new investment is made, and nothing already returned is taken back (F35)
+  - on one date: calls, then checks, then write-offs, then distributions (F4, F33)
+  - every distribution names an investment deal by deal; a distribution of unused capital is later (F35)
+  - the cost made can't run ahead of the investment calls; funding from a credit line is later (F37)
+  - the end: a final X and the NAV point realize everything left, so an investment still held counts as written off (F33)
+  - carry steps keep F10's LP multiple on all paid-in (F34)
+  - the clawback at the end is the whole fund's (F12), so both bases end at the same entitlement (F35)
