@@ -22,6 +22,8 @@ No engine or page code.
   - case 35's $6,800,139.13 under $6,879,360, $2,348,128 owed at X = 0, cleared at $18,376,163.27 with $24,888,000 back
   - case 36's $2,130,000, $1,233,000 and $792,000; breakpoints at $5,400,000, $5,841,919.19 and $6,283,838.38; $2,376,000, $99,466.52 and $45,000
 
+**Fix-up after your review:** your four answers are in, in the last section. Where it changes something here, it says so.
+
 **One thing to raise before f05b, open question 1.** Deal by deal, capital called for investments and never invested isn't due before carry, even at the end, as F35 reads. Where it's more than the profit already through the tiers, a final X's clawback rises as X grows, and F15 has no words for that. No case has it. It's FA49, with what I'd recommend.
 
 | Commit | What |
@@ -324,10 +326,10 @@ The 2021-01-05 call's LPs' $7,920,000 rebalanced from 10/14 and 4/14 to 1/2, 3/1
 
    It prints each distribution's cost, fees and expenses, and due: 2352000.00, 207680.00 and 2559680.00; 6272000.00, 607360.00 and 6879360.00; 6272000.00, 528139.13 and 6800139.13, under the 6879360.00 already back.
 4. **The refusals:** apply any fixture in `fund-37-deals-refused/fixtures/` to its base case's `inputs.json` and run it through `fund_ref.inputs.read`. Each is refused with the kind, term and path `cases-deals.json` gives.
-5. **FA49's stop, the open question:**
+5. **FA49, now the rule (changed in the fix-up; it was the stop):**
 
    ```bash
-   python3 -m unittest packages/fund/reference/tests/test_fund_ref.py -k test_capital_called_and_not_invested_stops_the_reference -v
+   python3 -m unittest packages/fund/reference/tests/test_fund_ref.py -k test_capital_called_and_not_invested_is_due_at_the_end -v
    ```
 
 6. **Nothing outside the step moved:**
@@ -358,3 +360,193 @@ The 2021-01-05 call's LPs' $7,920,000 rebalanced from 10/14 and 4/14 to 1/2, 3/1
 2. **FC15's shape.** It's what f05b's engine will be held to once the cases are locked: `investments` at the top; `due` after `tags` with the cost made and realized, and each account's after its `class`; `capital_returned`'s amount the due. Fine, or would you rather any of it be shaped differently? One choice inside it: earlier distributions' dues aren't listed, since F36 gives X's alone.
 3. **FA59: the investments' multiple.** The page's Investments tab shows proceeds over cost made, and the page does no fund math (FA16). Should f05b's engine give the multiple in the table? It's not in F36 or the case files.
 4. **FA53: the cost made on one date.** Where a date's checks together run past the calls, I name the first of them in the investments' order, as "the cost made by a check's date" reads, even if that check alone wouldn't run past. The other reading counts checks one at a time in that order and names the one that tips it over. No fixture tells them apart. Which?
+
+## Fix-up after your review (2026-10-29)
+
+Your four answers, on this branch with the fund cases' lock lifted:
+- **FA49:** (a), at the end all paid-in is due.
+- **FC15:** as proposed.
+- **The investments' multiple:** in the engine, as the realized multiple.
+- **FA53:** the first check of the date.
+
+**The reference and my hand working still agree.** The hand working rebuilds all four new run cases byte for byte, and f04a's five too, and it agrees with the reference on five funds that leave capital uninvested at the end, which no case does.
+
+**Nothing in `.github/workflows/` or `.claude/` changed.** `.claude/settings.json` is still uncommitted.
+
+| Commit | What |
+|---|---|
+| `b7fb2ff` | `SPEC.md` and `ASSUMPTIONS.md`: F35's end line, F36, F15 and FA9 back as they were, FA49 rewritten, FA57, FA59, FC15 and FA53 (§F1, §F2) |
+| `02b4475` | the reference: what's due at the end, the reason when final, the realized multiple, the unit test and the random funds (§F3) |
+| `35a571f` | the cases: 33 to 36's `expected.json` and `DERIVATION.md` (§F4) |
+| `a47dc30` | the case-file checks (§F5) |
+| the next commit | this section |
+
+### F1. Your answers in the spec
+
+- **F35's end line,** answer 1: "At the end (X final, and the NAV point), what's due is all the LPs' paid-in, capital called and never invested included: the fund ends, and its unused cash comes back as capital, as on the whole fund. Before the end, nothing changes." The clawback's line follows it as before.
+- **F15:** `clawback_starts` is back to "v1's terms can't produce it (FA9); it's kept for later terms".
+- **F36:**
+  - The investments gain the realized multiple: proceeds over the cost realized, none while nothing of it is realized.
+  - `capital_returned`, when X is final, reads as the whole fund's: "LPs have their $24,888,000 of paid-in capital back", its amount the same.
+- **Decided:** a 2026-10-29 entry with your four answers.
+
+### F2. Your answers in the assumptions
+
+| ID | Now | Status |
+|---|---|---|
+| F35, F36 | Their rows say what F35 and F36 now say. | Settled (S4) |
+| FA9 | Its added sentence is out. | Confirmed (f01a review) |
+| FA49 | Rewritten to the rule. At the end all paid-in is due, uninvested capital included; before the end, F35's due. A final X's tier 1 is all the paid-in not yet back, so its clawback never rises and FA9 holds. | Confirmed (f05a review) |
+| FA53 | The first of a date's checks in the investments' order is named, your reading. | Confirmed (f05a review) |
+| FA57 | A final X's `capital_returned` reads as the whole fund's, its amount the same; its amount what's due, as FC15 has it. | Confirmed (f05a review) |
+| FA59 | The realized multiple: proceeds over the cost realized, exact, null while nothing is realized. It explains why it isn't over the cost made: Dogwood 1.0x, not 2.5x, and Hazel 0x. | Confirmed (f05a review) |
+| FC15 | `realized_multiple` after `proceeds`, and `due` at the end (below). | Confirmed (f05a review) |
+
+**One choice inside answer 1, mine, written in FA49 and FC15.** With capital uninvested at the end, `due` there needs a split. I made it:
+- **`cost`:** the LPs' part of every investment call, invested or not.
+- **`fees_and_expenses`:** all their fees and expenses.
+- **`total`:** their paid-in, an account's its own.
+
+So `total` is still `cost` plus `fees_and_expenses`, and `cost_made` and `cost_realized` stay the investments' own. In cases 34 to 36 every dollar called for investments was invested, so `cost` is the LPs' part of the cost made, as before. No case has the uninvested split. Say if you'd rather it read another way: the engine will be held to it.
+
+### F3. The reference
+
+- **`waterfall.py`:** what's due takes `end`. At the end it's the run's paid-in: its fees and expenses, and the rest of its paid-in as cost. A final X and the NAV point pass it; earlier distributions never do.
+- **`breakpoints.py`:** deal by deal, `capital_returned` names what's due only when X isn't final. When X is final it reads as the whole fund's.
+- **`case.py`:** `realized_multiple` after `proceeds`, exact, or null when nothing of the investment is realized.
+- **The FA49 unit test** is now the rule, `test_capital_called_and_not_invested_is_due_at_the_end`:
+  - final, $1,000 called and $800 invested: $1,000 due, and nothing owed at X = 0, $800, $900, $1,000 or $2,000
+  - one breakpoint, at $1,000: "LPs have their $1,000 of paid-in capital back"
+  - not final, $800 due
+- **The random funds** now leave the last investment call a fifth uninvested about a third of the time. 10 of the 31 deal-by-deal funds end with capital uninvested. Every account's breakpoints are found and no clawback rises in them.
+- **The checks bite.** With the old rule put back, the unit test and the random funds both fail.
+
+The reference's unit tests are still 114: the FA49 test is renamed, not added.
+
+### F4. The cases
+
+**What moved, and only that.**
+- **Each investment in 33 to 36** gains `realized_multiple`.
+- **Case 35:** its one `capital_returned` reason now reads "LPs have their $24,888,000 of paid-in capital back". Its amount, 24888000, is the same.
+- **Nothing else moved:** in 33 to 36 every dollar called for investments was invested, so what's due at the end was already all paid-in.
+- **Untouched:** fund-01 to fund-32, fund-37 and every `inputs.json`.
+
+| Case | Investment | Proceeds | Cost realized | `realized_multiple` |
+|---|---|---:|---:|---|
+| 33, 34 | Alder Robotics | 9,000,000.00 | 3,000,000.00 | `"3"` |
+| 33, 34 | Birch Health | 0.00 | 3,000,000.00 | `"0"` |
+| 33, 34 | Cedar AI | 0.00 | 0.00 | `null` |
+| 35 | Dogwood Labs | 6,000,000.00 | 2,400,000.00 | `"2.5"` |
+| 35 | Elm Bio | 13,000,000.00 | 4,000,000.00 | `"3.25"` |
+| 35 | Fir Payments | 0.00 | 5,000,000.00 | `"0"` |
+| 35 | Hazel Cloud | 0.00 | 0.00 | `null` |
+| 36 | Ivy Analytics | 8,000,000.00 | 4,000,000.00 | `"2"` |
+| 36 | Juniper Health | 0.00 | 2,800,000.00 | `"0"` |
+| 36 | Kapok Robotics | 0.00 | 0.00 | `null` |
+
+Case 35's are your 2.5x, 3.25x, 0x and none.
+
+**The derivations:**
+- **Each of 33 to 36** has a line after its investments table, giving each multiple and how it's worked.
+- **Case 35 also:**
+  - X's due says the fund ends, so all paid-in is due, and that none of the investment calls is uninvested.
+  - The clearing line says what's due at the end is all paid-in (FA49), not "with everything invested".
+  - The breakpoint's reason is the new text, with a line on why.
+
+**How the files got there:**
+- **`expected.json`:** written by `generate.py`, and byte for byte the copy I made in my scratch folder before writing.
+- **`DERIVATION.md`:** edited in my scratch folder and copied in with `cp`.
+
+The sha256 of every changed file under `packages/fund/cases`, the same in my scratch folder:
+
+| File | sha256 |
+|---|---|
+| `fund-33-portfolio-whole-fund/DERIVATION.md` | `5f505670b07e1a469577ba7f6d2bf1f2a4a9b948c5b545e52cd8472a1f3332ab` |
+| `fund-33-portfolio-whole-fund/expected.json` | `8fcba847d040413e86bfadb9a62c7bb3886da4a3eb7dcd5a333f46c5f85e7210` |
+| `fund-34-deal-by-deal/DERIVATION.md` | `c3947b76be8a71d9ad989c25f95cfb60b560eb30feca019f37de4c298820f400` |
+| `fund-34-deal-by-deal/expected.json` | `b9379850461f15dbb7f50007f6e3bfbf47a9132291344cf2f46a6d2cafe6d310` |
+| `fund-35-deal-by-deal-clawback/DERIVATION.md` | `411ee72c2449db38cfbd89231d1a9769ef39f2d2f5f04a0988a23aca7ccf715e` |
+| `fund-35-deal-by-deal-clawback/expected.json` | `09cea7e3e3669d7d80d2e370fa96fb806dc44f896568a7356bb2574c1bbafd07` |
+| `fund-36-deal-by-deal-classes-closes/DERIVATION.md` | `0f8a0b2b6f1f3f99dd71930f4685efaa935d23aad70fda6d282f1c418a2aa7cc` |
+| `fund-36-deal-by-deal-classes-closes/expected.json` | `e1cf205aa54a42e0782a474e34faad9cf4578408424ac862478d9f25998293ba` |
+
+### F5. The case-file checks (`packages/fund/test/cases.test.ts`)
+
+- **The realized multiple (new):** proceeds over the cost realized, or null exactly when nothing is realized.
+- **What's due at the end:**
+  - `cost` is the LPs' part of the investment calls, each account's by its share, and `fees_and_expenses` all of them.
+  - The check that the total is all paid-in at the end now runs on every deal-by-deal case. It had run only where everything called for was invested.
+- **The breakpoint:** each `capital_returned` text is now checked whole, cents included: F36's when X isn't final, the whole fund's when it is.
+
+**The checks bite.** Against the case files before the fix-up, exactly five failed: the realized multiple in 33 to 36, and case 35's wording.
+
+### F6. Funds with capital uninvested at the end
+
+No case has one, so I compared my hand working against the reference on five variants of the cases, each with one check made smaller. They agree on every value in all five. In each, what's due at the end is all the LPs' paid-in, and the clawback only falls or holds as X grows.
+
+| Variant | Uninvested at D | Due at the end | LPs' paid-in | Owed back, X from 0 up |
+|---|---:|---:|---:|---|
+| 34, Cedar's check $3,000,000 | 1,000,000.00 | 11,100,000.00 | 11,100,000.00 | NAV point only: 0.00 |
+| 34, the same, final | 1,000,000.00 | 11,100,000.00 | 11,100,000.00 | 1,108,000.00, falling to 0.00 |
+| 35, Hazel's follow-on $2,000,000 | 1,000,000.00 | 24,888,000.00 | 24,888,000.00 | 2,348,128.00, falling to 0.00 |
+| 36, Kapok's check $4,000,000 | 1,200,000.00 | 12,855,000.00 | 12,855,000.00 | NAV point only: 0.00 |
+| 36, the same, final | 1,200,000.00 | 12,855,000.00 | 12,855,000.00 | 533,366.67, falling to 0.00 |
+
+**Under F35 as first written,** the three final ones never clear: the GP owes back at every X, however high.
+- **The 34 variant:** $198,000, which is 20% of the LPs' $990,000 never invested.
+- **The 35 variant:** $196,000.
+- **The 36 variant:** $172,260.
+
+Their earlier profit was enough that the clawback held rather than rose. It rises only where the uninvested capital is more than the profit already through the tiers, as in FA49's first example.
+
+### F7. CI
+
+What CI runs passes locally, exit 0:
+
+```bash
+pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm test:reference
+```
+
+| Suite | Before the fix-up | Now | Changed |
+|---|---:|---:|---|
+| Fund package | 1,472 (10 skipped) | 1,476 (10 skipped) | the realized multiple, once per case 33 to 36 |
+| Fund page | 605 | 605 | |
+| Engine | 3,177 | 3,177 | |
+| Main page | 680 | 680 | |
+
+- **The fund reference:** 114 unit tests, the same count, and all 37 fund case folders match it.
+- **Spillpoint's reference:** its 73 unit tests and its cases.
+
+### How to check the fix-up by behavior
+
+1. **The rule:**
+
+   ```bash
+   python3 -m unittest packages/fund/reference/tests/test_fund_ref.py -k test_capital_called_and_not_invested_is_due_at_the_end -v
+   ```
+
+2. **Case 35's realized multiples and its reason:**
+
+   ```bash
+   python3 -c '
+   import json; e = json.load(open("packages/fund/cases/fund-35-deal-by-deal-clawback/expected.json"))
+   print([(i["name"], i["realized_multiple"]) for i in e["investments"]]); print([r["text"] for b in e["breakpoints"] for r in b["reasons"] if r["code"] == "capital_returned"])'
+   ```
+
+   It prints Dogwood Labs 2.5, Elm Bio 3.25, Fir Payments 0 and Hazel Cloud None, then "LPs have their $24,888,000 of paid-in capital back".
+3. **Only the eight files moved under `packages/fund/cases`:**
+
+   ```bash
+   git diff --stat 97dbb75 -- packages/fund/cases
+   ```
+
+### Assumptions added or changed in the fix-up
+
+- **F35 and F36:** at the end all paid-in is due; the realized multiple; a final X's `capital_returned` reads as the whole fund's.
+- **FA49:** rewritten to the rule, with how `due` splits at the end. Confirmed (f05a review).
+- **FA53, FA57, FA59 and FC15:** Confirmed (f05a review). FA57 gains the final X's wording; FA59 is now the realized multiple.
+- **FA9 and F15:** their added sentences are out.
+
+### Open question
+
+1. **`due`'s split at the end, with capital uninvested (FA49, FC15).** `cost` carries the uninvested part and `total` is the paid-in. No case has it, so the engine will be held to it by the reference's random funds and f05b's own tests, not by a case file. Fine as it is?
