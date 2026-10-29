@@ -23,7 +23,8 @@
       "proceeds": {
         "amount": "6000000.00",
         "exact": "6000000"
-      }
+      },
+      "realized_multiple": "2.5"
     },
     {
       "name": "Elm Bio",
@@ -42,7 +43,8 @@
       "proceeds": {
         "amount": "13000000.00",
         "exact": "13000000"
-      }
+      },
+      "realized_multiple": "3.25"
     },
     {
       "name": "Fir Payments",
@@ -61,7 +63,8 @@
       "proceeds": {
         "amount": "0.00",
         "exact": "0"
-      }
+      },
+      "realized_multiple": "0"
     },
     {
       "name": "Hazel Cloud",
@@ -80,7 +83,8 @@
       "proceeds": {
         "amount": "0.00",
         "exact": "0"
-      }
+      },
+      "realized_multiple": null
     }
   ],
   "breakpoints": [
@@ -103,7 +107,7 @@
         {
           "code": "capital_returned",
           "amount": "24888000",
-          "text": "LPs have their $24,888,000 back for the investments exited or written off, fees and expenses included"
+          "text": "LPs have their $24,888,000 of paid-in capital back"
         },
         {
           "code": "clawback_cleared",

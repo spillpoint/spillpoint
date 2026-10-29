@@ -26,6 +26,8 @@ Once, at D, before X:
 | Birch Health | 3,000,000.00 | 3,000,000.00 | 3,000,000.00 | 0.00 |
 | Cedar AI | 4,000,000.00 | 0.00 | 0.00 | 0.00 |
 
+**The realized multiple** (F36, FA59), proceeds over the cost realized: Alder Robotics 9,000,000 / 3,000,000 = **3x**; Birch Health, written off with none, **0x**; Cedar AI, nothing realized, **none** (null).
+
 The table is case 33's: the investments are the same on either basis.
 
 ## Alder's exit: what's due (F35)

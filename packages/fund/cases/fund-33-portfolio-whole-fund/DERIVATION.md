@@ -26,6 +26,8 @@ Once, at D, before X:
 | Birch Health | 3,000,000.00 | 3,000,000.00 | 3,000,000.00 | 0.00 |
 | Cedar AI | 4,000,000.00 | 0.00 | 0.00 | 0.00 |
 
+**The realized multiple** (F36, FA59), proceeds over the cost realized: Alder Robotics 9,000,000 / 3,000,000 = **3x**; Birch Health, written off with none, **0x**; Cedar AI, nothing realized, **none** (null).
+
 ## The earlier distribution (F1, F5)
 
 The $9,000,000 on 2022-06-30: the GP commitment's 1%, $90,000, outside the tiers (F3), and $8,910,000 through them. On the whole fund the LPs get back all their paid-in capital first, and they had $11,100,000 in, so all $8,910,000 is capital. No carry. $2,190,000 of capital is still to come back.

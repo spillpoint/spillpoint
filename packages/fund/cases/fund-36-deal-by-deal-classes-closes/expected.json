@@ -625,7 +625,8 @@
       "proceeds": {
         "amount": "8000000.00",
         "exact": "8000000"
-      }
+      },
+      "realized_multiple": "2"
     },
     {
       "name": "Juniper Health",
@@ -644,7 +645,8 @@
       "proceeds": {
         "amount": "0.00",
         "exact": "0"
-      }
+      },
+      "realized_multiple": "0"
     },
     {
       "name": "Kapok Robotics",
@@ -663,7 +665,8 @@
       "proceeds": {
         "amount": "0.00",
         "exact": "0"
-      }
+      },
+      "realized_multiple": null
     }
   ],
   "lps": [

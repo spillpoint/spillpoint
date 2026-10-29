@@ -32,6 +32,8 @@ Once, at D, before X:
 | Fir Payments | 5,000,000.00 | 5,000,000.00 | 5,000,000.00 | 0.00 |
 | Hazel Cloud | 8,000,000.00 | 0.00 | 0.00 | 0.00 |
 
+**The realized multiple** (F36, FA59), proceeds over the cost realized: Dogwood Labs 6,000,000 / 2,400,000 = **2.5x**; Elm Bio 13,000,000 / 4,000,000 = **3.25x**; Fir Payments, written off with none, **0x**; Hazel Cloud, nothing realized, **none** (null).
+
 ## Each distribution: what's due, and the split (F35)
 
 What's due at each is the LPs' part, 98%, of the cost realized so far, its own included, plus the LPs' fees and expenses to date times the cost realized over the cost made, both at the distribution.
@@ -51,7 +53,7 @@ Before X the GP has been paid **$2,348,128** of carry, and the LPs have $6,879,3
 
 ## X: what's due (F33, F35)
 
-X is final, so everything left of every investment is realized at D: Dogwood's $3,600,000 and Hazel's $8,000,000. The cost realized is all **$23,000,000** of the $23,000,000 made. Due: 0.98 × $23,000,000 = **$22,540,000**, plus all **$2,348,000** of fees and expenses: **$24,888,000**, all the LPs' paid-in. $6,879,360 is back, so X's tier 1 is **$18,008,640**.
+X is final, so the fund ends, and what's due is all the LPs' paid-in, capital called and never invested included (F35, FA49). Everything left of every investment is realized at D: Dogwood's $3,600,000 and Hazel's $8,000,000. The cost realized is all **$23,000,000** of the $23,000,000 made, which is all the fund called for investments: none of it is uninvested. Due: 0.98 × $23,000,000 = **$22,540,000**, the LPs' part of the investment calls, plus all **$2,348,000** of fees and expenses: **$24,888,000**, all the LPs' paid-in. $6,879,360 is back, so X's tier 1 is **$18,008,640**.
 
 | X | Tags | Cost made | Cost realized | Cost | Fees and expenses | Due |
 |---:|---|---:|---:|---:|---:|---:|
@@ -75,7 +77,7 @@ X is final, so everything left of every investment is realized at D: Dogwood's $
 **The clawback owed** is the carry paid, $2,348,128 plus X's own, less the entitlement:
 - **Up to $6,395,918.37:** X pays no carry (it's all tier 1) and the entitlement is 0. **All $2,348,128 is owed back**: on the fund's totals the LPs haven't had their capital back, so the GP has earned nothing.
 - **From $6,395,918.37:** the entitlement grows by 0.196 a dollar of X while X still pays no carry: the clawback starts to fall, because on the fund's totals the LPs have their capital back. At **$12,000,000** the entitlement is 0.2 × (11,760,000 − 6,268,000) = **$1,098,400**, and **$1,249,728** is owed.
-- **At $18,376,163.27:** the entitlement is 0.2 × (18,008,640 − 6,268,000) = $2,348,128, the carry paid: cleared. It's the same X as X's tier 1 ending. With everything invested, what's due at the end is all paid-in, so both runs have the LPs' $24,888,000 back there, and what's left through the tiers in each is the same profit.
+- **At $18,376,163.27:** the entitlement is 0.2 × (18,008,640 − 6,268,000) = $2,348,128, the carry paid: cleared. It's the same X as X's tier 1 ending. What's due at the end is all paid-in (FA49), so both runs have the LPs' $24,888,000 back there, and what's left through the tiers in each is the same profit.
 - **Above it** X pays 20% and the entitlement grows 20%: nothing more is owed. At $25,000,000, X's tier 1 is $18,008,640 of the $24,500,000 through the tiers, so it pays $1,298,272 of carry, and the GP has $3,646,400, what the totals give it.
 
 | X | Tags | Carry paid | Entitlement | Owed |
@@ -92,9 +94,9 @@ X is final, so everything left of every investment is realized at D: Dogwood's $
 | X | Exact | Reasons |
 |---:|---|---|
 | 6,395,918.37 | 313400000/49 | `clawback_changes`: "the clawback owed starts to fall: on the fund's totals, LPs have their capital back" |
-| 18,376,163.27 | 900432000/49 | `capital_returned`: "LPs have their $24,888,000 back for the investments exited or written off, fees and expenses included"; `clawback_cleared`: "from here the GP has earned all the carry it was paid earlier" |
+| 18,376,163.27 | 900432000/49 | `capital_returned`: "LPs have their $24,888,000 of paid-in capital back"; `clawback_cleared`: "from here the GP has earned all the carry it was paid earlier" |
 
-At $6,395,918.37 X's own tier doesn't change: only the run on the totals does, so the reason is the clawback's alone (FC5, FC6).
+At $6,395,918.37 X's own tier doesn't change: only the run on the totals does, so the reason is the clawback's alone (FC5, FC6). At $18,376,163.27 X is final, so what's due is all paid-in and tier 1's end reads as the whole fund's, its amount the same $24,888,000 (F36, FA57).
 
 ## This distribution
 

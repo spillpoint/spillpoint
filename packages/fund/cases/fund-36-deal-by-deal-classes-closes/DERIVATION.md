@@ -64,6 +64,8 @@ Once, at D, before X: Ivy's $4,000,000 exited, Juniper's $2,800,000 written off,
 | Juniper Health | 2,800,000.00 | 2,800,000.00 | 2,800,000.00 | 0.00 |
 | Kapok Robotics | 5,200,000.00 | 0.00 | 0.00 | 0.00 |
 
+**The realized multiple** (F36, FA59), proceeds over the cost realized: Ivy Analytics 8,000,000 / 4,000,000 = **2x**; Juniper Health, written off with none, **0x**; Kapok Robotics, nothing realized, **none** (null).
+
 ## Ivy's exit: what's due by class (F35)
 
 On 2023-03-31 the cost made is all $12,000,000, and the exit realizes Ivy's $4,000,000: **a third**. The LPs' part of it is 0.99 × $4,000,000 = $3,960,000, divided by commitment.

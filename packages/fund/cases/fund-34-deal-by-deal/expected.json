@@ -23,7 +23,8 @@
       "proceeds": {
         "amount": "9000000.00",
         "exact": "9000000"
-      }
+      },
+      "realized_multiple": "3"
     },
     {
       "name": "Birch Health",
@@ -42,7 +43,8 @@
       "proceeds": {
         "amount": "0.00",
         "exact": "0"
-      }
+      },
+      "realized_multiple": "0"
     },
     {
       "name": "Cedar AI",
@@ -61,7 +63,8 @@
       "proceeds": {
         "amount": "0.00",
         "exact": "0"
-      }
+      },
+      "realized_multiple": null
     }
   ],
   "breakpoints": [
