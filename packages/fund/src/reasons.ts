@@ -11,7 +11,7 @@ import type { ClawbackChange, ReasonCode, TierReasonCode } from "./stable-names.
  * for the fund's terms. Its amounts and rates are that account's own.
  */
 export type Reason = { class: string | null } & (
-  /** The account's LPs' paid-in capital to date. */
+  /** The account's LPs' paid-in capital to date; from 0.5.0, deal by deal, its due on X (F36, FA57). */
   | { code: "capital_returned"; amount: D; text: string }
   /** The pref rate, and all the account's pref accrued to D, paid or not (FA4). */
   | { code: "pref_met"; rate: D; amount: D; text: string }

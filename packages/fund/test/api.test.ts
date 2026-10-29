@@ -1,18 +1,18 @@
 // The fund package's exports, and the names of their fields, are deliberate: these lists change only on purpose. f01e's
 // naming review settled them for 0.1.0 (notes/review-f01e.md), f02b added the LPs' for 0.2.0 (notes/review-f02b.md),
 // f03b the classes' and later closes' for 0.3.0 (notes/review-f03b.md), f04b the management fees' for 0.4.0
-// (notes/review-f04b.md), and f05b1 the investments' for 0.5.0 (notes/review-f05b1.md).
+// (notes/review-f04b.md), and f05b1 and f05b2 the investments' for 0.5.0 (notes/review-f05b1.md, notes/review-f05b2.md).
 
 import { expect, it } from "vitest";
 
 import * as fund from "../src/index.ts";
-import { FundRefusal, equalization, feeCalls, findBreakpoints, readFund, splitAt } from "../src/index.ts";
+import { FundRefusal, equalization, feeCalls, findBreakpoints, portfolio, readFund, splitAt } from "../src/index.ts";
 import { RUN_CASES, readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
 
 it("exports exactly the fund engine's API", () => {
-  // From 0.3.0: equalization (F25). From 0.4.0: feeCalls (F31).
-  expect(Object.keys(fund).sort()).toEqual(["D", "FundRefusal", "equalization", "feeCalls", "findBreakpoints", "readFund", "splitAt", "splitAtNav", "toCents"]);
+  // From 0.3.0: equalization (F25). From 0.4.0: feeCalls (F31). From 0.5.0: portfolio (F36).
+  expect(Object.keys(fund).sort()).toEqual(["D", "FundRefusal", "equalization", "feeCalls", "findBreakpoints", "portfolio", "readFund", "splitAt", "splitAtNav", "toCents"]);
 });
 
 const keys = (o: object) => Object.keys(o).sort();
@@ -61,7 +61,9 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
 
 it("names a split's fields as the naming review settled", () => {
   const split = splitAt(read("fund-10-clawback"), "1000000");
-  expect(keys(split)).toEqual(["byAccount", "byLp", "clawback", "distribution", "gpCommitmentPaidIn", "lpMultiple", "lpsPaidIn", "prefAccrued", "toDate", "x"]);
+  // From 0.5.0: what's due before carry on X, null on the whole fund (F36).
+  expect(keys(split)).toEqual(["byAccount", "byLp", "clawback", "distribution", "due", "gpCommitmentPaidIn", "lpMultiple", "lpsPaidIn", "prefAccrued", "toDate", "x"]);
+  expect(split.due).toBeNull();
   expect(keys(split.distribution)).toEqual(["amount", "gp", "gpCommitment", "lps"]);
   expect(keys(split.distribution.lps)).toEqual(["capital", "carryTier", "catchUp", "pref", "total"]);
   expect(keys(split.distribution.gp)).toEqual(["carry", "catchUp", "total"]);
@@ -77,7 +79,18 @@ it("names a split's fields as the naming review settled", () => {
   expect(withLps.byAccount).toEqual([]);
   const accounts = splitAt(read("fund-24-classes-clawback"), "0").byAccount;
   expect(accounts.map((a) => a.class)).toEqual([null, "Friends and family"]);
-  expect(keys(accounts[0]!)).toEqual(["class", "clawback", "distribution", "lpMultiple", "paidIn", "prefAccrued", "toDate"]);
+  expect(keys(accounts[0]!)).toEqual(["class", "clawback", "distribution", "due", "lpMultiple", "paidIn", "prefAccrued", "toDate"]);
+  expect(accounts[0]!.due).toBeNull();
+  // From 0.5.0, deal by deal: what's due on X, the fund's with its cost made and realized, and each account's (F36).
+  const deals = splitAt(read("fund-36-deal-by-deal-classes-closes"), "0");
+  expect(keys(deals.due!)).toEqual(["cost", "costMade", "costRealized", "feesAndExpenses", "total", "uninvested"]);
+  expect(keys(deals.byAccount[0]!.due!)).toEqual(["cost", "feesAndExpenses", "total", "uninvested"]);
+});
+
+it("names the investments table's fields as f05b1 proposed", () => {
+  expect(portfolio(read("fund-08-carry-steps"))).toEqual([]);
+  const rows = portfolio(read("fund-33-portfolio-whole-fund"));
+  expect(keys(rows[0]!)).toEqual(["costMade", "costRealized", "costWrittenOff", "name", "proceeds", "realizedMultiple"]);
 });
 
 it("names the equalization's fields as f03b settled", () => {

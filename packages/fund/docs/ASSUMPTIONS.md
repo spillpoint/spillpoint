@@ -206,6 +206,12 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 |---|---|---|---|---|
 | FA61 | A `Fund` built by hand without 0.5.0's fields (F33, F34) | As FA48 has one without 0.4.0's: no `carryBasis` on its terms is the whole fund, and no `investments`, no `distributionFrom`, and cash flows without an `investment` or `share` are none, so it splits as 0.4.0 split it. TypeScript requires the new fields. A write-off in one, as in one `readFund` returned, calls and distributes nothing, so on the whole fund the waterfall doesn't run it. | Fixed | New |
 
+## Added in f05b2
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA62 | A `Fund` built by hand, deal by deal, that `readFund` would refuse (F35, F37) | It's split, not refused, as FA48's are. A distribution, or X's `distributionFrom`, naming an investment the fund doesn't list realizes nothing, so it's all profit beyond what's due; one before its investment's first check realizes nothing either, nothing of it being made. A distribution's `share` of null is 1, as `readFund` fills it in. A check after D isn't made (F36: "its checks to D"). With nothing made at a distribution or on X, no investments listed say, nothing is realized: what's due is zero and every dollar goes through the carry tier. Checks that run past the investment calls (`investments_exceed_calls`) make the end's `uninvested` below zero, its `total` still the paid-in. A pref, which `readFund` refuses deal by deal (`deal_by_deal_pref`), runs as F6 has it after F35's tier 1, on the paid-in not yet back; no rule settles that, and the numbers mean nothing. | Fixed | New |
+
 ## Known edges
 
 Places where the engine and the reference can differ on an input both refuse, and an input whose result reads ambiguously, recorded rather than changed.

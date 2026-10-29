@@ -69,6 +69,8 @@ export type ClawbackChange = (typeof CLAWBACK_CHANGES)[number];
  */
 export const WORDINGS = {
   capital_returned: (amount: string) => `LPs have their ${amount} of paid-in capital back`,
+  /** From 0.5.0, deal by deal when X isn't final: what's due on the investments realized, its code `capital_returned` (F36, FA57). */
+  capital_returned_deal_by_deal: (amount: string) => `LPs have their ${amount} back for the investments exited or written off, fees and expenses included`,
   pref_met: (rate: string, amount: string) => `LPs have their ${rate} pref, ${amount}`,
   catch_up_done: (carry: string) => `the GP has ${carry} of the profit`,
   carry_step: (multiple: string, rate: string) => `LPs reach ${multiple}: carry is ${rate} from here`,

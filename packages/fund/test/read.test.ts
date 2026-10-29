@@ -568,16 +568,14 @@ describe("investments and carry deal by deal (F33, F34, F37, FA52 to FA56)", () 
     expect(refused({ set: { "cash_flows[3]": writeOff("2019-12-31", "B") } })).toEqual(input("investment_not_made", "cash_flows[3]"));
   });
 
-  it("holds a fund deal by deal back from the split until f05b2, and splits one on the whole fund as if it had no investments", () => {
-    const fund = read();
-    expect(() => splitAt(fund, "100")).toThrow("carry deal by deal is read, but not split until the next step (f05b2)");
-    expect(() => findBreakpoints(fund)).toThrow("not split until the next step (f05b2)");
+  it("splits one on the whole fund as if it had no investments, with nothing due (F34)", () => {
     // F34: on the whole fund the investments, the tags and the write-offs change no amount.
     const whole = read({ set: { "terms.carry_basis": "whole_fund", "cash_flows[3]": writeOff("2022-01-01", "B"), final: true } });
     const bare = read({ set: { "terms.carry_basis": null, "cash_flows[2].investment": null, final: true }, del: ["investments", "distribution_from"] });
     for (const x of ["0", "200", "1000", "5000"]) {
       const [a, b] = [splitAt(whole, x), splitAt(bare, x)];
       expect(JSON.stringify([a.distribution, a.toDate, a.clawback, a.lpsPaidIn]), x).toBe(JSON.stringify([b.distribution, b.toDate, b.clawback, b.lpsPaidIn]));
+      expect([a.due, b.due], x).toEqual([null, null]);
     }
     expect(findBreakpoints(whole)).toEqual(findBreakpoints(bare));
   });

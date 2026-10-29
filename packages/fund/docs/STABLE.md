@@ -76,6 +76,7 @@ Each reason's text is one of these (FC6), its blanks filled as FC6 writes them: 
 
 **The reasons, by code:**
 - `capital_returned`: "LPs have their {amount} of paid-in capital back"
+- `capital_returned`, from 0.5.0 deal by deal when X isn't final, its amount what's due on X (F36, FA57): "LPs have their {amount} back for the investments exited or written off, fees and expenses included"
 - `pref_met`: "LPs have their {rate} pref, {amount}"
 - `catch_up_done`: "the GP has {carry} of the profit"
 - `carry_step`: "LPs reach {multiple}: carry is {rate} from here"
@@ -115,6 +116,13 @@ From 0.5.0 (F33, F34), beside the API's other names, on the `Fund` `readFund` re
 - `investments`: the input's investments in its order, each `{ name, checks }`, each check `{ date, amount }`. Empty without any.
 - `investment` and `share`, on each cash flow: a distribution's investment (null without one) and share (1 when the input leaves it out), or a write-off's investment; both null on a call, and `share` null on a write-off.
 - `distributionFrom`: X's source, `{ investment, share }`, the share 1 when the input leaves it out. Null without one.
+
+And in what the engine gives (F35, F36):
+- `portfolio(fund)`: the investments table, at D before X, in the input's order, on either basis; empty without investments. Each row a `PortfolioRow`: `name`, `costMade`, `costRealized`, `costWrittenOff`, `proceeds`, and `realizedMultiple`, null while nothing of it is realized.
+- `due`, on a `Split`: deal by deal, what's due before carry on X, a `Due`: `costMade`, `costRealized`, `cost`, `uninvested`, `feesAndExpenses` and `total`. Null on the whole fund.
+- `due`, on an `AccountSplit`: deal by deal, the account's own, an `AccountDue`: `cost`, `uninvested`, `feesAndExpenses` and `total`. Null on the whole fund.
+- `uninvested` is always given, zero before the end; `total` is always `cost` + `uninvested` + `feesAndExpenses`, at the end the LPs' paid-in (FA49).
+- `capital_returned`'s `amount`, deal by deal: the account's due on X, which is its paid-in when X is final (FA57).
 
 ## Types that can be null from 0.4.0
 
