@@ -176,7 +176,7 @@ interface LpExpected extends Omit<Expected, "points"> {
   equalization?: { rate: string | null; closes: { date: string; joining: string[]; lps: Moves[] }[]; lps: Moves[] };
   fee_calls?: FeeCall[];
   /** FC15: each investment at D, before X. */
-  investments?: { name: string; cost_made: LpAmount; cost_realized: LpAmount; cost_written_off: LpAmount; proceeds: LpAmount }[];
+  investments?: { name: string; cost_made: LpAmount; cost_realized: LpAmount; cost_written_off: LpAmount; proceeds: LpAmount; realized_multiple: string | null }[];
   points: LpPoint[];
 }
 
@@ -713,6 +713,14 @@ describe.each(INVESTED)("%s, its investments", (dir) => {
     });
   });
 
+  it("gives each one's realized multiple, its proceeds over its cost realized, none while nothing is realized (F36, FA59)", () => {
+    for (const r of rows) {
+      const realized = exact(r.cost_realized.exact);
+      if (realized.isZero()) expect(r.realized_multiple, r.name).toBeNull();
+      else expect(exact(r.realized_multiple!).eq(exact(r.proceeds.exact).div(realized)), r.name).toBe(true);
+    }
+  });
+
   it("never makes more cost by a check's date than the investment calls to then (F37)", () => {
     const checks = inputs.investments!.flatMap((i) => i.checks);
     for (const c of checks) {
@@ -747,14 +755,17 @@ describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
   it("is the LPs' part of the cost realized, and their fees and expenses times realized over made, each account's own (F35)", () => {
     for (const p of expected.points) {
       const realized = exact(p.due!.cost_realized!.exact);
+      // FA49: at the end, a final X and the NAV point, the cost is the LPs' part of the investment calls, capital called
+      // and never invested included, and the fees and expenses are all of them.
+      const end = expected.final || p.tags.includes("nav");
       const parts = p.by_account?.map((a) => a.due!) ?? [p.due!];
       parts.forEach((due, i) => {
         const share = exact(accounts[i]!.share);
         const cost = exact(due.cost.exact);
-        expect(near(cost, new D(1).minus(g).times(share).times(realized)), `${p.x} ${i} cost`).toBe(true);
+        expect(near(cost, end ? invested.times(share) : new D(1).minus(g).times(share).times(realized)), `${p.x} ${i} cost`).toBe(true);
         // Its fees and expenses to D are its paid-in less its part of the investment calls (F5, F23).
         const fees = new D(accounts[i]!.paid_in).minus(invested.times(share));
-        expect(near(exact(due.fees_and_expenses.exact), fees.times(realized).div(made)), `${p.x} ${i} fees`).toBe(true);
+        expect(near(exact(due.fees_and_expenses.exact), end ? fees : fees.times(realized).div(made)), `${p.x} ${i} fees`).toBe(true);
         expect(near(exact(due.total.exact), cost.plus(exact(due.fees_and_expenses.exact))), `${p.x} ${i} total`).toBe(true);
       });
       for (const k of ["cost", "fees_and_expenses", "total"] as const) {
@@ -775,14 +786,14 @@ describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
     }
   });
 
-  it.runIf(made.times(new D(1).minus(g)).eq(invested))("dues all the paid-in at the end, every check called for (F35, FA49)", () => {
+  it("dues all the paid-in at the end, capital called and never invested included (F35, FA49)", () => {
     for (const p of expected.points.filter((x) => expected.final || x.tags.includes("nav"))) {
       expect(p.due!.total.amount, p.x).toBe(expected.lps_paid_in);
       p.by_account?.forEach((a, i) => expect(a.due!.total.amount, `${p.x} ${i}`).toBe(accounts[i]!.paid_in));
     }
   });
 
-  it("words tier 1's end as F36 does, its amount what's due on X (F36, FA57)", () => {
+  it("words tier 1's end as F36 does, its amount what's due on X, and when final as the whole fund (F36, FA57)", () => {
     const listed = new Map(expected.points.map((p) => [p.exact, p]));
     for (const b of expected.breakpoints) {
       for (const r of b.reasons.filter((x) => x.code === "capital_returned")) {
@@ -790,9 +801,12 @@ describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
         const due = r.class === undefined ? p.due! : p.by_account![accounts.findIndex((a) => a.class === r.class)]!.due!;
         expect(exact(r.amount!).eq(exact(due.total.exact)), b.x).toBe(true);
         const named = r.class === undefined ? "" : `${r.class ?? "Fund terms"}: `;
-        const dollars = `$${Number(due.total.amount.split(".")[0]).toLocaleString("en-US")}`;
-        expect(r.text.startsWith(`${named}LPs have their ${dollars}`), r.text).toBe(true);
-        expect(r.text.endsWith(" back for the investments exited or written off, fees and expenses included"), r.text).toBe(true);
+        // FC6: whole dollars when the cents are zero.
+        const [whole, cents_] = due.total.amount.split(".");
+        const dollars = `$${Number(whole).toLocaleString("en-US")}${cents_ === "00" ? "" : `.${cents_}`}`;
+        // FA49: when X is final, what's due is all paid-in, and the reason reads as the whole fund's.
+        const ending = expected.final ? " of paid-in capital back" : " back for the investments exited or written off, fees and expenses included";
+        expect(r.text, b.x).toBe(`${named}LPs have their ${dollars}${ending}`);
       }
     }
   });
