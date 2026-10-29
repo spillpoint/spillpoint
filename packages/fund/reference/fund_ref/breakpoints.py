@@ -195,8 +195,9 @@ def _locate(view, a, b, sa, sb):
 def _tier_reason(wf, ended, after):
     """The reason X's own tier `ended` ends, with `after` the tier the next dollar falls in."""
     f = wf.fund
-    if ended == "capital" and f.deal_by_deal:
-        # F36: deal by deal, tier 1 ends at what's due on X, the amount it names (FA57).
+    if ended == "capital" and f.deal_by_deal and not f.final:
+        # F36: deal by deal, tier 1 ends at what's due on X, the amount it names (FA57). When X is final, what's due is all
+        # paid-in (FA49), and the reason reads as the whole fund's, below.
         due = sum(wf.due_on_x(), Fraction(0))
         text = f"LPs have their {usd(due)} back for the investments exited or written off, fees and expenses included"
         return {"code": "capital_returned", "amount": exact(due), "text": text}

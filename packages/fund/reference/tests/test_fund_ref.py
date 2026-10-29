@@ -1252,15 +1252,19 @@ class Deals(unittest.TestCase):
         self.assertEqual(m.evaluate(0).clawback, 48)
         self.assertEqual(codes(breakpoints.find(m)), [("200.00", ["clawback_changes"]), ("440.00", ["capital_returned", "clawback_cleared"])])
 
-    def test_capital_called_and_not_invested_stops_the_reference(self):
-        # FA49: $1,000 called, only $800 invested, final. What's due at the end is $800, so X pays carry on the $200 never
-        # invested, and the totals' run, with all $1,000 as capital, takes it back: the clawback rises from nothing at
-        # X = $800 to $40 at $1,000 and holds there. F15 words where it starts, not where it stops rising, so the
-        # search stops there, unworded (FA9). An open question for Jordan.
-        m = Model(read({**DEALS, "final": True, "investments": [{"name": "B", "checks": [{"date": "2020-01-01", "amount": "800"}]}], "cash_flows": [call("2020-01-01", "1000")]}))
-        self.assertEqual([m.evaluate(x).clawback for x in (800, 900, 1000, 2000)], [0, 20, 40, 40])
-        with self.assertRaises(breakpoints.NotSettled):
-            breakpoints.find(m)
+    def test_capital_called_and_not_invested_is_due_at_the_end(self):
+        # FA49: $1,000 called, only $800 invested. Final, all $1,000 of paid-in is due, the $200 never invested included:
+        # the fund ends and its unused cash comes back as capital, as on the whole fund. So X's tier 1 runs to $1,000, as
+        # the totals' run does, nothing is owed back at any X, and tier 1's end reads as the whole fund's. Before the
+        # end nothing changes: not final, what's due is the $800 realized with X.
+        inputs = {**DEALS, "investments": [{"name": "B", "checks": [{"date": "2020-01-01", "amount": "800"}]}], "cash_flows": [call("2020-01-01", "1000")]}
+        m = Model(read({**inputs, "final": True}))
+        self.assertEqual(m.evaluate(0).by_account[0][1].due, (1000, 0))
+        self.assertEqual([m.evaluate(x).clawback for x in (0, 800, 900, 1000, 2000)], [0, 0, 0, 0, 0])
+        found = breakpoints.find(m)
+        self.assertEqual(codes(found), [("1000.00", ["capital_returned"])])
+        self.assertEqual(found[0][1][0]["text"], "LPs have their $1,000 of paid-in capital back")
+        self.assertEqual(Model(read(inputs)).evaluate(0).by_account[0][1].due, (800, 0))
 
 
 class DealRefusals(unittest.TestCase):
@@ -1377,9 +1381,10 @@ class DealRefusals(unittest.TestCase):
 
 
 def random_deals(rng, inputs):
-    """A random fund with investments (F33): its investment calls each paid out as one or two checks, all by D, so the
-    fund is fully invested at the end (FA49); each distribution from an investment already made, often a partial sale;
-    sometimes a write-off; X from any of them. Deal by deal most of the time, without its pref and catch-up (F37)."""
+    """A random fund with investments (F33): its investment calls each paid out as one or two checks, all by D, the last
+    sometimes only four fifths of its call, so capital called and never invested comes back at the end (FA49); each
+    distribution from an investment already made, often a partial sale; sometimes a write-off; X from any of them. Deal
+    by deal most of the time, without its pref and catch-up (F37)."""
     out = copy.deepcopy(inputs)
     d = datetime.date.fromisoformat(out.get("distribution_date") or out["as_of"])
     calls = sorted((f for f in out["cash_flows"] if f["type"] == "call" and f["kind"] == "investment"), key=lambda f: f["date"])
@@ -1388,6 +1393,8 @@ def random_deals(rng, inputs):
         day = datetime.date.fromisoformat(c["date"])
         amount = F(c["amount"])
         parts = [amount] if rng.random() < 0.5 else [amount * F(2, 5), amount * F(3, 5)]
+        if k == len(calls) - 1 and rng.random() < 0.3:
+            parts = [amount * F(4, 5)]
         checks = []
         for part in parts:
             day = min(d, day + datetime.timedelta(days=rng.randint(0, 90)))
@@ -1609,12 +1616,12 @@ class RandomFunds(unittest.TestCase):
 
     def test_with_investments(self):
         # The random funds with investments (F33 to F37), a third of them with classes and closes and some with fees:
-        # every account's breakpoints are found and no account's clawback rises (FA9, fully invested by D, FA49); the
-        # fund's amounts are the accounts' sums. On the whole fund the investments change no amount (F34); deal by deal,
+        # every account's breakpoints are found and no account's clawback rises (FA9), capital called and never invested
+        # among them, all due at the end (FA49); the fund's amounts are the accounts' sums. On the whole fund the investments change no amount (F34); deal by deal,
         # at a final X, the entitlement is the whole fund's at every X, so the GP keeps at most that (F35), and X's
         # tier 1 is all the paid-in not yet back. And each distribution's tier 1 is what's due less what's back, or none.
         rng = random.Random(20261027)
-        seen = {"deal by deal": 0, "whole fund": 0, "accounts": 0, "write-off": 0, "due below what's back": 0}
+        seen = {"deal by deal": 0, "whole fund": 0, "accounts": 0, "write-off": 0, "due below what's back": 0, "uninvested": 0}
         for i in range(36):
             inputs = random_fund(rng)
             if i % 3 == 1:
@@ -1650,6 +1657,7 @@ class RandomFunds(unittest.TestCase):
                         self.assertEqual((a.this.vector(), a.ledger.to_date.vector(), a.clawback), (b.this.vector(), b.ledger.to_date.vector(), b.clawback), (i, x))
                 continue
             seen["deal by deal"] += 1
+            seen["uninvested"] += f.made_at_d < sum(fl.amount for fl in f.flows if fl.type == "call" and fl.kind == "investment")
             w = Model(read(whole))
             for x in xs + [xs[-1] + 1]:
                 for (_, a), (_, b) in zip(m.evaluate(x).by_account, w.evaluate(x).by_account):

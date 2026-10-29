@@ -184,22 +184,28 @@ class Ledger:
         if kind != "investment":
             self.fees_and_expenses += amount - gp_part
 
-    def due(self, realized, made):
+    def due(self, realized, made, end=False):
         """F35, deal by deal: what's due before carry, with `realized` of the `made` cost realized so far (whole-fund
         amounts). The cost realized, the LPs' part of it (1 − g, the GP commitment's part aside, F3; an account's part
         of that by commitment, F23); and the LPs' fees and expenses to date (an account's own, F29) times the share of
-        the cost made that's been realized, by cost. Returns the two."""
+        the cost made that's been realized, by cost. At the end (X final, and the NAV point), all the LPs' paid-in: the
+        fund ends and its unused cash comes back as capital, as on the whole fund (FA49). The cost is then the LPs' part
+        of the investment calls, capital called and never invested included, and the fees and expenses are all of them.
+        Returns the two."""
+        if end:
+            return self.lps_paid_in - self.fees_and_expenses, self.fees_and_expenses
         return self.fund.lps_cost_share * realized, self.fees_and_expenses * realized / made
 
-    def distribute(self, amount, realized=None, made=None):
+    def distribute(self, amount, realized=None, made=None, end=False):
         """F3: g of the distribution to the GP commitment, outside the tiers; the rest runs the tiers. Deal by deal, tier
-        1 runs to what's due with `realized` of the `made` cost realized (F35); on the whole fund, to all paid-in (F5)."""
+        1 runs to what's due with `realized` of the `made` cost realized, or at the `end` to all paid-in (F35, FA49); on
+        the whole fund, to all paid-in (F5)."""
         amount = Fraction(amount)
         gpc = self.fund.gp_share * amount
         tiers = amount - gpc
         capital_due = self.lps_paid_in - self.capital_returned
         if self.fund.deal_by_deal:
-            cost, fees = self.due(realized, made)
+            cost, fees = self.due(realized, made, end)
             self.dues.append((cost, fees))
             # What's due can be less than what the LPs have had back (a new investment lowers the fees' share): then no
             # capital comes first, and nothing already returned is taken back.
@@ -278,7 +284,7 @@ class Waterfall:
         """X distributed on D, after every earlier cash flow (F14). final=None means the fund's own `final`."""
         final = self.fund.final if final is None else final
         ledger = copy.deepcopy(self._before)
-        this, tier = ledger.distribute(x, self.x_realized(final), self.fund.made_at_d)
+        this, tier = ledger.distribute(x, self.x_realized(final), self.fund.made_at_d, final)
         out = Outcome(Fraction(x), this, tier, ledger)
         if self.fund.deal_by_deal:
             out.due = ledger.dues[-1]
@@ -300,6 +306,7 @@ class Waterfall:
         return self.fund.made_at_d if final else self.fund.x_realized
 
     def due_on_x(self, final=None):
-        """F35: what's due before carry on X, (cost, fees and expenses). It doesn't change with X (F14)."""
+        """F35: what's due before carry on X, (cost, fees and expenses): when final, all the LPs' paid-in (FA49). It
+        doesn't change with X (F14)."""
         final = self.fund.final if final is None else final
-        return self._before.due(self.x_realized(final), self.fund.made_at_d)
+        return self._before.due(self.x_realized(final), self.fund.made_at_d, final)

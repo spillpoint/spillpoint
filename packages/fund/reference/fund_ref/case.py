@@ -236,7 +236,8 @@ def _fee_calls(fund):
 
 def _investments(fund):
     """F36, FC15: each investment once, at D before X, in the input's order: its cost made, the cost realized (exited or
-    written off), the cost written off, and its proceeds. Exact."""
+    written off), the cost written off, its proceeds, and its realized multiple: proceeds over the cost realized, none
+    while nothing of it is realized (FA59). Exact."""
     rows = []
     for inv, h in zip(fund.investments, fund.holdings):
         rows.append(
@@ -246,6 +247,7 @@ def _investments(fund):
                 "cost_realized": _lp_amount(h.realized),
                 "cost_written_off": _lp_amount(h.written_off),
                 "proceeds": _lp_amount(h.proceeds),
+                "realized_multiple": exact(h.proceeds / h.realized) if h.realized else None,
             }
         )
     return rows
