@@ -2,7 +2,9 @@
 // the case files, and the engine's own case tests arrive in f01b. The LPs' cases are also held to the cases they add
 // LPs to, since the engine reads LPs only from f02b. The classes' and later closes' cases (f03a) are held to their
 // accounts and their equalization, since the engine reads them only from f03b. The management fees' cases (f04a) are
-// held to their fee calls, their back fees and the paid-in they make, since the engine reads them only from f04b.
+// held to their fee calls, their back fees and the paid-in they make, since the engine reads them only from f04b. The
+// deals' cases (f05a) are held to their investments and, deal by deal, to what's due on X and the tier 1 it gives, since
+// the engine reads them only from f05b.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -44,6 +46,10 @@ const TERMS = [
   "fee_rate_with_schedule",
   "fee_call_with_schedule",
   "fee_commitments_mismatch",
+  "investment_name_repeated",
+  "investment_unknown",
+  "investment_not_made",
+  "investments_exceed_calls",
 ];
 
 interface Step {
@@ -63,18 +69,28 @@ interface Clawback {
   entitlement: string;
   owed: string;
 }
+/** FC15: deal by deal, what's due before carry on X, the fund's (with the cost made and realized) or an account's. */
+interface Due {
+  cost_made?: LpAmount;
+  cost_realized?: LpAmount;
+  cost: LpAmount;
+  fees_and_expenses: LpAmount;
+  total: LpAmount;
+}
 interface Point {
   x: string;
   exact: string;
   tags: string[];
+  due?: Due;
   distribution: Block;
   to_date: Block;
   clawback?: Clawback;
-  by_account?: { class: string | null; distribution: Block; to_date: Block; clawback?: Clawback }[];
+  by_account?: { class: string | null; due?: Due; distribution: Block; to_date: Block; clawback?: Clawback }[];
 }
 interface Reason {
   code: string;
   class?: string | null;
+  amount?: string;
   text: string;
 }
 interface Expected {
@@ -100,6 +116,10 @@ interface InputSchedule {
   steps: { rate: string; from?: string | null }[];
   commitments?: string | null;
 }
+interface InputInvestment {
+  name: string;
+  checks: { date: string; amount: string }[];
+}
 interface Inputs {
   case: string;
   xs: string[];
@@ -114,9 +134,13 @@ interface Inputs {
       lp_classes?: InputClass[] | null;
       gp_commitment?: { share: string; pays_fees?: boolean; pays_expenses?: boolean } | null;
       management_fee?: InputSchedule | null;
+      carry_basis?: string | null;
     };
-    cash_flows: { date: string; type: string; kind?: string; amount: string }[];
+    /** From 0.5.0 a write-off has no amount, and a distribution can name its investment and the share it sells (F33). */
+    cash_flows: { date: string; type: string; kind?: string; amount: string; investment?: string | null; share?: string | null }[];
     lps?: InputLp[] | null;
+    investments?: InputInvestment[] | null;
+    distribution_from?: { investment: string; share?: string | null } | null;
   };
 }
 interface LpAmount {
@@ -151,6 +175,8 @@ interface LpExpected extends Omit<Expected, "points"> {
   accounts?: { class: string | null; commitment: string; share: string; fee_share: string; paid_in: string; pref_accrued_to_d?: string }[];
   equalization?: { rate: string | null; closes: { date: string; joining: string[]; lps: Moves[] }[]; lps: Moves[] };
   fee_calls?: FeeCall[];
+  /** FC15: each investment at D, before X. */
+  investments?: { name: string; cost_made: LpAmount; cost_realized: LpAmount; cost_written_off: LpAmount; proceeds: LpAmount }[];
   points: LpPoint[];
 }
 
@@ -179,6 +205,10 @@ const joinsLater = (dir: string, lp: InputLp) => lp.close != null && lp.close > 
 /** F22, F25: a case whose LPs aren't all on the fund's terms and in from the start. */
 const classesOrCloses = (dir: string) => lpsOf(dir).some((lp) => lp.class != null || joinsLater(dir, lp));
 const CLASS_RUN = LP_RUN.filter(classesOrCloses);
+const investmentsOf = (dir: string) => readJson<Inputs>(dir, "inputs.json").fund.investments ?? [];
+/** F33: the cases that list their investments, and of them those that pay carry deal by deal (F34). */
+const INVESTED = RUN.filter((d) => investmentsOf(d).length > 0);
+const DEAL_BY_DEAL = RUN.filter((d) => readJson<Inputs>(d, "inputs.json").fund.terms.carry_basis === "deal_by_deal");
 
 /** F23, FA22: the accounts, the fund's terms first, then each class an LP names in the input's order. */
 function accountsOf(dir: string): (string | null)[] {
@@ -189,13 +219,13 @@ function accountsOf(dir: string): (string | null)[] {
 }
 
 describe("fund cases", () => {
-  it("are twenty-eight runs and four sets of refusals", () => {
-    expect(RUN).toHaveLength(28);
-    expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused", "fund-32-fees-refused"]);
+  it("are thirty-two runs and five sets of refusals", () => {
+    expect(RUN).toHaveLength(32);
+    expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused", "fund-32-fees-refused", "fund-37-deals-refused"]);
     expect([...RUN, ...REFUSED].sort()).toEqual(FUND);
   });
 
-  it("have LPs in cases 17 to 20, 22 to 26, 28, 30 and 31 (F19)", () => {
+  it("have LPs in cases 17 to 20, 22 to 26, 28, 30, 31 and 36 (F19)", () => {
     expect(LP_RUN).toEqual([
       "fund-17-lps-three",
       "fund-18-lps-thirds",
@@ -209,15 +239,26 @@ describe("fund cases", () => {
       "fund-28-classes-clawback-steps",
       "fund-30-fee-step-down",
       "fund-31-fee-schedule-classes-closes",
+      "fund-36-deal-by-deal-classes-closes",
     ]);
   });
 
-  it("have classes or later closes in cases 22 to 26, 28 and 31 only (F22, F25)", () => {
-    expect(CLASS_RUN).toEqual([...LP_RUN.slice(4, 10), "fund-31-fee-schedule-classes-closes"]);
+  it("have classes or later closes in cases 22 to 26, 28, 31 and 36 only (F22, F25)", () => {
+    expect(CLASS_RUN).toEqual([...LP_RUN.slice(4, 10), "fund-31-fee-schedule-classes-closes", "fund-36-deal-by-deal-classes-closes"]);
   });
 
-  it("have a fee schedule in cases 29 to 31 only (F30)", () => {
-    expect(RUN.filter((d) => scheduleOf(d) !== null)).toEqual(["fund-29-fee-schedule", "fund-30-fee-step-down", "fund-31-fee-schedule-classes-closes"]);
+  it("have a fee schedule in cases 29 to 31 and 36 only (F30)", () => {
+    expect(RUN.filter((d) => scheduleOf(d) !== null)).toEqual([
+      "fund-29-fee-schedule",
+      "fund-30-fee-step-down",
+      "fund-31-fee-schedule-classes-closes",
+      "fund-36-deal-by-deal-classes-closes",
+    ]);
+  });
+
+  it("have investments in cases 33 to 36 only, deal by deal in 34 to 36 (F33, F34)", () => {
+    expect(INVESTED).toEqual(["fund-33-portfolio-whole-fund", "fund-34-deal-by-deal", "fund-35-deal-by-deal-clawback", "fund-36-deal-by-deal-classes-closes"]);
+    expect(DEAL_BY_DEAL).toEqual(INVESTED.slice(1));
   });
 
   it("use 40 significant digits (F17)", () => {
@@ -631,5 +672,128 @@ describe.each(RUN.filter((d) => lpsOf(d).some((lp) => joinsLater(d, lp))))("%s, 
     const others = inputs.cash_flows.filter((f) => f.type === "call" && f.kind !== "fee").map((f) => exact(f.amount).minus(gpPart(inputs, f.kind!, exact(f.amount))));
     const paidIn = [...others, ...fees.map((f) => f.rate.times(all))].reduce((s, x) => s.plus(x), new D(0));
     expect(cents(paidIn)).toBe(expected.lps_paid_in);
+  });
+});
+
+describe.each(RUN.filter((d) => !INVESTED.includes(d)))("%s, with no investments", (dir) => {
+  it("gives no investments and nothing due (FC15)", () => {
+    const expected = readJson<LpExpected>(dir, "expected.json");
+    expect(expected.investments).toBeUndefined();
+    for (const p of expected.points) expect(p.due, p.x).toBeUndefined();
+  });
+});
+
+/** The investment calls, whole-fund amounts, on or before a date (F37). */
+const investmentCalls = (fund: Inputs["fund"], date: string) =>
+  fund.cash_flows.filter((f) => f.type === "call" && f.kind === "investment" && f.date <= date).reduce((s, f) => s.plus(exact(f.amount)), new D(0));
+
+describe.each(INVESTED)("%s, its investments", (dir) => {
+  const inputs = readJson<Inputs>(dir, "inputs.json").fund;
+  const expected = readJson<LpExpected>(dir, "expected.json");
+  const rows = expected.investments!;
+  const d = inputs.distribution_date ?? inputs.as_of;
+
+  it("lists each investment in the input's order, every amount to the cent and exact (F36, FC15)", () => {
+    expect(rows.map((r) => r.name)).toEqual(inputs.investments!.map((i) => i.name));
+    for (const r of rows) for (const a of [r.cost_made, r.cost_realized, r.cost_written_off, r.proceeds]) expect(a.amount, r.name).toBe(cents(exact(a.exact)));
+  });
+
+  it("gives each one's cost made, what's realized and written off of it, and its proceeds (F33)", () => {
+    rows.forEach((r, i) => {
+      const inv = inputs.investments![i]!;
+      // Every check is on or before D (F37), so the cost made at D is all of them.
+      expect(inv.checks.every((c) => c.date <= d), r.name).toBe(true);
+      expect(exact(r.cost_made.exact).eq(inv.checks.reduce((s, c) => s.plus(exact(c.amount)), new D(0))), r.name).toBe(true);
+      expect(exact(r.cost_realized.exact).lte(exact(r.cost_made.exact)), r.name).toBe(true);
+      expect(exact(r.cost_written_off.exact).lte(exact(r.cost_realized.exact)), r.name).toBe(true);
+      const writtenOff = inputs.cash_flows.some((f) => f.type === "write_off" && f.investment === r.name);
+      if (!writtenOff) expect(exact(r.cost_written_off.exact).isZero(), r.name).toBe(true);
+      const proceeds = inputs.cash_flows.filter((f) => f.type === "distribution" && f.investment === r.name).reduce((s, f) => s.plus(exact(f.amount)), new D(0));
+      expect(exact(r.proceeds.exact).eq(proceeds), r.name).toBe(true);
+    });
+  });
+
+  it("never makes more cost by a check's date than the investment calls to then (F37)", () => {
+    const checks = inputs.investments!.flatMap((i) => i.checks);
+    for (const c of checks) {
+      const made = checks.filter((x) => x.date <= c.date).reduce((s, x) => s.plus(exact(x.amount)), new D(0));
+      expect(made.lte(investmentCalls(inputs, c.date)), c.date).toBe(true);
+    }
+  });
+});
+
+describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
+  const inputs = readJson<Inputs>(dir, "inputs.json").fund;
+  const expected = readJson<LpExpected>(dir, "expected.json");
+  const g = inputs.terms.gp_commitment ? exact(inputs.terms.gp_commitment.share) : new D(0);
+  const d = inputs.distribution_date ?? inputs.as_of;
+  const made = expected.investments!.reduce((s, r) => s.plus(exact(r.cost_made.exact)), new D(0));
+  const invested = investmentCalls(inputs, d).times(new D(1).minus(g));
+  const accounts = expected.accounts ?? [{ class: null, share: "1", paid_in: expected.lps_paid_in }];
+  const near = (a: D, b: D) => a.minus(b).abs().lte(CLOSE);
+
+  it("gives what's due on X at every point, the cost made and realized, every amount to the cent and exact (F36, FC15)", () => {
+    for (const p of expected.points) {
+      const due = p.due!;
+      for (const a of [due.cost_made!, due.cost_realized!, due.cost, due.fees_and_expenses, due.total]) expect(a.amount, p.x).toBe(cents(exact(a.exact)));
+      expect(exact(due.cost_made!.exact).eq(made), p.x).toBe(true);
+      const realized = exact(due.cost_realized!.exact);
+      expect(realized.lte(made), p.x).toBe(true);
+      // F33: when final, and at the NAV point, everything left of every investment is realized.
+      if (expected.final || p.tags.includes("nav")) expect(realized.eq(made), p.x).toBe(true);
+    }
+  });
+
+  it("is the LPs' part of the cost realized, and their fees and expenses times realized over made, each account's own (F35)", () => {
+    for (const p of expected.points) {
+      const realized = exact(p.due!.cost_realized!.exact);
+      const parts = p.by_account?.map((a) => a.due!) ?? [p.due!];
+      parts.forEach((due, i) => {
+        const share = exact(accounts[i]!.share);
+        const cost = exact(due.cost.exact);
+        expect(near(cost, new D(1).minus(g).times(share).times(realized)), `${p.x} ${i} cost`).toBe(true);
+        // Its fees and expenses to D are its paid-in less its part of the investment calls (F5, F23).
+        const fees = new D(accounts[i]!.paid_in).minus(invested.times(share));
+        expect(near(exact(due.fees_and_expenses.exact), fees.times(realized).div(made)), `${p.x} ${i} fees`).toBe(true);
+        expect(near(exact(due.total.exact), cost.plus(exact(due.fees_and_expenses.exact))), `${p.x} ${i} total`).toBe(true);
+      });
+      for (const k of ["cost", "fees_and_expenses", "total"] as const) {
+        expect(near(parts.reduce((s, a) => s.plus(exact(a[k].exact)), new D(0)), exact(p.due![k].exact)), `${p.x} ${k}`).toBe(true);
+      }
+    }
+  });
+
+  it("gives X's tier 1 as what's due less what's back, or nothing (F35)", () => {
+    for (const p of expected.points) {
+      const parts = p.by_account ?? [{ due: p.due!, distribution: p.distribution, to_date: p.to_date }];
+      parts.forEach((a, i) => {
+        const part = new D(1).minus(g).times(exact(accounts[i]!.share)).times(exact(p.exact));
+        const back = new D(a.to_date.lps.capital).minus(a.distribution.lps.capital);
+        const tier1 = D.min(part, D.max(0, exact(a.due!.total.exact).minus(back)));
+        expect(a.distribution.lps.capital, `${p.x} ${i}`).toBe(cents(tier1));
+      });
+    }
+  });
+
+  it.runIf(made.times(new D(1).minus(g)).eq(invested))("dues all the paid-in at the end, every check called for (F35, FA49)", () => {
+    for (const p of expected.points.filter((x) => expected.final || x.tags.includes("nav"))) {
+      expect(p.due!.total.amount, p.x).toBe(expected.lps_paid_in);
+      p.by_account?.forEach((a, i) => expect(a.due!.total.amount, `${p.x} ${i}`).toBe(accounts[i]!.paid_in));
+    }
+  });
+
+  it("words tier 1's end as F36 does, its amount what's due on X (F36, FA57)", () => {
+    const listed = new Map(expected.points.map((p) => [p.exact, p]));
+    for (const b of expected.breakpoints) {
+      for (const r of b.reasons.filter((x) => x.code === "capital_returned")) {
+        const p = listed.get(b.exact)!;
+        const due = r.class === undefined ? p.due! : p.by_account![accounts.findIndex((a) => a.class === r.class)]!.due!;
+        expect(exact(r.amount!).eq(exact(due.total.exact)), b.x).toBe(true);
+        const named = r.class === undefined ? "" : `${r.class ?? "Fund terms"}: `;
+        const dollars = `$${Number(due.total.amount.split(".")[0]).toLocaleString("en-US")}`;
+        expect(r.text.startsWith(`${named}LPs have their ${dollars}`), r.text).toBe(true);
+        expect(r.text.endsWith(" back for the investments exited or written off, fees and expenses included"), r.text).toBe(true);
+      }
+    }
   });
 });
