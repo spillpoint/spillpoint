@@ -32,6 +32,11 @@ export const INPUT_TERMS = [
   "fee_rate_with_schedule",
   "fee_call_with_schedule",
   "fee_commitments_mismatch",
+  // From 0.5.0 (F37).
+  "investment_name_repeated",
+  "investment_unknown",
+  "investment_not_made",
+  "investments_exceed_calls",
 ] as const;
 export type InputTerm = (typeof INPUT_TERMS)[number];
 
@@ -39,7 +44,11 @@ export type InputTerm = (typeof INPUT_TERMS)[number];
  * The unsupported terms with a name of their own (F7, F18). Any other unsupported term is the key v1 doesn't model,
  * named by the key itself (`hurdle_irr`), so that list is open.
  */
-export const UNSUPPORTED_TERMS = ["compounded_pref"] as const;
+export const UNSUPPORTED_TERMS = [
+  "compounded_pref",
+  // From 0.5.0 (F37).
+  "deal_by_deal_pref",
+] as const;
 export type UnsupportedTerm = (typeof UNSUPPORTED_TERMS)[number];
 
 /** A tier of a run ending (F15): X's own, or the run on the fund's totals' when it bends the clawback. */

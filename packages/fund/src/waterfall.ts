@@ -429,6 +429,10 @@ const ledgers = new WeakMap<Fund, FundLedger>();
 function ledgerAtD(fund: Fund): FundLedger {
   const known = ledgers.get(fund);
   if (known) return known;
+  // F35: tier 1 deal by deal runs only to what's due on the investments realized so far, which f05b2 builds. Until then
+  // a fund read as deal by deal isn't split on the whole fund without saying so: the split stops here. Nothing is
+  // published between f05b1 and f05b2, and the page refuses such a file before the engine sees it.
+  if (fund.terms.carryBasis === "deal_by_deal") throw new Error("spillpoint-fund: carry deal by deal is read, but not split until the next step (f05b2)");
   const accounts = accountsOf(fund);
   let books: Ledger[] = accounts.map((a) => ({
     lpsPaidIn: ZERO,

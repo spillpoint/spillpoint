@@ -492,6 +492,7 @@ Two optional columns after the commitment: class, then close.
 - **Saving** keeps the two rates, the classes, and each LP's class and close. A fund without them saves without them.
 - **Opening:** f03b's guard comes out, so a file with classes or later closes opens into the tabs.
   - **From f04b until f04c,** a file whose terms have a `management_fee` is refused in one line, so a save can't drop it (Jordan's words): "This file has a management fee schedule; the page shows it from the next version." A null one is none, and opens.
+  - **From f05b1 until f05c,** a file with investments, a write-off or a `carry_basis` is refused in one line, so a save can't drop them (Jordan's words): "This file has investments; the page shows them from the next version." Null, and an empty list of investments, are none, and open.
 
 ### The examples
 

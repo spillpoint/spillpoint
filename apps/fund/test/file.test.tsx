@@ -180,6 +180,34 @@ describe("a file the page can't use is refused in one line, the current fund kep
     expect([pickerText(), answer()]).toEqual(before);
   });
 
+  it("refuses a file with investments, until the page shows them, and keeps the fund it had", async () => {
+    render(<App />);
+    const before = [pickerText(), answer()];
+    await openFile(caseText("fund-34-deal-by-deal"), "fund-34-deal-by-deal.json");
+    expect(status()).toBe("Couldn't open fund-34-deal-by-deal.json. This file has investments; the page shows them from the next version.");
+    expect([pickerText(), answer()]).toEqual(before);
+  });
+
+  it("refuses a saved file or a bare input with investments, a write-off or a carry basis, whatever their shape, and opens one with none", () => {
+    const refused = (text: string) => {
+      const r = readFile(text);
+      return r.ok ? "opened" : r.message;
+    };
+    const later = "This file has investments; the page shows them from the next version.";
+    for (const dir of ["fund-33-portfolio-whole-fund", "fund-34-deal-by-deal", "fund-35-deal-by-deal-clawback", "fund-36-deal-by-deal-classes-closes"]) expect(refused(caseText(dir))).toBe(later);
+    const fund = case8();
+    const investments = [{ name: "Alder", checks: [{ date: "2021-01-15", amount: "1000000" }] }];
+    expect(refused(savedFund({ ...fund, investments }))).toBe(later);
+    expect(refused(savedFund({ ...fund, terms: { ...fund.terms, carry_basis: "whole_fund" } }))).toBe(later);
+    expect(refused(savedFund({ ...fund, cash_flows: [...fund.cash_flows, { date: "2022-01-01", type: "write_off", investment: "Alder" }] }))).toBe(later);
+    // Before the engine reads it, so investments or a basis the engine would refuse get the same line.
+    expect(refused(JSON.stringify({ ...fund, investments: "Alder" }))).toBe(later);
+    expect(refused(JSON.stringify({ ...fund, terms: { ...fund.terms, carry_basis: "per deal" } }))).toBe(later);
+    // Null, and an empty list of investments, are none (FA52).
+    expect(refused(savedFund({ ...fund, investments: null, terms: { ...fund.terms, carry_basis: null } }))).toBe("opened");
+    expect(refused(savedFund({ ...fund, investments: [] }))).toBe("opened");
+  });
+
   it("refuses a cap table saved from the main page, and says where to open it", async () => {
     render(<App />);
     await openFile(JSON.stringify({ format: "spillpoint", version: 7, name: "Millrace Robotics", cap_table: {}, range: ["0", "1"] }), "millrace.json");

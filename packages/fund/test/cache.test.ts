@@ -8,18 +8,30 @@ import type { CashFlow, FeeCall, Fund } from "../src/index.ts";
 import { readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
 
-const call = (index: number, date: string, amount: string): CashFlow => ({ index, date, type: "call", kind: "investment", amount: new D(amount) });
+const call = (index: number, date: string, amount: string): CashFlow => ({ index, date, type: "call", kind: "investment", amount: new D(amount), investment: null, share: null });
 
 it("works a fund built by hand from scratch, so a change after a split shows in the next one", () => {
   // One $5,000,000 call and 20% carry: at $12,500,000 the GP has 20% of $7,500,000.
   const fund: Fund = {
     asOf: "2026-03-01",
-    terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [], managementFee: null },
+    terms: {
+      carry: [{ rate: new D("0.2"), fromLpMultiple: null }],
+      pref: null,
+      catchUp: null,
+      gpCommitment: null,
+      feeRate: null,
+      equalizationRate: null,
+      lpClasses: [],
+      managementFee: null,
+      carryBasis: "whole_fund",
+    },
     cashFlows: [call(0, "2022-03-01", "5000000")],
     distributionDate: "2026-03-01",
     final: false,
     nav: null,
     lps: [],
+    investments: [],
+    distributionFrom: null,
   };
   expect(toCents(splitAt(fund, "12500000").distribution.gp.total)).toBe("1500000.00");
 
@@ -77,7 +89,7 @@ it("splits a fund built by hand as 0.3.0 built one, without managementFee, as on
   // over its weight of 7. Birch's back fees are that times its 3, $42,857.14, and the call counts at $142,857.14 (F29),
   // so the LPs' paid-in is $5,142,857.14.
   const lp = (name: string, commitment: string, close: string | null) => ({ name, commitment: new D(commitment), class: null, close });
-  const fee: CashFlow = { index: 1, date: "2022-03-01", type: "call", kind: "fee", amount: new D("100000") };
+  const fee: CashFlow = { index: 1, date: "2022-03-01", type: "call", kind: "fee", amount: new D("100000"), investment: null, share: null };
   const fund = {
     asOf: "2026-03-01",
     terms: { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: new D("0.08"), lpClasses: [] },
@@ -90,6 +102,25 @@ it("splits a fund built by hand as 0.3.0 built one, without managementFee, as on
   expect(toCents(splitAt(fund, "12500000").lpsPaidIn)).toBe("5142857.14");
   expect(feeCalls(fund)).toBeNull();
   expect(equalization(fund)!.lps.map((m) => [m.name, toCents(m.capitalPaid), toCents(m.backFees)])).toEqual([["Alder", "0.00", "0.00"], ["Birch", "1500000.00", "42857.14"]]);
+});
+
+it("splits a fund built by hand as 0.4.0 built one, without 0.5.0's fields, on the whole fund with no investments", () => {
+  // FA61: no carryBasis on its terms is the whole fund, and no investments, no distributionFrom and cash flows without
+  // an investment or share are none. Case 10's fund, read, then each 0.5.0 field taken off: every point splits the same.
+  const read = readFund(readCaseFile<CaseInputs>("fund-10-clawback", "inputs.json").fund);
+  const { carryBasis: _basis, ...terms } = read.terms;
+  const fund = {
+    ...read,
+    terms,
+    cashFlows: read.cashFlows.map(({ investment: _i, share: _s, ...f }) => f),
+    investments: undefined,
+    distributionFrom: undefined,
+  } as unknown as Fund;
+  for (const x of ["0", "1000000", "25000000"]) {
+    const [a, b] = [splitAt(fund, x, { final: true }), splitAt(read, x, { final: true })];
+    expect([toCents(a.distribution.gp.total), toCents(a.toDate.lps.total), toCents(a.clawback!.owed)], x).toEqual([toCents(b.distribution.gp.total), toCents(b.toDate.lps.total), toCents(b.clawback!.owed)]);
+  }
+  expect(findBreakpoints(fund).map((p) => toCents(p.x))).toEqual(findBreakpoints(read).map((p) => toCents(p.x)));
 });
 
 it("keeps what it works out for a fund readFund returned, which can't change", () => {

@@ -2,11 +2,14 @@
 //
 // The order of checks is FA2's, each stage stopping at the first problem:
 // 1. Unsupported terms: the keys under `terms` in the file's order, each
-//    term's own keys in the file's order, and a compounding that isn't "simple".
+//    term's own keys in the file's order, and a compounding that isn't "simple";
+//    then from 0.5.0 a pref deal by deal (F37).
 // 2. The fields: unknown and missing top-level fields; `as_of`; `terms`
 //    (carry, pref, catch-up, GP commitment, then the terms against each other);
-//    each cash flow in the list's order; `distribution_date`; `final`; `nav`.
-// 3. The cash flows against each other and against D.
+//    each cash flow in the list's order; `distribution_date`; `final`; `nav`;
+//    from 0.5.0 the investments in order, then `distribution_from` (F37).
+// 3. The cash flows against each other and against D; from 0.5.0 then the
+//    investments against the cash flows and D (F37).
 // 4. The LPs (F21, FA19): `lps` itself, then each LP in the list's order,
 //    checked through before the next: its shape and its fields, that the name
 //    and commitment are there, the name, the commitment, whether the name
@@ -22,8 +25,16 @@
 // `start`, `frequency`, each step in order, `commitments`), `fee_rate` against
 // the schedule, and each class in order: its shape, its name, the name
 // repeating, its fee rate, its carry, its carry against the catch-up (F28,
-// F32). Stage 3 starts with an entered fee call beside a schedule, and counts
-// the schedule's calls among the calls (F30, FA39, FA40).
+// F32), then `carry_basis`. Stage 3 starts with an entered fee call beside a
+// schedule, and counts the schedule's calls among the calls (F30, FA39, FA40).
+//
+// From 0.5.0 (F37, FA53) each cash flow is checked through in this order: its
+// unknown fields in the file's order, a call's `investment` or `share` among
+// them; the fields it needs (`amount` not for a write-off); the date; the type;
+// a call's kind, or a distribution's; a write-off's own fields, then its
+// `investment` missing; the `investment`; the `share`; the amount. Each
+// investment: its shape, its unknown keys, `name` then `checks` missing, the
+// name, `checks`, each check in order, then the name against the ones before.
 //
 // null is the same as leaving an optional field out (FA3, FA24, FA41), except
 // a carry, the fund's or a class's, whose null could mean "none" or "the
@@ -32,7 +43,23 @@
 import { D, ONE, ZERO, exactOrNull, exactRatio } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { refuse, SCHEDULE_WITHOUT_PAYERS, unsupported } from "./errors.ts";
-import type { CallKind, CarryStep, CashFlow, FeeFrequency, FeeStep, Fund, FundTerms, GpCommitment, Lp, LpClass, ManagementFee } from "./model.ts";
+import type {
+  CallKind,
+  CarryBasis,
+  CarryStep,
+  CashFlow,
+  DistributionFrom,
+  FeeFrequency,
+  FeeStep,
+  Fund,
+  FundTerms,
+  GpCommitment,
+  Investment,
+  InvestmentCheck,
+  Lp,
+  LpClass,
+  ManagementFee,
+} from "./model.ts";
 import { PERIODS, schedulePeriods } from "./schedule.ts";
 
 type Json = Record<string, unknown>;
@@ -46,13 +73,20 @@ const TERM_KEYS: Record<string, readonly string[] | null> = {
   equalization_rate: null, // a rate (F25)
   lp_classes: null, // a list of classes, checked below (F22)
   management_fee: ["start", "frequency", "steps", "commitments"], // the schedule (F30)
+  carry_basis: null, // "whole_fund" or "deal_by_deal" (F34)
 };
 const STEP_KEYS = ["rate", "from_lp_multiple"];
 const FEE_STEP_KEYS = ["rate", "from"];
 const CLASS_KEYS = ["name", "fee_rate", "carry"];
-const TOP_KEYS = ["as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps"];
+const TOP_KEYS = ["as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps", "investments", "distribution_from"];
 const REQUIRED = ["as_of", "terms", "cash_flows"];
-const FLOW_KEYS = ["date", "type", "kind", "amount"];
+const FLOW_KEYS = ["date", "type", "kind", "amount", "investment", "share"];
+const FLOW_TYPES: readonly CashFlow["type"][] = ["call", "distribution", "write_off"];
+/** F37: what a write-off doesn't have, refused in the file's order. */
+const NOT_ON_A_WRITE_OFF = ["kind", "amount", "share"];
+const INVESTMENT_KEYS = ["name", "checks"];
+const CHECK_KEYS = ["date", "amount"];
+const DISTRIBUTION_FROM_KEYS = ["investment", "share"];
 const CALL_KINDS: readonly CallKind[] = ["investment", "fee", "expense"];
 const LP_KEYS = ["name", "commitment", "class", "close"];
 const REQUIRED_LP = ["name", "commitment"];
@@ -133,8 +167,8 @@ function checkUnsupported(terms: unknown): void {
       checkUnsupportedSchedule(value);
       continue;
     }
-    // A rate given as an object is stage 2's bad_number, not a term with keys of its own.
-    if (!isObject(value) || key === "fee_rate" || key === "equalization_rate") continue;
+    // A rate given as an object is stage 2's bad_number, not a term with keys of its own; so is a carry basis, bad_field.
+    if (!isObject(value) || key === "fee_rate" || key === "equalization_rate" || key === "carry_basis") continue;
     if (key === "carry") {
       checkUnsupportedCarry(value, field);
       continue;
@@ -145,6 +179,11 @@ function checkUnsupported(terms: unknown): void {
         throw unsupported("compounded_pref", `${field}.compounding`, "only a simple pref is modeled in v1 (F7)");
       }
     }
+  }
+  // F35, F37, FA54: no pref deal by deal in 0.5.0, whatever the pref's shape. A carry basis that isn't one of the two
+  // words isn't deal by deal here: it's stage 2's bad_field.
+  if (terms.carry_basis === "deal_by_deal" && given(terms, "pref")) {
+    throw unsupported("deal_by_deal_pref", "terms.pref", "a pref deal by deal isn't modeled in 0.5.0, so neither is a catch-up (F35)");
   }
 }
 
@@ -268,7 +307,23 @@ function readTerms(terms: unknown): FundTerms {
   if (managementFee && feeRate !== null) throw refuse("fee_rate_with_schedule", "terms.fee_rate");
   // F28, F32: a class's own fee rate is set against `fee_rate`, or against the schedule's first rate.
   const lpClasses = readClasses(terms.lp_classes, feeRate !== null || managementFee !== null, catchUpShare);
-  return { carry, pref: prefRate && { rate: prefRate }, catchUp: catchUpShare && { gpShare: catchUpShare }, gpCommitment, feeRate, equalizationRate, lpClasses, managementFee };
+  // F34, F37: one of the two words exactly; null or left out is the whole fund (FA52).
+  let carryBasis: CarryBasis = "whole_fund";
+  if (given(terms, "carry_basis")) {
+    if (terms.carry_basis !== "whole_fund" && terms.carry_basis !== "deal_by_deal") throw refuse("bad_field", "terms.carry_basis");
+    carryBasis = terms.carry_basis;
+  }
+  return {
+    carry,
+    pref: prefRate && { rate: prefRate },
+    catchUp: catchUpShare && { gpShare: catchUpShare },
+    gpCommitment,
+    feeRate,
+    equalizationRate,
+    lpClasses,
+    managementFee,
+    carryBasis,
+  };
 }
 
 /** F30: a management fee rate is from 0 up to, not including, 1, a year on commitments (F32). */
@@ -361,28 +416,157 @@ function readClasses(raw: unknown, fundFeeRate: boolean, catchUpShare: D | null)
   });
 }
 
+/** F33, F37: how much of what's left of an investment a distribution sells: above 0, at most 1. */
+function shareOf(value: unknown, field: string): D {
+  const share = exact(value, field);
+  if (!share.gt(ZERO) || share.gt(ONE)) throw refuse("bad_number", field);
+  return share;
+}
+
+/** F18, F37: each cash flow checked through before the next, in FA53's order (the header). */
 function readFlows(raw: unknown): CashFlow[] {
   if (!Array.isArray(raw)) throw refuse("bad_field", "cash_flows");
   return raw.map((f: unknown, index): CashFlow => {
     const field = `cash_flows[${index}]`;
     if (!isObject(f)) throw refuse("bad_field", field);
-    for (const key of Object.keys(f)) if (!FLOW_KEYS.includes(key)) throw refuse("unknown_field", `${field}.${key}`);
-    for (const key of ["date", "type", "amount"]) if (!given(f, key)) throw refuse("missing_field", `${field}.${key}`);
+    // F37: a call has no investment and no share. FA52: null on one is left out, not refused.
+    const onACall = (key: string) => f.type === "call" && (key === "investment" || key === "share") && given(f, key);
+    for (const key of Object.keys(f)) if (!FLOW_KEYS.includes(key) || onACall(key)) throw refuse("unknown_field", `${field}.${key}`);
+    // F33: a write-off has no amount, by the type as given.
+    for (const key of f.type === "write_off" ? ["date", "type"] : ["date", "type", "amount"]) if (!given(f, key)) throw refuse("missing_field", `${field}.${key}`);
     const when = date(f.date, `${field}.date`);
-    if (f.type !== "call" && f.type !== "distribution") throw refuse("bad_field", `${field}.type`);
+    if (!FLOW_TYPES.includes(f.type as CashFlow["type"])) throw refuse("bad_field", `${field}.type`);
+    const type = f.type as CashFlow["type"];
     let kind: CallKind | null = null;
-    if (f.type === "call") {
+    if (type === "call") {
       if (!given(f, "kind")) throw refuse("missing_field", `${field}.kind`);
       if (!CALL_KINDS.includes(f.kind as CallKind)) throw refuse("bad_field", `${field}.kind`);
       kind = f.kind as CallKind;
-    } else if (given(f, "kind")) {
+    } else if (type === "distribution" && given(f, "kind")) {
       // FA12: a distribution has no kind.
       throw refuse("unknown_field", `${field}.kind`);
     }
-    const amount = exact(f.amount, `${field}.amount`);
-    if (!amount.gt(ZERO)) throw refuse("bad_number", `${field}.amount`);
-    return { index, date: when, type: f.type, kind, amount };
+    if (type === "write_off") {
+      // F37, FA52: a write-off has no kind, amount or share, null being left out; it needs its investment.
+      for (const key of Object.keys(f)) if (NOT_ON_A_WRITE_OFF.includes(key) && given(f, key)) throw refuse("unknown_field", `${field}.${key}`);
+      if (!given(f, "investment")) throw refuse("missing_field", `${field}.investment`);
+    }
+    // F33, F37: a distribution's investment and share, or a write-off's investment. A share sells part of an investment,
+    // so it needs one named.
+    let investment: string | null = null;
+    let share: D | null = null;
+    if (type !== "call") {
+      if (given(f, "investment")) {
+        // FA52: an investment's name as LP names are: text, not blank, compared exactly as written.
+        if (typeof f.investment !== "string" || blank(f.investment)) throw refuse("bad_field", `${field}.investment`);
+        investment = f.investment;
+      } else if (given(f, "share")) {
+        throw refuse("missing_field", `${field}.investment`);
+      }
+      if (type === "distribution") share = given(f, "share") ? shareOf(f.share, `${field}.share`) : ONE;
+    }
+    let amount: D | null = null;
+    if (type !== "write_off") {
+      amount = exact(f.amount, `${field}.amount`);
+      if (!amount.gt(ZERO)) throw refuse("bad_number", `${field}.amount`);
+    }
+    return { index, date: when, type, kind, amount, investment, share };
   });
+}
+
+/**
+ * F33, F37: the fund's investments, each checked through before the next (FA53): its shape, its unknown keys in the
+ * file's order, `name` then `checks` missing, the name, `checks`, each check in order (its shape, its unknown keys,
+ * `date` then `amount` missing, the date, the amount), then its name against the ones before. Left out, null or an empty
+ * list: none (FA52).
+ */
+function readInvestments(raw: unknown): Investment[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw refuse("bad_field", "investments");
+  const names = new Set<string>();
+  return raw.map((inv: unknown, i): Investment => {
+    const field = `investments[${i}]`;
+    if (!isObject(inv)) throw refuse("bad_field", field);
+    for (const key of Object.keys(inv)) if (!INVESTMENT_KEYS.includes(key)) throw refuse("unknown_field", `${field}.${key}`);
+    for (const key of INVESTMENT_KEYS) if (!given(inv, key)) throw refuse("missing_field", `${field}.${key}`);
+    if (typeof inv.name !== "string" || blank(inv.name)) throw refuse("bad_field", `${field}.name`);
+    if (!Array.isArray(inv.checks) || inv.checks.length === 0) throw refuse("bad_field", `${field}.checks`);
+    const checks = inv.checks.map((c: unknown, j): InvestmentCheck => {
+      const at = `${field}.checks[${j}]`;
+      if (!isObject(c)) throw refuse("bad_field", at);
+      for (const key of Object.keys(c)) if (!CHECK_KEYS.includes(key)) throw refuse("unknown_field", `${at}.${key}`);
+      for (const key of CHECK_KEYS) if (!given(c, key)) throw refuse("missing_field", `${at}.${key}`);
+      const when = date(c.date, `${at}.date`);
+      // F33: a check is the fund's cost, an exact amount above 0.
+      const amount = exact(c.amount, `${at}.amount`);
+      if (!amount.gt(ZERO)) throw refuse("bad_number", `${at}.amount`);
+      return { date: when, amount };
+    });
+    // F37: no two investments share a name, compared exactly as written (FA52), checked once its checks are read.
+    if (names.has(inv.name)) throw refuse("investment_name_repeated", `${field}.name`);
+    names.add(inv.name);
+    return { name: inv.name, checks };
+  });
+}
+
+/** F14, F37: X's source, its shape, its unknown keys in the file's order, its investment, then its share. Null: none (FA52). */
+function readDistributionFrom(raw: unknown): DistributionFrom | null {
+  if (raw === undefined || raw === null) return null;
+  const at = "distribution_from";
+  if (!isObject(raw)) throw refuse("bad_field", at);
+  for (const key of Object.keys(raw)) if (!DISTRIBUTION_FROM_KEYS.includes(key)) throw refuse("unknown_field", `${at}.${key}`);
+  if (!given(raw, "investment")) throw refuse("missing_field", `${at}.investment`);
+  if (typeof raw.investment !== "string" || blank(raw.investment)) throw refuse("bad_field", `${at}.investment`);
+  return { investment: raw.investment, share: given(raw, "share") ? shareOf(raw.share, `${at}.share`) : ONE };
+}
+
+/**
+ * Stage 3, from 0.5.0 (F37), after the cash flows against each other and D. On the whole fund the investments are
+ * checked as deal by deal, and a distribution without one, or no `distribution_from`, is fine (FA55):
+ * - a check after D: the first in the investments' order, then its checks';
+ * - deal by deal, no investments;
+ * - each distribution and write-off in the input's order: deal by deal, a distribution naming none; an investment not
+ *   listed; one dated before its investment's first check (a write-off as a distribution, FA56);
+ * - `distribution_from`: deal by deal, missing; an investment not listed;
+ * - the cost made by a check's date more than the investment calls to then (FA53): checks in date order, on one date in
+ *   the investments' order then the checks', each with every check on or before its date, so the first check of a date
+ *   that runs past the calls is named.
+ */
+function checkInvestments(flows: CashFlow[], investments: Investment[], from: DistributionFrom | null, basis: CarryBasis, d: number): void {
+  investments.forEach((inv, i) =>
+    inv.checks.forEach((c, j) => {
+      if (dayNumber(c.date)! > d) throw refuse("cash_flow_after_distribution_date", `investments[${i}].checks[${j}]`);
+    }),
+  );
+  const dealByDeal = basis === "deal_by_deal";
+  if (dealByDeal && investments.length === 0) throw refuse("missing_field", "investments");
+  const firstCheck = new Map(investments.map((inv) => [inv.name, Math.min(...inv.checks.map((c) => dayNumber(c.date)!))]));
+  for (const f of flows) {
+    if (f.type === "call") continue;
+    const at = `cash_flows[${f.index}]`;
+    if (f.investment === null) {
+      // F35: deal by deal, every distribution is from an investment; a write-off always names one.
+      if (dealByDeal) throw refuse("missing_field", `${at}.investment`);
+      continue;
+    }
+    const first = firstCheck.get(f.investment);
+    if (first === undefined) throw refuse("investment_unknown", `${at}.investment`);
+    if (dayNumber(f.date)! < first) throw refuse("investment_not_made", at);
+  }
+  if (from === null) {
+    if (dealByDeal) throw refuse("missing_field", "distribution_from");
+  } else if (!firstCheck.has(from.investment)) {
+    throw refuse("investment_unknown", "distribution_from.investment");
+  }
+  // F37: checks aren't calls, but the cost made by any check's date can't be more than the investment calls to then.
+  // Calls come before checks on one date (F33). The sort is stable, so one date's checks stay in the investments' order.
+  const checks = investments
+    .flatMap((inv, i) => inv.checks.map((c, j) => ({ day: dayNumber(c.date)!, amount: c.amount, path: `investments[${i}].checks[${j}].amount` })))
+    .sort((a, b) => a.day - b.day);
+  const calls = flows.filter((f) => f.type === "call" && f.kind === "investment").map((f) => ({ day: dayNumber(f.date)!, amount: f.amount! }));
+  const upTo = (xs: { day: number; amount: D }[], day: number) => xs.filter((x) => x.day <= day).reduce((t, x) => t.plus(x.amount), ZERO);
+  const over = checks.find((c) => upTo(checks, c.day).gt(upTo(calls, c.day)));
+  if (over) throw refuse("investments_exceed_calls", over.path);
 }
 
 /**
@@ -531,6 +715,9 @@ export function readFund(input: unknown): Fund {
     nav = exact(input.nav, "nav");
     if (nav.isNegative() && !nav.isZero()) throw refuse("bad_number", "nav");
   }
+  // F37: after `nav`, the investments, then X's source.
+  const investments = readInvestments(input.investments);
+  const distributionFrom = readDistributionFrom(input.distribution_from);
 
   // F32: with a schedule, an entered fee call would be counted twice: the first in the input's order is refused.
   if (terms.managementFee) {
@@ -538,7 +725,8 @@ export function readFund(input: unknown): Fund {
     if (fee) throw refuse("fee_call_with_schedule", `cash_flows[${fee.index}]`);
   }
   // F4: no calls at all, or a distribution before the first call, is refused; D is on or after every cash flow. The
-  // schedule's calls are calls (F30), dated to D (FA39); a period with nothing to call isn't one (FA40).
+  // schedule's calls are calls (F30), dated to D (FA39); a period with nothing to call isn't one (FA40). A write-off
+  // isn't a distribution, but it's a cash flow after D like any other (FA56).
   const d = dayNumber(distributionDate)!;
   const calls = flows.filter((f) => f.type === "call");
   const scheduled = terms.managementFee ? schedulePeriods(terms.managementFee, d) : [];
@@ -549,16 +737,18 @@ export function readFund(input: unknown): Fund {
   // FA39: the schedule's calls are never after D, so this is about an entered flow.
   const late = flows.find((f) => dayNumber(f.date)! > d);
   if (late) throw refuse("cash_flow_after_distribution_date", `cash_flows[${late.index}]`);
+  checkInvestments(flows, investments, distributionFrom, terms.carryBasis, d);
 
-  // Stage 4: the LPs, after everything else (FA19). FA31: a close comes before the first distribution, and before D.
+  // Stage 4: the LPs, after everything else (FA19). FA31: a close comes before the first distribution, and before D;
+  // a write-off isn't a distribution (FA56).
   const firstDistribution = Math.min(d, ...flows.filter((f) => f.type === "distribution").map((f) => dayNumber(f.date)!));
   const lps = readLps(input.lps, terms.lpClasses, firstDistribution);
 
-  // F4: on one date, calls come before distributions; same-day distributions go in the order listed.
-  const cashFlows = [...flows].sort(
-    (a, b) => dayNumber(a.date)! - dayNumber(b.date)! || (a.type === b.type ? 0 : a.type === "call" ? -1 : 1) || a.index - b.index,
-  );
-  const unfrozen: Fund = { asOf, terms, cashFlows, distributionDate, final, nav, lps };
+  // F4, widened by F33: on one date, calls, then write-offs, then distributions; write-offs and distributions each in
+  // the order listed.
+  const rank = { call: 0, write_off: 1, distribution: 2 };
+  const cashFlows = [...flows].sort((a, b) => dayNumber(a.date)! - dayNumber(b.date)! || rank[a.type] - rank[b.type] || a.index - b.index);
+  const unfrozen: Fund = { asOf, terms, cashFlows, distributionDate, final, nav, lps, investments, distributionFrom };
   // Stage 5: what the LPs need of the rest (F28, F32).
   checkWhatTheLpsNeed(unfrozen, firstCall, input);
   const fund: Fund = deepFreeze(unfrozen);

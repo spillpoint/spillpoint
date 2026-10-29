@@ -117,6 +117,11 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
+  // Until the page shows investments (f05c, which removes this), a file with investments, a write-off or a carry basis
+  // is refused, so a save can't drop them: the forms have no place for them yet. Before the engine reads it, so one the
+  // engine would refuse gets the same line. Null, and an empty list of investments, are none (FA52), so they open.
+  if (hasInvestments(input)) return { ok: false, message: INVESTMENTS_LATER };
+
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -161,6 +166,18 @@ function trimmedNames(input: unknown): unknown {
   }
   if (Array.isArray(input.lps)) out = { ...out, lps: input.lps.map((lp: unknown) => trimmed(lp, ["name", "class"])) };
   return out;
+}
+
+const INVESTMENTS_LATER = "This file has investments; the page shows them from the next version.";
+
+/** F33, F34: the fund's input gives investments, a write-off among its cash flows, or a carry basis. */
+function hasInvestments(input: unknown): boolean {
+  if (!isObject(input)) return false;
+  const investments = input.investments;
+  const listed = investments !== undefined && investments !== null && !(Array.isArray(investments) && investments.length === 0);
+  const writeOff = Array.isArray(input.cash_flows) && input.cash_flows.some((f) => isObject(f) && f.type === "write_off");
+  const basis = isObject(input.terms) && input.terms.carry_basis !== undefined && input.terms.carry_basis !== null;
+  return listed || writeOff || basis;
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
