@@ -200,7 +200,7 @@ When no capital is called after the LPs first have all their capital back, the e
 
 When final, there are also breakpoints where the clawback owed bends:
 - `clawback_cleared`: "from here the GP has earned all the carry it was paid earlier"
-- `clawback_starts`: "from here the GP has been paid more carry than it has earned". v1's terms can't produce it (FA9); it's kept for later terms. From 0.5.0, deal by deal can, with capital called and not invested by the end (FA49).
+- `clawback_starts`: "from here the GP has been paid more carry than it has earned". v1's terms can't produce it (FA9); it's kept for later terms.
 - `clawback_changes`: where the clawback starts to fall, stops falling, or falls faster or more slowly.
   - **When a tier of the fund-total run ending causes it,** the reason says so: "the clawback owed starts to fall: on the fund's totals, LPs have their pref".
   - **When one of this distribution's tiers causes it,** that tier's own reason sits beside it.
@@ -416,14 +416,15 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 - **Each account (F23):** its part of the cost, by commitment; its own fees, by its fee weights (F29); its expenses, by commitment. The share is the fund's.
 - **No pref deal by deal in 0.5.0,** so no catch-up either (F8 needs a pref). It's refused as unsupported (F37).
 - **Carry is paid on each distribution as it's made, and kept until the end.** No interim clawback and no escrow (Jordan, 2026-10-27).
-- **At the end (X final, and the NAV point), the clawback is F12's,** and F24's by account. The GP's entitlement is the tiers run once on the fund's totals, with all paid-in as capital, as on the whole fund. So deal by deal, the GP keeps at most what the whole fund would give it at the end. Carry it got early on exits that later write-offs offset, it owes back.
+- **At the end (X final, and the NAV point), what's due is all the LPs' paid-in,** capital called and never invested included: the fund ends, and its unused cash comes back as capital, as on the whole fund (Jordan, f05a review). Before the end, nothing changes.
+- **At the end, the clawback is F12's,** and F24's by account. The GP's entitlement is the tiers run once on the fund's totals, with all paid-in as capital, as on the whole fund. So deal by deal, the GP keeps at most what the whole fund would give it at the end. Carry it got early on exits that later write-offs offset, it owes back.
 - **The x-axis (F14):** X comes from `distribution_from`'s investment and realizes its share (everything, when final). What's due on X doesn't change with X, so the split stays piecewise linear in X and every breakpoint is exact.
 - *Later: a pref, and a catch-up, deal by deal, on what's due, from each check's and each fee call's date; unrealized write-downs due before carry (marks below cost); an interim clawback, and carry escrow (a share of each carry payment held back); a distribution of unused capital, not from an investment; checks funded from a credit line, ahead of their calls; fees and expenses by another rule (all of them first, or by how long each investment was held); spillpoint exits feeding the investments' proceeds, after engine 1.0.*
 
 **F36, outputs.**
-- **The investments,** once, at D, before X: each with its name, cost made, cost realized (exited or written off), cost written off, and proceeds. Exact.
+- **The investments,** once, at D, before X: each with its name, cost made, cost realized (exited or written off), cost written off, proceeds, and its realized multiple: proceeds over the cost realized, none while nothing of it is realized (Jordan, f05a review). Exact.
 - **Deal by deal, at each X and at the NAV point:** what's due before carry on X, and each class's part.
-- **Breakpoints:** deal by deal, `capital_returned` reads "LPs have their $11,100,000 back for the investments exited or written off, fees and expenses included", with the class's name in front when there are two or more accounts (F27). The code doesn't change.
+- **Breakpoints:** deal by deal, `capital_returned` reads "LPs have their $11,100,000 back for the investments exited or written off, fees and expenses included", with the class's name in front when there are two or more accounts (F27). When X is final, what's due is all paid-in (F35), and it reads as the whole fund's: "LPs have their $24,888,000 of paid-in capital back", its amount the same. The code doesn't change.
 - **Everything else** is as before.
 
 **F37, refusals,** added to F18, F21, F28 and F32.
@@ -575,3 +576,8 @@ Thirty-two cases and five sets of refusals, in `packages/fund/cases/` (FC2):
   - the end: a final X and the NAV point realize everything left, so an investment still held counts as written off (F33)
   - carry steps keep F10's LP multiple on all paid-in (F34)
   - the clawback at the end is the whole fund's (F12), so both bases end at the same entitlement (F35)
+- **2026-10-29 (Jordan), the f05a review:**
+  - at the end, a final X and the NAV point, all the LPs' paid-in is due deal by deal, capital called and never invested included, so no final clawback rises (F35, FA49)
+  - each investment's realized multiple, proceeds over the cost realized, in the engine's outputs (F36, FA59)
+  - `expected.json`'s investments and what's due as proposed (FC15)
+  - where several checks on one date run past the calls, the first of them is named (FA53)
