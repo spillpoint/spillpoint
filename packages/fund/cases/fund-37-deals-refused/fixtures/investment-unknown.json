@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit names \"Alder\", not an investment's name exactly.",
+  "change": {
+    "set": {
+      "cash_flows[5].investment": "Alder"
+    }
+  }
+}

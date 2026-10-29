@@ -1,0 +1,2614 @@
+{
+  "case": "fund-36-deal-by-deal-classes-closes",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2024-09-30",
+  "final": false,
+  "lps_paid_in": "12855000.00",
+  "gp_commitment_paid_in": "120000.00",
+  "fee_calls": [
+    {
+      "date": "2021-01-01",
+      "first_day": "2021-01-01",
+      "last_day": "2021-03-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2021-04-01",
+      "first_day": "2021-04-01",
+      "last_day": "2021-06-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2021-07-01",
+      "first_day": "2021-07-01",
+      "last_day": "2021-09-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2021-10-01",
+      "first_day": "2021-10-01",
+      "last_day": "2021-12-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-01-01",
+      "first_day": "2022-01-01",
+      "last_day": "2022-03-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-04-01",
+      "first_day": "2022-04-01",
+      "last_day": "2022-06-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-07-01",
+      "first_day": "2022-07-01",
+      "last_day": "2022-09-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2022-10-01",
+      "first_day": "2022-10-01",
+      "last_day": "2022-12-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-01-01",
+      "first_day": "2023-01-01",
+      "last_day": "2023-03-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-04-01",
+      "first_day": "2023-04-01",
+      "last_day": "2023-06-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-07-01",
+      "first_day": "2023-07-01",
+      "last_day": "2023-09-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2023-10-01",
+      "first_day": "2023-10-01",
+      "last_day": "2023-12-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-01-01",
+      "first_day": "2024-01-01",
+      "last_day": "2024-03-31",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-04-01",
+      "first_day": "2024-04-01",
+      "last_day": "2024-06-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-07-01",
+      "first_day": "2024-07-01",
+      "last_day": "2024-09-30",
+      "call": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "lps": {
+        "amount": "65000.00",
+        "exact": "65000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "fee": {
+            "amount": "50000.00",
+            "exact": "50000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "fee": {
+            "amount": "15000.00",
+            "exact": "15000"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "fee": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "investments": [
+    {
+      "name": "Ivy Analytics",
+      "cost_made": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_realized": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "8000000.00",
+        "exact": "8000000"
+      }
+    },
+    {
+      "name": "Juniper Health",
+      "cost_made": {
+        "amount": "2800000.00",
+        "exact": "2800000"
+      },
+      "cost_realized": {
+        "amount": "2800000.00",
+        "exact": "2800000"
+      },
+      "cost_written_off": {
+        "amount": "2800000.00",
+        "exact": "2800000"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "name": "Kapok Robotics",
+      "cost_made": {
+        "amount": "5200000.00",
+        "exact": "5200000"
+      },
+      "cost_realized": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    }
+  ],
+  "lps": [
+    {
+      "name": "Alder Endowment",
+      "commitment": "10000000",
+      "share": "0.5",
+      "paid_in": {
+        "amount": "6690000.00",
+        "exact": "6690000"
+      }
+    },
+    {
+      "name": "Birch Family Office",
+      "class": "Anchor",
+      "close": "2021-07-15",
+      "commitment": "6000000",
+      "share": "0.3",
+      "paid_in": {
+        "amount": "3789000.00",
+        "exact": "3789000"
+      }
+    },
+    {
+      "name": "Cedar Holdings",
+      "class": "Friends and family",
+      "commitment": "4000000",
+      "share": "0.2",
+      "paid_in": {
+        "amount": "2376000.00",
+        "exact": "2376000"
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "class": null,
+      "commitment": "10000000",
+      "share": "0.5",
+      "fee_share": "10/13",
+      "paid_in": "6690000.00"
+    },
+    {
+      "class": "Anchor",
+      "commitment": "6000000",
+      "share": "0.3",
+      "fee_share": "3/13",
+      "paid_in": "3789000.00"
+    },
+    {
+      "class": "Friends and family",
+      "commitment": "4000000",
+      "share": "0.2",
+      "fee_share": "0",
+      "paid_in": "2376000.00"
+    }
+  ],
+  "equalization": {
+    "rate": "0.08",
+    "closes": [
+      {
+        "date": "2021-07-15",
+        "joining": [
+          "Birch Family Office"
+        ],
+        "lps": [
+          {
+            "name": "Alder Endowment",
+            "capital_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "capital_returned": {
+              "amount": "1697142.86",
+              "exact": "11880000/7"
+            },
+            "interest_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_received": {
+              "amount": "71047.51",
+              "exact": "36305280/511"
+            },
+            "back_fees": {
+              "amount": "0.00",
+              "exact": "0"
+            }
+          },
+          {
+            "name": "Birch Family Office",
+            "capital_paid": {
+              "amount": "2376000.00",
+              "exact": "2376000"
+            },
+            "capital_returned": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_paid": {
+              "amount": "99466.52",
+              "exact": "7261056/73"
+            },
+            "interest_received": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "back_fees": {
+              "amount": "45000.00",
+              "exact": "45000"
+            }
+          },
+          {
+            "name": "Cedar Holdings",
+            "capital_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "capital_returned": {
+              "amount": "678857.14",
+              "exact": "4752000/7"
+            },
+            "interest_paid": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "interest_received": {
+              "amount": "28419.01",
+              "exact": "14522112/511"
+            },
+            "back_fees": {
+              "amount": "0.00",
+              "exact": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "capital_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "capital_returned": {
+          "amount": "1697142.86",
+          "exact": "11880000/7"
+        },
+        "interest_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_received": {
+          "amount": "71047.51",
+          "exact": "36305280/511"
+        },
+        "back_fees": {
+          "amount": "0.00",
+          "exact": "0"
+        }
+      },
+      {
+        "name": "Birch Family Office",
+        "capital_paid": {
+          "amount": "2376000.00",
+          "exact": "2376000"
+        },
+        "capital_returned": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_paid": {
+          "amount": "99466.52",
+          "exact": "7261056/73"
+        },
+        "interest_received": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "back_fees": {
+          "amount": "45000.00",
+          "exact": "45000"
+        }
+      },
+      {
+        "name": "Cedar Holdings",
+        "capital_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "capital_returned": {
+          "amount": "678857.14",
+          "exact": "4752000/7"
+        },
+        "interest_paid": {
+          "amount": "0.00",
+          "exact": "0"
+        },
+        "interest_received": {
+          "amount": "28419.01",
+          "exact": "14522112/511"
+        },
+        "back_fees": {
+          "amount": "0.00",
+          "exact": "0"
+        }
+      }
+    ]
+  },
+  "breakpoints": [
+    {
+      "x": "5400000.00",
+      "exact": "5400000",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": "Friends and family",
+          "amount": "1861200",
+          "text": "Friends and family: LPs have their $1,861,200 back for the investments exited or written off, fees and expenses included"
+        }
+      ]
+    },
+    {
+      "x": "5841919.19",
+      "exact": "578350000/99",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": "Anchor",
+          "amount": "2968050",
+          "text": "Anchor: LPs have their $2,968,050 back for the investments exited or written off, fees and expenses included"
+        }
+      ]
+    },
+    {
+      "x": "6283838.38",
+      "exact": "622100000/99",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "class": null,
+          "amount": "5240500",
+          "text": "Fund terms: LPs have their $5,240,500 back for the investments exited or written off, fees and expenses included"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost_realized": {
+          "amount": "9400000.00",
+          "exact": "9400000"
+        },
+        "cost": {
+          "amount": "9306000.00",
+          "exact": "9306000"
+        },
+        "fees_and_expenses": {
+          "amount": "763750.00",
+          "exact": "763750"
+        },
+        "total": {
+          "amount": "10069750.00",
+          "exact": "10069750"
+        }
+      },
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "8000000.00",
+        "gp_commitment": "80000.00",
+        "lps": {
+          "capital": "4155000.00",
+          "carry_tier": "3227550.00",
+          "total": "7382550.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "366000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "171450.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "537450.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "due": {
+            "cost": {
+              "amount": "4653000.00",
+              "exact": "4653000"
+            },
+            "fees_and_expenses": {
+              "amount": "587500.00",
+              "exact": "587500"
+            },
+            "total": {
+              "amount": "5240500.00",
+              "exact": "5240500"
+            }
+          },
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "3960000.00",
+            "lps": {
+              "capital": "2130000.00",
+              "carry_tier": "1464000.00",
+              "total": "3594000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "366000.00"
+                }
+              ],
+              "total": "366000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "due": {
+            "cost": {
+              "amount": "2791800.00",
+              "exact": "2791800"
+            },
+            "fees_and_expenses": {
+              "amount": "176250.00",
+              "exact": "176250"
+            },
+            "total": {
+              "amount": "2968050.00",
+              "exact": "2968050"
+            }
+          },
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2376000.00",
+            "lps": {
+              "capital": "1233000.00",
+              "carry_tier": "971550.00",
+              "total": "2204550.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "171450.00"
+                }
+              ],
+              "total": "171450.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "due": {
+            "cost": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            },
+            "fees_and_expenses": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "total": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            }
+          },
+          "distribution": {
+            "amount": "0.00",
+            "lps": {
+              "capital": "0.00",
+              "carry_tier": "0.00",
+              "total": "0.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "1584000.00",
+            "lps": {
+              "capital": "792000.00",
+              "carry_tier": "792000.00",
+              "total": "1584000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "3594000.00",
+            "exact": "3594000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "2204550.00",
+            "exact": "2204550"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "0.00",
+            "exact": "0"
+          },
+          "to_date": {
+            "amount": "1584000.00",
+            "exact": "1584000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "5400000.00",
+      "exact": "5400000",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost_realized": {
+          "amount": "9400000.00",
+          "exact": "9400000"
+        },
+        "cost": {
+          "amount": "9306000.00",
+          "exact": "9306000"
+        },
+        "fees_and_expenses": {
+          "amount": "763750.00",
+          "exact": "763750"
+        },
+        "total": {
+          "amount": "10069750.00",
+          "exact": "10069750"
+        }
+      },
+      "distribution": {
+        "amount": "5400000.00",
+        "gp_commitment": "54000.00",
+        "lps": {
+          "capital": "5346000.00",
+          "carry_tier": "0.00",
+          "total": "5346000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "13400000.00",
+        "gp_commitment": "134000.00",
+        "lps": {
+          "capital": "9501000.00",
+          "carry_tier": "3227550.00",
+          "total": "12728550.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "366000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "171450.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "537450.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "due": {
+            "cost": {
+              "amount": "4653000.00",
+              "exact": "4653000"
+            },
+            "fees_and_expenses": {
+              "amount": "587500.00",
+              "exact": "587500"
+            },
+            "total": {
+              "amount": "5240500.00",
+              "exact": "5240500"
+            }
+          },
+          "distribution": {
+            "amount": "2673000.00",
+            "lps": {
+              "capital": "2673000.00",
+              "carry_tier": "0.00",
+              "total": "2673000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "6633000.00",
+            "lps": {
+              "capital": "4803000.00",
+              "carry_tier": "1464000.00",
+              "total": "6267000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "366000.00"
+                }
+              ],
+              "total": "366000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "due": {
+            "cost": {
+              "amount": "2791800.00",
+              "exact": "2791800"
+            },
+            "fees_and_expenses": {
+              "amount": "176250.00",
+              "exact": "176250"
+            },
+            "total": {
+              "amount": "2968050.00",
+              "exact": "2968050"
+            }
+          },
+          "distribution": {
+            "amount": "1603800.00",
+            "lps": {
+              "capital": "1603800.00",
+              "carry_tier": "0.00",
+              "total": "1603800.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "3979800.00",
+            "lps": {
+              "capital": "2836800.00",
+              "carry_tier": "971550.00",
+              "total": "3808350.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "171450.00"
+                }
+              ],
+              "total": "171450.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "due": {
+            "cost": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            },
+            "fees_and_expenses": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "total": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            }
+          },
+          "distribution": {
+            "amount": "1069200.00",
+            "lps": {
+              "capital": "1069200.00",
+              "carry_tier": "0.00",
+              "total": "1069200.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2653200.00",
+            "lps": {
+              "capital": "1861200.00",
+              "carry_tier": "792000.00",
+              "total": "2653200.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "2673000.00",
+            "exact": "2673000"
+          },
+          "to_date": {
+            "amount": "6267000.00",
+            "exact": "6267000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "distribution": {
+            "amount": "1603800.00",
+            "exact": "1603800"
+          },
+          "to_date": {
+            "amount": "3808350.00",
+            "exact": "3808350"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1069200.00",
+            "exact": "1069200"
+          },
+          "to_date": {
+            "amount": "2653200.00",
+            "exact": "2653200"
+          }
+        }
+      ]
+    },
+    {
+      "x": "5841919.19",
+      "exact": "578350000/99",
+      "tags": [
+        "breakpoint"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost_realized": {
+          "amount": "9400000.00",
+          "exact": "9400000"
+        },
+        "cost": {
+          "amount": "9306000.00",
+          "exact": "9306000"
+        },
+        "fees_and_expenses": {
+          "amount": "763750.00",
+          "exact": "763750"
+        },
+        "total": {
+          "amount": "10069750.00",
+          "exact": "10069750"
+        }
+      },
+      "distribution": {
+        "amount": "5841919.19",
+        "gp_commitment": "58419.19",
+        "lps": {
+          "capital": "5696000.00",
+          "carry_tier": "87500.00",
+          "total": "5783500.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "0.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "13841919.19",
+        "gp_commitment": "138419.19",
+        "lps": {
+          "capital": "9851000.00",
+          "carry_tier": "3315050.00",
+          "total": "13166050.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "366000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "171450.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "537450.00"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "due": {
+            "cost": {
+              "amount": "4653000.00",
+              "exact": "4653000"
+            },
+            "fees_and_expenses": {
+              "amount": "587500.00",
+              "exact": "587500"
+            },
+            "total": {
+              "amount": "5240500.00",
+              "exact": "5240500"
+            }
+          },
+          "distribution": {
+            "amount": "2891750.00",
+            "lps": {
+              "capital": "2891750.00",
+              "carry_tier": "0.00",
+              "total": "2891750.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "6851750.00",
+            "lps": {
+              "capital": "5021750.00",
+              "carry_tier": "1464000.00",
+              "total": "6485750.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "366000.00"
+                }
+              ],
+              "total": "366000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "due": {
+            "cost": {
+              "amount": "2791800.00",
+              "exact": "2791800"
+            },
+            "fees_and_expenses": {
+              "amount": "176250.00",
+              "exact": "176250"
+            },
+            "total": {
+              "amount": "2968050.00",
+              "exact": "2968050"
+            }
+          },
+          "distribution": {
+            "amount": "1735050.00",
+            "lps": {
+              "capital": "1735050.00",
+              "carry_tier": "0.00",
+              "total": "1735050.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "4111050.00",
+            "lps": {
+              "capital": "2968050.00",
+              "carry_tier": "971550.00",
+              "total": "3939600.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "171450.00"
+                }
+              ],
+              "total": "171450.00"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "due": {
+            "cost": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            },
+            "fees_and_expenses": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "total": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            }
+          },
+          "distribution": {
+            "amount": "1156700.00",
+            "lps": {
+              "capital": "1069200.00",
+              "carry_tier": "87500.00",
+              "total": "1156700.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2740700.00",
+            "lps": {
+              "capital": "1861200.00",
+              "carry_tier": "879500.00",
+              "total": "2740700.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "2891750.00",
+            "exact": "2891750"
+          },
+          "to_date": {
+            "amount": "6485750.00",
+            "exact": "6485750"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "distribution": {
+            "amount": "1735050.00",
+            "exact": "1735050"
+          },
+          "to_date": {
+            "amount": "3939600.00",
+            "exact": "3939600"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1156700.00",
+            "exact": "1156700"
+          },
+          "to_date": {
+            "amount": "2740700.00",
+            "exact": "2740700"
+          }
+        }
+      ]
+    },
+    {
+      "x": "6000000.00",
+      "exact": "6000000",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost_realized": {
+          "amount": "9400000.00",
+          "exact": "9400000"
+        },
+        "cost": {
+          "amount": "9306000.00",
+          "exact": "9306000"
+        },
+        "fees_and_expenses": {
+          "amount": "763750.00",
+          "exact": "763750"
+        },
+        "total": {
+          "amount": "10069750.00",
+          "exact": "10069750"
+        }
+      },
+      "distribution": {
+        "amount": "6000000.00",
+        "gp_commitment": "60000.00",
+        "lps": {
+          "capital": "5774250.00",
+          "carry_tier": "158707.50",
+          "total": "5932957.50"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "7042.50"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "7042.50"
+        }
+      },
+      "to_date": {
+        "amount": "14000000.00",
+        "gp_commitment": "140000.00",
+        "lps": {
+          "capital": "9929250.00",
+          "carry_tier": "3386257.50",
+          "total": "13315507.50"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "366000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "178492.50"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "544492.50"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "due": {
+            "cost": {
+              "amount": "4653000.00",
+              "exact": "4653000"
+            },
+            "fees_and_expenses": {
+              "amount": "587500.00",
+              "exact": "587500"
+            },
+            "total": {
+              "amount": "5240500.00",
+              "exact": "5240500"
+            }
+          },
+          "distribution": {
+            "amount": "2970000.00",
+            "lps": {
+              "capital": "2970000.00",
+              "carry_tier": "0.00",
+              "total": "2970000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "6930000.00",
+            "lps": {
+              "capital": "5100000.00",
+              "carry_tier": "1464000.00",
+              "total": "6564000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "366000.00"
+                }
+              ],
+              "total": "366000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "due": {
+            "cost": {
+              "amount": "2791800.00",
+              "exact": "2791800"
+            },
+            "fees_and_expenses": {
+              "amount": "176250.00",
+              "exact": "176250"
+            },
+            "total": {
+              "amount": "2968050.00",
+              "exact": "2968050"
+            }
+          },
+          "distribution": {
+            "amount": "1782000.00",
+            "lps": {
+              "capital": "1735050.00",
+              "carry_tier": "39907.50",
+              "total": "1774957.50"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "7042.50"
+                }
+              ],
+              "total": "7042.50"
+            }
+          },
+          "to_date": {
+            "amount": "4158000.00",
+            "lps": {
+              "capital": "2968050.00",
+              "carry_tier": "1011457.50",
+              "total": "3979507.50"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "178492.50"
+                }
+              ],
+              "total": "178492.50"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "due": {
+            "cost": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            },
+            "fees_and_expenses": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "total": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            }
+          },
+          "distribution": {
+            "amount": "1188000.00",
+            "lps": {
+              "capital": "1069200.00",
+              "carry_tier": "118800.00",
+              "total": "1188000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2772000.00",
+            "lps": {
+              "capital": "1861200.00",
+              "carry_tier": "910800.00",
+              "total": "2772000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "2970000.00",
+            "exact": "2970000"
+          },
+          "to_date": {
+            "amount": "6564000.00",
+            "exact": "6564000"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "distribution": {
+            "amount": "1774957.50",
+            "exact": "1774957.5"
+          },
+          "to_date": {
+            "amount": "3979507.50",
+            "exact": "3979507.5"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1188000.00",
+            "exact": "1188000"
+          },
+          "to_date": {
+            "amount": "2772000.00",
+            "exact": "2772000"
+          }
+        }
+      ]
+    },
+    {
+      "x": "6283838.38",
+      "exact": "622100000/99",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost_realized": {
+          "amount": "9400000.00",
+          "exact": "9400000"
+        },
+        "cost": {
+          "amount": "9306000.00",
+          "exact": "9306000"
+        },
+        "fees_and_expenses": {
+          "amount": "763750.00",
+          "exact": "763750"
+        },
+        "total": {
+          "amount": "10069750.00",
+          "exact": "10069750"
+        }
+      },
+      "distribution": {
+        "amount": "6283838.38",
+        "gp_commitment": "62838.38",
+        "lps": {
+          "capital": "5914750.00",
+          "carry_tier": "286562.50",
+          "total": "6201312.50"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "0.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "19687.50"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "19687.50"
+        }
+      },
+      "to_date": {
+        "amount": "14283838.38",
+        "gp_commitment": "142838.38",
+        "lps": {
+          "capital": "10069750.00",
+          "carry_tier": "3514112.50",
+          "total": "13583862.50"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "366000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "191137.50"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "557137.50"
+        }
+      },
+      "by_account": [
+        {
+          "class": null,
+          "due": {
+            "cost": {
+              "amount": "4653000.00",
+              "exact": "4653000"
+            },
+            "fees_and_expenses": {
+              "amount": "587500.00",
+              "exact": "587500"
+            },
+            "total": {
+              "amount": "5240500.00",
+              "exact": "5240500"
+            }
+          },
+          "distribution": {
+            "amount": "3110500.00",
+            "lps": {
+              "capital": "3110500.00",
+              "carry_tier": "0.00",
+              "total": "3110500.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "7070500.00",
+            "lps": {
+              "capital": "5240500.00",
+              "carry_tier": "1464000.00",
+              "total": "6704500.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "366000.00"
+                }
+              ],
+              "total": "366000.00"
+            }
+          }
+        },
+        {
+          "class": "Anchor",
+          "due": {
+            "cost": {
+              "amount": "2791800.00",
+              "exact": "2791800"
+            },
+            "fees_and_expenses": {
+              "amount": "176250.00",
+              "exact": "176250"
+            },
+            "total": {
+              "amount": "2968050.00",
+              "exact": "2968050"
+            }
+          },
+          "distribution": {
+            "amount": "1866300.00",
+            "lps": {
+              "capital": "1735050.00",
+              "carry_tier": "111562.50",
+              "total": "1846612.50"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "19687.50"
+                }
+              ],
+              "total": "19687.50"
+            }
+          },
+          "to_date": {
+            "amount": "4242300.00",
+            "lps": {
+              "capital": "2968050.00",
+              "carry_tier": "1083112.50",
+              "total": "4051162.50"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "191137.50"
+                }
+              ],
+              "total": "191137.50"
+            }
+          }
+        },
+        {
+          "class": "Friends and family",
+          "due": {
+            "cost": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            },
+            "fees_and_expenses": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "total": {
+              "amount": "1861200.00",
+              "exact": "1861200"
+            }
+          },
+          "distribution": {
+            "amount": "1244200.00",
+            "lps": {
+              "capital": "1069200.00",
+              "carry_tier": "175000.00",
+              "total": "1244200.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "2828200.00",
+            "lps": {
+              "capital": "1861200.00",
+              "carry_tier": "967000.00",
+              "total": "2828200.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "3110500.00",
+            "exact": "3110500"
+          },
+          "to_date": {
+            "amount": "6704500.00",
+            "exact": "6704500"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "distribution": {
+            "amount": "1846612.50",
+            "exact": "1846612.5"
+          },
+          "to_date": {
+            "amount": "4051162.50",
+            "exact": "4051162.5"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "1244200.00",
+            "exact": "1244200"
+          },
+          "to_date": {
+            "amount": "2828200.00",
+            "exact": "2828200"
+          }
+        }
+      ]
+    },
+    {
+      "x": "15000000.00",
+      "exact": "15000000",
+      "tags": [
+        "listed",
+        "nav"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost_realized": {
+          "amount": "12000000.00",
+          "exact": "12000000"
+        },
+        "cost": {
+          "amount": "11880000.00",
+          "exact": "11880000"
+        },
+        "fees_and_expenses": {
+          "amount": "975000.00",
+          "exact": "975000"
+        },
+        "total": {
+          "amount": "12855000.00",
+          "exact": "12855000"
+        }
+      },
+      "distribution": {
+        "amount": "15000000.00",
+        "gp_commitment": "150000.00",
+        "lps": {
+          "capital": "8700000.00",
+          "carry_tier": "5292150.00",
+          "total": "13992150.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "573000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "284850.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "857850.00"
+        }
+      },
+      "to_date": {
+        "amount": "23000000.00",
+        "gp_commitment": "230000.00",
+        "lps": {
+          "capital": "12855000.00",
+          "carry_tier": "8519700.00",
+          "total": "21374700.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "class": null,
+              "rate": "0.2",
+              "amount": "939000.00"
+            },
+            {
+              "class": "Anchor",
+              "rate": "0.15",
+              "amount": "456300.00"
+            },
+            {
+              "class": "Friends and family",
+              "rate": "0",
+              "amount": "0.00"
+            }
+          ],
+          "total": "1395300.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1395300.00",
+        "entitlement": "1395300.00",
+        "owed": "0.00"
+      },
+      "by_account": [
+        {
+          "class": null,
+          "due": {
+            "cost": {
+              "amount": "5940000.00",
+              "exact": "5940000"
+            },
+            "fees_and_expenses": {
+              "amount": "750000.00",
+              "exact": "750000"
+            },
+            "total": {
+              "amount": "6690000.00",
+              "exact": "6690000"
+            }
+          },
+          "distribution": {
+            "amount": "7425000.00",
+            "lps": {
+              "capital": "4560000.00",
+              "carry_tier": "2292000.00",
+              "total": "6852000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "573000.00"
+                }
+              ],
+              "total": "573000.00"
+            }
+          },
+          "to_date": {
+            "amount": "11385000.00",
+            "lps": {
+              "capital": "6690000.00",
+              "carry_tier": "3756000.00",
+              "total": "10446000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.2",
+                  "amount": "939000.00"
+                }
+              ],
+              "total": "939000.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "939000.00",
+            "entitlement": "939000.00",
+            "owed": "0.00"
+          }
+        },
+        {
+          "class": "Anchor",
+          "due": {
+            "cost": {
+              "amount": "3564000.00",
+              "exact": "3564000"
+            },
+            "fees_and_expenses": {
+              "amount": "225000.00",
+              "exact": "225000"
+            },
+            "total": {
+              "amount": "3789000.00",
+              "exact": "3789000"
+            }
+          },
+          "distribution": {
+            "amount": "4455000.00",
+            "lps": {
+              "capital": "2556000.00",
+              "carry_tier": "1614150.00",
+              "total": "4170150.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "284850.00"
+                }
+              ],
+              "total": "284850.00"
+            }
+          },
+          "to_date": {
+            "amount": "6831000.00",
+            "lps": {
+              "capital": "3789000.00",
+              "carry_tier": "2585700.00",
+              "total": "6374700.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0.15",
+                  "amount": "456300.00"
+                }
+              ],
+              "total": "456300.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "456300.00",
+            "entitlement": "456300.00",
+            "owed": "0.00"
+          }
+        },
+        {
+          "class": "Friends and family",
+          "due": {
+            "cost": {
+              "amount": "2376000.00",
+              "exact": "2376000"
+            },
+            "fees_and_expenses": {
+              "amount": "0.00",
+              "exact": "0"
+            },
+            "total": {
+              "amount": "2376000.00",
+              "exact": "2376000"
+            }
+          },
+          "distribution": {
+            "amount": "2970000.00",
+            "lps": {
+              "capital": "1584000.00",
+              "carry_tier": "1386000.00",
+              "total": "2970000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "to_date": {
+            "amount": "4554000.00",
+            "lps": {
+              "capital": "2376000.00",
+              "carry_tier": "2178000.00",
+              "total": "4554000.00"
+            },
+            "gp": {
+              "carry": [
+                {
+                  "rate": "0",
+                  "amount": "0.00"
+                }
+              ],
+              "total": "0.00"
+            }
+          },
+          "clawback": {
+            "carry_paid": "0.00",
+            "entitlement": "0.00",
+            "owed": "0.00"
+          }
+        }
+      ],
+      "by_lp": [
+        {
+          "name": "Alder Endowment",
+          "distribution": {
+            "amount": "6852000.00",
+            "exact": "6852000"
+          },
+          "to_date": {
+            "amount": "10446000.00",
+            "exact": "10446000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Birch Family Office",
+          "distribution": {
+            "amount": "4170150.00",
+            "exact": "4170150"
+          },
+          "to_date": {
+            "amount": "6374700.00",
+            "exact": "6374700"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        },
+        {
+          "name": "Cedar Holdings",
+          "distribution": {
+            "amount": "2970000.00",
+            "exact": "2970000"
+          },
+          "to_date": {
+            "amount": "4554000.00",
+            "exact": "4554000"
+          },
+          "clawback": {
+            "amount": "0.00",
+            "exact": "0"
+          }
+        }
+      ]
+    }
+  ]
+}

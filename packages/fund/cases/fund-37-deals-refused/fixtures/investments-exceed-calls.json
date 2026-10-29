@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Cedar AI's check raised to $4,500,000: by 1 February 2021 the fund has made $10,500,000 of cost on $10,000,000 of investment calls.",
+  "change": {
+    "set": {
+      "investments[2].checks[0].amount": "4500000"
+    }
+  }
+}

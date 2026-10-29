@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "A carry basis given as the number 1.",
+  "change": {
+    "set": {
+      "terms.carry_basis": 1
+    }
+  }
+}

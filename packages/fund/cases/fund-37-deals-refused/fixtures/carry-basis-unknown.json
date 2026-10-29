@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "A carry basis of \"american\", not one of the two.",
+  "change": {
+    "set": {
+      "terms.carry_basis": "american"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder Robotics' exit selling \"40%\", which isn't an exact number.",
+  "change": {
+    "set": {
+      "cash_flows[5].share": "40%"
+    }
+  }
+}

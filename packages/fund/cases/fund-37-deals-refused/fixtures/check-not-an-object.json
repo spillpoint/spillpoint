@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder Robotics' check given as its amount alone, not an object.",
+  "change": {
+    "set": {
+      "investments[0].checks[0]": "3000000"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Cedar AI renamed Alder Robotics, the first investment's name.",
+  "change": {
+    "set": {
+      "investments[2].name": "Alder Robotics"
+    }
+  }
+}

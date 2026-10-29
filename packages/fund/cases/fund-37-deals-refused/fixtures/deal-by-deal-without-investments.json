@@ -1,0 +1,7 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "The investments taken out, deal by deal.",
+  "change": {
+    "del": "investments"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit moved to 1 July 2024, after D, and named from Zeta: a cash flow after D is 0.4.0's check, before the investments'.",
+  "change": {
+    "set": {
+      "cash_flows[5].date": "2024-07-01",
+      "cash_flows[5].investment": "Zeta"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit without its investment, deal by deal.",
+  "change": {
+    "del": "cash_flows[5].investment"
+  }
+}

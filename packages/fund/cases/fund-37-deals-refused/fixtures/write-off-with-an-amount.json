@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's write-off given an amount of \"0\": a write-off has none.",
+  "change": {
+    "set": {
+      "cash_flows[6].amount": "0"
+    }
+  }
+}

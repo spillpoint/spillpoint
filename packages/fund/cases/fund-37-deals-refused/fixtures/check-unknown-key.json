@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder Robotics' check given a number of shares, which a check doesn't have.",
+  "change": {
+    "set": {
+      "investments[0].checks[0].shares": "1000000"
+    }
+  }
+}

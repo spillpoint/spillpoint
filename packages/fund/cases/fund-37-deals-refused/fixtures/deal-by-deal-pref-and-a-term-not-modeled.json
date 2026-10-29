@@ -1,0 +1,12 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "A pref deal by deal beside a hurdle IRR: the term v1 doesn't model is named before the pref.",
+  "change": {
+    "set": {
+      "terms.pref": {
+        "rate": "0.08"
+      },
+      "terms.hurdle_irr": "0.1"
+    }
+  }
+}

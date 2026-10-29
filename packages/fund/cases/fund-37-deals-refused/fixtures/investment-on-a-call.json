@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "The first investment call names Alder Robotics, which a call can't.",
+  "change": {
+    "set": {
+      "cash_flows[0].investment": "Alder Robotics"
+    }
+  }
+}

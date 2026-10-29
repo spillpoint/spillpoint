@@ -1,0 +1,10 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "X's source the number 5 and Alder Robotics' name the number 5: the investments are checked first.",
+  "change": {
+    "set": {
+      "distribution_from": 5,
+      "investments[0].name": 5
+    }
+  }
+}

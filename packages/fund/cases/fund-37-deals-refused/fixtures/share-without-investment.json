@@ -1,0 +1,10 @@
+{
+  "base": "fund-33-portfolio-whole-fund",
+  "about": "On case 33, the whole fund, Alder's exit loses its investment and gains a share of half: a share is of an investment.",
+  "change": {
+    "del": "cash_flows[5].investment",
+    "set": {
+      "cash_flows[5].share": "0.5"
+    }
+  }
+}

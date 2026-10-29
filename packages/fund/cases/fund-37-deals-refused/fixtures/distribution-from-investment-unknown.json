@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "X from Dogwood, which case 34 doesn't list.",
+  "change": {
+    "set": {
+      "distribution_from.investment": "Dogwood"
+    }
+  }
+}

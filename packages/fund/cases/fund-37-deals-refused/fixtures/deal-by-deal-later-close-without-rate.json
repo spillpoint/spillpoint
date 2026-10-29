@@ -1,0 +1,7 @@
+{
+  "base": "fund-36-deal-by-deal-classes-closes",
+  "about": "On case 36, the equalization rate taken out: the January 2021 investment call comes before Birch Family Office's close.",
+  "change": {
+    "del": "terms.equalization_rate"
+  }
+}

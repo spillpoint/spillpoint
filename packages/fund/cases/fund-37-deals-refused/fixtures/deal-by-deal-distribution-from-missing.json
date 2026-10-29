@@ -1,0 +1,7 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "X's source taken out, deal by deal.",
+  "change": {
+    "del": "distribution_from"
+  }
+}

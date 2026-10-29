@@ -1,0 +1,10 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "A note and an investment on the first call: the note comes first in the file, so it's named.",
+  "change": {
+    "set": {
+      "cash_flows[0].note": "first close",
+      "cash_flows[0].investment": "Alder Robotics"
+    }
+  }
+}

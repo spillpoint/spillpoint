@@ -1,0 +1,10 @@
+{
+  "base": "fund-36-deal-by-deal-classes-closes",
+  "about": "A carry basis of \"European\" and the Anchor class's name a single space: the class is checked first.",
+  "change": {
+    "set": {
+      "terms.carry_basis": "European",
+      "terms.lp_classes[0].name": " "
+    }
+  }
+}

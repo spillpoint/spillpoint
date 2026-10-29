@@ -1,0 +1,7 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's write-off without its investment.",
+  "change": {
+    "del": "cash_flows[6].investment"
+  }
+}

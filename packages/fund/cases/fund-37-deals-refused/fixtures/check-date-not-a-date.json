@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder Robotics' check dated 30 February 2020, which isn't on the calendar.",
+  "change": {
+    "set": {
+      "investments[0].checks[0].date": "2020-02-30"
+    }
+  }
+}
