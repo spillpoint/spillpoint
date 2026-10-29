@@ -121,7 +121,7 @@ And in what the engine gives (F35, F36):
 - `portfolio(fund)`: the investments table, at D before X, in the input's order, on either basis; empty without investments. Each row a `PortfolioRow`: `name`, `costMade`, `costRealized`, `costWrittenOff`, `proceeds`, and `realizedMultiple`, null while nothing of it is realized.
 - `due`, on a `Split`: deal by deal, what's due before carry on X, a `Due`: `costMade`, `costRealized`, `cost`, `uninvested`, `feesAndExpenses` and `total`. Null on the whole fund.
 - `due`, on an `AccountSplit`: deal by deal, the account's own, an `AccountDue`: `cost`, `uninvested`, `feesAndExpenses` and `total`. Null on the whole fund.
-- `uninvested` is always given, zero before the end; `total` is always `cost` + `uninvested` + `feesAndExpenses`, at the end the LPs' paid-in (FA49).
+- `uninvested` is always given, zero before the end, and exactly zero at the end when every dollar called for investments was invested; `total` is `cost` + `uninvested` + `feesAndExpenses` within FA15's tolerance, and at the end exactly the LPs' paid-in (FA49).
 - `capital_returned`'s `amount`, deal by deal: the account's due on X, which is its paid-in when X is final (FA57).
 
 ## Types that can be null from 0.4.0

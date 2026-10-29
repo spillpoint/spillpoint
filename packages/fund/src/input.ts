@@ -530,9 +530,10 @@ function readDistributionFrom(raw: unknown): DistributionFrom | null {
  * - `distribution_from`: deal by deal, missing; an investment not listed;
  * - the cost made by a check's date more than the investment calls to then (FA53): checks in date order, on one date in
  *   the investments' order then the checks', each with every check on or before its date, so the first check of a date
- *   that runs past the calls is named.
+ *   that runs past the calls is named. Both are added up exactly as the input writes them (FA41, FA53), so checks
+ *   written as fractions that come to exactly the calls aren't pushed past them by rounding at 40 digits.
  */
-function checkInvestments(flows: CashFlow[], investments: Investment[], from: DistributionFrom | null, basis: CarryBasis, d: number): void {
+function checkInvestments(raw: Json, flows: CashFlow[], investments: Investment[], from: DistributionFrom | null, basis: CarryBasis, d: number): void {
   investments.forEach((inv, i) =>
     inv.checks.forEach((c, j) => {
       if (dayNumber(c.date)! > d) throw refuse("cash_flow_after_distribution_date", `investments[${i}].checks[${j}]`);
@@ -560,12 +561,19 @@ function checkInvestments(flows: CashFlow[], investments: Investment[], from: Di
   }
   // F37: checks aren't calls, but the cost made by any check's date can't be more than the investment calls to then.
   // Calls come before checks on one date (F33). The sort is stable, so one date's checks stay in the investments' order.
+  const rawChecks = (i: number, j: number) => (((raw.investments as Json[])[i] as Json).checks as Json[])[j]!.amount;
   const checks = investments
-    .flatMap((inv, i) => inv.checks.map((c, j) => ({ day: dayNumber(c.date)!, amount: c.amount, path: `investments[${i}].checks[${j}].amount` })))
+    .flatMap((inv, i) => inv.checks.map((c, j) => ({ day: dayNumber(c.date)!, amount: rawChecks(i, j), path: `investments[${i}].checks[${j}].amount` })))
     .sort((a, b) => a.day - b.day);
-  const calls = flows.filter((f) => f.type === "call" && f.kind === "investment").map((f) => ({ day: dayNumber(f.date)!, amount: f.amount! }));
-  const upTo = (xs: { day: number; amount: D }[], day: number) => xs.filter((x) => x.day <= day).reduce((t, x) => t.plus(x.amount), ZERO);
-  const over = checks.find((c) => upTo(checks, c.day).gt(upTo(calls, c.day)));
+  const calls = flows
+    .filter((f) => f.type === "call" && f.kind === "investment")
+    .map((f) => ({ day: dayNumber(f.date)!, amount: ((raw.cash_flows as Json[])[f.index] as Json).amount }));
+  const upTo = (xs: { day: number; amount: unknown }[], day: number) => exactSum(xs.filter((x) => x.day <= day).map((x) => x.amount));
+  const over = checks.find((c) => {
+    // Denominators are never negative (FC1), so a/b > c/d is a·d > c·b.
+    const [[a, b], [c2, d2]] = [upTo(checks, c.day), upTo(calls, c.day)];
+    return a * d2 > c2 * b;
+  });
   if (over) throw refuse("investments_exceed_calls", over.path);
 }
 
@@ -681,16 +689,21 @@ function checkWhatTheLpsNeed(fund: Fund, firstCall: number, raw: Json): void {
 }
 
 /**
- * F32, FA41: whether the schedule's `commitments` is the LPs' total, exactly. Each is taken as the input writes it, an
- * exact string (FC1) that stages 2 and 4 have read, so commitments written as fractions, "1/3", total exactly as they
- * would on paper, with no rounding at 40 digits between.
+ * FA41: amounts added up exactly as the input writes them, each an exact string (FC1) already read, as a fraction of
+ * whole numbers, so ones written as fractions, "1/3", total as they would on paper, with no rounding at 40 digits.
  */
-function sameTotal(raw: Json): boolean {
+function exactSum(values: unknown[]): [bigint, bigint] {
   let [num, den] = [0n, 1n];
-  for (const lp of raw.lps as Json[]) {
-    const [n, d] = exactRatio(lp.commitment)!;
+  for (const v of values) {
+    const [n, d] = exactRatio(v)!;
     [num, den] = [num * d + n * den, den * d];
   }
+  return [num, den];
+}
+
+/** F32, FA41: whether the schedule's `commitments` is the LPs' total, exactly. */
+function sameTotal(raw: Json): boolean {
+  const [num, den] = exactSum((raw.lps as Json[]).map((lp) => lp.commitment));
   const [n, d] = exactRatio(((raw.terms as Json).management_fee as Json).commitments)!;
   return num * d === n * den;
 }
@@ -737,7 +750,7 @@ export function readFund(input: unknown): Fund {
   // FA39: the schedule's calls are never after D, so this is about an entered flow.
   const late = flows.find((f) => dayNumber(f.date)! > d);
   if (late) throw refuse("cash_flow_after_distribution_date", `cash_flows[${late.index}]`);
-  checkInvestments(flows, investments, distributionFrom, terms.carryBasis, d);
+  checkInvestments(input, flows, investments, distributionFrom, terms.carryBasis, d);
 
   // Stage 4: the LPs, after everything else (FA19). FA31: a close comes before the first distribution, and before D;
   // a write-off isn't a distribution (FA56).

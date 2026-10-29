@@ -236,10 +236,32 @@ Nothing changes on the page: it typechecks against the wider `Split` with no edi
   - checks past the investment calls make the end's `uninvested` negative
   - a pref runs after F35's tier 1, its numbers meaning nothing
 
-  Tests pin the first and third.
+  Tests pin the first and the fourth.
 
 ## Open questions
 
 None of the spec's. Two of mine, both settled one way in this PR, which you can turn the other way:
 1. **`uninvested` at the end (§2):** worked from the investment calls, so it's exactly zero when every dollar called was invested, and `total` is exactly the paid-in. The three add up to `total` within FA15 rather than to the last of 40 digits. The other way round makes the sum exact but `uninvested` sometimes a few parts in 10³³ off zero. I'd keep this one.
 2. **`final: true` on a fund whose X isn't final (§3):** gives the end's due, as at the NAV point. I read F14's override that way. Fine?
+
+**Your answers (f05b2 review):** both yes. Keep `uninvested` from the investment calls, and `final: true` gives the end's due.
+
+## The fix-up (f05b2 review)
+
+Your checker ran this engine from source over 10,794,838 checks: cases 01 to 36, the 138 refusal fixtures, 900 random funds with investments and 2,360 single faults. One failed, and this commit fixes it.
+
+**1. `investments_exceed_calls` adds up exactly.**
+- **What failed:** `readFund` added the checks at 40 digits. Checks written as fractions that came to exactly the investment calls could land a hair above them, and the fund was refused. Your fund: checks of 11000038/11 on 2018-01-01, 1760006/11 on 2018-02-01 and $840,003 on 2018-03-01, against $2,000,007 called. They come to exactly the call; at 40 digits the first two come to a little more than 1,160,004. The engine refused it at `investments[2].checks[0].amount`. The reference and your checker read it.
+- **The fix:** the checks and the investment calls are added as the input writes them, as exact fractions of whole numbers, and compared by cross-multiplying. That's what FA41 does for `fee_commitments_mismatch`. The adding is now one helper, `exactSum` in `input.ts`, which the `commitments` check uses too. The order of checks and the check named don't change.
+- **FA53** gains a sentence saying so, with your fund.
+- **The test,** beside the other `investments_exceed_calls` tests in `read.test.ts`:
+  - your fund reads, and its checks do add up to more than the call at 40 digits, so the test can't pass by accident
+  - the same fund with $840,003.00000001 for C is still refused, at C's check
+  - a call written as a fraction is read
+- **It bites:** run against the engine before the fix, the test fails, refused at `investments[2].checks[0].amount`, as you found.
+
+**2. STABLE.md's `total`.** It said `total` is "always" the three added up. It now says within FA15's tolerance, and that at the end `total` is exactly the paid-in, and `uninvested` is exactly zero when every dollar called was invested. The README's API line says the same in its own words: within rounding in the last of 40 digits.
+
+**3. A correction to this note.** "Assumptions added" said tests pin FA62's first and third points. They pin the first and the fourth: an X naming an investment the fund doesn't list, and nothing made. Nothing tests a check after D in a hand-built fund.
+
+**Counts:** fund package 1,871 (10 skipped), one more than before. The rest as in §4. CI as in "How to check", item 1.
