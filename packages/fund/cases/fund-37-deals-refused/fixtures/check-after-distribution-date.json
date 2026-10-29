@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Cedar AI's check moved to 1 July 2024, after D, 30 June 2024.",
+  "change": {
+    "set": {
+      "investments[2].checks[0].date": "2024-07-01"
+    }
+  }
+}

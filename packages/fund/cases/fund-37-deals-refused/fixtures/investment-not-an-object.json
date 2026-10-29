@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health given as its name alone, not an object.",
+  "change": {
+    "set": {
+      "investments[1]": "Birch Health"
+    }
+  }
+}

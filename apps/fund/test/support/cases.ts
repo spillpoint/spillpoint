@@ -11,12 +11,18 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 /**
- * Pending: cases the engine runs before the page reads them. From f04a, 0.4.0's management fees (F29 to F32) were here;
- * f04b took cases 25 and 26 off, and f04c, which shows a schedule, the fee cases 29 to 32, so it's empty again.
- * test/pending.test.ts fails if a case folder is neither run nor pending (nor a refusal set), or if this list names a
- * folder that doesn't exist.
+ * Pending: cases the engine runs before the page reads them. From f04a, 0.4.0's management fees (F29 to F32) were here
+ * until f04c emptied it. From f05a, 0.5.0's investments and carry deal by deal (F33 to F37), cases 33 to 37, ahead of
+ * the engine too; f05c, which shows them, empties it. test/pending.test.ts fails if a case folder is neither run nor
+ * pending (nor a refusal set), or if this list names a folder that doesn't exist.
  */
-export const PENDING: readonly string[] = [];
+export const PENDING: readonly string[] = [
+  "fund-33-portfolio-whole-fund",
+  "fund-34-deal-by-deal",
+  "fund-35-deal-by-deal-clawback",
+  "fund-36-deal-by-deal-classes-closes",
+  "fund-37-deals-refused",
+];
 /** The cases the page's tests run as a fund. */
 export const RUN_CASES = CASE_FOLDERS.filter((d) => existsSync(join(CASES_DIR, d, "inputs.json")) && !PENDING.includes(d));
 /** The refusal sets, which only the engine's tests run (FC7). */

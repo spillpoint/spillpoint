@@ -1,0 +1,95 @@
+{
+  "case": "fund-33-portfolio-whole-fund",
+  "description": "Case 34's fund on the whole fund (the default): three investments listed, a $9,000,000 exit from Alder Robotics, Birch Health written off, X from Cedar AI. The investments change no amount: the exit returns paid-in capital, with no carry, and carry starts once the LPs have all $11,100,000 back.",
+  "xs": [
+    "0",
+    "73000000/33",
+    "5000000",
+    "12000000"
+  ],
+  "fund": {
+    "as_of": "2024-06-30",
+    "terms": {
+      "carry": "0.20",
+      "gp_commitment": {
+        "share": "0.01"
+      }
+    },
+    "investments": [
+      {
+        "name": "Alder Robotics",
+        "checks": [
+          {
+            "date": "2020-02-01",
+            "amount": "3000000"
+          }
+        ]
+      },
+      {
+        "name": "Birch Health",
+        "checks": [
+          {
+            "date": "2020-03-01",
+            "amount": "3000000"
+          }
+        ]
+      },
+      {
+        "name": "Cedar AI",
+        "checks": [
+          {
+            "date": "2021-02-01",
+            "amount": "4000000"
+          }
+        ]
+      }
+    ],
+    "cash_flows": [
+      {
+        "date": "2020-01-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "6000000"
+      },
+      {
+        "date": "2020-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "400000"
+      },
+      {
+        "date": "2021-01-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "4000000"
+      },
+      {
+        "date": "2021-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "400000"
+      },
+      {
+        "date": "2022-01-15",
+        "type": "call",
+        "kind": "fee",
+        "amount": "400000"
+      },
+      {
+        "date": "2022-06-30",
+        "type": "distribution",
+        "amount": "9000000",
+        "investment": "Alder Robotics"
+      },
+      {
+        "date": "2023-03-31",
+        "type": "write_off",
+        "investment": "Birch Health"
+      }
+    ],
+    "distribution_from": {
+      "investment": "Cedar AI"
+    },
+    "nav": "12000000"
+  }
+}

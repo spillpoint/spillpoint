@@ -1,0 +1,10 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit moved before its check, and Birch Health's write-off named from Zeta: the exit comes first in the input's order.",
+  "change": {
+    "set": {
+      "cash_flows[5].date": "2020-01-20",
+      "cash_flows[6].investment": "Zeta"
+    }
+  }
+}

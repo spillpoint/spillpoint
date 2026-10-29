@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's write-off moved to 1 July 2024, after D, 30 June 2024.",
+  "change": {
+    "set": {
+      "cash_flows[6].date": "2024-07-01"
+    }
+  }
+}

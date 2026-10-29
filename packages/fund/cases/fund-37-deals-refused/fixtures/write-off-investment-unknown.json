@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's write-off names \"Birch\", not a listed investment.",
+  "change": {
+    "set": {
+      "cash_flows[6].investment": "Birch"
+    }
+  }
+}

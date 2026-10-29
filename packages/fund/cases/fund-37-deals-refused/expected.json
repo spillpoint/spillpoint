@@ -1,0 +1,391 @@
+{
+  "case": "fund-37-deals-refused",
+  "generated_by": "packages/fund/reference/generate.py",
+  "fixtures": {
+    "call-unknown-fields-in-order.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "cash_flows[0].note"
+      }
+    },
+    "carry-basis-after-the-classes.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.lp_classes[0].name"
+      }
+    },
+    "carry-basis-not-text.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.carry_basis"
+      }
+    },
+    "carry-basis-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.carry_basis"
+      }
+    },
+    "check-after-d-before-unknown-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "cash_flow_after_distribution_date",
+        "field": "investments[2].checks[0]"
+      }
+    },
+    "check-after-distribution-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "cash_flow_after_distribution_date",
+        "field": "investments[2].checks[0]"
+      }
+    },
+    "check-amount-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments[2].checks[0].amount"
+      }
+    },
+    "check-amount-zero.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "investments[0].checks[0].amount"
+      }
+    },
+    "check-before-any-call.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investments_exceed_calls",
+        "field": "investments[1].checks[0].amount"
+      }
+    },
+    "check-date-not-a-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_date",
+        "field": "investments[0].checks[0].date"
+      }
+    },
+    "check-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "investments[0].checks[0]"
+      }
+    },
+    "check-unknown-key.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "investments[0].checks[0].shares"
+      }
+    },
+    "deal-by-deal-compounded-pref.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "compounded_pref",
+        "field": "terms.pref.compounding"
+      }
+    },
+    "deal-by-deal-distribution-from-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "distribution_from"
+      }
+    },
+    "deal-by-deal-distribution-without-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "deal-by-deal-later-close-without-rate.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.equalization_rate"
+      }
+    },
+    "deal-by-deal-pref-and-a-term-not-modeled.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "hurdle_irr",
+        "field": "terms.hurdle_irr"
+      }
+    },
+    "deal-by-deal-with-pref.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "deal_by_deal_pref",
+        "field": "terms.pref"
+      }
+    },
+    "deal-by-deal-without-investments.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments"
+      }
+    },
+    "distribution-before-its-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_not_made",
+        "field": "cash_flows[5]"
+      }
+    },
+    "distribution-from-investment-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_unknown",
+        "field": "distribution_from.investment"
+      }
+    },
+    "distribution-from-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "distribution_from"
+      }
+    },
+    "distribution-from-share-above-one.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "distribution_from.share"
+      }
+    },
+    "distribution-from-unknown-key.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "distribution_from.amount"
+      }
+    },
+    "distribution-from-without-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "distribution_from.investment"
+      }
+    },
+    "flow-after-d-before-investment-checks.json": {
+      "refused": {
+        "kind": "input",
+        "term": "cash_flow_after_distribution_date",
+        "field": "cash_flows[5]"
+      }
+    },
+    "flow-investment-blank.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "flow-investment-not-text.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "investment-checks-empty.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "investments[1].checks"
+      }
+    },
+    "investment-checks-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments[1].checks"
+      }
+    },
+    "investment-name-blank.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "investments[2].name"
+      }
+    },
+    "investment-name-missing.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments[0].name"
+      }
+    },
+    "investment-name-repeated-after-its-checks.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "investments[2].checks[0].amount"
+      }
+    },
+    "investment-name-repeated.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_name_repeated",
+        "field": "investments[2].name"
+      }
+    },
+    "investment-not-an-object.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "investments[1]"
+      }
+    },
+    "investment-on-a-call.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "cash_flows[0].investment"
+      }
+    },
+    "investment-unknown-before-lp-class-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_unknown",
+        "field": "cash_flows[2].investment"
+      }
+    },
+    "investment-unknown-key.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "investments[0].sector"
+      }
+    },
+    "investment-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_unknown",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "investments-before-distribution-from.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "investments[0].name"
+      }
+    },
+    "investments-exceed-calls.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investments_exceed_calls",
+        "field": "investments[2].checks[0].amount"
+      }
+    },
+    "investments-not-a-list.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "investments"
+      }
+    },
+    "share-above-one.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "cash_flows[5].share"
+      }
+    },
+    "share-percent.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "cash_flows[5].share"
+      }
+    },
+    "share-without-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "share-zero.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "cash_flows[5].share"
+      }
+    },
+    "unknown-investment-before-exceed-calls.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_unknown",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "unknown-investment-before-not-made.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_not_made",
+        "field": "cash_flows[5]"
+      }
+    },
+    "whole-fund-investment-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_unknown",
+        "field": "cash_flows[5].investment"
+      }
+    },
+    "write-off-after-distribution-date.json": {
+      "refused": {
+        "kind": "input",
+        "term": "cash_flow_after_distribution_date",
+        "field": "cash_flows[6]"
+      }
+    },
+    "write-off-before-its-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_not_made",
+        "field": "cash_flows[6]"
+      }
+    },
+    "write-off-investment-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "investment_unknown",
+        "field": "cash_flows[6].investment"
+      }
+    },
+    "write-off-with-a-share.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "cash_flows[6].share"
+      }
+    },
+    "write-off-with-an-amount.json": {
+      "refused": {
+        "kind": "input",
+        "term": "unknown_field",
+        "field": "cash_flows[6].amount"
+      }
+    },
+    "write-off-without-investment.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "cash_flows[6].investment"
+      }
+    }
+  }
+}

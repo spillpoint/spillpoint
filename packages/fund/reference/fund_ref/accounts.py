@@ -11,7 +11,10 @@ kind of LP is:
 - its distributions are its part, by commitment, of the LPs' part of each
   distribution, X's included (F23);
 - it has no GP commitment: the GP commitment's line is the fund's, beside the
-  accounts (F3, F23).
+  accounts (F3, F23);
+- deal by deal (F35), its part of the cost realized is the LPs' part, by
+  commitment; its fees and expenses are its own calls; the share realized is
+  the fund's, carried on each distribution.
 
 So with one account the run is the fund's own, and 0.2.0's amounts come out
 exactly. The fund's amounts are the accounts' sums (F23), and each account
@@ -57,7 +60,8 @@ class Account:
 
 
 def _account_fund(fund, steps, share, fee_share):
-    """An account's own run: the fund's terms with its carry, its part of every flow, and no GP commitment."""
+    """An account's own run: the fund's terms with its carry, its part of every flow, and no GP commitment. Deal by deal,
+    its part of each check's cost is the LPs' part by commitment (F35)."""
     flows = []
     for f in fund.flows:
         if f.type == "call":
@@ -75,6 +79,7 @@ def _account_fund(fund, steps, share, fee_share):
         flows=flows,
         lps=[],
         classes=[],
+        lps_cost_share=(1 - fund.gp_share) * share,
     )
 
 

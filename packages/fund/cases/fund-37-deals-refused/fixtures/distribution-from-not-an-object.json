@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "X's source given as the name Cedar AI, not an object.",
+  "change": {
+    "set": {
+      "distribution_from": "Cedar AI"
+    }
+  }
+}

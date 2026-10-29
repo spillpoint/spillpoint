@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's write-off moved to 15 February 2020, before its check on 1 March.",
+  "change": {
+    "set": {
+      "cash_flows[6].date": "2020-02-15"
+    }
+  }
+}

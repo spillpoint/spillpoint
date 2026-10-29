@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit names its investment as the number 7.",
+  "change": {
+    "set": {
+      "cash_flows[5].investment": 7
+    }
+  }
+}

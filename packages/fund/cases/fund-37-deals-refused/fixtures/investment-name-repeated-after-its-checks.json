@@ -1,0 +1,10 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Cedar AI renamed Alder Robotics and its check made -1: an investment's checks come before its name repeating.",
+  "change": {
+    "set": {
+      "investments[2].name": "Alder Robotics",
+      "investments[2].checks[0].amount": "-1"
+    }
+  }
+}

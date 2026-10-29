@@ -1,0 +1,12 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "An 8% pref compounded annually, deal by deal: the compounding is refused first, in stage 1.",
+  "change": {
+    "set": {
+      "terms.pref": {
+        "rate": "0.08",
+        "compounding": "annual"
+      }
+    }
+  }
+}

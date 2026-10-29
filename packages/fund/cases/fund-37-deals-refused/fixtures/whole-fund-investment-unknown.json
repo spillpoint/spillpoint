@@ -1,0 +1,9 @@
+{
+  "base": "fund-33-portfolio-whole-fund",
+  "about": "On case 33, the whole fund, Alder's exit names Zeta, which isn't listed: the investments are checked on the whole fund too.",
+  "change": {
+    "set": {
+      "cash_flows[5].investment": "Zeta"
+    }
+  }
+}

@@ -1,0 +1,352 @@
+{
+  "case": "fund-34-deal-by-deal",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2024-06-30",
+  "final": false,
+  "lps_paid_in": "11100000.00",
+  "gp_commitment_paid_in": "100000.00",
+  "investments": [
+    {
+      "name": "Alder Robotics",
+      "cost_made": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "cost_realized": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "9000000.00",
+        "exact": "9000000"
+      },
+      "realized_multiple": "3"
+    },
+    {
+      "name": "Birch Health",
+      "cost_made": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "cost_realized": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "cost_written_off": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": "0"
+    },
+    {
+      "name": "Cedar AI",
+      "cost_made": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_realized": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": null
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "7848484.85",
+      "exact": "259000000/33",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "11100000",
+          "text": "LPs have their $11,100,000 back for the investments exited or written off, fees and expenses included"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost_realized": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost": {
+          "amount": "9900000.00",
+          "exact": "9900000"
+        },
+        "fees_and_expenses": {
+          "amount": "1200000.00",
+          "exact": "1200000"
+        },
+        "total": {
+          "amount": "11100000.00",
+          "exact": "11100000"
+        }
+      },
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "9000000.00",
+        "gp_commitment": "90000.00",
+        "lps": {
+          "capital": "3330000.00",
+          "carry_tier": "4464000.00",
+          "total": "7794000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1116000.00"
+            }
+          ],
+          "total": "1116000.00"
+        }
+      }
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost_realized": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost": {
+          "amount": "9900000.00",
+          "exact": "9900000"
+        },
+        "fees_and_expenses": {
+          "amount": "1200000.00",
+          "exact": "1200000"
+        },
+        "total": {
+          "amount": "11100000.00",
+          "exact": "11100000"
+        }
+      },
+      "distribution": {
+        "amount": "5000000.00",
+        "gp_commitment": "50000.00",
+        "lps": {
+          "capital": "4950000.00",
+          "carry_tier": "0.00",
+          "total": "4950000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "14000000.00",
+        "gp_commitment": "140000.00",
+        "lps": {
+          "capital": "8280000.00",
+          "carry_tier": "4464000.00",
+          "total": "12744000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1116000.00"
+            }
+          ],
+          "total": "1116000.00"
+        }
+      }
+    },
+    {
+      "x": "7848484.85",
+      "exact": "259000000/33",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost_realized": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost": {
+          "amount": "9900000.00",
+          "exact": "9900000"
+        },
+        "fees_and_expenses": {
+          "amount": "1200000.00",
+          "exact": "1200000"
+        },
+        "total": {
+          "amount": "11100000.00",
+          "exact": "11100000"
+        }
+      },
+      "distribution": {
+        "amount": "7848484.85",
+        "gp_commitment": "78484.85",
+        "lps": {
+          "capital": "7770000.00",
+          "carry_tier": "0.00",
+          "total": "7770000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "16848484.85",
+        "gp_commitment": "168484.85",
+        "lps": {
+          "capital": "11100000.00",
+          "carry_tier": "4464000.00",
+          "total": "15564000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1116000.00"
+            }
+          ],
+          "total": "1116000.00"
+        }
+      }
+    },
+    {
+      "x": "12000000.00",
+      "exact": "12000000",
+      "tags": [
+        "listed",
+        "nav"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost_realized": {
+          "amount": "10000000.00",
+          "exact": "10000000"
+        },
+        "cost": {
+          "amount": "9900000.00",
+          "exact": "9900000"
+        },
+        "fees_and_expenses": {
+          "amount": "1200000.00",
+          "exact": "1200000"
+        },
+        "total": {
+          "amount": "11100000.00",
+          "exact": "11100000"
+        }
+      },
+      "distribution": {
+        "amount": "12000000.00",
+        "gp_commitment": "120000.00",
+        "lps": {
+          "capital": "7770000.00",
+          "carry_tier": "3288000.00",
+          "total": "11058000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "822000.00"
+            }
+          ],
+          "total": "822000.00"
+        }
+      },
+      "to_date": {
+        "amount": "21000000.00",
+        "gp_commitment": "210000.00",
+        "lps": {
+          "capital": "11100000.00",
+          "carry_tier": "7752000.00",
+          "total": "18852000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1938000.00"
+            }
+          ],
+          "total": "1938000.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "1938000.00",
+        "entitlement": "1938000.00",
+        "owed": "0.00"
+      }
+    }
+  ]
+}

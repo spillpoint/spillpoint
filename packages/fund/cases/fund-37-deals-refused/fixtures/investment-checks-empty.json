@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health with an empty list of checks.",
+  "change": {
+    "set": {
+      "investments[1].checks": []
+    }
+  }
+}

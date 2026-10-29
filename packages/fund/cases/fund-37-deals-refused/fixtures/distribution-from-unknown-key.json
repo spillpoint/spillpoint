@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "X's source given an amount, which it doesn't have.",
+  "change": {
+    "set": {
+      "distribution_from.amount": "1000"
+    }
+  }
+}

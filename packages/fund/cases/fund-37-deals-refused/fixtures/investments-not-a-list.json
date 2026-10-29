@@ -1,0 +1,11 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "The investments given as one object, not a list.",
+  "change": {
+    "set": {
+      "investments": {
+        "name": "Alder Robotics"
+      }
+    }
+  }
+}

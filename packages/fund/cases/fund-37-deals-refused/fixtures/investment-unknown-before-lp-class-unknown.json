@@ -1,0 +1,10 @@
+{
+  "base": "fund-36-deal-by-deal-classes-closes",
+  "about": "On case 36, Ivy's exit named from Zeta and Birch Family Office put in \"Anchors\": the investments, in stage 3, come before the LPs, in stage 4.",
+  "change": {
+    "set": {
+      "lps[1].class": "Anchors",
+      "cash_flows[2].investment": "Zeta"
+    }
+  }
+}

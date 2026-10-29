@@ -1,0 +1,7 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder Robotics without its name.",
+  "change": {
+    "del": "investments[0].name"
+  }
+}

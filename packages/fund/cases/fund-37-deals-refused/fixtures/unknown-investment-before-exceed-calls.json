@@ -1,0 +1,10 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit named from Zeta and Cedar AI's check raised past the calls: each cash flow's investment comes before the cost made.",
+  "change": {
+    "set": {
+      "cash_flows[5].investment": "Zeta",
+      "investments[2].checks[0].amount": "4500000"
+    }
+  }
+}

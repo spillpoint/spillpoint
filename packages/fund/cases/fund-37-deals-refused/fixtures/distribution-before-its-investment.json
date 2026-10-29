@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder's exit moved to 20 January 2020, before its check on 1 February.",
+  "change": {
+    "set": {
+      "cash_flows[5].date": "2020-01-20"
+    }
+  }
+}

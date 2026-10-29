@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Cedar AI's name a single space.",
+  "change": {
+    "set": {
+      "investments[2].name": " "
+    }
+  }
+}

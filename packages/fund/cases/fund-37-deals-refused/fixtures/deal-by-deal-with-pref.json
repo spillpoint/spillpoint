@@ -1,0 +1,11 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "An 8% pref on case 34's deal-by-deal fund, which 0.5.0 doesn't model deal by deal.",
+  "change": {
+    "set": {
+      "terms.pref": {
+        "rate": "0.08"
+      }
+    }
+  }
+}

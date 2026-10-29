@@ -1,0 +1,152 @@
+{
+  "case": "fund-35-deal-by-deal-clawback",
+  "description": "Deal by deal, final: a 40% secondary sale of Dogwood Labs after a follow-on, Elm Bio's exit and a $1,000,000 escrow release from it after, Fir Payments written off, and Hazel Cloud still held, with a follow-on after Elm's exit. The follow-on lowers the fees' share due, so the escrow release is all profit. At X = 0 the GP owes back all $2,348,128 of its carry; X from Dogwood clears it at $18,376,163.27.",
+  "xs": [
+    "0",
+    "5000000",
+    "313400000/49",
+    "12000000",
+    "900432000/49",
+    "25000000"
+  ],
+  "fund": {
+    "as_of": "2024-12-31",
+    "terms": {
+      "carry": "0.20",
+      "gp_commitment": {
+        "share": "0.02"
+      },
+      "carry_basis": "deal_by_deal"
+    },
+    "investments": [
+      {
+        "name": "Dogwood Labs",
+        "checks": [
+          {
+            "date": "2020-02-01",
+            "amount": "4000000"
+          },
+          {
+            "date": "2021-03-01",
+            "amount": "2000000"
+          }
+        ]
+      },
+      {
+        "name": "Elm Bio",
+        "checks": [
+          {
+            "date": "2020-04-01",
+            "amount": "4000000"
+          }
+        ]
+      },
+      {
+        "name": "Fir Payments",
+        "checks": [
+          {
+            "date": "2021-05-01",
+            "amount": "5000000"
+          }
+        ]
+      },
+      {
+        "name": "Hazel Cloud",
+        "checks": [
+          {
+            "date": "2022-03-01",
+            "amount": "5000000"
+          },
+          {
+            "date": "2023-02-01",
+            "amount": "3000000"
+          }
+        ]
+      }
+    ],
+    "cash_flows": [
+      {
+        "date": "2020-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "8000000"
+      },
+      {
+        "date": "2020-01-10",
+        "type": "call",
+        "kind": "fee",
+        "amount": "600000"
+      },
+      {
+        "date": "2021-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "7000000"
+      },
+      {
+        "date": "2021-01-10",
+        "type": "call",
+        "kind": "fee",
+        "amount": "600000"
+      },
+      {
+        "date": "2021-06-30",
+        "type": "call",
+        "kind": "expense",
+        "amount": "100000"
+      },
+      {
+        "date": "2021-09-30",
+        "type": "distribution",
+        "amount": "6000000",
+        "investment": "Dogwood Labs",
+        "share": "0.4"
+      },
+      {
+        "date": "2022-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "5000000"
+      },
+      {
+        "date": "2022-01-10",
+        "type": "call",
+        "kind": "fee",
+        "amount": "600000"
+      },
+      {
+        "date": "2022-06-30",
+        "type": "distribution",
+        "amount": "12000000",
+        "investment": "Elm Bio"
+      },
+      {
+        "date": "2023-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "3000000"
+      },
+      {
+        "date": "2023-06-30",
+        "type": "distribution",
+        "amount": "1000000",
+        "investment": "Elm Bio"
+      },
+      {
+        "date": "2023-07-10",
+        "type": "call",
+        "kind": "fee",
+        "amount": "450000"
+      },
+      {
+        "date": "2023-09-30",
+        "type": "write_off",
+        "investment": "Fir Payments"
+      }
+    ],
+    "distribution_from": {
+      "investment": "Dogwood Labs"
+    },
+    "final": true
+  }
+}

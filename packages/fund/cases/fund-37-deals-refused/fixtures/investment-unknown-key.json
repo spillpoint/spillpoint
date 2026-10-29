@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Alder Robotics given a sector, which an investment doesn't have.",
+  "change": {
+    "set": {
+      "investments[0].sector": "robotics"
+    }
+  }
+}

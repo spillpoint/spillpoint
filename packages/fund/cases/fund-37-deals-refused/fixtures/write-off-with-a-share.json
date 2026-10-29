@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's write-off given a share of half: a write-off ends all that's left.",
+  "change": {
+    "set": {
+      "cash_flows[6].share": "0.5"
+    }
+  }
+}

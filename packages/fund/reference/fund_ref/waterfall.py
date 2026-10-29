@@ -8,6 +8,12 @@ commitment takes its share of every distribution outside the tiers (F3).
 When X is final, or at the NAV point (F14), the tiers also run once on the
 fund's totals (F12): the GP's entitlement. The clawback owed is the carry paid
 to date less that entitlement, when that's positive.
+
+From 0.5.0 a fund can pay carry deal by deal (F34, F35): tier 1 then runs, at
+each distribution, only to what's due on the investments realized so far, its
+cost and its share of the fees and expenses (deals.py works out what's
+realized). Everything else, the clawback's run on the totals among it, is as on
+the whole fund.
 """
 
 import copy
@@ -148,6 +154,7 @@ class Ledger:
         self.fund = fund
         self.lps_paid_in = Fraction(0)  # P
         self.gp_commitment_paid_in = Fraction(0)
+        self.fees_and_expenses = Fraction(0)  # the LPs' part of the fee and expense calls to date (F35)
         self.capital_returned = Fraction(0)  # R
         self.through_tiers = Fraction(0)  # T: every distribution that ran the tiers, net of the GP commitment's share
         self.distributed = Fraction(0)
@@ -156,6 +163,7 @@ class Ledger:
         self.hurdle_pref = Fraction(0)  # F12's pref, on the hurdle balance
         self.to_date = Pot(len(fund.steps))
         self.date = None
+        self.dues = []  # F35, deal by deal: each distribution's (cost, fees and expenses) due, in F4's order
 
     def advance(self, date):
         """Accrues the pref up to `date`, Actual/365, on the balances since the last cash flow (F6, F12)."""
@@ -173,16 +181,39 @@ class Ledger:
         gp_part = gp_commitment_part(self.fund, kind, amount)
         self.gp_commitment_paid_in += gp_part
         self.lps_paid_in += amount - gp_part
+        if kind != "investment":
+            self.fees_and_expenses += amount - gp_part
 
-    def distribute(self, amount):
-        """F3: g of the distribution to the GP commitment, outside the tiers; the rest runs the tiers."""
+    def due(self, realized, made, end=False):
+        """F35, deal by deal: what's due before carry, with `realized` of the `made` cost realized so far (whole-fund
+        amounts). The cost realized, the LPs' part of it (1 − g, the GP commitment's part aside, F3; an account's part
+        of that by commitment, F23); and the LPs' fees and expenses to date (an account's own, F29) times the share of
+        the cost made that's been realized, by cost. At the end (X final, and the NAV point), all the LPs' paid-in: the
+        fund ends and its unused cash comes back as capital, as on the whole fund (FA49). The cost is then the LPs' part
+        of the investment calls, capital called and never invested included, and the fees and expenses are all of them.
+        Returns the two."""
+        if end:
+            return self.lps_paid_in - self.fees_and_expenses, self.fees_and_expenses
+        return self.fund.lps_cost_share * realized, self.fees_and_expenses * realized / made
+
+    def distribute(self, amount, realized=None, made=None, end=False):
+        """F3: g of the distribution to the GP commitment, outside the tiers; the rest runs the tiers. Deal by deal, tier
+        1 runs to what's due with `realized` of the `made` cost realized, or at the `end` to all paid-in (F35, FA49); on
+        the whole fund, to all paid-in (F5)."""
         amount = Fraction(amount)
         gpc = self.fund.gp_share * amount
         tiers = amount - gpc
+        capital_due = self.lps_paid_in - self.capital_returned
+        if self.fund.deal_by_deal:
+            cost, fees = self.due(realized, made, end)
+            self.dues.append((cost, fees))
+            # What's due can be less than what the LPs have had back (a new investment lowers the fees' share): then no
+            # capital comes first, and nothing already returned is taken back.
+            capital_due = max(Fraction(0), cost + fees - self.capital_returned)
         pot, last = pay_tiers(
             self.fund,
             tiers,
-            capital_due=self.lps_paid_in - self.capital_returned,
+            capital_due=capital_due,
             pref_due=self.pref_accrued - self.pref_paid,
             lp_before=self.to_date.lps,
             gp_before=self.to_date.gp,
@@ -221,7 +252,7 @@ def before_x(fund):
         if f.type == "call":
             ledger.call(f.kind, f.amount)
         else:
-            ledger.distribute(f.amount)
+            ledger.distribute(f.amount, f.realized, f.made)
     ledger.advance(fund.distribution_date)
     return ledger
 
@@ -237,6 +268,7 @@ class Outcome:
     carry_paid: Fraction | None = None
     entitlement: Fraction | None = None
     owed_before_floor: Fraction | None = None  # carry paid less entitlement; the clawback owed is this when positive
+    due: tuple | None = None  # deal by deal: what's due before carry on X, (cost, fees and expenses) (F35, F36)
 
     @property
     def clawback(self):
@@ -252,8 +284,10 @@ class Waterfall:
         """X distributed on D, after every earlier cash flow (F14). final=None means the fund's own `final`."""
         final = self.fund.final if final is None else final
         ledger = copy.deepcopy(self._before)
-        this, tier = ledger.distribute(x)
+        this, tier = ledger.distribute(x, self.x_realized(final), self.fund.made_at_d, final)
         out = Outcome(Fraction(x), this, tier, ledger)
+        if self.fund.deal_by_deal:
+            out.due = ledger.dues[-1]
         if final:
             totals, totals_tier = ledger.entitlement()
             out.totals, out.totals_tier = totals, totals_tier
@@ -265,3 +299,14 @@ class Waterfall:
     @property
     def before(self):
         return self._before
+
+    def x_realized(self, final):
+        """F33: the cost realized with X: its share of what's left of its investment; when final, and at the NAV point,
+        everything left of every investment, so all the cost made."""
+        return self.fund.made_at_d if final else self.fund.x_realized
+
+    def due_on_x(self, final=None):
+        """F35: what's due before carry on X, (cost, fees and expenses): when final, all the LPs' paid-in (FA49). It
+        doesn't change with X (F14)."""
+        final = self.fund.final if final is None else final
+        return self._before.due(self.x_realized(final), self.fund.made_at_d, final)

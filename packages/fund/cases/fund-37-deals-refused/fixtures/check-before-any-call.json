@@ -1,0 +1,9 @@
+{
+  "base": "fund-34-deal-by-deal",
+  "about": "Birch Health's check moved to 10 January 2020, before the first investment call on 15 January.",
+  "change": {
+    "set": {
+      "investments[1].checks[0].date": "2020-01-10"
+    }
+  }
+}

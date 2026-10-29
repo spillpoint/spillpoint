@@ -14,10 +14,17 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .sort();
 /**
  * Pending: cases added before the engine reads what they need, which its case tests skip until then. f02b, f03b and
- * f04b each emptied it; the next release's cases go here until its engine step. test/pending.test.ts fails if a case
- * folder is neither run nor pending, or if this list names a folder that doesn't exist.
+ * f04b each emptied it. From f05a, 0.5.0's investments and carry deal by deal (F33 to F37), cases 33 to 37; f05b empties
+ * it. test/pending.test.ts fails if a case folder is neither run nor pending, or if this list names a folder that
+ * doesn't exist.
  */
-export const PENDING: readonly string[] = [];
+export const PENDING: readonly string[] = [
+  "fund-33-portfolio-whole-fund",
+  "fund-34-deal-by-deal",
+  "fund-35-deal-by-deal-clawback",
+  "fund-36-deal-by-deal-classes-closes",
+  "fund-37-deals-refused",
+];
 const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */
 export const RUN_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));

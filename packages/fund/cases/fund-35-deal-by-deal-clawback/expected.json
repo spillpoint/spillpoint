@@ -1,0 +1,543 @@
+{
+  "case": "fund-35-deal-by-deal-clawback",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2024-12-31",
+  "final": true,
+  "lps_paid_in": "24888000.00",
+  "gp_commitment_paid_in": "462000.00",
+  "investments": [
+    {
+      "name": "Dogwood Labs",
+      "cost_made": {
+        "amount": "6000000.00",
+        "exact": "6000000"
+      },
+      "cost_realized": {
+        "amount": "2400000.00",
+        "exact": "2400000"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "6000000.00",
+        "exact": "6000000"
+      },
+      "realized_multiple": "2.5"
+    },
+    {
+      "name": "Elm Bio",
+      "cost_made": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_realized": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "13000000.00",
+        "exact": "13000000"
+      },
+      "realized_multiple": "3.25"
+    },
+    {
+      "name": "Fir Payments",
+      "cost_made": {
+        "amount": "5000000.00",
+        "exact": "5000000"
+      },
+      "cost_realized": {
+        "amount": "5000000.00",
+        "exact": "5000000"
+      },
+      "cost_written_off": {
+        "amount": "5000000.00",
+        "exact": "5000000"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": "0"
+    },
+    {
+      "name": "Hazel Cloud",
+      "cost_made": {
+        "amount": "8000000.00",
+        "exact": "8000000"
+      },
+      "cost_realized": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": null
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "6395918.37",
+      "exact": "313400000/49",
+      "reasons": [
+        {
+          "code": "clawback_changes",
+          "change": "starts_to_fall",
+          "fund_totals": "capital_returned",
+          "text": "the clawback owed starts to fall: on the fund's totals, LPs have their capital back"
+        }
+      ]
+    },
+    {
+      "x": "18376163.27",
+      "exact": "900432000/49",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "24888000",
+          "text": "LPs have their $24,888,000 of paid-in capital back"
+        },
+        {
+          "code": "clawback_cleared",
+          "text": "from here the GP has earned all the carry it was paid earlier"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost_realized": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost": {
+          "amount": "22540000.00",
+          "exact": "22540000"
+        },
+        "fees_and_expenses": {
+          "amount": "2348000.00",
+          "exact": "2348000"
+        },
+        "total": {
+          "amount": "24888000.00",
+          "exact": "24888000"
+        }
+      },
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "19000000.00",
+        "gp_commitment": "380000.00",
+        "lps": {
+          "capital": "6879360.00",
+          "carry_tier": "9392512.00",
+          "total": "16271872.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2348128.00"
+            }
+          ],
+          "total": "2348128.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2348128.00",
+        "entitlement": "0.00",
+        "owed": "2348128.00"
+      }
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost_realized": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost": {
+          "amount": "22540000.00",
+          "exact": "22540000"
+        },
+        "fees_and_expenses": {
+          "amount": "2348000.00",
+          "exact": "2348000"
+        },
+        "total": {
+          "amount": "24888000.00",
+          "exact": "24888000"
+        }
+      },
+      "distribution": {
+        "amount": "5000000.00",
+        "gp_commitment": "100000.00",
+        "lps": {
+          "capital": "4900000.00",
+          "carry_tier": "0.00",
+          "total": "4900000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "24000000.00",
+        "gp_commitment": "480000.00",
+        "lps": {
+          "capital": "11779360.00",
+          "carry_tier": "9392512.00",
+          "total": "21171872.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2348128.00"
+            }
+          ],
+          "total": "2348128.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2348128.00",
+        "entitlement": "0.00",
+        "owed": "2348128.00"
+      }
+    },
+    {
+      "x": "6395918.37",
+      "exact": "313400000/49",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost_realized": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost": {
+          "amount": "22540000.00",
+          "exact": "22540000"
+        },
+        "fees_and_expenses": {
+          "amount": "2348000.00",
+          "exact": "2348000"
+        },
+        "total": {
+          "amount": "24888000.00",
+          "exact": "24888000"
+        }
+      },
+      "distribution": {
+        "amount": "6395918.37",
+        "gp_commitment": "127918.37",
+        "lps": {
+          "capital": "6268000.00",
+          "carry_tier": "0.00",
+          "total": "6268000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "25395918.37",
+        "gp_commitment": "507918.37",
+        "lps": {
+          "capital": "13147360.00",
+          "carry_tier": "9392512.00",
+          "total": "22539872.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2348128.00"
+            }
+          ],
+          "total": "2348128.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2348128.00",
+        "entitlement": "0.00",
+        "owed": "2348128.00"
+      }
+    },
+    {
+      "x": "12000000.00",
+      "exact": "12000000",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost_realized": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost": {
+          "amount": "22540000.00",
+          "exact": "22540000"
+        },
+        "fees_and_expenses": {
+          "amount": "2348000.00",
+          "exact": "2348000"
+        },
+        "total": {
+          "amount": "24888000.00",
+          "exact": "24888000"
+        }
+      },
+      "distribution": {
+        "amount": "12000000.00",
+        "gp_commitment": "240000.00",
+        "lps": {
+          "capital": "11760000.00",
+          "carry_tier": "0.00",
+          "total": "11760000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "31000000.00",
+        "gp_commitment": "620000.00",
+        "lps": {
+          "capital": "18639360.00",
+          "carry_tier": "9392512.00",
+          "total": "28031872.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2348128.00"
+            }
+          ],
+          "total": "2348128.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2348128.00",
+        "entitlement": "1098400.00",
+        "owed": "1249728.00"
+      }
+    },
+    {
+      "x": "18376163.27",
+      "exact": "900432000/49",
+      "tags": [
+        "listed",
+        "breakpoint"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost_realized": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost": {
+          "amount": "22540000.00",
+          "exact": "22540000"
+        },
+        "fees_and_expenses": {
+          "amount": "2348000.00",
+          "exact": "2348000"
+        },
+        "total": {
+          "amount": "24888000.00",
+          "exact": "24888000"
+        }
+      },
+      "distribution": {
+        "amount": "18376163.27",
+        "gp_commitment": "367523.27",
+        "lps": {
+          "capital": "18008640.00",
+          "carry_tier": "0.00",
+          "total": "18008640.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "37376163.27",
+        "gp_commitment": "747523.27",
+        "lps": {
+          "capital": "24888000.00",
+          "carry_tier": "9392512.00",
+          "total": "34280512.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2348128.00"
+            }
+          ],
+          "total": "2348128.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2348128.00",
+        "entitlement": "2348128.00",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "25000000.00",
+      "exact": "25000000",
+      "tags": [
+        "listed"
+      ],
+      "due": {
+        "cost_made": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost_realized": {
+          "amount": "23000000.00",
+          "exact": "23000000"
+        },
+        "cost": {
+          "amount": "22540000.00",
+          "exact": "22540000"
+        },
+        "fees_and_expenses": {
+          "amount": "2348000.00",
+          "exact": "2348000"
+        },
+        "total": {
+          "amount": "24888000.00",
+          "exact": "24888000"
+        }
+      },
+      "distribution": {
+        "amount": "25000000.00",
+        "gp_commitment": "500000.00",
+        "lps": {
+          "capital": "18008640.00",
+          "carry_tier": "5193088.00",
+          "total": "23201728.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1298272.00"
+            }
+          ],
+          "total": "1298272.00"
+        }
+      },
+      "to_date": {
+        "amount": "44000000.00",
+        "gp_commitment": "880000.00",
+        "lps": {
+          "capital": "24888000.00",
+          "carry_tier": "14585600.00",
+          "total": "39473600.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "3646400.00"
+            }
+          ],
+          "total": "3646400.00"
+        }
+      },
+      "clawback": {
+        "carry_paid": "3646400.00",
+        "entitlement": "3646400.00",
+        "owed": "0.00"
+      }
+    }
+  ]
+}
