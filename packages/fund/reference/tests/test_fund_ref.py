@@ -25,7 +25,7 @@ from fund_ref.closes import equalization  # noqa: E402
 from fund_ref.inputs import Refusal, read  # noqa: E402
 from fund_ref.lps import each_lp, shares  # noqa: E402
 from fund_ref.num import days, exact, money, multiple, percent, usd  # noqa: E402
-from fund_ref.waterfall import Waterfall  # noqa: E402
+from fund_ref.waterfall import Ledger, Waterfall  # noqa: E402
 
 
 def call(date, amount, kind="investment"):
@@ -1083,6 +1083,351 @@ class ClassRefusals(unittest.TestCase):
         read(apply_change(CLASSED, {"set": {"lps": None}}))
 
 
+def dist_from(date, amount, investment, share=None):
+    flow = {"date": date, "type": "distribution", "amount": amount, "investment": investment}
+    if share is not None:
+        flow["share"] = share
+    return flow
+
+
+def write_off(date, investment):
+    return {"date": date, "type": "write_off", "investment": investment}
+
+
+DEALS = {
+    "as_of": "2024-01-01",
+    "terms": {"carry": "0.2", "carry_basis": "deal_by_deal"},
+    "investments": [
+        {"name": "A", "checks": [{"date": "2020-01-01", "amount": "600"}]},
+        {"name": "B", "checks": [{"date": "2020-01-01", "amount": "400"}]},
+    ],
+    "cash_flows": [call("2020-01-01", "1000"), call("2020-01-01", "100", "fee"), dist_from("2021-01-01", "900", "A")],
+    "distribution_from": {"investment": "B"},
+}
+
+
+def deals(change=None):
+    return Model(read(apply_change(DEALS, change or {})))
+
+
+def earlier(m, k=0, account=0):
+    """The k-th earlier distribution of an account's run, replayed: (its pot, its (cost, fees and expenses) due)."""
+    run = m.accounts[account].run
+    pots = []
+    ledger = Ledger(run.fund)
+    for f in run.fund.flows:
+        ledger.advance(f.date)
+        if f.type == "call":
+            ledger.call(f.kind, f.amount)
+        else:
+            pots.append(ledger.distribute(f.amount, f.realized, f.made)[0])
+    return pots[k], run.before.dues[k]
+
+
+class Deals(unittest.TestCase):
+    """F33 to F36 on small numbers: $1,000 called for A ($600) and B ($400), $100 of fees, A's exit for $900."""
+
+    def test_on_the_whole_fund_the_investments_change_no_amount(self):
+        # F34: the same fund without its investments, its tags and X's source splits the same at every X, with the same
+        # breakpoints. A's exit returns $900 of the $1,100 paid in; X returns the last $200, then 80/20.
+        whole = deals({"set": {"terms.carry_basis": "whole_fund"}})
+        bare = apply_change(DEALS, {"set": {"terms.carry_basis": "whole_fund", "cash_flows[2]": dist("2021-01-01", "900")}, "del": ["investments", "distribution_from"]})
+        plain = Model(read(bare))
+        for x in (0, 100, 200, 1000):
+            a, b = whole.evaluate(x).by_account[0][1], plain.evaluate(x).by_account[0][1]
+            self.assertEqual((a.this.vector(), a.ledger.to_date.vector()), (b.this.vector(), b.ledger.to_date.vector()), x)
+            self.assertIsNone(a.due)
+        self.assertEqual(codes(breakpoints.find(whole)), [("200.00", ["capital_returned"])])
+        self.assertEqual(breakpoints.find(whole), breakpoints.find(plain))
+
+    def test_an_exit_returns_its_cost_and_its_share_of_the_fees_then_pays_carry(self):
+        # F35: at A's exit, $600 of the $1,000 made is realized, so $600 of cost and 60% of the $100 of fees are due:
+        # $660 to the LPs first, then 80/20 on the other $240, $48 of carry. X from B realizes the rest: $1,100 is due,
+        # $440 more, so X's tier 1 ends at $440 and its text says what it is.
+        m = deals()
+        pot, due = earlier(m)
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((600, 60), 660, 48))
+        out = m.evaluate(1000).by_account[0][1]
+        self.assertEqual((out.due, out.this.lp_capital, out.this.gp), ((1000, 100), 440, 112))
+        found = breakpoints.find(m)
+        self.assertEqual(named(found), [("440.00", ["LPs have their $1,100 back for the investments exited or written off, fees and expenses included"])])
+        self.assertEqual(found[0][1][0]["amount"], "1100")
+
+    def test_a_share_sold_is_of_whats_left_and_a_follow_on_adds_to_it(self):
+        # F33: half of A's $600 on 2021-01-01 realizes $300; a $200 follow-on on 2021-06-01 leaves $500; half of that
+        # on 2022-01-01 realizes $250. A's table: $800 made, $550 realized, nothing written off, $1,300 of proceeds.
+        f = read(apply_change(DEALS, {"set": {
+            "cash_flows[2]": dist_from("2021-01-01", "900", "A", "0.5"),
+            "cash_flows[3]": call("2021-06-01", "200"),
+            "cash_flows[4]": dist_from("2022-01-01", "400", "A", "1/2"),
+            "investments[0].checks[1]": {"date": "2021-06-01", "amount": "200"},
+        }}))
+        a = f.holdings[0]
+        self.assertEqual((a.made, a.realized, a.written_off, a.proceeds, a.left), (800, 550, 0, 1300, 250))
+        self.assertEqual([(x.realized, x.made) for x in f.flows if x.type == "distribution"], [(300, 1000), (550, 1200)])
+
+    def test_a_write_off_ends_whats_left_and_an_escrow_release_realizes_nothing(self):
+        # F33: B written off on 2022-01-01 realizes its $400, with no proceeds. A $50 release from A's escrow on
+        # 2023-01-01, after its full exit, realizes nothing more, but all $1,000 made is realized by then: $1,100 is
+        # due, $440 more than the $660 back, so all $50 is capital.
+        m = deals({"set": {"cash_flows[3]": write_off("2022-01-01", "B"), "cash_flows[4]": dist_from("2023-01-01", "50", "A")}})
+        a, b = m.fund.holdings
+        self.assertEqual((a.realized, a.proceeds, b.realized, b.written_off, b.proceeds), (600, 950, 400, 400, 0))
+        pot, due = earlier(m, 1)
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((1000, 100), 50, 0))
+        # X from B, written off, realizes nothing; what's due is still all of it, and $390 of it is still to come.
+        out = m.evaluate(500).by_account[0][1]
+        self.assertEqual((out.due, out.this.lp_capital), ((1000, 100), 390))
+
+    def test_on_one_date_checks_then_write_offs_then_distributions(self):
+        # F4, F33, FA50: B's write-off listed after A's exit on the same date still comes first, so the exit has all
+        # $1,000 realized and all $1,100 due: the $900 is all capital. A check on the exit's date counts in the cost made.
+        m = deals({"set": {"cash_flows[3]": write_off("2021-01-01", "B")}})
+        pot, due = earlier(m)
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((1000, 100), 900, 0))
+        f = read(apply_change(DEALS, {"set": {"investments[1].checks[0].date": "2021-01-01"}}))
+        self.assertEqual([(x.realized, x.made) for x in f.flows if x.type == "distribution"], [(600, 1000)])
+
+    def test_a_new_investment_lowers_the_fees_share_and_nothing_is_taken_back(self):
+        # F35: with B made only on 2021-06-01, A's exit has all $600 made realized: $700 due, $600 of cost and all $100 of
+        # fees. A $50 escrow release on 2022-01-01, after B is made, has 60%: $660 due, under the $700 already back,
+        # so no capital comes first and nothing is taken back: all $50 runs the carry tier, $10 of carry.
+        m = deals({"set": {"investments[1].checks[0].date": "2021-06-01", "cash_flows[3]": dist_from("2022-01-01", "50", "A")}})
+        pot, due = earlier(m)
+        self.assertEqual((due, pot.lp_capital), ((600, 100), 700))
+        pot, due = earlier(m, 1)
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((600, 60), 0, 10))
+
+    def test_each_account_its_own_due(self):
+        # F35, F23: two LPs at $1 each, B in a class paying no fees and no carry. Each account's part of the cost
+        # realized is half of $600; the $100 fee call is all A's, so A's account is due $300 + $60 and B's $300. On X,
+        # A's is due $600 with $360 back and B's $500 with $300 back; each has half of X, so B's tier 1 ends at X = $400
+        # and A's at $480.
+        classes = [{"name": "F&F", "fee_rate": "0", "carry": "0"}]
+        lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "F&F"}]
+        m = deals({"set": {"terms.fee_rate": "0.02", "terms.lp_classes": classes, "lps": lps}})
+        self.assertEqual([earlier(m, 0, i)[1] for i in (0, 1)], [(300, 60), (300, 0)])
+        out = m.evaluate(0)
+        self.assertEqual([o.due for _, o in out.by_account], [(500, 100), (500, 0)])
+        self.assertEqual(named(breakpoints.find(m)), [
+            ("400.00", ["F&F: LPs have their $500 back for the investments exited or written off, fees and expenses included"]),
+            ("480.00", ["Fund terms: LPs have their $600 back for the investments exited or written off, fees and expenses included"]),
+        ])
+
+    def test_x_realizes_its_share_and_everything_when_final_or_at_the_nav_point(self):
+        # F33, FA58: X selling half of B realizes $200 more, $800 of $1,000: $880 due. Final, or at the NAV point,
+        # everything left is realized: $1,100.
+        m = deals({"set": {"distribution_from.share": "0.5", "nav": "2000"}})
+        self.assertEqual(m.evaluate(0).by_account[0][1].due, (800, 80))
+        self.assertEqual(m.evaluate(0, final=True).by_account[0][1].due, (1000, 100))
+        self.assertEqual(codes(breakpoints.find(m)), [("220.00", ["capital_returned"])])
+        # X's share is of what's left: with half of A sold at its exit, $300 realized, X selling half of A realizes $150
+        # more, $450 in all.
+        m = deals({"set": {"cash_flows[2].share": "0.5", "distribution_from": {"investment": "A", "share": "0.5"}}})
+        self.assertEqual(m.evaluate(0).by_account[0][1].due, (450, 45))
+
+    def test_a_fee_call_on_the_distributions_date_counts(self):
+        # FA51, F4: calls come before distributions on one date, so a $50 fee call on the day of A's exit is in the fees
+        # to date: 60% of $150, $90, beside the $600 of cost.
+        m = deals({"set": {"cash_flows[3]": call("2021-01-01", "50", "fee")}})
+        self.assertEqual(earlier(m)[1], (600, 90))
+
+    def test_the_gp_commitments_part_of_the_cost_is_aside(self):
+        # F35, FA60: with a 10% GP commitment, fee-free, the LPs' part of A's $600 is $540, whatever the GP commitment
+        # pays of expenses; the $100 fee call is all the LPs'. With an expense call the GP commitment doesn't pay, all of
+        # it is the LPs' too.
+        m = deals({"set": {"terms.gp_commitment": {"share": "0.1", "pays_expenses": False}, "cash_flows[3]": call("2020-06-01", "50", "expense")}})
+        self.assertEqual(earlier(m)[1], (540, 90))
+
+    def test_the_end_is_the_whole_funds_entitlement(self):
+        # F35: final, the GP's entitlement is the tiers on the fund's totals, as on the whole fund, so it keeps at most
+        # what the whole fund gives it. At X = 0: $48 of carry paid, none earned, all of it owed back. From X = $200 the
+        # totals have all paid-in back and the clawback falls; at $440 X's own tier 1 ends and the clawback is cleared.
+        m = deals({"set": {"final": True}})
+        whole = deals({"set": {"final": True, "terms.carry_basis": "whole_fund"}})
+        for x in (0, 200, 300, 440, 1000):
+            a, b = m.evaluate(x), whole.evaluate(x)
+            self.assertEqual(a.entitlement, b.entitlement, x)
+            self.assertLessEqual(a.carry_paid - a.clawback, b.entitlement)
+        self.assertEqual(m.evaluate(0).clawback, 48)
+        self.assertEqual(codes(breakpoints.find(m)), [("200.00", ["clawback_changes"]), ("440.00", ["capital_returned", "clawback_cleared"])])
+
+    def test_capital_called_and_not_invested_stops_the_reference(self):
+        # FA49: $1,000 called, only $800 invested, final. What's due at the end is $800, so X pays carry on the $200 never
+        # invested, and the totals' run, with all $1,000 as capital, takes it back: the clawback rises from nothing at
+        # X = $800 to $40 at $1,000 and holds there. F15 words where it starts, not where it stops rising, so the
+        # search stops there, unworded (FA9). An open question for Jordan.
+        m = Model(read({**DEALS, "final": True, "investments": [{"name": "B", "checks": [{"date": "2020-01-01", "amount": "800"}]}], "cash_flows": [call("2020-01-01", "1000")]}))
+        self.assertEqual([m.evaluate(x).clawback for x in (800, 900, 1000, 2000)], [0, 20, 40, 40])
+        with self.assertRaises(breakpoints.NotSettled):
+            breakpoints.find(m)
+
+
+class DealRefusals(unittest.TestCase):
+    """F37 beyond the fixtures in packages/fund/cases/fund-37-deals-refused, and FA52 to FA56."""
+
+    def refused(self, change, base=DEALS):
+        with self.assertRaises(Refusal) as ctx:
+            read(apply_change(base, change))
+        return (ctx.exception.kind, ctx.exception.term, ctx.exception.path)
+
+    def test_null_is_left_out(self):
+        # FA52: null carry_basis is the whole fund; null investments, distribution_from and a distribution's investment
+        # are none, so deal by deal each is missing; a null share is 1; on a call or a write-off, a null field it
+        # doesn't have is left out. A null name, checks, date or amount is missing.
+        self.assertEqual(read(apply_change(DEALS, {"set": {"terms.carry_basis": None}})).carry_basis, "whole_fund")
+        self.assertEqual(self.refused({"set": {"investments": None}}), ("input", "missing_field", "investments"))
+        self.assertEqual(self.refused({"set": {"investments": []}}), ("input", "missing_field", "investments"))
+        self.assertEqual(self.refused({"set": {"distribution_from": None}}), ("input", "missing_field", "distribution_from"))
+        self.assertEqual(self.refused({"set": {"cash_flows[2].investment": None}}), ("input", "missing_field", "cash_flows[2].investment"))
+        f = read(apply_change(DEALS, {"set": {"cash_flows[2].share": None, "distribution_from.share": None, "cash_flows[0].investment": None, "cash_flows[3]": {**write_off("2022-01-01", "B"), "amount": None, "share": None, "kind": None}}}))
+        self.assertEqual((f.flows[-1].share, f.distribution_from.share, len(f.write_offs)), (1, 1, 1))
+        for path in ("investments[0].name", "investments[0].checks", "investments[0].checks[0].date", "investments[0].checks[0].amount", "distribution_from.investment"):
+            self.assertEqual(self.refused({"set": {path: None}}), ("input", "missing_field", path))
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": {**write_off("2022-01-01", "B"), "investment": None}}}), ("input", "missing_field", "cash_flows[3].investment"))
+
+    def test_names_are_kept_and_compared_as_written(self):
+        # FA52, FA17: "A " isn't A, so it's unknown; an investment may share a name with an LP.
+        self.assertEqual(self.refused({"set": {"cash_flows[2].investment": "A "}}), ("input", "investment_unknown", "cash_flows[2].investment"))
+        self.assertEqual(self.refused({"set": {"investments[1].name": "\u3000"}}), ("input", "bad_field", "investments[1].name"))
+        read(apply_change(DEALS, {"set": {"lps": [{"name": "A", "commitment": "1"}]}}))
+
+    def test_within_a_cash_flow(self):
+        # FA53: unknown fields first, in the file's order; a write-off's own fields after its type; the investment
+        # before the share; a share without an investment is the investment missing, before the share's own number.
+        wo = write_off("2022-01-01", "B")
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": {**wo, "amount": "5", "note": "x"}}}), ("input", "unknown_field", "cash_flows[3].note"))
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": {**wo, "share": "1", "amount": "5"}}}), ("input", "unknown_field", "cash_flows[3].share"))
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": {**wo, "date": "x", "amount": "5"}}}), ("input", "bad_date", "cash_flows[3].date"))
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": {"date": "2022-01-01", "type": "write_off"}}}), ("input", "missing_field", "cash_flows[3].investment"))
+        self.assertEqual(self.refused({"set": {"cash_flows[2].investment": "", "cash_flows[2].share": "2"}}), ("input", "bad_field", "cash_flows[2].investment"))
+        self.assertEqual(self.refused({"set": {"cash_flows[2].share": "2", "cash_flows[2].amount": "x"}}), ("input", "bad_number", "cash_flows[2].share"))
+        no_inv = {"date": "2021-01-01", "type": "distribution", "amount": "900", "share": "2"}
+        self.assertEqual(self.refused({"set": {"cash_flows[2]": no_inv}}), ("input", "missing_field", "cash_flows[2].investment"))
+        # A type that isn't one of the three is refused after the fields every flow needs; an amount is needed unless the
+        # type is a write-off's.
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": {"date": "2022-01-01", "type": "writeoff", "investment": "B"}}}), ("input", "missing_field", "cash_flows[3].amount"))
+
+    def test_within_an_investment_and_distribution_from(self):
+        # FA53: an investment's unknown keys before its missing ones, its name before its checks, its checks in order,
+        # then the name repeated; distribution_from's keys before its investment, its investment before its share.
+        self.assertEqual(self.refused({"set": {"investments[0]": {"checks": [], "sector": "x"}}}), ("input", "unknown_field", "investments[0].sector"))
+        self.assertEqual(self.refused({"set": {"investments[0]": {"sector": None}}}), ("input", "unknown_field", "investments[0].sector"))
+        self.assertEqual(self.refused({"set": {"investments[0]": {"checks": "x"}}}), ("input", "missing_field", "investments[0].name"))
+        self.assertEqual(self.refused({"set": {"investments[0].name": 1, "investments[0].checks": []}}), ("input", "bad_field", "investments[0].name"))
+        self.assertEqual(self.refused({"set": {"investments[0].checks": {"date": "2020-01-01", "amount": "600"}}}), ("input", "bad_field", "investments[0].checks"))
+        two = [{"date": "2020-01-01", "amount": "-1"}, {"date": "x"}]
+        self.assertEqual(self.refused({"set": {"investments[0].checks": two}}), ("input", "bad_number", "investments[0].checks[0].amount"))
+        self.assertEqual(self.refused({"set": {"investments[0].checks[0]": {"amount": "x", "shares": "1"}}}), ("input", "unknown_field", "investments[0].checks[0].shares"))
+        self.assertEqual(self.refused({"set": {"investments[0].checks[0]": {"amount": "x"}}}), ("input", "missing_field", "investments[0].checks[0].date"))
+        self.assertEqual(self.refused({"set": {"investments[0].checks[0].amount": 600}}), ("input", "bad_number", "investments[0].checks[0].amount"))
+        self.assertEqual(self.refused({"set": {"investments[1].name": "A", "investments[1].checks[0].date": "x"}}), ("input", "bad_date", "investments[1].checks[0].date"))
+        self.assertEqual(self.refused({"set": {"distribution_from": {"share": "x", "note": "y"}}}), ("input", "unknown_field", "distribution_from.note"))
+        self.assertEqual(self.refused({"set": {"distribution_from": {"investment": " ", "share": "x"}}}), ("input", "bad_field", "distribution_from.investment"))
+        self.assertEqual(self.refused({"set": {"distribution_from.share": "0"}}), ("input", "bad_number", "distribution_from.share"))
+        # Stage 2's order: every cash flow, then distribution_date, final and nav, then the investments.
+        self.assertEqual(self.refused({"set": {"nav": "-1", "investments": "x"}}), ("input", "bad_number", "nav"))
+
+    def test_the_cost_made_by_a_checks_date(self):
+        # F37, FA53: investment calls only, on or before the check's date; on one date the checks together, the first
+        # in the investments' order named: A's $600 and B's $500 on one date pass $1,000, and A is named though $600
+        # alone wouldn't. A fee call doesn't fund a check.
+        self.assertEqual(self.refused({"set": {"investments[1].checks[0].amount": "500"}}), ("input", "investments_exceed_calls", "investments[0].checks[0].amount"))
+        self.assertEqual(self.refused({"set": {"cash_flows[1].amount": "5000", "investments[1].checks[0].amount": "500"}}), ("input", "investments_exceed_calls", "investments[0].checks[0].amount"))
+        late = {"investments[1].checks[0].date": "2020-06-01", "investments[1].checks[0].amount": "500", "cash_flows[3]": call("2020-06-01", "100")}
+        read(apply_change(DEALS, {"set": late}))
+        self.assertEqual(self.refused({"set": {**late, "cash_flows[3]": call("2020-06-02", "100")}}), ("input", "investments_exceed_calls", "investments[1].checks[0].amount"))
+
+    def test_a_pref_deal_by_deal_whatever_its_shape(self):
+        # FA54: any pref but null, deal by deal, last in stage 1; a basis that isn't one of the two words isn't deal by
+        # deal there, and is refused after the classes in stage 2. A catch-up without a pref is as before.
+        for pref in ({"rate": "0.08"}, "0.08", {}):
+            self.assertEqual(self.refused({"set": {"terms.pref": pref}}), ("unsupported", "deal_by_deal_pref", "terms.pref"))
+        read(apply_change(DEALS, {"set": {"terms.pref": None}}))
+        self.assertEqual(self.refused({"set": {"terms.pref": {"rate": "0.08"}, "terms.carry_basis": "Deal by deal"}}), ("input", "bad_field", "terms.carry_basis"))
+        self.assertEqual(self.refused({"set": {"terms.catch_up": {"gp_share": "1"}}}), ("input", "catch_up_without_pref", "terms.catch_up"))
+
+    def test_on_the_whole_fund_the_investments_are_checked_and_unneeded(self):
+        # FA55: whole fund, no distribution_from and an untagged distribution read; an unknown investment, one not made,
+        # a check after D and checks past the calls are refused as deal by deal.
+        whole = apply_change(DEALS, {"set": {"terms.carry_basis": "whole_fund", "cash_flows[2]": dist("2021-01-01", "900")}, "del": "distribution_from"})
+        read(whole)
+        self.assertEqual(self.refused({"set": {"distribution_from": {"investment": "Z"}}}, whole), ("input", "investment_unknown", "distribution_from.investment"))
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": write_off("2019-06-01", "A")}}, whole), ("input", "investment_not_made", "cash_flows[3]"))
+        self.assertEqual(self.refused({"set": {"investments[0].checks[0].date": "2025-01-01"}}, whole), ("input", "cash_flow_after_distribution_date", "investments[0].checks[0]"))
+        self.assertEqual(self.refused({"set": {"investments[0].checks[0].amount": "601"}}, whole), ("input", "investments_exceed_calls", "investments[0].checks[0].amount"))
+
+    def test_a_write_off_isnt_a_distribution(self):
+        # FA56: a write-off before the first call isn't distribution_before_call: before its investment's first check
+        # it's not made; after it, the check is before any call. Nor does it limit a later close.
+        moved = {"cash_flows[0].date": "2020-02-01", "cash_flows[1].date": "2020-02-01", "investments[0].checks[0].date": "2020-02-01", "investments[1].checks[0].date": "2020-02-01"}
+        early = {**moved, "cash_flows[3]": write_off("2020-01-15", "A")}
+        self.assertEqual(self.refused({"set": early}), ("input", "investment_not_made", "cash_flows[3]"))
+        self.assertEqual(self.refused({"set": {**early, "investments[0].checks[0].date": "2020-01-10"}}), ("input", "investments_exceed_calls", "investments[0].checks[0].amount"))
+        closes = {"terms.equalization_rate": "0", "lps": [{"name": "L", "commitment": "1"}, {"name": "M", "commitment": "1", "close": "2020-12-01"}], "cash_flows[3]": write_off("2020-06-01", "B")}
+        read(apply_change(DEALS, {"set": closes}))
+
+    def test_stage_3s_order(self):
+        # F37: 0.4.0's checks first, write-offs among the flows after D; then a check after D; the investments; each
+        # distribution and write-off in the input's order, its three checks together; X's investment; the cost made.
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": write_off("2025-01-01", "Z"), "cash_flows[4]": dist("2025-01-01", "1")}}), ("input", "cash_flow_after_distribution_date", "cash_flows[3]"))
+        self.assertEqual(self.refused({"set": {"cash_flows[2].investment": "Z", "distribution_from.investment": "Z"}}), ("input", "investment_unknown", "cash_flows[2].investment"))
+        self.assertEqual(self.refused({"set": {"distribution_from.investment": "Z", "investments[0].checks[0].amount": "700"}}), ("input", "investment_unknown", "distribution_from.investment"))
+        self.assertEqual(self.refused({"set": {"cash_flows[3]": write_off("2019-12-01", "B"), "cash_flows[2].investment": "Z"}}), ("input", "investment_unknown", "cash_flows[2].investment"))
+
+
+def random_deals(rng, inputs):
+    """A random fund with investments (F33): its investment calls each paid out as one or two checks, all by D, so the
+    fund is fully invested at the end (FA49); each distribution from an investment already made, often a partial sale;
+    sometimes a write-off; X from any of them. Deal by deal most of the time, without its pref and catch-up (F37)."""
+    out = copy.deepcopy(inputs)
+    d = datetime.date.fromisoformat(out.get("distribution_date") or out["as_of"])
+    calls = sorted((f for f in out["cash_flows"] if f["type"] == "call" and f["kind"] == "investment"), key=lambda f: f["date"])
+    investments = []
+    for k, c in enumerate(calls):
+        day = datetime.date.fromisoformat(c["date"])
+        amount = F(c["amount"])
+        parts = [amount] if rng.random() < 0.5 else [amount * F(2, 5), amount * F(3, 5)]
+        checks = []
+        for part in parts:
+            day = min(d, day + datetime.timedelta(days=rng.randint(0, 90)))
+            checks.append({"date": day.isoformat(), "amount": exact(part)})
+        investments.append({"name": f"Co {k}", "checks": checks})
+    first = {inv["name"]: min(c["date"] for c in inv["checks"]) for inv in investments}
+    for f in out["cash_flows"]:
+        if f["type"] == "distribution":
+            made = [n for n, day in first.items() if day <= f["date"]]
+            if made:
+                f["investment"] = rng.choice(made)
+                if rng.random() < 0.5:
+                    f["share"] = rng.choice(["0.5", "0.4", "1/3"])
+    deal_by_deal = rng.random() < 0.8 and all(f.get("investment") for f in out["cash_flows"] if f["type"] == "distribution")
+    if rng.random() < 0.4:
+        name = rng.choice(list(first))
+        day = datetime.date.fromisoformat(first[name]) + datetime.timedelta(days=rng.randint(0, 400))
+        if day <= d:
+            out["cash_flows"].append(write_off(day.isoformat(), name))
+    exits = [f for f in out["cash_flows"] if f["type"] == "distribution" and f.get("investment")]
+    if exits and rng.random() < 0.5:
+        # A late investment on D, called and paid that day, then a release from escrow from the first exit, sold whole:
+        # the release realizes nothing more, and the late check lowers the fees' share, so what's due can be under what's
+        # back (F35).
+        exits[0].pop("share", None)
+        late = str(rng.randint(1, 5) * 100000)
+        out["cash_flows"].append(call(d.isoformat(), late))
+        investments.append({"name": "Co late", "checks": [{"date": d.isoformat(), "amount": late}]})
+        first["Co late"] = d.isoformat()
+        out["cash_flows"].append(dist_from(d.isoformat(), str(rng.randint(1, 5) * 10000), exits[0]["investment"]))
+    out["investments"] = investments
+    out["distribution_from"] = {"investment": rng.choice(list(first))}
+    if rng.random() < 0.5:
+        out["distribution_from"]["share"] = rng.choice(["0.5", "1"])
+    if deal_by_deal:
+        out["terms"] = {k: v for k, v in out["terms"].items() if k not in ("pref", "catch_up")}
+        out["terms"]["carry_basis"] = "deal_by_deal"
+    return out
+
+
 def random_fund(rng):
     """A small fund with a pref or not, a catch-up or not, one to three carry steps, a GP commitment or not, and calls
     and distributions in any order after the first call: its X final."""
@@ -1260,6 +1605,72 @@ class RandomFunds(unittest.TestCase):
                 for x in xs + [xs[-1] + 1]:
                     for (_, a), (_, b) in zip(m.evaluate(x).by_account, start.evaluate(x).by_account):
                         self.assertEqual((a.this.vector(), a.ledger.to_date.vector(), a.clawback), (b.this.vector(), b.ledger.to_date.vector(), b.clawback))
+        self.assertTrue(all(seen.values()), seen)
+
+    def test_with_investments(self):
+        # The random funds with investments (F33 to F37), a third of them with classes and closes and some with fees:
+        # every account's breakpoints are found and no account's clawback rises (FA9, fully invested by D, FA49); the
+        # fund's amounts are the accounts' sums. On the whole fund the investments change no amount (F34); deal by deal,
+        # at a final X, the entitlement is the whole fund's at every X, so the GP keeps at most that (F35), and X's
+        # tier 1 is all the paid-in not yet back. And each distribution's tier 1 is what's due less what's back, or none.
+        rng = random.Random(20261027)
+        seen = {"deal by deal": 0, "whole fund": 0, "accounts": 0, "write-off": 0, "due below what's back": 0}
+        for i in range(36):
+            inputs = random_fund(rng)
+            if i % 3 == 1:
+                inputs = random_classes(rng, inputs)
+            elif i % 3 == 2:
+                inputs = random_fees(rng, random_classes(rng, inputs))
+            inputs = random_deals(rng, inputs)
+            try:
+                f = read(inputs)
+            except Refusal as r:
+                self.assertEqual(r.term, "call_without_payers", (i, inputs))
+                continue
+            m = Model(f)
+            found = breakpoints.find(m)
+            run_case({"case": "random", "xs": ["0"], "fund": inputs})
+            xs = sorted({F(0)} | {x for x, _ in found})
+            for a_i in range(len(m.accounts)):
+                owed = [m.evaluate(x).by_account[a_i][1].clawback for x in xs + [xs[-1] + 10**7]]
+                self.assertEqual(owed, sorted(owed, reverse=True), (i, inputs))
+            for x in xs[1:] + [xs[-1] + 1]:
+                out = m.evaluate(x)
+                self.assertEqual(sum(o.this.lps + o.this.gp for _, o in out.by_account) + out.gp_commitment, x)
+            seen["accounts"] += len(m.accounts) > 1
+            seen["write-off"] += bool(f.write_offs)
+            whole = {**inputs, "terms": {**inputs["terms"], "carry_basis": "whole_fund"}}
+            if not f.deal_by_deal:
+                seen["whole fund"] += 1
+                bare = {k: v for k, v in inputs.items() if k not in ("investments", "distribution_from")}
+                bare["cash_flows"] = [{k: v for k, v in c.items() if k not in ("investment", "share")} for c in inputs["cash_flows"] if c["type"] != "write_off"]
+                plain = Model(read(bare))
+                for x in xs + [xs[-1] + 1]:
+                    for (_, a), (_, b) in zip(m.evaluate(x).by_account, plain.evaluate(x).by_account):
+                        self.assertEqual((a.this.vector(), a.ledger.to_date.vector(), a.clawback), (b.this.vector(), b.ledger.to_date.vector(), b.clawback), (i, x))
+                continue
+            seen["deal by deal"] += 1
+            w = Model(read(whole))
+            for x in xs + [xs[-1] + 1]:
+                for (_, a), (_, b) in zip(m.evaluate(x).by_account, w.evaluate(x).by_account):
+                    self.assertEqual(a.entitlement, b.entitlement, (i, x))
+                    self.assertLessEqual(a.carry_paid - a.clawback, b.entitlement, (i, x))
+                    self.assertEqual(a.this.lp_capital, min(a.x, a.ledger.lps_paid_in - (a.ledger.capital_returned - a.this.lp_capital)))
+            for acct in m.accounts:
+                led = acct.run.before
+                back = F(0)
+                ledger = Ledger(acct.run.fund)
+                for fl in acct.run.fund.flows:
+                    ledger.advance(fl.date)
+                    if fl.type == "call":
+                        ledger.call(fl.kind, fl.amount)
+                        continue
+                    pot, _ = ledger.distribute(fl.amount, fl.realized, fl.made)
+                    cost, fees_ = ledger.dues[-1]
+                    self.assertEqual(pot.lp_capital, min(fl.amount, max(F(0), cost + fees_ - back)), (i, inputs))
+                    seen["due below what's back"] += cost + fees_ < back
+                    back += pot.lp_capital
+                self.assertEqual(back, led.capital_returned)
         self.assertTrue(all(seen.values()), seen)
 
 

@@ -1,5 +1,5 @@
-"""Turns a fund case's inputs.json into its expected.json (FC2 to FC5, FC9, FC11, FC13), and a refusal fixture into its
-refusal (FC7, FC12, FC14)."""
+"""Turns a fund case's inputs.json into its expected.json (FC2 to FC5, FC9, FC11, FC13, FC15), and a refusal fixture into
+its refusal (FC7, FC12, FC14, FC16)."""
 
 import copy
 import re
@@ -86,15 +86,26 @@ def _clawback(carry_paid, entitlement, owed):
     return {"carry_paid": money(carry_paid), "entitlement": money(entitlement), "owed": money(owed)}
 
 
+def _due(cost, fees):
+    """F35, F36, FC15: what's due before carry on X: the LPs' part of the cost realized, their fees and expenses times the
+    share realized, and the two together."""
+    return {"cost": _lp_amount(cost), "fees_and_expenses": _lp_amount(fees), "total": _lp_amount(cost + fees)}
+
+
 def _by_account(outs, final):
-    """F26, FC11: each account's own amounts, by tier as FC4 has them, and when final its own clawback (F24)."""
+    """F26, FC11: each account's own amounts, by tier as FC4 has them, and when final its own clawback (F24). Deal by deal,
+    first what's due before carry on its part of X (F36, FC15)."""
     entries = []
     for acct, o in outs:
-        entry = {
-            "class": acct.class_name,
-            "distribution": _block(acct.run.fund, o.this, o.x),
-            "to_date": _block(acct.run.fund, o.ledger.to_date, o.ledger.distributed),
-        }
+        entry = {"class": acct.class_name}
+        if o.due is not None:
+            entry["due"] = _due(*o.due)
+        entry.update(
+            {
+                "distribution": _block(acct.run.fund, o.this, o.x),
+                "to_date": _block(acct.run.fund, o.ledger.to_date, o.ledger.distributed),
+            }
+        )
         if final:
             entry["clawback"] = _clawback(o.carry_paid, o.entitlement, o.clawback)
         entries.append(entry)
@@ -119,13 +130,15 @@ def _point(model, x, tags):
     fund = model.fund
     final = fund.final or "nav" in tags  # F14: the NAV point is final by definition
     out = model.evaluate(x, final=final)
-    entry = {
-        "x": money(x),
-        "exact": exact(x),
-        "tags": tags,
-        "distribution": _fund_block(model, out.by_account, "this", x, out.gp_commitment),
-        "to_date": _fund_block(model, out.by_account, "to_date", out.distributed, out.gp_commitment_to_date),
-    }
+    entry = {"x": money(x), "exact": exact(x), "tags": tags}
+    if fund.deal_by_deal:
+        # F36, FC15: what's due before carry on X, the accounts' sums, beside the cost made and realized with X's.
+        realized = model.accounts[0].run.x_realized(final)
+        cost = sum((o.due[0] for _, o in out.by_account), Fraction(0))
+        fees = sum((o.due[1] for _, o in out.by_account), Fraction(0))
+        entry["due"] = {"cost_made": _lp_amount(fund.made_at_d), "cost_realized": _lp_amount(realized), **_due(cost, fees)}
+    entry["distribution"] = _fund_block(model, out.by_account, "this", x, out.gp_commitment)
+    entry["to_date"] = _fund_block(model, out.by_account, "to_date", out.distributed, out.gp_commitment_to_date)
     if final:
         entry["clawback"] = _clawback(out.carry_paid, out.entitlement, out.clawback)
     if model.named:
@@ -221,6 +234,23 @@ def _fee_calls(fund):
     return out
 
 
+def _investments(fund):
+    """F36, FC15: each investment once, at D before X, in the input's order: its cost made, the cost realized (exited or
+    written off), the cost written off, and its proceeds. Exact."""
+    rows = []
+    for inv, h in zip(fund.investments, fund.holdings):
+        rows.append(
+            {
+                "name": inv.name,
+                "cost_made": _lp_amount(h.made),
+                "cost_realized": _lp_amount(h.realized),
+                "cost_written_off": _lp_amount(h.written_off),
+                "proceeds": _lp_amount(h.proceeds),
+            }
+        )
+    return rows
+
+
 def run_case(case):
     fund = read(case["fund"])
     model = Model(fund)
@@ -247,6 +277,8 @@ def run_case(case):
             out["pref_on_fund_totals"] = money(model.hurdle_pref())
     if fund.schedule is not None:
         out["fee_calls"] = _fee_calls(fund)
+    if fund.investments:
+        out["investments"] = _investments(fund)
     if fund.lps:
         out["lps"] = _lps(model)
     if model.named:

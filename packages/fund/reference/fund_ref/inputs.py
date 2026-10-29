@@ -11,7 +11,8 @@ more than one problem:
    `terms` (carry, pref, catch-up, GP commitment, then the terms against each
    other); each cash flow in the list's order; `distribution_date`; `final`;
    `nav`.
-3. The cash flows against each other and against D.
+3. The cash flows against each other and against D; from 0.5.0, then the
+   investments against the cash flows and D (F37).
 4. The LPs (F21, FA19): `lps` itself, then each LP in the list's order, each
    checked through before the next: its shape and its fields, that the name
    and commitment are there, the name, the commitment, whether the name
@@ -24,9 +25,11 @@ more than one problem:
 
 Within `terms`, stage 2 checks the carry, pref, catch-up and GP commitment, the
 terms against each other, then `fee_rate`, `equalization_rate`, the management
-fee schedule (F30, F32), `fee_rate_with_schedule`, and each class in order
-(F28). Stage 3 starts with `fee_call_with_schedule`, and counts the schedule's
-calls among the calls (F30).
+fee schedule (F30, F32), `fee_rate_with_schedule`, each class in order (F28),
+then `carry_basis` (F37). After `nav` it checks the investments, then
+`distribution_from` (F37). Stage 3 starts with `fee_call_with_schedule`, and
+counts the schedule's calls among the calls (F30). Stage 1 ends with
+`deal_by_deal_pref` (F37).
 
 null is the same as leaving an optional field out (FA3, FA24), except `carry`,
 the fund's or a class's: a null carry could mean "none" or "the default", so
@@ -36,7 +39,7 @@ it's refused.
 from dataclasses import dataclass, field
 from fractions import Fraction
 
-from . import fees
+from . import deals, fees
 from .num import parse_exact, parse_date
 
 TERM_KEYS = {
@@ -48,14 +51,21 @@ TERM_KEYS = {
     "equalization_rate": None,  # a rate (F25)
     "lp_classes": None,  # a list of classes (F22)
     "management_fee": ("start", "frequency", "steps", "commitments"),  # the schedule (F30)
+    "carry_basis": None,  # "whole_fund" or "deal_by_deal" (F34)
 }
+CARRY_BASES = ("whole_fund", "deal_by_deal")  # F34
 STEP_KEYS = ("rate", "from_lp_multiple")
 FEE_STEP_KEYS = ("rate", "from")  # a schedule's step (F30)
 CLASS_KEYS = ("name", "fee_rate", "carry")
-TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps")
+TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps", "investments", "distribution_from")
 REQUIRED_TOP = ("as_of", "terms", "cash_flows")
-FLOW_KEYS = ("date", "type", "kind", "amount")
+FLOW_KEYS = ("date", "type", "kind", "amount", "investment", "share")
+FLOW_TYPES = ("call", "distribution", "write_off")  # a write-off from 0.5.0 (F33)
 CALL_KINDS = ("investment", "fee", "expense")
+DEAL_KEYS = ("investment", "share")  # a distribution's or a write-off's, and X's in `distribution_from` (F33)
+WRITE_OFF_NOT = ("kind", "amount", "share")  # a write-off has none of these (F37)
+INVESTMENT_KEYS = ("name", "checks")
+CHECK_KEYS = ("date", "amount")
 LP_KEYS = ("name", "commitment", "class", "close")
 REQUIRED_LP = ("name", "commitment")
 # FA17: whitespace as JavaScript's String.prototype.trim takes it off, listed so the reference and the engine agree on
@@ -94,10 +104,53 @@ class Flow:
     amount: Fraction | None  # a schedule's call has its amount once the LPs are read (F30)
     scheduled: bool = False  # a schedule's fee call, not an entered one (F30)
     period: object = None  # fees.Period, for a schedule's call
+    investment: str | None = None  # a distribution's investment, as named (F33)
+    share: Fraction = Fraction(1)  # how much of what's left of it the distribution sells (F33)
+    realized: Fraction | None = None  # the cost realized so far, this distribution's included (F35, deals.py)
+    made: Fraction | None = None  # the cost made by its date (F35, deals.py)
 
     @property
     def factor(self):
         return self.period.factor
+
+
+@dataclass
+class WriteOff:
+    """F33: a write-off, a cash flow of its own with no amount: it ends what's left of an investment at its date."""
+
+    index: int  # its place in the input's cash flows
+    date: object
+    investment: str
+
+
+@dataclass
+class Check:
+    """F33: one of an investment's checks, the fund's cost, a whole-fund amount (F2)."""
+
+    index: int  # its place in its investment's `checks`
+    date: object
+    amount: Fraction
+
+
+@dataclass
+class Investment:
+    """F33: one of the fund's investments, in the order the GP shows them."""
+
+    index: int  # its place in `investments`
+    name: str  # as written, compared exactly (FA17)
+    checks: list  # Check, as listed
+
+    @property
+    def first_check(self):
+        return min(c.date for c in self.checks)
+
+
+@dataclass
+class DistributionFrom:
+    """F33: X's investment, and how much of what's left of it X sells."""
+
+    investment: str
+    share: Fraction
 
 
 @dataclass
@@ -136,6 +189,21 @@ class Fund:
     equalization_rate: Fraction | None = None  # F25
     classes: list = field(default_factory=list)  # F22: in the input's order
     schedule: object = None  # F30: fees.Schedule, or None when fee calls are entered
+    carry_basis: str = "whole_fund"  # F34
+    investments: list = field(default_factory=list)  # F33: Investment, in the input's order
+    write_offs: list = field(default_factory=list)  # F33: WriteOff, in the input's order
+    distribution_from: object = None  # F33: DistributionFrom, or None
+    # F35: the part of each check's cost that's this run's LPs': 1 − g for the fund (F3), and an account's part of that
+    # by commitment (F23, accounts.py).
+    lps_cost_share: Fraction = Fraction(1)
+    holdings: list = field(default_factory=list)  # F33, F36: deals.Holding, one an investment, at D before X
+    made_at_d: Fraction = Fraction(0)  # F35: the cost made by D
+    x_realized: Fraction = Fraction(0)  # F33, F35: the cost realized so far with X's share of its investment, X not final
+
+    @property
+    def deal_by_deal(self):
+        """F34: carry deal by deal, F35's tier 1."""
+        return self.carry_basis == "deal_by_deal"
 
     @property
     def first_rate(self):
@@ -234,7 +302,7 @@ def _unsupported(terms):
         if key == "lp_classes":
             _unsupported_classes(value)
             continue
-        if not isinstance(value, dict) or key in ("fee_rate", "equalization_rate"):
+        if not isinstance(value, dict) or key in ("fee_rate", "equalization_rate", "carry_basis"):
             continue
         if key == "carry":
             _unsupported_carry(value, path)
@@ -248,6 +316,10 @@ def _unsupported(terms):
             # F7: simple pref only in v1.
             if key == "pref" and k2 == "compounding" and v2 is not None and v2 != "simple":
                 raise Refusal("unsupported", "compounded_pref", f"{path}.compounding")
+    # F35, F37: no pref deal by deal in 0.5.0, so no catch-up either (F8 needs a pref). Last in stage 1, and only for a
+    # `carry_basis` of exactly "deal_by_deal": any other is refused in stage 2 (FA54).
+    if terms.get("carry_basis") == "deal_by_deal" and terms.get("pref") is not None:
+        raise Refusal("unsupported", "deal_by_deal_pref", "terms.pref")
 
 
 def _number(value, path):
@@ -394,6 +466,15 @@ def _terms(terms):
     if schedule is not None and fee_rate is not None:
         raise _input("fee_rate_with_schedule", "terms.fee_rate")
 
+    classes = _classes(terms.get("lp_classes"), fee_rate is not None or schedule is not None, catch_up)
+
+    # F34, F37: the carry basis, after the classes; null is the default, the whole fund (FA52).
+    carry_basis = terms.get("carry_basis")
+    if carry_basis is None:
+        carry_basis = "whole_fund"
+    elif not isinstance(carry_basis, str) or carry_basis not in CARRY_BASES:
+        raise _input("bad_field", "terms.carry_basis")
+
     return {
         "steps": steps,
         "pref": pref,
@@ -405,7 +486,8 @@ def _terms(terms):
         "fee_rate": fee_rate,
         "equalization_rate": equalization_rate,
         "schedule": schedule,
-        "classes": _classes(terms.get("lp_classes"), fee_rate is not None or schedule is not None, catch_up),
+        "classes": classes,
+        "carry_basis": carry_basis,
     }
 
 
@@ -506,21 +588,28 @@ def _classes(raw, has_fee_rate, catch_up):
 
 
 def _flows(raw):
+    """Each cash flow, in the list's order (F18, F37): its unknown fields, an `investment` or `share` on a call among them,
+    in the file's order; the fields it needs (`amount` not for a write-off); the date; the type; a call's kind; a
+    write-off's own fields; the `investment`; the `share`; then the amount. Returns the calls and distributions, and the
+    write-offs apart (F33), each with its place in the list."""
     if not isinstance(raw, list):
         raise _input("bad_field", "cash_flows")
-    flows = []
+    flows, write_offs = [], []
     for i, f in enumerate(raw):
         path = f"cash_flows[{i}]"
         if not isinstance(f, dict):
             raise _input("bad_field", path)
+        # F37: a call has no investment and sells no share. null is left out (FA52).
+        is_call = f.get("type") == "call"
         for key in f:
-            if key not in FLOW_KEYS:
+            if key not in FLOW_KEYS or (is_call and key in DEAL_KEYS and f[key] is not None):
                 raise _input("unknown_field", f"{path}.{key}")
-        for key in ("date", "type", "amount"):
+        write_off = f.get("type") == "write_off"
+        for key in ("date", "type") if write_off else ("date", "type", "amount"):
             if f.get(key) is None:
                 raise _input("missing_field", f"{path}.{key}")
         date = _date(f["date"], f"{path}.date")
-        if f["type"] not in ("call", "distribution"):
+        if f["type"] not in FLOW_TYPES:
             raise _input("bad_field", f"{path}.type")
         kind = None
         if f["type"] == "call":
@@ -529,13 +618,112 @@ def _flows(raw):
             if f["kind"] not in CALL_KINDS:
                 raise _input("bad_field", f"{path}.kind")
             kind = f["kind"]
-        elif f.get("kind") is not None:
+        elif f["type"] == "distribution" and f.get("kind") is not None:
             raise _input("unknown_field", f"{path}.kind")
+        if write_off:
+            # F37: a write-off's own fields. It has no kind, no amount and sells no share: it ends all that's left of its
+            # investment. Each in the file's order, null left out, as a distribution's kind is (FA52); then its investment.
+            for key in f:
+                if key in WRITE_OFF_NOT and f[key] is not None:
+                    raise _input("unknown_field", f"{path}.{key}")
+            if f.get("investment") is None:
+                raise _input("missing_field", f"{path}.investment")
+        investment = None
+        if f["type"] != "call":
+            investment = f.get("investment")
+            if investment is not None and (not isinstance(investment, str) or _blank(investment)):
+                raise _input("bad_field", f"{path}.investment")
+            # F37: a share sold is of an investment, so a share without one is the investment missing (FA53).
+            if investment is None and f.get("share") is not None:
+                raise _input("missing_field", f"{path}.investment")
+        share = Fraction(1)
+        if f["type"] == "distribution" and f.get("share") is not None:
+            share = _share(f["share"], f"{path}.share")
+        if write_off:
+            write_offs.append(WriteOff(i, date, investment))
+            continue
         amount = _number(f["amount"], f"{path}.amount")
         if amount <= 0:
             raise _input("bad_number", f"{path}.amount")
-        flows.append(Flow(i, date, f["type"], kind, amount))
-    return flows
+        flows.append(Flow(i, date, f["type"], kind, amount, investment=investment, share=share))
+    return flows, write_offs
+
+
+def _share(value, path):
+    """F33: how much of what's left of an investment a distribution sells: above 0 and at most 1."""
+    share = _number(value, path)
+    if share <= 0 or share > 1:
+        raise _input("bad_number", path)
+    return share
+
+
+def _investments(raw):
+    """Stage 2, after `nav` (F37): the investments in order, each with its fields, its checks in order, then its name
+    against the ones before. Left out, null or an empty list: none (FA52)."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise _input("bad_field", "investments")
+    investments, names = [], set()
+    for i, inv in enumerate(raw):
+        path = f"investments[{i}]"
+        if not isinstance(inv, dict):
+            raise _input("bad_field", path)
+        for key in inv:
+            if key not in INVESTMENT_KEYS:
+                raise _input("unknown_field", f"{path}.{key}")
+        for key in INVESTMENT_KEYS:
+            if inv.get(key) is None:
+                raise _input("missing_field", f"{path}.{key}")
+        name = inv["name"]
+        if not isinstance(name, str) or _blank(name):
+            raise _input("bad_field", f"{path}.name")
+        raw_checks = inv["checks"]
+        if not isinstance(raw_checks, list) or not raw_checks:
+            raise _input("bad_field", f"{path}.checks")
+        checks = []
+        for j, c in enumerate(raw_checks):
+            at = f"{path}.checks[{j}]"
+            if not isinstance(c, dict):
+                raise _input("bad_field", at)
+            for key in c:
+                if key not in CHECK_KEYS:
+                    raise _input("unknown_field", f"{at}.{key}")
+            for key in CHECK_KEYS:
+                if c.get(key) is None:
+                    raise _input("missing_field", f"{at}.{key}")
+            date = _date(c["date"], f"{at}.date")
+            amount = _number(c["amount"], f"{at}.amount")
+            # F33: a check is an exact amount above 0, the fund's cost.
+            if amount <= 0:
+                raise _input("bad_number", f"{at}.amount")
+            checks.append(Check(j, date, amount))
+        # F33: no two investments share a name, compared exactly as written (FA17), checked after its checks (F37).
+        if name in names:
+            raise _input("investment_name_repeated", f"{path}.name")
+        names.add(name)
+        investments.append(Investment(i, name, checks))
+    return investments
+
+
+def _distribution_from(raw):
+    """Stage 2, after the investments (F37): X's investment and the share it sells, `"1"` by default. null is left out
+    (FA52)."""
+    if raw is None:
+        return None
+    at = "distribution_from"
+    if not isinstance(raw, dict):
+        raise _input("bad_field", at)
+    for key in raw:
+        if key not in DEAL_KEYS:
+            raise _input("unknown_field", f"{at}.{key}")
+    investment = raw.get("investment")
+    if investment is None:
+        raise _input("missing_field", f"{at}.investment")
+    if not isinstance(investment, str) or _blank(investment):
+        raise _input("bad_field", f"{at}.investment")
+    share = Fraction(1) if raw.get("share") is None else _share(raw["share"], f"{at}.share")
+    return DistributionFrom(investment, share)
 
 
 def _blank(name):
@@ -588,6 +776,48 @@ def _lps(raw, classes, close_limit):
     return lps
 
 
+def _investments_against_flows(carry_basis, investments, flows, write_offs, distribution_from, d):
+    """Stage 3, after 0.4.0's checks (F37): the investments against the cash flows, each other and D, in this order. A
+    check after D; deal by deal, the investments themselves; each distribution and write-off in the input's order, for
+    its investment (named deal by deal, listed, and made by its date); X's investment; then the cost made against the
+    investment calls."""
+    for inv in investments:
+        for c in inv.checks:
+            if c.date > d:
+                raise _input("cash_flow_after_distribution_date", f"investments[{inv.index}].checks[{c.index}]")
+    deal_by_deal = carry_basis == "deal_by_deal"
+    if deal_by_deal and not investments:
+        raise _input("missing_field", "investments")
+    listed = {inv.name: inv for inv in investments}
+    dists = [f for f in flows if f.type == "distribution"]
+    for f in sorted(dists + write_offs, key=lambda f: f.index):
+        path = f"cash_flows[{f.index}]"
+        # F35: deal by deal, every distribution is from an investment; a distribution of unused capital is later.
+        if f.investment is None:
+            if deal_by_deal:
+                raise _input("missing_field", f"{path}.investment")
+            continue
+        if f.investment not in listed:
+            raise _input("investment_unknown", f"{path}.investment")
+        if f.date < listed[f.investment].first_check:
+            raise _input("investment_not_made", path)
+    if distribution_from is None:
+        if deal_by_deal:
+            raise _input("missing_field", "distribution_from")
+    elif distribution_from.investment not in listed:
+        raise _input("investment_unknown", "distribution_from.investment")
+    # F37: the cost made by a check's date can't be more than the investment calls up to that date, both whole-fund
+    # amounts: checks aren't calls, but a check can't be paid before its money is called (credit lines are later). The
+    # first such check in date order, on one date in the investments' order, then the checks' (FA53).
+    checks = sorted(((c.date, inv.index, c.index, c.amount) for inv in investments for c in inv.checks))
+    calls = [f for f in flows if f.type == "call" and f.kind == "investment"]
+    for date, i, j, _ in checks:
+        made = sum((a for day, _, _, a in checks if day <= date), Fraction(0))
+        called = sum((f.amount for f in calls if f.date <= date), Fraction(0))
+        if made > called:
+            raise _input("investments_exceed_calls", f"investments[{i}].checks[{j}].amount")
+
+
 def _what_the_lps_need(fund):
     """Stage 5 (F28, F32): an equalization rate when an investment or expense call comes before a later close (F29);
     a schedule's `commitments`, needed without listed LPs and their total with them; a schedule needs a listed LP that
@@ -628,7 +858,7 @@ def read(inputs):
     as_of = _date(inputs["as_of"], "as_of")
     terms = _terms(inputs["terms"])
     raw_flows = inputs["cash_flows"]
-    flows = _flows(raw_flows)
+    flows, write_offs = _flows(raw_flows)
     d = as_of if inputs.get("distribution_date") is None else _date(inputs["distribution_date"], "distribution_date")
     final = _flag(inputs, "final", "final", False)
     nav = None
@@ -636,6 +866,8 @@ def read(inputs):
         nav = _number(inputs["nav"], "nav")
         if nav < 0:
             raise _input("bad_number", "nav")
+    investments = _investments(inputs.get("investments"))
+    distribution_from = _distribution_from(inputs.get("distribution_from"))
 
     # F32: with a schedule, no fee call is entered, so nothing is counted twice: the first such call in the input's order.
     schedule = terms["schedule"]
@@ -654,9 +886,11 @@ def read(inputs):
     for f in flows:
         if f.type == "distribution" and f.date < first_call:
             raise _input("distribution_before_call", f"cash_flows[{f.index}]")
-    for f in flows:
-        if not f.scheduled and f.date > d:
+    # F37: write-offs among the cash flows, in the input's order.
+    for f in sorted([f for f in flows if not f.scheduled] + write_offs, key=lambda f: f.index):
+        if f.date > d:
             raise _input("cash_flow_after_distribution_date", f"cash_flows[{f.index}]")
+    _investments_against_flows(terms["carry_basis"], investments, flows, write_offs, distribution_from, d)
 
     # FA32: a close must come before the first distribution in the cash flows, and before D, X's date.
     close_limit = min([d] + [f.date for f in flows if f.type == "distribution"])
@@ -666,8 +900,22 @@ def read(inputs):
     # call has no place in the list: it comes after the entered calls of its date, which changes nothing, since calls
     # on one date only add up.
     ordered = sorted(flows, key=lambda f: (f.date, 0 if f.type == "call" else 1, len(raw_flows) if f.index is None else f.index))
-    fund = Fund(as_of=as_of, distribution_date=d, final=final, nav=nav, flows=ordered, lps=lps, **terms)
+    fund = Fund(
+        as_of=as_of,
+        distribution_date=d,
+        final=final,
+        nav=nav,
+        flows=ordered,
+        lps=lps,
+        investments=investments,
+        write_offs=write_offs,
+        distribution_from=distribution_from,
+        lps_cost_share=1 - terms["gp_share"],
+        **terms,
+    )
     _what_the_lps_need(fund)
+    # F33, F35: what each distribution realizes, the cost made by its date, and the investments at D.
+    deals.realize(fund)
     # F30: each of the schedule's calls is the LPs' fees, as if every LP were in from the start, once the LPs are read.
     for f in fund.flows:
         if f.scheduled:
