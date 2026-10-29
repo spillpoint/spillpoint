@@ -364,7 +364,7 @@ The checks run in a fixed order, and the first problem is the one refused.
 - **`pref`:** its rate a year, simple. Left out, there's none.
 - **`catch_up`:** the GP's share, `"1"` for a full catch-up. Only with a pref, and above the first carry rate.
 - **`gp_commitment`:** its `share`, with `pays_fees` (default false) and `pays_expenses` (default true).
-- **A call's `kind`:** `investment`, `fee` or `expense`. A distribution has none.
+- **A call's `kind`:** `investment`, `fee` or `expense`. A distribution has none, nor, from 0.5.0, a write-off.
 - **`distribution_date`,** D, defaults to `as_of`. Every cash flow is on or before it.
 - **`final`** (default false) makes the distribution on D the fund's last, with its clawback.
 - **`nav`,** optional: the fund's net asset value on D.
@@ -407,11 +407,32 @@ The checks run in a fixed order, and the first problem is the one refused.
   - **`steps`:** the annual rate on commitments, the first from `start` and above 0, each later one from its `from` date. `"0"` ends fees from its date.
   - **`commitments`:** the fee's base for a fund that doesn't list its LPs. A fund that lists them uses their commitments, and `commitments`, if given, must be their total.
   - **With a schedule** no fee call is entered and `fee_rate` isn't given: the schedule's first rate is the fund's, and a class's `fee_rate` is set against it. Each LP pays its own fee on its own commitment, whatever its close.
+- **Investments and carry deal by deal,** from 0.5.0:
+
+  ```json
+  "terms": { "carry": "0.20", "carry_basis": "deal_by_deal" },
+  "investments": [
+    { "name": "Alder Robotics", "checks": [{ "date": "2020-02-01", "amount": "3000000" }] },
+    { "name": "Cedar AI", "checks": [{ "date": "2021-02-01", "amount": "2500000" }, { "date": "2022-05-01", "amount": "1500000" }] }
+  ],
+  "cash_flows": [
+    { "date": "2022-06-30", "type": "distribution", "amount": "9000000", "investment": "Alder Robotics" },
+    { "date": "2023-03-31", "type": "distribution", "amount": "1500000", "investment": "Cedar AI", "share": "0.4" },
+    { "date": "2023-09-30", "type": "write_off", "investment": "Cedar AI" }
+  ],
+  "distribution_from": { "investment": "Cedar AI" }
+  ```
+
+  - **`carry_basis`:** `"whole_fund"`, the default, or `"deal_by_deal"`, where each distribution's capital tier runs only to what's due on the investments exited or written off so far. No pref deal by deal.
+  - **`investments`:** each a `name` and one or more `checks`, each a `date` and an `amount`: the fund's cost, the GP commitment's part included. A follow-on is another check. The cost made by any check's date can't be more than the investment calls up to it. Names are kept exactly as written, and no two investments can share one.
+  - **On a distribution:** the `investment` it comes from, and the `share` of what's left of it that it sells, `"1"` by default. Deal by deal every distribution names one; on the whole fund they're optional.
+  - **A write-off:** a cash flow of type `"write_off"`, with a `date` and an `investment` and no amount. It ends what's left of the investment.
+  - **`distribution_from`:** the investment X comes from, and its `share`, `"1"` by default. Needed deal by deal.
 - **Numbers** are exact strings: an integer, a decimal, or `"a/b"`. **Dates** are `YYYY-MM-DD`.
 
 ## API
 
-- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs). From 0.3.0 its `terms` have `feeRate`, `equalizationRate` (each null when not given) and `lpClasses` (each a `name`, `feeRate` and `carry`, null for the fund's), and each LP its `class` and `close` (null when not given). From 0.4.0 its `terms` have `managementFee`, the schedule as read (null without one): `start`, `frequency`, `steps` (each a `rate` and a `from`, the first's null) and `commitments` (null when not given). The schedule's calls aren't in `cashFlows`, which stays the input's.
+- **`readFund(input)`:** checks an input and returns a `Fund`, or throws a `FundRefusal`. The `Fund` mirrors the input in camelCase, its `lps` each a `name` and a `commitment` (empty without LPs). From 0.3.0 its `terms` have `feeRate`, `equalizationRate` (each null when not given) and `lpClasses` (each a `name`, `feeRate` and `carry`, null for the fund's), and each LP its `class` and `close` (null when not given). From 0.4.0 its `terms` have `managementFee`, the schedule as read (null without one): `start`, `frequency`, `steps` (each a `rate` and a `from`, the first's null) and `commitments` (null when not given). The schedule's calls aren't in `cashFlows`, which stays the input's. From 0.5.0 its `terms` have `carryBasis` (`"whole_fund"` filled in when not given); it has `investments` (each a `name` and `checks`, each check a `date` and an `amount`; empty without any) and `distributionFrom` (`investment` and `share`; null without one); and each cash flow has its `investment` and `share` (null where it has none, the share 1 on a distribution that doesn't give one), a write-off's type being `"write_off"` and its `amount` null. Its `cashFlows` are in date order, and on one date calls, then write-offs, then distributions.
 - **`splitAt(fund, x, { final? })`:** X, one more distribution on D, split by tier. It returns a `Split`:
   - `distribution`, X itself, and `toDate`, the fund to date with X, each a `Tiers`: `amount`, `gpCommitment`, `lps` (`capital`, `pref`, `catchUp`, `carryTier`, `total`) and `gp` (`catchUp`, `carry` by step, `total`)
   - `lpsPaidIn` and `gpCommitmentPaidIn`
@@ -464,12 +485,17 @@ Code can match on these names and words. From 0.1.0, or the version that added i
 - `fee_rate_with_schedule`: a `fee_rate` given beside a management fee schedule, at `terms.fee_rate`. From 0.4.0.
 - `fee_call_with_schedule`: a fee call entered beside a management fee schedule, at the first in the input's order. From 0.4.0.
 - `fee_commitments_mismatch`: a schedule's `commitments` that isn't the listed LPs' total, at `terms.management_fee.commitments`. From 0.4.0.
+- `investment_name_repeated`: an investment's name that an earlier investment already has, at the later investment's `name`. From 0.5.0.
+- `investment_unknown`: a distribution's, a write-off's or `distribution_from`'s `investment` that isn't the name of one of the fund's investments, at that `investment`. From 0.5.0.
+- `investment_not_made`: a distribution or a write-off dated before its investment's first check, at the cash flow. From 0.5.0.
+- `investments_exceed_calls`: the cost made by a check's date more than the investment calls up to it, at the first such check's `amount`. From 0.5.0.
 
 ### `FundRefusal`'s unsupported terms
 
 - `compounded_pref`: a pref compounding other than simple.
+- `deal_by_deal_pref`: a pref with carry deal by deal, at `terms.pref`. From 0.5.0.
 
-Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`. From 0.3.0 an LP's `class` and `close` are read, and a class's field other than its name, fee rate and carry is unsupported, such as its own `pref` at `terms.lp_classes[0].pref`. From 0.4.0 a schedule's field other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate` and `from`, is unsupported, such as an `offset` at `terms.management_fee.offset`.
+Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment, such as a side letter's `carry` at `lps[0].carry`. From 0.3.0 an LP's `class` and `close` are read, and a class's field other than its name, fee rate and carry is unsupported, such as its own `pref` at `terms.lp_classes[0].pref`. From 0.4.0 a schedule's field other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate` and `from`, is unsupported, such as an `offset` at `terms.management_fee.offset`. From 0.5.0 `carry_basis` is a term it reads.
 
 ### `ReasonCode`
 
@@ -504,6 +530,11 @@ From 0.3.0, with two or more accounts, every reason reads "{account}: {reason}",
 ### Types that can be null from 0.4.0
 
 - `Equalization.rate`, stable from 0.3.0, is `D | null`: null when no `equalization_rate` is given, as only fee calls before the later closes allow.
+
+### Types widened in 0.5.0
+
+- `CashFlow.type`, stable from 0.1.0, is `"call" | "distribution" | "write_off"`.
+- `CashFlow.amount`, stable from 0.1.0, is `D | null`: null on a write-off, which has no amount.
 
 ## How it's tested
 

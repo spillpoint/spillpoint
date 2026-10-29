@@ -16,11 +16,11 @@ From 0.1.0, or the version that added it, none is renamed or reused for somethin
 ## `FundRefusal`'s input terms
 
 Each with the `path` it names, into the input (F18, FA2):
-- `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share; a zero amount or pref rate; a catch-up share above 1; an LP's commitment of 0 or less (F21); or an X below 0 (FA13), whose path is `x`. From 0.3.0 also the fund's `fee_rate` of 0 or less, and a class's fee rate or the `equalization_rate` below 0 (F28). From 0.4.0 also a schedule's rate below 0 or of 1 or more, or not an exact string; its first rate of 0; and its `commitments` of 0 or less (F32).
-- `bad_date`: not a date written YYYY-MM-DD that exists, an LP's `close` included (F28). From 0.4.0 also a schedule's `start` and a step's `from` (F32).
-- `bad_field`: an unknown call kind or flow type, a non-boolean flag, a blank LP name (FA17), or a value of the wrong shape. From 0.3.0 also `lp_classes` that isn't a list, a class that isn't an object, a class's name that isn't text or is blank (FA27), and an LP's `class` that isn't text (F28). From 0.4.0 also a `management_fee` that isn't an object, a `frequency` that isn't `"quarterly"`, `"semiannual"` or `"annual"` exactly, `steps` that isn't a list or is empty, and a step that isn't an object (F32, FA41).
-- `missing_field`: a field the input needs, left out. From 0.3.0 also a class's name; the fund's `fee_rate`, at `terms.fee_rate`, when a class gives a fee rate of its own; and the `equalization_rate`, at `terms.equalization_rate`, when an LP joins at a later close (F28). From 0.4.0 the `equalization_rate` is missing only when an investment or expense call comes before a later close (F29), and a class's fee rate needs the fund's `fee_rate` or a schedule; a schedule's `start`, `steps`, a step's `rate` and a later step's `from`, each at its own path; and the schedule's `commitments`, at `terms.management_fee.commitments`, when the fund doesn't list its LPs (F32).
-- `unknown_field`: a field outside `terms` that a fund input doesn't have, a distribution's `kind` included (FA12).
+- `bad_number`: not an exact string, or out of range. Out of range is a negative amount, rate or share; a zero amount or pref rate; a catch-up share above 1; an LP's commitment of 0 or less (F21); or an X below 0 (FA13), whose path is `x`. From 0.3.0 also the fund's `fee_rate` of 0 or less, and a class's fee rate or the `equalization_rate` below 0 (F28). From 0.4.0 also a schedule's rate below 0 or of 1 or more, or not an exact string; its first rate of 0; and its `commitments` of 0 or less (F32). From 0.5.0 also a check's amount of 0 or less, and a distribution's or `distribution_from`'s `share` of 0 or less or above 1 (F37).
+- `bad_date`: not a date written YYYY-MM-DD that exists, an LP's `close` included (F28). From 0.4.0 also a schedule's `start` and a step's `from` (F32). From 0.5.0 also a check's `date` (F37).
+- `bad_field`: an unknown call kind or flow type, a non-boolean flag, a blank LP name (FA17), or a value of the wrong shape. From 0.3.0 also `lp_classes` that isn't a list, a class that isn't an object, a class's name that isn't text or is blank (FA27), and an LP's `class` that isn't text (F28). From 0.4.0 also a `management_fee` that isn't an object, a `frequency` that isn't `"quarterly"`, `"semiannual"` or `"annual"` exactly, `steps` that isn't a list or is empty, and a step that isn't an object (F32, FA41). From 0.5.0 also a flow type other than `"call"`, `"distribution"` and `"write_off"`; a `carry_basis` other than `"whole_fund"` and `"deal_by_deal"`; `investments` that isn't a list; an investment, a check or `distribution_from` that isn't an object; an investment's `checks` that isn't a list or is empty; and an investment's name, or a distribution's, a write-off's or `distribution_from`'s `investment`, that isn't text or is blank (F37, FA52).
+- `missing_field`: a field the input needs, left out. From 0.3.0 also a class's name; the fund's `fee_rate`, at `terms.fee_rate`, when a class gives a fee rate of its own; and the `equalization_rate`, at `terms.equalization_rate`, when an LP joins at a later close (F28). From 0.4.0 the `equalization_rate` is missing only when an investment or expense call comes before a later close (F29), and a class's fee rate needs the fund's `fee_rate` or a schedule; a schedule's `start`, `steps`, a step's `rate` and a later step's `from`, each at its own path; and the schedule's `commitments`, at `terms.management_fee.commitments`, when the fund doesn't list its LPs (F32). From 0.5.0 also an investment's `name` or `checks`, a check's `date` or `amount`, a write-off's `investment`, and `distribution_from`'s `investment`, each at its own path; a distribution's `investment` when it gives a `share`, or deal by deal; and deal by deal, `investments` and `distribution_from` (F37).
+- `unknown_field`: a field outside `terms` that a fund input doesn't have, a distribution's `kind` included (FA12). From 0.5.0 also a call's `investment` or `share`, a write-off's `kind`, `amount` or `share`, and a key on an investment other than `name` and `checks`, on a check other than `date` and `amount`, or on `distribution_from` other than `investment` and `share` (F37).
 - `carry_rate_not_below_one`: a carry rate of 1 or more, the fund's or, from 0.3.0, a class's at its own path.
 - `steps_out_of_order`: carry steps whose rates don't rise, whose multiples don't rise from above 1, or whose first step has a multiple; from 0.3.0 a class's too. From 0.4.0 also a schedule's steps: the first given a `from`, or a later step's `from` not after the step before it's, the first's being `start`, at the step (F32).
 - `catch_up_without_pref`: a catch-up with no pref.
@@ -28,7 +28,7 @@ Each with the `path` it names, into the input (F18, FA2):
 - `gp_commitment_not_below_one`: a GP commitment share of 1 or more.
 - `no_calls`: no calls at all.
 - `distribution_before_call`: a distribution before the fund's first call.
-- `cash_flow_after_distribution_date`: a cash flow after D.
+- `cash_flow_after_distribution_date`: a cash flow after D. From 0.5.0 also a write-off after D, and a check after D, at the check (F37).
 - `lp_name_repeated`: an LP's name that an earlier LP already has, compared exactly as written, at the later LP's `name` (F21). From 0.2.0.
 - `lp_class_name_repeated`: a class's name that an earlier class already has, compared exactly as written, at the later class's `name` (F28). From 0.3.0.
 - `lp_class_unknown`: an LP's `class` that isn't the name of a class in the terms, compared exactly as written (F28, FA27). From 0.3.0.
@@ -37,12 +37,17 @@ Each with the `path` it names, into the input (F18, FA2):
 - `fee_rate_with_schedule`: a `fee_rate` given beside a management fee schedule, whose first rate is the fund's, at `terms.fee_rate` (F32). From 0.4.0.
 - `fee_call_with_schedule`: a fee call entered beside a management fee schedule, which would count it twice, at the first in the input's order (F32). From 0.4.0.
 - `fee_commitments_mismatch`: a schedule's `commitments` that isn't the listed LPs' commitments added up, at `terms.management_fee.commitments` (F32, FA41). From 0.4.0.
+- `investment_name_repeated`: an investment's name that an earlier investment already has, compared exactly as written, at the later investment's `name` (F37, FA52). From 0.5.0.
+- `investment_unknown`: a distribution's, a write-off's or `distribution_from`'s `investment` that isn't the name of one of the fund's investments, compared exactly as written, at that `investment` (F37). From 0.5.0.
+- `investment_not_made`: a distribution or a write-off dated before its investment's first check, at the cash flow (F37). From 0.5.0.
+- `investments_exceed_calls`: the cost made by a check's date more than the investment calls up to that date, at the first such check's `amount`, checks in date order and on one date in the investments' order (F37, FA53). From 0.5.0.
 
 ## `FundRefusal`'s unsupported terms
 
 - `compounded_pref`: a pref compounding other than simple (F7).
+- `deal_by_deal_pref`: a pref, whatever its shape, with carry deal by deal, at `terms.pref` (F35, F37, FA54). From 0.5.0.
 
-Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment: a side letter's `carry` at `lps[0].carry` (F21). From 0.3.0 an LP's `class` and `close` are read, and a field on a class other than its name, fee rate and carry is unsupported: a class's own `pref` at `terms.lp_classes[0].pref` (F28). From 0.4.0 a `management_fee` is read, and a field on it other than `start`, `frequency`, `steps` and `commitments`, or on a step other than `rate` and `from`, is unsupported: an `offset` at `terms.management_fee.offset`, a `basis` at `terms.management_fee.steps[0].basis` (F32).
+Any other unsupported term is the key v1 doesn't model, named by itself: `hurdle_irr` for `terms.hurdle_irr`, at that path. From 0.2.0 that includes a field on an LP other than its name and commitment: a side letter's `carry` at `lps[0].carry` (F21). From 0.3.0 an LP's `class` and `close` are read, and a field on a class other than its name, fee rate and carry is unsupported: a class's own `pref` at `terms.lp_classes[0].pref` (F28). From 0.4.0 a `management_fee` is read, and a field on it other than `start`, `frequency`, `steps` and `commitments`, or on a step other than `rate` and `from`, is unsupported: an `offset` at `terms.management_fee.offset`, a `basis` at `terms.management_fee.steps[0].basis` (F32). From 0.5.0 `carry_basis` is a term the engine reads.
 
 ## `ReasonCode`
 
@@ -103,7 +108,21 @@ From 0.4.0 (F29 to F31), beside the API's other names:
 - `feeCalls(fund)`: the schedule's calls in date order, each `{ date, firstDay, lastDay, call, lps, gpCommitment, byLp }`, and in `byLp` each LP's `{ name, fee }`. Null without a schedule.
 - `backFees`, on each LP's equalization amounts: its own part of each fee call before its close, paid to the manager.
 
+## The investments' names
+
+From 0.5.0 (F33, F34), beside the API's other names, on the `Fund` `readFund` returns:
+- `carryBasis`, on a fund's `terms`: `"whole_fund"` or `"deal_by_deal"`, `"whole_fund"` filled in when the input leaves it out.
+- `investments`: the input's investments in its order, each `{ name, checks }`, each check `{ date, amount }`. Empty without any.
+- `investment` and `share`, on each cash flow: a distribution's investment (null without one) and share (1 when the input leaves it out), or a write-off's investment; both null on a call, and `share` null on a write-off.
+- `distributionFrom`: X's source, `{ investment, share }`, the share 1 when the input leaves it out. Null without one.
+
 ## Types that can be null from 0.4.0
 
 One type stable from an earlier version can now be null, so code that reads it checks first:
 - `Equalization.rate`, stable from 0.3.0: `D | null`, was `D`. Null when no `equalization_rate` is given, which is allowed when only fee calls come before the later closes: each joiner pays its own back fees, with no interest (F29, FA45).
+
+## Types widened in 0.5.0
+
+Two fields of `CashFlow`, stable from 0.1.0, take one more value, so code that reads them checks first:
+- `CashFlow.type`: `"call" | "distribution" | "write_off"`, was `"call" | "distribution"`. A write-off ends what's left of an investment, with no proceeds (F33).
+- `CashFlow.amount`: `D | null`, was `D`. Null on a write-off, which has no amount; a call's and a distribution's are never null.
