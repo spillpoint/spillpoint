@@ -24,6 +24,8 @@ export type { RefusalKind } from "./errors.ts";
 // Reading a fund's input.
 export { readFund } from "./input.ts";
 export type { CallKind, CarryStep, CashFlow, FeeFrequency, FeeStep, Fund, FundTerms, GpCommitment, Lp, LpClass, ManagementFee } from "./model.ts";
+// From 0.5.0: the carry basis, the investments and X's source (F33, F34).
+export type { CarryBasis, DistributionFrom, Investment, InvestmentCheck } from "./model.ts";
 
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";

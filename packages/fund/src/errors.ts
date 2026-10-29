@@ -51,6 +51,10 @@ const MESSAGES: Record<InputTerm, string> = {
   fee_rate_with_schedule: "with a management fee schedule, its first rate is the fund's: no fee_rate is given beside it",
   fee_call_with_schedule: "with a management fee schedule, the schedule works out the fee calls: none is entered as well",
   fee_commitments_mismatch: "the schedule's commitments must be the listed LPs' commitments added up",
+  investment_name_repeated: "an earlier investment has this name; no two investments share one",
+  investment_unknown: "the fund's investments have none of this name",
+  investment_not_made: "this comes before its investment's first check",
+  investments_exceed_calls: "the checks made by this date cost more than the investment calls up to it",
 };
 
 /**
@@ -64,7 +68,7 @@ export function refuse(term: InputTerm, path: string, message: string = MESSAGES
   return new FundRefusal("input", term, path, message);
 }
 
-/** An unsupported refusal: `compounded_pref`, or a key v1 doesn't model, named by itself (F18). */
+/** An unsupported refusal: `compounded_pref`, from 0.5.0 `deal_by_deal_pref`, or a key v1 doesn't model, named by itself (F18). */
 export function unsupported(term: UnsupportedTerm | { key: string }, path: string, what: string): FundRefusal {
   return new FundRefusal("unsupported", typeof term === "string" ? term : term.key, path, what);
 }

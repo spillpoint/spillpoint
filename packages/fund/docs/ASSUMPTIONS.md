@@ -200,6 +200,12 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 | FA59 | The investments table (F36) | At D, before X, on either basis, in the input's order. Cost made: its checks to D. Cost realized and cost written off: by the write-offs and distributions before X. Proceeds: the amounts of the distributions naming it, whatever they realize, an escrow release among them. The realized multiple: proceeds over the cost realized, exact, none (null) while nothing of it is realized (Jordan, f05a review). Over the cost made instead, a partial sale would show as less than it made and an investment still held as 0x: case 35's Dogwood Labs, 40% sold, would be 1.0x, not 2.5x, and Hazel Cloud, still held, 0x. A written-off investment's is its proceeds, if any, over all its cost: Fir Payments, written off with none, 0x. | Fixed | Confirmed (f05a review) |
 | FA60 | The LPs' part of the cost (F35, F3) | (1 − g) of every check, whatever `pays_fees` and `pays_expenses` say: a check is an investment, and the GP commitment pays g of every investment call (F3). An account's part of that by its commitment share (F23); without listed LPs, all of it. | Fixed | Confirmed (f05a review) |
 
+## Added in f05b1
+
+| ID | Question | Default | Toggle? | Status |
+|---|---|---|---|---|
+| FA61 | A `Fund` built by hand without 0.5.0's fields (F33, F34) | As FA48 has one without 0.4.0's: no `carryBasis` on its terms is the whole fund, and no `investments`, no `distributionFrom`, and cash flows without an `investment` or `share` are none, so it splits as 0.4.0 split it. TypeScript requires the new fields. A write-off in one, as in one `readFund` returned, calls and distributes nothing, so on the whole fund the waterfall doesn't run it. | Fixed | New |
+
 ## Known edges
 
 Places where the engine and the reference can differ on an input both refuse, and an input whose result reads ambiguously, recorded rather than changed.

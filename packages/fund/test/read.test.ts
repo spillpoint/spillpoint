@@ -5,7 +5,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { D, FundRefusal, equalization, readFund, splitAt } from "../src/index.ts";
+import { D, FundRefusal, equalization, findBreakpoints, readFund, splitAt } from "../src/index.ts";
 import { CASES_DIR, REFUSAL_CASES, applyChange, readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
 
@@ -391,5 +391,194 @@ describe("the management fee schedule (F29, F30, F32, FA39 to FA41)", () => {
     // Case 30's first entered call moved after Birchwood's close: the schedule's first call, on start, comes before it.
     const fund = read(C30, { set: { "lps[1].close": "2020-08-01", "cash_flows[0].date": "2020-09-01" } });
     expect(equalization(fund)!.closes.map((c) => [c.date, c.joining])).toEqual([["2020-08-01", ["Birchwood Family Office"]]]);
+  });
+});
+
+describe("investments and carry deal by deal (F33, F34, F37, FA52 to FA56)", () => {
+  // A small fund of its own: $1,000 of investment calls for two investments, A's $600 and B's $400, a $100 fee call, A's
+  // exit, and X from B.
+  const call = (date: string, amount: string, kind = "investment") => ({ date, type: "call", kind, amount });
+  const writeOff = (date: string, investment: string) => ({ date, type: "write_off", investment });
+  const DEALS = {
+    as_of: "2024-01-01",
+    terms: { carry: "0.2", carry_basis: "deal_by_deal" },
+    investments: [
+      { name: "A", checks: [{ date: "2020-01-01", amount: "600" }] },
+      { name: "B", checks: [{ date: "2020-01-01", amount: "400" }] },
+    ],
+    cash_flows: [call("2020-01-01", "1000"), call("2020-01-01", "100", "fee"), { date: "2021-01-01", type: "distribution", amount: "900", investment: "A" }],
+    distribution_from: { investment: "B" },
+  };
+  const refused = (c: Fixture["change"], base: Record<string, unknown> = DEALS) => refusal(applyChange(base, c));
+  const input = (term: string, field: string) => ({ kind: "input", term, field });
+  const read = (c: Fixture["change"] = {}, base: Record<string, unknown> = DEALS) => readFund(applyChange(base, c));
+
+  it("reads them as the input gives them, frozen with the rest, and none without them", () => {
+    const fund = read({ set: { "cash_flows[3]": writeOff("2022-01-01", "B"), "distribution_from.share": "1/2" } });
+    expect(fund.terms.carryBasis).toBe("deal_by_deal");
+    expect(fund.investments.map((i) => [i.name, i.checks.map((c) => [c.date, c.amount.toString()])])).toEqual([
+      ["A", [["2020-01-01", "600"]]],
+      ["B", [["2020-01-01", "400"]]],
+    ]);
+    expect([fund.distributionFrom!.investment, fund.distributionFrom!.share.toString()]).toEqual(["B", "0.5"]);
+    const [investmentCall, , exit, writtenOff] = fund.cashFlows;
+    expect([investmentCall!.investment, investmentCall!.share]).toEqual([null, null]);
+    expect([exit!.investment, exit!.share!.toString()]).toEqual(["A", "1"]);
+    expect([writtenOff!.type, writtenOff!.investment, writtenOff!.kind, writtenOff!.amount, writtenOff!.share]).toEqual(["write_off", "B", null, null, null]);
+    expect([fund.investments, fund.investments[0]!.checks[0], fund.distributionFrom].every((o) => Object.isFrozen(o))).toBe(true);
+    // Without them: the whole fund, no investments, no X's source, and every distribution without an investment.
+    const plain = readFund(BASE);
+    expect([plain.terms.carryBasis, plain.investments, plain.distributionFrom]).toEqual(["whole_fund", [], null]);
+    expect(plain.cashFlows.map((f) => [f.investment, f.share?.toString() ?? null])).toEqual([[null, null]]);
+  });
+
+  it("orders one date's cash flows calls, write-offs, then distributions, each as listed (F4, F33)", () => {
+    const day = "2022-01-01";
+    const fund = read({
+      set: {
+        "cash_flows[2]": { date: day, type: "distribution", amount: "50", investment: "A" },
+        "cash_flows[3]": writeOff(day, "B"),
+        "cash_flows[4]": { date: day, type: "distribution", amount: "40", investment: "A" },
+        "cash_flows[5]": writeOff(day, "A"),
+        "cash_flows[6]": call(day, "10", "expense"),
+      },
+    });
+    expect(fund.cashFlows.filter((f) => f.date === day).map((f) => f.index)).toEqual([6, 3, 5, 2, 4]);
+  });
+
+  it("reads null as left out, and refuses a null that leaves out what's needed (FA52)", () => {
+    expect(read({ set: { "terms.carry_basis": null } }).terms.carryBasis).toBe("whole_fund");
+    expect(refused({ set: { investments: null } })).toEqual(input("missing_field", "investments"));
+    expect(refused({ set: { investments: [] } })).toEqual(input("missing_field", "investments"));
+    expect(refused({ set: { distribution_from: null } })).toEqual(input("missing_field", "distribution_from"));
+    expect(refused({ set: { "cash_flows[2].investment": null } })).toEqual(input("missing_field", "cash_flows[2].investment"));
+    const fund = read({
+      set: {
+        "cash_flows[2].share": null,
+        "distribution_from.share": null,
+        "cash_flows[0].investment": null,
+        "cash_flows[0].share": null,
+        "cash_flows[3]": { ...writeOff("2022-01-01", "B"), amount: null, share: null, kind: null },
+      },
+    });
+    expect([fund.cashFlows[2]!.share!.toString(), fund.distributionFrom!.share.toString(), fund.cashFlows[3]!.type]).toEqual(["1", "1", "write_off"]);
+    for (const path of ["investments[0].name", "investments[0].checks", "investments[0].checks[0].date", "investments[0].checks[0].amount", "distribution_from.investment"]) {
+      expect(refused({ set: { [path]: null } }), path).toEqual(input("missing_field", path));
+    }
+    expect(refused({ set: { "cash_flows[3]": { ...writeOff("2022-01-01", "B"), investment: null } } })).toEqual(input("missing_field", "cash_flows[3].investment"));
+  });
+
+  it("keeps names as written and compares them exactly, blank as trim takes it (FA52, FA17)", () => {
+    expect(refused({ set: { "cash_flows[2].investment": "A " } })).toEqual(input("investment_unknown", "cash_flows[2].investment"));
+    expect(refused({ set: { "investments[1].name": "　" } })).toEqual(input("bad_field", "investments[1].name"));
+    expect(read({ set: { "investments[1].name": " B", "distribution_from.investment": " B" } }).investments[1]!.name).toBe(" B");
+    // An investment may share a name with an LP.
+    read({ set: { lps: [{ name: "A", commitment: "1" }] } });
+  });
+
+  it("checks a cash flow through in FA53's order", () => {
+    const wo = writeOff("2022-01-01", "B");
+    expect(refused({ set: { "cash_flows[3]": { ...wo, amount: "5", note: "x" } } })).toEqual(input("unknown_field", "cash_flows[3].note"));
+    expect(refused({ set: { "cash_flows[3]": { ...wo, share: "1", amount: "5" } } })).toEqual(input("unknown_field", "cash_flows[3].share"));
+    expect(refused({ set: { "cash_flows[3]": { ...wo, date: "x", amount: "5" } } })).toEqual(input("bad_date", "cash_flows[3].date"));
+    expect(refused({ set: { "cash_flows[3]": { date: "2022-01-01", type: "write_off" } } })).toEqual(input("missing_field", "cash_flows[3].investment"));
+    expect(refused({ set: { "cash_flows[2].investment": "", "cash_flows[2].share": "2" } })).toEqual(input("bad_field", "cash_flows[2].investment"));
+    expect(refused({ set: { "cash_flows[2].share": "2", "cash_flows[2].amount": "x" } })).toEqual(input("bad_number", "cash_flows[2].share"));
+    expect(refused({ set: { "cash_flows[2]": { date: "2021-01-01", type: "distribution", amount: "900", share: "2" } } })).toEqual(input("missing_field", "cash_flows[2].investment"));
+    // A call's investment and share are unknown in the file's order among its other unknown fields.
+    expect(refused({ set: { "cash_flows[0]": { ...call("2020-01-01", "1000"), share: "1", note: "x" } } })).toEqual(input("unknown_field", "cash_flows[0].share"));
+    // A type that isn't one of the three is refused after the fields every cash flow needs: an amount unless the type is
+    // a write-off's.
+    expect(refused({ set: { "cash_flows[3]": { date: "2022-01-01", type: "writeoff", investment: "B" } } })).toEqual(input("missing_field", "cash_flows[3].amount"));
+    expect(refused({ set: { "cash_flows[3]": { date: "2022-01-01", type: "writeoff", investment: "B", amount: "1" } } })).toEqual(input("bad_field", "cash_flows[3].type"));
+  });
+
+  it("checks an investment and X's source through in FA53's order, after nav", () => {
+    expect(refused({ set: { "investments[0]": { checks: [], sector: "x" } } })).toEqual(input("unknown_field", "investments[0].sector"));
+    expect(refused({ set: { "investments[0]": { sector: null } } })).toEqual(input("unknown_field", "investments[0].sector"));
+    expect(refused({ set: { "investments[0]": { checks: "x" } } })).toEqual(input("missing_field", "investments[0].name"));
+    expect(refused({ set: { "investments[0].name": 1, "investments[0].checks": [] } })).toEqual(input("bad_field", "investments[0].name"));
+    expect(refused({ set: { "investments[0].checks": { date: "2020-01-01", amount: "600" } } })).toEqual(input("bad_field", "investments[0].checks"));
+    expect(refused({ set: { "investments[0].checks": [{ date: "2020-01-01", amount: "-1" }, { date: "x" }] } })).toEqual(input("bad_number", "investments[0].checks[0].amount"));
+    expect(refused({ set: { "investments[0].checks[0]": { amount: "x", shares: "1" } } })).toEqual(input("unknown_field", "investments[0].checks[0].shares"));
+    expect(refused({ set: { "investments[0].checks[0]": { amount: "x" } } })).toEqual(input("missing_field", "investments[0].checks[0].date"));
+    expect(refused({ set: { "investments[0].checks[0].amount": 600 } })).toEqual(input("bad_number", "investments[0].checks[0].amount"));
+    // The name repeated is checked once the investment's checks are read.
+    expect(refused({ set: { "investments[1].name": "A", "investments[1].checks[0].date": "x" } })).toEqual(input("bad_date", "investments[1].checks[0].date"));
+    expect(refused({ set: { distribution_from: { share: "x", note: "y" } } })).toEqual(input("unknown_field", "distribution_from.note"));
+    expect(refused({ set: { distribution_from: { investment: " ", share: "x" } } })).toEqual(input("bad_field", "distribution_from.investment"));
+    expect(refused({ set: { "distribution_from.share": "0" } })).toEqual(input("bad_number", "distribution_from.share"));
+    expect(refused({ set: { nav: "-1", investments: "x" } })).toEqual(input("bad_number", "nav"));
+  });
+
+  it("names the first check of a date whose checks together run past the investment calls (F37, FA53)", () => {
+    // A's $600 and B's $500 on one date pass $1,000, and A is named, though $600 alone wouldn't. A fee call doesn't fund a check.
+    expect(refused({ set: { "investments[1].checks[0].amount": "500" } })).toEqual(input("investments_exceed_calls", "investments[0].checks[0].amount"));
+    expect(refused({ set: { "cash_flows[1].amount": "5000", "investments[1].checks[0].amount": "500" } })).toEqual(input("investments_exceed_calls", "investments[0].checks[0].amount"));
+    // A call on a check's date funds it, calls coming before checks on one date (F33); a day later doesn't.
+    const late = { "investments[1].checks[0].date": "2020-06-01", "investments[1].checks[0].amount": "500", "cash_flows[3]": call("2020-06-01", "100") };
+    read({ set: late });
+    expect(refused({ set: { ...late, "cash_flows[3]": call("2020-06-02", "100") } })).toEqual(input("investments_exceed_calls", "investments[1].checks[0].amount"));
+  });
+
+  it("refuses any pref deal by deal, whatever its shape, last in stage 1 (FA54)", () => {
+    const unsupported = { kind: "unsupported", term: "deal_by_deal_pref", field: "terms.pref" };
+    for (const pref of [{ rate: "0.08" }, "0.08", {}]) expect(refused({ set: { "terms.pref": pref } })).toEqual(unsupported);
+    read({ set: { "terms.pref": null } });
+    expect(refused({ set: { "terms.pref": { rate: "0.08" }, "terms.carry_basis": "Deal by deal" } })).toEqual(input("bad_field", "terms.carry_basis"));
+    expect(refused({ set: { "terms.carry_basis": { deal: true } } })).toEqual(input("bad_field", "terms.carry_basis"));
+    expect(refused({ set: { "terms.catch_up": { gp_share: "1" } } })).toEqual(input("catch_up_without_pref", "terms.catch_up"));
+    expect(refused({ set: { "terms.pref": { rate: "0.08", compounding: "annual" } } })).toEqual({ kind: "unsupported", term: "compounded_pref", field: "terms.pref.compounding" });
+  });
+
+  it("checks the investments on the whole fund as deal by deal, and doesn't need them (FA55)", () => {
+    const whole = applyChange(DEALS, { set: { "terms.carry_basis": "whole_fund", "cash_flows[2]": { date: "2021-01-01", type: "distribution", amount: "900" } }, del: "distribution_from" }) as Record<string, unknown>;
+    expect(readFund(whole).distributionFrom).toBeNull();
+    expect(refused({ set: { distribution_from: { investment: "Z" } } }, whole)).toEqual(input("investment_unknown", "distribution_from.investment"));
+    expect(refused({ set: { "cash_flows[3]": writeOff("2019-06-01", "A") } }, whole)).toEqual(input("investment_not_made", "cash_flows[3]"));
+    expect(refused({ set: { "investments[0].checks[0].date": "2025-01-01" } }, whole)).toEqual(input("cash_flow_after_distribution_date", "investments[0].checks[0]"));
+    expect(refused({ set: { "investments[0].checks[0].amount": "601" } }, whole)).toEqual(input("investments_exceed_calls", "investments[0].checks[0].amount"));
+  });
+
+  it("doesn't count a write-off as a distribution (FA56)", () => {
+    // Before the first call, a write-off is refused for its investment, not as distribution_before_call.
+    const moved = { "cash_flows[0].date": "2020-02-01", "cash_flows[1].date": "2020-02-01", "investments[0].checks[0].date": "2020-02-01", "investments[1].checks[0].date": "2020-02-01" };
+    const early = { ...moved, "cash_flows[3]": writeOff("2020-01-15", "A") };
+    expect(refused({ set: early })).toEqual(input("investment_not_made", "cash_flows[3]"));
+    expect(refused({ set: { ...early, "investments[0].checks[0].date": "2020-01-10" } })).toEqual(input("investments_exceed_calls", "investments[0].checks[0].amount"));
+    // Nor does one limit a later close, which stays before the first distribution: A's exit on 2021-01-01.
+    const closes = { "terms.equalization_rate": "0", lps: [{ name: "L", commitment: "1" }, { name: "M", commitment: "1", close: "2020-12-01" }], "cash_flows[3]": writeOff("2020-06-01", "B") };
+    read({ set: closes });
+    expect(refused({ set: { ...closes, "lps[1].close": "2021-01-01" } })).toEqual(input("lp_close_after_distribution", "lps[1].close"));
+  });
+
+  it("checks stage 3 in F37's order", () => {
+    // 0.4.0's checks first, a write-off among the cash flows after D; then a check after D; then each distribution and
+    // write-off in the input's order, its three checks together; then X's investment; then the cost made.
+    expect(refused({ set: { "cash_flows[3]": writeOff("2025-01-01", "Z"), "cash_flows[4]": { date: "2025-01-01", type: "distribution", amount: "1" } } })).toEqual(
+      input("cash_flow_after_distribution_date", "cash_flows[3]"),
+    );
+    expect(refused({ set: { "cash_flows[2].investment": "Z", "distribution_from.investment": "Z" } })).toEqual(input("investment_unknown", "cash_flows[2].investment"));
+    expect(refused({ set: { "distribution_from.investment": "Z", "investments[0].checks[0].amount": "700" } })).toEqual(input("investment_unknown", "distribution_from.investment"));
+    expect(refused({ set: { "cash_flows[3]": writeOff("2019-12-01", "B"), "cash_flows[2].investment": "Z" } })).toEqual(input("investment_unknown", "cash_flows[2].investment"));
+  });
+
+  it("reads a distribution or a write-off on its investment's first check's date, checks coming first on one date (F33)", () => {
+    read({ set: { "cash_flows[2].date": "2020-01-01", "cash_flows[3]": writeOff("2020-01-01", "B") } });
+    expect(refused({ set: { "cash_flows[3]": writeOff("2019-12-31", "B") } })).toEqual(input("investment_not_made", "cash_flows[3]"));
+  });
+
+  it("holds a fund deal by deal back from the split until f05b2, and splits one on the whole fund as if it had no investments", () => {
+    const fund = read();
+    expect(() => splitAt(fund, "100")).toThrow("carry deal by deal is read, but not split until the next step (f05b2)");
+    expect(() => findBreakpoints(fund)).toThrow("not split until the next step (f05b2)");
+    // F34: on the whole fund the investments, the tags and the write-offs change no amount.
+    const whole = read({ set: { "terms.carry_basis": "whole_fund", "cash_flows[3]": writeOff("2022-01-01", "B"), final: true } });
+    const bare = read({ set: { "terms.carry_basis": null, "cash_flows[2].investment": null, final: true }, del: ["investments", "distribution_from"] });
+    for (const x of ["0", "200", "1000", "5000"]) {
+      const [a, b] = [splitAt(whole, x), splitAt(bare, x)];
+      expect(JSON.stringify([a.distribution, a.toDate, a.clawback, a.lpsPaidIn]), x).toBe(JSON.stringify([b.distribution, b.toDate, b.clawback, b.lpsPaidIn]));
+    }
+    expect(findBreakpoints(whole)).toEqual(findBreakpoints(bare));
   });
 });

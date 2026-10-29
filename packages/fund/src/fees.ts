@@ -21,7 +21,7 @@
 import { D, ONE, ZERO } from "./decimal.ts";
 import { dayNumber, isoDate } from "./dates.ts";
 import { feeWeight, isIn, wasRead } from "./input.ts";
-import type { CallKind, Fund } from "./model.ts";
+import type { CallKind, CashFlow, Fund } from "./model.ts";
 import { schedulePeriods } from "./schedule.ts";
 
 /** One LP's fee for one of the schedule's periods (F31). */
@@ -83,6 +83,13 @@ export function gpCommitmentPart(fund: Fund, kind: CallKind | null, amount: D): 
 }
 
 const sum = (xs: D[]) => xs.reduce((t, x) => t.plus(x), ZERO);
+
+/** A call or a distribution: a cash flow with an amount (F2). From 0.5.0 a write-off has none (F33). */
+type MoneyFlow = CashFlow & { type: "call" | "distribution"; amount: D };
+
+function movesMoney(f: CashFlow): f is MoneyFlow {
+  return f.type !== "write_off";
+}
 
 /** F22: every listed LP's fee weight added up, in the input's order. */
 function allFeeWeights(fund: Fund): D {
@@ -147,7 +154,8 @@ export function runFlows(fund: Fund): RunFlow[] {
   if (known) return known;
   const lps = fund.lps ?? [];
   const weightsAll = allFeeWeights(fund);
-  const entered = fund.cashFlows.map((f): RunFlow => {
+  // F33: a write-off calls and distributes nothing, so the waterfall doesn't run it as a cash flow.
+  const entered = fund.cashFlows.filter(movesMoney).map((f): RunFlow => {
     const day = dayNumber(f.date)!;
     const gp = f.type === "call" ? gpCommitmentPart(fund, f.kind, f.amount) : ZERO;
     const paid = f.amount.minus(gp);

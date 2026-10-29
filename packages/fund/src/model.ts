@@ -33,7 +33,15 @@ export interface FundTerms {
   lpClasses: LpClass[];
   /** F30: the management fee schedule that works out the fee calls, or null when they're entered as cash flows. */
   managementFee: ManagementFee | null;
+  /** F34, from 0.5.0: the carry basis, `"whole_fund"` when the input doesn't give one. */
+  carryBasis: CarryBasis;
 }
+
+/**
+ * F34: carry on the whole fund (F1, the default), or deal by deal, where tier 1 at each distribution runs only to what's
+ * due on the investments exited or written off so far (F35).
+ */
+export type CarryBasis = "whole_fund" | "deal_by_deal";
 
 /** F30: how often fees are called, on calendar quarters, half-years (January to June, July to December) or years. */
 export type FeeFrequency = "quarterly" | "semiannual" | "annual";
@@ -74,15 +82,42 @@ export interface LpClass {
 
 export type CallKind = "investment" | "fee" | "expense";
 
-/** One call or distribution, for the whole fund (F2). */
+/** One call, distribution or, from 0.5.0, write-off, for the whole fund (F2, F33). */
 export interface CashFlow {
   /** Its place in the input's list, which a refusal's path names (FA12). */
   index: number;
   date: string;
-  type: "call" | "distribution";
-  /** A call's kind; null on a distribution. */
+  /** From 0.5.0 also `"write_off"`: the end of what's left of an investment, with no proceeds (F33). */
+  type: "call" | "distribution" | "write_off";
+  /** A call's kind; null on a distribution and a write-off. */
   kind: CallKind | null;
+  /** From 0.5.0 null on a write-off, which has no amount (F33). */
+  amount: D | null;
+  /** F33, from 0.5.0: the investment a distribution comes from, or a write-off ends; null on a call, and on a distribution without one. */
+  investment: string | null;
+  /** F33, from 0.5.0: how much of what's left of its investment a distribution sells, 1 by default; null on a call and a write-off. */
+  share: D | null;
+}
+
+/** F33, from 0.5.0: one of the fund's investments, as the input lists it. */
+export interface Investment {
+  /** As written: not trimmed, case-folded or normalized (FA52). */
+  name: string;
+  /** In the input's order; one or more. A follow-on is another check. */
+  checks: InvestmentCheck[];
+}
+
+/** F33: a check, the fund's cost, a whole-fund amount with the GP commitment's part included, as a call is (F2). */
+export interface InvestmentCheck {
+  date: string;
   amount: D;
+}
+
+/** F33, F14, from 0.5.0: X's source, the investment it comes from and how much of what's left of it X sells. */
+export interface DistributionFrom {
+  investment: string;
+  /** 1 by default. */
+  share: D;
 }
 
 /**
@@ -105,7 +140,10 @@ export interface Lp {
 export interface Fund {
   asOf: string;
   terms: FundTerms;
-  /** In F4's order: by date, calls before distributions, distributions in the order listed. */
+  /**
+   * In F4's order, widened by F33: by date; on one date calls, then write-offs, then distributions; write-offs and
+   * distributions each in the order listed.
+   */
   cashFlows: CashFlow[];
   /** D, the date X is distributed on (F14): `distribution_date`, or `as_of` when it isn't given (FA11). */
   distributionDate: string;
@@ -114,4 +152,8 @@ export interface Fund {
   nav: D | null;
   /** The input's LPs in its order (F19); empty when it has none. */
   lps: Lp[];
+  /** F33, from 0.5.0: the input's investments in its order; empty when it has none. */
+  investments: Investment[];
+  /** F33, F14, from 0.5.0: X's source; null when the input doesn't give one. */
+  distributionFrom: DistributionFrom | null;
 }

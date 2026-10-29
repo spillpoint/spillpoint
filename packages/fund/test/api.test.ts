@@ -1,7 +1,7 @@
 // The fund package's exports, and the names of their fields, are deliberate: these lists change only on purpose. f01e's
 // naming review settled them for 0.1.0 (notes/review-f01e.md), f02b added the LPs' for 0.2.0 (notes/review-f02b.md),
-// f03b the classes' and later closes' for 0.3.0 (notes/review-f03b.md), and f04b the management fees' for 0.4.0
-// (notes/review-f04b.md).
+// f03b the classes' and later closes' for 0.3.0 (notes/review-f03b.md), f04b the management fees' for 0.4.0
+// (notes/review-f04b.md), and f05b1 the investments' for 0.5.0 (notes/review-f05b1.md).
 
 import { expect, it } from "vitest";
 
@@ -22,13 +22,13 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
   // Case 8 has a GP commitment and steps, case 6 a pref and a catch-up.
   const f8 = read("fund-08-carry-steps");
   const f6 = read("fund-06-full-catch-up");
-  expect(keys(f8)).toEqual(["asOf", "cashFlows", "distributionDate", "final", "lps", "nav", "terms"]);
-  expect(keys(f8.terms)).toEqual(["carry", "catchUp", "equalizationRate", "feeRate", "gpCommitment", "lpClasses", "managementFee", "pref"]);
+  expect(keys(f8)).toEqual(["asOf", "cashFlows", "distributionDate", "distributionFrom", "final", "investments", "lps", "nav", "terms"]);
+  expect(keys(f8.terms)).toEqual(["carry", "carryBasis", "catchUp", "equalizationRate", "feeRate", "gpCommitment", "lpClasses", "managementFee", "pref"]);
   expect(keys(f8.terms.carry[1]!)).toEqual(["fromLpMultiple", "rate"]);
   expect(keys(f8.terms.gpCommitment!)).toEqual(["paysExpenses", "paysFees", "share"]);
   expect(keys(f6.terms.pref!)).toEqual(["rate"]);
   expect(keys(f6.terms.catchUp!)).toEqual(["gpShare"]);
-  expect(keys(f8.cashFlows[0]!)).toEqual(["amount", "date", "index", "kind", "type"]);
+  expect(keys(f8.cashFlows[0]!)).toEqual(["amount", "date", "index", "investment", "kind", "share", "type"]);
   // From 0.2.0: the LPs, as the input lists them (F19).
   expect(f8.lps).toEqual([]);
   // From 0.3.0: each LP's class and close, null when absent, and the classes and the two rates (F22, F25).
@@ -48,6 +48,15 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
   expect([f30.frequency, f30.commitments]).toEqual(["semiannual", null]);
   // Case 31 gives no frequency: quarterly.
   expect(read("fund-31-fee-schedule-classes-closes").terms.managementFee!.frequency).toBe("quarterly");
+  // From 0.5.0: the carry basis, the whole fund filled in; the investments and X's source, none without them; each cash
+  // flow's investment and share, null on a call; a write-off's type, with no amount (F33, F34).
+  expect([f8.terms.carryBasis, f8.investments, f8.distributionFrom, f8.cashFlows[0]!.investment, f8.cashFlows[0]!.share]).toEqual(["whole_fund", [], null, null, null]);
+  const f34 = read("fund-34-deal-by-deal");
+  expect(f34.terms.carryBasis).toBe("deal_by_deal");
+  expect([keys(f34.investments[0]!), keys(f34.investments[0]!.checks[0]!), keys(f34.distributionFrom!)]).toEqual([["checks", "name"], ["amount", "date"], ["investment", "share"]]);
+  const exit = f34.cashFlows.find((f) => f.type === "distribution")!;
+  const writeOff = f34.cashFlows.find((f) => f.type === "write_off")!;
+  expect([exit.investment, exit.share!.toString(), writeOff.investment, writeOff.amount, writeOff.share, writeOff.kind]).toEqual(["Alder Robotics", "1", "Birch Health", null, null, null]);
 });
 
 it("names a split's fields as the naming review settled", () => {
