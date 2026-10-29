@@ -51,9 +51,11 @@ export function flowsFrom(fund: Fund): FlowsForm {
     distributionDate: fund.distributionDate === fund.asOf ? "" : fund.distributionDate,
     final: fund.final,
     nav: fund.nav ? exactDollars(fund.nav) : "",
+    // Until the page shows investments (f05c), a file with a write-off is refused before it's read (file.ts), so none
+    // reaches the form; a write-off has no amount (F33).
     rows: [...fund.cashFlows]
       .sort((a, b) => a.index - b.index)
-      .map((f) => ({ id: nextId++, date: f.date, type: f.type, kind: f.kind ?? "investment", amount: exactDollars(f.amount) })),
+      .flatMap((f) => (f.type === "write_off" ? [] : [{ id: nextId++, date: f.date, type: f.type, kind: f.kind ?? "investment", amount: exactDollars(f.amount!) }])),
   };
 }
 

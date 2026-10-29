@@ -81,7 +81,17 @@ const FILE = "file";
 const EDITED = "edited";
 
 /** A blank fund's terms: F9's 20% carry, flat, and nothing else, each to change on the Terms tab. */
-const BLANK_TERMS: FundTerms = { carry: [{ rate: new D("0.2"), fromLpMultiple: null }], pref: null, catchUp: null, gpCommitment: null, feeRate: null, equalizationRate: null, lpClasses: [], managementFee: null };
+const BLANK_TERMS: FundTerms = {
+  carry: [{ rate: new D("0.2"), fromLpMultiple: null }],
+  pref: null,
+  catchUp: null,
+  gpCommitment: null,
+  feeRate: null,
+  equalizationRate: null,
+  lpClasses: [],
+  managementFee: null,
+  carryBasis: "whole_fund",
+};
 
 function opened(id: string): Opened {
   const fresh = { problem: null, edited: false, top: { text: null, set: null, problem: null } };
@@ -534,7 +544,8 @@ function Tabs({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
 export function summaryText(fund: Fund, edited = false): string {
   const calls = fund.cashFlows.filter((f) => f.type === "call");
   const distributions = fund.cashFlows.filter((f) => f.type === "distribution");
-  const total = (flows: typeof calls) => flows.reduce((sum, f) => sum.plus(f.amount), new D(0));
+  // A call's and a distribution's amount is never null: only a write-off's is (F33).
+  const total = (flows: typeof calls) => flows.reduce((sum, f) => sum.plus(f.amount!), new D(0));
   // F30: a schedule's fee calls are calls the engine works out, so what's paid in counts them too.
   const scheduled = feeCalls(fund) ?? [];
   const paidIn = scheduled.reduce((sum, c) => sum.plus(c.call), total(calls));
