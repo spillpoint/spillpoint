@@ -1146,9 +1146,9 @@ class Deals(unittest.TestCase):
         # $440 more, so X's tier 1 ends at $440 and its text says what it is.
         m = deals()
         pot, due = earlier(m)
-        self.assertEqual((due, pot.lp_capital, pot.gp), ((600, 60), 660, 48))
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((600, 0, 60), 660, 48))
         out = m.evaluate(1000).by_account[0][1]
-        self.assertEqual((out.due, out.this.lp_capital, out.this.gp), ((1000, 100), 440, 112))
+        self.assertEqual((out.due, out.this.lp_capital, out.this.gp), ((1000, 0, 100), 440, 112))
         found = breakpoints.find(m)
         self.assertEqual(named(found), [("440.00", ["LPs have their $1,100 back for the investments exited or written off, fees and expenses included"])])
         self.assertEqual(found[0][1][0]["amount"], "1100")
@@ -1174,17 +1174,17 @@ class Deals(unittest.TestCase):
         a, b = m.fund.holdings
         self.assertEqual((a.realized, a.proceeds, b.realized, b.written_off, b.proceeds), (600, 950, 400, 400, 0))
         pot, due = earlier(m, 1)
-        self.assertEqual((due, pot.lp_capital, pot.gp), ((1000, 100), 50, 0))
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((1000, 0, 100), 50, 0))
         # X from B, written off, realizes nothing; what's due is still all of it, and $390 of it is still to come.
         out = m.evaluate(500).by_account[0][1]
-        self.assertEqual((out.due, out.this.lp_capital), ((1000, 100), 390))
+        self.assertEqual((out.due, out.this.lp_capital), ((1000, 0, 100), 390))
 
     def test_on_one_date_checks_then_write_offs_then_distributions(self):
         # F4, F33, FA50: B's write-off listed after A's exit on the same date still comes first, so the exit has all
         # $1,000 realized and all $1,100 due: the $900 is all capital. A check on the exit's date counts in the cost made.
         m = deals({"set": {"cash_flows[3]": write_off("2021-01-01", "B")}})
         pot, due = earlier(m)
-        self.assertEqual((due, pot.lp_capital, pot.gp), ((1000, 100), 900, 0))
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((1000, 0, 100), 900, 0))
         f = read(apply_change(DEALS, {"set": {"investments[1].checks[0].date": "2021-01-01"}}))
         self.assertEqual([(x.realized, x.made) for x in f.flows if x.type == "distribution"], [(600, 1000)])
 
@@ -1194,9 +1194,9 @@ class Deals(unittest.TestCase):
         # so no capital comes first and nothing is taken back: all $50 runs the carry tier, $10 of carry.
         m = deals({"set": {"investments[1].checks[0].date": "2021-06-01", "cash_flows[3]": dist_from("2022-01-01", "50", "A")}})
         pot, due = earlier(m)
-        self.assertEqual((due, pot.lp_capital), ((600, 100), 700))
+        self.assertEqual((due, pot.lp_capital), ((600, 0, 100), 700))
         pot, due = earlier(m, 1)
-        self.assertEqual((due, pot.lp_capital, pot.gp), ((600, 60), 0, 10))
+        self.assertEqual((due, pot.lp_capital, pot.gp), ((600, 0, 60), 0, 10))
 
     def test_each_account_its_own_due(self):
         # F35, F23: two LPs at $1 each, B in a class paying no fees and no carry. Each account's part of the cost
@@ -1206,9 +1206,9 @@ class Deals(unittest.TestCase):
         classes = [{"name": "F&F", "fee_rate": "0", "carry": "0"}]
         lps = [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "class": "F&F"}]
         m = deals({"set": {"terms.fee_rate": "0.02", "terms.lp_classes": classes, "lps": lps}})
-        self.assertEqual([earlier(m, 0, i)[1] for i in (0, 1)], [(300, 60), (300, 0)])
+        self.assertEqual([earlier(m, 0, i)[1] for i in (0, 1)], [(300, 0, 60), (300, 0, 0)])
         out = m.evaluate(0)
-        self.assertEqual([o.due for _, o in out.by_account], [(500, 100), (500, 0)])
+        self.assertEqual([o.due for _, o in out.by_account], [(500, 0, 100), (500, 0, 0)])
         self.assertEqual(named(breakpoints.find(m)), [
             ("400.00", ["F&F: LPs have their $500 back for the investments exited or written off, fees and expenses included"]),
             ("480.00", ["Fund terms: LPs have their $600 back for the investments exited or written off, fees and expenses included"]),
@@ -1218,26 +1218,26 @@ class Deals(unittest.TestCase):
         # F33, FA58: X selling half of B realizes $200 more, $800 of $1,000: $880 due. Final, or at the NAV point,
         # everything left is realized: $1,100.
         m = deals({"set": {"distribution_from.share": "0.5", "nav": "2000"}})
-        self.assertEqual(m.evaluate(0).by_account[0][1].due, (800, 80))
-        self.assertEqual(m.evaluate(0, final=True).by_account[0][1].due, (1000, 100))
+        self.assertEqual(m.evaluate(0).by_account[0][1].due, (800, 0, 80))
+        self.assertEqual(m.evaluate(0, final=True).by_account[0][1].due, (1000, 0, 100))
         self.assertEqual(codes(breakpoints.find(m)), [("220.00", ["capital_returned"])])
         # X's share is of what's left: with half of A sold at its exit, $300 realized, X selling half of A realizes $150
         # more, $450 in all.
         m = deals({"set": {"cash_flows[2].share": "0.5", "distribution_from": {"investment": "A", "share": "0.5"}}})
-        self.assertEqual(m.evaluate(0).by_account[0][1].due, (450, 45))
+        self.assertEqual(m.evaluate(0).by_account[0][1].due, (450, 0, 45))
 
     def test_a_fee_call_on_the_distributions_date_counts(self):
         # FA51, F4: calls come before distributions on one date, so a $50 fee call on the day of A's exit is in the fees
         # to date: 60% of $150, $90, beside the $600 of cost.
         m = deals({"set": {"cash_flows[3]": call("2021-01-01", "50", "fee")}})
-        self.assertEqual(earlier(m)[1], (600, 90))
+        self.assertEqual(earlier(m)[1], (600, 0, 90))
 
     def test_the_gp_commitments_part_of_the_cost_is_aside(self):
         # F35, FA60: with a 10% GP commitment, fee-free, the LPs' part of A's $600 is $540, whatever the GP commitment
         # pays of expenses; the $100 fee call is all the LPs'. With an expense call the GP commitment doesn't pay, all of
         # it is the LPs' too.
         m = deals({"set": {"terms.gp_commitment": {"share": "0.1", "pays_expenses": False}, "cash_flows[3]": call("2020-06-01", "50", "expense")}})
-        self.assertEqual(earlier(m)[1], (540, 90))
+        self.assertEqual(earlier(m)[1], (540, 0, 90))
 
     def test_the_end_is_the_whole_funds_entitlement(self):
         # F35: final, the GP's entitlement is the tiers on the fund's totals, as on the whole fund, so it keeps at most
@@ -1253,18 +1253,20 @@ class Deals(unittest.TestCase):
         self.assertEqual(codes(breakpoints.find(m)), [("200.00", ["clawback_changes"]), ("440.00", ["capital_returned", "clawback_cleared"])])
 
     def test_capital_called_and_not_invested_is_due_at_the_end(self):
-        # FA49: $1,000 called, only $800 invested. Final, all $1,000 of paid-in is due, the $200 never invested included:
-        # the fund ends and its unused cash comes back as capital, as on the whole fund. So X's tier 1 runs to $1,000, as
-        # the totals' run does, nothing is owed back at any X, and tier 1's end reads as the whole fund's. Before the
-        # end nothing changes: not final, what's due is the $800 realized with X.
+        # FA49: $1,000 called, only $800 invested. Final, all $1,000 of paid-in is due: the $800 of cost, and the $200
+        # never invested, due at the end only. The fund ends and its unused cash comes back as capital, as on the whole
+        # fund. So X's tier 1 runs to $1,000, as the totals' run does, nothing is owed back at any X, and tier 1's end
+        # reads as the whole fund's. Before the end nothing changes: not final, what's due is the $800 realized with X.
         inputs = {**DEALS, "investments": [{"name": "B", "checks": [{"date": "2020-01-01", "amount": "800"}]}], "cash_flows": [call("2020-01-01", "1000")]}
         m = Model(read({**inputs, "final": True}))
-        self.assertEqual(m.evaluate(0).by_account[0][1].due, (1000, 0))
+        self.assertEqual(m.evaluate(0).by_account[0][1].due, (800, 200, 0))
+        due = run_case({"case": "FA49", "xs": ["0"], "fund": {**inputs, "final": True}})["points"][0]["due"]
+        self.assertEqual({k: v["amount"] for k, v in due.items()}, {"cost_made": "800.00", "cost_realized": "800.00", "cost": "800.00", "uninvested": "200.00", "fees_and_expenses": "0.00", "total": "1000.00"})
         self.assertEqual([m.evaluate(x).clawback for x in (0, 800, 900, 1000, 2000)], [0, 0, 0, 0, 0])
         found = breakpoints.find(m)
         self.assertEqual(codes(found), [("1000.00", ["capital_returned"])])
         self.assertEqual(found[0][1][0]["text"], "LPs have their $1,000 of paid-in capital back")
-        self.assertEqual(Model(read(inputs)).evaluate(0).by_account[0][1].due, (800, 0))
+        self.assertEqual(Model(read(inputs)).evaluate(0).by_account[0][1].due, (800, 0, 0))
 
 
 class DealRefusals(unittest.TestCase):
@@ -1674,7 +1676,8 @@ class RandomFunds(unittest.TestCase):
                         ledger.call(fl.kind, fl.amount)
                         continue
                     pot, _ = ledger.distribute(fl.amount, fl.realized, fl.made)
-                    cost, fees_ = ledger.dues[-1]
+                    cost, uninvested, fees_ = ledger.dues[-1]
+                    self.assertEqual(uninvested, 0, (i, inputs))
                     self.assertEqual(pot.lp_capital, min(fl.amount, max(F(0), cost + fees_ - back)), (i, inputs))
                     seen["due below what's back"] += cost + fees_ < back
                     back += pot.lp_capital

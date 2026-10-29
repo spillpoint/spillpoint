@@ -74,6 +74,8 @@ interface Due {
   cost_made?: LpAmount;
   cost_realized?: LpAmount;
   cost: LpAmount;
+  /** FA49: at the end only, and only when there is some: the capital called for investments and never invested. */
+  uninvested?: LpAmount;
   fees_and_expenses: LpAmount;
   total: LpAmount;
 }
@@ -755,18 +757,22 @@ describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
   it("is the LPs' part of the cost realized, and their fees and expenses times realized over made, each account's own (F35)", () => {
     for (const p of expected.points) {
       const realized = exact(p.due!.cost_realized!.exact);
-      // FA49: at the end, a final X and the NAV point, the cost is the LPs' part of the investment calls, capital called
-      // and never invested included, and the fees and expenses are all of them.
+      // FA49: at the end, a final X and the NAV point, everything made is realized, so the cost is the LPs' part of the
+      // cost made, and the fees and expenses are all of them; beside them, the capital called for investments and never
+      // invested, given only when there is some.
       const end = expected.final || p.tags.includes("nav");
       const parts = p.by_account?.map((a) => a.due!) ?? [p.due!];
       parts.forEach((due, i) => {
         const share = exact(accounts[i]!.share);
         const cost = exact(due.cost.exact);
-        expect(near(cost, end ? invested.times(share) : new D(1).minus(g).times(share).times(realized)), `${p.x} ${i} cost`).toBe(true);
+        expect(near(cost, new D(1).minus(g).times(share).times(realized)), `${p.x} ${i} cost`).toBe(true);
+        const uninvested = due.uninvested ? exact(due.uninvested.exact) : new D(0);
+        expect(due.uninvested === undefined || (end && uninvested.gt(0)), `${p.x} ${i} uninvested only at the end, only when there is some`).toBe(true);
+        if (end) expect(near(uninvested, invested.times(share).minus(cost)), `${p.x} ${i} uninvested`).toBe(true);
         // Its fees and expenses to D are its paid-in less its part of the investment calls (F5, F23).
         const fees = new D(accounts[i]!.paid_in).minus(invested.times(share));
         expect(near(exact(due.fees_and_expenses.exact), end ? fees : fees.times(realized).div(made)), `${p.x} ${i} fees`).toBe(true);
-        expect(near(exact(due.total.exact), cost.plus(exact(due.fees_and_expenses.exact))), `${p.x} ${i} total`).toBe(true);
+        expect(near(exact(due.total.exact), cost.plus(uninvested).plus(exact(due.fees_and_expenses.exact))), `${p.x} ${i} total`).toBe(true);
       });
       for (const k of ["cost", "fees_and_expenses", "total"] as const) {
         expect(near(parts.reduce((s, a) => s.plus(exact(a[k].exact)), new D(0)), exact(p.due![k].exact)), `${p.x} ${k}`).toBe(true);

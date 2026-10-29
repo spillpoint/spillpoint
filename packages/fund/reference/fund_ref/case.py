@@ -86,10 +86,15 @@ def _clawback(carry_paid, entitlement, owed):
     return {"carry_paid": money(carry_paid), "entitlement": money(entitlement), "owed": money(owed)}
 
 
-def _due(cost, fees):
-    """F35, F36, FC15: what's due before carry on X: the LPs' part of the cost realized, their fees and expenses times the
-    share realized, and the two together."""
-    return {"cost": _lp_amount(cost), "fees_and_expenses": _lp_amount(fees), "total": _lp_amount(cost + fees)}
+def _due(cost, uninvested, fees):
+    """F35, F36, FC15: what's due before carry on X: the LPs' part of the cost realized; at the end, the capital called
+    for investments and never invested, given only when there is some (FA49); their fees and expenses times the share
+    realized; and all of it together."""
+    out = {"cost": _lp_amount(cost)}
+    if uninvested:
+        out["uninvested"] = _lp_amount(uninvested)
+    out.update({"fees_and_expenses": _lp_amount(fees), "total": _lp_amount(cost + uninvested + fees)})
+    return out
 
 
 def _by_account(outs, final):
@@ -134,9 +139,8 @@ def _point(model, x, tags):
     if fund.deal_by_deal:
         # F36, FC15: what's due before carry on X, the accounts' sums, beside the cost made and realized with X's.
         realized = model.accounts[0].run.x_realized(final)
-        cost = sum((o.due[0] for _, o in out.by_account), Fraction(0))
-        fees = sum((o.due[1] for _, o in out.by_account), Fraction(0))
-        entry["due"] = {"cost_made": _lp_amount(fund.made_at_d), "cost_realized": _lp_amount(realized), **_due(cost, fees)}
+        parts = [sum((o.due[k] for _, o in out.by_account), Fraction(0)) for k in range(3)]
+        entry["due"] = {"cost_made": _lp_amount(fund.made_at_d), "cost_realized": _lp_amount(realized), **_due(*parts)}
     entry["distribution"] = _fund_block(model, out.by_account, "this", x, out.gp_commitment)
     entry["to_date"] = _fund_block(model, out.by_account, "to_date", out.distributed, out.gp_commitment_to_date)
     if final:
