@@ -94,3 +94,44 @@ export function randomClasses(rand: () => number, input: Record<string, unknown>
   }
   return { ...input, terms, lps };
 }
+
+/**
+ * The same fund with investments, carry deal by deal (F33 to F35): no pref or catch-up (F37), one to four investments
+ * funded by the investment calls, each call's checks on its date (all of it, or 80% or half), so the cost made never runs
+ * ahead of the calls and sometimes falls short of them (FA49). Each distribution names an investment already made, with
+ * a share of what's left (all, a half, a quarter or a third); some become write-offs. X comes from one of them.
+ */
+export function randomDeals(rand: () => number, input: Record<string, unknown>): Record<string, unknown> {
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)]!;
+  const { pref: _pref, catch_up: _catchUp, ...rest } = input.terms as Record<string, unknown>;
+  const terms = { ...rest, carry_basis: "deal_by_deal" };
+  const names = ["Alder", "Birch", "Cedar", "Dogwood"].slice(0, 1 + Math.floor(rand() * 4));
+  const checks = new Map<string, { date: string; amount: string }[]>();
+  const flows = (input.cash_flows as Record<string, string>[]).map((f) => ({ ...f }));
+  for (const f of flows.filter((f) => f.type === "call" && f.kind === "investment")) {
+    // Amounts are multiples of $50,000, so 80% and halves of halves stay whole dollars.
+    const spent = Number(f.amount) * pick([1, 1, 0.8, 0.5]);
+    const parts = rand() < 0.5 ? [spent] : [spent / 2, spent / 2];
+    for (const amount of parts) {
+      const name = pick(names);
+      checks.set(name, [...(checks.get(name) ?? []), { date: f.date!, amount: String(amount) }]);
+    }
+  }
+  const investments = names.filter((n) => checks.has(n)).map((name) => ({ name, checks: checks.get(name)! }));
+  const firstCheck = (name: string) => checks.get(name)![0]!.date;
+  for (const f of flows.filter((f) => f.type === "distribution")) {
+    const made = investments.filter((i) => firstCheck(i.name) <= f.date!);
+    const from = pick(made).name;
+    if (rand() < 0.15) {
+      delete f.amount;
+      Object.assign(f, { type: "write_off", investment: from });
+    } else {
+      Object.assign(f, { investment: from });
+      const share = pick(["1", "1", "0.5", "0.25", "1/3"]);
+      if (share !== "1") f.share = share;
+    }
+  }
+  const from: Record<string, string> = { investment: pick(investments).name };
+  if (rand() < 0.4) from.share = pick(["0.5", "0.25"]);
+  return { ...input, terms, investments, cash_flows: flows, distribution_from: from };
+}

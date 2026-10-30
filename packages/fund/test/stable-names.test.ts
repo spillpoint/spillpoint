@@ -56,6 +56,7 @@ describe("the README's \"Stable from 0.1.0\", which the package carries since ST
     const examples = ["$10,890,000", "$4,004,383.56", "8%", "7.5%", "3.0x", "2.25x"];
     const engine = new Set([
       WORDINGS.capital_returned("{amount}"),
+      WORDINGS.capital_returned_deal_by_deal("{amount}"),
       WORDINGS.pref_met("{rate}", "{amount}"),
       WORDINGS.catch_up_done("{carry}"),
       WORDINGS.carry_step("{multiple}", "{rate}"),
@@ -91,6 +92,7 @@ describe("STABLE.md", () => {
     const quoted = [...section("The wordings").matchAll(/^- `[a-z_]+`[^"]*: "([^"]+)"$/gm)].map((m) => m[1]!);
     expect(quoted).toEqual([
       WORDINGS.capital_returned("{amount}"),
+      WORDINGS.capital_returned_deal_by_deal("{amount}"),
       WORDINGS.pref_met("{rate}", "{amount}"),
       WORDINGS.catch_up_done("{carry}"),
       WORDINGS.carry_step("{multiple}", "{rate}"),
@@ -139,7 +141,7 @@ describe("the engine gives only what STABLE.md lists", () => {
   const change = `(?:${CLAWBACK_CHANGES.map((c) => escape(CHANGE_WORDS[c])).join("|")})`;
   const tier = `(?:${[TOTALS_WORDINGS.capital_returned(), TOTALS_WORDINGS.pref_met(), TOTALS_WORDINGS.catch_up_done("{carry}"), TOTALS_WORDINGS.carry_step("{multiple}", "{rate}")].map(fill).join("|")})`;
   const TEXT: Record<Reason["code"], RegExp[]> = {
-    capital_returned: [new RegExp(`^${fill(WORDINGS.capital_returned("{amount}"))}$`)],
+    capital_returned: [new RegExp(`^${fill(WORDINGS.capital_returned("{amount}"))}$`), new RegExp(`^${fill(WORDINGS.capital_returned_deal_by_deal("{amount}"))}$`)],
     pref_met: [new RegExp(`^${fill(WORDINGS.pref_met("{rate}", "{amount}"))}$`)],
     catch_up_done: [new RegExp(`^${fill(WORDINGS.catch_up_done("{carry}"))}$`)],
     carry_step: [new RegExp(`^${fill(WORDINGS.carry_step("{multiple}", "{rate}"))}$`)],

@@ -440,13 +440,15 @@ The checks run in a fixed order, and the first problem is the one refused.
   - `lpMultiple`, the LPs' net multiple to date
   - `clawback`, when final: `carryPaid`, `entitlement`, `owed`, `prefOnFundTotals`
   - `byLp`, from 0.2.0, each LP's amounts in the input's order (empty without LPs): `name`, `commitment`, `share`, `paidIn`, `distribution` (its share of the LPs' total from X), `toDate`, and `clawback` (its share of what's owed back, null when not final). From 0.3.0 also its `class` and `close`; its `share` is still its commitment over all the LPs', and its amounts are its part of its class's account's, by commitment.
-  - `byAccount`, from 0.3.0, with two or more accounts (empty otherwise): each class's account, the fund's terms first, with its `class` (null for the fund's terms), `distribution` and `toDate` by tier with its own steps, `paidIn`, `prefAccrued`, `lpMultiple` (null when it has nothing paid in), and `clawback` when final. The split's own amounts are the accounts' sums, and its carry by step lists every account's steps, each step with its `class`.
+  - `byAccount`, from 0.3.0, with two or more accounts (empty otherwise): each class's account, the fund's terms first, with its `class` (null for the fund's terms), `distribution` and `toDate` by tier with its own steps, `paidIn`, `prefAccrued`, `lpMultiple` (null when it has nothing paid in), and `clawback` when final. The split's own amounts are the accounts' sums, and its carry by step lists every account's steps, each step with its `class`. From 0.5.0 each account also has its own `due`, as the split's below without `costMade` and `costRealized`.
+  - `due`, from 0.5.0, deal by deal (null on the whole fund): what's due before carry on X, a `Due`: `costMade` and `costRealized`, whole-fund, X's realization included (everything, when final); the LPs' part of the cost realized, `cost`; at the end only, `uninvested`, their capital called for investments and never invested (zero before the end, and exactly zero at the end when all of it was invested); `feesAndExpenses`, their fees and expenses to date times the cost realized over the cost made (all of them at the end); and `total`, the three together (within rounding in the last of 40 digits), exactly their paid-in at the end. X's tier 1 runs until the LPs' capital back reaches `total`.
 
   `final` overrides the fund's own for this X.
 - **`splitAtNav(fund)`:** the split at NAV as if the fund were liquidated there, final, with its clawback; null without a NAV.
-- **`findBreakpoints(fund)`:** every breakpoint in order, each `{ x, reasons }`. From 0.3.0 each reason has the `class` of the account it's about, and with two or more accounts its text starts with that account's name.
+- **`findBreakpoints(fund)`:** every breakpoint in order, each `{ x, reasons }`. From 0.3.0 each reason has the `class` of the account it's about, and with two or more accounts its text starts with that account's name. From 0.5.0, deal by deal, `capital_returned`'s `amount` is the account's due on X, its paid-in when X is final.
 - **`equalization(fund)`,** from 0.3.0: what moves between LPs at the fund's later closes, or null when no LP joins at one. It gives the `rate`; each close in date order, its `date`, the names `joining`, and every LP in by then; and each LP over all of them. Each LP's amounts are its `capitalPaid` at its close, `capitalReturned` at later ones, `interestPaid` and `interestReceived`, and from 0.4.0 its `backFees`, its own part of the fee calls before its close, paid to the manager. From 0.4.0 the `rate` is null when none is given, as only fee calls before the later closes allow.
 - **`feeCalls(fund)`,** from 0.4.0: the management fee schedule's calls in date order, or null without a schedule. Each has its `date`, the `firstDay` and `lastDay` it covers, the `call`, the LPs' part (`lps`), the GP commitment's (`gpCommitment`, zero when it doesn't pay fees), and `byLp`, each listed LP's `name` and `fee` (empty without listed LPs).
+- **`portfolio(fund)`,** from 0.5.0: the investments table, each investment at D before X in the input's order, on either basis, or empty without investments. Each has its `name`, `costMade`, `costRealized` (exited or written off), `costWrittenOff`, `proceeds`, and `realizedMultiple`, its proceeds over its cost realized (null while nothing of it is realized).
 - **`toCents(amount)`:** an amount as a string to the cent, rounded half away from zero.
 - **`D`:** the 40-digit decimal class every amount is.
 - **`FundRefusal`:** what the engine throws: `kind`, `term`, `path`.
@@ -515,7 +517,7 @@ What a breakpoint's reason is about. From 0.3.0 every reason's `class` is the ac
 ### The wordings
 
 Each reason's `text` is one of these, an amount written as "$10,890,000" or "$4,004,383.56", a rate as "8%" or "7.5%", and a multiple as "3.0x" or "2.25x":
-- `capital_returned`: "LPs have their {amount} of paid-in capital back"
+- `capital_returned`: "LPs have their {amount} of paid-in capital back". From 0.5.0, deal by deal when X isn't final, "LPs have their {amount} back for the investments exited or written off, fees and expenses included", the amount what's due on X.
 - `pref_met`: "LPs have their {rate} pref, {amount}"
 - `catch_up_done`: "the GP has {carry} of the profit"
 - `carry_step`: "LPs reach {multiple}: carry is {rate} from here"

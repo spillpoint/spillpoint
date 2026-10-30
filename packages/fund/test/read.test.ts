@@ -521,6 +521,28 @@ describe("investments and carry deal by deal (F33, F34, F37, FA52 to FA56)", () 
     expect(refused({ set: { ...late, "cash_flows[3]": call("2020-06-02", "100") } })).toEqual(input("investments_exceed_calls", "investments[1].checks[0].amount"));
   });
 
+  it("adds up the checks and the calls exactly as the input writes them, fractions and all (F37, FA41, FA53)", () => {
+    // Jordan's fund (f05b2 review): checks of 11000038/11, 1760006/11 and $840,003 come to exactly the $2,000,007 called.
+    // Added at 40 digits, the first two land a hair above 1,160,004, and the three run past the call.
+    const exactlyCalled = {
+      as_of: "2020-06-30",
+      terms: { carry_basis: "deal_by_deal" },
+      investments: [
+        { name: "A", checks: [{ date: "2018-01-01", amount: "11000038/11" }] },
+        { name: "B", checks: [{ date: "2018-02-01", amount: "1760006/11" }] },
+        { name: "C", checks: [{ date: "2018-03-01", amount: "840003" }] },
+      ],
+      cash_flows: [call("2018-01-01", "2000007")],
+      distribution_from: { investment: "A" },
+    };
+    const fund = readFund(exactlyCalled);
+    expect(fund.investments.reduce((t, i) => t.plus(i.checks[0]!.amount), new D(0)).gt("2000007")).toBe(true);
+    // A cent's millionth more than the calls is still refused, at the check that runs past them.
+    expect(refused({ set: { "investments[2].checks[0].amount": "840003.00000001" } }, exactlyCalled)).toEqual(input("investments_exceed_calls", "investments[2].checks[0].amount"));
+    // A call written as a fraction is exact too: 1760006/11 called for B's check alone.
+    read({ set: { "cash_flows[0]": call("2018-01-01", "1760006/11"), investments: [{ name: "B", checks: [{ date: "2018-02-01", amount: "1760006/11" }] }], "distribution_from.investment": "B" } }, exactlyCalled);
+  });
+
   it("refuses any pref deal by deal, whatever its shape, last in stage 1 (FA54)", () => {
     const unsupported = { kind: "unsupported", term: "deal_by_deal_pref", field: "terms.pref" };
     for (const pref of [{ rate: "0.08" }, "0.08", {}]) expect(refused({ set: { "terms.pref": pref } })).toEqual(unsupported);
@@ -568,16 +590,14 @@ describe("investments and carry deal by deal (F33, F34, F37, FA52 to FA56)", () 
     expect(refused({ set: { "cash_flows[3]": writeOff("2019-12-31", "B") } })).toEqual(input("investment_not_made", "cash_flows[3]"));
   });
 
-  it("holds a fund deal by deal back from the split until f05b2, and splits one on the whole fund as if it had no investments", () => {
-    const fund = read();
-    expect(() => splitAt(fund, "100")).toThrow("carry deal by deal is read, but not split until the next step (f05b2)");
-    expect(() => findBreakpoints(fund)).toThrow("not split until the next step (f05b2)");
+  it("splits one on the whole fund as if it had no investments, with nothing due (F34)", () => {
     // F34: on the whole fund the investments, the tags and the write-offs change no amount.
     const whole = read({ set: { "terms.carry_basis": "whole_fund", "cash_flows[3]": writeOff("2022-01-01", "B"), final: true } });
     const bare = read({ set: { "terms.carry_basis": null, "cash_flows[2].investment": null, final: true }, del: ["investments", "distribution_from"] });
     for (const x of ["0", "200", "1000", "5000"]) {
       const [a, b] = [splitAt(whole, x), splitAt(bare, x)];
       expect(JSON.stringify([a.distribution, a.toDate, a.clawback, a.lpsPaidIn]), x).toBe(JSON.stringify([b.distribution, b.toDate, b.clawback, b.lpsPaidIn]));
+      expect([a.due, b.due], x).toEqual([null, null]);
     }
     expect(findBreakpoints(whole)).toEqual(findBreakpoints(bare));
   });

@@ -24,6 +24,14 @@
 // by the joiners' back fees, and each account's part is its LPs' fee weights
 // times the call's rate per unit of weight (FA43).
 //
+// From 0.5.0 a fund can pay carry deal by deal (F34, F35). Then tier 1 at each
+// distribution runs only until the LPs' capital back to date reaches what's due
+// on the investments realized so far (portfolio.ts): their cost, the LPs' part,
+// and the LPs' fees and expenses to date times the share of the cost made that's
+// realized. Each account's due is its own. Everything else runs as on the whole
+// fund, and at the end, X final or the NAV point, everything paid in is due, so
+// the clawback is F12's and F24's as before.
+//
 // Amounts are decimal.js at 40 digits throughout; nothing is rounded here.
 
 import { D, ONE, ZERO, exactOrNull } from "./decimal.ts";
@@ -33,6 +41,8 @@ import { gpCommitmentPart, runFlows } from "./fees.ts";
 import type { RunFlow } from "./fees.ts";
 import { callWeight, wasRead } from "./input.ts";
 import type { CarryStep, Fund, Lp } from "./model.ts";
+import { realizedAt, realizedByX } from "./portfolio.ts";
+import type { Realized } from "./portfolio.ts";
 
 /** One carry step's part of a split (F16): the GP's carry at this rate, and the LPs' share of the carry tier beside it. */
 export interface StepCarry {
@@ -83,6 +93,34 @@ export interface Clawback {
 }
 
 /**
+ * F35, F36, from 0.5.0: what's due before carry on X, deal by deal: one account's own. Its LPs' part of the cost
+ * realized, by commitment (FA60); at the end, X final or the NAV point, its capital called for investments and never
+ * invested (FA49); and its fees and expenses to date times realized over made, all of them at the end (FA51).
+ */
+export interface AccountDue {
+  /** The LPs' part of the cost realized: (1 − g) of it, by commitment. At the end, of the cost made. */
+  cost: D;
+  /** At the end, the LPs' part of the capital called for investments and never invested; zero before the end. */
+  uninvested: D;
+  /** The LPs' fees and expenses to date, their own (F29), times the cost realized over the cost made; all at the end. */
+  feesAndExpenses: D;
+  /** `cost` + `uninvested` + `feesAndExpenses`: tier 1 runs until the LPs' capital back to date reaches it. At the end, their paid-in. */
+  total: D;
+}
+
+/** F36: the fund's due on X, deal by deal: the accounts' sums, beside the fund's cost made and realized. */
+export interface Due {
+  /** Every check to D, whole-fund. */
+  costMade: D;
+  /** Exited or written off, whole-fund, X's realization included: at the end, everything (FA58). */
+  costRealized: D;
+  cost: D;
+  uninvested: D;
+  feesAndExpenses: D;
+  total: D;
+}
+
+/**
  * One LP's amounts in a split (F20): its part of its account's paid-in, of its total from X and to date, and of the
  * clawback owed back to the account (F23, F24). Within an account its LPs share by commitment, so these bend exactly
  * where its account's do.
@@ -122,6 +160,8 @@ export interface AccountSplit {
   lpMultiple: D | null;
   /** F24: its own clawback, when X is final or at the NAV point; null otherwise. */
   clawback: Clawback | null;
+  /** F35, F36, from 0.5.0: deal by deal, its own due before carry on X; null on the whole fund. */
+  due: AccountDue | null;
 }
 
 export interface Split {
@@ -142,6 +182,8 @@ export interface Split {
   lpMultiple: D;
   /** Null unless X is final or at the NAV point. */
   clawback: Clawback | null;
+  /** F35, F36, from 0.5.0: deal by deal, what's due before carry on X; null on the whole fund. */
+  due: Due | null;
   /** Each LP's amounts, in the input's order (F20); empty when the fund has no LPs. */
   byLp: LpAmounts[];
   /** Each account's own split, the fund's terms first (F26), with two or more accounts; empty otherwise. */
@@ -371,6 +413,8 @@ interface Ledger {
   hurdleDays: D;
   /** Everything that has run the account's tiers: its part of each distribution, after the GP commitment's share. */
   throughTiers: D;
+  /** F35, FA51: its part of every fee and expense call, as the waterfall counts them, in its paid-in. */
+  feesAndExpenses: D;
   toDate: Tiers;
 }
 
@@ -381,6 +425,8 @@ interface FundLedger {
   /** Every distribution to date, and the GP commitment's share of each, summed distribution by distribution. */
   distributed: D;
   gpCommitmentDistributed: D;
+  /** F35, FA49: the LPs' part of every investment call to date, whole-fund. */
+  lpsInvestmentCalls: D;
 }
 
 function prefOn(terms: RunTerms, balanceDays: D): D {
@@ -392,10 +438,14 @@ function gpCommitmentShare(fund: Fund, amount: D): D {
   return (fund.terms.gpCommitment?.share ?? ZERO).times(amount);
 }
 
-/** Where the account's next run of the tiers starts, from its running balances. */
-function startOf(terms: RunTerms, ledger: Ledger): Start {
+/**
+ * Where the account's next run of the tiers starts, from its running balances. F5: tier 1 is all its paid-in not yet
+ * back. F35, deal by deal: only what's due not yet back, and when what's due is less than what's back already, nothing,
+ * with nothing already returned taken back.
+ */
+function startOf(terms: RunTerms, ledger: Ledger, due: AccountDue | null): Start {
   return {
-    capitalDue: ledger.lpsPaidIn.minus(ledger.capitalReturned),
+    capitalDue: due ? D.max(ZERO, due.total.minus(ledger.capitalReturned)) : ledger.lpsPaidIn.minus(ledger.capitalReturned),
     prefDue: prefOn(terms, ledger.unreturnedDays).minus(ledger.prefPaid),
     lps: ledger.toDate.lps.total,
     gp: ledger.toDate.gp.total,
@@ -415,8 +465,53 @@ function after(ledger: Ledger, tiers: Tiers): Ledger {
 }
 
 /** F23: the account's part of a distribution's LPs' part, down its own tiers from where it stands. */
-function distribute(account: Account, ledger: Ledger, lpsPart: D): Tiers {
-  return runTiers(account.terms, distributionPart(account, lpsPart), startOf(account.terms, ledger));
+function distribute(account: Account, ledger: Ledger, lpsPart: D, due: AccountDue | null): Tiers {
+  return runTiers(account.terms, distributionPart(account, lpsPart), startOf(account.terms, ledger, due));
+}
+
+/** F34: carry deal by deal. A fund built by hand without 0.5.0's `carryBasis` is on the whole fund (FA61). */
+function dealByDeal(fund: Fund): boolean {
+  return fund.terms.carryBasis === "deal_by_deal";
+}
+
+/**
+ * FA60: the LPs' part of the cost is (1 − g) of every check, whatever the GP commitment pays of fees and expenses; an
+ * account's part of that by commitment (F23).
+ */
+function lpsCost(fund: Fund, account: Account, cost: D): D {
+  return distributionPart(account, ONE.minus(fund.terms.gpCommitment?.share ?? ZERO).times(cost));
+}
+
+/** F35: one account's due before carry, with the fund's cost made and realized at that moment, its balances as they stand. */
+function accountDue(fund: Fund, account: Account, ledger: Ledger, at: Realized): AccountDue {
+  const cost = lpsCost(fund, account, at.realized);
+  // F35, FA51: fees and expenses to date, the account's own, times realized over made, by cost: multiplied first. With
+  // nothing made, in a fund built by hand that readFund would refuse, nothing is realized either (FA62).
+  const feesAndExpenses = at.made.isZero() ? ZERO : ledger.feesAndExpenses.times(at.realized).div(at.made);
+  return { cost, uninvested: ZERO, feesAndExpenses, total: cost.plus(feesAndExpenses) };
+}
+
+/**
+ * FA49: at the end, X final or the NAV point, the fund ends, so all an account's paid-in is due: the cost made (FA58),
+ * all its fees and expenses, and its capital called for investments and never invested, which comes back as capital,
+ * as on the whole fund. That last is its part of the LPs' investment calls less their part of the cost made, worked
+ * out once, so it's exactly zero when every dollar called was invested; `total` is exactly the paid-in, and the three
+ * add up to it within FA15.
+ */
+function accountDueAtEnd(fund: Fund, account: Account, ledger: Ledger, at: Realized, lpsInvestmentCalls: D): AccountDue {
+  const g = fund.terms.gpCommitment?.share ?? ZERO;
+  const uninvested = distributionPart(account, lpsInvestmentCalls.minus(ONE.minus(g).times(at.made)));
+  return { cost: lpsCost(fund, account, at.made), uninvested, feesAndExpenses: ledger.feesAndExpenses, total: ledger.lpsPaidIn };
+}
+
+/** F35: each account's due on X, deal by deal, from where it stands at D; null on the whole fund. */
+function duesOnX(fund: Fund, final: boolean): AccountDue[] | null {
+  if (!dealByDeal(fund)) return null;
+  const at = realizedByX(fund, final);
+  const ledger = ledgerAtD(fund);
+  return accountsOf(fund).map((account, i) =>
+    final ? accountDueAtEnd(fund, account, ledger.accounts[i]!, at, ledger.lpsInvestmentCalls) : accountDue(fund, account, ledger.accounts[i]!, at),
+  );
 }
 
 const ledgers = new WeakMap<Fund, FundLedger>();
@@ -429,11 +524,8 @@ const ledgers = new WeakMap<Fund, FundLedger>();
 function ledgerAtD(fund: Fund): FundLedger {
   const known = ledgers.get(fund);
   if (known) return known;
-  // F35: tier 1 deal by deal runs only to what's due on the investments realized so far, which f05b2 builds. Until then
-  // a fund read as deal by deal isn't split on the whole fund without saying so: the split stops here. Nothing is
-  // published between f05b1 and f05b2, and the page refuses such a file before the engine sees it.
-  if (fund.terms.carryBasis === "deal_by_deal") throw new Error("spillpoint-fund: carry deal by deal is read, but not split until the next step (f05b2)");
   const accounts = accountsOf(fund);
+  const deals = dealByDeal(fund);
   let books: Ledger[] = accounts.map((a) => ({
     lpsPaidIn: ZERO,
     capitalReturned: ZERO,
@@ -441,11 +533,13 @@ function ledgerAtD(fund: Fund): FundLedger {
     unreturnedDays: ZERO,
     hurdleDays: ZERO,
     throughTiers: ZERO,
+    feesAndExpenses: ZERO,
     toDate: emptyTiers(a.terms),
   }));
   let gpCommitmentPaidIn = ZERO;
   let distributed = ZERO;
   let gpCommitmentDistributed = ZERO;
+  let lpsInvestmentCalls = ZERO;
   let day: number | null = null;
   const advance = (to: number) => {
     if (day !== null && to > day) {
@@ -462,16 +556,24 @@ function ledgerAtD(fund: Fund): FundLedger {
     advance(flow.day);
     if (flow.type === "call") {
       gpCommitmentPaidIn = gpCommitmentPaidIn.plus(flow.gpCommitment);
-      books = books.map((b, i) => ({ ...b, lpsPaidIn: b.lpsPaidIn.plus(callPart(accounts[i]!, flow)) }));
+      if (flow.kind === "investment") lpsInvestmentCalls = lpsInvestmentCalls.plus(flow.lps);
+      books = books.map((b, i) => {
+        const part = callPart(accounts[i]!, flow);
+        // F35, FA51: fee and expense calls, a schedule's among them, are the fees and expenses in what's due.
+        return { ...b, lpsPaidIn: b.lpsPaidIn.plus(part), feesAndExpenses: flow.kind === "investment" ? b.feesAndExpenses : b.feesAndExpenses.plus(part) };
+      });
     } else {
       const gpc = gpCommitmentShare(fund, flow.amount);
       distributed = distributed.plus(flow.amount);
       gpCommitmentDistributed = gpCommitmentDistributed.plus(gpc);
-      books = books.map((b, i) => after(b, distribute(accounts[i]!, b, flow.amount.minus(gpc))));
+      // F35, FA50: deal by deal, what's due by this distribution, its own realization included. Never the end's: the
+      // fund ends only with X (FA49).
+      const at = deals ? realizedAt(fund, flow.index!) : null;
+      books = books.map((b, i) => after(b, distribute(accounts[i]!, b, flow.amount.minus(gpc), at && accountDue(fund, accounts[i]!, b, at))));
     }
   }
   advance(dayNumber(fund.distributionDate)!);
-  const ledger: FundLedger = { accounts: books, gpCommitmentPaidIn, distributed, gpCommitmentDistributed };
+  const ledger: FundLedger = { accounts: books, gpCommitmentPaidIn, distributed, gpCommitmentDistributed, lpsInvestmentCalls };
   if (wasRead(fund)) ledgers.set(fund, ledger);
   return ledger;
 }
@@ -490,18 +592,23 @@ export interface StandingAtD {
   prefAccrued: D;
   /** F12's pref, on the hurdle balance: the totals' run's pref tier. */
   prefOnFundTotals: D;
+  /** F35, deal by deal: its due on X, the fund's own X final or not; null on the whole fund. `capital_returned` names it (FA57). */
+  due: AccountDue | null;
 }
 
 export function standingsAtD(fund: Fund): StandingAtD[] {
   const ledger = ledgerAtD(fund);
+  const dues = duesOnX(fund, fund.final);
   return accountsOf(fund).map((account, i) => {
     const book = ledger.accounts[i]!;
+    const due = dues && dues[i]!;
     return {
       account,
-      start: startOf(account.terms, book),
+      start: startOf(account.terms, book, due),
       throughTiers: book.throughTiers,
       prefAccrued: prefOn(account.terms, book.unreturnedDays),
       prefOnFundTotals: prefOn(account.terms, book.hurdleDays),
+      due,
     };
   });
 }
@@ -539,14 +646,20 @@ interface AccountRun {
   paidIn: D;
   prefAccrued: D;
   clawback: Clawback | null;
+  due: AccountDue | null;
 }
 
-/** F23, F24: X's LPs' part down each account's tiers, and, when final, each account's clawback on its own totals. */
+/**
+ * F23, F24: X's LPs' part down each account's tiers, and, when final, each account's clawback on its own totals. Deal
+ * by deal, X's tier 1 runs to its due on X (F35); when final, that's all its paid-in, so its clawback is F12's.
+ */
 export function runAccounts(fund: Fund, lpsPart: D, final: boolean): AccountRun[] {
   const ledger = ledgerAtD(fund);
+  const dues = duesOnX(fund, final);
   return accountsOf(fund).map((account, i) => {
     const book = ledger.accounts[i]!;
-    const distribution = distribute(account, book, lpsPart);
+    const due = dues && dues[i]!;
+    const distribution = distribute(account, book, lpsPart, due);
     const now = after(book, distribution);
     let clawback: Clawback | null = null;
     if (final) {
@@ -568,7 +681,7 @@ export function runAccounts(fund: Fund, lpsPart: D, final: boolean): AccountRun[
         prefOnFundTotals: account.terms.pref ? prefOn(account.terms, now.hurdleDays) : null,
       };
     }
-    return { distribution, toDate: now.toDate, paidIn: now.lpsPaidIn, prefAccrued: prefOn(account.terms, book.unreturnedDays), clawback };
+    return { distribution, toDate: now.toDate, paidIn: now.lpsPaidIn, prefAccrued: prefOn(account.terms, book.unreturnedDays), clawback, due };
   });
 }
 
@@ -582,6 +695,21 @@ function fundClawback(fund: Fund, runs: AccountRun[]): Clawback | null {
     entitlement: total((c) => c.entitlement),
     owed: total((c) => c.owed),
     prefOnFundTotals: fund.terms.pref ? total((c) => c.prefOnFundTotals!) : null,
+  };
+}
+
+/** F36: the fund's due on X, deal by deal, its accounts' summed; null on the whole fund. */
+function fundDue(fund: Fund, runs: AccountRun[], final: boolean): Due | null {
+  if (runs.some((r) => r.due === null)) return null;
+  const at = realizedByX(fund, final);
+  const total = (f: (d: AccountDue) => D) => runs.reduce((s, r) => s.plus(f(r.due!)), ZERO);
+  return {
+    costMade: at.made,
+    costRealized: at.realized,
+    cost: total((d) => d.cost),
+    uninvested: total((d) => d.uninvested),
+    feesAndExpenses: total((d) => d.feesAndExpenses),
+    total: total((d) => d.total),
   };
 }
 
@@ -642,6 +770,7 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
     prefAccrued: fund.terms.pref ? runs.reduce((s, r) => s.plus(r.prefAccrued), ZERO) : null,
     lpMultiple: toDate.lps.total.div(lpsPaidIn),
     clawback: fundClawback(fund, runs),
+    due: fundDue(fund, runs, final),
     byLp: byLp(fund, runs),
     byAccount:
       runs.length < 2
@@ -654,6 +783,7 @@ export function splitAt(fund: Fund, x: D | string, options: { final?: boolean } 
             prefAccrued: fund.terms.pref ? r.prefAccrued : null,
             lpMultiple: multipleOf(r.toDate.lps.total, r.paidIn),
             clawback: r.clawback,
+            due: r.due,
           })),
   };
 }

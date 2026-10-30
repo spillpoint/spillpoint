@@ -21,6 +21,11 @@
 // the classes in the input's order (F27). With two or more accounts each
 // reason's text starts with its account's name.
 //
+// From 0.5.0, deal by deal (F35), an account's capital tier is its due on X
+// not yet back, and X comes from `distribution_from`'s investment. What's due
+// on X doesn't change with X, so the tiers are sized as before and every point
+// is exact. `capital_returned` names that due (FA57).
+//
 // The reference finds the same points by searching instead, so the two
 // methods check each other.
 
@@ -119,12 +124,23 @@ function words(naming: Naming, text: string): string {
   return naming.named ? WORDINGS.named(naming.class ?? FUND_TERMS, text) : text;
 }
 
+/** What an account's `capital_returned` names: its paid-in, or deal by deal its due on X (F36, FA57). */
+interface CapitalBack {
+  amount: D;
+  /** Deal by deal and X not final: F36's words for what's due on the investments realized. */
+  dealByDeal: boolean;
+}
+
 /** F15's reason for the account's own tier ending, `next` the tier the next dollar falls in. */
-function tierReason(terms: RunTerms, ended: Tier, next: Tier, paidIn: D, prefAccrued: D, naming: Naming): Reason {
+function tierReason(terms: RunTerms, ended: Tier, next: Tier, capital: CapitalBack, prefAccrued: D, naming: Naming): Reason {
   const cls = naming.class;
   switch (ended.kind) {
-    case "capital":
-      return { class: cls, code: "capital_returned", amount: paidIn, text: words(naming, WORDINGS.capital_returned(usd(paidIn))) };
+    case "capital": {
+      // F36, FA57: deal by deal, the account's due on X. When X is final that's all its paid-in, and it reads as the
+      // whole fund's, its amount the same.
+      const wording = capital.dealByDeal ? WORDINGS.capital_returned_deal_by_deal : WORDINGS.capital_returned;
+      return { class: cls, code: "capital_returned", amount: capital.amount, text: words(naming, wording(usd(capital.amount))) };
+    }
     case "pref": {
       const rate = terms.pref!.rate;
       return { class: cls, code: "pref_met", rate, amount: prefAccrued, text: words(naming, WORDINGS.pref_met(percent(rate), usd(prefAccrued))) };
@@ -180,6 +196,7 @@ function accountBreakpoints(fund: Fund, standing: StandingAtD, index: number, na
   const terms = account.terms;
   const naming: Naming = { class: account.class, named };
   const paidIn = standing.start.paidIn;
+  const capital: CapitalBack = standing.due ? { amount: standing.due.total, dealByDeal: !fund.final } : { amount: paidIn, dealByDeal: false };
   // F3, F23: the account's tiers get its part of 1 − g of each dollar of X.
   const toX = (throughTiers: D) => throughTiersToX(fund, account, throughTiers);
   const perX = perDollarOfX(fund, account);
@@ -188,7 +205,7 @@ function accountBreakpoints(fund: Fund, standing: StandingAtD, index: number, na
   const mine = segments(terms, standing.start).map((s) => ({ ...s, end: s.end && toX(s.end) }));
   const ownEnds = mine.filter((s) => s.end !== null).map((s) => s.end!);
   if (!fund.final) {
-    return ownEnds.map((x, i) => ({ x, reasons: [tierReason(terms, mine[i]!.tier, mine[i + 1]!.tier, paidIn, standing.prefAccrued, naming)] }));
+    return ownEnds.map((x, i) => ({ x, reasons: [tierReason(terms, mine[i]!.tier, mine[i + 1]!.tier, capital, standing.prefAccrued, naming)] }));
   }
 
   // F12, F24: the run on the account's totals, from zero: all its paid-in as capital and its hurdle pref, its amount
@@ -229,7 +246,7 @@ function accountBreakpoints(fund: Fund, standing: StandingAtD, index: number, na
   for (const { x, f } of points) {
     const reasons: Reason[] = [];
     const [ownBefore, ownAfter] = [segmentAt(mine, x, -1), segmentAt(mine, x, 1)];
-    if (ownBefore !== ownAfter) reasons.push(tierReason(terms, mine[ownBefore]!.tier, mine[ownAfter]!.tier, paidIn, standing.prefAccrued, naming));
+    if (ownBefore !== ownAfter) reasons.push(tierReason(terms, mine[ownBefore]!.tier, mine[ownAfter]!.tier, capital, standing.prefAccrued, naming));
 
     const [below, above] = [slope(x, -1), slope(x, 1)];
     const left = sign(f) !== 0 ? sign(f) : -sign(below);

@@ -10,6 +10,8 @@
 //   const breakpoints = findBreakpoints(fund);   // every X where it bends, and why (F15, F27)
 //   const eq = equalization(fund);               // what moves between LPs at later closes (F25)
 //   const fees = feeCalls(fund);                 // a fee schedule's calls, from 0.4.0 (F30)
+//   const rows = portfolio(fund);                // the investments table, from 0.5.0 (F36)
+//   split.due                                    // deal by deal, what's due before carry on X (F35)
 //
 // Everything runs locally: no I/O, no network. Rules are in docs/SPEC.md and
 // choices in docs/ASSUMPTIONS.md; the fund's own documents govern, not this.
@@ -30,6 +32,8 @@ export type { CarryBasis, DistributionFrom, Investment, InvestmentCheck } from "
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";
 export type { AccountSplit, Clawback, LpAmounts, Split, StepCarry, Tiers } from "./waterfall.ts";
+// From 0.5.0: deal by deal, what's due before carry on X, the fund's and each account's (F35, F36).
+export type { AccountDue, Due } from "./waterfall.ts";
 
 // Later closes: what the joining LPs pay in and the LPs already in get back, with interest (F25), and from 0.4.0 the
 // back fees each joiner pays the manager (F29).
@@ -39,6 +43,10 @@ export type { Equalization, EqualizationAmounts, LaterClose } from "./equalizati
 // A management fee schedule's calls, once for the fund, from 0.4.0 (F30, F31).
 export { feeCalls } from "./fees.ts";
 export type { FeeCall, LpFee } from "./fees.ts";
+
+// The investments table: each investment's cost, what's realized of it and its proceeds, from 0.5.0 (F36).
+export { portfolio } from "./portfolio.ts";
+export type { PortfolioRow } from "./portfolio.ts";
 
 // Every X where the split bends, with its reasons (F15).
 export { findBreakpoints } from "./breakpoints.ts";
