@@ -18,14 +18,16 @@ export interface ClassesTable {
 
 /**
  * The card for a split with two or more accounts: each account's LPs and GP this distribution and to date, its paid-in,
- * its LP multiple ("—" with nothing paid in, FA38), and, when the split is final and some class is owed something, what
- * the GP owes each back (F24), $0.00 for a class owed nothing: one class's surplus doesn't offset another's. With nothing
- * owed to any class, the column is left out, as the LPs' card leaves out its clawback column (f03c review, answer 1).
+ * deal by deal its own due before carry on X (F35, F36), its LP multiple ("—" with nothing paid in, FA38), and, when the
+ * split is final and some class is owed something, what the GP owes each back (F24), $0.00 for a class owed nothing: one
+ * class's surplus doesn't offset another's. With nothing owed to any class, the column is left out, as the LPs' card
+ * leaves out its clawback column (f03c review, answer 1).
  */
 export function classesTable(split: Split): ClassesTable {
   const owed = split.clawback !== null && split.byAccount.some((a) => owesSomething(a.clawback!.owed));
+  const due = split.due !== null;
   return {
-    headings: ["Class", "LPs, this distribution", "GP, this distribution", "LPs, to date", "GP, to date", "Paid in", "LP multiple", ...(owed ? ["Owed back"] : [])],
+    headings: ["Class", "LPs, this distribution", "GP, this distribution", "LPs, to date", "GP, to date", "Paid in", ...(due ? ["Due before carry"] : []), "LP multiple", ...(owed ? ["Owed back"] : [])],
     rows: split.byAccount.map((a) => ({
       name: a.class ?? FUND_TERMS,
       cells: [
@@ -34,6 +36,7 @@ export function classesTable(split: Split): ClassesTable {
         cents(a.toDate.lps.total),
         cents(a.toDate.gp.total),
         cents(a.paidIn),
+        ...(due ? [cents(a.due!.total)] : []),
         a.lpMultiple ? lpMultipleText(a.lpMultiple) : NONE,
         ...(owed ? [cents(a.clawback!.owed)] : []),
       ],

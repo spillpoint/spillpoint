@@ -1,7 +1,8 @@
 // The Terms tab (plan, "The terms: a form", f01i): carry flat or in steps, the pref, the catch-up with a pref, the
 // GP commitment with F3's two flags, from 0.3.0 the two rates classes and later closes need (F22, F25), and from 0.4.0
-// the management fee, entered as fee calls or a schedule (F30). Each change runs the engine again; a refusal shows
-// under the field its path names, and at the top of the form with "Show me".
+// the management fee, entered as fee calls or a schedule (F30), and from 0.5.0 the carry basis, on the whole fund or
+// deal by deal (F34). Each change runs the engine again; a refusal shows under the field its path names, and at the top
+// of the form with "Show me".
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
@@ -37,6 +38,9 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
 export function Terms({ name, onName, form, problem, onForm, onShow, listsLps, firstCall }: Props) {
   const { carry, pref, catchUp, gpCommitment: g, managementFee: fee } = form;
   const scheduled = fee.mode === "schedule";
+  // F35, F37: no pref deal by deal in 0.5.0, so no catch-up either. What was typed waits for the whole fund.
+  const dealByDeal = form.basis === "deal_by_deal";
+  const prefOn = pref.on && !dealByDeal;
   // A term turned on starts at its usual value, selected in its field, so it's typed straight over (f01i review,
   // answer 3). The field appears with the change, so it's focused once it's there.
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -84,16 +88,42 @@ export function Terms({ name, onName, form, problem, onForm, onShow, listsLps, f
         <Carry at="terms.carry" owner={null} carry={carry} problem={problem} onCarry={(next) => onForm({ ...form, carry: next })} />
       </Fieldset>
 
+      {/* F34: carry on the whole fund (F1), or deal by deal (F35). */}
+      <Fieldset legend="Carry is paid">
+        <div className="terms__choice" role="radiogroup" aria-label="Carry is paid">
+          <label>
+            <input id="terms.carry_basis" type="radio" name="carry-basis" checked={!dealByDeal} onChange={() => onForm({ ...form, basis: "whole_fund" })} /> On the whole fund
+          </label>
+          <label>
+            <input type="radio" name="carry-basis" checked={dealByDeal} onChange={() => onForm({ ...form, basis: "deal_by_deal" })} /> Deal by deal
+          </label>
+        </div>
+        <FieldProblem path="terms.carry_basis" problem={problem} />
+        <p className="terms__line">
+          Deal by deal: before carry, LPs get back the cost of each investment exited or written off, with its share of fees and expenses. At the end the GP owes
+          back any carry the whole fund doesn't earn.
+        </p>
+      </Fieldset>
+
       <Fieldset legend="Pref">
         <label className="terms__check">
           <input
+            id="terms.pref"
             type="checkbox"
-            checked={pref.on}
+            checked={prefOn}
+            disabled={dealByDeal}
             onChange={(e) => (e.target.checked ? turnOn({ ...form, pref: { ...pref, on: true } }, "terms.pref.rate") : onForm({ ...form, pref: { ...pref, on: false } }))}
+            aria-describedby={dealByDeal ? "terms-pref-off" : undefined}
           />{" "}
           A preferred return
         </label>
-        {pref.on && (
+        {dealByDeal && (
+          <p id="terms-pref-off" className="terms__line">
+            Off deal by deal: this version has no pref deal by deal, so no catch-up either.
+          </p>
+        )}
+        <FieldProblem path="terms.pref" problem={problem} />
+        {prefOn && (
           <>
             <Percent id="terms.pref.rate" label="Rate a year, simple" value={pref.rate} problem={problem} onChange={(rate) => onForm({ ...form, pref: { ...pref, rate } })} />
             <FieldProblem path="terms.pref.rate" problem={problem} />
@@ -102,7 +132,7 @@ export function Terms({ name, onName, form, problem, onForm, onShow, listsLps, f
       </Fieldset>
 
       {/* F8: a catch-up catches the GP up to the pref, so it's here only with one. */}
-      {pref.on && (
+      {prefOn && (
         <Fieldset legend="Catch-up">
           <div className="terms__choice" role="radiogroup" aria-label="Catch-up">
             {(

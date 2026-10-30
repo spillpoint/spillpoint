@@ -3,7 +3,7 @@
 // cash flow's own in its row, and at the top of the tab with "Show me". Rows can be pasted from a spreadsheet (f01k),
 // into the box under the table, or into a cell, which sends a paste of more than one cell to the same box. From 0.4.0,
 // with a management fee schedule, Fee isn't a kind to choose, and the schedule's fee calls show under the table (F30,
-// F31).
+// F31). From 0.5.0 a distribution's From and Share sold, and a write-off with its investment and no amount (F33).
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { D } from "spillpoint-fund";
@@ -13,11 +13,16 @@ import { CardTable } from "./CardTable.tsx";
 import type { FlowRow, FlowsForm } from "./flows.ts";
 import { isEmptyRow, newRow, sortByDate } from "./flows.ts";
 import { cents, dateText, exactDollars } from "./format.ts";
+import type { InvestmentRow } from "./investments.ts";
+import { investmentLabel, investmentOf } from "./investments.ts";
 import type { PasteState } from "./Paste.tsx";
 import { isManyCells, PasteBox } from "./Paste.tsx";
 import type { PastedRow } from "./paste.ts";
 import type { Problem } from "./terms.ts";
 import { controlFor, isAt } from "./terms.ts";
+
+/** None, in a cell or a picker. */
+const NONE = "—";
 
 const KINDS: { kind: CallKind; text: string }[] = [
   { kind: "investment", text: "Investment" },
@@ -42,6 +47,8 @@ interface Props {
   onShow: (path: string) => void;
   /** With a management fee schedule (F30): its calls, under the table; null with fees entered as fee calls. */
   schedule: ScheduleView | null;
+  /** F34: deal by deal, every distribution comes from an investment, so "—" isn't offered on one. */
+  dealByDeal: boolean;
 }
 
 /** A refusal's words, where its path names, or one of its others. The LPs tab's cells show theirs the same way. */
@@ -60,7 +67,35 @@ export function marks(problem: Problem | null, id: string) {
   return { "aria-invalid": mine, "aria-describedby": mine ? `${id}-problem` : undefined };
 }
 
-export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
+interface PickerProps {
+  id: string;
+  /** For a cell, whose label is for screen readers only: "Row 6's investment". */
+  label?: string | undefined;
+  value: number | null;
+  rows: readonly InvestmentRow[];
+  /** "—" for none is offered: on a distribution, on the whole fund. Elsewhere only while it's chosen, to show it. */
+  offerNone: boolean;
+  problem: Problem | null;
+  onChange: (id: number | null) => void;
+}
+
+/** An investment to choose, by its row (F33): each by name, or "Investment 2" while it has none. */
+export function InvestmentPicker({ id, label, value, rows, offerNone, problem, onChange }: PickerProps) {
+  const chosen = investmentOf(rows, value);
+  return (
+    <select id={id} value={chosen ? String(chosen.id) : ""} onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))} aria-label={label} {...marks(problem, id)}>
+      {(offerNone || chosen === null) && <option value="">{NONE}</option>}
+      {rows.map((r) => (
+        <option key={r.id} value={r.id}>
+          {investmentLabel(rows, r)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+
+export function CashFlows({ form, problem, onForm, onShow, schedule, dealByDeal }: Props) {
   // F30: with a schedule, the schedule works out the fee calls, so Fee isn't a kind to choose. A row already of kind
   // Fee keeps it in its own picker, to show what it is, with the problem under it.
   const kinds = (r: FlowRow) => KINDS.filter((k) => !schedule || k.kind !== "fee" || r.kind === "fee");
@@ -96,7 +131,7 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
   return (
     <section className="card" aria-labelledby="flows-heading">
       <h2 id="flows-heading">Cash flows</h2>
-      <p className="card__intro">Every call and distribution before X, in the order entered. Amounts in dollars: 8000000, $8,000,000 or $8M.</p>
+      <p className="card__intro">Every call, distribution and write-off before X, in the order entered. Amounts in dollars: 8000000, $8,000,000 or $8M.</p>
       {problem && (
         <div className="notice notice--problem" role="status">
           <strong>The fund can't run as it is.</strong> {problem.message}{" "}
@@ -142,7 +177,9 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
               <th scope="col">Row</th>
               <th scope="col">Date</th>
               <th scope="col">Type</th>
-              <th scope="col">Kind</th>
+              {/* A call's kind, or a distribution's or write-off's investment: a row has one or the other (F33). */}
+              <th scope="col">Kind / From</th>
+              <th scope="col">Share sold</th>
               <th scope="col" className="num">
                 Amount
               </th>
@@ -154,7 +191,7 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
           <tbody>
             {form.rows.map((r, i) => (
               <Fragment key={r.id}>
-                <tr>
+                <tr className={`flows__row--${r.type}`}>
                   <th scope="row" className="flows__n">{i + 1}</th>
                   <td className="flows__date">
                     <input
@@ -172,6 +209,7 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
                     <select id={`${at(i)}.type`} value={r.type} onChange={(e) => setRow(i, { ...r, type: e.target.value as FlowRow["type"] })} aria-label={`Row ${i + 1}'s type`}>
                       <option value="call">Call</option>
                       <option value="distribution">Distribution</option>
+                      <option value="write_off">Write-off</option>
                     </select>
                   </td>
                   <td className="flows__kind">
@@ -190,23 +228,65 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
                         ))}
                       </select>
                     ) : (
-                      // FA12: a distribution has no kind.
+                      // FA12: a distribution has no kind, nor has a write-off; each has the investment it's from (F33).
+                      <>
+                        <InvestmentPicker
+                          id={`${at(i)}.investment`}
+                          label={`Row ${i + 1}'s investment`}
+                          value={r.from}
+                          rows={form.investments}
+                          // F37: a write-off names the investment it ends, and deal by deal a distribution the one it comes from.
+                          offerNone={r.type === "distribution" && !dealByDeal}
+                          problem={problem}
+                          onChange={(from) => setRow(i, { ...r, from })}
+                        />
+                        <ProblemText problem={problem} path={`${at(i)}.investment`} />
+                      </>
+                    )}
+                  </td>
+                  <td className={`flows__share${r.type === "distribution" && investmentOf(form.investments, r.from) ? "" : " flows__na"}`}>
+                    {r.type === "distribution" && investmentOf(form.investments, r.from) ? (
+                      // F33: a share of what's left of its investment, only with one.
+                      <>
+                        <span className="terms__percent">
+                          <input
+                            id={`${at(i)}.share`}
+                            className="flows__share-box"
+                            type="text"
+                            inputMode="decimal"
+                            value={r.share}
+                            onChange={(e) => setRow(i, { ...r, share: e.target.value })}
+                            aria-label={`Row ${i + 1}'s share sold`}
+                            {...marks(problem, `${at(i)}.share`)}
+                          />
+                          <span aria-hidden="true">%</span>
+                        </span>
+                        <ProblemText problem={problem} path={`${at(i)}.share`} />
+                      </>
+                    ) : (
                       <span className="muted">—</span>
                     )}
                   </td>
-                  <td className="num flows__amount-cell">
-                    <input
-                      id={`${at(i)}.amount`}
-                      className="flows__amount"
-                      type="text"
-                      inputMode="decimal"
-                      value={r.amount}
-                      onChange={(e) => setRow(i, { ...r, amount: e.target.value })}
-                      onPaste={pasteIntoCell}
-                      aria-label={`Row ${i + 1}'s amount`}
-                      {...marks(problem, `${at(i)}.amount`)}
-                    />
-                    <ProblemText problem={problem} path={`${at(i)}.amount`} />
+                  <td className={`num flows__amount-cell${r.type === "write_off" ? " flows__na" : ""}`}>
+                    {r.type === "write_off" ? (
+                      // F33: a write-off has no amount: nothing is distributed.
+                      <span className="muted">—</span>
+                    ) : (
+                      <>
+                        <input
+                          id={`${at(i)}.amount`}
+                          className="flows__amount"
+                          type="text"
+                          inputMode="decimal"
+                          value={r.amount}
+                          onChange={(e) => setRow(i, { ...r, amount: e.target.value })}
+                          onPaste={pasteIntoCell}
+                          aria-label={`Row ${i + 1}'s amount`}
+                          {...marks(problem, `${at(i)}.amount`)}
+                        />
+                        <ProblemText problem={problem} path={`${at(i)}.amount`} />
+                      </>
+                    )}
                   </td>
                   <td className="flows__remove">
                     <button type="button" className="link-button" aria-label={`Remove row ${i + 1}`} onClick={() => onForm({ ...form, rows: form.rows.filter((_, j) => j !== i) })}>
@@ -220,7 +300,7 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
                   .map((p) => (
                     <tr key={p} className="flows__problem">
                       <td />
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         <ProblemText problem={problem} path={p} />
                       </td>
                     </tr>
@@ -232,8 +312,8 @@ export function CashFlows({ form, problem, onForm, onShow, schedule }: Props) {
       </div>
       <ProblemText problem={problem} path="cash_flows" />
       <p className="footnote">
-        On one date, calls run before distributions, and distributions run in the order shown here. “Sort by date” keeps that
-        order within a date.
+        On one date, calls run first, then the investments' checks, then write-offs, then distributions in the order shown
+        here. “Sort by date” keeps that order within a date.
       </p>
       <div className="flows__actions">
         <button

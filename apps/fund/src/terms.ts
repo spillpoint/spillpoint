@@ -1,6 +1,7 @@
 // The Terms tab's form (plan, "The terms: a form", f01i): what it holds, how it's written into the fund's input for the
 // engine, and the page's words for a refusal, shown under the field the refusal's path names. From 0.4.0 it holds the
-// management fee too: entered as fee calls, or a schedule (plan, "0.4.0: management fees"; F30).
+// management fee too: entered as fee calls, or a schedule (plan, "0.4.0: management fees"; F30). From 0.5.0, the carry
+// basis: on the whole fund, or deal by deal (plan, "0.5.0: investments and carry deal by deal"; F34).
 //
 // Rates are typed as percents and written exactly, as strings: "7.25" is "0.0725", by moving the decimal point, so
 // nothing is rounded however many places are typed. The page reads only what it can't hand the engine (text that isn't
@@ -8,7 +9,7 @@
 // refusal says which (F18).
 
 import { D, FundRefusal } from "spillpoint-fund";
-import type { CarryStep, FeeFrequency, FundTerms } from "spillpoint-fund";
+import type { CarryBasis, CarryStep, FeeFrequency, FundTerms } from "spillpoint-fund";
 
 import { exactDollars, parseDollars } from "./format.ts";
 
@@ -59,6 +60,8 @@ export interface TermsForm {
   equalizationRate: string;
   /** F30: the management fee, entered as fee calls or a schedule. */
   managementFee: FeeForm;
+  /** F34: carry on the whole fund, or deal by deal. Deal by deal the pref and catch-up are kept here, out of the input. */
+  basis: CarryBasis;
 }
 
 /** What the page writes for text it can't read: not a number, so the engine refuses it where it is. */
@@ -131,6 +134,7 @@ export function formFrom(terms: FundTerms): TermsForm {
     feeRate: terms.feeRate ? percentOf(terms.feeRate) : "",
     equalizationRate: terms.equalizationRate ? percentOf(terms.equalizationRate) : "",
     managementFee: feeFormFrom(terms),
+    basis: terms.carryBasis,
   };
 }
 
@@ -222,7 +226,9 @@ export function termsInput(form: TermsForm, listsLps = false): Record<string, un
   const rate = (text: string) => rateFrom(text) ?? UNREAD;
   const terms: Record<string, unknown> = {};
   terms.carry = carryInput(form.carry);
-  if (form.pref.on) {
+  // F35, F37: no pref deal by deal in 0.5.0, so no catch-up either; what was typed waits in the form for the whole fund.
+  const dealByDeal = form.basis === "deal_by_deal";
+  if (form.pref.on && !dealByDeal) {
     terms.pref = { rate: rate(form.pref.rate) };
     // F8: a catch-up only with a pref, so the form shows it only then.
     if (form.catchUp.kind !== "none") terms.catch_up = { gp_share: form.catchUp.kind === "full" ? "1" : rate(form.catchUp.share) };
@@ -230,6 +236,8 @@ export function termsInput(form: TermsForm, listsLps = false): Record<string, un
   if (form.gpCommitment.on) {
     terms.gp_commitment = { share: rate(form.gpCommitment.share), pays_fees: form.gpCommitment.paysFees, pays_expenses: form.gpCommitment.paysExpenses };
   }
+  // F34: the whole fund is the default, so only deal by deal is written.
+  if (dealByDeal) terms.carry_basis = "deal_by_deal";
   // F22, F25: each only when typed; blank leaves it out, which is none. With a schedule its first rate is the fund's
   // (F30), so the fee rate typed is kept in the form, out of the input.
   const scheduled = form.managementFee.mode === "schedule";
@@ -332,28 +340,46 @@ function feeWords(refusal: FundRefusal, fee: FeeForm): string | null {
 
 /**
  * The form control a problem's path names, on any tab: a carry step's own problem goes to its rate, a fee step's to its
- * date, a cash flow's to its date, an LP's or a class's to its name, the cash flows' to "Add a cash flow", the LPs' to "Add an LP" and the
- * classes' to "Add a class". A class's carry in steps, refused as a whole, has no box of its own: App focuses its first
- * step's rate.
+ * date, a cash flow's or a check's to its date, an LP's, a class's or an investment's to its name, X's source to its
+ * investment, the cash flows' to "Add a cash flow", the investments' to "Add an investment", the LPs' to "Add an LP"
+ * and the classes' to "Add a class". A class's carry in steps, refused as a whole, has no box of its own: App focuses
+ * its first step's rate.
  */
 export function controlFor(path: string): string {
   if (/^terms\.(lp_classes\[\d+\]\.)?carry\.steps\[\d+\]$/.test(path)) return `${path}.rate`;
   // A fee step out of order is about its date (F32).
   if (/^terms\.management_fee\.steps\[\d+\]$/.test(path)) return `${path}.from`;
   if (path === "terms.catch_up") return "terms.catch_up.gp_share";
-  if (/^cash_flows\[\d+\]$/.test(path)) return `${path}.date`;
-  if (/^(lps|terms\.lp_classes)\[\d+\]$/.test(path)) return `${path}.name`;
+  // F37: a cash flow before its investment's first check, or a check after D, is about its date.
+  if (/^(cash_flows|investments\[\d+\]\.checks)\[\d+\]$/.test(path)) return `${path}.date`;
+  if (/^(lps|terms\.lp_classes|investments)\[\d+\]$/.test(path)) return `${path}.name`;
+  // F37: deal by deal, X's source missing is about which investment it comes from.
+  if (path === "distribution_from") return "distribution_from.investment";
   return path;
 }
 
+/** Where a problem can be: a tab, or X's source, beside X on Payouts (F33, F14). */
+export type Place = "terms" | "flows" | "investments" | "lps" | "payouts";
+
 /**
- * The tab a problem's path is on: the terms on Terms, but for the classes, which are on LPs with the LPs (F21, F22);
- * everything else on Cash flows.
+ * The place a problem's path is on: the terms on Terms, but for the classes, which are on LPs with the LPs (F21, F22);
+ * the investments on Investments, and X's source beside X (F33); everything else on Cash flows.
  */
-export function tabFor(path: string): "terms" | "flows" | "lps" {
+export function tabFor(path: string): Place {
   if (path === "lps" || path.startsWith("lps[") || path.startsWith("terms.lp_classes")) return "lps";
+  if (path === "investments" || path.startsWith("investments[")) return "investments";
+  if (path === "distribution_from" || path.startsWith("distribution_from.")) return "payouts";
   return path.startsWith("terms") ? "terms" : "flows";
 }
 
-/** What a tab holds, as a sentence names it: "Your last change to the LPs has a problem". */
-export const TAB_WORDS = { terms: "terms", flows: "cash flows", lps: "LPs" } as const;
+/**
+ * What a place holds, as a sentence names it, and whether it's many things or one: "the LPs have a problem", "X's
+ * source has a problem".
+ */
+export const PLACE_WORDS: Record<Place, { name: string; many: boolean }> = {
+  terms: { name: "the terms", many: true },
+  flows: { name: "the cash flows", many: true },
+  investments: { name: "the investments", many: true },
+  lps: { name: "the LPs", many: true },
+  payouts: { name: "X's source", many: false },
+};

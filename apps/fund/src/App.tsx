@@ -2,13 +2,14 @@
 // slider, the split at X for X alone and the fund to date (f01f), the chart and the breakpoints (f01g), the clawback
 // with the NAV button (f01h), with LPs each LP's amounts (f02c), and with classes each class's, and with later closes
 // the equalization (f03c), on the Payouts tab; the fund behind them, editable, on the Terms (f01i), Cash flows (f01j)
-// and LPs (f02c, f03c) tabs, with from 0.4.0 a management fee schedule on Terms and its calls on Cash flows (f04c).
-// Pasting cash flows and files come in f01k to f01m.
+// and LPs (f02c, f03c) tabs, with from 0.4.0 a management fee schedule on Terms and its calls on Cash flows (f04c), and
+// from 0.5.0 the investments on a tab of their own, their tags on Cash flows, X's source beside X and carry deal by deal
+// (f05c). Pasting cash flows and files come in f01k to f01m.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
-import { D, equalization, feeCalls, FundRefusal, readFund, splitAt, splitAtNav } from "spillpoint-fund";
-import type { CarryStep, Clawback as ClawbackAmounts, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
+import { D, equalization, feeCalls, FundRefusal, portfolio, readFund, splitAt, splitAtNav } from "spillpoint-fund";
+import type { CarryStep, Clawback as ClawbackAmounts, Due, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
@@ -26,7 +27,9 @@ import type { EqualizationBlock } from "./equalizationCard.ts";
 import { Terms } from "./Terms.tsx";
 import { fileName, fileText, inputOf, readFile, UNNAMED } from "./file.ts";
 import { blankFlows, flowsFrom, flowsProblem } from "./flows.ts";
-import type { FlowsForm } from "./flows.ts";
+import type { FlowsForm, SourceForm } from "./flows.ts";
+import { Investments, XSource } from "./Investments.tsx";
+import { investmentsProblem } from "./investments.ts";
 import { useNarrow, useTooWide } from "./layout.ts";
 import { Lps } from "./Lps.tsx";
 import { FUND_TERMS, fundTermsClass, LP_WORDS, lpsFrom, lpsProblem, noLps } from "./lps.ts";
@@ -34,8 +37,8 @@ import type { LpsForm } from "./lps.ts";
 import { LpsCard } from "./LpsCard.tsx";
 import { lpsCsv, lpsCsvName } from "./lpsCard.ts";
 import type { LpsTable } from "./lpsCard.ts";
-import { controlFor, formFrom, TAB_WORDS, tabFor, termsProblem } from "./terms.ts";
-import type { Problem, TermsForm } from "./terms.ts";
+import { controlFor, formFrom, PLACE_WORDS, tabFor, termsProblem } from "./terms.ts";
+import type { Place, Problem, TermsForm } from "./terms.ts";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
 /** What the X box holds: the text typed, and the last amount that split, which the page shows while the text doesn't. */
@@ -68,6 +71,8 @@ interface Opened {
   problem: Problem | null;
   /** Something has changed since the example or file was picked. */
   edited: boolean;
+  /** Where the last change was made, which the Payouts notice names; null before any. */
+  changedOn: Place | null;
   /** The fund's name: a saved file is named after it (f01l). */
   name: string;
   opening: D;
@@ -94,11 +99,11 @@ const BLANK_TERMS: FundTerms = {
 };
 
 function opened(id: string): Opened {
-  const fresh = { problem: null, edited: false, top: { text: null, set: null, problem: null } };
+  const fresh = { problem: null, edited: false, changedOn: null, top: { text: null, set: null, problem: null } };
   if (id === BLANK) {
     const zero = new D(0);
     const s: Opened = { ...fresh, name: UNNAMED, input: {}, terms: formFrom(BLANK_TERMS), flows: blankFlows(), lps: noLps(), fund: null, opening: zero, x: { text: xText(zero), shown: zero, problem: null } };
-    return { ...run(s, s.terms, s.flows, s.lps), edited: false };
+    return { ...run(s, s.terms, s.flows, s.lps, null), edited: false };
   }
   const example = examples.find((e) => e.id === id)!;
   return fromFund(readFund(example.fund), example.label, parseDollars(example.defaultX)!);
@@ -115,6 +120,7 @@ function fromFund(fund: Fund, name: string, x: D): Opened {
   return {
     problem: null,
     edited: false,
+    changedOn: null,
     top: { text: null, set: null, problem: null },
     name,
     input: inputOf(terms, flows, lps),
@@ -128,30 +134,41 @@ function fromFund(fund: Fund, name: string, x: D): Opened {
 }
 
 /**
- * The fund the three forms write, or the engine's refusal in the page's words, at the path it names. The engine checks
- * in its order (FA2, the LPs last by FA19), so the problem shown is its first, on whichever tab. Then the page's own
- * rule: no class takes "Fund terms", its name for the fund's own terms (f03c review, answer 3).
+ * The fund the forms write, or the engine's refusal in the page's words, at the path it names. The engine checks in its
+ * order (FA2, the LPs last by FA19), so the problem shown is its first, on whichever tab. Then the page's own rule: no
+ * class takes "Fund terms", its name for the fund's own terms (f03c review, answer 3). `changedOn` is where the change
+ * was made, which can be another tab than the problem's: deal by deal chosen on Terms needs the investments.
  */
-function run(s: Opened, terms: TermsForm, flows: FlowsForm, lps: LpsForm): Opened {
+function run(s: Opened, terms: TermsForm, flows: FlowsForm, lps: LpsForm, changedOn: Place | null): Opened {
   const input = inputOf(terms, flows, lps);
+  const next = { ...s, input, terms, flows, lps, edited: true, changedOn };
   try {
     const fund = readFund(input);
     const named = fundTermsClass(fund);
-    if (named >= 0) return { ...s, input, terms, flows, lps, edited: true, problem: { path: `terms.lp_classes[${named}].name`, message: LP_WORDS.classFundTerms } };
-    return { ...s, input, terms, flows, lps, edited: true, fund, problem: null };
+    if (named >= 0) return { ...next, problem: { path: `terms.lp_classes[${named}].name`, message: LP_WORDS.classFundTerms } };
+    return { ...next, fund, problem: null };
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
-    const tab = tabFor(e.path);
-    const problem = tab === "terms" ? termsProblem(e, terms) : tab === "lps" ? lpsProblem(e, lps, terms) : flowsProblem(e, flows);
-    return { ...s, input, terms, flows, lps, edited: true, problem };
+    const place = tabFor(e.path);
+    const problem =
+      place === "terms"
+        ? termsProblem(e, terms)
+        : place === "lps"
+          ? lpsProblem(e, lps, terms)
+          : place === "investments" || place === "payouts"
+            ? investmentsProblem(e, flows)
+            : flowsProblem(e, flows);
+    return { ...next, problem };
   }
 }
 
-type Tab = "payouts" | "terms" | "flows" | "lps";
+type Tab = Place;
+// F33: the investments after the cash flows, since a distribution's From names one of them (plan, "0.5.0").
 const TABS: { id: Tab; label: string }[] = [
   { id: "payouts", label: "Payouts" },
   { id: "terms", label: "Terms" },
   { id: "flows", label: "Cash flows" },
+  { id: "investments", label: "Investments" },
   { id: "lps", label: "LPs" },
 ];
 
@@ -174,10 +191,10 @@ export function App() {
       : null;
   // Where a schedule's start starts: the fund's first call, as the Cash flows tab has it.
   const firstCall = flows.rows.filter((r) => r.type === "call" && r.date).map((r) => r.date).sort()[0] ?? "";
-  // A problem's field, to focus once its tab shows it.
+  // A problem's field, to focus once its tab shows it: on Payouts, X's source (F33).
   const [focusing, setFocusing] = useState<string | null>(null);
   useEffect(() => {
-    if (focusing === null || tab === "payouts") return;
+    if (focusing === null) return;
     // A class's carry in steps refused as a whole (F8, F22) has no box of its own: its first step's rate carries it.
     const el = document.getElementById(focusing) ?? document.getElementById(`${focusing}.steps[0].rate`);
     el?.focus();
@@ -213,8 +230,8 @@ export function App() {
   /** Only a fund the engine accepts is saved, so a saved file always opens; X goes in too, so it reopens where it was. */
   const save = () => {
     if (!fund || problem) {
-      const where = `the ${TAB_WORDS[problem ? tabFor(problem.path) : "flows"]} have`;
-      setFileStatus({ kind: "problem", text: `Not saved: ${where} a problem to fix first. ${problem?.message ?? ""}`.trim() });
+      const place = PLACE_WORDS[problem ? tabFor(problem.path) : "flows"];
+      setFileStatus({ kind: "problem", text: `Not saved: ${place.name} ${place.many ? "have" : "has"} a problem to fix first. ${problem?.message ?? ""}`.trim() });
       return;
     }
     const name = fileName(state.name);
@@ -287,6 +304,12 @@ export function App() {
   // A blank fund stays "A blank fund" as it's filled in, and a file its name; an example changed isn't the case any
   // more (f01i).
   const pickerValue = edited && exampleId !== BLANK && exampleId !== FILE ? EDITED : exampleId;
+  // F34: deal by deal, as the form has it, which a fund that can't run yet hasn't.
+  const dealByDeal = terms.basis === "deal_by_deal";
+  // F33, F14: X's source beside X, deal by deal; a change to it is a change to the fund.
+  const source = dealByDeal ? { form: flows, problem, onSource: (next: SourceForm) => change((s) => run(s, s.terms, { ...s.flows, source: next }, s.lps, "payouts")) } : null;
+  // F36: the investments' table, the engine's, once the fund runs.
+  const holdings = !problem && fund ? portfolio(fund) : null;
   return (
     <div className="page">
       <header className="masthead">
@@ -347,14 +370,23 @@ export function App() {
             <>
               {problem && (
                 <div className="notice notice--problem" role="status">
-                  <strong>Your last change to the {TAB_WORDS[tabFor(problem.path)]} has a problem, so these payouts are from the fund before it.</strong>{" "}
+                  <strong>Your last change to {PLACE_WORDS[state.changedOn ?? tabFor(problem.path)].name} has a problem, so these payouts are from the fund before it.</strong>{" "}
                   {problem.message}{" "}
                   <button type="button" className="link-button" onClick={() => show(problem.path)}>
                     Fix it
                   </button>
                 </div>
               )}
-              <Payouts fund={fund} state={state} onX={setX} onTypeX={typeX} onTop={typeTop} onDownloadLps={downloadLps} onDownloadEqualization={downloadEqualization} />
+              <Payouts
+                fund={fund}
+                state={state}
+                source={source}
+                onX={setX}
+                onTypeX={typeX}
+                onTop={typeTop}
+                onDownloadLps={downloadLps}
+                onDownloadEqualization={downloadEqualization}
+              />
             </>
           ) : (
             <div className="card" role="status">
@@ -364,6 +396,8 @@ export function App() {
                   Fix it
                 </button>
               )}
+              {/* A fund that has never run, deal by deal, needs X's source to run: it's here until there are payouts. */}
+              {source && <XSource {...source} />}
             </div>
           )}
         </div>
@@ -373,21 +407,38 @@ export function App() {
             onName={(name) => change((s) => ({ ...s, name, edited: true }))}
             form={terms}
             problem={problem}
-            onForm={(next) => change((s) => run(s, next, s.flows, s.lps))}
+            onForm={(next) => change((s) => run(s, next, s.flows, s.lps, "terms"))}
             onShow={show}
             listsLps={state.lps.rows.length > 0}
             firstCall={firstCall}
           />
         </div>
         <div role="tabpanel" id="panel-flows" aria-labelledby="tab-flows" hidden={tab !== "flows"}>
-          <CashFlows form={flows} problem={problem} onForm={(next) => change((s) => run(s, s.terms, next, s.lps))} onShow={show} schedule={schedule} />
+          <CashFlows
+            form={flows}
+            problem={problem}
+            onForm={(next) => change((s) => run(s, s.terms, next, s.lps, "flows"))}
+            onShow={show}
+            schedule={schedule}
+            dealByDeal={dealByDeal}
+          />
+        </div>
+        <div role="tabpanel" id="panel-investments" aria-labelledby="tab-investments" hidden={tab !== "investments"}>
+          <Investments
+            form={flows}
+            problem={problem}
+            onForm={(next) => change((s) => run(s, s.terms, next, s.lps, "investments"))}
+            onShow={show}
+            holdings={holdings}
+            date={fund?.distributionDate ?? (flows.distributionDate || flows.asOf)}
+          />
         </div>
         <div role="tabpanel" id="panel-lps" aria-labelledby="tab-lps" hidden={tab !== "lps"}>
           <Lps
             form={state.lps}
             fundCarry={terms.carry}
             problem={problem}
-            onForm={(next) => change((s) => run(s, s.terms, s.flows, next))}
+            onForm={(next) => change((s) => run(s, s.terms, s.flows, next, "lps"))}
             onShow={show}
             scheduled={terms.managementFee.mode === "schedule"}
           />
@@ -402,9 +453,18 @@ export function App() {
   );
 }
 
+/** X's source beside X, deal by deal: the form it's in, its problem, and a change to it. */
+interface SourceProps {
+  form: FlowsForm;
+  problem: Problem | null;
+  onSource: (source: SourceForm) => void;
+}
+
 interface PayoutsProps {
   fund: Fund;
   state: Opened;
+  /** Deal by deal, X's source, beside X (F33, F14); null on the whole fund. */
+  source: SourceProps | null;
   onX: (x: D) => void;
   onTypeX: (text: string) => void;
   onTop: (text: string) => void;
@@ -413,9 +473,13 @@ interface PayoutsProps {
 }
 
 /** Everything about X's split, for a fund the engine accepted. */
-function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps, onDownloadEqualization }: PayoutsProps) {
+function Payouts({ fund, state, source, onX, onTypeX, onTop, onDownloadLps, onDownloadEqualization }: PayoutsProps) {
   const { opening, x, top: topState } = state;
-  const split = useMemo(() => splitAt(fund, x.shown), [fund, x.shown]);
+  // The NAV point of a fund whose X isn't final is the split as if the fund were liquidated on D (F14), its clawback
+  // included. On the whole fund its tiers are the x-axis's there; deal by deal what's due is the end's (FA58), so they
+  // can differ, and the page shows the NAV split's throughout.
+  const atNav = fund.nav !== null && x.shown.eq(fund.nav);
+  const split = useMemo(() => (atNav && !fund.final ? splitAtNav(fund)! : splitAt(fund, x.shown)), [fund, x.shown, atNav]);
   const breakpoints = useMemo(() => breakpointViews(fund), [fund]);
   // The range's top: as typed, or the page's own; an X past it raises it to 1.25 × X, so X's mark is never off the chart
   // (f01g review, answer 1).
@@ -423,18 +487,16 @@ function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps, onDownloadEq
   const top = x.shown.gt(base) ? niceUp(x.shown.times("1.25")) : base;
   const points = useMemo(() => chartPoints(fund, breakpoints, top), [fund, breakpoints, top]);
   // The clawback (F12): a final fund's at X; for a fund that isn't final, the NAV point's alone, which F14 takes as final.
-  const atNav = fund.nav !== null && x.shown.eq(fund.nav);
-  const clawbackAt = fund.final ? split : atNav ? splitAtNav(fund) : null;
+  const clawbackAt = split.clawback ? split : null;
   const owed = useMemo(() => (fund.final ? owedPoints(fund, breakpoints, top) : null), [fund, breakpoints, top]);
   const bends = useMemo(() => breakpoints.filter(bendsClawback), [breakpoints]);
   // F25: once for the fund, not by X; null without a later close.
   const moves = useMemo(() => equalization(fund), [fund]);
-  // The cards after the split follow the NAV split at the NAV point, its clawback included, as the clawback card does.
-  const shown = clawbackAt ?? split;
+  const shown = split;
   return (
     <>
       <Headline fund={fund} split={split} clawback={clawbackAt?.clawback ?? null} />
-      <XBox fund={fund} x={x} onType={onTypeX} top={top} topState={topState} onTop={onTop} breakpoints={breakpoints} onX={onX} />
+      <XBox fund={fund} x={x} onType={onTypeX} top={top} topState={topState} onTop={onTop} breakpoints={breakpoints} onX={onX} source={source} />
       {/* The chart and the split are both about this distribution, so they sit together; the clawback, about the fund's life, after them (f01i). */}
       <Chart
         points={points}
@@ -446,7 +508,7 @@ function Payouts({ fund, state, onX, onTypeX, onTop, onDownloadLps, onDownloadEq
         hasCommitment={fund.terms.gpCommitment !== null}
         onX={onX}
       />
-      <SplitTable fund={fund} split={split} />
+      <SplitTable fund={fund} split={split} atEnd={clawbackAt !== null} />
       {/* Each class's own split (F26), only with two or more accounts. */}
       {shown.byAccount.length > 1 && <ClassesCard split={shown} />}
       {clawbackAt?.clawback && (
@@ -574,13 +636,14 @@ function carryText(carry: readonly CarryStep[]): string {
 
 /**
  * The fund's terms in one line: "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free."
+ * Deal by deal (F34), it says so after the carry: "Carry 20% deal by deal; no pref; …".
  * With a management fee schedule (F30) it's named after the GP commitment: "management fee 2% a year from 15 Feb 2021,
  * 1.5% from 15 Feb 2026, called quarterly". Fees entered as calls add nothing. Then each class with LPs, by what it
  * changes (F22): "Friends and family: carry 0%, no fees."
  */
 function termsText(fund: Fund): string {
   const t = fund.terms;
-  const carry = `Carry ${carryText(t.carry)}`;
+  const carry = `Carry ${carryText(t.carry)}${t.carryBasis === "deal_by_deal" ? " deal by deal" : ""}`;
   const pref = !t.pref
     ? "no pref"
     : `pref ${percentText(t.pref.rate)}, ${!t.catchUp ? "no catch-up" : t.catchUp.gpShare.eq(1) ? "full catch-up" : `${percentText(t.catchUp.gpShare)} catch-up`}`;
@@ -660,13 +723,15 @@ interface XBoxProps {
   onTop: (text: string) => void;
   breakpoints: readonly BreakpointView[];
   onX: (x: D) => void;
+  source: SourceProps | null;
 }
 
 /**
  * X: typed exactly, or set by the slider beside the box, from $0 to the range's top. Under the slider, each breakpoint
- * is a numbered mark and NAV a mark of its own; choosing one moves X there exactly.
+ * is a numbered mark and NAV a mark of its own; choosing one moves X there exactly. Deal by deal, X's source is under
+ * the box (F33, F14).
  */
-function XBox({ fund, x, onType, top, topState, onTop, breakpoints, onX }: XBoxProps) {
+function XBox({ fund, x, onType, top, topState, onTop, breakpoints, onX, source }: XBoxProps) {
   const position = D.min(POSITIONS, x.shown.div(top).times(POSITIONS).round()).toNumber();
   const percent = (v: D) => v.div(top).times(100).toNumber();
   const marks = breakpoints.filter((b) => b.x.lte(top));
@@ -689,6 +754,7 @@ function XBox({ fund, x, onType, top, topState, onTop, breakpoints, onX }: XBoxP
         <label htmlFor="x">Distribution on {dateText(fund.distributionDate)} (X)</label>
         <input id="x" type="text" inputMode="decimal" value={x.text} onChange={(e) => onType(e.target.value)} aria-describedby="x-problem" aria-invalid={x.problem !== null} />
       </div>
+      {source && <XSource {...source} />}
       {fund.nav && (
         // The NAV point (plan, "The NAV point"): X at NAV is the split as if the fund were liquidated on D (F14).
         <p className="x-box__nav">
@@ -868,8 +934,19 @@ function WideSplit({ ref, rows, total }: { ref: Ref<HTMLTableElement>; rows: Spl
   );
 }
 
+/**
+ * F36: deal by deal, what's due to the LPs before carry on X: "$11,100,000.00". At the end, X final or the NAV point,
+ * it's all their paid-in (FA49), with its parts: the cost, any capital called and never invested, and the fees and
+ * expenses. Only an amount of a cent or more counts as some called and never invested, as an amount owed does.
+ */
+export function dueText(due: Due, atEnd: boolean): string {
+  if (!atEnd) return cents(due.total);
+  const parts = [`${cents(due.cost)} of cost`, ...(owesSomething(due.uninvested) ? [`${cents(due.uninvested)} called and never invested`] : []), `${cents(due.feesAndExpenses)} of fees and expenses`];
+  return `${cents(due.total)}, all their paid-in: ${listed(parts)}`;
+}
+
 /** The split by tier (F16): a tier the terms don't have isn't shown, though the engine gives it as zero. */
-function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
+function SplitTable({ fund, split, atEnd }: { fund: Fund; split: Split; atEnd: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const wide = useRef<HTMLTableElement>(null);
   const phone = useNarrow();
@@ -941,6 +1018,12 @@ function SplitTable({ fund, split }: { fund: Fund; split: Split }) {
           <div>
             <dt>The GP commitment's paid-in</dt>
             <dd>{cents(split.gpCommitmentPaidIn)}</dd>
+          </div>
+        )}
+        {split.due && (
+          <div>
+            <dt>Due to LPs before carry</dt>
+            <dd>{dueText(split.due, atEnd)}</dd>
           </div>
         )}
         {split.prefAccrued && (

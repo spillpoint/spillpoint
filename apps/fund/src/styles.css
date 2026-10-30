@@ -98,6 +98,11 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .x-box__typed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .x-box__typed label { font-weight: 600; }
 .x-box__typed input { width: 14rem; font-variant-numeric: tabular-nums; }
+/* F33, F14: deal by deal, X's source under the box: the investment it comes from and the share it sells. */
+.x-box__source { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-top: 10px; }
+.x-box__source .terms__percent input { width: 5rem; text-align: right; }
+.x-box__source .field-error { flex-basis: 100%; margin: 0; }
+.card[role="status"] .x-box__source { margin-top: 14px; }
 .field-error { color: var(--error); font-size: 0.875rem; margin: 8px 0 0; }
 
 /* The slider beside the box, its marks, and the range's top */
@@ -182,6 +187,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .flows th[scope="row"] { color: var(--muted); padding-top: 14px; }
 .flows .field-error { margin: 4px 0 0; white-space: normal; }
 .flows input.flows__amount { width: 9rem; text-align: right; font-variant-numeric: tabular-nums; }
+/* F33: a distribution's share sold, a percent, beside its From. */
+.flows input.flows__share-box { width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; }
 .flows .muted { display: inline-block; padding-top: 6px; }
 .flows .link-button { padding-top: 6px; }
 .flows__problem td { border-top: 0; padding-top: 0; }
@@ -274,10 +281,13 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Each cash flow is a card wherever the table wouldn't fit (f01m; f01m2): date and type on one line, kind and amount
    on the next, its number and "Remove" at its end, so the cash flows never scroll sideways, on a phone or an upright
-   tablet. The table needs about 720 pixels, so the cards go up to a 760-pixel card, whatever the window: it's the
-   card's own width that decides. Each field keeps its own label ("Row 3's amount"), so the column headings can go. */
+   tablet. From f05c the table, with a share sold, needs about 845 pixels, so the cards go up to an 880-pixel card,
+   whatever the window: it's the card's own width that decides. Each field keeps its own label ("Row 3's amount"), so the
+   column headings can go. */
 .flows__scroll { container-type: inline-size; }
-@container (max-width: 759px) {
+/* An investment's long name shortens in its picker rather than widen the table past its card (F33). */
+.flows .flows__kind select { max-width: 12rem; }
+@container (max-width: 879px) {
   .flows, .flows tbody { display: block; }
   .flows thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
   .flows tbody tr:not(.flows__problem) {
@@ -291,9 +301,18 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .flows .flows__type { grid-area: type; }
   .flows .flows__kind { grid-area: kind; }
   .flows .flows__amount-cell { grid-area: amount; text-align: left; }
+  /* F33: only a type's own fields: a call's kind and amount, a distribution's From, share and amount, a write-off's
+     From. The share says what it is, since the headings go. */
+  .flows tbody tr.flows__row--distribution { grid-template-areas: "date type" "kind amount" "share share" "n remove"; }
+  .flows .flows__share { grid-area: share; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .flows .flows__share .field-error { flex-basis: 100%; }
+  .flows .flows__share::before { content: "Share sold"; }
+  .flows .flows__share input.flows__share-box { width: 5rem; }
+  .flows .flows__na { display: none; }
   .flows .flows__remove { grid-area: remove; justify-self: end; }
   /* Two to a line at 320 pixels: the fields' own padding is trimmed so a date and "Distribution" fit whole. */
   .flows input, .flows select, .flows input.flows__amount { width: 100%; min-width: 0; padding: 6px 6px; }
+  .flows .flows__kind select { max-width: 100%; }
   .flows input[type="date"] { padding: 6px 2px 6px 4px; }
   .flows input[type="date"]::-webkit-calendar-picker-indicator { margin: 0; padding: 0 0 0 2px; }
   .flows .muted { padding-top: 6px; }
@@ -308,6 +327,12 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
    row is a card of its own: the name on one line, the commitment and "Remove" on the next, then the class and the
    close, each with its column's name, so nothing scrolls sideways. */
 .lps__section { margin-top: 20px; }
+/* The Investments tab (f05c): each investment a group, its name, then its checks a line each, as the carry's steps. */
+.investments__one .terms__steps { margin-top: 10px; }
+.investments__one .flows__actions { margin-top: 10px; }
+.investments__one .terms__step-name { min-width: 4.5rem; }
+input.investments__name { width: 16rem; max-width: 100%; }
+input.investments__amount { width: 10rem; text-align: right; font-variant-numeric: tabular-nums; }
 .lps__section h3 { margin: 0; font-size: 1rem; }
 /* The schedule's fee calls (f04c), under the cash flows: a section of the card, as the LPs tab's are. */
 .flows__schedule { margin-top: 20px; }

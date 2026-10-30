@@ -660,12 +660,14 @@ spillpoint-fund 0.5.0 lists a fund's investments and can pay carry deal by deal 
 ### The Cash flows tab
 
 - **A distribution gets "From"** (an investment; "—" for none on the whole fund) **and "Share sold"** (100% by default).
+  - **One column, "Kind / From" (mine):** a call's kind, or a distribution's or write-off's investment, since a row has one or the other. With a column each the table needed 1,018 pixels, more than the card's 926 at a 1,024-pixel window; with one it needs about 845. A long name shortens in its picker rather than widen the table.
   - **"From":** each investment by name, or "Investment 2" while it has none **(mine)**. Deal by deal, and on a write-off, "—" isn't offered **(mine)**, but a row already on it keeps it, with the problem under it, as a Fee row does with a schedule.
   - **"Share sold":** a percent, as the terms' rates are typed, only on a distribution with a From **(mine)**; "—" otherwise. 100% is left out of the input, which is its default **(mine)**.
 - **A "Write-off" type,** with its investment and no amount: "—" under Kind, Share sold and Amount.
 - **A new row (mine)** copies the type, kind and From of the row above, as it copies the type and kind now.
+- **The line under the tab's heading (mine):** "Every call, distribution and write-off before X, in the order entered. …"
 - **The line under the table (mine):** "On one date, calls run first, then the investments' checks, then write-offs, then distributions in the order shown here. “Sort by date” keeps that order within a date."
-- **On a phone (mine),** each row is a card as now, with only its type's fields: a call's kind and amount, a distribution's From, share and amount, a write-off's From.
+- **On a phone (mine),** each row is a card as now, with only its type's fields: a call's kind and amount, a distribution's From, share and amount, a write-off's From. The share says "Share sold" beside its box, since the headings go. The cards go up to an 880-pixel card, from 760, for the wider table.
 - **Pasting (mine):** pasted rows are calls and distributions as now, with no From; deal by deal each distribution then asks for one.
 
 ### Beside X
@@ -677,8 +679,8 @@ spillpoint-fund 0.5.0 lists a fund's investments and can pay carry deal by deal 
 ### Payouts
 
 - **The headline's terms line:** "deal by deal" after the carry: "Carry 20% deal by deal; no pref; GP commitment 1%, fee-free."
-- **Deal by deal, beside the split:** "Due to LPs before carry", among the facts under the split table, to the cent as they are **(mine)**: "$11,100,000.00".
-  - **At the end,** X final or the NAV point, its parts **(the words mine)**: "$11,100,000.00, all their paid-in: $9,900,000.00 of cost and $1,200,000.00 of fees and expenses". With capital called and never invested: "…: $9,000,000.00 of cost, $900,000.00 called and never invested, and $1,200,000.00 of fees and expenses". Only an amount of a cent or more counts as some.
+- **Deal by deal, beside the split:** "Due to LPs before carry", among the facts under the split table, after the paid-ins, to the cent as they are **(mine)**: "$11,100,000.00".
+  - **At the end,** X final or the NAV point, its parts **(the words mine)**: "$11,100,000.00, all their paid-in: $9,900,000.00 of cost and $1,200,000.00 of fees and expenses". With capital called and never invested: "…: $9,000,000.00 of cost, $900,000.00 called and never invested and $1,200,000.00 of fees and expenses", listed as the headline lists carry steps, with no comma before the "and". Only an amount of a cent or more counts as some.
 - **The classes card:** each class's due, a column "Due before carry" **(the heading mine)**, deal by deal.
 - **At the NAV point of a fund whose X isn't final (mine),** the split, its due and the headline are the NAV split's, as the cards after the split already are. On the whole fund they're the same as the x-axis's split there. Deal by deal they can differ, since at the NAV point what's due is the end's (FA58): case 36 has $12,855,000 due at its NAV point and $10,069,750 on its axis. The chart's lines stay on the x-axis.
 - **The notice on Payouts (mine)** names the tab the last change was made on, not the problem's: switching to deal by deal on Terms, with no investments, reads "Your last change to the terms has a problem, …", and "Fix it" goes to the Investments tab.
