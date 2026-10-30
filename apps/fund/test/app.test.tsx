@@ -108,8 +108,16 @@ const headline = () => [...screen.getByRole("region", { name: "The answer" }).qu
 const fact = (label: string | RegExp) => screen.getByText(label, { selector: "dt" }).nextElementSibling!.textContent;
 
 describe("the fund page", () => {
-  it("offers six examples, read from the locked cases at build time, a flat 20% fund first, then a blank fund", () => {
-    expect(examples.map((e) => e.id)).toEqual(["fund-03-gp-commitment", "fund-17-lps-three", "fund-19-lps-clawback", "fund-26-closes-and-classes", "fund-29-fee-schedule", "fund-12-spv"]);
+  it("offers seven examples, read from the locked cases at build time, a flat 20% fund first, then a blank fund", () => {
+    expect(examples.map((e) => e.id)).toEqual([
+      "fund-03-gp-commitment",
+      "fund-17-lps-three",
+      "fund-19-lps-clawback",
+      "fund-26-closes-and-classes",
+      "fund-29-fee-schedule",
+      "fund-34-deal-by-deal",
+      "fund-12-spv",
+    ]);
     for (const e of examples) expect(e.fund).toEqual(caseFile(e.id, "inputs.json").fund);
     render(<App />);
     const picker = screen.getByLabelText("Start from") as HTMLSelectElement;
@@ -119,6 +127,7 @@ describe("the fund page", () => {
       "A late call, a clawback and two LPs (fictional)",
       "Two later closes and a friends-and-family class (fictional)",
       "A fund with a 2% fee schedule (fictional)",
+      "A fund that pays carry deal by deal (fictional)",
       "An SPV: one company, the exit as its last distribution (fictional)",
       "A blank fund",
     ]);
