@@ -186,6 +186,44 @@ describe("a file the page can't use is refused in one line, the current fund kep
     expect(status()).toBe("Couldn't open millrace.json. This is a cap table file. Open it on the main page.");
   });
 
+  it("refuses a file with a management fee on invested capital, until the page shows it, and keeps the fund it had", async () => {
+    render(<App />);
+    const before = [pickerText(), answer()];
+    await openFile(caseText("fund-38-fees-on-invested-capital"), "fund-38-fees-on-invested-capital.json");
+    expect(status()).toBe("Couldn't open fund-38-fees-on-invested-capital.json. This file has a management fee on invested capital; the page shows it from the next version.");
+    expect([pickerText(), answer()]).toEqual(before);
+  });
+
+  it("refuses a saved file or a bare input with a fee step on invested capital, whatever its basis's shape, and opens one on commitments", () => {
+    const refused = (text: string) => {
+      const r = readFile(text);
+      return r.ok ? "opened" : r.message;
+    };
+    const later = "This file has a management fee on invested capital; the page shows it from the next version.";
+    for (const dir of ["fund-38-fees-on-invested-capital", "fund-39-invested-capital-deal-by-deal-classes", "fund-40-spv-fees-on-invested-capital"]) expect(refused(caseText(dir))).toBe(later);
+    const fund = caseFile("fund-29-fee-schedule", "inputs.json").fund;
+    const withBasis = (basis: unknown) => ({ ...fund, terms: { ...fund.terms, management_fee: { ...fund.terms.management_fee, steps: [fund.terms.management_fee.steps[0], { ...fund.terms.management_fee.steps[1], basis }] } } });
+    // Case 29 has no investments, which the engine would refuse; the line comes first.
+    expect(refused(savedFund(withBasis("invested_capital")))).toBe(later);
+    // Before the engine reads it, so a basis the engine would refuse gets the same line.
+    for (const bad of ["Invested_Capital", "Commitments", 5, ["commitments"]]) expect(refused(JSON.stringify(withBasis(bad))), JSON.stringify(bad)).toBe(later);
+    // Left out, null or "commitments" is the default (FA63).
+    expect(refused(savedFund(withBasis(null)))).toBe("opened");
+    expect(refused(savedFund(withBasis("commitments")))).toBe("opened");
+  });
+
+  it("opens fee steps written on commitments, and saves them as the same fund without the basis", async () => {
+    const input = caseFile("fund-29-fee-schedule", "inputs.json").fund;
+    const named = { ...input, terms: { ...input.terms, management_fee: { ...input.terms.management_fee, steps: input.terms.management_fee.steps.map((s: object) => ({ ...s, basis: "commitments" })) } } };
+    render(<App />);
+    await openFile(savedFund(named), "named.json");
+    expect(status()).toBe("Opened named.json.");
+    save();
+    const file = await saved();
+    expect(file.fund.terms.management_fee.steps.map((s: object) => "basis" in s)).toEqual([false, false]);
+    expect(valuesOf(file.fund)).toEqual(valuesOf(input));
+  });
+
   it("refuses each other file it can't use, naming the row or term", () => {
     const refused = (text: string) => {
       const r = readFile(text);
