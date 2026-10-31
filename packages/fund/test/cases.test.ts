@@ -4,7 +4,8 @@
 // accounts and their equalization, since the engine reads them only from f03b. The management fees' cases (f04a) are
 // held to their fee calls, their back fees and the paid-in they make, since the engine reads them only from f04b. The
 // deals' cases (f05a) are held to their investments and, deal by deal, to what's due on X and the tier 1 it gives, since
-// the engine reads them only from f05b.
+// the engine reads them only from f05b. The cases with fees on invested capital (f06a) are held to their fee calls,
+// each worked again here day by day from the inputs alone, since the engine reads them only from f06b.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -115,7 +116,8 @@ interface InputClass {
 interface InputSchedule {
   start: string;
   frequency?: string | null;
-  steps: { rate: string; from?: string | null }[];
+  /** F39: from 0.6.0 each step has a basis, commitments by default. */
+  steps: { rate: string; from?: string | null; basis?: string | null }[];
   commitments?: string | null;
 }
 interface InputInvestment {
@@ -211,6 +213,8 @@ const investmentsOf = (dir: string) => readJson<Inputs>(dir, "inputs.json").fund
 /** F33: the cases that list their investments, and of them those that pay carry deal by deal (F34). */
 const INVESTED = RUN.filter((d) => investmentsOf(d).length > 0);
 const DEAL_BY_DEAL = RUN.filter((d) => readJson<Inputs>(d, "inputs.json").fund.terms.carry_basis === "deal_by_deal");
+/** F39: the cases with a fee step on invested capital. */
+const ON_INVESTED = RUN.filter((d) => (scheduleOf(d)?.steps ?? []).some((s) => s.basis === "invested_capital"));
 
 /** F23, FA22: the accounts, the fund's terms first, then each class an LP names in the input's order. */
 function accountsOf(dir: string): (string | null)[] {
@@ -221,13 +225,13 @@ function accountsOf(dir: string): (string | null)[] {
 }
 
 describe("fund cases", () => {
-  it("are thirty-two runs and five sets of refusals", () => {
-    expect(RUN).toHaveLength(32);
-    expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused", "fund-32-fees-refused", "fund-37-deals-refused"]);
+  it("are thirty-five runs and six sets of refusals", () => {
+    expect(RUN).toHaveLength(35);
+    expect(REFUSED).toEqual(["fund-14-refused", "fund-21-lps-refused", "fund-27-classes-refused", "fund-32-fees-refused", "fund-37-deals-refused", "fund-41-invested-capital-refused"]);
     expect([...RUN, ...REFUSED].sort()).toEqual(FUND);
   });
 
-  it("have LPs in cases 17 to 20, 22 to 26, 28, 30, 31 and 36 (F19)", () => {
+  it("have LPs in cases 17 to 20, 22 to 26, 28, 30, 31, 36 and 39 (F19)", () => {
     expect(LP_RUN).toEqual([
       "fund-17-lps-three",
       "fund-18-lps-thirds",
@@ -242,25 +246,42 @@ describe("fund cases", () => {
       "fund-30-fee-step-down",
       "fund-31-fee-schedule-classes-closes",
       "fund-36-deal-by-deal-classes-closes",
+      "fund-39-invested-capital-deal-by-deal-classes",
     ]);
   });
 
-  it("have classes or later closes in cases 22 to 26, 28, 31 and 36 only (F22, F25)", () => {
-    expect(CLASS_RUN).toEqual([...LP_RUN.slice(4, 10), "fund-31-fee-schedule-classes-closes", "fund-36-deal-by-deal-classes-closes"]);
+  it("have classes or later closes in cases 22 to 26, 28, 31, 36 and 39 only (F22, F25)", () => {
+    expect(CLASS_RUN).toEqual([...LP_RUN.slice(4, 10), "fund-31-fee-schedule-classes-closes", "fund-36-deal-by-deal-classes-closes", "fund-39-invested-capital-deal-by-deal-classes"]);
   });
 
-  it("have a fee schedule in cases 29 to 31 and 36 only (F30)", () => {
+  it("have a fee schedule in cases 29 to 31, 36 and 38 to 40 only (F30)", () => {
     expect(RUN.filter((d) => scheduleOf(d) !== null)).toEqual([
       "fund-29-fee-schedule",
       "fund-30-fee-step-down",
       "fund-31-fee-schedule-classes-closes",
       "fund-36-deal-by-deal-classes-closes",
+      "fund-38-fees-on-invested-capital",
+      "fund-39-invested-capital-deal-by-deal-classes",
+      "fund-40-spv-fees-on-invested-capital",
     ]);
   });
 
-  it("have investments in cases 33 to 36 only, deal by deal in 34 to 36 (F33, F34)", () => {
-    expect(INVESTED).toEqual(["fund-33-portfolio-whole-fund", "fund-34-deal-by-deal", "fund-35-deal-by-deal-clawback", "fund-36-deal-by-deal-classes-closes"]);
-    expect(DEAL_BY_DEAL).toEqual(INVESTED.slice(1));
+  it("have a fee step on invested capital in cases 38 to 40 only, every step's basis one of the two (F39)", () => {
+    expect(ON_INVESTED).toEqual(["fund-38-fees-on-invested-capital", "fund-39-invested-capital-deal-by-deal-classes", "fund-40-spv-fees-on-invested-capital"]);
+    for (const d of RUN) for (const s of scheduleOf(d)?.steps ?? []) expect([undefined, "commitments", "invested_capital"], d).toContain(s.basis);
+  });
+
+  it("have investments in cases 33 to 36 and 38 to 40 only, deal by deal in 34 to 36 and 39 (F33, F34)", () => {
+    expect(INVESTED).toEqual([
+      "fund-33-portfolio-whole-fund",
+      "fund-34-deal-by-deal",
+      "fund-35-deal-by-deal-clawback",
+      "fund-36-deal-by-deal-classes-closes",
+      "fund-38-fees-on-invested-capital",
+      "fund-39-invested-capital-deal-by-deal-classes",
+      "fund-40-spv-fees-on-invested-capital",
+    ]);
+    expect(DEAL_BY_DEAL).toEqual(["fund-34-deal-by-deal", "fund-35-deal-by-deal-clawback", "fund-36-deal-by-deal-classes-closes", "fund-39-invested-capital-deal-by-deal-classes"]);
   });
 
   it("use 40 significant digits (F17)", () => {
@@ -591,6 +612,75 @@ function gpPart(fund: Inputs["fund"], kind: string, amount: D): D {
 /** FA21: an LP is in at a date when it has no close, or its close is on or before it. */
 const isIn = (lp: InputLp, date: string) => lp.close == null || lp.close <= date;
 
+const DAY = 86_400_000;
+const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+const time = (s: string) => new Date(`${s}T00:00:00Z`).getTime();
+const MONTHS: Record<string, number> = { quarterly: 3, semiannual: 6, annual: 12 };
+
+/** F30: every calendar period from start's to D's, by its date: the first day it covers (start for the first), its last
+ * day, and the calendar period's days. */
+function calendarPeriods(schedule: InputSchedule, d: string): { first_day: string; last_day: string; whole: number }[] {
+  const months = MONTHS[schedule.frequency ?? "quarterly"]!;
+  const out = [];
+  for (let covers = schedule.start; covers <= d; ) {
+    const [y, m] = covers.split("-").map(Number) as [number, number];
+    const month = Math.floor((m - 1) / months) * months;
+    const next = Date.UTC(y, month + months, 1);
+    out.push({ first_day: covers, last_day: iso(next - DAY), whole: (next - Date.UTC(y, month, 1)) / DAY });
+    covers = iso(next);
+  }
+  return out;
+}
+
+/** F38: the fund's net invested capital once every event of a day has happened, from the inputs alone: each investment's
+ * checks to that day, less what its write-offs and distributions realized of what was left, in F4's widened order. */
+function netInvested(fund: Inputs["fund"]): (day: string) => D {
+  const events: { date: string; order: number; i: number; name: string; amount?: D; share?: D }[] = [];
+  for (const inv of fund.investments ?? []) for (const c of inv.checks) events.push({ date: c.date, order: 0, i: 0, name: inv.name, amount: exact(c.amount) });
+  fund.cash_flows.forEach((f, i) => {
+    if (f.type === "write_off") events.push({ date: f.date, order: 1, i, name: f.investment! });
+    else if (f.type === "distribution" && f.investment) events.push({ date: f.date, order: 2, i, name: f.investment, share: exact(f.share ?? "1") });
+  });
+  events.sort((a, b) => (a.date === b.date ? a.order - b.order || a.i - b.i : a.date < b.date ? -1 : 1));
+  const left = new Map<string, D>();
+  const after: [string, D][] = [];
+  let net = new D(0);
+  for (const e of events) {
+    const was = left.get(e.name) ?? new D(0);
+    const now = e.order === 0 ? was.plus(e.amount!) : e.order === 1 ? new D(0) : was.minus(was.times(e.share!));
+    net = net.plus(now).minus(was);
+    left.set(e.name, now);
+    after.push([e.date, net]);
+  }
+  return (day) => after.filter(([date]) => date <= day).at(-1)?.[1] ?? new D(0);
+}
+
+/** F30, F39: a period's LPs' fee, worked day by day from the inputs alone. Each day at the rate of the step in force: on
+ * commitments, times the LPs' fee weights (`commitments` without listed LPs); on invested capital, times (1 − g) of
+ * that day's net invested capital and the LPs' fee weights over their commitments (1 without listed LPs). Added up, over
+ * n × the calendar period's days. */
+function lpsFeeFor(fund: Inputs["fund"], period: { first_day: string; last_day: string; whole: number }, nic: (day: string) => D): D {
+  const schedule = fund.terms.management_fee!;
+  const steps = schedule.steps.map((s, i) => ({ from: i === 0 ? schedule.start : s.from!, rate: exact(s.rate), basis: s.basis ?? "commitments" }));
+  const lps = fund.lps ?? [];
+  const weights = lps.reduce((t, lp) => t.plus(feeWeight(fund, lp)), new D(0));
+  const commitments = lps.reduce((t, lp) => t.plus(exact(lp.commitment)), new D(0));
+  const g = fund.terms.gp_commitment ? exact(fund.terms.gp_commitment.share) : new D(0);
+  let added = new D(0);
+  for (let t = time(period.first_day); t <= time(period.last_day); t += DAY) {
+    const day = iso(t);
+    const step = steps.filter((s) => s.from <= day).at(-1)!;
+    const base =
+      step.basis === "invested_capital"
+        ? new D(1).minus(g).times(nic(day)).times(lps.length ? weights.div(commitments) : 1)
+        : lps.length
+          ? weights
+          : exact(schedule.commitments!);
+    added = added.plus(step.rate.times(base));
+  }
+  return added.div(12 / MONTHS[schedule.frequency ?? "quarterly"]!).div(period.whole);
+}
+
 describe.each(RUN.filter((d) => scheduleOf(d) !== null))("%s, its fee calls", (dir) => {
   const inputs = readJson<Inputs>(dir, "inputs.json").fund;
   const schedule = inputs.terms.management_fee!;
@@ -598,22 +688,35 @@ describe.each(RUN.filter((d) => scheduleOf(d) !== null))("%s, its fee calls", (d
   const calls = expected.fee_calls!;
   const lps = inputs.lps ?? [];
   const d = inputs.distribution_date ?? inputs.as_of;
+  const nic = netInvested(inputs);
 
-  it("are one a calendar period from start's to D's, in advance, the first dated start (F30, FA39)", () => {
-    const months = { quarterly: 3, semiannual: 6, annual: 12 }[schedule.frequency ?? "quarterly"]!;
-    expect(calls[0]!.date).toBe(schedule.start);
-    expect(calls[0]!.first_day).toBe(schedule.start);
+  it("are one a calendar period from start's to D's with something to call, in advance, the first dated start (F30, F39, FA39)", () => {
+    const months = MONTHS[schedule.frequency ?? "quarterly"]!;
+    const periods = calendarPeriods(schedule, d);
+    expect(periods[0]!.first_day).toBe(schedule.start);
+    expect(time(periods.at(-1)!.last_day) + DAY > time(d)).toBe(true);
+    const listed = new Map(calls.map((c) => [c.date, c]));
+    for (const p of periods) {
+      const c = listed.get(p.first_day);
+      // F39, FA40: a period with nothing to call, every day of it at a rate of 0 or on invested capital with nothing
+      // invested, isn't a call. Every other period is one, above $0.
+      if (c === undefined) {
+        expect(lpsFeeFor(inputs, p, nic).isZero(), p.first_day).toBe(true);
+        continue;
+      }
+      expect([c.first_day, c.last_day], c.date).toEqual([p.first_day, p.last_day]);
+      expect(exact(c.call.exact).gt(0), c.date).toBe(true);
+    }
+    expect(calls.map((c) => c.date)).toEqual(periods.map((p) => p.first_day).filter((day) => listed.has(day)));
     calls.forEach((c, i) => {
-      const [y, m, day] = c.first_day.split("-").map(Number) as [number, number, number];
-      if (i > 0) expect([day, (m - 1) % months], c.date).toEqual([1, 0]);
-      expect(c.date, c.date).toBe(c.first_day);
-      expect(c.date <= d, c.date).toBe(true);
-      const end = new Date(Date.UTC(y, Math.floor((m - 1) / months) * months + months, 0)).toISOString().slice(0, 10);
-      expect(c.last_day, c.date).toBe(end);
-      if (i > 0) expect(new Date(`${calls[i - 1]!.last_day}T00:00:00Z`).getTime() + 86_400_000, c.date).toBe(new Date(`${c.date}T00:00:00Z`).getTime());
+      const [, m, day] = c.first_day.split("-").map(Number) as [number, number, number];
+      if (i > 0 || c.date !== schedule.start) expect([day, (m - 1) % months], c.date).toEqual([1, 0]);
     });
-    const next = new Date(`${calls.at(-1)!.last_day}T00:00:00Z`).getTime() + 86_400_000;
-    expect(new Date(next).toISOString().slice(0, 10) > d).toBe(true);
+  });
+
+  it("are each day's rate on its step's basis, added up day by day, over n × the period's days (F30, F38, F39)", () => {
+    const periods = new Map(calendarPeriods(schedule, d).map((p) => [p.first_day, p]));
+    for (const c of calls) expect(exact(c.lps.exact).minus(lpsFeeFor(inputs, periods.get(c.date)!, nic)).abs().lte(CLOSE), c.date).toBe(true);
   });
 
   it("are the LPs' fees, with the GP commitment's g when it pays fees, every amount to the cent and exact (F3, F30, FC13)", () => {
@@ -741,6 +844,15 @@ describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
   const invested = investmentCalls(inputs, d).times(new D(1).minus(g));
   const accounts = expected.accounts ?? [{ class: null, share: "1", paid_in: expected.lps_paid_in }];
   const near = (a: D, b: D) => a.minus(b).abs().lte(CLOSE);
+  // Each account's paid-in, exact: its LPs' (FC9), or without listed LPs every call's LPs' part, the schedule's from its
+  // fee calls. Fees on invested capital rarely come to whole cents (FA65), so the cents a case file shows won't do.
+  const entered = inputs.cash_flows.filter((f) => f.type === "call").reduce((s, f) => s.plus(exact(f.amount)).minus(gpPart(inputs, f.kind!, exact(f.amount))), new D(0));
+  const scheduled = (expected.fee_calls ?? []).reduce((s, c) => s.plus(exact(c.lps.exact)), new D(0));
+  const paidIn = (i: number) => {
+    if (!expected.lps) return entered.plus(scheduled);
+    const mine = expected.accounts ? expected.lps.filter((r) => (r.class ?? null) === accounts[i]!.class) : expected.lps;
+    return mine.reduce((s, r) => s.plus(exact(r.paid_in.exact)), new D(0));
+  };
 
   it("gives what's due on X at every point, the cost made and realized, every amount to the cent and exact (F36, FC15)", () => {
     for (const p of expected.points) {
@@ -770,7 +882,7 @@ describe.each(DEAL_BY_DEAL)("%s, what's due deal by deal", (dir) => {
         expect(due.uninvested === undefined || (end && uninvested.gt(0)), `${p.x} ${i} uninvested only at the end, only when there is some`).toBe(true);
         if (end) expect(near(uninvested, invested.times(share).minus(cost)), `${p.x} ${i} uninvested`).toBe(true);
         // Its fees and expenses to D are its paid-in less its part of the investment calls (F5, F23).
-        const fees = new D(accounts[i]!.paid_in).minus(invested.times(share));
+        const fees = paidIn(i).minus(invested.times(share));
         expect(near(exact(due.fees_and_expenses.exact), end ? fees : fees.times(realized).div(made)), `${p.x} ${i} fees`).toBe(true);
         expect(near(exact(due.total.exact), cost.plus(uninvested).plus(exact(due.fees_and_expenses.exact))), `${p.x} ${i} total`).toBe(true);
       });
