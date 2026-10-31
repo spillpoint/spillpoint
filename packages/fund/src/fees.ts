@@ -12,7 +12,11 @@
 //   at its date are all of them, and it counts as entered;
 // - worked out by a schedule (F30): one call a calendar period, each LP's fee
 //   its commitment times its class factor times the period's fee factor, the
-//   call the LPs' fees over (1 − g) when the GP commitment pays fees.
+//   call the LPs' fees over (1 − g) when the GP commitment pays fees. From
+//   0.6.0 a step can be on invested capital instead (F39): its days charge the
+//   LPs' part of each day's net invested capital (F38), (1 − g) of it, times
+//   their fee weights over their commitments, shared between the LPs by fee
+//   weight as on commitments. A period with nothing to call isn't a call.
 // Either way an LP that joins at a later close owes its own part of each fee
 // call before its close, its back fees, paid to the manager (equalization.ts).
 // Nothing about fees moves between the LPs. Amounts are 40-digit decimals;
@@ -22,7 +26,9 @@ import { D, ONE, ZERO } from "./decimal.ts";
 import { dayNumber, isoDate } from "./dates.ts";
 import { feeWeight, isIn, wasRead } from "./input.ts";
 import type { CallKind, CashFlow, Fund } from "./model.ts";
+import { investedDays } from "./portfolio.ts";
 import { schedulePeriods } from "./schedule.ts";
+import type { Period } from "./schedule.ts";
 
 /** One LP's fee for one of the schedule's periods (F31). */
 export interface LpFee {
@@ -97,10 +103,11 @@ function allFeeWeights(fund: Fund): D {
 }
 
 /**
- * The schedule's fee calls to D (F30, F31), once for the fund, in date order: each its date, the days it covers, the
- * call, the LPs' part and the GP commitment's, and each listed LP's fee. Null without a schedule; empty when it starts
- * after D (FA39). A period whose every day is at a rate of 0 isn't a call (FA40). Fresh each time, as a split is: what
- * a caller does to them changes nothing the waterfall keeps.
+ * The schedule's fee calls to D (F30, F31, F39), once for the fund, in date order: each its date, the days it covers,
+ * the call, the LPs' part and the GP commitment's, and each listed LP's fee. Null without a schedule; empty when it
+ * starts after D (FA39). A period with nothing to call isn't a call: every day of it at a rate of 0 (FA40), or from
+ * 0.6.0 on invested capital with nothing invested (F39). Fresh each time, as a split is: what a caller does to them
+ * changes nothing the waterfall keeps.
  */
 export function feeCalls(fund: Fund): FeeCall[] | null {
   return scheduleCalls(fund)?.map((c) => ({ ...c, call: new D(c.call), lps: new D(c.lps), gpCommitment: new D(c.gpCommitment), byLp: c.byLp.map((f) => ({ name: f.name, fee: new D(f.fee) })) })) ?? null;
@@ -117,17 +124,30 @@ function scheduleCalls(fund: Fund): FeeCall[] | null {
     const firstRate = fee.steps[0]!.rate;
     const lps = fund.lps ?? [];
     const g = fund.terms.gpCommitment;
-    out = schedulePeriods(fee, dayNumber(fund.distributionDate)!).map((p): FeeCall => {
+    // F3, F39: the LPs' part of net invested capital, the GP commitment's share g aside whether or not it pays fees.
+    const lpsPart = ONE.minus(g?.share ?? ZERO);
+    const commitments = sum(lps.map((lp) => lp.commitment));
+    out = [];
+    for (const p of schedulePeriods(fee, dayNumber(fund.distributionDate)!)) {
+      const onInvested = investedRateDays(fund, p);
+      // F39, FA40: a period with nothing to call isn't a call, so every call is above $0.
+      if (p.onCommitments.isZero() && onInvested.isZero()) continue;
       // F30: an LP's fee is its commitment, times its class factor (its class's fee rate over the schedule's first
       // rate), times the fee factor. Its fee weight is its commitment times its class's rate, or the first rate on the
       // fund's terms (F22), so the fee is that weight times the rate-days, over the first rate times the divisor:
-      // multiplied first, divided once.
-      const byLp = lps.map((lp) => ({ name: lp.name, fee: feeWeight(fund, lp).times(p.rateDays).div(firstRate.times(p.divisor)) }));
-      // Without listed LPs, the LPs' fee is `commitments` times the fee factor.
-      const lpsFee = lps.length > 0 ? sum(byLp.map((f) => f.fee)) : fee.commitments!.times(p.rateDays).div(p.divisor);
+      // multiplied first, divided once. F39: a day on invested capital charges the LPs' part of that day's net
+      // invested capital times their class factors over their commitments, shared by fee weight, so each LP's is its
+      // weight times the LPs' part of the rate-days on invested capital over all their commitments, beside its
+      // rate-days on commitments. Without a day on invested capital that's 0.5.0's, digit for digit.
+      const perWeight = onInvested.isZero() ? p.onCommitments : p.onCommitments.times(commitments).plus(lpsPart.times(onInvested));
+      const over = onInvested.isZero() ? firstRate.times(p.divisor) : firstRate.times(p.divisor).times(commitments);
+      const byLp = lps.map((lp) => ({ name: lp.name, fee: feeWeight(fund, lp).times(perWeight).div(over) }));
+      // Without listed LPs, the LPs' fee is `commitments` times the fee factor on commitments (F30), and the LPs' part
+      // of net invested capital times the rate on invested capital, over the same divisor (F39).
+      const lpsFee = lps.length > 0 ? sum(byLp.map((f) => f.fee)) : withoutLps(fee.commitments, p, lpsPart.times(onInvested));
       // F3, F30: when the GP commitment pays fees, the call is the LPs' fees over (1 − g), so it pays g of it.
       const call = g?.paysFees ? lpsFee.div(ONE.minus(g.share)) : lpsFee;
-      return {
+      out.push({
         date: isoDate(p.date),
         firstDay: isoDate(p.date),
         lastDay: isoDate(p.last),
@@ -135,11 +155,43 @@ function scheduleCalls(fund: Fund): FeeCall[] | null {
         lps: lpsFee,
         gpCommitment: gpCommitmentPart(fund, "fee", call),
         byLp,
-      };
-    });
+      });
+    }
   }
   if (wasRead(fund)) scheduleKept.set(fund, out);
   return out;
+}
+
+/**
+ * F39: a period's days on invested capital, each at its rate times that day's net invested capital (F38), added up:
+ * the whole fund's, before the LPs' part is taken. A run of days at one rate charges its rate times the days' net
+ * invested capital added up. Zero without a day on invested capital, or with nothing invested on any of them.
+ */
+function investedRateDays(fund: Fund, p: Period): D {
+  return sum(p.onInvested.map((run) => run.rate.times(investedDays(fund, run.first, run.last))));
+}
+
+/**
+ * F30, F39, without listed LPs: `commitments` times the rate-days on commitments, and the LPs' part of the rate-days on
+ * invested capital, over the divisor. Without a day on invested capital that's 0.5.0's, digit for digit; without a day
+ * on commitments `commitments` isn't used, and needn't be given (F40).
+ */
+function withoutLps(commitments: D | null, p: Period, onInvested: D): D {
+  if (onInvested.isZero()) return commitments!.times(p.onCommitments).div(p.divisor);
+  const onCommitments = p.onCommitments.isZero() ? ZERO : commitments!.times(p.onCommitments);
+  return onCommitments.plus(onInvested).div(p.divisor);
+}
+
+/**
+ * F25, F30, FA66: the fund's first call, entered or the schedule's, which decides who joins at a later close. The
+ * schedule's periods count by their dates, as readFund counts them, even one on invested capital with nothing to call:
+ * which periods count never turns on the investments.
+ */
+export function firstCallDay(fund: Fund): number {
+  const days = fund.cashFlows.filter((f) => f.type === "call").map((f) => dayNumber(f.date)!);
+  const fee = fund.terms.managementFee ?? null;
+  if (fee) days.push(...schedulePeriods(fee, dayNumber(fund.distributionDate)!).map((p) => p.date));
+  return Math.min(...days);
 }
 
 const flowsKept = new WeakMap<Fund, RunFlow[]>();

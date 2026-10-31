@@ -26,7 +26,7 @@ import { ZERO } from "./decimal.ts";
 import type { D } from "./decimal.ts";
 import { dayNumber } from "./dates.ts";
 import { refuse } from "./errors.ts";
-import { ownFeePart, runFlows } from "./fees.ts";
+import { firstCallDay, ownFeePart, runFlows } from "./fees.ts";
 import type { RunFlow } from "./fees.ts";
 import { isIn, joinsLater, needsEqualizationRate } from "./input.ts";
 import type { Fund, Lp } from "./model.ts";
@@ -97,8 +97,9 @@ export function equalization(fund: Fund): Equalization | null {
   const lps = fund.lps ?? [];
   const flows = runFlows(fund);
   const calls = flows.filter((f) => f.type === "call");
-  // F25, F30: the fund's first call, entered or the schedule's, decides who joins at a later close.
-  const firstCall = Math.min(...calls.map((f) => f.day));
+  // F25, F30: the fund's first call, entered or the schedule's, decides who joins at a later close. From 0.6.0 the
+  // schedule's periods count by date, even one with nothing to call (FA66), so it can come before every call made.
+  const firstCall = firstCallDay(fund);
   const dates = [...new Set(lps.filter((lp) => joinsLater(lp, firstCall)).map((lp) => lp.close!))].sort((a, b) => dayNumber(a)! - dayNumber(b)!);
   if (dates.length === 0) return null;
   // F29: it must be entered when an investment or expense call comes before a later close. readFund refuses a fund

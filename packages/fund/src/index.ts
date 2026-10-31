@@ -11,6 +11,7 @@
 //   const eq = equalization(fund);               // what moves between LPs at later closes (F25)
 //   const fees = feeCalls(fund);                 // a fee schedule's calls, from 0.4.0 (F30)
 //   const rows = portfolio(fund);                // the investments table, from 0.5.0 (F36)
+//   const invested = netInvestedCapital(fund);   // what's left of the investments at D, from 0.6.0 (F38)
 //   split.due                                    // deal by deal, what's due before carry on X (F35)
 //
 // Everything runs locally: no I/O, no network. Rules are in docs/SPEC.md and
@@ -28,6 +29,8 @@ export { readFund } from "./input.ts";
 export type { CallKind, CarryStep, CashFlow, FeeFrequency, FeeStep, Fund, FundTerms, GpCommitment, Lp, LpClass, ManagementFee } from "./model.ts";
 // From 0.5.0: the carry basis, the investments and X's source (F33, F34).
 export type { CarryBasis, DistributionFrom, Investment, InvestmentCheck } from "./model.ts";
+// From 0.6.0: what a fee step's rate is charged on, commitments or invested capital (F39).
+export type { FeeBasis } from "./model.ts";
 
 // The split at X on D.
 export { splitAt, splitAtNav } from "./waterfall.ts";
@@ -44,8 +47,9 @@ export type { Equalization, EqualizationAmounts, LaterClose } from "./equalizati
 export { feeCalls } from "./fees.ts";
 export type { FeeCall, LpFee } from "./fees.ts";
 
-// The investments table: each investment's cost, what's realized of it and its proceeds, from 0.5.0 (F36).
-export { portfolio } from "./portfolio.ts";
+// The investments table: each investment's cost, what's realized of it and its proceeds, from 0.5.0 (F36). From 0.6.0,
+// the fund's net invested capital at D, what a fee on invested capital is charged on (F38).
+export { netInvestedCapital, portfolio } from "./portfolio.ts";
 export type { PortfolioRow } from "./portfolio.ts";
 
 // Every X where the split bends, with its reasons (F15).

@@ -117,6 +117,12 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
+  // Until the page shows fees on invested capital (f06c, which removes this), a file with a fee step on invested capital is
+  // refused, so a save can't drop it: the forms have no place for a step's basis yet. Before the engine reads it, so a
+  // basis the engine would refuse gets the same line. A basis left out, null or "commitments" is the default (FA63), so
+  // it opens, and saves as the same fund without it.
+  if (hasInvestedCapitalFee(input)) return { ok: false, message: INVESTED_CAPITAL_LATER };
+
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -165,6 +171,15 @@ function trimmedNames(input: unknown): unknown {
   if (Array.isArray(input.cash_flows)) out = { ...out, cash_flows: input.cash_flows.map((f: unknown) => trimmed(f, ["investment"])) };
   if (isObject(input.distribution_from)) out = { ...out, distribution_from: trimmed(input.distribution_from, ["investment"]) };
   return out;
+}
+
+const INVESTED_CAPITAL_LATER = "This file has a management fee on invested capital; the page shows it from the next version.";
+
+/** F39: a step of the fund's management fee schedule gives a basis other than the default, commitments. */
+function hasInvestedCapitalFee(input: unknown): boolean {
+  if (!isObject(input) || !isObject(input.terms) || !isObject(input.terms.management_fee)) return false;
+  const steps = input.terms.management_fee.steps;
+  return Array.isArray(steps) && steps.some((s) => isObject(s) && s.basis !== undefined && s.basis !== null && s.basis !== "commitments");
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';

@@ -373,8 +373,8 @@ describe("the fund-32 refusals, in the page's words", () => {
     "fee-schedule-offset.json": offset,
     "fee-start-missing.json": "Its management fee's start date is missing.",
     "fee-start-not-a-date.json": "Its management fee's start date isn't a date that exists, written YYYY-MM-DD.",
-    "fee-step-basis.json":
-      "This file has a term the page doesn't model: `basis` on a fee rate step (step 2 of its management fee schedule). A step has only its rate and the date it's in force from.",
+    // From 0.6.0 a step's basis is read (F40); until f06c the page refuses a step on invested capital in one line.
+    "fee-step-basis.json": "This file has a management fee on invested capital; the page shows it from the next version.",
     "fee-step-from-at-start.json": `Fee rate step 2${order}`,
     "fee-step-from-missing.json": "Fee rate step 2's date is missing.",
     "fee-step-from-not-a-date.json": "Fee rate step 2's date isn't a date that exists, written YYYY-MM-DD.",
