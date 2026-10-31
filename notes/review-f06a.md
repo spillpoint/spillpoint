@@ -30,7 +30,8 @@ No engine or page code.
 | `fc59925` | `CLAUDE.md` names the 0.6.0 steps and F1 to F40 |
 | `1bcd995` | FA66: why counting a period wholly at a rate of 0 couldn't change the checks that count calls |
 | `934f616` | this note |
-| the next commit | the fix-up: fund-32's derivation row, FC14, and §10 of this note |
+| `daca29c` | the fix-up: fund-32's derivation row, FC14, and §10 of this note |
+| the next commit | the fix-up: fund-41's last sentence, and its sha256 in §6 and §10 |
 
 ## 1. The spec (`packages/fund/docs/SPEC.md`)
 
@@ -165,7 +166,9 @@ Each derivation's sha256, the same in my scratch folder and the case folder:
 | `fund-38-fees-on-invested-capital/DERIVATION.md` | `bec4f1ad547a0f45863649a14b44180699baebbefa8925d0e2de98e44734632b` |
 | `fund-39-invested-capital-deal-by-deal-classes/DERIVATION.md` | `0f0313ce9a37f2b5bb730f475811c1f0253f2bb3399b55f19e3b07cf95ce4ada` |
 | `fund-40-spv-fees-on-invested-capital/DERIVATION.md` | `c0e8fa0d9a665c73975b818d5a2e086ba32f4b2010ff16874ddb2ed85cddd1f0` |
-| `fund-41-invested-capital-refused/DERIVATION.md` | `770291f57442ed9e61fb7fd5607be7a1b9e8480e8a26a802f73b6006bfc10078` |
+| `fund-41-invested-capital-refused/DERIVATION.md` | `06c81bcc8c12080c7f9783d56dbb00046eaccc1a06fbde2e152ee5e54f40c57b` |
+
+fund-41's was `770291f57442ed9e61fb7fd5607be7a1b9e8480e8a26a802f73b6006bfc10078` until the fix-up changed its last sentence (§10).
 
 ## 7. The pending lists and the case-file checks (your step 4)
 
@@ -313,13 +316,15 @@ The 2021-01-10 investment call's LPs' $5,880,000 rebalances from 10/14 and 4/14 
 
 ## 10. The fix-up after your review (2026-10-31)
 
-Your answers to the four open questions, and the one change to a case file you asked for.
+Your answers to the four open questions and to the one I asked after the fix-up, and the two changes to case files you asked for.
 
 **Your answers:**
 1. **fund-32's derivation:** fix the row now, while this PR needs the label anyway. A derivation that describes a refusal the fixture no longer gives is wrong, not history. Done, below.
 2. **FA64, a step dated after D:** agreed, a step counts whatever its date. A file that reads shouldn't start refusing just because its as-of date moves past a step's date with nothing else changed, and a GP who enters a future switch to invested capital needs the investments on that day anyway. The same goes for `commitments` and a later step on commitments. FA64 stands as written.
 3. **FA66, a first period with nothing to call:** agreed, for FA40's reason. Which periods count is decided from the schedule alone, so who joins at a later close never turns on the investments' dates or the fee arithmetic. The LP did join after the fee term began, and its all-zero equalization row is the true answer: it owes nothing. FA66 stands as written.
 4. **The GP commitment's part on invested capital:** keep F39. The GP commitment pays its share of each call, the LPs' fee over 1 − g. That's the 0.4.0 rule on commitments too, where with fee classes it already pays the LPs' blended rate, not the full one. Charging it the full rate only on invested capital would make the two bases disagree. A fee rate of the GP commitment's own would be a Later item if a fund asks for it; I haven't added it to the Later list.
+
+5. **fund-41's derivation, its last sentence** (asked after the fix-up): fix it too, in this PR. A derivation that says something no longer true is wrong, and the label covers it. Done, below.
 
 You agreed FA63 to FA66 and FC17. Their rows are unchanged; as in 0.5.0, their status moves to Confirmed in the engine step.
 
@@ -337,7 +342,15 @@ You agreed FA63 to FA66 and FC17. Their rows are unchanged; as in 0.5.0, their s
   - `expected.json` and the 37 fixtures are unchanged since `934f616`. In fund-32, `git diff --stat 934f616` lists only `DERIVATION.md`.
   - `generate.py --check` matches all 41 folders, and the fund package's tests pass as before: 1,959, 13 skipped.
 - **FC14** in `ASSUMPTIONS.md` said only the expectation and the `about` moved in fund-32. It now names the derivation row too. §1, §3, §5 and step 6 of "How to check it" here say the same.
-- **Not changed:** fund-41's derivation. Its last sentence still says nothing moved in fund-32 but the expectation and the `about` (the open question below).
+
+**fund-41's derivation.** Its last sentence, about fund-32's moved fixture, said only the expectation and the `about` moved there. It now reads, in my wording, which you approved: "Its expectation, its `about` and its row in fund-32's derivation moved; nothing else there did."
+
+- **How it got there:** I took `934f616`'s file into my scratch folder with `git show`, replaced that one sentence, which ends the file, and checked it there. You copied it in with `cp`.
+- **Its sha256,** the same in my scratch folder and the case folder: `06c81bcc8c12080c7f9783d56dbb00046eaccc1a06fbde2e152ee5e54f40c57b`. `934f616`'s was `770291f57442ed9e61fb7fd5607be7a1b9e8480e8a26a802f73b6006bfc10078`. §6's table has the new one.
+- **Checked after the copy:**
+  - Against `934f616`, the file differs by that sentence only. It ends the paragraph on line 37, so `git diff --numstat 934f616` gives one line out and one in, and `--word-diff` shows only the sentence's words.
+  - fund-41's `expected.json` and its 15 fixtures are unchanged since `934f616`. `git diff --stat 934f616 -- packages/fund/cases` lists only the two derivations, fund-32's and fund-41's.
+  - `generate.py --check` matches all 41 folders.
 
 **How to check the fix-up:**
 
@@ -348,10 +361,16 @@ git diff main -- packages/fund/cases/fund-32-fees-refused
 It shows the fixture's `about`, its entry in `expected.json`, and the one derivation row.
 
 ```bash
-shasum -a 256 packages/fund/cases/fund-32-fees-refused/DERIVATION.md
+git diff 934f616 -- packages/fund/cases
 ```
 
-It prints `40f8b92a…`, as above.
+It shows the fix-up's two lines: fund-32's derivation row and fund-41's last sentence.
+
+```bash
+shasum -a 256 packages/fund/cases/fund-32-fees-refused/DERIVATION.md packages/fund/cases/fund-41-invested-capital-refused/DERIVATION.md
+```
+
+It prints `40f8b92a…` and `06c81bcc…`, as above.
 
 ## How to check it by behavior
 
@@ -419,6 +438,4 @@ It prints `40f8b92a…`, as above.
 
 ## Open questions
 
-1. **fund-41's derivation, its last sentence.** It says of fund-32's moved fixture: "Its expectation and its `about` moved in fund-32; nothing else there did." Since the fix-up, fund-32's derivation row has moved too, so the sentence is wrong in the way the row was. It's in a locked case file whose sha256 you've checked, and you asked for fund-32's row and nothing else, so I left it. Shall I change it as I did fund-32's row, in my scratch folder and then your `cp`? It would read: "Its expectation, its `about` and its row in fund-32's derivation moved; nothing else there did." That changes fund-41's sha256 from `770291f5…`.
-
-The four questions from the first round are answered in §10.
+None. The four from the first round, and fund-41's sentence asked after the fix-up, are answered in §10.
