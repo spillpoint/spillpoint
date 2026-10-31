@@ -7,7 +7,7 @@ How a fund's distribution splits between its LPs and its GP. Give spillpoint-fun
 - the carry, flat or in steps by the LPs' multiple
 - the GP commitment's own line beside them
 
-It finds every **breakpoint**, every distribution where the split bends, and explains each one in plain English. And when the distribution is the fund's last, it works out any **clawback** the GP owes back. Given the fund's LPs, it gives **each LP's share** of what the LPs get. From 0.3.0 LPs can be in **classes** with their own fee rate and carry, each class running the waterfall on its own, and can join at **later closes**, with the equalization between them worked out. From 0.4.0 it works out **management fees** from a schedule, a rate on commitments with steps by date, and a fee call before a later close is each LP's own: the joining LP pays its **back fees** to the manager. From 0.5.0 it lists a fund's **investments**, their checks, exits and write-offs, and can pay **carry deal by deal**: before carry, the LPs get back the cost of each investment exited or written off, with its share of fees and expenses.
+It finds every **breakpoint**, every distribution where the split bends, and explains each one in plain English. And when the distribution is the fund's last, it works out any **clawback** the GP owes back. Given the fund's LPs, it gives **each LP's share** of what the LPs get. From 0.3.0 LPs can be in **classes** with their own fee rate and carry, each class running the waterfall on its own, and can join at **later closes**, with the equalization between them worked out. From 0.4.0 it works out **management fees** from a schedule, a rate on commitments with steps by date, and a fee call before a later close is each LP's own: the joining LP pays its **back fees** to the manager. From 0.5.0 it lists a fund's **investments**, their checks, exits and write-offs, and can pay **carry deal by deal**: before carry, the LPs get back the cost of each investment exited or written off, with its share of fees and expenses. From 0.6.0 a fee step can be on the fund's **invested capital** instead of commitments, worked out day by day.
 
 It runs entirely on your machine. There is no network access and no I/O; a fund's numbers never leave the process.
 
@@ -331,11 +331,71 @@ Whole fund, X = 12000000: the GP's carry 1938000.00 from X, 1938000.00 to date
 
 Deal by deal, Alder Robotics' $9,000,000 exit first returns what's due on it: the LPs' 99% of its $3,000,000 cost, $2,970,000, and the share of the $1,200,000 of fees that its cost is of the $10,000,000 made, 30%, $360,000. With that $3,330,000 back, the GP takes 20% of the rest of the LPs' $8,910,000, the 99% of the exit beside the GP commitment's 1%: $1,116,000 of carry, the fund to date at X = 0, before Birch Health or Cedar AI has returned anything. On the whole fund the same exit pays no carry, since all $11,100,000 of the LPs' paid-in comes back first. X from Cedar AI, all of it sold, realizes the last of the cost; Birch Health's write-off already made its cost due though it returned nothing. So what's due on X is all the LPs' $11,100,000, and it doesn't change with X. At $12,000,000 both bases come to $1,938,000 of carry in all: deal by deal the GP has it sooner, not more. Where later write-offs leave the whole fund earning less than the GP was paid, it owes the difference back at the end, the clawback, as on the whole fund.
 
+## A worked example: a fee on invested capital
+
+Case 38 in the repository: a fund that doesn't list its LPs, with $20,000,000 of commitments and a 1% GP commitment, fee-free. Its fee is 2% a year on commitments for three years, called quarterly from 1 Jan 2020, then 1.5% a year on invested capital from 1 Jan 2023. Four investments, $14,000,000 of cost: Dogwood Labs' check comes after the switch, Alder Robotics exits for $10,000,000 and Birch Health is written off, each inside a quarter. X comes from Cedar AI.
+
+```js
+import { D, feeCalls, netInvestedCapital, readFund, toCents } from "spillpoint-fund";
+
+const fund = readFund({
+  as_of: "2024-06-30",
+  terms: {
+    carry: "0.20",
+    gp_commitment: { share: "0.01" },
+    management_fee: {
+      start: "2020-01-01",
+      frequency: "quarterly",
+      steps: [{ rate: "0.02" }, { rate: "0.015", from: "2023-01-01", basis: "invested_capital" }],
+      commitments: "20000000",
+    },
+  },
+  investments: [
+    { name: "Alder Robotics", checks: [{ date: "2020-02-01", amount: "4000000" }] },
+    { name: "Birch Health", checks: [{ date: "2020-06-15", amount: "3000000" }] },
+    { name: "Cedar AI", checks: [{ date: "2021-03-01", amount: "5000000" }] },
+    { name: "Dogwood Labs", checks: [{ date: "2023-05-16", amount: "2000000" }] },
+  ],
+  cash_flows: [
+    { date: "2020-01-15", type: "call", kind: "investment", amount: "7000000" },
+    { date: "2021-02-15", type: "call", kind: "investment", amount: "5000000" },
+    { date: "2023-05-01", type: "call", kind: "investment", amount: "2000000" },
+    { date: "2023-08-15", type: "distribution", amount: "10000000", investment: "Alder Robotics" },
+    { date: "2024-02-20", type: "write_off", investment: "Birch Health" },
+  ],
+  distribution_from: { investment: "Cedar AI" },
+  nav: "18000000",
+});
+
+// The schedule's calls from the switch to invested capital: each day of a quarter at that day's net invested capital.
+const calls = feeCalls(fund);
+for (const c of calls.filter((c) => c.date >= "2023-01-01")) console.log(`${c.firstDay} to ${c.lastDay}: ${toCents(c.call)}`);
+console.log(`${calls.length} calls, ${toCents(calls.reduce((sum, c) => sum.plus(c.call), new D(0)))} of fees in all`);
+
+// The fund's net invested capital at D, before X: Cedar AI's and Dogwood Labs' cost, still held.
+console.log(`Net invested capital at ${fund.distributionDate}: ${toCents(netInvestedCapital(fund))}`);
+```
+
+Output:
+
+```
+2023-01-01 to 2023-03-31: 44550.00
+2023-04-01 to 2023-06-30: 48303.30
+2023-07-01 to 2023-09-30: 44388.59
+2023-10-01 to 2023-12-31: 37125.00
+2024-01-01 to 2024-03-31: 32107.01
+2024-04-01 to 2024-06-30: 25987.50
+18 calls, 1432461.39 of fees in all
+Net invested capital at 2024-06-30: 7000000.00
+```
+
+For three years the fee is 2% of the $20,000,000 of commitments, $100,000 a quarter. From 1 Jan 2023 each day counts at 1.5% a year of the LPs' 99% of that day's net invested capital, the checks made less the cost exited or written off, with the GP commitment's 1% aside. Each event counts from its own date: Dogwood Labs' $2,000,000 check raises it from 16 May 2023, Alder Robotics' exit takes its $4,000,000 of cost out from 15 Aug 2023, and Birch Health's write-off its $3,000,000 from 20 Feb 2024. So the third quarter of 2023 has 45 days at $14,000,000 and 47 at $10,000,000: 1.5% × 99% × (14,000,000 × 45 + 10,000,000 × 47) / (4 × 92) = $44,388.59. The six calls on invested capital come to $232,461.39, where 1.5% of commitments would have been $450,000. At D, $7,000,000 is still invested, Cedar AI's cost and Dogwood Labs'. Without listed LPs, `commitments` is the base of the step on commitments; a schedule wholly on invested capital, an SPV's say, needs none. The split, the breakpoints and the clawback run on the calls as on any fee calls.
+
 ## What it covers
 
-Version 0.5.0 models a waterfall cumulative across the fund's life, on the whole fund (European) by default, or deal by deal:
+Version 0.6.0 models a waterfall cumulative across the fund's life, on the whole fund (European) by default, or deal by deal:
 - **Calls** for investments, fees and expenses, all counted as the LPs' capital.
-- **Management fees,** from 0.4.0: entered as fee calls, or worked out by a schedule: a rate a year on commitments, with steps by date, called in advance on calendar periods, quarterly, half-yearly or yearly (the input's `quarterly`, `semiannual` or `annual`), the first pro rata from its start. A class's fee rate is set against the schedule's first rate. `feeCalls(fund)` gives the schedule's calls, with each LP's fee.
+- **Management fees,** from 0.4.0: entered as fee calls, or worked out by a schedule: a rate a year on commitments, with steps by date, called in advance on calendar periods, quarterly, half-yearly or yearly (the input's `quarterly`, `semiannual` or `annual`), the first pro rata from its start. A class's fee rate is set against the schedule's first rate. `feeCalls(fund)` gives the schedule's calls, with each LP's fee. From 0.6.0 a step can be on invested capital instead, worked out day by day: each day at the rate on the LPs' part of that day's net invested capital, the checks made less the cost exited or written off, each event from its own date. So a schedule can switch to invested capital at the end of the investment period, or an SPV charge on invested capital from the start. `netInvestedCapital(fund)` gives the figure at D.
 - **Distributions** earlier in the fund's life, each run through the same tiers in date order. Carry on them is paid as they're made.
 - **A GP commitment:** a share of the fund, fee-free and paying its share of expenses by default (both can be changed). It gets its share of every distribution beside the tiers, with no carry.
 - **The tiers:**
@@ -362,13 +422,13 @@ The rules, each with its default, are in [`docs/SPEC.md`](https://github.com/spi
 - **A class's own terms beyond the fee rate and the carry:** its own pref or catch-up, a fee break that isn't proportional (a different step-down, a fee offset), or its own expenses. A field on a class other than its name, fee rate and carry is refused.
 - **Later closes beyond these:** a close after a distribution, refused as `lp_close_after_distribution`; a fund that keeps a joining LP's catch-up to reduce its next call; equalization interest treated as capital; and the GP commitment in the equalization.
 - Defaulted or excused LPs. A field on an LP other than its name, commitment, class and close is refused.
-- Capital as invested capital only, or committed capital.
+- Tier 1's capital as invested capital only, or as committed capital, instead of everything paid in.
 - A compounding pref, or an IRR hurdle. A compounded pref is refused as `compounded_pref`, and an IRR hurdle by its own key.
 - A step's higher rate on all profit, with a GP catch-up to it.
 - An after-tax clawback cap, a carry holdback or escrow, and interim clawback tests.
-- **Management fees beyond a rate on commitments:** fees on invested capital, gross or net of exits and write-offs; anniversary periods; fees in arrears; fee offsets and waivers; a class's fee step that isn't proportional; and an LP's own fee start. A schedule's key other than its start, frequency, steps and commitments, such as an `offset`, is refused.
+- **Management fees beyond these:** fees on invested capital gross of exits, never falling, or net of write-downs, marks below cost; the base at each period's first day, or its average, instead of day by day; fees in arrears; anniversary periods; fee offsets and waivers; a class's fee step that isn't proportional; an LP's own fee start; and each fee call's average invested capital, as an output. A schedule's key other than its start, frequency, steps and commitments, such as an `offset`, is refused, and so is a step's other than its rate, basis and date.
 - **Back fees beyond these:** interest on back fees, and back fees paid to the fund and shared between the LPs already in.
-- **Deal by deal beyond these:** a pref and a catch-up deal by deal, on what's due (a pref with carry deal by deal is refused as `deal_by_deal_pref`); unrealized write-downs, marks below cost, due before carry; an interim clawback, and carry escrow; a distribution of unused capital, not from an investment; checks funded from a credit line ahead of their calls; fees and expenses due by another rule, all of them first or by how long each investment was held; and spillpoint exits feeding the investments' proceeds.
+- **Deal by deal beyond these:** a pref and a catch-up deal by deal, on what's due (a pref with carry deal by deal is refused as `deal_by_deal_pref`); unrealized write-downs, marks below cost, due before carry; a distribution of unused capital, not from an investment; checks funded from a credit line ahead of their calls; fees and expenses due by another rule, all of them first or by how long each investment was held; and spillpoint exits feeding the investments' proceeds.
 
 A term it doesn't model is refused, never quietly ignored.
 
@@ -606,7 +666,7 @@ From 0.3.0, with two or more accounts, every reason reads "{account}: {reason}",
 
 ## How it's tested
 
-Thirty-two worked cases and a hundred and thirty-eight refusals, each with a plain-English derivation. Four of the cases and eleven of the refusals are about the LPs; six of the cases and twenty of the refusals, from 0.3.0, about classes and later closes; three of the cases and thirty-seven of the refusals, from 0.4.0, about management fees, with two of 0.3.0's cases worked again for fee calls at a later close; and four of the cases and fifty-five of the refusals, from 0.5.0, about investments and carry deal by deal. Their expected values come from an independent calculator in exact fractions, which finds breakpoints by search rather than from tier sizes. The engine meets every one to the cent, and every breakpoint exactly. They're in the repository, not the package: [`packages/fund/cases`](https://github.com/spillpoint/spillpoint/tree/main/packages/fund/cases).
+Thirty-five worked cases and a hundred and fifty-three refusals, each with a plain-English derivation. Four of the cases and eleven of the refusals are about the LPs; six of the cases and twenty of the refusals, from 0.3.0, about classes and later closes; three of the cases and thirty-seven of the refusals, from 0.4.0, about management fees, with two of 0.3.0's cases worked again for fee calls at a later close; four of the cases and fifty-five of the refusals, from 0.5.0, about investments and carry deal by deal; and three of the cases and fifteen of the refusals, from 0.6.0, about management fees on invested capital. Their expected values come from an independent calculator in exact fractions, which finds breakpoints by search rather than from tier sizes. The engine meets every one to the cent, and every breakpoint exactly. They're in the repository, not the package: [`packages/fund/cases`](https://github.com/spillpoint/spillpoint/tree/main/packages/fund/cases).
 
 ## License
 

@@ -1,6 +1,6 @@
 {
   "name": "spillpoint-fund",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Fund-level waterfall: how a distribution splits between LPs and GP, tier by tier, with every breakpoint and any clawback.",
   "license": "Apache-2.0",
   "type": "module",
