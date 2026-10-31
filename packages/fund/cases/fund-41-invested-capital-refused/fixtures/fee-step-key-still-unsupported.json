@@ -1,0 +1,9 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "An offset on the second fee step: a step's keys are still only its rate, its from and its basis.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].offset": "0.5"
+    }
+  }
+}

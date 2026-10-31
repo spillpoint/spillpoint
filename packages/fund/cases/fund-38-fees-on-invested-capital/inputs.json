@@ -1,0 +1,106 @@
+{
+  "case": "fund-38-fees-on-invested-capital",
+  "description": "No listed LPs, $20,000,000 of commitments, quarterly: 2% of commitments for three years, then 1.5% of net invested capital from 1 Jan 2023. A follow-on mid-quarter, an exit mid-quarter and a write-off mid-quarter each change the fee from their own date. A 1% GP commitment, fee-free; carry on the whole fund.",
+  "xs": [
+    "0",
+    "5000000",
+    "12000000"
+  ],
+  "fund": {
+    "as_of": "2024-06-30",
+    "terms": {
+      "carry": "0.20",
+      "gp_commitment": {
+        "share": "0.01"
+      },
+      "management_fee": {
+        "start": "2020-01-01",
+        "frequency": "quarterly",
+        "steps": [
+          {
+            "rate": "0.02"
+          },
+          {
+            "rate": "0.015",
+            "from": "2023-01-01",
+            "basis": "invested_capital"
+          }
+        ],
+        "commitments": "20000000"
+      }
+    },
+    "investments": [
+      {
+        "name": "Alder Robotics",
+        "checks": [
+          {
+            "date": "2020-02-01",
+            "amount": "4000000"
+          }
+        ]
+      },
+      {
+        "name": "Birch Health",
+        "checks": [
+          {
+            "date": "2020-06-15",
+            "amount": "3000000"
+          }
+        ]
+      },
+      {
+        "name": "Cedar AI",
+        "checks": [
+          {
+            "date": "2021-03-01",
+            "amount": "5000000"
+          }
+        ]
+      },
+      {
+        "name": "Dogwood Labs",
+        "checks": [
+          {
+            "date": "2023-05-16",
+            "amount": "2000000"
+          }
+        ]
+      }
+    ],
+    "cash_flows": [
+      {
+        "date": "2020-01-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "7000000"
+      },
+      {
+        "date": "2021-02-15",
+        "type": "call",
+        "kind": "investment",
+        "amount": "5000000"
+      },
+      {
+        "date": "2023-05-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      },
+      {
+        "date": "2023-08-15",
+        "type": "distribution",
+        "amount": "10000000",
+        "investment": "Alder Robotics"
+      },
+      {
+        "date": "2024-02-20",
+        "type": "write_off",
+        "investment": "Birch Health"
+      }
+    ],
+    "distribution_from": {
+      "investment": "Cedar AI"
+    },
+    "nav": "18000000"
+  }
+}

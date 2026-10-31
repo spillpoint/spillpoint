@@ -109,9 +109,9 @@
     },
     "fee-step-basis.json": {
       "refused": {
-        "kind": "unsupported",
-        "term": "basis",
-        "field": "terms.management_fee.steps[1].basis"
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments"
       }
     },
     "fee-step-from-at-start.json": {

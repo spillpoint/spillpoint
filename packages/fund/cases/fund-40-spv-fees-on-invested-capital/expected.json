@@ -1,0 +1,165 @@
+{
+  "case": "fund-40-spv-fees-on-invested-capital",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2025-03-31",
+  "final": true,
+  "lps_paid_in": "2091781.42",
+  "fee_calls": [
+    {
+      "date": "2022-01-01",
+      "first_day": "2022-01-01",
+      "last_day": "2022-12-31",
+      "call": {
+        "amount": "32000.00",
+        "exact": "32000"
+      },
+      "lps": {
+        "amount": "32000.00",
+        "exact": "32000"
+      }
+    },
+    {
+      "date": "2023-01-01",
+      "first_day": "2023-01-01",
+      "last_day": "2023-12-31",
+      "call": {
+        "amount": "40000.00",
+        "exact": "40000"
+      },
+      "lps": {
+        "amount": "40000.00",
+        "exact": "40000"
+      }
+    },
+    {
+      "date": "2024-01-01",
+      "first_day": "2024-01-01",
+      "last_day": "2024-12-31",
+      "call": {
+        "amount": "19781.42",
+        "exact": "3620000/183"
+      },
+      "lps": {
+        "amount": "19781.42",
+        "exact": "3620000/183"
+      }
+    }
+  ],
+  "investments": [
+    {
+      "name": "Larch Bio",
+      "cost_made": {
+        "amount": "2000000.00",
+        "exact": "2000000"
+      },
+      "cost_realized": {
+        "amount": "2000000.00",
+        "exact": "2000000"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "6000000.00",
+        "exact": "6000000"
+      },
+      "realized_multiple": "3"
+    }
+  ],
+  "breakpoints": [],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "6000000.00",
+        "lps": {
+          "capital": "2091781.42",
+          "carry_tier": "3126574.86",
+          "total": "5218356.28"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "781643.72"
+            }
+          ],
+          "total": "781643.72"
+        }
+      },
+      "clawback": {
+        "carry_paid": "781643.72",
+        "entitlement": "781643.72",
+        "owed": "0.00"
+      }
+    },
+    {
+      "x": "500000.00",
+      "exact": "500000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "500000.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "400000.00",
+          "total": "400000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "100000.00"
+            }
+          ],
+          "total": "100000.00"
+        }
+      },
+      "to_date": {
+        "amount": "6500000.00",
+        "lps": {
+          "capital": "2091781.42",
+          "carry_tier": "3526574.86",
+          "total": "5618356.28"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "881643.72"
+            }
+          ],
+          "total": "881643.72"
+        }
+      },
+      "clawback": {
+        "carry_paid": "881643.72",
+        "entitlement": "881643.72",
+        "owed": "0.00"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "The second fee step's rate below 0 and its basis unknown: the rate is checked before the basis.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].basis": "net",
+      "terms.management_fee.steps[1].rate": "-0.01"
+    }
+  }
+}

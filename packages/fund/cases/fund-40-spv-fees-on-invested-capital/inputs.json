@@ -1,0 +1,53 @@
+{
+  "case": "fund-40-spv-fees-on-invested-capital",
+  "description": "An SPV's fee, 2% a year of its invested capital from the start, called yearly, with no commitments: part of 2022 before its one check, the whole of 2023, half of 2024 before the exit, and nothing to call for 2025. Final.",
+  "xs": [
+    "0",
+    "500000"
+  ],
+  "fund": {
+    "as_of": "2025-03-31",
+    "terms": {
+      "carry": "0.20",
+      "management_fee": {
+        "start": "2022-01-01",
+        "frequency": "annual",
+        "steps": [
+          {
+            "rate": "0.02",
+            "basis": "invested_capital"
+          }
+        ]
+      }
+    },
+    "investments": [
+      {
+        "name": "Larch Bio",
+        "checks": [
+          {
+            "date": "2022-03-15",
+            "amount": "2000000"
+          }
+        ]
+      }
+    ],
+    "cash_flows": [
+      {
+        "date": "2022-03-01",
+        "type": "call",
+        "kind": "investment",
+        "amount": "2000000"
+      },
+      {
+        "date": "2024-06-30",
+        "type": "distribution",
+        "amount": "6000000",
+        "investment": "Larch Bio"
+      }
+    ],
+    "distribution_from": {
+      "investment": "Larch Bio"
+    },
+    "final": true
+  }
+}

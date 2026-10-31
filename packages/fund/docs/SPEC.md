@@ -1,6 +1,6 @@
 # spillpoint fund waterfall: spec
 
-The fund-level waterfall, `spillpoint-fund`. Each rule has a code (F1, F2, …) and a default. Jordan settled F1 to F18 on 2026-10-12 (S0), F19 to F21, the LPs, on 2026-10-18 for 0.2.0 (S1), F22 to F28, LPs in classes and later closes, on 2026-10-23 for 0.3.0 (S2), F29 to F32, management fees, on 2026-10-25 for 0.4.0 (S3), and F33 to F37, investments and carry deal by deal, on 2026-10-27 for 0.5.0 (S4); his decisions are listed at the end. `ASSUMPTIONS.md` has each rule's default in one table, the choices these rules don't settle (FA1 onward), the case-file conventions (FC1 onward), and each rule's later work.
+The fund-level waterfall, `spillpoint-fund`. Each rule has a code (F1, F2, …) and a default. Jordan settled F1 to F18 on 2026-10-12 (S0), F19 to F21, the LPs, on 2026-10-18 for 0.2.0 (S1), F22 to F28, LPs in classes and later closes, on 2026-10-23 for 0.3.0 (S2), F29 to F32, management fees, on 2026-10-25 for 0.4.0 (S3), F33 to F37, investments and carry deal by deal, on 2026-10-27 for 0.5.0 (S4), and F38 to F40, management fees on invested capital, on 2026-10-30 for 0.6.0 (S5); his decisions are listed at the end. `ASSUMPTIONS.md` has each rule's default in one table, the choices these rules don't settle (FA1 onward), the case-file conventions (FC1 onward), and each rule's later work.
 
 ## What it answers
 
@@ -20,6 +20,9 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
 - for investments and carry deal by deal (F33 to F37):
   - for a GP whose fund pays carry deal by deal: how a distribution from one investment splits, when the LPs get back first only what's due on the investments exited or written off so far, not all their paid-in capital. So how much carry that pays the GP earlier than the whole fund would, and what the GP owes back at the end if later investments don't cover it.
   - for any fund: its investments, each with its cost, how much of it has been exited or written off, and what it has returned
+- for management fees on invested capital (F38 to F40):
+  - for a GP whose fee moves to invested capital after the investment period: every fee call from the step on, falling as investments are exited or written off, each LP's share of each, and the split with them in
+  - for an SPV or a fund that charges on invested capital from the start: its fees with no commitments to enter
 
 ## Inputs
 
@@ -104,8 +107,8 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
   - **`management_fee`:** a schedule that works out the fund's fee calls. Without it, fee calls are entered as cash flows, as before.
   - **`start`:** the date fees start, usually the initial close.
   - **`frequency`:** `"quarterly"` (the default), `"semiannual"` or `"annual"`. Periods are calendar quarters, calendar half-years (January to June, July to December) or calendar years.
-  - **`steps`:** the annual rate on commitments, the first from `start`, and each after it from its `from` date. A rate of `"0"` ends fees from its date. The first rate is above 0: a fee holiday is a later `start`.
-  - **`commitments`:** the LPs' total commitments, the fee's base, for a fund that doesn't list its LPs. A fund that lists them uses their commitments; `commitments`, if given, must be their total.
+  - **`steps`:** the annual rate on commitments, the first from `start`, and each after it from its `from` date. A rate of `"0"` ends fees from its date. The first rate is above 0: a fee holiday is a later `start`. From 0.6.0 a step can be on invested capital instead (F39).
+  - **`commitments`:** the LPs' total commitments, the fee's base, for a fund that doesn't list its LPs. A fund that lists them uses their commitments; `commitments`, if given, must be their total. From 0.6.0 it's needed only when a step is on commitments (F40).
 - **From 0.5.0, investments and carry deal by deal** (F33 to F37): one more term, the fund's investments, a new cash flow, two fields on a distribution, and X's source.
 
   ```json
@@ -141,6 +144,23 @@ Given a fund's terms, its dated calls and distributions, a date D, and an amount
   - **`"type": "write_off"`:** a cash flow of its own, with a `date` and an `investment` and no amount. It ends what's left of the investment at its date. Nothing is distributed.
   - **`distribution_from`:** X's investment, and its share (`"1"` by default). Needed deal by deal. On the whole fund it's optional and changes nothing.
   - **Checks aren't calls.** Checks are what the fund paid for its investments; calls are what the partners paid in. They aren't matched one to one, but the cost made by any check's date can't be more than the investment calls up to that date (F37).
+- **From 0.6.0, management fees on invested capital** (F38 to F40): one more field on a fee step.
+
+  ```json
+  "management_fee": {
+    "start": "2020-01-01",
+    "frequency": "quarterly",
+    "steps": [
+      { "rate": "0.02" },
+      { "rate": "0.015", "from": "2023-01-01", "basis": "invested_capital" }
+    ],
+    "commitments": "20000000"
+  }
+  ```
+
+  - **`basis`:** `"commitments"`, the default, as in 0.4.0, or `"invested_capital"`. Each step has its own, so a schedule can switch at the end of the investment period.
+  - **A step on invested capital needs the fund's investments** (F33): its checks, exits and write-offs are what the fee is on.
+  - **`commitments`** is needed, for a fund that doesn't list its LPs, only when a step is on commitments. A schedule wholly on invested capital needs none. A fund that lists its LPs still uses their commitments, and `commitments`, if given, must be their total (F32).
 - **Numbers** are exact strings, as in spillpoint. **Dates** are ISO.
 
 ## The rules
@@ -321,14 +341,14 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - An investment or expense call before a later close, without `equalization_rate` (F29; in 0.3.0, any later close): `missing_field` at `terms.equalization_rate`.
   - An entered call that no LP in the fund at its date would pay, because none had closed yet or none of them pays fees: `call_without_payers`, new, at the call. A schedule no listed LP pays, every one in a class at a fee rate of 0, is refused the same way, at `terms.management_fee` (F32).
 
-**The order of checks.** FA2's three stages, then F21's LPs (FA19), then one more, with the schedule in them from 0.4.0 (F32) and the investments from 0.5.0 (F37):
-1. **Unsupported terms:** the keys under `terms` in the file's order, then each term's own keys in the file's order, each class's keys and its carry's among them, and the schedule's keys and its steps' among them; a compounding that isn't simple; then `deal_by_deal_pref`. `carry_basis` is a term.
-2. **The fields,** as FA2 has them. Within `terms`: the carry, pref, catch-up, GP commitment, and the terms against each other; then `fee_rate`; `equalization_rate`; the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, rate, then `from`, then `commitments`); then `fee_rate_with_schedule`; then each class in order (its shape, its name, the name repeating, its fee rate, its carry, its carry against the catch-up); then `carry_basis`.
+**The order of checks.** FA2's three stages, then F21's LPs (FA19), then one more, with the schedule in them from 0.4.0 (F32), the investments from 0.5.0 (F37), and a step's basis from 0.6.0 (F40):
+1. **Unsupported terms:** the keys under `terms` in the file's order, then each term's own keys in the file's order, each class's keys and its carry's among them, and the schedule's keys and its steps' among them (a step's are `rate`, `from` and `basis`); a compounding that isn't simple; then `deal_by_deal_pref`. `carry_basis` is a term.
+2. **The fields,** as FA2 has them. Within `terms`: the carry, pref, catch-up, GP commitment, and the terms against each other; then `fee_rate`; `equalization_rate`; the schedule (its shape, `start`, `frequency`, `steps` in order, each its shape, rate, basis, then `from`, then `commitments`); then `fee_rate_with_schedule`; then each class in order (its shape, its name, the name repeating, its fee rate, its carry, its carry against the catch-up); then `carry_basis`.
    - **Each cash flow** as F18 has it: unknown fields (an `investment` or `share` on a call among them), then the fields it needs (`amount` not for a write-off), the date, the type, a call's kind, a write-off's own fields, the `investment`, the `share`, then the amount.
-   - **After `nav`:** the investments in order, each with its fields, its checks in order, then its name against the ones before. Then `distribution_from`.
-3. **The cash flows:** first `fee_call_with_schedule`, then against each other and D, the schedule's calls among the calls, and write-offs among the cash flows after D. Then F37's against each other and D: a check after D; deal by deal, the investments missing; each distribution and write-off in the input's order, for its investment; `distribution_from`; then `investments_exceed_calls`.
+   - **After `nav`:** the investments in order, each with its fields, its checks in order, then its name against the ones before. Then `distribution_from`. Then a step on invested capital without investments (F40).
+3. **The cash flows:** first `fee_call_with_schedule`, then against each other and D, the schedule's calls among the calls by their dates (F39), and write-offs among the cash flows after D. Then F37's against each other and D: a check after D; deal by deal, the investments missing; each distribution and write-off in the input's order, for its investment; `distribution_from`; then `investments_exceed_calls`.
 4. **The LPs,** as F21 checks them, each through before the next: then its class, then its close.
-5. **What the LPs need of the rest:** `equalization_rate`, when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing or not the LPs' total; a schedule no listed LP pays; then each entered call in date order for its payers.
+5. **What the LPs need of the rest:** `equalization_rate`, when an investment or expense call comes before a later close (F29); the schedule's `commitments`, missing (only with a step on commitments, F40) or not the LPs' total; a schedule no listed LP pays; then each entered call in date order for its payers.
 
 **From 0.4.0, F29 to F32 are management fees:** fee calls at a later close are each LP's own, not rebalanced, which fixes 0.3.0's F25, and a schedule works out the fee calls from a rate on commitments. A fund with no schedule and no fee call before a later close is exactly as in 0.3.0.
 
@@ -349,11 +369,12 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - **The rate in force on a day** is the last step whose date (`start` for the first) is on or before it.
   - **The class factor:** a class's own `fee_rate` over the schedule's first rate, so a class's rate steps down in proportion with the fund's (F22). 1 for the fund's terms and for a class without a fee rate.
   - **Without listed LPs,** the LPs' fee is `commitments` times the fee factor.
+  - **From 0.6.0, a step on invested capital** (F39) works its days on the LPs' part of each day's net invested capital instead (F38).
 - **The call:** the LPs' fees added up. When the GP commitment pays fees (F3), the call is that over (1 − g), so the GP commitment pays g of it.
 - **As if in from the start** (F25, F29): a schedule's calls are every LP's own fee, whatever its close. A joiner's part of those before its close is its back fees.
-- **A period with nothing to call,** every day of it at a rate of 0, isn't a call (FA40).
+- **A period with nothing to call,** every day of it at a rate of 0, isn't a call (FA40). From 0.6.0, nor is one whose every day is on invested capital with nothing invested, or at a rate of 0 (F39).
 - **With a schedule,** no fee call is entered and `fee_rate` isn't given: the schedule's rate is the fund's. A class's `fee_rate` is against the schedule's first rate.
-- **The schedule's calls are calls:** they run as entered fee calls do (F3, F5, F6, F23), come before distributions on one date (F4), and count for `no_calls` and `distribution_before_call`. The fund's first call, entered or the schedule's, decides who joins at a later close (F25): an LP whose close is after it, so after `start` at the latest, owes back fees.
+- **The schedule's calls are calls:** they run as entered fee calls do (F3, F5, F6, F23), come before distributions on one date (F4), and count for `no_calls` and `distribution_before_call`. The fund's first call, entered or the schedule's, decides who joins at a later close (F25): an LP whose close is after it, so after `start` at the latest, owes back fees. From 0.6.0 these count every period of the schedule by its date, even one with nothing to call on invested capital (F39).
 - **Defaults (Claude's, settled with the spec):**
   - fees called quarterly in advance on calendar periods, the first pro-rated by days from `start`, with semiannual and annual as options
   - each LP pays the rate on its own commitment: with a schedule, LP commitments are the real base, not only shares
@@ -362,7 +383,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - no interest on back fees: equalization interest stays on capital, and nothing that moves money is assumed (2026-10-23)
   - a joiner owes the whole of each fee call before its close, as if in from the start, even for the period it joins in the middle of
   - the GP commitment stays fee-free unless `pays_fees`; when it pays, it pays g of each call (F3)
-- *Later: fees on invested capital, gross or net of exits and write-offs; anniversary periods; fees in arrears; fee offsets and waivers; a fee step that isn't proportional for a class (F22's Later); an LP's own fee start.*
+- *Later: F39's.*
 
 **F31, outputs.**
 - **The schedule's fee calls,** once for the fund, not by X: each its date, the first and last day it covers, the call, the LPs' part and the GP commitment's, and with listed LPs, each LP's fee. Exact.
@@ -371,7 +392,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 
 **F32, refusals,** added to F18, F21 and F28.
 - **The schedule:**
-  - `management_fee` not an object: `bad_field`. A key other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate` and `from`: *unsupported*, named by the key (an `offset`, a `basis`).
+  - `management_fee` not an object: `bad_field`. A key other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate`, `from` and, from 0.6.0, `basis` (F40): *unsupported*, named by the key (an `offset`).
   - `start` missing: `missing_field`; not a date: `bad_date`.
   - `frequency` not `"quarterly"`, `"semiannual"` or `"annual"`: `bad_field`.
   - `steps` missing: `missing_field`; not a list, or empty: `bad_field`; a step not an object: `bad_field`.
@@ -380,7 +401,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - `commitments` not a number, or 0 or less: `bad_number`.
 - **The terms:** `fee_rate` given with a schedule: `fee_rate_with_schedule`, new, at `terms.fee_rate`. A class's own fee rate when the terms have neither `fee_rate` nor a schedule: `missing_field` at `terms.fee_rate` (F28, widened).
 - **The cash flows:** an entered fee call with a schedule: `fee_call_with_schedule`, new, at the first such call in the input's order.
-- **Once the LPs are read:** a schedule without `commitments` when the fund doesn't list its LPs: `missing_field` at `terms.management_fee.commitments`. `commitments` that isn't the listed LPs' total: `fee_commitments_mismatch`, new, there. A schedule no listed LP pays, every one in a class at a fee rate of 0: `call_without_payers` at `terms.management_fee`, as an entered fee call nobody pays is (F28).
+- **Once the LPs are read:** a schedule without `commitments` when the fund doesn't list its LPs, from 0.6.0 only with a step on commitments (F40): `missing_field` at `terms.management_fee.commitments`. `commitments` that isn't the listed LPs' total: `fee_commitments_mismatch`, new, there. A schedule no listed LP pays, every one in a class at a fee rate of 0: `call_without_payers` at `terms.management_fee`, as an entered fee call nobody pays is (F28).
 - **The order of checks** is F28's five stages, with the schedule in them, as F28 lists them.
 
 **From 0.5.0, F33 to F37 are a fund's investments, and a carry basis:** the whole fund (F1, the default) or deal by deal. A fund without investments, or with them on the whole fund, gives exactly 0.4.0's numbers.
@@ -453,6 +474,53 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
   - The cost made by a check's date more than the investment calls up to that date: `investments_exceed_calls`, new, at the first such check's `amount`. Checks go in date order; on one date, in the investments' order, then the checks'.
 - **The order of checks** is F28's five stages, with the investments in them, as F28 lists them.
 
+**From 0.6.0, F38 to F40 are management fees on invested capital:** a fee schedule step on net invested capital, worked out day by day. F39 amends F30, and F40 amends F32. A fund whose schedule has no step on invested capital gives exactly 0.5.0's numbers.
+
+**Why (Jordan, 2026-10-30).** 0.4.0's fee schedule charges only on commitments. Many VC funds switch after the investment period to a fee on invested capital: the cost of the investments still held, net of exits and write-offs, so the fee falls as the fund exits. SPVs often charge on invested capital from the start. 0.5.0's investments are what that base needs.
+
+**F38, net invested capital** (Jordan, 2026-10-30).
+- **On a day:** the checks made to that day, less the cost realized to that day, exited or written off (F33). That's what's left of every investment, added up.
+- **Whole-fund amounts,** the GP commitment's part included, as checks are (F33).
+- **Each event counts from its own date:** a check's date is the first day with it in. An exit's or a write-off's date is the first day without the cost it realizes. On one date, F33's order: checks, then write-offs, then distributions.
+- **A distribution that names no investment** (on the whole fund) realizes nothing, so it doesn't lower invested capital. Nor does a distribution from an investment with nothing left, such as an escrow release.
+
+**F39, the fee calls on invested capital** (amends F30; Jordan, 2026-10-30: "day by day").
+- **`basis` on a step:** `"commitments"`, the default, as in 0.4.0, or `"invested_capital"`. Each step has its own, so a schedule can switch at the end of the investment period. A step on invested capital needs the fund's investments (F33).
+- **A period's LPs' fee:** each of its days, from its first day (or `start`) to its last, at the rate in force that day on that step's basis, added up, over (n × the calendar period's days), with n = 4, 2 or 1.
+  - **A day on commitments:** the rate × the LPs' fee weights, as F30 has it: each LP's commitment × its class factor, or `commitments` without LPs.
+  - **A day on invested capital:** the rate × the LPs' part of net invested capital that day, (1 − g) of it, × their fee weights over their commitments. Without listed LPs, that last factor is 1.
+- **Each LP's fee:** its fee weight over all fee weights, × the LPs' fee, as on commitments. So on invested capital each LP pays the rate on its share of invested capital, by commitment, times its class factor: a fee-free class pays none, an Anchor at half the rate pays half.
+- **The call:** the LPs' fee, over (1 − g) when the GP commitment pays fees (F3), as F30 has it.
+- **D's period:** called in advance, as F30 has it, so it covers days after D. They count at D's net invested capital, before X: X doesn't move the fees.
+- **A period with nothing to call isn't a call** (FA40, widened): say every day of it is on invested capital with nothing invested, such as the year after the last exit. Every call is above $0.
+- **`no_calls`, `distribution_before_call` and the fund's first call** (F25) still count every period of the schedule by its date, as 0.4.0 does, even one with nothing to call. They're decided from the schedule's dates, before the investments are read against the cash flows.
+- **Everything else is as fees on commitments:** the calls run as entered fee calls do (F3, F5, F6, F23). A joiner's part of the calls before its close is its back fees (F29). Deal by deal, they're in the fees and expenses due before carry (F35), by realized over made.
+- **Defaults (Claude's, settled with the spec):**
+  - the LPs' part is (1 − g) of net invested capital, the GP commitment's part aside (F3); with classes, each LP's share is by commitment, times its class factor, as on commitments
+  - each event counts from its own date: a check's date is in, an exit's or write-off's date is out
+  - calls stay in advance, dated the period's first day (F30), so a call already counts the checks, exits and write-offs later in its period
+  - D's period: the days after D at D's invested capital; X doesn't move the fees
+  - a period with nothing to call isn't a call; the checks that count calls still count the schedule's periods by date, as 0.4.0 does
+  - a step on invested capital needs investments: refused without them, not worked out as $0 fees
+  - `commitments` without LPs only for a step on commitments; with LPs, still their total if given
+  - an untagged distribution doesn't lower invested capital on the whole fund
+  - a step's basis is checked after its rate and before its `from`
+- *Later: fees on invested capital gross of exits (never falling), or net of write-downs (marks below cost); the base at each period's first day, or its average, instead of day by day; fees in arrears; anniversary periods; fee offsets and waivers; a class's fee step that isn't proportional (F22's Later); an LP's own fee start; each fee call's average invested capital, as an output.*
+
+**F40, outputs and refusals** (amends F32).
+- **Outputs:** as F31. Each step's basis comes back with the schedule, the default filled in. The fee calls keep their shape: date, first and last day, the call, the LPs' part, the GP commitment's, and each LP's fee.
+- **Refusals,** added to F18, F21, F28, F32 and F37:
+  - A step's `basis` not `"commitments"` or `"invested_capital"`, or not text: `bad_field`. No longer unsupported.
+  - A step's key other than `rate`, `from` and `basis` stays unsupported, named by the key (an `offset`).
+  - A step on invested capital and no investments, or an empty list: `missing_field` at `investments`.
+  - A fund that doesn't list its LPs, with no `commitments`: `missing_field` at `terms.management_fee.commitments` only when a step is on commitments.
+- **The order of checks** is F28's five stages, with a step's basis and the investments it needs in them, as F28 lists them:
+  1. **Unsupported terms:** a step's keys are `rate`, `from` and `basis`.
+  2. **The fields:** each step: its shape, its rate, its basis, then its `from`. After `distribution_from`, a step on invested capital without investments.
+  3. **The cash flows:** as 0.5.0. The schedule's periods count by date (F39).
+  4. **The LPs,** as F28 has them.
+  5. **What the LPs need of the rest:** `commitments` missing without LPs, only with a step on commitments; then as F32.
+
 ## Worked examples (exact, to the cent)
 
 **A, the VC default.** Case fund-08 is this with a third step.
@@ -489,7 +557,7 @@ Once for the fund, not by X, for each LP: its **equalization**: the capital it p
 
 ## Cases
 
-Thirty-two cases and five sets of refusals, in `packages/fund/cases/` (FC2):
+Thirty-five cases and six sets of refusals, in `packages/fund/cases/` (FC2):
 
 1. One investment call, 20% carry.
 2. Investment, fee and expense calls all count as capital; an interim distribution returns part of it.
@@ -522,12 +590,16 @@ Thirty-two cases and five sets of refusals, in `packages/fund/cases/` (FC2):
 29. A fee schedule with no listed LPs: $40,000,000 of commitments, 2% a year called quarterly from 15 Feb 2021 and 1.5% from 15 Feb 2026, $4,225,000 in all. A 1% GP commitment, fee-free; an 8% pref with a full catch-up, so the pref runs on each fee call from its date (f04a).
 30. Two LPs, fees called half-yearly, 2% stepping down to 1.5% on 1 Mar 2022, inside a half-year; a 2% GP commitment that pays fees; an 8% pref with a full catch-up; final. The fees called after the last distribution are paid-in the final distribution returns first, so at X = 0 the GP owes back $150,000 of carry (f04a).
 31. Quarterly fees at 2%; an Anchor class at a 1% fee joining at a later close in the middle of a quarter, a friends-and-family class paying no fees, and an investment call before the close: back fees and capital equalization side by side (f04a).
-32. Thirty-seven refusals on cases 29 to 31: each line of F32, and the order of checks where the schedule meets the other checks (f04a; the thirty-seventh, a schedule no listed LP pays, in the f04b review).
+32. Thirty-seven refusals on cases 29 to 31: each line of F32, and the order of checks where the schedule meets the other checks (f04a; the thirty-seventh, a schedule no listed LP pays, in the f04b review). From 0.6.0 (f06a), `fee-step-basis`, case 29's second step on invested capital, is read, and refused as `missing_field` at `investments`, since case 29 has none (F40).
 33. Case 34's fund on the whole fund, the default: three investments, a $9,000,000 exit from Alder Robotics, Birch Health written off, X from Cedar AI. The investments change no amount: the exit returns paid-in capital with no carry, and carry starts once the LPs have all $11,100,000 back, at X = $2,212,121.21. At $12,000,000 the GP has $1,938,000, all of it from X (f05a).
 34. Deal by deal: three investments, $10,000,000 of cost, $1,200,000 of fees and a 1% GP commitment that's fee-free. Alder's exit returns the LPs' $2,970,000 of its cost and $360,000 of fees (its 30% of the cost made), then pays $1,116,000 of carry, two years before the whole fund would pay any. Birch Health is written off; X from Cedar AI realizes the rest, so $11,100,000 is due. At the NAV point, $12,000,000, the GP has $1,938,000 in all, what case 33 gives, so it owes nothing back (f05a).
 35. Deal by deal, final, a 2% GP commitment: a 40% secondary sale of Dogwood Labs after a follow-on, Elm Bio's exit and a $1,000,000 escrow release from it after, Fir Payments written off, and Hazel Cloud still held, with a follow-on after Elm's exit that lowers the fees' share due to $6,800,139.13, under the $6,879,360 already back, so the escrow release is all profit. At X = 0 the GP owes back all $2,348,128 of its carry; X from Dogwood clears it at $18,376,163.27, where the LPs have all $24,888,000 back (f05a).
 36. Deal by deal with classes, a later close and a quarterly 2% fee schedule: Alder Endowment on the fund's terms, Birch Family Office in an Anchor class (15% carry, 1% fee) joining at a later close, Cedar Holdings friends and family (no fee, no carry). At Ivy Analytics' exit a third of the cost made is realized: $2,130,000, $1,233,000 and $792,000 due by class. X sells half of Kapok Robotics, with breakpoints at $5,400,000, $5,841,919.19 and $6,283,838.38. Birch's equalization at its close: $2,376,000, $99,466.52 of interest and $45,000 of back fees (f05a).
 37. Fifty-five refusals on cases 33, 34 and 36: each line of F37, and the order of checks where the investments meet the other checks (f05a).
+38. Fees on invested capital: no listed LPs, $20,000,000 of commitments, quarterly; 2% of commitments for three years, then 1.5% of net invested capital from 1 Jan 2023; a 1% GP commitment, fee-free, on the whole fund. A follow-on, an exit and a write-off each fall inside a quarter and change the fee from their own date: $44,550, $48,303.30, $44,388.59, $37,125, $32,107.01 and $25,987.50, $232,461.39 for the six quarters where 1.5% of commitments would be $450,000, and $1,432,461.39 of fees in all. Carry starts at X = $5,446,930.70, once the LPs have all $15,292,461.39 of paid-in back (f06a).
+39. Fees on invested capital deal by deal, half-yearly: 2% of commitments, then 1.75% of invested capital from 1 Apr 2023, inside a half-year. An Anchor class at a 1% fee joins at a later close, a friends-and-family class pays no fees, and a 2% GP commitment pays its share; the LPs' fee on invested capital is 98% × 13/20 of it, the fee weights over the commitments. Ivy Analytics' half sale and Juniper Health's write-off lower the fee from their dates. Breakpoints at $5,000,000, $5,279,539.50 and $5,559,079.01; Birch's back fees $30,000 (f06a).
+40. An SPV's fee, 2% a year of its invested capital from the start, no commitments, final: $32,000 for the part of 2022 after its one check, $40,000 for 2023, $19,781.42 for 2024 before the exit, and no call for 2025. Carry $781,643.72 (f06a).
+41. Fifteen refusals on cases 38 to 40: each line of F40, and where they meet 0.4.0's and 0.5.0's checks (f06a).
 
 ## Decided
 
@@ -581,3 +653,9 @@ Thirty-two cases and five sets of refusals, in `packages/fund/cases/` (FC2):
   - each investment's realized multiple, proceeds over the cost realized, in the engine's outputs (F36, FA59)
   - `expected.json`'s investments and what's due as proposed (FC15)
   - where several checks on one date run past the calls, the first of them is named (FA53)
+- **2026-10-30 (Jordan), for spillpoint-fund 0.6.0:**
+  - 0.6.0 is fees on invested capital ("0.6.0: fees on invested capital")
+  - the base is net invested capital: checks made, less the cost exited or written off (F38)
+  - the switch is a step with its own basis (F39)
+  - measured day by day: each day at that day's net invested capital (F39)
+- **2026-10-30, Claude's defaults settled with the spec:** the nine in F39, from the LPs' part being (1 − g) of net invested capital to a step's basis checked after its rate and before its `from`

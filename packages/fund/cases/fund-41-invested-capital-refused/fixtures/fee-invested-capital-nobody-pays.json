@@ -1,0 +1,10 @@
+{
+  "base": "fund-39-invested-capital-deal-by-deal-classes",
+  "about": "Every LP in case 39 friends and family, at a fee rate of 0: no listed LP pays the schedule, on commitments or on invested capital.",
+  "change": {
+    "set": {
+      "lps[0].class": "Friends and family",
+      "lps[1].class": "Friends and family"
+    }
+  }
+}

@@ -22,6 +22,12 @@ X realizes its share of what's left of its investment at D, after every other
 cash flow. When X is final, and at the NAV point, everything left of every
 investment is realized at D: the fund ends (F33), so the cost realized is the
 cost made.
+
+From 0.6.0 the same walk gives the fund's net invested capital (F38), what a
+fee step on invested capital charges (F39, fees.py): on a day, the checks made
+to that day less the cost realized to that day, exited or written off, on
+either carry basis. Each event counts from its own date, after every event of
+that date in F4's widened order. X isn't in it.
 """
 
 from dataclasses import dataclass
@@ -52,31 +58,47 @@ def realize(fund):
     events += [(w.date, 1, w.index, 0, w) for w in fund.write_offs]
     events += [(f.date, 2, f.index, 0, f) for f in fund.flows if f.type == "distribution"]
     made = realized = Fraction(0)
-    for _, order, i, _, event in sorted(events, key=lambda e: e[:4]):
+    invested = []
+    for date, order, i, _, event in sorted(events, key=lambda e: e[:4]):
         if order == 0:
             # A check, or a follow-on: the cost made, and what's left of its investment, grow by it.
             holdings[i].made += event.amount
             made += event.amount
-            continue
-        h = holdings[by_name[event.investment]] if event.investment is not None else None
-        if order == 1:
+        elif order == 1:
             # A write-off ends all that's left of its investment, with no proceeds.
+            h = holdings[by_name[event.investment]]
             gone = h.left
             h.realized += gone
             h.written_off += gone
             realized += gone
-            continue
-        if h is not None:
-            # A distribution sells `share` of what's left of its investment: that much cost is exited. With nothing left,
-            # it realizes nothing more.
-            gone = event.share * h.left
-            h.realized += gone
-            h.proceeds += event.amount
-            realized += gone
-        event.realized, event.made = realized, made
+        else:
+            if event.investment is not None:
+                # A distribution sells `share` of what's left of its investment: that much cost is exited. With nothing
+                # left, it realizes nothing more. One that names no investment realizes nothing (F38).
+                h = holdings[by_name[event.investment]]
+                gone = event.share * h.left
+                h.realized += gone
+                h.proceeds += event.amount
+                realized += gone
+            event.realized, event.made = realized, made
+        # F38: net invested capital from this event's date on, the last event of a date giving that date's.
+        invested.append((date, made - realized))
     fund.holdings = holdings
+    fund.invested = invested
     fund.made_at_d = made
     fund.x_realized = realized
     if fund.distribution_from is not None:
         h = holdings[by_name[fund.distribution_from.investment]]
         fund.x_realized = realized + fund.distribution_from.share * h.left
+
+
+def invested_on(fund, day):
+    """F38: net invested capital on a day: the checks made to that day, less the cost realized to that day, exited or
+    written off, whole-fund amounts. A check's date is the first day with it in; an exit's or a write-off's, the first
+    day without the cost it realizes. Nothing before the first check."""
+    net = Fraction(0)
+    for date, value in fund.invested:
+        if date > day:
+            break
+        net = value
+    return net

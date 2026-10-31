@@ -1,0 +1,9 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "The second fee step's basis a JSON number, not text.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].basis": 1
+    }
+  }
+}

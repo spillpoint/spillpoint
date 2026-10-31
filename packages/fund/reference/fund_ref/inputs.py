@@ -19,17 +19,19 @@ more than one problem:
    repeats, then its class and its close (F28).
 5. What the LPs need of the rest (F28, F32): `equalization_rate` when an
    investment or expense call comes before a later close (F29); a schedule's
-   `commitments`, missing without listed LPs or not their total; a schedule
-   no listed LP pays; then each entered call in date order for an LP to pay
-   it.
+   `commitments`, missing without listed LPs (from 0.6.0, only with a step on
+   commitments, F40) or not their total; a schedule no listed LP pays; then
+   each entered call in date order for an LP to pay it.
 
 Within `terms`, stage 2 checks the carry, pref, catch-up and GP commitment, the
 terms against each other, then `fee_rate`, `equalization_rate`, the management
 fee schedule (F30, F32), `fee_rate_with_schedule`, each class in order (F28),
-then `carry_basis` (F37). After `nav` it checks the investments, then
-`distribution_from` (F37). Stage 3 starts with `fee_call_with_schedule`, and
-counts the schedule's calls among the calls (F30). Stage 1 ends with
-`deal_by_deal_pref` (F37).
+then `carry_basis` (F37). A schedule's step is checked for its shape, its
+rate, its basis (F40, from 0.6.0), then its `from`. After `nav` it checks the
+investments, then `distribution_from` (F37), then a step on invested capital
+without investments (F40). Stage 3 starts with `fee_call_with_schedule`, and
+counts the schedule's calls among the calls by their dates (F30, F39). Stage 1
+ends with `deal_by_deal_pref` (F37).
 
 null is the same as leaving an optional field out (FA3, FA24), except `carry`,
 the fund's or a class's: a null carry could mean "none" or "the default", so
@@ -55,7 +57,7 @@ TERM_KEYS = {
 }
 CARRY_BASES = ("whole_fund", "deal_by_deal")  # F34
 STEP_KEYS = ("rate", "from_lp_multiple")
-FEE_STEP_KEYS = ("rate", "from")  # a schedule's step (F30)
+FEE_STEP_KEYS = ("rate", "from", "basis")  # a schedule's step (F30), its basis from 0.6.0 (F39)
 CLASS_KEYS = ("name", "fee_rate", "carry")
 TOP_KEYS = ("as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps", "investments", "distribution_from")
 REQUIRED_TOP = ("as_of", "terms", "cash_flows")
@@ -199,6 +201,9 @@ class Fund:
     holdings: list = field(default_factory=list)  # F33, F36: deals.Holding, one an investment, at D before X
     made_at_d: Fraction = Fraction(0)  # F35: the cost made by D
     x_realized: Fraction = Fraction(0)  # F33, F35: the cost realized so far with X's share of its investment, X not final
+    invested: list = field(default_factory=list)  # F38: (date, net invested capital from that date on), deals.py
+    # F39: the schedule's first call by its date, kept as the fund's first call (F25) even when it has nothing to call.
+    first_scheduled: object = None
 
     @property
     def deal_by_deal(self):
@@ -212,7 +217,10 @@ class Fund:
 
     @property
     def first_call(self):
-        return min(f.date for f in self.flows if f.type == "call")
+        """F4, F25: the fund's first call, entered or the schedule's. The schedule's count by their dates (F39), so one
+        with nothing to call, left out of the flows, is still the first if it's earliest."""
+        dates = [f.date for f in self.flows if f.type == "call"]
+        return min(dates + ([self.first_scheduled] if self.first_scheduled is not None else []))
 
     def lp_class(self, lp):
         """The LP's class, or None when it's on the fund's terms (F22)."""
@@ -277,8 +285,8 @@ def _unsupported_classes(classes):
 
 
 def _unsupported_schedule(schedule):
-    """F32: a schedule's key other than `start`, `frequency`, `steps` and `commitments`, or a step's other than `rate` and
-    `from`, named by its own key (an `offset`, a `basis`); its steps' keys at the steps' place among them."""
+    """F32, F40: a schedule's key other than `start`, `frequency`, `steps` and `commitments`, or a step's other than
+    `rate`, `from` and `basis`, named by its own key (an `offset`); its steps' keys at the steps' place among them."""
     for key, value in schedule.items():
         path = f"terms.management_fee.{key}"
         if key not in TERM_KEYS["management_fee"]:
@@ -493,8 +501,8 @@ def _terms(terms):
 
 def _schedule(raw):
     """F30, F32: the schedule, checked in order: its shape, `start`, `frequency`, `steps` in order (each its shape, its
-    rate, then its `from`), then `commitments`. null is the same as leaving it out, as for each of its optional fields
-    (FA41)."""
+    rate, its basis (F40), then its `from`), then `commitments`. null is the same as leaving it out, as for each of its
+    optional fields (FA41, FA63)."""
     if raw is None:
         return None
     at = "terms.management_fee"
@@ -525,11 +533,18 @@ def _schedule(raw):
         # `start`. A later rate of 0 ends fees from its date.
         if rate < 0 or rate >= 1 or (i == 0 and rate == 0):
             raise _input("bad_number", f"{path}.rate")
+        # F39, F40: what the rate is on, after the rate and before the `from`: commitments, the default, or net invested
+        # capital. null is the default (FA63); the word is compared exactly, as `frequency` is (FA41).
+        basis = s.get("basis")
+        if basis is None:
+            basis = fees.COMMITMENTS
+        elif not isinstance(basis, str) or basis not in fees.BASES:
+            raise _input("bad_field", f"{path}.basis")
         if i == 0:
             # The first step is in force from `start`, so it isn't given a date of its own.
             if s.get("from") is not None:
                 raise _input("steps_out_of_order", path)
-            steps.append(fees.FeeStep(rate, start))
+            steps.append(fees.FeeStep(rate, start, basis))
             continue
         if s.get("from") is None:
             raise _input("missing_field", f"{path}.from")
@@ -537,7 +552,7 @@ def _schedule(raw):
         # Each step after the one before it; the first's date is `start`.
         if frm <= steps[-1].start:
             raise _input("steps_out_of_order", path)
-        steps.append(fees.FeeStep(rate, frm))
+        steps.append(fees.FeeStep(rate, frm, basis))
     commitments = None
     if raw.get("commitments") is not None:
         commitments = _number(raw["commitments"], f"{at}.commitments")
@@ -820,17 +835,18 @@ def _investments_against_flows(carry_basis, investments, flows, write_offs, dist
 
 def _what_the_lps_need(fund):
     """Stage 5 (F28, F32): an equalization rate when an investment or expense call comes before a later close (F29);
-    a schedule's `commitments`, needed without listed LPs and their total with them; a schedule needs a listed LP that
-    pays it, one not in a class at a fee rate of 0, as an entered fee call does (F28, F32): its calls are every LP's own
-    fee, whatever its close, so a fee weight above 0 is all it needs; then each entered call, in date order, needs an LP
-    in the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22)."""
+    a schedule's `commitments`, needed without listed LPs when a step is on commitments (F40; FA64: any step, whatever
+    its date) and their total with them; a schedule needs a listed LP that pays it, one not in a class at a fee rate of
+    0, as an entered fee call does (F28, F32): its calls are every LP's own fee, whatever its close, so a fee weight above
+    0 is all it needs; then each entered call, in date order, needs an LP in the fund at its date to pay it (FA21): for a
+    fee call, one with a fee weight above 0 (F22)."""
     if fund.lps and fund.equalization_rate is None:
         rebalanced = [f for f in fund.flows if f.type == "call" and f.kind != "fee"]
         if any(fund.joins_later(lp) and any(f.date < lp.close for f in rebalanced) for lp in fund.lps):
             raise _input("missing_field", "terms.equalization_rate")
     if fund.schedule is not None:
         at = "terms.management_fee.commitments"
-        if not fund.lps and fund.schedule.commitments is None:
+        if not fund.lps and fund.schedule.commitments is None and fund.schedule.charges_commitments:
             raise _input("missing_field", at)
         total = sum((lp.commitment for lp in fund.lps), Fraction(0))
         if fund.lps and fund.schedule.commitments is not None and fund.schedule.commitments != total:
@@ -868,6 +884,10 @@ def read(inputs):
             raise _input("bad_number", "nav")
     investments = _investments(inputs.get("investments"))
     distribution_from = _distribution_from(inputs.get("distribution_from"))
+    # F39, F40: a step on invested capital charges the cost of the investments still held (F38), so it needs them: last
+    # in stage 2, after `distribution_from`. An empty list is none (FA52). Any step, whatever its date (FA64).
+    if terms["schedule"] is not None and terms["schedule"].charges_invested_capital and not investments:
+        raise _input("missing_field", "investments")
 
     # F32: with a schedule, no fee call is entered, so nothing is counted twice: the first such call in the input's order.
     schedule = terms["schedule"]
@@ -875,7 +895,8 @@ def read(inputs):
         for f in flows:
             if f.type == "call" and f.kind == "fee":
                 raise _input("fee_call_with_schedule", f"cash_flows[{f.index}]")
-        # F30: the schedule's calls are calls, dated from the schedule alone, none after D (FA39, FA40).
+        # F30: the schedule's calls are calls, dated from the schedule alone, none after D (FA39, FA40). From 0.6.0 they
+        # count here by their dates, even one that turns out to have nothing to call on invested capital (F39, FA66).
         flows = flows + [Flow(None, p.date, "call", "fee", None, True, p) for p in fees.periods(schedule, d)]
 
     # F4: refused, no calls at all, or a distribution before the first call; D on or after every cash flow.
@@ -914,10 +935,19 @@ def read(inputs):
         **terms,
     )
     _what_the_lps_need(fund)
-    # F33, F35: what each distribution realizes, the cost made by its date, and the investments at D.
+    # F33, F35: what each distribution realizes, the cost made by its date, and the investments at D; F38: the net
+    # invested capital on every day.
     deals.realize(fund)
+    # F39: each of the schedule's periods on invested capital, day by day, now the investments are read. A period with
+    # nothing to call isn't a call; the fund's first call is still the schedule's first by its date (F25, FA66).
+    scheduled = [f for f in fund.flows if f.scheduled]
+    if scheduled:
+        fund.first_scheduled = scheduled[0].date
+    for f in scheduled:
+        f.period.on_invested = fees.invested(fund, f.period)
+    fund.flows = [f for f in fund.flows if not (f.scheduled and f.period.nothing_to_call)]
     # F30: each of the schedule's calls is the LPs' fees, as if every LP were in from the start, once the LPs are read.
     for f in fund.flows:
         if f.scheduled:
-            f.amount = fees.call_amount(fund, f.factor)
+            f.amount = fees.call_amount(fund, f.period)
     return fund

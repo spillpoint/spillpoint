@@ -20,7 +20,7 @@ The new input terms are `fee_rate_with_schedule`, `fee_call_with_schedule` and `
 |---|---|---|---|---|---|---|
 | `fee-schedule-not-an-object` | 29 | `terms.management_fee` = `"0.02"` | input | `bad_field` | `terms.management_fee` | The schedule isn't an object (F32, stage 2). |
 | `fee-schedule-offset` | 29 | `terms.management_fee.offset` = `"0.5"` | unsupported | `offset` | `terms.management_fee.offset` | A key a schedule doesn't have: unsupported, named by the key (stage 1). |
-| `fee-step-basis` | 29 | `terms.management_fee.steps[1].basis` = `"invested_capital"` | unsupported | `basis` | `terms.management_fee.steps[1].basis` | A key a step doesn't have, found among the schedule's keys at the steps' place (stage 1). |
+| `fee-step-basis` | 29 | `terms.management_fee.steps[1].basis` = `"invested_capital"` | input | `missing_field` | `investments` | From 0.6.0 a step's basis is read (F40); case 29 lists no investments, so its step on invested capital is refused at the end of stage 2 (FA64). |
 | `fee-start-missing` | 29 | `terms.management_fee.start` removed | input | `missing_field` | `terms.management_fee.start` | `start` is needed (stage 2). |
 | `fee-start-not-a-date` | 29 | `terms.management_fee.start` = `"2021-02-30"` | input | `bad_date` | `terms.management_fee.start` | 30 February 2021 isn't on the calendar. |
 | `fee-frequency-monthly` | 29 | `terms.management_fee.frequency` = `"monthly"` | input | `bad_field` | `terms.management_fee.frequency` | Not one of quarterly, semiannual or annual. |

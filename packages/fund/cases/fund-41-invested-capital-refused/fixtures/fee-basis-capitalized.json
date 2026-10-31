@@ -1,0 +1,9 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "The second fee step's basis \"Invested_Capital\": the word is compared exactly as written.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].basis": "Invested_Capital"
+    }
+  }
+}
