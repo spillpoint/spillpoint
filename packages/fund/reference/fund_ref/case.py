@@ -228,12 +228,12 @@ def _fee_calls(fund):
     for f in fund.flows:
         if not f.scheduled:
             continue
-        lps = fees.lps_fee(fund, f.factor)
+        lps = fees.lps_fee(fund, f.period)
         entry = {"date": f.date.isoformat(), "first_day": f.period.first_day.isoformat(), "last_day": f.period.last_day.isoformat(), "call": _lp_amount(f.amount), "lps": _lp_amount(lps)}
         if fund.has_gp_commitment:
             entry["gp_commitment"] = _lp_amount(f.amount - lps)
         if fund.lps:
-            entry["by_lp"] = [{"name": lp.name, "fee": _lp_amount(fees.lp_fee(fund, lp, f.factor))} for lp in fund.lps]
+            entry["by_lp"] = [{"name": lp.name, "fee": _lp_amount(fees.lp_fee(fund, lp, f.period))} for lp in fund.lps]
         out.append(entry)
     return out
 

@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 CASES = Path(__file__).resolve().parents[2] / "cases"
 
 from fund_ref import breakpoints, fees  # noqa: E402
+from fund_ref import deals as deals_mod  # noqa: E402
 from fund_ref.accounts import Model  # noqa: E402
 from fund_ref.case import apply_change, run_case  # noqa: E402
 from fund_ref.closes import equalization  # noqa: E402
@@ -754,7 +755,7 @@ class Schedule(unittest.TestCase):
         }
         lps = [{"name": "A", "commitment": "4"}, {"name": "B", "commitment": "2", "class": "Anchor"}]
         f = read({"as_of": "2022-12-31", "terms": terms, "cash_flows": [call("2021-06-01", "6")], "lps": lps})
-        fees_of = [[fees.lp_fee(f, lp, c.factor) for lp in f.lps] for c in f.flows if c.scheduled]
+        fees_of = [[fees.lp_fee(f, lp, c.period) for lp in f.lps] for c in f.flows if c.scheduled]
         self.assertEqual(fees_of, [[F(8, 100), F(2, 100)], [F(6, 100), F(15, 1000)]])
         self.assertEqual([c.amount for c in f.flows if c.scheduled], [F(1, 10), F(75, 1000)])
 
@@ -924,8 +925,8 @@ class FeeRefusals(unittest.TestCase):
 
     def test_the_schedules_keys_in_the_files_order_among_the_terms(self):
         # Stage 1: a term's own keys in the file's order, the steps' keys at the steps' place; an unknown term first.
-        fee = {"steps": [{"rate": "0.02", "basis": "nav"}], "offset": "1", "start": "x"}
-        self.assertEqual(self.refused({"set": {"terms.management_fee": fee}}), ("unsupported", "basis", "terms.management_fee.steps[0].basis"))
+        fee = {"steps": [{"rate": "0.02", "waiver": "1"}], "offset": "1", "start": "x"}
+        self.assertEqual(self.refused({"set": {"terms.management_fee": fee}}), ("unsupported", "waiver", "terms.management_fee.steps[0].waiver"))
         terms = {"hurdle_irr": "0.1", "management_fee": {"offset": "1"}}
         self.assertEqual(self.refused({"set": {"terms": terms}}), ("unsupported", "hurdle_irr", "terms.hurdle_irr"))
 
@@ -1382,6 +1383,177 @@ class DealRefusals(unittest.TestCase):
         self.assertEqual(self.refused({"set": {"cash_flows[3]": write_off("2019-12-01", "B"), "cash_flows[2].investment": "Z"}}), ("input", "investment_unknown", "cash_flows[2].investment"))
 
 
+INVESTED = {
+    "as_of": "2021-12-31",
+    "terms": {"carry": "0.2", "management_fee": {"start": "2021-01-01", "frequency": "annual", "steps": [{"rate": "0.02", "basis": "invested_capital"}]}},
+    "investments": [
+        {"name": "A", "checks": [{"date": "2021-01-01", "amount": "600"}, {"date": "2021-07-01", "amount": "200"}]},
+        {"name": "B", "checks": [{"date": "2021-03-01", "amount": "400"}]},
+        {"name": "C", "checks": [{"date": "2021-02-01", "amount": "100"}]},
+    ],
+    "cash_flows": [
+        call("2021-01-01", "1300"),
+        dist_from("2021-05-01", "500", "A", "0.5"),
+        dist_from("2021-06-01", "300", "C"),
+        dist_from("2021-07-01", "400", "A", "0.5"),
+        dist_from("2021-08-01", "50", "C"),
+        dist("2021-09-01", "100"),
+        write_off("2021-10-01", "B"),
+    ],
+}
+
+
+def scheduled(f):
+    return [(c.date.isoformat(), c.amount) for c in f.flows if c.scheduled]
+
+
+class InvestedCapital(unittest.TestCase):
+    """F38, F39: fees on net invested capital, day by day, on small numbers."""
+
+    def test_net_invested_capital_on_each_day(self):
+        # F38: A's $600 on 1 Jan; C's $100 on 1 Feb; B's $400 on 1 Mar: $1,100. Half of A sold on 1 May realizes $300:
+        # $800. C sold whole on 1 Jun: $700. On 1 Jul A's $200 follow-on comes before the half sale that day (F4), which
+        # realizes half of $500: $650. C's escrow release on 1 Aug and the distribution naming no investment on 1 Sep
+        # realize nothing. B written off on 1 Oct: $250. Each event counts from its own date.
+        f = read(INVESTED)
+        on = lambda day: deals_mod.invested_on(f, datetime.date.fromisoformat(day))  # noqa: E731
+        days_ = ["2020-12-31", "2021-01-01", "2021-01-31", "2021-02-01", "2021-03-01", "2021-04-30", "2021-05-01", "2021-06-01", "2021-07-01", "2021-08-01", "2021-09-01", "2021-09-30", "2021-10-01", "2021-12-31"]
+        self.assertEqual([on(d) for d in days_], [0, 600, 600, 700, 1100, 1100, 800, 700, 650, 650, 650, 650, 250, 250])
+
+    def test_a_period_is_each_days_rate_times_that_days_invested_capital(self):
+        # F39: 2021's 365 days: 31 at $600, 28 at $700, 61 at $1,100, 31 at $800, 30 at $700, 92 at $650 and 92 at $250,
+        # $233,900 of dollar-days; at 2% a year, 0.02 x 233,900 / 365 = 4,678 / 365. Without listed LPs and with no GP
+        # commitment, the call is the LPs' fee. No `commitments`: the schedule is wholly on invested capital.
+        self.assertEqual(scheduled(read(INVESTED)), [("2021-01-01", F(4678, 365))])
+
+    def test_a_switch_to_invested_capital_inside_a_quarter(self):
+        # F39: 2% of $3,650 of commitments to 14 Feb, then 1% of invested capital, $1,000 from 1 Jan, a 1% GP commitment
+        # fee-free. Q1's 90 days: 45 at 2% of $3,650, 45 at 1% of the LPs' 99% of $1,000: (3,285 + 445.5) / 360. Q2's 91
+        # days all at 1%: 9.9 / 4. Paying fees, the call is that over 0.99, and the GP commitment pays 1% of it (F3).
+        terms = {"carry": "0.2", "gp_commitment": {"share": "0.01"}, "management_fee": {"start": "2021-01-01", "steps": [{"rate": "0.02"}, {"rate": "0.01", "from": "2021-02-15", "basis": "invested_capital"}], "commitments": "3650"}}
+        inputs = {"as_of": "2021-06-30", "terms": terms, "investments": [{"name": "A", "checks": [{"date": "2021-01-01", "amount": "1000"}]}], "cash_flows": [call("2021-01-01", "1000")]}
+        self.assertEqual(scheduled(read(inputs)), [("2021-01-01", F(37305, 3600)), ("2021-04-01", F(99, 40))])
+        terms["gp_commitment"]["pays_fees"] = True
+        self.assertEqual(scheduled(read(inputs)), [("2021-01-01", F(37305, 3600) / F(99, 100)), ("2021-04-01", F(5, 2))])
+        # The first step named on commitments is the same as the default, and so is null (FA63).
+        for basis in ("commitments", None):
+            terms["management_fee"]["steps"][0]["basis"] = basis
+            self.assertEqual(scheduled(read(inputs))[0][1], F(37305, 3600) / F(99, 100))
+
+    def test_each_lp_by_its_fee_weight_over_the_commitments(self):
+        # F39: A on the fund's terms commits 6, B in an Anchor class at 1% against the schedule's 2% commits 2, C at no
+        # fee commits 2: fee weights 6, 1 and 0 over commitments of 10. $1,000 invested all year at 2%, a 2% GP commitment
+        # paying fees: the LPs' fee is 0.02 x 0.98 x 1,000 x 7/10 = 13.72. A pays 11.76, B 1.96 (half A's rate on its
+        # commitment), C nothing; the call is 13.72 / 0.98 = 14, the GP commitment's part 0.28.
+        terms = {"carry": "0.2", "gp_commitment": {"share": "0.02", "pays_fees": True}, "lp_classes": [{"name": "Anchor", "fee_rate": "0.01"}, {"name": "F&F", "fee_rate": "0"}],
+                 "management_fee": {"start": "2021-01-01", "frequency": "annual", "steps": [{"rate": "0.02", "basis": "invested_capital"}]}}
+        lps = [{"name": "A", "commitment": "6"}, {"name": "B", "commitment": "2", "class": "Anchor"}, {"name": "C", "commitment": "2", "class": "F&F"}]
+        inputs = {"as_of": "2021-12-31", "terms": terms, "lps": lps, "investments": [{"name": "X", "checks": [{"date": "2021-01-01", "amount": "1000"}]}], "cash_flows": [call("2021-01-01", "1000")]}
+        f = read(inputs)
+        c = [c for c in f.flows if c.scheduled][0]
+        self.assertEqual([fees.lp_fee(f, lp, c.period) for lp in f.lps], [F(1176, 100), F(196, 100), 0])
+        self.assertEqual((fees.lps_fee(f, c.period), c.amount), (F(1372, 100), 14))
+        self.assertEqual(run_case({"case": "t", "xs": ["0"], "fund": inputs})["fee_calls"][0]["gp_commitment"], {"amount": "0.28", "exact": "0.28"})
+
+    def test_a_period_with_nothing_to_call_isnt_a_call_but_counts_by_its_date(self):
+        # F39, FA66: yearly at 2% of invested capital from 2021, the one check on 1 Mar 2022, sold on 30 Jun 2023. 2021 has
+        # nothing invested, and neither has 2024: neither is a call. 2022 has 306 days at $1,000, 2023 has 180. But 2021's
+        # period is still the fund's first call by its date, so B, closing on 1 Jun 2021, joins at a later close (F25),
+        # owing no back fees, where without the schedule it would be in from the start.
+        terms = {"carry": "0.2", "management_fee": {"start": "2021-01-01", "frequency": "annual", "steps": [{"rate": "0.02", "basis": "invested_capital"}]}}
+        inputs = {
+            "as_of": "2024-03-31",
+            "terms": terms,
+            "lps": [{"name": "A", "commitment": "1"}, {"name": "B", "commitment": "1", "close": "2021-06-01"}],
+            "investments": [{"name": "X", "checks": [{"date": "2022-03-01", "amount": "1000"}]}],
+            "cash_flows": [call("2022-03-01", "1000"), dist_from("2023-06-30", "3000", "X")],
+        }
+        f = read(inputs)
+        self.assertEqual(scheduled(f), [("2022-01-01", F(20 * 306, 365)), ("2023-01-01", F(20 * 180, 365))])
+        self.assertEqual(f.first_call, datetime.date(2021, 1, 1))
+        self.assertTrue(f.joins_later(f.lps[1]))
+        self.assertEqual([m.back_fees for m in equalization(f).totals], [0, 0])
+        self.assertFalse(read({**inputs, "terms": {"carry": "0.2"}}).joins_later(f.lps[1]))
+        self.assertTrue(all(c["call"]["amount"] != "0.00" for c in run_case({"case": "t", "xs": ["0"], "fund": inputs})["fee_calls"]))
+
+    def test_ds_period_counts_at_ds_invested_capital(self):
+        # F39: quarterly at 2%, $1,000 from 1 Jan, half sold on D, 16 May. Q2's 91 days: 45 at $1,000, then 46 at $500
+        # from D's sale, the days after D at D's: 0.02 x 68,000 / 364. X, the other half, doesn't move it.
+        terms = {"carry": "0.2", "management_fee": {"start": "2021-01-01", "steps": [{"rate": "0.02", "basis": "invested_capital"}]}}
+        inputs = {"as_of": "2021-05-16", "terms": terms, "investments": [{"name": "X", "checks": [{"date": "2021-01-01", "amount": "1000"}]}],
+                  "cash_flows": [call("2021-01-01", "1000"), dist_from("2021-05-16", "800", "X", "0.5")], "distribution_from": {"investment": "X"}}
+        self.assertEqual(scheduled(read(inputs)), [("2021-01-01", 5), ("2021-04-01", F(1360, 364))])
+        self.assertEqual(scheduled(read({**inputs, "final": True})), scheduled(read(inputs)))
+
+
+class InvestedCapitalRefusals(unittest.TestCase):
+    """F40, and the choices FA63 to FA66 make for it."""
+
+    def refused(self, change, base=INVESTED):
+        with self.assertRaises(Refusal) as ctx:
+            read(apply_change(base, change))
+        return ctx.exception.kind, ctx.exception.term, ctx.exception.path
+
+    def test_a_steps_basis(self):
+        # FA63: compared exactly, as `frequency` is; after the rate and before the `from`, on the first step too.
+        at = "terms.management_fee.steps[0]"
+        for bad in (" invested_capital", "Commitments", True, ["invested_capital"]):
+            self.assertEqual(self.refused({"set": {f"{at}.basis": bad}}), ("input", "bad_field", f"{at}.basis"))
+        self.assertEqual(self.refused({"set": {f"{at}.basis": "nav", f"{at}.from": "2021-01-01"}}), ("input", "bad_field", f"{at}.basis"))
+        self.assertEqual(self.refused({"set": {f"{at}.basis": "nav", f"{at}.rate": "1"}}), ("input", "bad_number", f"{at}.rate"))
+        self.assertEqual(self.refused({"set": {f"{at}.from": "2021-01-01"}}), ("input", "steps_out_of_order", at))
+
+    def test_a_step_on_invested_capital_needs_investments_whatever_its_date(self):
+        # F40, FA64: missing at the end of stage 2, even for a step dated after D, and after distribution_from's own
+        # refusals; before stage 3's.
+        plain = {"as_of": "2021-12-31", "terms": {"carry": "0.2", "management_fee": {"start": "2021-01-01", "steps": [{"rate": "0.02"}, {"rate": "0.01", "from": "2030-01-01", "basis": "invested_capital"}], "commitments": "100"}}, "cash_flows": [call("2021-01-01", "100")]}
+        self.assertEqual(self.refused({}, plain), ("input", "missing_field", "investments"))
+        self.assertEqual(self.refused({"set": {"distribution_from": {"investment": ""}}}, plain), ("input", "bad_field", "distribution_from.investment"))
+        self.assertEqual(self.refused({"set": {"cash_flows[1]": call("2022-01-01", "1")}}, plain), ("input", "missing_field", "investments"))
+        read(apply_change(plain, {"set": {"terms.management_fee.steps[1].basis": "commitments"}}))
+
+    def test_commitments_only_for_a_step_on_commitments(self):
+        # F40, FA64: wholly on invested capital, a fund without listed LPs needs no `commitments`; given, they're checked
+        # and unused (FA26). A step on commitments dated after D still needs them.
+        fee = "terms.management_fee"
+        self.assertEqual(scheduled(read(apply_change(INVESTED, {"set": {f"{fee}.commitments": "5000"}}))), scheduled(read(INVESTED)))
+        self.assertEqual(self.refused({"set": {f"{fee}.commitments": "0"}}), ("input", "bad_number", f"{fee}.commitments"))
+        later = {"set": {f"{fee}.steps[1]": {"rate": "0.01", "from": "2030-01-01"}}}
+        self.assertEqual(self.refused(later), ("input", "missing_field", f"{fee}.commitments"))
+        # With LPs, `commitments` given is still their total, whatever the basis (F32).
+        lps = {"lps": [{"name": "A", "commitment": "3"}, {"name": "B", "commitment": "1"}], f"{fee}.commitments": "5"}
+        self.assertEqual(self.refused({"set": lps}), ("input", "fee_commitments_mismatch", f"{fee}.commitments"))
+        read(apply_change(INVESTED, {"set": {**lps, f"{fee}.commitments": "4"}}))
+
+    def test_the_schedules_periods_count_by_date_for_stage_3(self):
+        # F39: a distribution after the schedule's first period by date isn't before the fund's first call, even with
+        # nothing invested in that period and the investment call later.
+        inputs = apply_change(INVESTED, {"set": {"cash_flows[5]": dist("2020-06-01", "100"), "terms.management_fee.start": "2020-01-01"}})
+        f = read(inputs)
+        self.assertEqual(f.first_call, datetime.date(2020, 1, 1))
+        self.assertEqual(scheduled(f)[0][0], "2021-01-01")
+        self.assertEqual(self.refused({"set": {"cash_flows[5]": dist("2019-12-31", "100"), "terms.management_fee.start": "2020-01-01"}}), ("input", "distribution_before_call", "cash_flows[5]"))
+
+
+def random_invested_fees(rng, inputs):
+    """random_deals' fund with a schedule on invested capital (F39) in place of its fee calls: from the start, or
+    switching from commitments at a date in the fund's life, often inside a period; quarterly, half-yearly or yearly."""
+    out = copy.deepcopy(inputs)
+    out["cash_flows"] = [f for f in out["cash_flows"] if f.get("kind") != "fee"]
+    start = datetime.date(2015, 1, 1) + datetime.timedelta(days=rng.randint(-90, 120))
+    on_invested = {"rate": rng.choice(["0.02", "0.015", "0.0175"]), "basis": "invested_capital"}
+    if rng.random() < 0.5:
+        steps = [on_invested]
+    else:
+        on_invested["from"] = (start + datetime.timedelta(days=rng.randint(1, 1200))).isoformat()
+        steps = [{"rate": "0.02"}, on_invested]
+    fee = {"start": start.isoformat(), "frequency": rng.choice(["quarterly", "semiannual", "annual"]), "steps": steps}
+    if not out.get("lps") and len(steps) > 1:
+        fee["commitments"] = str(rng.randint(10, 50) * 100000)
+    out["terms"] = {**{k: v for k, v in out["terms"].items() if k not in ("fee_rate", "management_fee")}, "management_fee": fee}
+    return out
+
+
 def random_deals(rng, inputs):
     """A random fund with investments (F33): its investment calls each paid out as one or two checks, all by D, the last
     sometimes only four fifths of its call, so capital called and never invested comes back at the end (FA49); each
@@ -1596,7 +1768,7 @@ class RandomFunds(unittest.TestCase):
             fee_calls = [c for c in f.flows if c.type == "call" and c.kind == "fee"]
             counted = sum((fees.lps_part(f, c) for c in fee_calls), F(0))
             as_made = sum((c.amount - (f.gp_share * c.amount if f.pays_fees else 0) for c in fee_calls if not c.scheduled), F(0))
-            as_made += sum((f.fee_weight(lp) * c.factor for c in fee_calls if c.scheduled for lp in f.lps if f.is_in(lp, c.date)), F(0))
+            as_made += sum((fees.lp_fee(f, lp, c.period) for c in fee_calls if c.scheduled for lp in f.lps if f.is_in(lp, c.date)), F(0))
             e = equalization(f)
             owed_back = sum((t.back_fees for t in e.totals), F(0)) if e else F(0)
             self.assertEqual(counted, as_made + owed_back, (i, inputs))
@@ -1682,6 +1854,62 @@ class RandomFunds(unittest.TestCase):
                     seen["due below what's back"] += cost + fees_ < back
                     back += pot.lp_capital
                 self.assertEqual(back, led.capital_returned)
+        self.assertTrue(all(seen.values()), seen)
+
+    def test_with_fees_on_invested_capital(self):
+        # The random funds with investments again, a third with classes and closes, with a schedule on invested capital in
+        # place of their fee calls (F38, F39), from the start or switching from commitments in the fund's life: every
+        # account's breakpoints are found, no account's clawback rises, and the fund's amounts are the accounts' sums.
+        # Every fee call is above $0, in date order to D's period; what the waterfall counts as the LPs' fees is what the
+        # LPs in at each call owe, plus every joiner's back fees; and deal by deal the GP keeps at most the whole fund's
+        # entitlement, which has the same fees.
+        rng = random.Random(20261030)
+        seen = {"deal by deal": 0, "accounts": 0, "a period with nothing to call": 0, "back fees": 0, "a switch": 0, "no listed LPs": 0}
+        for i in range(24):
+            inputs = random_fund(rng)
+            if i % 3 == 1:
+                inputs = random_classes(rng, inputs)
+            inputs = random_invested_fees(rng, random_deals(rng, inputs))
+            try:
+                f = read(inputs)
+            except Refusal as r:
+                self.assertEqual(r.term, "call_without_payers", (i, inputs))
+                continue
+            m = Model(f)
+            found = breakpoints.find(m)
+            run_case({"case": "random", "xs": ["0"], "fund": inputs})
+            xs = sorted({F(0)} | {x for x, _ in found})
+            for a_i in range(len(m.accounts)):
+                owed = [m.evaluate(x).by_account[a_i][1].clawback for x in xs + [xs[-1] + 10**7]]
+                self.assertEqual(owed, sorted(owed, reverse=True), (i, inputs))
+            for x in xs[1:] + [xs[-1] + 1]:
+                out = m.evaluate(x)
+                self.assertEqual(sum(o.this.lps + o.this.gp for _, o in out.by_account) + out.gp_commitment, x)
+            calls = [c for c in f.flows if c.scheduled]
+            self.assertTrue(all(c.amount > 0 for c in calls), (i, inputs))
+            self.assertEqual([c.date for c in calls], sorted({c.date for c in calls}))
+            self.assertTrue(all(c.date <= f.distribution_date for c in calls))
+            by_date = fees.periods(f.schedule, f.distribution_date)
+            seen["a period with nothing to call"] += len(by_date) > len(calls)
+            self.assertEqual(f.first_call, min([fl.date for fl in f.flows if fl.type == "call"] + [p.date for p in by_date]))
+            seen["a switch"] += len(f.schedule.steps) > 1
+            seen["accounts"] += len(m.accounts) > 1
+            if f.lps:
+                counted = sum((fees.lps_part(f, c) for c in calls), F(0))
+                as_made = sum((fees.lp_fee(f, lp, c.period) for c in calls for lp in f.lps if f.is_in(lp, c.date)), F(0))
+                e = equalization(f)
+                owed_back = sum((t.back_fees for t in e.totals), F(0)) if e else F(0)
+                self.assertEqual(counted, as_made + owed_back, (i, inputs))
+                seen["back fees"] += owed_back > 0
+            else:
+                seen["no listed LPs"] += 1
+            if f.deal_by_deal:
+                seen["deal by deal"] += 1
+                w = Model(read({**inputs, "terms": {**inputs["terms"], "carry_basis": "whole_fund"}}))
+                for x in xs + [xs[-1] + 1]:
+                    for (_, a), (_, b) in zip(m.evaluate(x).by_account, w.evaluate(x).by_account):
+                        self.assertEqual(a.entitlement, b.entitlement, (i, x))
+                        self.assertLessEqual(a.carry_paid - a.clawback, b.entitlement, (i, x))
         self.assertTrue(all(seen.values()), seen)
 
 
