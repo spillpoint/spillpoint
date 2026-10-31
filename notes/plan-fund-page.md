@@ -493,7 +493,7 @@ Two optional columns after the commitment: class, then close.
 - **Opening:** f03b's guard comes out, so a file with classes or later closes opens into the tabs.
   - **From f04b until f04c,** a file whose terms have a `management_fee` is refused in one line, so a save can't drop it (Jordan's words): "This file has a management fee schedule; the page shows it from the next version." A null one is none, and opens.
   - **From f05b1 until f05c,** a file with investments, a write-off or a `carry_basis` was refused in one line, so a save couldn't drop them (Jordan's words): "This file has investments; the page shows them from the next version." Null, and an empty list of investments, were none, and opened. f05c took the guard out.
-  - **From f06b until f06c,** a file with a fee step on invested capital is refused in one line, so a save can't drop it (Jordan's words): "This file has a management fee on invested capital; the page shows it from the next version." A step's basis left out, null or `"commitments"` is the default, and opens; any other, one the engine would refuse included, gets the same line.
+  - **From f06b until f06c,** a file with a fee step on invested capital was refused in one line, so a save couldn't drop it (Jordan's words): "This file has a management fee on invested capital; the page shows it from the next version." A step's basis left out, null or `"commitments"` was the default, and opened; any other, one the engine would refuse included, got the same line. f06c takes the guard out.
 
 ### The examples
 
@@ -745,6 +745,79 @@ spillpoint-fund 0.5.0 lists a fund's investments and can pay carry deal by deal 
   - the fund-37 refusals show in the page's words: beside their fields for those the form can make, and in one line when opened from a file for all of them
 - **Case 34's numbers** as the review checks them, and as case 33 once switched to the whole fund.
 - **Case 26 switched to deal by deal and back.**
+
+## 0.6.0: fees on invested capital
+
+spillpoint-fund 0.6.0 can charge a management fee step on the fund's net invested capital, not the LPs' commitments (F38 to F40). f06c puts it on the page: each step's basis on Terms, beside its rate, and the fund's invested capital under the schedule's calls on Cash flows. This section is f06c's first commit, before code builds on its words. Your words and layout from the f06c brief are as you gave them; what they leave open is marked **(mine)**, and listed in `notes/review-f06c.md`.
+
+### The Terms tab, the schedule's steps
+
+- **Each step gets "On",** beside its rate: "Commitments" (the default) or "Invested capital".
+  - **A picker after the rate, before the step's date (mine):** "Step 2 [1.5] % On [Invested capital] from [1 Jan 2023] Remove". The first step's reads "Step 1 [2] % On [Commitments] from the start".
+  - **Its label for a screen reader (mine):** "Fee rate step 2 is on", as its date's is "Fee rate step 2 is in force from".
+  - **A step added (mine)** is on the basis of the step above it, as a new cash flow copies the row above's type and kind; its rate and date start blank, as now.
+- **One line under the steps:** "Invested capital is the cost of the fund's investments, less the cost of what it has exited or written off. Each day of a period counts at that day's invested capital."
+  - **Always, with a schedule (mine),** so what "Invested capital" means is there before it's chosen; after "Add a step".
+- **"The LPs' total commitments"** is asked for only when the fund lists no LPs and a step is on commitments. A schedule wholly on invested capital doesn't ask for it.
+  - **What was typed in it (mine)** is kept, out of the input, while every step is on invested capital, and comes back with a step on commitments, as the fee rate's is kept with a schedule.
+- **The line at the schedule's end (mine)** says what the fees are worked out from, which with a step on invested capital isn't only the LPs' commitments:
+  - **Every step on commitments:** as now, "Fees are worked out from the LPs' commitments, called in advance on calendar periods; the first period runs from the start date."
+  - **Every step on invested capital:** "Fees are worked out from the fund's invested capital, called in advance on calendar periods; the first period runs from the start date."
+  - **Some of each:** "Fees are worked out from the LPs' commitments or the fund's invested capital, as each step says, called in advance on calendar periods; the first period runs from the start date."
+
+### Problems, in the page's words, beside the field their path names
+
+- **A step on invested capital without investments,** under that step's On: "A fee on invested capital needs the fund's investments. Add them on the Investments tab."
+  - **The engine names `investments`** (F40, FA64), at the end of stage 2, before deal by deal's same refusal in stage 3. With a step on invested capital, the page puts it under that step's On; deal by deal with no step on invested capital, it's under "Add an investment", as in 0.5.0.
+  - **Under every step on invested capital (mine),** as a Fee row's problem is under every Fee row with a schedule, so every step that needs the investments shows at once. "Show me" goes to the first one's On.
+  - **At the top of the tab,** as now. On Payouts, the notice names the tab the last change was made on (f05c): "Your last change to the terms has a problem, …" after switching a step on Terms, "the investments" after removing the last one.
+- **What the form can't make:** a basis other than the two, since On is a picker of them; and, as in 0.4.0, commitments beside listed LPs and a fee rate beside a schedule. Only a file has them.
+- **Everything else is in 0.4.0's words,** whatever a step's basis: a schedule no LP pays, the commitments missing without LPs (now only with a step on commitments), a step's rate, its date.
+
+**An opened file's problem, in one line,** as now, its place then its words **(all mine)**:
+- **The place:** "Fee rate step 2's basis", as "Fee rate step 2's rate" and "Fee rate step 2's date" are.
+- **A basis that isn't one of the two:** "Fee rate step 2's basis isn't one the page knows: it's commitments or invested_capital.", as a frequency it doesn't know is worded.
+- **A step on invested capital without investments:** "Its list of investments is missing: it's needed for a management fee on invested capital." Deal by deal with no step on invested capital, as in 0.5.0: "…: it's needed to pay carry deal by deal."
+- **An unsupported key on a step,** with the basis now among a step's keys: "This file has a term the page doesn't model: `offset` on a fee rate step (step 2 of its management fee schedule). A step has only its rate, what it's on and the date it's in force from."
+
+### The Cash flows tab
+
+- **The schedule's fee calls,** listed as in 0.4.0.
+- **With a step on invested capital, one line under them,** from `netInvestedCapital(fund)`: "Net invested capital at 30 Jun 2024: $7,000,000."
+  - **The date is D, and the amount in whole dollars when it has no cents, to the cent when it has (mine),** as the X box shows X: "$6,500,000", "$0", "$6,500,000.50".
+  - **While the fund can't run (mine)** the line isn't there, since it's the engine's; the calls' own line says they show once the fund can run.
+- **No fee call with fees started (mine):** a schedule on invested capital can start on or before D and still have nothing to call, when the fund has no invested capital on any of its days on it. "No fee call yet: fees start on 1 Jan 2022." would be wrong, so it reads "No fee call yet: the fund has had no invested capital while its fee has been on it." A start after D reads as in 0.4.0.
+- **On the whole fund with a step on invested capital, a distribution that names no investment** says beside it: "Names no investment, so it doesn't lower invested capital."
+  - **Where (mine):** in a line under its row, where a problem in its row shows, in a hint's grey, not a problem's red; on a phone, in its card. A note in the From cell itself would widen the table past its card.
+  - **Only on a distribution with From "—" (mine).** Deal by deal, From "—" is a problem, as in 0.5.0, so the note isn't there.
+
+### Payouts
+
+**Nothing on Payouts changes (mine).** The split, the chart, the breakpoints and every card run on the schedule's calls, on either basis, as they do now. The summary under the picker counts the calls on invested capital among the schedule's.
+- **The headline's terms line (mine)** names the schedule as now, its steps' rates and dates without their basis: "management fee 2% a year from 1 Jan 2020, 1.5% from 1 Jan 2023, called quarterly" for case 38. Whether it should say "on invested capital" is an open question in the review note, as 0.4.0's line was settled in f04c's review.
+
+### Saving and opening
+
+- **Saving keeps each step's basis.** A step on commitments is saved without the word (FA63), so a fund with no step on invested capital saves exactly as before.
+- **Opening brings it back.** f06b's guard comes out, and its tests.
+- **A file's commitments, with no LPs and every step on invested capital (mine),** open, and a save leaves them out, as the form doesn't ask for them there; without a step on commitments they change no amount (F39). As in 0.4.0, a file's commitments beside listed LPs open and save without them.
+
+### The examples
+
+- **Case 38 joins the picker** as "A fee that moves to invested capital", after case 34.
+- **It opens at $5,000,000 (mine),** a listed X, below its one breakpoint at $5,446,930.70: X goes to the LPs as paid-in, the schedule's fees among it.
+- **The others stay.**
+
+### Tests
+
+- **The page's pending list empties,** so cases 38 to 41 run through its case tests:
+  - the forms round trip with each step's basis
+  - files open and save
+  - the fund-41 refusals show in the page's words: beside their fields for those the form can make, and in one line when opened from a file for all fifteen
+- **Case 38's Cash flows** list 18 fee calls, the six on invested capital $44,550.00, $48,303.30, $44,388.59, $37,125.00, $32,107.01 and $25,987.50, and the line "Net invested capital at 30 Jun 2024: $7,000,000."
+- **Case 40** never asks for the LPs' total commitments, and its line says $0 at 31 Mar 2025.
+- **Case 29's second step switched to Invested capital** shows the investments line under it, and back to Commitments clears it.
+- **Narrow screens:** every width from 320 to 1,400 on Terms and Cash flows of cases 38 to 40: the On picker inside its card, and nothing scrolling sideways.
 
 ## How it's built: its own app, `apps/fund` (your answer 1)
 
