@@ -20,9 +20,14 @@ const caseFile = (dir: string, file: string) => JSON.parse(readFileSync(resolve(
 
 afterEach(() => vi.restoreAllMocks());
 
-/** Everything the engine read but the terms, with every amount as its exact string. */
+/** Everything the engine read but the terms and the LPs, with every amount as its exact string: from 0.5.0 the investments and X's source too. */
 const flowsOf = (fund: Fund) =>
-  JSON.parse(JSON.stringify({ asOf: fund.asOf, d: fund.distributionDate, final: fund.final, nav: fund.nav, flows: fund.cashFlows }, (_, v) => (v instanceof D ? v.toString() : v)));
+  JSON.parse(
+    JSON.stringify(
+      { asOf: fund.asOf, d: fund.distributionDate, final: fund.final, nav: fund.nav, flows: fund.cashFlows, investments: fund.investments, from: fund.distributionFrom },
+      (_, v) => (v instanceof D ? v.toString() : v),
+    ),
+  );
 
 describe("the form writes the cash flows exactly", () => {
   it.each(RUN_CASES)("%s: as the case has them, with the same breakpoints", (dir) => {
@@ -45,8 +50,9 @@ describe("the form writes the cash flows exactly", () => {
   });
 
   it("sorts by date and keeps the order shown within a date, since same-day distributions run in that order (F4)", () => {
-    const row = (id: number, date: string, amount: string) => ({ id, date, type: "distribution" as const, kind: "investment" as const, amount });
-    const form = { asOf: "", distributionDate: "", final: false, nav: "", rows: [row(1, "2025-01-01", "1"), row(2, "", "2"), row(3, "2024-01-01", "3"), row(4, "2025-01-01", "4")] };
+    const row = (id: number, date: string, amount: string) => ({ id, date, type: "distribution" as const, kind: "investment" as const, amount, from: null, share: "100" });
+    const rows = [row(1, "2025-01-01", "1"), row(2, "", "2"), row(3, "2024-01-01", "3"), row(4, "2025-01-01", "4")];
+    const form = { asOf: "", distributionDate: "", final: false, nav: "", rows, investments: [], source: { investment: null, share: "100" } };
     expect(sortByDate(form).rows.map((r) => r.id)).toEqual([3, 1, 4, 2]);
   });
 });
@@ -242,8 +248,8 @@ describe("the rows and the facts about D", () => {
     expect(document.querySelector(".example-label")!.textContent).toMatch(/^This fund, with your changes: \$11.1M paid in over 5 calls/);
     fireEvent.click(screen.getByRole("button", { name: "Remove row 3" }));
     expect(document.querySelector(".example-label")!.textContent).toMatch(/^This fund, with your changes: \$11M paid in over 4 calls/);
-    // Under the table: the order same-day distributions run in.
-    expect(screen.getByText(/^On one date, calls run before distributions/).textContent).toContain("distributions run in the order shown here");
+    // Under the table: the order same-day cash flows run in (F4, F33).
+    expect(screen.getByText(/^On one date, calls run first/).textContent).toContain("then the investments' checks, then write-offs, then distributions in the order shown here");
   });
 
   it("makes X the last distribution when the box is ticked, as case 12 is", () => {

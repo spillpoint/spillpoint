@@ -37,6 +37,7 @@ describe("the tabs", () => {
       ["Payouts", "true"],
       ["Terms", "false"],
       ["Cash flows", "false"],
+      ["Investments", "false"],
       ["LPs", "false"],
     ]);
     expect(screen.getByRole("tabpanel").getAttribute("id")).toBe("panel-payouts");

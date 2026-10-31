@@ -99,12 +99,14 @@ interface Props {
   top: Decimal;
   /** X's split at the chosen X, for the legend's values. */
   at: { lps: Decimal; gp: Decimal; gpCommitment: Decimal };
+  /** The line under the values when they aren't the lines' at X: the NAV point, deal by deal (F14, FA58); else null. */
+  valuesLine: string | null;
   hasCommitment: boolean;
   /** A click or tap on the chart sets X there. */
   onX: (x: Decimal) => void;
 }
 
-export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment, onX }: Props) {
+export function Chart({ points, breakpoints, nav, x, top, at, valuesLine, hasCommitment, onX }: Props) {
   const [ref, width] = useWidth(960);
   const series: Series[] = [
     { key: "gp", name: "The GP's carry", colour: GP, width: 2.5 },
@@ -200,7 +202,7 @@ export function Chart({ points, breakpoints, nav, x, top, at, hasCommitment, onX
           </li>
         ))}
       </ul>
-      <p className="chart__hint">Values at X = {cents(x)}, from this distribution.</p>
+      <p className="chart__hint">{valuesLine ?? `Values at X = ${cents(x)}, from this distribution.`}</p>
     </section>
   );
 }

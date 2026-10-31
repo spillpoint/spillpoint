@@ -492,7 +492,7 @@ Two optional columns after the commitment: class, then close.
 - **Saving** keeps the two rates, the classes, and each LP's class and close. A fund without them saves without them.
 - **Opening:** f03b's guard comes out, so a file with classes or later closes opens into the tabs.
   - **From f04b until f04c,** a file whose terms have a `management_fee` is refused in one line, so a save can't drop it (Jordan's words): "This file has a management fee schedule; the page shows it from the next version." A null one is none, and opens.
-  - **From f05b1 until f05c,** a file with investments, a write-off or a `carry_basis` is refused in one line, so a save can't drop them (Jordan's words): "This file has investments; the page shows them from the next version." Null, and an empty list of investments, are none, and open.
+  - **From f05b1 until f05c,** a file with investments, a write-off or a `carry_basis` was refused in one line, so a save couldn't drop them (Jordan's words): "This file has investments; the page shows them from the next version." Null, and an empty list of investments, were none, and opened. f05c took the guard out.
 
 ### The examples
 
@@ -622,6 +622,128 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
 - **Case 29's Cash flows** list 22 fee calls, $100,000.00 first, $150,000.00 last and $4,225,000.00 in all.
 - **Case 30's half-year with the step** reads $212,115.23, of it $4,242.30 the GP commitment's.
 - **Case 26 switched to a schedule** shows the problem under its two Fee rows.
+
+## 0.5.0: investments and carry deal by deal
+
+spillpoint-fund 0.5.0 lists a fund's investments and can pay carry deal by deal (F33 to F37). f05c puts them on the page: the basis on Terms, the investments on a tab of their own, their tags on Cash flows, X's source beside X, and what's due before carry beside the split. This section is f05c's first commit, before code builds on its words. Your words and layout from the f05c brief are as you gave them; what they leave open is marked **(mine)**, and listed in `notes/review-f05c.md`.
+
+### The Terms tab
+
+**"Carry is paid",** a choice of two, in a group of its own after Carry **(mine)**:
+- **"On the whole fund"** (the default), and **"Deal by deal"**.
+- **One line under them,** whichever is chosen **(mine)**: "Deal by deal: before carry, LPs get back the cost of each investment exited or written off, with its share of fees and expenses. At the end the GP owes back any carry the whole fund doesn't earn."
+
+**Deal by deal, the pref and catch-up are off and say why** (no pref deal by deal in 0.5.0):
+- **The pref's box** is unticked and can't be ticked, with one line **(the words mine)**: "Off deal by deal: this version has no pref deal by deal, so no catch-up either."
+- **The catch-up group goes,** as it does without a pref.
+- **What was typed (mine)** is kept, out of the input, and comes back on the whole fund, as the carry keeps its steps when it's flat.
+
+### The Investments tab
+
+**A tab of its own, after Cash flows (mine):** the tabs run Payouts, Terms, Cash flows, Investments, LPs. The brief has it "between Cash flows and Payouts", which aren't next to each other; after Cash flows, since a distribution's From names one of them.
+- **A line under its heading (mine):** "Each investment the fund has made, with its checks: a follow-on is another check. Amounts in dollars: 3000000, $3,000,000 or $3M."
+- **Each investment:** its name, then its checks, each a date and an amount, with "Add a follow-on".
+  - **"Remove"** on each check after the first **(mine)**: the first goes with its investment.
+  - **"Remove this investment"** under its checks **(the words mine)**.
+  - **Labels (mine):** "Investment 1's name", "Investment 1, check 2's date", "Investment 1, check 2's amount", "Add a follow-on to investment 1", "Remove investment 1, check 2" and "Remove investment 1". On screen: "Name", "Check 2", "Remove", "Add a follow-on" and "Remove this investment".
+- **"Add an investment"** under them: one check, its date and amount to come, and the focus in its name **(mine)**.
+- **With none (mine):** "No investments yet. Add them to tag distributions and write-offs, and to pay carry deal by deal."
+- **Under them, the table from `portfolio(fund)`,** read-only, at D before X: cost, exited or written off, written off, proceeds, and the realized multiple, "—" while nothing is realized.
+  - **Its heading (mine):** "The investments at 30 Jun 2024, before X".
+  - **Its columns (mine):** "Investment", "Cost", "Exited or written off", "Written off", "Proceeds" and "Realized multiple". Amounts to the cent; the multiple to two places, rounded down, as the LPs' net multiple is: "3.00x".
+  - **A line under it (mine):** "Cost is each investment's checks to D. The realized multiple is its proceeds over the cost exited or written off."
+  - **While the fund can't run (mine):** "The table shows here once the fund can run." in its place, since it's the engine's.
+  - **On a phone,** and wherever it wouldn't fit its card, each investment is a card, through the same `CardTable` Payouts' cards use.
+
+**Names (mine),** as LPs' and classes' are (FA17, FA27): the page takes the whitespace off each end as it reads an investment's name, typed or from a file, and a distribution's, a write-off's and X's investment in a file, so "Alder " never reaches the engine. A tag holds its investment by its row, not its name, as an LP holds its class, so renaming an investment keeps its tags; removing one leaves them on "—".
+
+### The Cash flows tab
+
+- **A distribution gets "From"** (an investment; "—" for none on the whole fund) **and "Share sold"** (100% by default).
+  - **One column, "Kind / From" (mine):** a call's kind, or a distribution's or write-off's investment, since a row has one or the other. With a column each the table needed 1,018 pixels, more than the card's 926 at a 1,024-pixel window; with one it needs about 845. A long name shortens in its picker rather than widen the table.
+  - **"From":** each investment by name, or "Investment 2" while it has none **(mine)**. Deal by deal, and on a write-off, "—" isn't offered **(mine)**, but a row already on it keeps it, with the problem under it, as a Fee row does with a schedule.
+  - **"Share sold":** a percent, as the terms' rates are typed, only on a distribution with a From **(mine)**; "—" otherwise. 100% is left out of the input, which is its default **(mine)**.
+- **A "Write-off" type,** with its investment and no amount: "—" under Kind, Share sold and Amount.
+- **A new row (mine)** copies the type, kind and From of the row above, as it copies the type and kind now.
+- **The line under the tab's heading (mine):** "Every call, distribution and write-off before X, in the order entered. …"
+- **The line under the table (mine):** "On one date, calls run first, then the investments' checks, then write-offs, then distributions in the order shown here. “Sort by date” keeps that order within a date."
+- **On a phone (mine),** each row is a card as now, with only its type's fields: a call's kind and amount, a distribution's From, share and amount, a write-off's From. The share says "Share sold" beside its box, since the headings go. The cards go up to an 880-pixel card, from 760, for the wider table.
+- **Pasting (mine):** pasted rows are calls and distributions as now, with no From; deal by deal each distribution then asks for one.
+
+### Beside X
+
+**Deal by deal, "From" and "Share sold"** under the X box **(where, mine)**, for `distribution_from`: the same picker, "—" not offered, and 100% by default.
+- **On the whole fund (mine)** they're hidden, and a file's X source is kept as it is, since it changes no amount there.
+- **While the fund has never run (mine),** as a blank fund built deal by deal hasn't, they're in the "No payouts yet" card, so X's source can be set before there are payouts.
+
+### Payouts
+
+- **The headline's terms line:** "deal by deal" after the carry: "Carry 20% deal by deal; no pref; GP commitment 1%, fee-free."
+- **Deal by deal, beside the split:** "Due to LPs before carry", among the facts under the split table, after the paid-ins, to the cent as they are **(mine)**: "$11,100,000.00".
+  - **At the end,** X final or the NAV point, its parts **(the words mine)**: "$11,100,000.00, all their paid-in: $9,900,000.00 of cost and $1,200,000.00 of fees and expenses". With capital called and never invested: "…: $9,000,000.00 of cost, $900,000.00 called and never invested and $1,200,000.00 of fees and expenses", listed as the headline lists carry steps, with no comma before the "and". Only an amount of a cent or more counts as some.
+- **The classes card:** each class's due, a column "Due before carry" **(the heading mine)**, deal by deal.
+- **At the NAV point of a fund whose X isn't final (mine),** the split, its due and the headline are the NAV split's, as the cards after the split already are. On the whole fund they're the same as the x-axis's split there. Deal by deal they can differ, since at the NAV point what's due is the end's (FA58): case 36 has $12,855,000 due at its NAV point and $10,069,750 on its axis. The chart's lines stay on the x-axis, with no jump at NAV (Jordan, f05c review, answer 4).
+  - **The line under the chart's values says so (Jordan's words, f05c review, answer 4):** deal by deal, at the NAV point, when what's due at the end differs from what's due on the axis, it reads "Values at NAV, $15,000,000.00, as if the fund were liquidated: everything left of every investment counts as realized, so all the LPs' paid-in comes back before carry. The lines are X from Kapok Robotics, 50% sold.", with the investment and share as X's source has them. Otherwise it's as before: "Values at X = $15,000,000.00, from this distribution."
+  - **"Differs" is to the cent (mine),** as the two dues show: case 34's NAV point, whose X from Cedar AI realizes everything left, keeps the line as before.
+- **The notice on Payouts (mine)** names the tab the last change was made on, not the problem's: switching to deal by deal on Terms, with no investments, reads "Your last change to the terms has a problem, …", and "Fix it" goes to the Investments tab.
+
+### Problems, in the page's words, under the field their path names
+
+**From the form (the words mine):**
+- **Deal by deal without investments,** under "Add an investment": "Deal by deal needs the fund's investments: add each one, with its checks."
+- **An investment's name blank:** "Write the investment's name."
+- **A name used twice:** "An investment above already has this name; each investment needs its own."
+- **A check's date:** "Choose this check's date."
+- **A check's amount:** "Write the check's amount in dollars, more than zero: 3000000 or $3M."
+- **A check after D:** "This check is after the distribution date, 30 Jun 2024."
+- **Checks past the investment calls,** under the first such check's amount: "By this check's date the checks come to more than the investment calls. Checks are paid from capital called for investments."
+- **Deal by deal, a distribution without a From:** "Deal by deal, every distribution comes from an investment: choose which."
+- **A write-off without one:** "Choose the investment this write-off ends."
+- **A From whose investment has no name yet:** "This investment has no name yet: name it on the Investments tab."
+- **A share that isn't one:** "Write the share sold as a percent, above 0 and at most 100: 100 or 40."
+- **Before its investment's first check,** in its row: "This distribution is before the first check in Alder Robotics, on 1 Feb 2020." A write-off's says "This write-off".
+- **A write-off after D:** the cash flows' line, as now.
+- **Deal by deal, X without a From:** "Deal by deal, X comes from an investment: choose which."
+- **X's share:** "Write the share X sells as a percent, above 0 and at most 100: 100 or 40."
+- **At the top of the tab,** as now, the Investments tab too. X's are on Payouts: "Your last change to X's source has a problem, …", and saving says "Not saved: X's source has a problem to fix first."
+- **What the form can't make:** a pref deal by deal, since the box is off; a basis it doesn't know; an investment or share on a call; a kind, amount or share on a write-off; an investment that isn't text, or isn't listed; a share without an investment; the shapes of the investments, their checks and X's source; and an empty list of checks. Only a file has them.
+
+**An opened file's problem, in one line,** as now, its place then its words **(all mine)**:
+- **The places:** "Its list of investments", "Row 2 of its investments", "The name in row 2 of its investments", "The list of checks in row 2 of its investments", "Check 1 in row 2 of its investments", "The date of check 1 in row 2 of its investments", "The amount of check 1 in row 2 of its investments", "`sector` in row 2 of its investments", "`shares` on check 1 in row 2 of its investments", "X's source", "The investment X comes from", "The share X sells", "`note` in X's source", "Its carry basis", and a cash flow's "The investment in row 6 of its cash flows" and "The share in row 6 of its cash flows".
+- **A pref deal by deal:** "This file has a term the page doesn't model: a pref with carry deal by deal (`terms.pref`). Deal by deal, this version has no pref, so no catch-up either."
+- **A basis it doesn't know:** "Its carry basis isn't one the page knows: it's whole_fund or deal_by_deal."
+- **On a call:** "Row 1 of its cash flows is a call, which has no investment or share: only a distribution or a write-off does."
+- **On a write-off:** "Row 7 of its cash flows is a write-off, which has no kind, amount or share: only its date and investment."
+- **A share that isn't one:** 'The share in row 6 of its cash flows isn't a share the page can use: it's above 0 and at most 1, written as an exact string like "0.4".' X's the same, after "The share X sells".
+- **A missing investment,** by what the row is: "The investment in row 7 of its cash flows is missing: a write-off names the investment it ends." / "…: a share sold needs the investment it's sold from." / "…: deal by deal, every distribution comes from one."
+- **Deal by deal without investments:** "Its list of investments is missing: it's needed to pay carry deal by deal."
+- **Deal by deal without X's source:** "X's source is missing: deal by deal, X comes from an investment."
+- **`investment_name_repeated`:** "The name in row 2 of its investments: an investment above already has this name; each needs its own."
+- **`investment_unknown`:** "The investment in row 6 of its cash flows: it isn't one of the fund's investments." X's the same, after "The investment X comes from".
+- **`investment_not_made`:** "Row 6 of its cash flows: it's before the first check in the investment it names."
+- **A check after D:** "Check 1 in row 3 of its investments: this check is after the distribution date."
+- **`investments_exceed_calls`:** "The amount of check 1 in row 2 of its investments: by its date, the checks come to more than the investment calls."
+- **Everything else** in the lines files already have: "isn't a value it can take", "is missing", "isn't part of a fund's input", the amounts' line, the dates' line.
+
+### Saving and opening
+
+- **Saving keeps** the investments, the tags (a distribution's investment and share, a write-off's investment), the write-offs, X's source and the basis. A fund without them saves without them; the whole fund's basis is left out, as its default **(mine)**.
+- **Opening brings them back.** f05b1's guard comes out, and its tests.
+
+### The examples
+
+- **Case 34 joins the picker** as "A fund that pays carry deal by deal", after case 29.
+- **It opens at $5,000,000 (mine),** its listed X, below its one breakpoint: X from Cedar AI goes to the LPs as capital, toward the $11,100,000 due.
+- **The others stay.**
+
+### Tests
+
+- **The page's pending list empties,** so cases 33 to 37 run through its case tests:
+  - the forms round trip with the investments
+  - files open and save
+  - the fund-37 refusals show in the page's words: beside their fields for those the form can make, and in one line when opened from a file for all of them
+- **Case 34's numbers** as the review checks them, and as case 33 once switched to the whole fund.
+- **Case 26 switched to deal by deal and back.**
 
 ## How it's built: its own app, `apps/fund` (your answer 1)
 

@@ -6,8 +6,8 @@
 // `fund` is exactly the input the Terms, Cash flows and LPs tabs write, which is readFund's input (SPEC.md, "Inputs"),
 // so a saved file is also a fund the engine reads on its own. Only a fund the engine accepts is saved, so a saved file
 // always opens. Opening also takes a bare input, or a case's inputs.json, which has the input as `fund`. A file's LP
-// names, class names and LPs' classes are trimmed as the page reads them (FA17, FA27), so "Alder " never reaches the
-// engine.
+// names, class names and LPs' classes are trimmed as the page reads them (FA17, FA27), and from 0.5.0 its investments'
+// names and the investments its cash flows and X's source name (FA52), so "Alder " never reaches the engine.
 
 import { D, FundRefusal, readFund, splitAt } from "spillpoint-fund";
 import type { Fund } from "spillpoint-fund";
@@ -26,9 +26,9 @@ const FIELDS = ["format", "version", "name", "fund", "view"];
 export const UNNAMED = "My fund";
 
 /**
- * The fund's input, as the three tabs write it: what the engine reads, and what a file keeps. The classes, on the LPs
- * tab, go in the terms (F22). No LPs: no `lps`; no classes: no `lp_classes`. A schedule's commitments only without
- * LPs, since with them their commitments are its base (F30).
+ * The fund's input, as the tabs write it: what the engine reads, and what a file keeps. The classes, on the LPs tab, go
+ * in the terms (F22). No LPs: no `lps`; no classes: no `lp_classes`. A schedule's commitments only without LPs, since
+ * with them their commitments are its base (F30). The investments and X's source come with the cash flows (F33).
  */
 export function inputOf(terms: TermsForm, flows: FlowsForm, lps: LpsForm): Record<string, unknown> {
   const { as_of, ...rest } = flowsInput(flows);
@@ -117,18 +117,13 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
-  // Until the page shows investments (f05c, which removes this), a file with investments, a write-off or a carry basis
-  // is refused, so a save can't drop them: the forms have no place for them yet. Before the engine reads it, so one the
-  // engine would refuse gets the same line. Null, and an empty list of investments, are none (FA52), so they open.
-  if (hasInvestments(input)) return { ok: false, message: INVESTMENTS_LATER };
-
   input = trimmedNames(input);
   let fund: Fund;
   try {
     fund = readFund(input);
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
-    return { ok: false, message: fileProblem(e) };
+    return { ok: false, message: fileProblem(e, input) };
   }
   // The page's own rule, after the engine's: no class takes the page's name for the fund's terms (f03c review, answer 3).
   const named = fundTermsClass(fund);
@@ -149,8 +144,9 @@ export function readFile(text: string): OpenedFile {
 
 /**
  * The input with each name trimmed, as the page reads every name (FA17, FA27; f02a review, answer 2): each LP's, each
- * class's, and each LP's class, so "Seed " and "Seed" are one class. Only a name that is text changes; anything else is
- * left for the engine to refuse where it is (F21, F28).
+ * class's, and each LP's class, so "Seed " and "Seed" are one class; and from 0.5.0 each investment's, and the
+ * investment each cash flow and X's source names (FA52). Only a name that is text changes; anything else is left for the
+ * engine to refuse where it is (F21, F28, F37).
  */
 function trimmedNames(input: unknown): unknown {
   if (!isObject(input)) return input;
@@ -165,19 +161,10 @@ function trimmedNames(input: unknown): unknown {
     out = { ...out, terms: { ...input.terms, lp_classes: input.terms.lp_classes.map((c: unknown) => trimmed(c, ["name"])) } };
   }
   if (Array.isArray(input.lps)) out = { ...out, lps: input.lps.map((lp: unknown) => trimmed(lp, ["name", "class"])) };
+  if (Array.isArray(input.investments)) out = { ...out, investments: input.investments.map((inv: unknown) => trimmed(inv, ["name"])) };
+  if (Array.isArray(input.cash_flows)) out = { ...out, cash_flows: input.cash_flows.map((f: unknown) => trimmed(f, ["investment"])) };
+  if (isObject(input.distribution_from)) out = { ...out, distribution_from: trimmed(input.distribution_from, ["investment"]) };
   return out;
-}
-
-const INVESTMENTS_LATER = "This file has investments; the page shows them from the next version.";
-
-/** F33, F34: the fund's input gives investments, a write-off among its cash flows, or a carry basis. */
-function hasInvestments(input: unknown): boolean {
-  if (!isObject(input)) return false;
-  const investments = input.investments;
-  const listed = investments !== undefined && investments !== null && !(Array.isArray(investments) && investments.length === 0);
-  const writeOff = Array.isArray(input.cash_flows) && input.cash_flows.some((f) => isObject(f) && f.type === "write_off");
-  const basis = isObject(input.terms) && input.terms.carry_basis !== undefined && input.terms.carry_basis !== null;
-  return listed || writeOff || basis;
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
@@ -193,6 +180,26 @@ function where(path: string): string {
   // A step of the management fee schedule (F30): "Fee rate step 2", "Fee rate step 2's rate", "Fee rate step 2's date".
   const feeStep = /^terms\.management_fee\.steps\[(\d+)\](?:\.(rate|from))?$/.exec(path);
   if (feeStep) return `Fee rate step ${Number(feeStep[1]) + 1}${feeStep[2] === "rate" ? "'s rate" : feeStep[2] === "from" ? "'s date" : ""}`;
+  // F33: an investment and its checks: "The name in row 2 of its investments", "The amount of check 1 in row 2 of its
+  // investments", "`sector` in row 2 of its investments".
+  const inv = /^investments\[(\d+)\](?:\.(.+))?$/.exec(path);
+  if (inv) {
+    const row = `row ${Number(inv[1]) + 1} of its investments`;
+    const field = inv[2];
+    if (!field) return `Row ${Number(inv[1]) + 1} of its investments`;
+    const check = /^checks\[(\d+)\](?:\.(\w+))?$/.exec(field);
+    if (check) {
+      const n = `check ${Number(check[1]) + 1} in ${row}`;
+      if (!check[2]) return `Check ${Number(check[1]) + 1} in ${row}`;
+      return check[2] === "date" || check[2] === "amount" ? `The ${check[2]} of ${n}` : `\`${check[2]}\` on ${n}`;
+    }
+    const fields: Record<string, string> = { name: "The name", checks: "The list of checks" };
+    return `${fields[field] ?? `\`${field}\``} in ${row}`;
+  }
+  // F33, F14: X's source.
+  const source: Record<string, string> = { distribution_from: "X's source", "distribution_from.investment": "The investment X comes from", "distribution_from.share": "The share X sells" };
+  if (path in source) return source[path]!;
+  if (path.startsWith("distribution_from.")) return `\`${path.slice("distribution_from.".length)}\` in X's source`;
   // A class (F22): "The fee rate in row 2 of its LP classes", "Carry step 2's rate in row 1 of its LP classes".
   const cls = /^terms\.lp_classes\[(\d+)\](?:\.(.+))?$/.exec(path);
   if (cls) {
@@ -229,8 +236,10 @@ function where(path: string): string {
     "terms.management_fee.steps": "Its management fee's list of rates",
     "terms.management_fee.commitments": "Its management fee's total commitments",
     "terms.lp_classes": "Its list of LP classes",
+    "terms.carry_basis": "Its carry basis",
     cash_flows: "Its cash flows",
     lps: "Its list of LPs",
+    investments: "Its list of investments",
   };
   return named[path] ?? `\`${path}\``;
 }
@@ -246,11 +255,13 @@ function sentencePart(words: string): string {
   return `${words.charAt(0).toLowerCase()}${words.slice(1).replace(/\.$/, "")}`;
 }
 
-/** The engine's refusal of an opened file, in the page's words, naming the row or term (F18). */
-export function fileProblem(refusal: FundRefusal): string {
+/** The engine's refusal of an opened file, in the page's words, naming the row or term (F18); `input` is the file's, to tell a row's type. */
+export function fileProblem(refusal: FundRefusal, input?: unknown): string {
   const { kind, term, path } = refusal;
   if (kind === "unsupported") {
     if (term === "compounded_pref") return `This file has a term the page doesn't model: a pref compounded, not simple (\`${path}\`).`;
+    // F37: no pref deal by deal in 0.5.0, so no catch-up either.
+    if (term === "deal_by_deal_pref") return `This file has a term the page doesn't model: a pref with carry deal by deal (\`${path}\`). Deal by deal, this version has no pref, so no catch-up either.`;
     // F21: a per-LP term, such as a side letter's carry. From 0.3.0 an LP's own terms are its class's (F22).
     const lp = /^lps\[(\d+)\]\./.exec(path);
     if (lp) return `This file has a term the page doesn't model: \`${term}\` on an LP (row ${Number(lp[1]) + 1} of its LPs). An LP's terms are its class's, or the fund's.`;
@@ -281,6 +292,8 @@ export function fileProblem(refusal: FundRefusal): string {
   if (term === "missing_field" && path === "terms.equalization_rate") return "Its equalization interest rate is missing: it's needed when an investment or expense call comes before a later close.";
   const fee = scheduleProblem(refusal);
   if (fee) return fee;
+  const deals = dealsProblem(refusal, input);
+  if (deals) return deals;
   // F28: the standard fee rate is the one rate that must be above 0, which the amounts' line doesn't say.
   if (term === "bad_number" && path === "terms.fee_rate") return 'Its management fee rate isn\'t a number the page can use: it\'s a rate above 0, written as an exact string like "0.02".';
   if (term in field) return `${where(path)} ${field[term]}.`;
@@ -300,8 +313,39 @@ export function fileProblem(refusal: FundRefusal): string {
     call_without_payers: "no LP in the fund on this date pays this call, as none had closed yet or none of them pays fees",
     fee_rate_with_schedule: "with a schedule, the schedule's first rate is the fund's, so there's no rate of its own",
     fee_call_with_schedule: "it's a fee call, and this fund's fees come from its schedule",
+    investment_name_repeated: "an investment above already has this name; each needs its own",
+    investment_unknown: "it isn't one of the fund's investments",
+    investment_not_made: "it's before the first check in the investment it names",
+    investments_exceed_calls: "by its date, the checks come to more than the investment calls",
   };
   return `${where(path)}: ${rule[term] ?? refusal.message}.`;
+}
+
+/**
+ * The investments' and X's source's lines where their words differ from the rest's (F37), or null. A cash flow's type
+ * is read from the file's own row, since one term at one path can be a call's, a distribution's or a write-off's.
+ */
+function dealsProblem({ term, path }: FundRefusal, input: unknown): string | null {
+  if (term === "bad_field" && path === "terms.carry_basis") return "Its carry basis isn't one the page knows: it's whole_fund or deal_by_deal.";
+  if (term === "missing_field" && path === "investments") return "Its list of investments is missing: it's needed to pay carry deal by deal.";
+  if (term === "missing_field" && path === "distribution_from") return "X's source is missing: deal by deal, X comes from an investment.";
+  const share = 'isn\'t a share the page can use: it\'s above 0 and at most 1, written as an exact string like "0.4".';
+  if (term === "bad_number" && path === "distribution_from.share") return `${where(path)} ${share}`;
+  // A check after D, as a cash flow after it is (F37).
+  if (term === "cash_flow_after_distribution_date" && path.startsWith("investments[")) return `${where(path)}: this check is after the distribution date.`;
+  const cell = /^cash_flows\[(\d+)\]\.(\w+)$/.exec(path);
+  if (!cell) return null;
+  const flow = isObject(input) && Array.isArray(input.cash_flows) ? input.cash_flows[Number(cell[1])] : undefined;
+  const type = isObject(flow) ? flow.type : undefined;
+  const row = `Row ${Number(cell[1]) + 1} of its cash flows`;
+  if (term === "unknown_field" && type === "call" && (cell[2] === "investment" || cell[2] === "share")) return `${row} is a call, which has no investment or share: only a distribution or a write-off does.`;
+  if (term === "unknown_field" && type === "write_off" && ["kind", "amount", "share"].includes(cell[2]!)) return `${row} is a write-off, which has no kind, amount or share: only its date and investment.`;
+  if (term === "bad_number" && cell[2] === "share") return `${where(path)} ${share}`;
+  if (term === "missing_field" && cell[2] === "investment") {
+    const why = type === "write_off" ? "a write-off names the investment it ends" : isObject(flow) && flow.share != null ? "a share sold needs the investment it's sold from" : "deal by deal, every distribution comes from one";
+    return `${where(path)} is missing: ${why}.`;
+  }
+  return null;
 }
 
 /** The management fee schedule's lines where its words differ from the rest's (F32), or null. */
