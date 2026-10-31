@@ -46,11 +46,19 @@ export type CarryBasis = "whole_fund" | "deal_by_deal";
 /** F30: how often fees are called, on calendar quarters, half-years (January to June, July to December) or years. */
 export type FeeFrequency = "quarterly" | "semiannual" | "annual";
 
-/** F30: one step of the management fee, its annual rate on commitments, in force from its date. */
+/**
+ * F39, from 0.6.0: what a fee step's rate is charged on. On commitments, the LPs' fee weights, as in 0.4.0; on invested
+ * capital, the LPs' part of each day's net invested capital (F38).
+ */
+export type FeeBasis = "commitments" | "invested_capital";
+
+/** F30: one step of the management fee, its annual rate, in force from its date. */
 export interface FeeStep {
   rate: D;
   /** The date it's in force from. The first step is in force from the schedule's `start`: null. */
   from: string | null;
+  /** F39, from 0.6.0: what its rate is charged on, `"commitments"` when the input leaves it out (FA63). */
+  basis: FeeBasis;
 }
 
 /**
@@ -63,7 +71,10 @@ export interface ManagementFee {
   frequency: FeeFrequency;
   /** In the input's order, which is date order (F32). The first rate is above 0 and is the fund's (F22, F30). */
   steps: FeeStep[];
-  /** The LPs' total commitments, the fee's base for a fund that doesn't list its LPs; null when not given. */
+  /**
+   * The LPs' total commitments, the base of a step on commitments for a fund that doesn't list its LPs; null when not
+   * given, which from 0.6.0 a schedule wholly on invested capital needs none of (F40).
+   */
   commitments: D | null;
 }
 
