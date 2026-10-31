@@ -373,8 +373,8 @@ describe("the fund-32 refusals, in the page's words", () => {
     "fee-schedule-offset.json": offset,
     "fee-start-missing.json": "Its management fee's start date is missing.",
     "fee-start-not-a-date.json": "Its management fee's start date isn't a date that exists, written YYYY-MM-DD.",
-    // From 0.6.0 a step's basis is read (F40); until f06c the page refuses a step on invested capital in one line.
-    "fee-step-basis.json": "This file has a management fee on invested capital; the page shows it from the next version.",
+    // From 0.6.0 a step's basis is read (F40): case 29's step on invested capital needs investments it doesn't list.
+    "fee-step-basis.json": "Its list of investments is missing: it's needed for a management fee on invested capital.",
     "fee-step-from-at-start.json": `Fee rate step 2${order}`,
     "fee-step-from-missing.json": "Fee rate step 2's date is missing.",
     "fee-step-from-not-a-date.json": "Fee rate step 2's date isn't a date that exists, written YYYY-MM-DD.",
@@ -429,9 +429,9 @@ describe("the fund-32 refusals, in the page's words", () => {
     expect(result.ok ? "opened" : result.message).toBe(WORDS[file]);
   });
 
-  // The seventeen the form can make, each made on its base's tabs as the fixture has it, and where its words show.
+  // The eighteen the form can make, each made on its base's tabs as the fixture has it, and where its words show.
   // `control`: where the page shows it, when that isn't the control the fixture's path names: a Fee row's problem is at
-  // its kind, which is what makes it one.
+  // its kind, which is what makes it one, and the investments a step on invested capital needs are under its On (F40).
   const FORM: Record<string, { make: () => void; under: string; words: string; control?: string }> = {
     "fee-start-missing.json": { make: () => (tab("Terms"), type("Fees start on", "")), under: "Fees start on", words: "Choose the date fees start on." },
     "fee-step-rate-missing.json": {
@@ -528,6 +528,12 @@ describe("the fund-32 refusals, in the page's words", () => {
       under: "Row 6's date",
       words: "This distribution is before the fund's first call.",
     },
+    "fee-step-basis.json": {
+      make: () => (tab("Terms"), choose("Fee rate step 2 is on", "Invested capital")),
+      under: "Fee rate step 2 is on",
+      words: "A fee on invested capital needs the fund's investments. Add them on the Investments tab.",
+      control: "terms.management_fee.steps[1].basis",
+    },
     "later-close-without-rate.json": {
       make: () => (tab("Terms"), type("Equalization interest rate", "")),
       under: "Equalization interest rate",
@@ -545,8 +551,8 @@ describe("the fund-32 refusals, in the page's words", () => {
     },
   };
 
-  it("makes seventeen in the form; the other twenty only a file can make", () => {
-    expect(Object.keys(FORM)).toHaveLength(17);
+  it("makes eighteen in the form; the other nineteen only a file can make", () => {
+    expect(Object.keys(FORM)).toHaveLength(18);
     expect(fixtures.filter((f) => !(f in FORM))).toEqual([
       "fee-commitments-not-the-lps-total.json",
       "fee-first-step-from.json",
@@ -555,7 +561,6 @@ describe("the fund-32 refusals, in the page's words", () => {
       "fee-schedule-not-an-object.json",
       "fee-schedule-offset.json",
       "fee-start-not-a-date.json",
-      "fee-step-basis.json",
       "fee-step-from-not-a-date.json",
       "fee-step-not-an-object.json",
       "fee-steps-empty.json",
