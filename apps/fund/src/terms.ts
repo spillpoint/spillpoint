@@ -1,7 +1,8 @@
 // The Terms tab's form (plan, "The terms: a form", f01i): what it holds, how it's written into the fund's input for the
 // engine, and the page's words for a refusal, shown under the field the refusal's path names. From 0.4.0 it holds the
 // management fee too: entered as fee calls, or a schedule (plan, "0.4.0: management fees"; F30). From 0.5.0, the carry
-// basis: on the whole fund, or deal by deal (plan, "0.5.0: investments and carry deal by deal"; F34).
+// basis: on the whole fund, or deal by deal (plan, "0.5.0: investments and carry deal by deal"; F34). From 0.6.0, each
+// fee step's basis: the LPs' commitments, or the fund's invested capital (plan, "0.6.0: fees on invested capital"; F39).
 //
 // Rates are typed as percents and written exactly, as strings: "7.25" is "0.0725", by moving the decimal point, so
 // nothing is rounded however many places are typed. The page reads only what it can't hand the engine (text that isn't
@@ -9,7 +10,7 @@
 // refusal says which (F18).
 
 import { D, FundRefusal } from "spillpoint-fund";
-import type { CarryBasis, CarryStep, FeeFrequency, FundTerms } from "spillpoint-fund";
+import type { CarryBasis, CarryStep, FeeBasis, FeeFrequency, FundTerms } from "spillpoint-fund";
 
 import { exactDollars, parseDollars } from "./format.ts";
 
@@ -27,9 +28,13 @@ export interface CarryForm {
   steps: StepText[];
 }
 
-/** A step of the fee schedule's rates (F30): a percent a year, and the date it's in force from, "" for the first. */
+/**
+ * A step of the fee schedule's rates (F30): a percent a year, what it's on (F39), and the date it's in force from, ""
+ * for the first.
+ */
 export interface FeeStepText {
   rate: string;
+  basis: FeeBasis;
   from: string;
 }
 
@@ -43,7 +48,10 @@ export interface FeeForm {
   start: string;
   frequency: FeeFrequency;
   steps: FeeStepText[];
-  /** The LPs' total commitments in dollars, the fee's base when the fund lists no LPs; "" for none. */
+  /**
+   * The LPs' total commitments in dollars, the fee's base when the fund lists no LPs and a step is on commitments; ""
+   * for none. Kept while no step is on them, out of the input, for a way back (F40).
+   */
   commitments: string;
 }
 
@@ -141,12 +149,12 @@ export function formFrom(terms: FundTerms): TermsForm {
 /** The management fee as the form holds it: the schedule as read, or fees entered, with a schedule's starting values. */
 function feeFormFrom(terms: FundTerms): FeeForm {
   const m = terms.managementFee;
-  if (!m) return { mode: "entered", start: "", frequency: "quarterly", steps: [{ rate: STARTING.feeRate, from: "" }], commitments: "" };
+  if (!m) return { mode: "entered", start: "", frequency: "quarterly", steps: [{ rate: STARTING.feeRate, basis: "commitments", from: "" }], commitments: "" };
   return {
     mode: "schedule",
     start: m.start,
     frequency: m.frequency,
-    steps: m.steps.map((s) => ({ rate: percentOf(s.rate), from: s.from ?? "" })),
+    steps: m.steps.map((s) => ({ rate: percentOf(s.rate), basis: s.basis, from: s.from ?? "" })),
     commitments: m.commitments ? exactDollars(m.commitments) : "",
   };
 }
@@ -192,7 +200,22 @@ const WORDS = {
   feeCommitments: "Write the LPs' total commitments in dollars, more than zero: 40000000 or $40M.",
   // F32: the schedule's call_without_payers, a schedule no listed LP pays.
   feeWithoutPayers: "No LP pays this schedule: every LP is in a class at a fee rate of 0.",
+  // F40, FA64: a step on invested capital charges the fund's investments, so it needs some.
+  feeNeedsInvestments: "A fee on invested capital needs the fund's investments. Add them on the Investments tab.",
 };
+
+/** F39: a step of the schedule is on invested capital. */
+export function onInvestedCapital(fee: FeeForm): boolean {
+  return fee.steps.some((s) => s.basis === "invested_capital");
+}
+
+/**
+ * F40: the fund lists no LPs and a step is on commitments, so the schedule needs the LPs' total commitments. A schedule
+ * wholly on invested capital doesn't.
+ */
+export function needsCommitments(fee: FeeForm, listsLps: boolean): boolean {
+  return !listsLps && fee.steps.some((s) => s.basis === "commitments");
+}
 
 /** A carry as the engine reads it, the fund's or a class's: the flat rate, or the steps (F9). */
 export function carryInput(carry: CarryForm): unknown {
@@ -204,16 +227,19 @@ export function carryInput(carry: CarryForm): unknown {
 
 /**
  * The schedule as the engine reads it (F30): the start, the frequency written out, the steps with the first's date its
- * start, and the LPs' total commitments only when the fund lists no LPs, since with LPs their commitments are the base.
- * A field left blank is left out, so the engine says it's missing.
+ * start, each on invested capital saying so (F39) and one on commitments without the word, its default (FA63); and the
+ * LPs' total commitments only when the fund lists no LPs and a step is on commitments (F40), since with LPs their
+ * commitments are the base, and on invested capital none is. A field left blank is left out, so the engine says it's
+ * missing.
  */
 export function feeInput(fee: FeeForm, listsLps: boolean): Record<string, unknown> {
   const rate = (text: string) => rateFrom(text) ?? UNREAD;
+  const basis = (s: FeeStepText) => (s.basis === "invested_capital" ? { basis: s.basis } : {});
   return {
     ...(fee.start ? { start: fee.start } : {}),
     frequency: fee.frequency,
-    steps: fee.steps.map((s, i) => (i === 0 ? { rate: rate(s.rate) } : { rate: rate(s.rate), ...(s.from ? { from: s.from } : {}) })),
-    ...(!listsLps && fee.commitments.trim() !== "" ? { commitments: parseDollars(fee.commitments)?.toFixed() ?? UNREAD } : {}),
+    steps: fee.steps.map((s, i) => (i === 0 ? { rate: rate(s.rate), ...basis(s) } : { rate: rate(s.rate), ...basis(s), ...(s.from ? { from: s.from } : {}) })),
+    ...(needsCommitments(fee, listsLps) && fee.commitments.trim() !== "" ? { commitments: parseDollars(fee.commitments)?.toFixed() ?? UNREAD } : {}),
   };
 }
 
@@ -318,6 +344,22 @@ export function termsProblem(refusal: FundRefusal, form: TermsForm): Problem {
     return `The engine can't run this fund: ${refusal.message}.`;
   };
   return { path, message: words() };
+}
+
+/**
+ * F40, FA64: the engine's refusal of a schedule with a step on invested capital and no investments, at `investments`,
+ * in the page's words under that step's On: under every step on invested capital, as a Fee row's problem is under every
+ * Fee row with a schedule, the first's the one "Show me" goes to. Null for any other refusal: deal by deal's, with no
+ * step on invested capital, is the investments' (F37). The engine checks the fee's at the end of stage 2, before deal by
+ * deal's in stage 3, so with both it's the fee's.
+ */
+export function feeInvestmentsProblem(refusal: FundRefusal, form: TermsForm): Problem | null {
+  const fee = form.managementFee;
+  if (refusal.term !== "missing_field" || refusal.path !== "investments" || fee.mode !== "schedule") return null;
+  const paths = fee.steps.flatMap((s, i) => (s.basis === "invested_capital" ? [`terms.management_fee.steps[${i}].basis`] : []));
+  if (paths.length === 0) return null;
+  const [path, ...also] = paths as [string, ...string[]];
+  return { path, message: WORDS.feeNeedsInvestments, ...(also.length > 0 ? { also } : {}) };
 }
 
 /** The page's words for the engine's refusal of the schedule the form wrote (F32), or null when it isn't about it. */

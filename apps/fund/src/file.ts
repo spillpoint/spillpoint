@@ -117,12 +117,6 @@ export function readFile(text: string): OpenedFile {
     return { ok: false, message: NOT_A_FUND };
   }
 
-  // Until the page shows fees on invested capital (f06c, which removes this), a file with a fee step on invested capital is
-  // refused, so a save can't drop it: the forms have no place for a step's basis yet. Before the engine reads it, so a
-  // basis the engine would refuse gets the same line. A basis left out, null or "commitments" is the default (FA63), so
-  // it opens, and saves as the same fund without it.
-  if (hasInvestedCapitalFee(input)) return { ok: false, message: INVESTED_CAPITAL_LATER };
-
   input = trimmedNames(input);
   let fund: Fund;
   try {
@@ -173,13 +167,11 @@ function trimmedNames(input: unknown): unknown {
   return out;
 }
 
-const INVESTED_CAPITAL_LATER = "This file has a management fee on invested capital; the page shows it from the next version.";
-
-/** F39: a step of the fund's management fee schedule gives a basis other than the default, commitments. */
+/** F39, F40: a step of the file's management fee schedule is on invested capital, exactly as the engine reads one. */
 function hasInvestedCapitalFee(input: unknown): boolean {
   if (!isObject(input) || !isObject(input.terms) || !isObject(input.terms.management_fee)) return false;
   const steps = input.terms.management_fee.steps;
-  return Array.isArray(steps) && steps.some((s) => isObject(s) && s.basis !== undefined && s.basis !== null && s.basis !== "commitments");
+  return Array.isArray(steps) && steps.some((s) => isObject(s) && s.basis === "invested_capital");
 }
 
 const NOT_A_FUND = 'It isn\'t a fund file: a fund file starts with "format": "spillpoint-fund", and a fund\'s input has as_of, terms and cash_flows.';
@@ -192,9 +184,10 @@ function where(path: string): string {
   if (lp) return lp[2] ? `The ${lp[2]} in row ${Number(lp[1]) + 1} of its LPs` : `Row ${Number(lp[1]) + 1} of its LPs`;
   const step = /^terms\.carry\.steps\[(\d+)\](?:\.(\w+))?$/.exec(path);
   if (step) return stepPlace(step);
-  // A step of the management fee schedule (F30): "Fee rate step 2", "Fee rate step 2's rate", "Fee rate step 2's date".
-  const feeStep = /^terms\.management_fee\.steps\[(\d+)\](?:\.(rate|from))?$/.exec(path);
-  if (feeStep) return `Fee rate step ${Number(feeStep[1]) + 1}${feeStep[2] === "rate" ? "'s rate" : feeStep[2] === "from" ? "'s date" : ""}`;
+  // A step of the management fee schedule (F30, F39): "Fee rate step 2", "Fee rate step 2's rate", "Fee rate step 2's
+  // date", "Fee rate step 2's basis".
+  const feeStep = /^terms\.management_fee\.steps\[(\d+)\](?:\.(rate|from|basis))?$/.exec(path);
+  if (feeStep) return `Fee rate step ${Number(feeStep[1]) + 1}${feeStep[2] ? `'s ${feeStep[2] === "from" ? "date" : feeStep[2]}` : ""}`;
   // F33: an investment and its checks: "The name in row 2 of its investments", "The amount of check 1 in row 2 of its
   // investments", "`sector` in row 2 of its investments".
   const inv = /^investments\[(\d+)\](?:\.(.+))?$/.exec(path);
@@ -288,7 +281,7 @@ export function fileProblem(refusal: FundRefusal, input?: unknown): string {
     // F32: a term on the management fee schedule beyond what F30 has, such as an offset, or on one of its steps.
     const feeStep = /^terms\.management_fee\.steps\[(\d+)\]\./.exec(path);
     if (feeStep) {
-      return `This file has a term the page doesn't model: \`${term}\` on a fee rate step (step ${Number(feeStep[1]) + 1} of its management fee schedule). A step has only its rate and the date it's in force from.`;
+      return `This file has a term the page doesn't model: \`${term}\` on a fee rate step (step ${Number(feeStep[1]) + 1} of its management fee schedule). A step has only its rate, what it's on and the date it's in force from.`;
     }
     if (path.startsWith("terms.management_fee.")) {
       return `This file has a term the page doesn't model: \`${term}\` on its management fee schedule. A schedule has a start date, how often it's called, its rates by date and the LPs' total commitments.`;
@@ -342,7 +335,10 @@ export function fileProblem(refusal: FundRefusal, input?: unknown): string {
  */
 function dealsProblem({ term, path }: FundRefusal, input: unknown): string | null {
   if (term === "bad_field" && path === "terms.carry_basis") return "Its carry basis isn't one the page knows: it's whole_fund or deal_by_deal.";
-  if (term === "missing_field" && path === "investments") return "Its list of investments is missing: it's needed to pay carry deal by deal.";
+  // F40: a step on invested capital is checked first, at the end of stage 2, so with one it's the fee's.
+  if (term === "missing_field" && path === "investments") {
+    return `Its list of investments is missing: it's needed ${hasInvestedCapitalFee(input) ? "for a management fee on invested capital" : "to pay carry deal by deal"}.`;
+  }
   if (term === "missing_field" && path === "distribution_from") return "X's source is missing: deal by deal, X comes from an investment.";
   const share = 'isn\'t a share the page can use: it\'s above 0 and at most 1, written as an exact string like "0.4".';
   if (term === "bad_number" && path === "distribution_from.share") return `${where(path)} ${share}`;
@@ -369,6 +365,8 @@ function scheduleProblem({ term, path }: FundRefusal): string | null {
   if (term === "fee_commitments_mismatch") return "Its management fee schedule: its commitments for the schedule aren't the LPs' total.";
   if (term === "call_without_payers" && path === at) return "Its management fee schedule: no LP pays it, as every LP is in a class at a fee rate of 0.";
   if (term === "bad_field" && path === `${at}.frequency`) return "Its management fee's frequency isn't one the page knows: it's quarterly, semiannual or annual.";
+  // F39: a step is on commitments or invested capital, the word exactly as written (FA63).
+  if (term === "bad_field" && /^terms\.management_fee\.steps\[\d+\]\.basis$/.test(path)) return `${where(path)} isn't one the page knows: it's commitments or invested_capital.`;
   if (term === "missing_field" && path === `${at}.commitments`) return "Its management fee's total commitments are missing: they're needed when the fund lists no LPs.";
   if (term === "bad_number" && path === `${at}.commitments`) return 'Its management fee\'s total commitments aren\'t an amount the page can use: they\'re an exact string more than zero, like "40000000".';
   const step = /^terms\.management_fee\.steps\[\d+\](\.rate)?$/.exec(path);

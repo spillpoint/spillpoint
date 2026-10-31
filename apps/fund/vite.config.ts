@@ -35,7 +35,9 @@ const casesDir = resolve(repo, "packages/fund/cases");
  * two breakpoints. From f04c case 29 follows it, so a management fee schedule shows from the picker, at its listed X of
  * $20,000,000, between its second and third breakpoints, where the GP is catching up. From f05c case 34 follows that, so
  * carry deal by deal and the investments show from the picker, at its listed X of $5,000,000, below its one breakpoint,
- * where X from Cedar AI goes to the LPs as capital.
+ * where X from Cedar AI goes to the LPs as capital. From f06c case 38 follows that, so a fee that moves to invested
+ * capital shows from the picker, at its listed X of $5,000,000, below its one breakpoint at $5,446,930.70, where X goes
+ * to the LPs as paid-in, the schedule's fees among it.
  */
 export const EXAMPLES = [
   { id: "fund-03-gp-commitment", label: "A fund: 20% carry and a 2% GP commitment", defaultX: "20000000" },
@@ -44,6 +46,7 @@ export const EXAMPLES = [
   { id: "fund-26-closes-and-classes", label: "Two later closes and a friends-and-family class", defaultX: "5200000" },
   { id: "fund-29-fee-schedule", label: "A fund with a 2% fee schedule", defaultX: "20000000" },
   { id: "fund-34-deal-by-deal", label: "A fund that pays carry deal by deal", defaultX: "5000000" },
+  { id: "fund-38-fees-on-invested-capital", label: "A fee that moves to invested capital", defaultX: "5000000" },
   { id: "fund-12-spv", label: "An SPV: one company, the exit as its last distribution", defaultX: "6000000" },
 ];
 

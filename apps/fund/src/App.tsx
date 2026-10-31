@@ -4,11 +4,12 @@
 // the equalization (f03c), on the Payouts tab; the fund behind them, editable, on the Terms (f01i), Cash flows (f01j)
 // and LPs (f02c, f03c) tabs, with from 0.4.0 a management fee schedule on Terms and its calls on Cash flows (f04c), and
 // from 0.5.0 the investments on a tab of their own, their tags on Cash flows, X's source beside X and carry deal by deal
-// (f05c). Pasting cash flows and files come in f01k to f01m.
+// (f05c), and from 0.6.0 a fee step on invested capital, with the fund's invested capital on Cash flows (f06c). Pasting
+// cash flows and files come in f01k to f01m.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
-import { D, equalization, feeCalls, FundRefusal, portfolio, readFund, splitAt, splitAtNav } from "spillpoint-fund";
+import { D, equalization, feeCalls, FundRefusal, netInvestedCapital, portfolio, readFund, splitAt, splitAtNav } from "spillpoint-fund";
 import type { CarryStep, Clawback as ClawbackAmounts, Due, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
@@ -37,7 +38,7 @@ import type { LpsForm } from "./lps.ts";
 import { LpsCard } from "./LpsCard.tsx";
 import { lpsCsv, lpsCsvName } from "./lpsCard.ts";
 import type { LpsTable } from "./lpsCard.ts";
-import { controlFor, formFrom, PLACE_WORDS, tabFor, termsProblem } from "./terms.ts";
+import { controlFor, feeInvestmentsProblem, formFrom, onInvestedCapital, PLACE_WORDS, tabFor, termsProblem } from "./terms.ts";
 import type { Place, Problem, TermsForm } from "./terms.ts";
 import { cents, dateText, lpMultipleText, parseDollars, percentText, short, stepMultiple, xText } from "./format.ts";
 
@@ -150,14 +151,16 @@ function run(s: Opened, terms: TermsForm, flows: FlowsForm, lps: LpsForm, change
   } catch (e) {
     if (!(e instanceof FundRefusal)) throw e;
     const place = tabFor(e.path);
+    // F40: the investments missing for a fee step on invested capital are under that step's On, on Terms.
     const problem =
-      place === "terms"
+      feeInvestmentsProblem(e, terms) ??
+      (place === "terms"
         ? termsProblem(e, terms)
         : place === "lps"
           ? lpsProblem(e, lps, terms)
           : place === "investments" || place === "payouts"
             ? investmentsProblem(e, flows)
-            : flowsProblem(e, flows);
+            : flowsProblem(e, flows));
     return { ...next, problem };
   }
 }
@@ -184,10 +187,17 @@ export function App() {
   const [tab, setTab] = useState<Tab>("payouts");
   const [state, setState] = useState(() => opened(examples[0]!.id));
   const { fund, terms, flows, problem, edited, x } = state;
-  // F30: with a schedule, its calls show on Cash flows once the fund runs, since they're the engine's.
+  // F30: with a schedule, its calls show on Cash flows once the fund runs, since they're the engine's; with a step on
+  // invested capital, the fund's net invested capital at D under them (F38).
+  const running = !problem && fund ? fund : null;
   const schedule: ScheduleView | null =
     terms.managementFee.mode === "schedule"
-      ? { calls: !problem && fund ? feeCalls(fund) : null, start: fund?.terms.managementFee?.start ?? terms.managementFee.start, gpPart: fund?.terms.gpCommitment?.paysFees ?? false }
+      ? {
+          calls: running ? feeCalls(running) : null,
+          start: fund?.terms.managementFee?.start ?? terms.managementFee.start,
+          gpPart: fund?.terms.gpCommitment?.paysFees ?? false,
+          invested: running?.terms.managementFee?.steps.some((s) => s.basis === "invested_capital") ? { date: running.distributionDate, amount: netInvestedCapital(running) } : null,
+        }
       : null;
   // Where a schedule's start starts: the fund's first call, as the Cash flows tab has it.
   const firstCall = flows.rows.filter((r) => r.type === "call" && r.date).map((r) => r.date).sort()[0] ?? "";
@@ -421,6 +431,7 @@ export function App() {
             onShow={show}
             schedule={schedule}
             dealByDeal={dealByDeal}
+            investedCapitalFee={terms.managementFee.mode === "schedule" && onInvestedCapital(terms.managementFee)}
           />
         </div>
         <div role="tabpanel" id="panel-investments" aria-labelledby="tab-investments" hidden={tab !== "investments"}>

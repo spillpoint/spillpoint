@@ -186,6 +186,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .flows td { vertical-align: top; }
 .flows th[scope="row"] { color: var(--muted); padding-top: 14px; }
 .flows .field-error { margin: 4px 0 0; white-space: normal; }
+/* F38: a note under a distribution's row, as its problem would be, in a hint's grey: it names no investment. */
+.flows .flows__note p { margin: 4px 0 0; white-space: normal; }
 .flows input.flows__amount { width: 9rem; text-align: right; font-variant-numeric: tabular-nums; }
 /* F33: a distribution's share sold, a percent, beside its From. */
 .flows input.flows__share-box { width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; }
