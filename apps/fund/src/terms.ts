@@ -196,7 +196,7 @@ const WORDS = {
   feeFirstRate: "The first rate must be above 0. To start fees later, change the start date.",
   feeStepDate: "Choose the date this rate is in force from.",
   feeStepsOrder: "Each step's date must come after the one before it.",
-  feeCommitmentsNeeded: "Needed: the fund lists no LPs, so the fee is on this total.",
+  feeCommitmentsNeeded: "Needed: the fund lists no LPs, so a fee on commitments is on this total.",
   feeCommitments: "Write the LPs' total commitments in dollars, more than zero: 40000000 or $40M.",
   // F32: the schedule's call_without_payers, a schedule no listed LP pays.
   feeWithoutPayers: "No LP pays this schedule: every LP is in a class at a fee rate of 0.",
@@ -226,10 +226,23 @@ export function carryInput(carry: CarryForm): unknown {
 }
 
 /**
+ * The LPs' total commitments as the engine reads them, for a fund that lists no LPs (F40); with LPs their commitments
+ * are the base. With a step on commitments they're needed: blank is left out, so the engine says they're missing, and
+ * text that isn't an amount goes as "". With every step on invested capital they change no amount, but the engine
+ * still reads them (FA64), so an amount above zero is kept and a file saves back the same fund; text that isn't one
+ * stays out, so no problem lands on a field the form doesn't show (f06c review, answer 3).
+ */
+function commitmentsInput(fee: FeeForm, listsLps: boolean): Record<string, unknown> {
+  if (listsLps || fee.commitments.trim() === "") return {};
+  const amount = parseDollars(fee.commitments);
+  if (needsCommitments(fee, listsLps)) return { commitments: amount?.toFixed() ?? UNREAD };
+  return amount?.gt(0) ? { commitments: amount.toFixed() } : {};
+}
+
+/**
  * The schedule as the engine reads it (F30): the start, the frequency written out, the steps with the first's date its
- * start, each on invested capital saying so (F39) and one on commitments without the word, its default (FA63); and the
- * LPs' total commitments only when the fund lists no LPs and a step is on commitments (F40), since with LPs their
- * commitments are the base, and on invested capital none is. A field left blank is left out, so the engine says it's
+ * start, each on invested capital saying so (F39) and one on commitments without the word, its default (FA63); and,
+ * without listed LPs, the LPs' total commitments (F40, above). A field left blank is left out, so the engine says it's
  * missing.
  */
 export function feeInput(fee: FeeForm, listsLps: boolean): Record<string, unknown> {
@@ -239,7 +252,7 @@ export function feeInput(fee: FeeForm, listsLps: boolean): Record<string, unknow
     ...(fee.start ? { start: fee.start } : {}),
     frequency: fee.frequency,
     steps: fee.steps.map((s, i) => (i === 0 ? { rate: rate(s.rate), ...basis(s) } : { rate: rate(s.rate), ...basis(s), ...(s.from ? { from: s.from } : {}) })),
-    ...(needsCommitments(fee, listsLps) && fee.commitments.trim() !== "" ? { commitments: parseDollars(fee.commitments)?.toFixed() ?? UNREAD } : {}),
+    ...commitmentsInput(fee, listsLps),
   };
 }
 

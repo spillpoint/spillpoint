@@ -367,7 +367,7 @@ function scheduleProblem({ term, path }: FundRefusal): string | null {
   if (term === "bad_field" && path === `${at}.frequency`) return "Its management fee's frequency isn't one the page knows: it's quarterly, semiannual or annual.";
   // F39: a step is on commitments or invested capital, the word exactly as written (FA63).
   if (term === "bad_field" && /^terms\.management_fee\.steps\[\d+\]\.basis$/.test(path)) return `${where(path)} isn't one the page knows: it's commitments or invested_capital.`;
-  if (term === "missing_field" && path === `${at}.commitments`) return "Its management fee's total commitments are missing: they're needed when the fund lists no LPs.";
+  if (term === "missing_field" && path === `${at}.commitments`) return "Its management fee's total commitments are missing: they're needed when the fund lists no LPs and a step is on commitments.";
   if (term === "bad_number" && path === `${at}.commitments`) return 'Its management fee\'s total commitments aren\'t an amount the page can use: they\'re an exact string more than zero, like "40000000".';
   const step = /^terms\.management_fee\.steps\[\d+\](\.rate)?$/.exec(path);
   // F32: a rate from 0 up to, not including, 1, the first above 0, which the amounts' line doesn't say.

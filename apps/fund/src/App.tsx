@@ -10,7 +10,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Ref } from "react";
 import { D, equalization, feeCalls, FundRefusal, netInvestedCapital, portfolio, readFund, splitAt, splitAtNav } from "spillpoint-fund";
-import type { CarryStep, Clawback as ClawbackAmounts, Due, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
+import type { CarryStep, Clawback as ClawbackAmounts, Due, FeeStep, Fund, FundTerms, Split, Tiers } from "spillpoint-fund";
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
@@ -653,8 +653,11 @@ function carryText(carry: readonly CarryStep[]): string {
  * The fund's terms in one line: "Carry 20%, 25% from 3.0x and 30% from 5.0x; no pref; GP commitment 1%, fee-free."
  * Deal by deal (F34), it says so after the carry: "Carry 20% deal by deal; no pref; …".
  * With a management fee schedule (F30) it's named after the GP commitment: "management fee 2% a year from 15 Feb 2021,
- * 1.5% from 15 Feb 2026, called quarterly". Fees entered as calls add nothing. Then each class with LPs, by what it
- * changes (F22): "Friends and family: carry 0%, no fees."
+ * 1.5% from 15 Feb 2026, called quarterly". With a step on invested capital (F39) each step names its base, since 1.5%
+ * of commitments and 1.5% of invested capital are very different fees: "management fee 2% a year on commitments from
+ * 1 Jan 2020, 1.5% on invested capital from 1 Jan 2023, called quarterly"; with every step on commitments it reads as
+ * 0.5.0's (f06c review, answer 1). Fees entered as calls add nothing. Then each class with LPs, by what it changes
+ * (F22): "Friends and family: carry 0%, no fees."
  */
 function termsText(fund: Fund): string {
   const t = fund.terms;
@@ -667,8 +670,10 @@ function termsText(fund: Fund): string {
     ? "no GP commitment"
     : `GP commitment ${percentText(g.share)}, ${g.paysFees ? "paying its share of fees" : "fee-free"}${g.paysExpenses ? "" : ", not paying its share of expenses"}`;
   const m = t.managementFee;
+  const named = m?.steps.some((s) => s.basis === "invested_capital") ?? false;
+  const base = (s: FeeStep) => (!named ? "" : s.basis === "invested_capital" ? " on invested capital" : " on commitments");
   const fee = m
-    ? [`management fee ${m.steps.map((s) => `${percentText(s.rate)}${s.from === null ? ` a year from ${dateText(m.start)}` : ` from ${dateText(s.from)}`}`).join(", ")}, called ${CALLED[m.frequency]}`]
+    ? [`management fee ${m.steps.map((s) => `${percentText(s.rate)}${s.from === null ? ` a year${base(s)} from ${dateText(m.start)}` : `${base(s)} from ${dateText(s.from)}`}`).join(", ")}, called ${CALLED[m.frequency]}`]
     : [];
   const classes = (t.lpClasses ?? []).filter((c) => fund.lps.some((lp) => lp.class === c.name));
   const classText = (c: (typeof classes)[number]) => {
