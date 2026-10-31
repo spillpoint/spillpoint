@@ -235,7 +235,7 @@ Nothing from ILPA's model LPA, law-firm templates or any other published waterfa
 
 | ID | Question | Default | Toggle? | Status |
 |---|---|---|---|---|
-| FA67 | A `Fund` built by hand without 0.6.0's field (F39) | As FA48 and FA61 have one without 0.4.0's and 0.5.0's: a fee step without a `basis` is on commitments, so the fund splits as 0.5.0 split it. TypeScript requires the field. | Fixed | New |
+| FA67 | A `Fund` built by hand without 0.6.0's field (F39) | As FA48 and FA61 have one without 0.4.0's and 0.5.0's: a fee step without a `basis` is on commitments, so the fund splits as 0.5.0 split it. TypeScript requires the field. | Fixed | Confirmed (f06b review) |
 
 ## Known edges
 

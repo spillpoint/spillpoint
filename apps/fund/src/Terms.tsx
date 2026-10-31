@@ -1,16 +1,16 @@
 // The Terms tab (plan, "The terms: a form", f01i): carry flat or in steps, the pref, the catch-up with a pref, the
 // GP commitment with F3's two flags, from 0.3.0 the two rates classes and later closes need (F22, F25), and from 0.4.0
-// the management fee, entered as fee calls or a schedule (F30), and from 0.5.0 the carry basis, on the whole fund or
-// deal by deal (F34). Each change runs the engine again; a refusal shows under the field its path names, and at the top
-// of the form with "Show me".
+// the management fee, entered as fee calls or a schedule (F30), from 0.5.0 the carry basis, on the whole fund or deal
+// by deal (F34), and from 0.6.0 each fee step on commitments or invested capital (F39). Each change runs the engine
+// again; a refusal shows under the field its path names, and at the top of the form with "Show me".
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import { marks } from "./CashFlows.tsx";
+import { marks, ProblemText } from "./CashFlows.tsx";
 import { Carry, FieldProblem, Percent } from "./Fields.tsx";
 import type { FeeForm, FeeStepText, Problem, TermsForm } from "./terms.ts";
-import { toFlat, toSchedule, toSteps } from "./terms.ts";
+import { needsCommitments, onInvestedCapital, toFlat, toSchedule, toSteps } from "./terms.ts";
 
 interface Props {
   /** The fund's name, as the main page has the cap table's: a saved file is named after it. */
@@ -243,13 +243,27 @@ interface FeeScheduleProps {
 }
 
 /**
+ * What the schedule's fees are worked out from, at its end: the LPs' commitments, the fund's invested capital, or each
+ * as its steps say (F30, F39).
+ */
+function workedOutFrom(fee: FeeForm): string {
+  const invested = onInvestedCapital(fee);
+  const committed = fee.steps.some((s) => s.basis === "commitments");
+  if (!invested) return "the LPs' commitments";
+  return committed ? "the LPs' commitments or the fund's invested capital, as each step says" : "the fund's invested capital";
+}
+
+/**
  * The schedule (F30): when fees start, how often they're called, the rates by date, a step at a time as the carry's
- * are, and, only when the fund lists no LPs, the commitments the fee is on.
+ * are, each on commitments or invested capital (F39), and, only when the fund lists no LPs and a step is on
+ * commitments, the commitments the fee is on (F40).
  */
 function FeeSchedule({ fee, listsLps, problem, onFee }: FeeScheduleProps) {
   const at = "terms.management_fee";
   const stepPath = (i: number) => `${at}.steps[${i}]`;
   const setStep = (i: number, step: FeeStepText) => onFee({ ...fee, steps: fee.steps.map((s, j) => (j === i ? step : s)) });
+  // A step added is on the basis of the one above it, as a new cash flow copies the row above.
+  const added = (): FeeStepText => ({ rate: "", basis: fee.steps.at(-1)?.basis ?? "commitments", from: "" });
   return (
     <>
       <div className="terms__rate">
@@ -275,6 +289,20 @@ function FeeSchedule({ fee, listsLps, problem, onFee }: FeeScheduleProps) {
           <li key={i}>
             <span className="terms__step-name">Step {i + 1}</span>
             <Percent id={`${stepPath(i)}.rate`} label={`Fee rate step ${i + 1}`} hiddenLabel value={s.rate} problem={problem} onChange={(rate) => setStep(i, { ...s, rate })} />
+            {/* F39: what the step's rate is charged on. */}
+            <span className="terms__field">
+              <label htmlFor={`${stepPath(i)}.basis`}>On</label>
+              <select
+                id={`${stepPath(i)}.basis`}
+                value={s.basis}
+                onChange={(e) => setStep(i, { ...s, basis: e.target.value as FeeStepText["basis"] })}
+                aria-label={`Fee rate step ${i + 1} is on`}
+                {...marks(problem, `${stepPath(i)}.basis`)}
+              >
+                <option value="commitments">Commitments</option>
+                <option value="invested_capital">Invested capital</option>
+              </select>
+            </span>
             {i === 0 ? (
               <span className="muted">from the start</span>
             ) : (
@@ -295,16 +323,22 @@ function FeeSchedule({ fee, listsLps, problem, onFee }: FeeScheduleProps) {
                 Remove
               </button>
             )}
-            <FieldProblem path={(p) => p === stepPath(i) || p.startsWith(`${stepPath(i)}.`)} problem={problem} />
+            <FieldProblem path={(p) => p === stepPath(i) || (p.startsWith(`${stepPath(i)}.`) && p !== `${stepPath(i)}.basis`)} problem={problem} />
+            {/* F40: a step on invested capital without investments, under each such step's On. */}
+            <ProblemText problem={problem} path={`${stepPath(i)}.basis`} />
           </li>
         ))}
       </ol>
       {/* The schedule's steps refused as a whole, missing or empty, only a file makes: under them. */}
       <FieldProblem path={`${at}.steps`} problem={problem} />
-      <button type="button" className="button" aria-label="Add a fee rate step" onClick={() => onFee({ ...fee, steps: [...fee.steps, { rate: "", from: "" }] })}>
+      <button type="button" className="button" aria-label="Add a fee rate step" onClick={() => onFee({ ...fee, steps: [...fee.steps, added()] })}>
         Add a step
       </button>
-      {!listsLps && (
+      <p className="terms__line">
+        Invested capital is the cost of the fund's investments, less the cost of what it has exited or written off. Each day of a period counts at that day's
+        invested capital.
+      </p>
+      {needsCommitments(fee, listsLps) && (
         <div className="terms__rate">
           <span className="terms__field">
             <label htmlFor={`${at}.commitments`}>The LPs' total commitments</label>
@@ -321,7 +355,7 @@ function FeeSchedule({ fee, listsLps, problem, onFee }: FeeScheduleProps) {
           <FieldProblem path={`${at}.commitments`} problem={problem} />
         </div>
       )}
-      <p className="terms__line">Fees are worked out from the LPs' commitments, called in advance on calendar periods; the first period runs from the start date.</p>
+      <p className="terms__line">Fees are worked out from {workedOutFrom(fee)}, called in advance on calendar periods; the first period runs from the start date.</p>
     </>
   );
 }

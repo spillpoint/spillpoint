@@ -3,7 +3,9 @@
 // cash flow's own in its row, and at the top of the tab with "Show me". Rows can be pasted from a spreadsheet (f01k),
 // into the box under the table, or into a cell, which sends a paste of more than one cell to the same box. From 0.4.0,
 // with a management fee schedule, Fee isn't a kind to choose, and the schedule's fee calls show under the table (F30,
-// F31). From 0.5.0 a distribution's From and Share sold, and a write-off with its investment and no amount (F33).
+// F31). From 0.5.0 a distribution's From and Share sold, and a write-off with its investment and no amount (F33). From
+// 0.6.0, with a fee step on invested capital, the fund's net invested capital under the schedule's calls, and on the
+// whole fund a note beside a distribution that names no investment (F38).
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { D } from "spillpoint-fund";
@@ -12,7 +14,7 @@ import type { CallKind, FeeCall } from "spillpoint-fund";
 import { CardTable } from "./CardTable.tsx";
 import type { FlowRow, FlowsForm } from "./flows.ts";
 import { isEmptyRow, newRow, sortByDate } from "./flows.ts";
-import { cents, dateText, exactDollars } from "./format.ts";
+import { cents, dateText, exactDollars, xText } from "./format.ts";
 import type { InvestmentRow } from "./investments.ts";
 import { investmentLabel, investmentOf } from "./investments.ts";
 import type { PasteState } from "./Paste.tsx";
@@ -38,6 +40,11 @@ export interface ScheduleView {
   start: string;
   /** The GP commitment pays fees, so its part of each call shows (F3). */
   gpPart: boolean;
+  /**
+   * F38: with a step on invested capital, the fund's net invested capital at D, from netInvestedCapital; null without
+   * one, or while the fund can't run, since it's the engine's.
+   */
+  invested: { date: string; amount: D } | null;
 }
 
 interface Props {
@@ -49,7 +56,12 @@ interface Props {
   schedule: ScheduleView | null;
   /** F34: deal by deal, every distribution comes from an investment, so "—" isn't offered on one. */
   dealByDeal: boolean;
+  /** F39: a step of the schedule on the Terms tab is on invested capital, as the form has it. */
+  investedCapitalFee: boolean;
 }
+
+/** F38: what the cash flows' note says beside a distribution that names no investment, with a fee on invested capital. */
+export const NAMES_NO_INVESTMENT = "Names no investment, so it doesn't lower invested capital.";
 
 /** A refusal's words, where its path names, or one of its others. The LPs tab's cells show theirs the same way. */
 export function ProblemText({ problem, path }: { problem: Problem | null; path: string }) {
@@ -95,7 +107,10 @@ export function InvestmentPicker({ id, label, value, rows, offerNone, problem, o
 }
 
 
-export function CashFlows({ form, problem, onForm, onShow, schedule, dealByDeal }: Props) {
+export function CashFlows({ form, problem, onForm, onShow, schedule, dealByDeal, investedCapitalFee }: Props) {
+  // F38: on the whole fund a distribution needn't name an investment, but with a fee on invested capital one that
+  // doesn't realizes no cost, so invested capital stays where it was. Deal by deal it's a problem instead (F37).
+  const notesNoInvestment = (r: FlowRow) => investedCapitalFee && !dealByDeal && r.type === "distribution" && investmentOf(form.investments, r.from) === null;
   // F30: with a schedule, the schedule works out the fee calls, so Fee isn't a kind to choose. A row already of kind
   // Fee keeps it in its own picker, to show what it is, with the problem under it.
   const kinds = (r: FlowRow) => KINDS.filter((k) => !schedule || k.kind !== "fee" || r.kind === "fee");
@@ -305,6 +320,14 @@ export function CashFlows({ form, problem, onForm, onShow, schedule, dealByDeal 
                       </td>
                     </tr>
                   ))}
+                {notesNoInvestment(r) && (
+                  <tr className="flows__problem flows__note">
+                    <td />
+                    <td colSpan={6}>
+                      <p className="flows__hint">{NAMES_NO_INVESTMENT}</p>
+                    </td>
+                  </tr>
+                )}
               </Fragment>
             ))}
           </tbody>
@@ -348,7 +371,7 @@ export function CashFlows({ form, problem, onForm, onShow, schedule, dealByDeal 
  * it fits, and on a phone each call a card, as Payouts' cards are.
  */
 function ScheduleCalls({ schedule }: { schedule: ScheduleView }) {
-  const { calls, start, gpPart } = schedule;
+  const { calls, start, gpPart, invested } = schedule;
   const sum = (f: (c: FeeCall) => D) => (calls ?? []).reduce((t, c) => t.plus(f(c)), new D(0));
   const amounts = (call: D, gp: D) => (gpPart ? [cents(call), cents(gp)] : [cents(call)]);
   return (
@@ -358,7 +381,10 @@ function ScheduleCalls({ schedule }: { schedule: ScheduleView }) {
       {calls === null ? (
         <p className="classes__line">The schedule's fee calls show here once the fund can run.</p>
       ) : calls.length === 0 ? (
-        <p className="classes__line">No fee call yet: fees start on {dateText(start)}.</p>
+        // F39: fees that started on or before D with nothing to call are on invested capital the fund hasn't had.
+        <p className="classes__line">
+          {invested && start <= invested.date ? "No fee call yet: the fund has had no invested capital while its fee has been on it." : `No fee call yet: fees start on ${dateText(start)}.`}
+        </p>
       ) : (
         <CardTable
           headings={["Date", "Covers", "Call", ...(gpPart ? ["The GP commitment's part"] : [])]}
@@ -368,6 +394,11 @@ function ScheduleCalls({ schedule }: { schedule: ScheduleView }) {
             { name: "Total", cells: [calls.length === 1 ? "1 call" : `${calls.length} calls`, ...amounts(sum((c) => c.call), sum((c) => c.gpCommitment))], kind: "total" as const },
           ]}
         />
+      )}
+      {invested && (
+        <p className="classes__line">
+          Net invested capital at {dateText(invested.date)}: {xText(invested.amount)}.
+        </p>
       )}
     </section>
   );
