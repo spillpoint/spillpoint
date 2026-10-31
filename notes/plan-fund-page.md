@@ -575,7 +575,7 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
 - **The first rate 0:** "The first rate must be above 0. To start fees later, change the start date."
 - **A later step without a date (mine):** "Choose the date this rate is in force from."
 - **A step's date not after the one before:** "Each step's date must come after the one before it."
-- **The commitments missing without LPs:** "Needed: the fund lists no LPs, so the fee is on this total."
+- **The commitments missing without LPs:** "Needed: the fund lists no LPs, so the fee is on this total." From 0.6.0 (f06d), since only a fee on commitments needs them: "Needed: the fund lists no LPs, so a fee on commitments is on this total."
 - **The commitments not an amount, or 0 (mine):** "Write the LPs' total commitments in dollars, more than zero: 40000000 or $40M."
 - **The schedule's `call_without_payers`, under Management fee:** "No LP pays this schedule: every LP is in a class at a fee rate of 0."
 - **At the top of the tab,** as now. The schedule is on Terms, so on Payouts it's "Your last change to the terms has a problem, …".
@@ -586,7 +586,7 @@ spillpoint-fund 0.4.0 works out management fees from a schedule, and makes fee c
 - **A frequency it doesn't know (mine):** "Its management fee's frequency isn't one the page knows: it's quarterly, semiannual or annual."
 - **A step's rate (mine):** 'Fee rate step 1's rate isn't a number the page can use: it's a rate from 0 up to, not including, 1, the first above 0, written as an exact string like "0.02".'
 - **Steps out of order (mine):** "Fee rate step 2: each step's date must come after the one before it, and the first has none of its own."
-- **The commitments missing (mine):** "Its management fee's total commitments are missing: they're needed when the fund lists no LPs."
+- **The commitments missing (mine):** "Its management fee's total commitments are missing: they're needed when the fund lists no LPs." From 0.6.0 (f06d): "…: they're needed when the fund lists no LPs and a step is on commitments."
 - **The commitments not an amount (mine):** 'Its management fee's total commitments aren't an amount the page can use: they're an exact string more than zero, like "40000000".' The amounts' line would say "isn't" of them.
 - **`fee_rate_with_schedule` (mine):** "Its management fee rate: with a schedule, the schedule's first rate is the fund's, so there's no rate of its own."
 - **`fee_call_with_schedule` (mine):** "Row 5 of its cash flows: it's a fee call, and this fund's fees come from its schedule."
@@ -759,7 +759,8 @@ spillpoint-fund 0.6.0 can charge a management fee step on the fund's net investe
 - **One line under the steps:** "Invested capital is the cost of the fund's investments, less the cost of what it has exited or written off. Each day of a period counts at that day's invested capital."
   - **Always, with a schedule (mine),** so what "Invested capital" means is there before it's chosen; after "Add a step".
 - **"The LPs' total commitments"** is asked for only when the fund lists no LPs and a step is on commitments. A schedule wholly on invested capital doesn't ask for it.
-  - **What was typed in it (mine)** is kept, out of the input, while every step is on invested capital, and comes back with a step on commitments, as the fee rate's is kept with a schedule.
+  - **What was typed in it** is kept while every step is on invested capital, and comes back with a step on commitments, as the fee rate's is kept with a schedule (mine).
+  - **Saved while it's hidden (f06c review, answer 3; f06d):** without listed LPs, the commitments are written whenever the field holds an amount above zero, shown or hidden. The engine reads them (FA64), so opening a file and saving it gives back the same fund. Hidden text that isn't an amount above zero stays out, so no problem lands on a field the form doesn't show.
 - **The line at the schedule's end (mine)** says what the fees are worked out from, which with a step on invested capital isn't only the LPs' commitments:
   - **Every step on commitments:** as now, "Fees are worked out from the LPs' commitments, called in advance on calendar periods; the first period runs from the start date."
   - **Every step on invested capital:** "Fees are worked out from the fund's invested capital, called in advance on calendar periods; the first period runs from the start date."
@@ -773,11 +774,13 @@ spillpoint-fund 0.6.0 can charge a management fee step on the fund's net investe
   - **At the top of the tab,** as now. On Payouts, the notice names the tab the last change was made on (f05c): "Your last change to the terms has a problem, …" after switching a step on Terms, "the investments" after removing the last one.
 - **What the form can't make:** a basis other than the two, since On is a picker of them; and, as in 0.4.0, commitments beside listed LPs and a fee rate beside a schedule. Only a file has them.
 - **Everything else is in 0.4.0's words,** whatever a step's basis: a schedule no LP pays, the commitments missing without LPs (now only with a step on commitments), a step's rate, its date.
+- **The commitments missing, reworded (f06d),** since 0.6.0 made 0.4.0's line half true: "Needed: the fund lists no LPs, so a fee on commitments is on this total."
 
 **An opened file's problem, in one line,** as now, its place then its words **(all mine)**:
 - **The place:** "Fee rate step 2's basis", as "Fee rate step 2's rate" and "Fee rate step 2's date" are.
 - **A basis that isn't one of the two:** "Fee rate step 2's basis isn't one the page knows: it's commitments or invested_capital.", as a frequency it doesn't know is worded.
 - **A step on invested capital without investments:** "Its list of investments is missing: it's needed for a management fee on invested capital." Deal by deal with no step on invested capital, as in 0.5.0: "…: it's needed to pay carry deal by deal."
+- **The commitments missing, reworded (f06d):** "Its management fee's total commitments are missing: they're needed when the fund lists no LPs and a step is on commitments."
 - **An unsupported key on a step,** with the basis now among a step's keys: "This file has a term the page doesn't model: `offset` on a fee rate step (step 2 of its management fee schedule). A step has only its rate, what it's on and the date it's in force from."
 
 ### The Cash flows tab
@@ -793,14 +796,18 @@ spillpoint-fund 0.6.0 can charge a management fee step on the fund's net investe
 
 ### Payouts
 
-**Nothing on Payouts changes (mine).** The split, the chart, the breakpoints and every card run on the schedule's calls, on either basis, as they do now. The summary under the picker counts the calls on invested capital among the schedule's.
-- **The headline's terms line (mine)** names the schedule as now, its steps' rates and dates without their basis: "management fee 2% a year from 1 Jan 2020, 1.5% from 1 Jan 2023, called quarterly" for case 38. Whether it should say "on invested capital" is an open question in the review note, as 0.4.0's line was settled in f04c's review.
+**Nothing on Payouts changes but the headline's terms line (mine).** The split, the chart, the breakpoints and every card run on the schedule's calls, on either basis, as they do now. The summary under the picker counts the calls on invested capital among the schedule's.
+- **The headline's terms line (f06c review, answer 1; f06d):** it's what an LP or co-GP reads first, and 1.5% of commitments and 1.5% of invested capital are very different fees. When any step is on invested capital, each step names its base:
+  - **Case 38:** "management fee 2% a year on commitments from 1 Jan 2020, 1.5% on invested capital from 1 Jan 2023, called quarterly"
+  - **Case 40:** "management fee 2% a year on invested capital from 1 Jan 2022, called yearly"
+  - **With every step on commitments** it stays as it is, "management fee 2% a year from 15 Feb 2021, 1.5% from 15 Feb 2026, called quarterly" for case 29, so 0.5.0's funds read the same.
+  - **In f06c** the line named no basis; f06d's first commit makes this change.
 
 ### Saving and opening
 
 - **Saving keeps each step's basis.** A step on commitments is saved without the word (FA63), so a fund with no step on invested capital saves exactly as before.
 - **Opening brings it back.** f06b's guard comes out, and its tests.
-- **A file's commitments, with no LPs and every step on invested capital (mine),** open, and a save leaves them out, as the form doesn't ask for them there; without a step on commitments they change no amount (F39). As in 0.4.0, a file's commitments beside listed LPs open and save without them.
+- **A file's commitments, with no LPs and every step on invested capital,** open, and a save keeps them (f06c review, answer 3; f06d): they change no amount, but the engine reads them (FA64), and a file opened and saved gives back the same fund. In f06c a save left them out. As in 0.4.0, a file's commitments beside listed LPs open and save without them, since they must be the LPs' total.
 
 ### The examples
 
@@ -818,6 +825,11 @@ spillpoint-fund 0.6.0 can charge a management fee step on the fund's net investe
 - **Case 40** never asks for the LPs' total commitments, and its line says $0 at 31 Mar 2025.
 - **Case 29's second step switched to Invested capital** shows the investments line under it, and back to Commitments clears it.
 - **Narrow screens:** every width from 320 to 1,400 on Terms and Cash flows of cases 38 to 40: the On picker inside its card, and nothing scrolling sideways.
+- **f06d's:**
+  - the terms lines of case 38, case 39 and case 40 as above, and case 29's unchanged, as is and once its second step is back on Commitments
+  - case 40 with commitments of 2000000 opens and saves as the same fund
+  - case 40 switched to Commitments, 2000000 typed, switched back and saved keeps them; hidden text that isn't an amount above zero ("two million", "0") is left out, with no problem
+  - the two reworded lines, in the form and from a file
 
 ## How it's built: its own app, `apps/fund` (your answer 1)
 

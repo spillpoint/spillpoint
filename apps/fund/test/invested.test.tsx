@@ -7,7 +7,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { feeCalls, readFund } from "spillpoint-fund";
+import { D, readFund } from "spillpoint-fund";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
@@ -56,6 +56,8 @@ const problemUnder = (label: string | RegExp) => {
   expect(field.getAttribute("aria-invalid"), `${label} is marked`).toBe("true");
   return document.getElementById(field.getAttribute("aria-describedby")!)!.textContent;
 };
+/** A fund as the engine reads it, every amount as its exact string: "0.20" and "0.2" are the same carry. */
+const valuesOf = (input: unknown) => JSON.parse(JSON.stringify(readFund(input), (_, v) => (v instanceof D ? v.toString() : v)));
 const unmarked = (label: string | RegExp) => screen.getByLabelText(label).getAttribute("aria-invalid") === "false";
 /** "Add an investment", on the Investments tab, where deal by deal's missing investments are (F37). */
 const addInvestment = () => screen.getByRole("button", { name: "Add an investment", hidden: true });
@@ -138,7 +140,7 @@ describe("the LPs' total commitments", () => {
     expect(value("The LPs' total commitments")).toBe("");
   });
 
-  it("are kept, out of the input, while every step is on invested capital, and come back with a step on commitments", async () => {
+  it("are kept and saved while every step is on invested capital, since the engine reads them, and come back with a step on commitments", async () => {
     render(<App />);
     await openFile(caseText("fund-38-fees-on-invested-capital"));
     tab("Terms");
@@ -146,9 +148,43 @@ describe("the LPs' total commitments", () => {
     expect(screen.queryByLabelText("The LPs' total commitments")).toBeNull();
     expect(screen.queryByText("The fund can't run as it is.")).toBeNull();
     save();
-    expect((await saved()).fund.terms.management_fee).not.toHaveProperty("commitments");
+    expect((await saved()).fund.terms.management_fee.commitments).toBe("20000000");
     choose("Fee rate step 1 is on", "Commitments");
     expect(value("The LPs' total commitments")).toBe("$20,000,000");
+  });
+
+  it("typed in case 40 on Commitments, are kept switched back to Invested capital, and saved", async () => {
+    render(<App />);
+    await openFile(caseText("fund-40-spv-fees-on-invested-capital"));
+    tab("Terms");
+    choose("Fee rate step 1 is on", "Commitments");
+    type("The LPs' total commitments", "2000000");
+    choose("Fee rate step 1 is on", "Invested capital");
+    expect(screen.queryByLabelText("The LPs' total commitments")).toBeNull();
+    expect(screen.queryByText("The fund can't run as it is.")).toBeNull();
+    save();
+    expect((await saved()).fund.terms.management_fee).toEqual({
+      start: "2022-01-01",
+      frequency: "annual",
+      steps: [{ rate: "0.02", basis: "invested_capital" }],
+      commitments: "2000000",
+    });
+  });
+
+  it("hidden, are left out when they aren't an amount above zero, so no problem lands on a field the form doesn't show", async () => {
+    for (const typed of ["two million", "0"]) {
+      const { unmount } = render(<App />);
+      await openFile(caseText("fund-40-spv-fees-on-invested-capital"));
+      tab("Terms");
+      choose("Fee rate step 1 is on", "Commitments");
+      type("The LPs' total commitments", typed);
+      expect(problemUnder("The LPs' total commitments")).toBe("Write the LPs' total commitments in dollars, more than zero: 40000000 or $40M.");
+      choose("Fee rate step 1 is on", "Invested capital");
+      expect(screen.queryByText("The fund can't run as it is.")).toBeNull();
+      save();
+      expect((await saved()).fund.terms.management_fee, typed).not.toHaveProperty("commitments");
+      unmount();
+    }
   });
 
   it("aren't asked for beside listed LPs, on either basis", async () => {
@@ -336,17 +372,18 @@ describe("saving and opening each step's basis", () => {
     expect((await saved()).fund.terms.management_fee).toEqual({ start: "2022-01-01", frequency: "annual", steps: [{ rate: "0.02", basis: "invested_capital" }] });
   });
 
-  it("opens commitments with no LPs and every step on invested capital, and saves without them: they change no amount", async () => {
+  it("opens case 40 with commitments of 2000000, never asking for them, and saves it as the same fund", async () => {
     const input = caseFile("fund-40-spv-fees-on-invested-capital", "inputs.json").fund;
-    const withCommitments = { ...input, terms: { ...input.terms, management_fee: { ...input.terms.management_fee, commitments: "5000000" } } };
+    const withCommitments = { ...input, terms: { ...input.terms, management_fee: { ...input.terms.management_fee, commitments: "2000000" } } };
     render(<App />);
     await openFile(JSON.stringify(withCommitments), "forty.json");
     expect(status()).toBe("Opened forty.json.");
+    tab("Terms");
+    expect(screen.queryByLabelText("The LPs' total commitments")).toBeNull();
     save();
     const file = await saved();
-    expect(file.fund.terms.management_fee).not.toHaveProperty("commitments");
-    const calls = (fund: unknown) => feeCalls(readFund(fund))!.map((c) => c.call.toString());
-    expect(calls(file.fund)).toEqual(calls(withCommitments));
+    expect(file.fund.terms.management_fee.commitments).toBe("2000000");
+    expect(valuesOf(file.fund)).toEqual(valuesOf(withCommitments));
   });
 
   it("opens and saves a step switched in the form: case 29's second step on invested capital, once it has investments", async () => {
@@ -376,6 +413,42 @@ describe("case 38 in the picker", () => {
   });
 });
 
+describe("the headline's terms line", () => {
+  const termsLine = () => document.querySelector(".headline__terms")!.textContent;
+
+  it("names each step's base when a step is on invested capital: case 38, case 39 and case 40", async () => {
+    render(<App />);
+    pick("fund-38-fees-on-invested-capital");
+    expect(termsLine()).toBe(
+      "Carry 20%; no pref; GP commitment 1%, fee-free; management fee 2% a year on commitments from 1 Jan 2020, 1.5% on invested capital from 1 Jan 2023, called quarterly.",
+    );
+    await openFile(caseText("fund-39-invested-capital-deal-by-deal-classes"), "thirty-nine.json");
+    expect(termsLine()).toBe(
+      "Carry 20% deal by deal; no pref; GP commitment 2%, paying its share of fees; management fee 2% a year on commitments from 1 Jan 2021, 1.75% on invested capital from 1 Apr 2023, called half-yearly. Anchor: carry 15%, fees at 1%. Friends and family: carry 0%, no fees.",
+    );
+    await openFile(caseText("fund-40-spv-fees-on-invested-capital"), "forty.json");
+    expect(termsLine()).toBe("Carry 20%; no pref; no GP commitment; management fee 2% a year on invested capital from 1 Jan 2022, called yearly.");
+  });
+
+  it("reads as 0.5.0's with every step on commitments: case 29, and again once its second step is back on Commitments", async () => {
+    const before = "Carry 20%; pref 8%, full catch-up; GP commitment 1%, fee-free; management fee 2% a year from 15 Feb 2021, 1.5% from 15 Feb 2026, called quarterly.";
+    const input = caseFile("fund-29-fee-schedule", "inputs.json").fund;
+    const withInvestment = { ...input, investments: [{ name: "Alder Robotics", checks: [{ date: "2021-04-01", amount: "10000000" }] }] };
+    render(<App />);
+    pick("fund-29-fee-schedule");
+    expect(termsLine()).toBe(before);
+    await openFile(JSON.stringify(withInvestment), "twenty-nine.json");
+    expect(termsLine()).toBe(before);
+    tab("Terms");
+    choose("Fee rate step 2 is on", "Invested capital");
+    expect(termsLine()).toBe(
+      "Carry 20%; pref 8%, full catch-up; GP commitment 1%, fee-free; management fee 2% a year on commitments from 15 Feb 2021, 1.5% on invested capital from 15 Feb 2026, called quarterly.",
+    );
+    choose("Fee rate step 2 is on", "Commitments");
+    expect(termsLine()).toBe(before);
+  });
+});
+
 describe("the fund-41 refusals, in the page's words", () => {
   const dir = "fund-41-invested-capital-refused";
   const fixtures = readdirSync(resolve(casesDir, dir, "fixtures")).sort();
@@ -391,7 +464,7 @@ describe("the fund-41 refusals, in the page's words", () => {
     "fee-commitments-mismatch-on-invested-capital.json": "Its management fee schedule: its commitments for the schedule aren't the LPs' total.",
     "fee-invested-capital-nobody-pays.json": "Its management fee schedule: no LP pays it, as every LP is in a class at a fee rate of 0.",
     "fee-invested-capital-with-fee-rate.json": "Its management fee rate: with a schedule, the schedule's first rate is the fund's, so there's no rate of its own.",
-    "fee-mixed-without-commitments.json": "Its management fee's total commitments are missing: they're needed when the fund lists no LPs.",
+    "fee-mixed-without-commitments.json": "Its management fee's total commitments are missing: they're needed when the fund lists no LPs and a step is on commitments.",
     "fee-on-invested-capital-empty-investments.json": investments,
     "fee-on-invested-capital-investments-before-fee-call.json": investments,
     "fee-on-invested-capital-investments-before-lps.json": investments,
@@ -463,7 +536,7 @@ describe("the fund-41 refusals, in the page's words", () => {
     "fee-mixed-without-commitments.json": {
       make: () => (tab("Terms"), type("The LPs' total commitments", "")),
       under: "The LPs' total commitments",
-      words: "Needed: the fund lists no LPs, so the fee is on this total.",
+      words: "Needed: the fund lists no LPs, so a fee on commitments is on this total.",
     },
     "fee-on-invested-capital-empty-investments.json": {
       make: () => (removeInvestments(), tab("Terms")),

@@ -361,7 +361,7 @@ describe("the fund-32 refusals, in the page's words", () => {
     "class-fee-rate-without-fee-terms.json": "Its management fee rate is missing: it's needed when a class has its own fee rate.",
     "distribution-before-schedule.json": "Row 6 of its cash flows: this distribution is before the fund's first call.",
     "fee-call-with-schedule.json": "Row 5 of its cash flows: it's a fee call, and this fund's fees come from its schedule.",
-    "fee-commitments-missing.json": "Its management fee's total commitments are missing: they're needed when the fund lists no LPs.",
+    "fee-commitments-missing.json": "Its management fee's total commitments are missing: they're needed when the fund lists no LPs and a step is on commitments.",
     "fee-commitments-not-a-number.json": commitmentsAmount,
     "fee-commitments-not-the-lps-total.json": "Its management fee schedule: its commitments for the schedule aren't the LPs' total.",
     "fee-commitments-zero.json": commitmentsAmount,
@@ -492,7 +492,7 @@ describe("the fund-32 refusals, in the page's words", () => {
     "fee-commitments-missing.json": {
       make: () => (tab("Terms"), type("The LPs' total commitments", "")),
       under: "The LPs' total commitments",
-      words: "Needed: the fund lists no LPs, so the fee is on this total.",
+      words: "Needed: the fund lists no LPs, so a fee on commitments is on this total.",
     },
     "class-fee-rate-without-fee-terms.json": {
       make: () => (tab("Terms"), click("radio", "Entered as fee calls")),
