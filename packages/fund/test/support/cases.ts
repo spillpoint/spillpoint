@@ -13,24 +13,17 @@ export const CASE_FOLDERS = readdirSync(CASES_DIR, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 /**
- * Pending: cases added before the engine reads what they need, which its case tests skip until then. f02b, f03b, f04b
- * and f05b2 each emptied it (f05b1 ran fund-37's refusals first). From f06a, 0.6.0's fees on invested capital (F38 to
- * F40), cases 38 to 41, until f06b empties it. test/pending.test.ts fails if a case folder is neither run nor pending,
- * or if this list names a folder that doesn't exist.
+ * Pending: cases added before the engine reads what they need, which its case tests skip until then. f02b, f03b, f04b,
+ * f05b2 and f06b each emptied it (f05b1 ran fund-37's refusals first). test/pending.test.ts fails if a case folder is
+ * neither run nor pending, or if this list names a folder that doesn't exist.
  */
-export const PENDING: readonly string[] = [
-  "fund-38-fees-on-invested-capital",
-  "fund-39-invested-capital-deal-by-deal-classes",
-  "fund-40-spv-fees-on-invested-capital",
-  "fund-41-invested-capital-refused",
-];
+export const PENDING: readonly string[] = [];
 /**
- * Pending fixtures: one refusal fixture in a set the engine runs, whose expectation moved ahead of the engine, which
- * test/read.test.ts skips until then. From f06a, fund-32's `fee-step-basis`, read from 0.6.0 and refused as
- * `missing_field` at `investments` (F40), until f06b empties it. test/pending.test.ts fails if this list names a fixture
- * that doesn't exist, or one in a set that's pending whole.
+ * Pending fixtures: a refusal fixture in a set the engine runs, whose expectation moved ahead of the engine, which
+ * test/read.test.ts skips until then. f06a put fund-32's `fee-step-basis` on it, and f06b emptied it.
+ * test/pending.test.ts fails if this list names a fixture that doesn't exist, or one in a set that's pending whole.
  */
-export const PENDING_FIXTURES: readonly string[] = ["fund-32-fees-refused/fixtures/fee-step-basis.json"];
+export const PENDING_FIXTURES: readonly string[] = [];
 const ENGINE = CASE_FOLDERS.filter((n) => !PENDING.includes(n));
 /** The cases run as a fund: an inputs.json each. */
 export const RUN_CASES = ENGINE.filter((n) => existsSync(join(CASES_DIR, n, "inputs.json")));

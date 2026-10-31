@@ -12,6 +12,12 @@
 // distributions in the order listed (F4, F33). X comes after every cash flow on
 // D (FA50, FA58).
 //
+// From 0.6.0 the same walk gives net invested capital (F38): on each day, the
+// cost made to that day less the cost realized to that day, what's left of
+// every investment added up. Each event counts from its own date, so a day's
+// figure is after every event of that date (FA65); before the first check it's
+// 0, and after D it stays at D's, X never in it (F39).
+//
 // Amounts are whole-fund, the GP commitment's part included, as a check is
 // (F2). decimal.js at 40 digits; nothing is rounded here.
 
@@ -51,11 +57,19 @@ interface Holding {
   proceeds: D;
 }
 
+/** F38: net invested capital from `day` on, until the next change. */
+interface Invested {
+  day: number;
+  amount: D;
+}
+
 interface Book {
   /** Each investment at D, before X, in the input's order. */
   holdings: Holding[];
   /** At each distribution, by its place in the input's `cash_flows`: the fund's cost made and realized, its own realization included. */
   atDistribution: Map<number, Realized>;
+  /** F38, FA65: net invested capital after each date's events to D, one entry a date, in date order. */
+  invested: Invested[];
 }
 
 const sum = (xs: D[]) => xs.reduce((t, x) => t.plus(x), ZERO);
@@ -77,10 +91,21 @@ function bookOf(fund: Fund): Book {
     .flatMap((inv, i) => inv.checks.map((c) => ({ holding: holdings[i]!, day: dayNumber(c.date)!, amount: c.amount })))
     .filter((c) => c.day <= d)
     .sort((a, b) => a.day - b.day);
+  const invested: Invested[] = [];
+  // F38, FA65: what's left of every investment once a date's events so far are in; a later event that date replaces it.
+  const mark = (day: number) => {
+    if (day > d) return;
+    const amount = sum(holdings.map((x) => x.made)).minus(sum(holdings.map((x) => x.realized)));
+    if (invested.at(-1)?.day === day) invested.at(-1)!.amount = amount;
+    else invested.push({ day, amount });
+  };
   let next = 0;
   // F4, F33: a date's checks come before its write-offs and distributions, so they're made by then.
   const makeTo = (day: number) => {
-    for (; next < checks.length && checks[next]!.day <= day; next++) checks[next]!.holding.made = checks[next]!.holding.made.plus(checks[next]!.amount);
+    for (; next < checks.length && checks[next]!.day <= day; next++) {
+      checks[next]!.holding.made = checks[next]!.holding.made.plus(checks[next]!.amount);
+      mark(checks[next]!.day);
+    }
   };
   const atDistribution = new Map<number, Realized>();
   // cashFlows is in F4's order, widened: on one date, write-offs before distributions, each in the order listed.
@@ -100,11 +125,12 @@ function bookOf(fund: Fund): Book {
         h.realized = h.realized.plus((flow.share ?? ONE).times(left));
         h.proceeds = h.proceeds.plus(flow.amount!);
       }
+      mark(dayNumber(flow.date)!);
     }
     if (flow.type === "distribution") atDistribution.set(flow.index, { made: sum(holdings.map((x) => x.made)), realized: sum(holdings.map((x) => x.realized)) });
   }
   makeTo(d);
-  const book = { holdings, atDistribution };
+  const book = { holdings, atDistribution, invested };
   if (wasRead(fund)) booksKept.set(fund, book);
   return book;
 }
@@ -127,6 +153,33 @@ export function realizedByX(fund: Fund, final: boolean): Realized {
   const h = from === null ? undefined : holdings.find((x) => x.name === from.investment);
   const before = sum(holdings.map((x) => x.realized));
   return { made, realized: h ? before.plus(from!.share.times(h.made.minus(h.realized))) : before };
+}
+
+/**
+ * F38: the fund's net invested capital at D, before X: the checks made to D less the cost realized to D, exited or
+ * written off. Whole-fund, the GP commitment's part included, as a check is (F33); zero without investments. Exact.
+ */
+export function netInvestedCapital(fund: Fund): D {
+  return new D(bookOf(fund).invested.at(-1)?.amount ?? ZERO);
+}
+
+/**
+ * F39: net invested capital on each day from `first` to `last`, both in, added up: each day at its figure after that
+ * date's events (FA65), and a day after D at D's. Worked by the runs of days between changes, not day by day.
+ */
+export function investedDays(fund: Fund, first: number, last: number): D {
+  let total = ZERO;
+  let amount = ZERO;
+  let since = first;
+  for (const change of bookOf(fund).invested) {
+    if (change.day > last) break;
+    if (change.day > since) {
+      total = total.plus(amount.times(change.day - since));
+      since = change.day;
+    }
+    amount = change.amount;
+  }
+  return total.plus(amount.times(last - since + 1));
 }
 
 /**

@@ -7,7 +7,8 @@
 // 2. The fields: unknown and missing top-level fields; `as_of`; `terms`
 //    (carry, pref, catch-up, GP commitment, then the terms against each other);
 //    each cash flow in the list's order; `distribution_date`; `final`; `nav`;
-//    from 0.5.0 the investments in order, then `distribution_from` (F37).
+//    from 0.5.0 the investments in order, then `distribution_from` (F37); from
+//    0.6.0 then a step on invested capital without investments (F40).
 // 3. The cash flows against each other and against D; from 0.5.0 then the
 //    investments against the cash flows and D (F37).
 // 4. The LPs (F21, FA19): `lps` itself, then each LP in the list's order,
@@ -16,17 +17,20 @@
 //    repeats, then its class and its close (F28, FA25).
 // 5. What the LPs need of the rest (F28, F32): the equalization rate, when an
 //    investment or expense call comes before a later close (F29); the
-//    schedule's `commitments`, missing or not the LPs' total; then each entered
-//    call in date order for an LP in the fund at its date to pay it.
+//    schedule's `commitments`, missing (from 0.6.0 only with a step on
+//    commitments, F40) or not the LPs' total; then each entered call in date
+//    order for an LP in the fund at its date to pay it.
 //
 // Within `terms`, stage 1 takes each class's keys and its carry's among them,
 // and the schedule's keys and its steps' among them. Stage 2 reads the fund's
 // own terms, then `fee_rate`, `equalization_rate`, the schedule (its shape,
-// `start`, `frequency`, each step in order, `commitments`), `fee_rate` against
+// `start`, `frequency`, each step in order: its shape, its rate, from 0.6.0 its
+// basis, then its `from`; then `commitments`), `fee_rate` against
 // the schedule, and each class in order: its shape, its name, the name
 // repeating, its fee rate, its carry, its carry against the catch-up (F28,
 // F32), then `carry_basis`. Stage 3 starts with an entered fee call beside a
-// schedule, and counts the schedule's calls among the calls (F30, FA39, FA40).
+// schedule, and counts the schedule's calls among the calls by their dates
+// (F30, FA39, FA40, FA66).
 //
 // From 0.5.0 (F37, FA53) each cash flow is checked through in this order: its
 // unknown fields in the file's order, a call's `investment` or `share` among
@@ -49,6 +53,7 @@ import type {
   CarryStep,
   CashFlow,
   DistributionFrom,
+  FeeBasis,
   FeeFrequency,
   FeeStep,
   Fund,
@@ -76,7 +81,9 @@ const TERM_KEYS: Record<string, readonly string[] | null> = {
   carry_basis: null, // "whole_fund" or "deal_by_deal" (F34)
 };
 const STEP_KEYS = ["rate", "from_lp_multiple"];
-const FEE_STEP_KEYS = ["rate", "from"];
+const FEE_STEP_KEYS = ["rate", "from", "basis"];
+/** F39: what a fee step's rate is charged on. */
+const FEE_BASES: readonly FeeBasis[] = ["commitments", "invested_capital"];
 const CLASS_KEYS = ["name", "fee_rate", "carry"];
 const TOP_KEYS = ["as_of", "terms", "cash_flows", "distribution_date", "final", "nav", "lps", "investments", "distribution_from"];
 const REQUIRED = ["as_of", "terms", "cash_flows"];
@@ -134,9 +141,9 @@ function checkUnsupportedClasses(classes: unknown): void {
 }
 
 /**
- * F32: a schedule's fields are `start`, `frequency`, `steps` and `commitments`, and a step's `rate` and `from`: any
- * other, an `offset` or a `basis`, is a fee term the engine doesn't model, named by its own key. The steps' keys are
- * checked at `steps`' place among the schedule's.
+ * F32, F40: a schedule's fields are `start`, `frequency`, `steps` and `commitments`, and a step's `rate`, `from` and,
+ * from 0.6.0, `basis`: any other, an `offset`, is a fee term the engine doesn't model, named by its own key. The steps'
+ * keys are checked at `steps`' place among the schedule's.
  */
 function checkUnsupportedSchedule(schedule: unknown): void {
   if (!isObject(schedule)) return;
@@ -334,10 +341,10 @@ function feeRate(value: unknown, field: string): D {
 }
 
 /**
- * F30, F32: the management fee schedule, checked through in order: its shape, `start`, `frequency`, each step in turn
- * (its shape, its rate, then its `from`), then `commitments`. Left out or null: none, and the fee calls are entered.
- * FA41: null is the same as leaving out `frequency` (quarterly), `commitments` and the first step's `from`; a null
- * `start`, `steps`, rate or later `from` is missing.
+ * F30, F32, F40: the management fee schedule, checked through in order: its shape, `start`, `frequency`, each step in
+ * turn (its shape, its rate, its basis, then its `from`), then `commitments`. Left out or null: none, and the fee calls
+ * are entered. FA41, FA63: null is the same as leaving out `frequency` (quarterly), `commitments`, a step's `basis`
+ * (commitments) and the first step's `from`; a null `start`, `steps`, rate or later `from` is missing.
  */
 function readSchedule(terms: Json): ManagementFee | null {
   if (!given(terms, "management_fee")) return null;
@@ -360,18 +367,25 @@ function readSchedule(terms: Json): ManagementFee | null {
     if (!isObject(s)) throw refuse("bad_field", field);
     if (!given(s, "rate")) throw refuse("missing_field", `${field}.rate`);
     const rate = feeRate(s.rate, `${field}.rate`);
+    // F32: the first rate is above 0, since a fee holiday is a later `start`.
+    if (i === 0 && rate.isZero()) throw refuse("bad_number", `${field}.rate`);
+    // F39, FA63: commitments unless the step says otherwise, the word compared exactly as written, as `frequency` is.
+    let basis: FeeBasis = "commitments";
+    if (given(s, "basis")) {
+      if (typeof s.basis !== "string" || !FEE_BASES.includes(s.basis as FeeBasis)) throw refuse("bad_field", `${field}.basis`);
+      basis = s.basis as FeeBasis;
+    }
     if (i === 0) {
-      // F32: the first rate is above 0, since a fee holiday is a later `start`; and it's in force from `start`.
-      if (rate.isZero()) throw refuse("bad_number", `${field}.rate`);
+      // F32: the first step is in force from `start`.
       if (given(s, "from")) throw refuse("steps_out_of_order", field);
-      steps.push({ rate, from: null });
+      steps.push({ rate, from: null, basis });
       return;
     }
     if (!given(s, "from")) throw refuse("missing_field", `${field}.from`);
     const from = date(s.from, `${field}.from`);
     // F32, FA46: steps in date order, each after the one before it, the first's date being `start`. Rates in any order.
     if (dayNumber(from)! <= dayNumber(steps[i - 1]!.from ?? start)!) throw refuse("steps_out_of_order", field);
-    steps.push({ rate, from });
+    steps.push({ rate, from, basis });
   });
   let commitments: D | null = null;
   if (given(raw, "commitments")) {
@@ -664,16 +678,19 @@ export function needsEqualizationRate(fund: Fund, firstCall: number): boolean {
 
 /**
  * Stage 5 (F28, F32): an investment or expense call before a later close needs an equalization rate (F29); a schedule
- * needs its base, `commitments` without listed LPs, and with them `commitments`, if given, is their total; a schedule
- * needs a listed LP that pays it, as an entered fee call does; then each entered call, in F4's order, needs an LP in
- * the fund at its date to pay it (FA21): for a fee call, one with a fee weight above 0 (F22).
+ * needs its base, `commitments` without listed LPs when a step is on commitments (F40), and with them `commitments`, if
+ * given, is their total; a schedule needs a listed LP that pays it, as an entered fee call does; then each entered
+ * call, in F4's order, needs an LP in the fund at its date to pay it (FA21): for a fee call, one with a fee weight above
+ * 0 (F22).
  */
 function checkWhatTheLpsNeed(fund: Fund, firstCall: number, raw: Json): void {
   if (fund.terms.equalizationRate === null && needsEqualizationRate(fund, firstCall)) throw refuse("missing_field", "terms.equalization_rate");
   const fee = fund.terms.managementFee;
   if (fee) {
     const at = "terms.management_fee.commitments";
-    if (fund.lps.length === 0 && fee.commitments === null) throw refuse("missing_field", at);
+    // F40, FA64: a step on invested capital charges net invested capital, not commitments; any step on commitments,
+    // whatever its date, needs them.
+    if (fund.lps.length === 0 && fee.commitments === null && fee.steps.some((s) => s.basis === "commitments")) throw refuse("missing_field", at);
     // FA41: compared as a number, exactly, with the commitments as the input writes them: "40000000.00" is 40,000,000.
     if (fund.lps.length > 0 && fee.commitments !== null && !sameTotal(raw)) throw refuse("fee_commitments_mismatch", at);
     // F32: with every listed LP in a class at a fee rate of 0, each of the schedule's calls would be $0. Its calls are
@@ -731,6 +748,9 @@ export function readFund(input: unknown): Fund {
   // F37: after `nav`, the investments, then X's source.
   const investments = readInvestments(input.investments);
   const distributionFrom = readDistributionFrom(input.distribution_from);
+  // F40, FA64: a step on invested capital, whatever its date, charges the fund's investments, so it needs some; an empty
+  // list is none (FA52). Last in stage 2, so before deal by deal's same refusal in stage 3 (F37).
+  if (investments.length === 0 && terms.managementFee?.steps.some((s) => s.basis === "invested_capital")) throw refuse("missing_field", "investments");
 
   // F32: with a schedule, an entered fee call would be counted twice: the first in the input's order is refused.
   if (terms.managementFee) {
@@ -738,8 +758,9 @@ export function readFund(input: unknown): Fund {
     if (fee) throw refuse("fee_call_with_schedule", `cash_flows[${fee.index}]`);
   }
   // F4: no calls at all, or a distribution before the first call, is refused; D is on or after every cash flow. The
-  // schedule's calls are calls (F30), dated to D (FA39); a period with nothing to call isn't one (FA40). A write-off
-  // isn't a distribution, but it's a cash flow after D like any other (FA56).
+  // schedule's calls are calls (F30), dated to D (FA39), counted by their dates: a period with a day at a rate above 0,
+  // on either basis (FA40, FA66), though one on invested capital may turn out to have nothing to call. A write-off isn't
+  // a distribution, but it's a cash flow after D like any other (FA56).
   const d = dayNumber(distributionDate)!;
   const calls = flows.filter((f) => f.type === "call");
   const scheduled = terms.managementFee ? schedulePeriods(terms.managementFee, d) : [];
