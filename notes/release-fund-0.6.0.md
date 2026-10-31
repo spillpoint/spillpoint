@@ -70,7 +70,7 @@ The package's README lists each stable name with what it means.
 ## How it's tested
 
 **Three new cases** (`packages/fund/cases`), each with a plain-English derivation:
-- **Case 38:** no listed LPs, quarterly, 2% of $20,000,000 of commitments for three years, then 1.5% of net invested capital from 1 Jan 2023. A follow-on, an exit and a write-off, each inside a quarter, change the fee from their own date. The six calls on invested capital come to $232,461.39, $1,432,461.39 of fees in all; one breakpoint, at $5,446,930.70.
+- **Case 38:** no listed LPs, quarterly, 2% of $20,000,000 of commitments for three years, then 1.5% of net invested capital from 1 Jan 2023. A new investment, an exit and a write-off, each inside a quarter, change the fee from their own date. The six calls on invested capital come to $232,461.39, $1,432,461.39 of fees in all; one breakpoint, at $5,446,930.70.
 - **Case 39:** deal by deal, half-yearly, 2% of commitments then 1.75% of net invested capital from 1 Apr 2023, inside a half-year. An Anchor class at a 1% fee joins at a later close, a friends-and-family class pays no fees, and a 2% GP commitment pays its share. A half sale and a write-off lower the fee from their dates.
 - **Case 40:** an SPV's fee, 2% a year of its invested capital from the start, called yearly, with no commitments. Final, with nothing to call for 2025, after its exit.
 - **Fifteen refusals,** one or more for each line of F40 and where it meets 0.4.0's and 0.5.0's checks.

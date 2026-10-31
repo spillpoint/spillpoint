@@ -242,3 +242,11 @@ None in `ASSUMPTIONS.md`. On the page, both changes are your answers.
 ## Open questions
 
 1. **Commitments beside listed LPs,** in a file. With listed LPs the page never writes a schedule's `commitments`, as in 0.4.0, so a file that gives them, equal to the LPs' total as the engine requires, saves without them. The fund is the same: the LPs' commitments are the base, and the total is only checked against them. But the file changes, as it did for answer 3. Keep it, or write them back too when they're the LPs' total?
+
+## Your answers (f06d review)
+
+1. **Commitments beside listed LPs stay out of a saved file,** as in 0.4.0: they only repeat the LPs' total, which the LPs tab holds, and a copy written back would go stale, and be refused, the moment an LP's commitment changes; without LPs, answer 3's number exists nowhere else.
+
+## The fix-up (f06d review)
+
+- **The release note's case 38 line** reads "A new investment, an exit and a write-off", since Dogwood Labs is a new investment, not a follow-on, as the README says. Nothing in the package changed, so the tarball and its shasum are the same.
