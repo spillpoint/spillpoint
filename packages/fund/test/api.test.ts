@@ -1,18 +1,20 @@
 // The fund package's exports, and the names of their fields, are deliberate: these lists change only on purpose. f01e's
 // naming review settled them for 0.1.0 (notes/review-f01e.md), f02b added the LPs' for 0.2.0 (notes/review-f02b.md),
 // f03b the classes' and later closes' for 0.3.0 (notes/review-f03b.md), f04b the management fees' for 0.4.0
-// (notes/review-f04b.md), and f05b1 and f05b2 the investments' for 0.5.0 (notes/review-f05b1.md, notes/review-f05b2.md).
+// (notes/review-f04b.md), f05b1 and f05b2 the investments' for 0.5.0 (notes/review-f05b1.md, notes/review-f05b2.md),
+// and f06b the fees on invested capital's for 0.6.0 (notes/review-f06b.md).
 
 import { expect, it } from "vitest";
 
 import * as fund from "../src/index.ts";
-import { FundRefusal, equalization, feeCalls, findBreakpoints, portfolio, readFund, splitAt } from "../src/index.ts";
+import { D, FundRefusal, equalization, feeCalls, findBreakpoints, netInvestedCapital, portfolio, readFund, splitAt } from "../src/index.ts";
 import { RUN_CASES, readCaseFile } from "./support/cases.ts";
 import type { CaseInputs } from "./support/cases.ts";
 
 it("exports exactly the fund engine's API", () => {
-  // From 0.3.0: equalization (F25). From 0.4.0: feeCalls (F31). From 0.5.0: portfolio (F36).
-  expect(Object.keys(fund).sort()).toEqual(["D", "FundRefusal", "equalization", "feeCalls", "findBreakpoints", "portfolio", "readFund", "splitAt", "splitAtNav", "toCents"]);
+  // From 0.3.0: equalization (F25). From 0.4.0: feeCalls (F31). From 0.5.0: portfolio (F36). From 0.6.0:
+  // netInvestedCapital (F38).
+  expect(Object.keys(fund).sort()).toEqual(["D", "FundRefusal", "equalization", "feeCalls", "findBreakpoints", "netInvestedCapital", "portfolio", "readFund", "splitAt", "splitAtNav", "toCents"]);
 });
 
 const keys = (o: object) => Object.keys(o).sort();
@@ -43,7 +45,7 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
   expect(f8.terms.managementFee).toBeNull();
   const f29 = read("fund-29-fee-schedule").terms.managementFee!;
   expect(keys(f29)).toEqual(["commitments", "frequency", "start", "steps"]);
-  expect([f29.start, f29.commitments?.toString(), keys(f29.steps[0]!), f29.steps.map((s) => [s.rate.toString(), s.from])]).toEqual(["2021-02-15", "40000000", ["from", "rate"], [["0.02", null], ["0.015", "2026-02-15"]]]);
+  expect([f29.start, f29.commitments?.toString(), keys(f29.steps[0]!), f29.steps.map((s) => [s.rate.toString(), s.from])]).toEqual(["2021-02-15", "40000000", ["basis", "from", "rate"], [["0.02", null], ["0.015", "2026-02-15"]]]);
   const f30 = read("fund-30-fee-step-down").terms.managementFee!;
   expect([f30.frequency, f30.commitments]).toEqual(["semiannual", null]);
   // Case 31 gives no frequency: quarterly.
@@ -57,6 +59,12 @@ it("names a fund's fields as the naming review settled, mirroring the input", ()
   const exit = f34.cashFlows.find((f) => f.type === "distribution")!;
   const writeOff = f34.cashFlows.find((f) => f.type === "write_off")!;
   expect([exit.investment, exit.share!.toString(), writeOff.investment, writeOff.amount, writeOff.share, writeOff.kind]).toEqual(["Alder Robotics", "1", "Birch Health", null, null, null]);
+  // From 0.6.0: each fee step's basis, commitments filled in when the input leaves it out (F39, FA63); `commitments`
+  // null when a schedule wholly on invested capital doesn't give it (F40).
+  expect(f29.steps.map((s) => s.basis)).toEqual(["commitments", "commitments"]);
+  expect(read("fund-38-fees-on-invested-capital").terms.managementFee!.steps.map((s) => s.basis)).toEqual(["commitments", "invested_capital"]);
+  const f40 = read("fund-40-spv-fees-on-invested-capital").terms.managementFee!;
+  expect([f40.steps.map((s) => s.basis), f40.commitments]).toEqual([["invested_capital"], null]);
 });
 
 it("names a split's fields as the naming review settled", () => {
@@ -91,6 +99,12 @@ it("names the investments table's fields as f05b1 proposed", () => {
   expect(portfolio(read("fund-08-carry-steps"))).toEqual([]);
   const rows = portfolio(read("fund-33-portfolio-whole-fund"));
   expect(keys(rows[0]!)).toEqual(["costMade", "costRealized", "costWrittenOff", "name", "proceeds", "realizedMultiple"]);
+});
+
+it("gives net invested capital as a decimal, zero without investments, as f06b proposed", () => {
+  // From 0.6.0 (F38): at D before X, whole-fund.
+  expect(netInvestedCapital(read("fund-08-carry-steps")).toString()).toBe("0");
+  expect(netInvestedCapital(read("fund-38-fees-on-invested-capital"))).toBeInstanceOf(D);
 });
 
 it("names the equalization's fields as f03b settled", () => {

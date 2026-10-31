@@ -69,10 +69,12 @@ describe.each(RUN_CASES)("%s", (dir) => {
     if (expected.gp_commitment_paid_in) expect(toCents(split.gpCommitmentPaidIn)).toBe(expected.gp_commitment_paid_in);
     else expect(split.gpCommitmentPaidIn.isZero()).toBe(true);
     expect(split.prefAccrued && toCents(split.prefAccrued)).toBe(expected.pref_accrued_to_d ?? null);
-    // F10: the LP multiple is the LPs' to date over their paid-in, exactly, and reproduces the case's LP total to the
-    // cent. The cases don't record the multiple itself (FC4).
+    // F10: the LP multiple is the LPs' to date over their paid-in, exactly, and reproduces the case's LP total from its
+    // paid-in, each to the cent. The cases don't record the multiple itself (FC4). Each cent figure is within half a
+    // cent, so the product is within half a cent times the multiple, the total within half a cent: from 0.6.0 a fee on
+    // invested capital leaves paid-in short of whole cents (case 39's $11,524,216.761050), where before it never was.
     expect(split.lpMultiple.times(split.lpsPaidIn).minus(split.toDate.lps.total).abs().lte("1e-25")).toBe(true);
-    expect(split.lpMultiple.times(expected.lps_paid_in).minus(p.to_date.lps.total!).abs().lte("0.005")).toBe(true);
+    expect(split.lpMultiple.times(expected.lps_paid_in).minus(p.to_date.lps.total!).abs().lte(split.lpMultiple.plus(1).times("0.005"))).toBe(true);
     // Each step's LP share is the GP's × (1 − rate) ÷ rate, and the steps' add up to the carry tier, for X and to date
     // (f01f review, answer 2).
     for (const t of [split.distribution, split.toDate]) {
