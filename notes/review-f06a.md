@@ -9,7 +9,7 @@ No engine or page code.
 
 **Nothing in the engine, the fund's source, the page's source, the main page, `cases/`, `reference/`, `.github/` or `.claude/` changed:** `git diff --stat main HEAD -- packages/engine packages/fund/src apps/fund/src apps/dashboard cases reference .github .claude` prints nothing.
 - **Under `apps/`,** only the page's pending list, `apps/fund/test/support/cases.ts`.
-- **`packages/fund/cases`:** four new folders, fund-38 to fund-41. In fund-32, only `fixtures/fee-step-basis.json`'s `about` and that fixture's entry in `expected.json`. Nothing else in fund-01 to fund-37 changed.
+- **`packages/fund/cases`:** four new folders, fund-38 to fund-41. In fund-32, only `fixtures/fee-step-basis.json`'s `about`, that fixture's entry in `expected.json`, and, in the fix-up (§10), its row in `DERIVATION.md`. Nothing else in fund-01 to fund-37 changed.
 
 `.claude/settings.json` isn't committed: the fund cases' lock is lifted only on your machine.
 
@@ -29,7 +29,8 @@ No engine or page code.
 | `52a7d4c` | the pending lists, a pending fixture, and the case-file checks (§7) |
 | `fc59925` | `CLAUDE.md` names the 0.6.0 steps and F1 to F40 |
 | `1bcd995` | FA66: why counting a period wholly at a rate of 0 couldn't change the checks that count calls |
-| the next commit | this note |
+| `934f616` | this note |
+| the next commit | the fix-up: fund-32's derivation row, FC14, and §10 of this note |
 
 ## 1. The spec (`packages/fund/docs/SPEC.md`)
 
@@ -73,7 +74,7 @@ No engine or page code.
 
 **No new shape.** The fee calls on invested capital are FC13's, as F40 says, and nothing else in `expected.json` changes: each step's basis is in the input, so it isn't repeated.
 - **FC13, widened:** a period with nothing to call isn't listed, so the calls can skip a period, as case 40's 2025 is skipped.
-- **FC14, amended:** fund-32's `fee-step-basis` is now refused as `missing_field` at `investments`. Its expectation and its `about` moved in f06a, at your instruction, and nothing else.
+- **FC14, amended:** fund-32's `fee-step-basis` is now refused as `missing_field` at `investments`. Its expectation and its `about` moved in f06a, at your instruction, and its derivation row in the fix-up (§10); nothing else.
 - **FC17 (new):** fund-41 in FC7's shape, each fixture naming its base. Case 38 for most of them; case 40 for the first step's basis and an empty list; case 39 for the LPs' checks. The changes and refusals are yours; each `about` sentence is mine.
 
 ## 4. The reference (`packages/fund/reference`)
@@ -116,8 +117,8 @@ Written from `SPEC.md`. Nothing in the engine or its tests is imported, and the 
   - `inputs.json` written by a script from `cases-inv.json`, `about` as `description`
   - `expected.json` from the reference
   - a `DERIVATION.md` worked by hand
-- **fund-41-invested-capital-refused:** your 15 changes as fixtures, `expected.json` from the reference, and a derivation of each refusal with the stage that decides it. It also explains fund-32's moved fixture, since fund-32's own derivation stays as it was (open question 1).
-- **fund-32:** `fee-step-basis.json`'s `about` now reads "The second fee step on invested capital: read from 0.6.0 (F40), and refused, since case 29 lists no investments for it to charge." Its entry in `expected.json` moved from `unsupported`, `basis` to `input`, `missing_field`, `investments`.
+- **fund-41-invested-capital-refused:** your 15 changes as fixtures, `expected.json` from the reference, and a derivation of each refusal with the stage that decides it. It also explains fund-32's moved fixture.
+- **fund-32:** `fee-step-basis.json`'s `about` now reads "The second fee step on invested capital: read from 0.6.0 (F40), and refused, since case 29 lists no investments for it to charge." Its entry in `expected.json` moved from `unsupported`, `basis` to `input`, `missing_field`, `investments`. Since the fix-up, its row in `DERIVATION.md` gives the new refusal (§10).
 
 **How the hand work was done and checked.** f05b's hand working, grown for invested capital, in my scratch folder, importing nothing from the reference. Its method differs from the reference's:
 - **Net invested capital on a day** is each investment's own cost made less its cost realized by the end of that day, from its own history, added up. The reference uses one walk over the fund.
@@ -310,6 +311,48 @@ One fee call is before Birch's close: the first half of 2021, on commitments. Bi
 
 The 2021-01-10 investment call's LPs' $5,880,000 rebalances from 10/14 and 4/14 to 1/2, 3/10 and 1/5, with 8% for 95 days.
 
+## 10. The fix-up after your review (2026-10-31)
+
+Your answers to the four open questions, and the one change to a case file you asked for.
+
+**Your answers:**
+1. **fund-32's derivation:** fix the row now, while this PR needs the label anyway. A derivation that describes a refusal the fixture no longer gives is wrong, not history. Done, below.
+2. **FA64, a step dated after D:** agreed, a step counts whatever its date. A file that reads shouldn't start refusing just because its as-of date moves past a step's date with nothing else changed, and a GP who enters a future switch to invested capital needs the investments on that day anyway. The same goes for `commitments` and a later step on commitments. FA64 stands as written.
+3. **FA66, a first period with nothing to call:** agreed, for FA40's reason. Which periods count is decided from the schedule alone, so who joins at a later close never turns on the investments' dates or the fee arithmetic. The LP did join after the fee term began, and its all-zero equalization row is the true answer: it owes nothing. FA66 stands as written.
+4. **The GP commitment's part on invested capital:** keep F39. The GP commitment pays its share of each call, the LPs' fee over 1 − g. That's the 0.4.0 rule on commitments too, where with fee classes it already pays the LPs' blended rate, not the full one. Charging it the full rate only on invested capital would make the two bases disagree. A fee rate of the GP commitment's own would be a Later item if a fund asks for it; I haven't added it to the Later list.
+
+You agreed FA63 to FA66 and FC17. Their rows are unchanged; as in 0.5.0, their status moves to Confirmed in the engine step.
+
+**fund-32's derivation.** Its `fee-step-basis` row is now yours:
+
+| Fixture | Base | Change | Kind | Term | Field | Why |
+|---|---|---|---|---|---|---|
+| `fee-step-basis` | 29 | `terms.management_fee.steps[1].basis` = `"invested_capital"` | input | `missing_field` | `investments` | From 0.6.0 a step's basis is read (F40); case 29 lists no investments, so its step on invested capital is refused at the end of stage 2 (FA64). |
+
+- **How it got there:** in my scratch folder I replaced that one line of main's `DERIVATION.md` with your row and checked it there. You copied it in with `cp`.
+- **Its sha256,** the same in my scratch folder and the case folder: `40f8b92a51182aaf767d724d6a507704bb5c320cdbc58fb364bf89a472e88e01`. Main's, and `934f616`'s, was `4278da6cae4c21e86904c9103bf5104d296c33e589f4450c3bc0f2591008f434`.
+- **Checked after the copy:**
+  - Against main, the file differs by that row only: `git diff --numstat main` gives one line out and one in, line 23.
+  - The row's kind, term and field are the fixture's entry in `expected.json`, and its change and base are the fixture's. All 37 rows of the table now match `expected.json`; before, this one didn't.
+  - `expected.json` and the 37 fixtures are unchanged since `934f616`. In fund-32, `git diff --stat 934f616` lists only `DERIVATION.md`.
+  - `generate.py --check` matches all 41 folders, and the fund package's tests pass as before: 1,959, 13 skipped.
+- **FC14** in `ASSUMPTIONS.md` said only the expectation and the `about` moved in fund-32. It now names the derivation row too. §1, §3, §5 and step 6 of "How to check it" here say the same.
+- **Not changed:** fund-41's derivation. Its last sentence still says nothing moved in fund-32 but the expectation and the `about` (the open question below).
+
+**How to check the fix-up:**
+
+```bash
+git diff main -- packages/fund/cases/fund-32-fees-refused
+```
+
+It shows the fixture's `about`, its entry in `expected.json`, and the one derivation row.
+
+```bash
+shasum -a 256 packages/fund/cases/fund-32-fees-refused/DERIVATION.md
+```
+
+It prints `40f8b92a…`, as above.
+
 ## How to check it by behavior
 
 1. **Run what CI runs:**
@@ -362,7 +405,7 @@ The 2021-01-10 investment call's LPs' $5,880,000 rebalances from 10/14 and 4/14 
    git diff --stat main HEAD -- packages/engine packages/fund/src apps/fund/src apps/dashboard cases reference .github .claude
    ```
 
-   It prints nothing. `git diff --stat main HEAD -- packages/fund/cases` lists the four new folders and fund-32's two files.
+   It prints nothing. `git diff --stat main HEAD -- packages/fund/cases` lists the four new folders and fund-32's three files.
 7. **Have cases 38 to 41 re-derived** independently, from `SPEC.md` and each case's `inputs.json`, before you add the cases label.
 
 ## Assumptions added
@@ -372,10 +415,10 @@ The 2021-01-10 investment call's LPs' $5,880,000 rebalances from 10/14 and 4/14 
 - **FA63 to FA66 (New):** a step's basis as written; a step on either basis, whatever its date; the arithmetic of net invested capital; the periods by date and the first call.
 - **FC13 widened, FC14 amended, FC17 (New):** no new shape; a period with nothing to call isn't listed; fund-32's moved fixture; the invested capital's refusals.
 - **FC2:** names the sixth refusal set.
+- **FC14, in the fix-up:** names fund-32's derivation row as moved too (§10).
 
 ## Open questions
 
-1. **fund-32's derivation.** Its row for `fee-step-basis` still gives the old refusal: unsupported, `basis`, found among the schedule's keys in stage 1. You said nothing else in fund-32 changes, so I left it, and fund-41's derivation explains the move. Shall I change that one row to the new refusal before you lock the cases, or leave it?
-2. **FA64: a step dated after D.** A step on invested capital from 2030 needs investments today, and a step on commitments from 2030 needs `commitments` today, without listed LPs. The other reading looks only at steps in force by D, so a refusal could appear when D passes a step's date. I'd keep FA64: a schedule's file is checked as written, as F32 checks every step's fields. Fine?
-3. **FA66: the first call when its period has nothing to call.** Say fees on invested capital start on 2021-01-01 and the first check is in 2022. The 2021 period isn't a call, but it's still the fund's first call by its date, as F39 says. So an LP closing in mid-2021 joins at a later close, with no back fees and no capital to catch up. Its row in the equalization is all zeros. Fine?
-4. **The GP commitment's part on invested capital, when it pays fees (FA65).** It pays g of each call, as F39 says ("as F30 has it"). On invested capital that's the rate on its share of net invested capital, times the LPs' fee weights over their commitments. In case 39 that's 13/20, because friends and family pay no fee and Anchor half: $1,903.98 in the first half of 2023, not the 1.75% on its own 2% share it would pay with every LP on the fund's terms. 0.4.0 already treats a fee-paying GP commitment this way on commitments. I followed the spec; say if you'd rather it pay the full rate on its own share.
+1. **fund-41's derivation, its last sentence.** It says of fund-32's moved fixture: "Its expectation and its `about` moved in fund-32; nothing else there did." Since the fix-up, fund-32's derivation row has moved too, so the sentence is wrong in the way the row was. It's in a locked case file whose sha256 you've checked, and you asked for fund-32's row and nothing else, so I left it. Shall I change it as I did fund-32's row, in my scratch folder and then your `cp`? It would read: "Its expectation, its `about` and its row in fund-32's derivation moved; nothing else there did." That changes fund-41's sha256 from `770291f5…`.
+
+The four questions from the first round are answered in §10.
