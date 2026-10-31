@@ -6,7 +6,7 @@
     "dev": "pnpm --filter @spillpoint/dashboard dev",
     "preview": "pnpm --filter @spillpoint/dashboard build && pnpm --filter @spillpoint/dashboard preview",
     "build": "pnpm -r build",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --workspace-concurrency=1 test",
     "typecheck": "pnpm -r typecheck",
     "test:reference": "python3 -m unittest discover reference/tests && python3 reference/generate.py --check && pnpm test:reference:fund",
     "test:reference:fund": "python3 -m unittest discover packages/fund/reference/tests && python3 packages/fund/reference/generate.py --check",
