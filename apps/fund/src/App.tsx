@@ -492,6 +492,9 @@ function Payouts({ fund, state, source, onX, onTypeX, onTop, onDownloadLps, onDo
   const bends = useMemo(() => breakpoints.filter(bendsClawback), [breakpoints]);
   // F25: once for the fund, not by X; null without a later close.
   const moves = useMemo(() => equalization(fund), [fund]);
+  // The NAV point deal by deal: the values are the liquidation's, so the line under them says so where they differ from
+  // the lines', X on the axis (FA58; f05c review, answer 4).
+  const valuesLine = useMemo(() => (atNav && !fund.final ? navValuesLine(fund, splitAt(fund, x.shown), split) : null), [fund, x.shown, atNav, split]);
   const shown = split;
   return (
     <>
@@ -505,6 +508,7 @@ function Payouts({ fund, state, source, onX, onTypeX, onTop, onDownloadLps, onDo
         x={x.shown}
         top={top}
         at={{ lps: split.distribution.lps.total, gp: split.distribution.gp.total, gpCommitment: split.distribution.gpCommitment }}
+        valuesLine={valuesLine}
         hasCommitment={fund.terms.gpCommitment !== null}
         onX={onX}
       />
@@ -932,6 +936,20 @@ function WideSplit({ ref, rows, total }: { ref: Ref<HTMLTableElement>; rows: Spl
       </tfoot>
     </table>
   );
+}
+
+/**
+ * The line under the chart's values at the NAV point of a fund whose X isn't final, deal by deal, when what's due at the
+ * end, the liquidation's, differs to the cent from what's due on the axis at the same X (FA58; f05c review, answer 4):
+ * "Values at NAV, $15,000,000.00, as if the fund were liquidated: everything left of every investment counts as
+ * realized, so all the LPs' paid-in comes back before carry. The lines are X from Kapok Robotics, 50% sold." Null
+ * otherwise, and the line is as it was: on the whole fund the two are the same split.
+ */
+export function navValuesLine(fund: Fund, axis: Split, nav: Split): string | null {
+  if (!axis.due || !nav.due || cents(axis.due.total) === cents(nav.due.total)) return null;
+  const from = fund.distributionFrom;
+  const lines = from ? ` The lines are X from ${from.investment}, ${percentText(from.share)} sold.` : "";
+  return `Values at NAV, ${cents(nav.x)}, as if the fund were liquidated: everything left of every investment counts as realized, so all the LPs' paid-in comes back before carry.${lines}`;
 }
 
 /**

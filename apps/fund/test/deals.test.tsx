@@ -427,6 +427,35 @@ describe("cases 35 and 36 opened", () => {
   });
 });
 
+describe("the line under the chart's values at the NAV point (f05c review, answer 4)", () => {
+  const valuesLine = () => within(card("Who gets what as X grows")!).getByText(/^Values at/).textContent;
+  const gpValue = () => within(screen.getByRole("list", { name: /^Values at X/ })).getAllByRole("listitem")[0]!.textContent;
+
+  it("case 36 at NAV: the liquidation's values, all the LPs' paid-in back before carry, and the lines X from Kapok Robotics, 50% sold", async () => {
+    render(<App />);
+    await openFile(caseText("fund-36-deal-by-deal-classes-closes"));
+    expect(valuesLine()).toBe("Values at X = $0.00, from this distribution.");
+    click("button", "Set X to NAV");
+    expect(valuesLine()).toBe(
+      "Values at NAV, $15,000,000.00, as if the fund were liquidated: everything left of every investment counts as realized, so all the LPs' paid-in comes back before carry. The lines are X from Kapok Robotics, 50% sold.",
+    );
+    // The value is the liquidation's $857,850.00, not the line's $1,270,892.50 at $15,000,000 on the axis.
+    expect(gpValue()).toBe("The GP's carry$857,850.00");
+    typeX("15000000.01");
+    expect(valuesLine()).toBe("Values at X = $15,000,000.01, from this distribution.");
+  });
+
+  it("is as before where the end's due is the axis's, case 34 at NAV, and on the whole fund, case 33 at NAV", async () => {
+    render(<App />);
+    pick("fund-34-deal-by-deal");
+    click("button", "Set X to NAV");
+    expect(valuesLine()).toBe("Values at X = $12,000,000.00, from this distribution.");
+    await openFile(caseText("fund-33-portfolio-whole-fund"));
+    click("button", "Set X to NAV");
+    expect(valuesLine()).toBe("Values at X = $12,000,000.00, from this distribution.");
+  });
+});
+
 describe("case 26 switched to deal by deal and back", () => {
   it("asks for the fund's investments, on the Investments tab, and the payouts say the change was to the terms", () => {
     render(<App />);
