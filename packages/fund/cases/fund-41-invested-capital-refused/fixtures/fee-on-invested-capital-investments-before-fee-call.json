@@ -1,0 +1,18 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "No investments, and an entered fee call beside the schedule: the investments are missed in stage 2, before the entered fee call in stage 3.",
+  "change": {
+    "del": [
+      "investments",
+      "distribution_from"
+    ],
+    "set": {
+      "cash_flows[5]": {
+        "date": "2021-01-01",
+        "type": "call",
+        "kind": "fee",
+        "amount": "100000"
+      }
+    }
+  }
+}

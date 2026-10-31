@@ -1,0 +1,13 @@
+{
+  "base": "fund-39-invested-capital-deal-by-deal-classes",
+  "about": "Case 39 without its investments, on the whole fund, and an LP in a class the terms don't have: the investments are missed in stage 2, before the LPs in stage 4.",
+  "change": {
+    "del": [
+      "investments"
+    ],
+    "set": {
+      "lps[1].class": "Anchors",
+      "terms.carry_basis": "whole_fund"
+    }
+  }
+}

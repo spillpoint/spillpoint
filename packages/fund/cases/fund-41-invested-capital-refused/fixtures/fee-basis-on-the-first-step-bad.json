@@ -1,0 +1,9 @@
+{
+  "base": "fund-40-spv-fees-on-invested-capital",
+  "about": "The SPV's one fee step on a basis F39 doesn't have, \"committed\".",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[0].basis": "committed"
+    }
+  }
+}

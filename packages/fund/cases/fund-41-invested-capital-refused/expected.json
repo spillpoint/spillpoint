@@ -1,0 +1,111 @@
+{
+  "case": "fund-41-invested-capital-refused",
+  "generated_by": "packages/fund/reference/generate.py",
+  "fixtures": {
+    "fee-basis-before-from.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps[1].basis"
+      }
+    },
+    "fee-basis-capitalized.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps[1].basis"
+      }
+    },
+    "fee-basis-not-text.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps[1].basis"
+      }
+    },
+    "fee-basis-on-the-first-step-bad.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps[0].basis"
+      }
+    },
+    "fee-basis-unknown.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_field",
+        "field": "terms.management_fee.steps[1].basis"
+      }
+    },
+    "fee-commitments-mismatch-on-invested-capital.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_commitments_mismatch",
+        "field": "terms.management_fee.commitments"
+      }
+    },
+    "fee-invested-capital-nobody-pays.json": {
+      "refused": {
+        "kind": "input",
+        "term": "call_without_payers",
+        "field": "terms.management_fee"
+      }
+    },
+    "fee-invested-capital-with-fee-rate.json": {
+      "refused": {
+        "kind": "input",
+        "term": "fee_rate_with_schedule",
+        "field": "terms.fee_rate"
+      }
+    },
+    "fee-mixed-without-commitments.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "terms.management_fee.commitments"
+      }
+    },
+    "fee-on-invested-capital-empty-investments.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments"
+      }
+    },
+    "fee-on-invested-capital-investments-before-fee-call.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments"
+      }
+    },
+    "fee-on-invested-capital-investments-before-lps.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments"
+      }
+    },
+    "fee-on-invested-capital-without-investments.json": {
+      "refused": {
+        "kind": "input",
+        "term": "missing_field",
+        "field": "investments"
+      }
+    },
+    "fee-rate-before-basis.json": {
+      "refused": {
+        "kind": "input",
+        "term": "bad_number",
+        "field": "terms.management_fee.steps[1].rate"
+      }
+    },
+    "fee-step-key-still-unsupported.json": {
+      "refused": {
+        "kind": "unsupported",
+        "term": "offset",
+        "field": "terms.management_fee.steps[1].offset"
+      }
+    }
+  }
+}

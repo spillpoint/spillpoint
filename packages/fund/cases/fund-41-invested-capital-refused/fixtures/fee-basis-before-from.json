@@ -1,0 +1,10 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "The second fee step's basis unknown and its from not a date: the basis is checked before the from.",
+  "change": {
+    "set": {
+      "terms.management_fee.steps[1].basis": "net",
+      "terms.management_fee.steps[1].from": "2023-13-01"
+    }
+  }
+}

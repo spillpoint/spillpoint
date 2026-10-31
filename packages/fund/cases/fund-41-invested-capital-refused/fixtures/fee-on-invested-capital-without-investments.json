@@ -1,0 +1,10 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "Case 38 without its investments: its second fee step is on invested capital, with nothing to charge it on.",
+  "change": {
+    "del": [
+      "investments",
+      "distribution_from"
+    ]
+  }
+}

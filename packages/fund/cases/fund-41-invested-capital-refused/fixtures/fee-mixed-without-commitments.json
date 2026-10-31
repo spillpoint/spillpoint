@@ -1,0 +1,7 @@
+{
+  "base": "fund-38-fees-on-invested-capital",
+  "about": "Case 38 without its commitments: its first fee step is on commitments, so a fund that doesn't list its LPs still needs them.",
+  "change": {
+    "del": "terms.management_fee.commitments"
+  }
+}

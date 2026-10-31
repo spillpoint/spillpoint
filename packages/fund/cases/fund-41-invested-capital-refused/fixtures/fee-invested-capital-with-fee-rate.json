@@ -1,0 +1,9 @@
+{
+  "base": "fund-39-invested-capital-deal-by-deal-classes",
+  "about": "Case 39 with the fund's own fee rate beside a schedule that moves to invested capital.",
+  "change": {
+    "set": {
+      "terms.fee_rate": "0.02"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base": "fund-40-spv-fees-on-invested-capital",
+  "about": "The SPV's investments an empty list, which is none, under a fee wholly on invested capital.",
+  "change": {
+    "set": {
+      "investments": []
+    },
+    "del": "distribution_from"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "base": "fund-39-invested-capital-deal-by-deal-classes",
+  "about": "Case 39 with commitments of $21,000,000, not its LPs' $20,000,000: with LPs, commitments given must be their total, whatever the steps' basis.",
+  "change": {
+    "set": {
+      "terms.management_fee.commitments": "21000000"
+    }
+  }
+}

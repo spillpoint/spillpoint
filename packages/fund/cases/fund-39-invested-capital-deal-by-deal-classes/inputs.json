@@ -1,0 +1,125 @@
+{
+  "case": "fund-39-invested-capital-deal-by-deal-classes",
+  "description": "Deal by deal, half-yearly fees, 2% of commitments then 1.75% of net invested capital from 1 Apr 2023, inside a half-year. An Anchor class at a 1% fee joining at a later close, a friends-and-family class paying no fees, a 2% GP commitment that pays its share of fees, a half sale of Ivy mid-half and Juniper written off.",
+  "xs": [
+    "0",
+    "5000000",
+    "5400000",
+    "8000000"
+  ],
+  "fund": {
+    "as_of": "2024-09-30",
+    "terms": {
+      "carry": "0.20",
+      "gp_commitment": {
+        "share": "0.02",
+        "pays_fees": true
+      },
+      "carry_basis": "deal_by_deal",
+      "equalization_rate": "0.08",
+      "management_fee": {
+        "start": "2021-01-01",
+        "frequency": "semiannual",
+        "steps": [
+          {
+            "rate": "0.02"
+          },
+          {
+            "rate": "0.0175",
+            "from": "2023-04-01",
+            "basis": "invested_capital"
+          }
+        ]
+      },
+      "lp_classes": [
+        {
+          "name": "Anchor",
+          "fee_rate": "0.01",
+          "carry": "0.15"
+        },
+        {
+          "name": "Friends and family",
+          "fee_rate": "0",
+          "carry": "0"
+        }
+      ]
+    },
+    "lps": [
+      {
+        "name": "Alder Endowment",
+        "commitment": "10000000"
+      },
+      {
+        "name": "Birch Family Office",
+        "commitment": "6000000",
+        "class": "Anchor",
+        "close": "2021-04-15"
+      },
+      {
+        "name": "Cedar Holdings",
+        "commitment": "4000000",
+        "class": "Friends and family"
+      }
+    ],
+    "investments": [
+      {
+        "name": "Ivy Analytics",
+        "checks": [
+          {
+            "date": "2021-02-01",
+            "amount": "3000000"
+          }
+        ]
+      },
+      {
+        "name": "Juniper Health",
+        "checks": [
+          {
+            "date": "2021-05-01",
+            "amount": "3000000"
+          }
+        ]
+      },
+      {
+        "name": "Kapok Robotics",
+        "checks": [
+          {
+            "date": "2022-02-01",
+            "amount": "5000000"
+          }
+        ]
+      }
+    ],
+    "cash_flows": [
+      {
+        "date": "2021-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "6000000"
+      },
+      {
+        "date": "2022-01-10",
+        "type": "call",
+        "kind": "investment",
+        "amount": "5000000"
+      },
+      {
+        "date": "2023-05-15",
+        "type": "distribution",
+        "amount": "9000000",
+        "investment": "Ivy Analytics",
+        "share": "0.5"
+      },
+      {
+        "date": "2024-03-01",
+        "type": "write_off",
+        "investment": "Juniper Health"
+      }
+    ],
+    "distribution_from": {
+      "investment": "Kapok Robotics",
+      "share": "0.4"
+    },
+    "nav": "14000000"
+  }
+}

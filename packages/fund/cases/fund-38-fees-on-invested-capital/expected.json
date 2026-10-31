@@ -1,0 +1,633 @@
+{
+  "case": "fund-38-fees-on-invested-capital",
+  "generated_by": "packages/fund/reference/generate.py",
+  "distribution_date": "2024-06-30",
+  "final": false,
+  "lps_paid_in": "15292461.39",
+  "gp_commitment_paid_in": "140000.00",
+  "fee_calls": [
+    {
+      "date": "2020-01-01",
+      "first_day": "2020-01-01",
+      "last_day": "2020-03-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2020-04-01",
+      "first_day": "2020-04-01",
+      "last_day": "2020-06-30",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2020-07-01",
+      "first_day": "2020-07-01",
+      "last_day": "2020-09-30",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2020-10-01",
+      "first_day": "2020-10-01",
+      "last_day": "2020-12-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-01-01",
+      "first_day": "2021-01-01",
+      "last_day": "2021-03-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-04-01",
+      "first_day": "2021-04-01",
+      "last_day": "2021-06-30",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-07-01",
+      "first_day": "2021-07-01",
+      "last_day": "2021-09-30",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2021-10-01",
+      "first_day": "2021-10-01",
+      "last_day": "2021-12-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-01-01",
+      "first_day": "2022-01-01",
+      "last_day": "2022-03-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-04-01",
+      "first_day": "2022-04-01",
+      "last_day": "2022-06-30",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-07-01",
+      "first_day": "2022-07-01",
+      "last_day": "2022-09-30",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2022-10-01",
+      "first_day": "2022-10-01",
+      "last_day": "2022-12-31",
+      "call": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "lps": {
+        "amount": "100000.00",
+        "exact": "100000"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-01-01",
+      "first_day": "2023-01-01",
+      "last_day": "2023-03-31",
+      "call": {
+        "amount": "44550.00",
+        "exact": "44550"
+      },
+      "lps": {
+        "amount": "44550.00",
+        "exact": "44550"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-04-01",
+      "first_day": "2023-04-01",
+      "last_day": "2023-06-30",
+      "call": {
+        "amount": "48303.30",
+        "exact": "4395600/91"
+      },
+      "lps": {
+        "amount": "48303.30",
+        "exact": "4395600/91"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-07-01",
+      "first_day": "2023-07-01",
+      "last_day": "2023-09-30",
+      "call": {
+        "amount": "44388.59",
+        "exact": "2041875/46"
+      },
+      "lps": {
+        "amount": "44388.59",
+        "exact": "2041875/46"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2023-10-01",
+      "first_day": "2023-10-01",
+      "last_day": "2023-12-31",
+      "call": {
+        "amount": "37125.00",
+        "exact": "37125"
+      },
+      "lps": {
+        "amount": "37125.00",
+        "exact": "37125"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2024-01-01",
+      "first_day": "2024-01-01",
+      "last_day": "2024-03-31",
+      "call": {
+        "amount": "32107.01",
+        "exact": "5843475/182"
+      },
+      "lps": {
+        "amount": "32107.01",
+        "exact": "5843475/182"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    },
+    {
+      "date": "2024-04-01",
+      "first_day": "2024-04-01",
+      "last_day": "2024-06-30",
+      "call": {
+        "amount": "25987.50",
+        "exact": "25987.5"
+      },
+      "lps": {
+        "amount": "25987.50",
+        "exact": "25987.5"
+      },
+      "gp_commitment": {
+        "amount": "0.00",
+        "exact": "0"
+      }
+    }
+  ],
+  "investments": [
+    {
+      "name": "Alder Robotics",
+      "cost_made": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_realized": {
+        "amount": "4000000.00",
+        "exact": "4000000"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "10000000.00",
+        "exact": "10000000"
+      },
+      "realized_multiple": "2.5"
+    },
+    {
+      "name": "Birch Health",
+      "cost_made": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "cost_realized": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "cost_written_off": {
+        "amount": "3000000.00",
+        "exact": "3000000"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": "0"
+    },
+    {
+      "name": "Cedar AI",
+      "cost_made": {
+        "amount": "5000000.00",
+        "exact": "5000000"
+      },
+      "cost_realized": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": null
+    },
+    {
+      "name": "Dogwood Labs",
+      "cost_made": {
+        "amount": "2000000.00",
+        "exact": "2000000"
+      },
+      "cost_realized": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "cost_written_off": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "proceeds": {
+        "amount": "0.00",
+        "exact": "0"
+      },
+      "realized_multiple": null
+    }
+  ],
+  "breakpoints": [
+    {
+      "x": "5446930.70",
+      "exact": "376214056250/69069",
+      "reasons": [
+        {
+          "code": "capital_returned",
+          "amount": "64014243375/4186",
+          "text": "LPs have their $15,292,461.39 of paid-in capital back"
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "x": "0.00",
+      "exact": "0",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "0.00",
+        "gp_commitment": "0.00",
+        "lps": {
+          "capital": "0.00",
+          "carry_tier": "0.00",
+          "total": "0.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "10000000.00",
+        "gp_commitment": "100000.00",
+        "lps": {
+          "capital": "9900000.00",
+          "carry_tier": "0.00",
+          "total": "9900000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "5000000.00",
+      "exact": "5000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "5000000.00",
+        "gp_commitment": "50000.00",
+        "lps": {
+          "capital": "4950000.00",
+          "carry_tier": "0.00",
+          "total": "4950000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "15000000.00",
+        "gp_commitment": "150000.00",
+        "lps": {
+          "capital": "14850000.00",
+          "carry_tier": "0.00",
+          "total": "14850000.00"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "5446930.70",
+      "exact": "376214056250/69069",
+      "tags": [
+        "breakpoint"
+      ],
+      "distribution": {
+        "amount": "5446930.70",
+        "gp_commitment": "54469.31",
+        "lps": {
+          "capital": "5392461.39",
+          "carry_tier": "0.00",
+          "total": "5392461.39"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      },
+      "to_date": {
+        "amount": "15446930.70",
+        "gp_commitment": "154469.31",
+        "lps": {
+          "capital": "15292461.39",
+          "carry_tier": "0.00",
+          "total": "15292461.39"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "0.00"
+            }
+          ],
+          "total": "0.00"
+        }
+      }
+    },
+    {
+      "x": "12000000.00",
+      "exact": "12000000",
+      "tags": [
+        "listed"
+      ],
+      "distribution": {
+        "amount": "12000000.00",
+        "gp_commitment": "120000.00",
+        "lps": {
+          "capital": "5392461.39",
+          "carry_tier": "5190030.89",
+          "total": "10582492.28"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1297507.72"
+            }
+          ],
+          "total": "1297507.72"
+        }
+      },
+      "to_date": {
+        "amount": "22000000.00",
+        "gp_commitment": "220000.00",
+        "lps": {
+          "capital": "15292461.39",
+          "carry_tier": "5190030.89",
+          "total": "20482492.28"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "1297507.72"
+            }
+          ],
+          "total": "1297507.72"
+        }
+      }
+    },
+    {
+      "x": "18000000.00",
+      "exact": "18000000",
+      "tags": [
+        "nav"
+      ],
+      "distribution": {
+        "amount": "18000000.00",
+        "gp_commitment": "180000.00",
+        "lps": {
+          "capital": "5392461.39",
+          "carry_tier": "9942030.89",
+          "total": "15334492.28"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2485507.72"
+            }
+          ],
+          "total": "2485507.72"
+        }
+      },
+      "to_date": {
+        "amount": "28000000.00",
+        "gp_commitment": "280000.00",
+        "lps": {
+          "capital": "15292461.39",
+          "carry_tier": "9942030.89",
+          "total": "25234492.28"
+        },
+        "gp": {
+          "carry": [
+            {
+              "rate": "0.2",
+              "amount": "2485507.72"
+            }
+          ],
+          "total": "2485507.72"
+        }
+      },
+      "clawback": {
+        "carry_paid": "2485507.72",
+        "entitlement": "2485507.72",
+        "owed": "0.00"
+      }
+    }
+  ]
+}
