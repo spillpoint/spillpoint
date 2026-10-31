@@ -213,3 +213,52 @@ Nothing in `.github/workflows/` or `.claude/` changed. `.claude/launch.json` is 
 3. **The due to the cent.** Your line reads "Due to LPs before carry: $11,100,000". It's in the facts under the split, which are to the cent, so it reads "$11,100,000.00". The breakpoint's reason keeps the engine's "$11,100,000". Fine?
 4. **The NAV split at the NAV point.** Deal by deal, at a fund's NAV point, the split as if liquidated differs from the axis's split at the same X (case 36: $12,855,000 due against $10,069,750). The page now shows the NAV split's split, due and headline there, as its cards already did and as the case's point at NAV has it. The chart's lines stay on the axis, so for case 36 the GP's dot at NAV sits off its line: $857,850.00 as if liquidated, against $1,270,892.50 on the axis at $15,000,000. On the whole fund nothing changes. Fine, or should the chart show a jump at NAV?
 5. **The notice naming the tab of the change.** Before, Payouts' notice named the problem's tab. Switching to deal by deal on Terms would then have said "Your last change to the investments has a problem", about a tab you hadn't touched. It now names the tab the change was made on. That also changes one existing case: a class change on LPs that leaves a fee call unpaid now says "the LPs", not "the cash flows". "Fix it" still goes to the problem. Fine?
+
+## Your answers (f05c review)
+
+Your checks on the built page: 2,055 against your own checker, no failures, no console errors. CI ran clean for you twice all at once and once one suite at a time.
+
+1. **Investments after Cash flows:** yes.
+2. **One "Kind / From" column:** yes.
+3. **The due to the cent:** yes, as the facts beside it are.
+4. **The liquidation's split at the NAV point:** keep it, and say so in the line under the chart's values, deal by deal, when what's due at the end differs from the axis's. No jump in the chart. Done in the fix-up, §1 below.
+5. **The notice naming the tab of the change:** yes.
+
+## The fix-up (f05c review)
+
+### 1. The line under the chart's values at the NAV point (`src/App.tsx`, `src/Chart.tsx`)
+
+- **Your words,** deal by deal, at the NAV point of a fund whose X isn't final, when what's due at the end differs from what's due on the axis at the same X: "Values at NAV, $15,000,000.00, as if the fund were liquidated: everything left of every investment counts as realized, so all the LPs' paid-in comes back before carry. The lines are X from Kapok Robotics, 50% sold."
+  - **The investment and share** are X's source's, the share as a percent, so all of it reads "100% sold".
+  - **Otherwise it's as before:** "Values at X = $15,000,000.00, from this distribution." The chart's lines stay on the axis, with no jump.
+- **"Differs" is to the cent (mine),** as the two dues show on the page. Case 34's NAV point keeps the line as before, since its X from Cedar AI realizes everything left, and so does the whole fund.
+- **Where:** `navValuesLine` in `App.tsx` works out the line from the fund and the two splits; `Chart` takes it as `valuesLine` and shows it in place of the usual line.
+- **The plan's section** says so under Payouts.
+- **Tests,** in `test/deals.test.tsx`:
+  - **Case 36:** at X = 0 the line is as before. At NAV it's yours word for word, and the GP's value beside it is the liquidation's $857,850.00, not the axis's $1,270,892.50. A cent past NAV, it's as before again.
+  - **Case 34 at its NAV point, and case 33 at its,** keep the line as before.
+- **Planted errors,** three, one at a time: the line never shown, and the share written as `0.5`, were each caught. The third, dropping "whose X isn't final", changes nothing: at a final fund's NAV the split is the axis's, so the two dues already match.
+
+### 2. Outside the fund rule, with your OK: the root `package.json`'s `test` script
+
+- **One line:** `"test": "pnpm -r test"` is now `"test": "pnpm -r --workspace-concurrency=1 test"`. The suites run one at a time, so the page's and the main page's long tests stop timing out under the parallel load (§12).
+- **Nothing in `.github/` changes:** CI already runs `pnpm test`. Nothing else in `package.json` changes. Neither the tarballs nor `apps/` code change.
+- **Left as they are:** two test comments in `apps/dashboard` still describe "the workspace's parallel run (pnpm -r test)". They're `add-a-round.test.tsx`'s and `ocf-check.test.ts`'s, beside their own timeouts. The timeouts stay; the comments are outside your OK, so I didn't touch them.
+- **Here:** `pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm test:reference` passes the first time, with no timeouts. That's 347 seconds for the whole of it, references included. Each suite's own run:
+  - engine 3,177 tests in 5 seconds
+  - fund package 1,871 in 1.4
+  - main page 680 in 53
+  - fund page 751 in 25
+
+  Before, all at once, the page's suite alone took 213 seconds (§12).
+
+### The counts after the fix-up
+
+| Suite | Tests |
+|---|---|
+| fund package | 1,871 passed, 10 skipped, unchanged |
+| fund page | 751 (749 before the fix-up, 607 on main) |
+| engine | 3,177, unchanged |
+| main page | 680, unchanged |
+| engine reference | 73 |
+| fund reference | 114 |
