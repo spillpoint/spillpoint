@@ -148,8 +148,10 @@ export function matchRounds(ctx: Tab, table: Table, classes: ShareClass[], draft
 
 /**
  * Participation's two columns in Financing History, neither required (OX7, OX14; 10f, 10g): the first real Carta
- * export, 0.4/0.5, had every other header and no `Participating (Y/N)`. Without either column, participation can't be
- * read, so each preferred class's is a term to fill, never guessed (O1): with no cap column a "Y" could be capped or not.
+ * export, 0.4/0.5, had no `Participating (Y/N)`. It had every header read05 checks before it: the two snapshot tabs',
+ * and Financing History's `Round` through `Liquidation Multiple`. Whether it has `Participation Cap` and Stock Plan
+ * Details', checked after, isn't known. Without either column, participation can't be read, so each preferred class's
+ * is a term to fill, never guessed (O1): with no cap column a "Y" could be capped or not.
  */
 const PARTICIPATION = ["Participating (Y/N)", "Participation Cap"];
 

@@ -43,7 +43,7 @@ Started in 10c. The release step finishes it.
 
 1. **`readOcx` reads a workbook whose Financing History lacks a participation column** (10f, 10g).
    - **What was wrong:**
-     - **In the 0.4/0.5 layout,** 0.7.0 required both `Participating (Y/N)` and `Participation Cap` in Context's Financing History, and refused a workbook without either: `missing_header`, "Context: Participating (Y/N)". The one Carta export tried so far, in the 0.4/0.5 layout, had every other header the layout needs and no `Participating (Y/N)`.
+     - **In the 0.4/0.5 layout,** 0.7.0 required both `Participating (Y/N)` and `Participation Cap` in Context's Financing History, and refused a workbook without either: `missing_header`, "Context: Participating (Y/N)". The one Carta export tried so far, in the 0.4/0.5 layout, had no `Participating (Y/N)`. It had every header checked before that one: those the layout needs on `Summary Snapshot` and `Stakeholder Snapshot`, and Financing History's `Round` through `Liquidation Multiple`. Whether it has `Participation Cap` and Stock Plan Details' headers, which are checked after it, isn't known.
      - **In the 0.7 layout,** where a workbook has a Financing History, neither column was required. But with `Participating (Y/N)` there and no `Participation Cap`, a "Y" was read as uncapped participating. That's a guess: the cap may only be missing.
    - **Now:** in either layout, a Financing History without one of the two columns is read without either.
      - **Each preferred series' participation is blank to fill,** never guessed (O1). Its other terms are read as before.

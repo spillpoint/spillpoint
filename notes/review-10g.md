@@ -102,6 +102,20 @@ Nothing more about the export or the founder is anywhere.
 
 None.
 
+## After your review: one more commit on #137
+
+**Decisions 1, 2 and 3:** agreed. Two wording fixes:
+
+1. **"Every other header" overclaimed.** The refusal shows only what `read05` checks before `Participating (Y/N)`: every header it needs on Summary Snapshot and Stakeholder Snapshot, and Financing History's Round through Liquidation Multiple. `Participation Cap` and Stock Plan Details' headers are checked after it, so whether the export has them isn't known. All three places now say that:
+   - the release note's "What was wrong"
+   - `ocx-terms.ts`'s comment on `PARTICIPATION`
+   - ASSUMPTIONS OX14's "Without a participation column", from #136
+
+   `notes/review-10f.md` says it too, but that note is history, so I've left it.
+2. **The READMEs' new 1.0 sentence** said "which 0.7.0 refused", which is true of 0.4/0.5 only: in 0.7, 0.7.0 read a "Y" as uncapped. Both now say: "And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed."
+
+Nothing but comments and docs changes in this commit.
+
 ## Next
 
 I'm stopping here.
