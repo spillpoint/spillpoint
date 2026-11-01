@@ -235,3 +235,82 @@ describe("rules the OCX cases don't reach", () => {
     });
   });
 });
+
+// 10f: the first real Carta export, a 0.4/0.5 workbook, was refused for having no `Participating (Y/N)`: every header
+// before it was there. Without either participation column, each preferred class's participation is a term to fill,
+// never guessed, and a line names the column; a header OCX doesn't have is still an unrecognized_field line (OX14).
+describe("a 0.4/0.5 workbook without a participation column (OX14; 10f)", () => {
+  const text = (address: string, value: string) => ({ address, kind: "text" as const, text: value, formula: false });
+  const hollis = expectedOf<CaseExpected>("ocx-06-hollis-mill").result;
+  // Financing History's header is row 6, Seed's round row 7 and Series A's row 8; H is `Participating (Y/N)`, I `Participation Cap`.
+  const removed = (column: string) => [6, 7, 8].map((row) => ({ op: "clear" as const, tab: "Context", address: `${column}${row}` }));
+
+  it.each([
+    ["without Participating (Y/N)", removed("H"), "Participating (Y/N)", []],
+    ["without Participation Cap", removed("I"), "Participation Cap", []],
+    ["with Participating (Y/N) renamed", [{ op: "set" as const, tab: "Context", cell: text("H6", "Participating") }], "Participating (Y/N)", [{ code: "unrecognized_field", subject: "Context", field: "Participating" }]],
+  ])("reads Hollis Mill %s: each preferred class's participation blank to fill, with a line naming the column", (_, change, column, more) => {
+    const r = readOcx(applyOcxChange(readOcxWorkbook("ocx-06-hollis-mill"), change) as OcxWorkbook);
+    const preferred = ["series_seed_preferred", "series_a_preferred"];
+    const securities = (hollis.cap_table as { securities: Json[] }).securities.map((s) => (preferred.includes(String(s.id)) ? { ...s, participation: null, cap_multiple: null } : s));
+    const want: CapTableImport = {
+      ...hollis,
+      cap_table: { ...hollis.cap_table, securities },
+      to_fill: [...preferred.map((security) => ({ security, field: "participation" })), ...hollis.to_fill],
+      report: {
+        ...hollis.report,
+        // Series A's cap isn't read, so neither is how it's read.
+        notes: [...hollis.report.notes.filter((n) => n.code !== "participation_cap_includes_preference"), { code: "no_participation_column", subject: column }, ...more] as CapTableImport["report"]["notes"],
+      },
+    };
+    expect(asSet(r)).toEqual(asSet(want));
+  });
+
+  /** A 0.4/0.5 workbook with common stock only, and Financing History's header with these participation columns. */
+  const commonOnly = (participation: string[]): OcxWorkbook => {
+    const tab = (name: string, rows: string[][]) => ({
+      name,
+      cells: rows.flatMap((row, r) =>
+        row.flatMap((value, c) => (value === "" ? [] : [{ address: `${"ABCDEFGHI"[c]}${r + 1}`, kind: /^\d+$/.test(value) ? ("number" as const) : ("text" as const), text: value, formula: false }])),
+      ),
+    });
+    return {
+      dateSystem: 1900,
+      sheets: [
+        tab("Summary Snapshot", [
+          ["As of 2025.06.30"],
+          ["Share Class", "Outstanding Shares", "Liquidation Preference", "Security Type", "# of Securities", "Outstanding Amount", "Discount", "Valuation Cap"],
+          ["Common Stock"],
+          ["Common Stock", "8000000", "N/A"],
+        ]),
+        tab("Stakeholder Snapshot", [
+          ["As of 2025.06.30"],
+          ["Stakeholder", "Stakeholder Group", "Common Stock", "Total Stock (outstanding)"],
+          ["Founder A", "", "6000000", "6000000"],
+          ["Founder B", "", "2000000", "2000000"],
+        ]),
+        tab("Context", [
+          ["Financing History"],
+          ["Round", "Initial Closing Date", "Original Issue Price", "Adjusted Conversion Price", "Conversion Ratio", "Liquidation Multiple", ...participation],
+          [],
+          ["Stock Plan Details"],
+          ["Plan Name", "Outstanding RSUs", "Shares Available for Grant"],
+        ]),
+      ],
+    } as OcxWorkbook;
+  };
+
+  it("reads a workbook with no preferred stock, with or without the columns, and asks nothing", () => {
+    const codes = (r: CapTableImport) => r.report.notes.filter((n) => n.code === "no_participation_column").map((n) => n.subject);
+    for (const [columns, missing] of [
+      [["Participating (Y/N)", "Participation Cap"], []],
+      [["Participation Cap"], ["Participating (Y/N)"]],
+      [[], ["Participating (Y/N)", "Participation Cap"]],
+    ] as const) {
+      const r = readOcx(commonOnly([...columns]));
+      expect((r.cap_table as { securities: Json[] }).securities.map((s) => s.kind)).toEqual(["common"]);
+      expect(r.to_fill).toEqual([]);
+      expect(codes(r), columns.join(", ")).toEqual(missing);
+    }
+  });
+});

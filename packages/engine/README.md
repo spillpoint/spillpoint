@@ -813,6 +813,7 @@ What an import's `report.notes` say, with the format each comes from:
 - `no_conversion_group_field` *(both)*: neither format has a field for series that must convert together.
 - `no_dividend_field` *(both)*: neither format has a field for cumulative dividends.
 - `no_financing_history` *(OCX)*: a 0.7 workbook without Financing History, so a series' conversion price, multiple and participation are blank.
+- `no_participation_column` *(OCX)* *(1.0)*: a 0.4/0.5 workbook whose Financing History has no `Participating (Y/N)` or no `Participation Cap` column, the one missing as its subject, so each preferred series' participation is blank to fill.
 - `no_sale_date_field` *(both)*: neither format has a field for the sale's date.
 - `no_seniority_field` *(OCX)*: OCX has no seniority, so it's blank to fill.
 - `no_strike_field` *(OCX)*: in 0.4/0.5, an option, award or warrant column with no strike, blank to fill.

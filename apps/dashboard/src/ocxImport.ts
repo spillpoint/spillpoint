@@ -117,6 +117,11 @@ export function ocxReportLines(result: CapTableImport, workbook: OcxWorkbook): s
         return `${named(subject)} is named preferred, but it sits under Common Stock with no liquidation preference, so it's read as common.`;
       case "no_financing_history":
         return "The workbook has no Financing History, so a preferred series' terms aren't in it. They're asked for below.";
+      case "no_participation_column":
+        // OX14 (10f): without the column, participation isn't read, never guessed.
+        return ct.securities.some((s) => s.kind === "preferred")
+          ? `The workbook's Financing History has no "${subject}" column, so whether each preferred series participates is asked for below.`
+          : `The workbook's Financing History has no "${subject}" column. It has no preferred stock, so nothing depends on it.`;
       case "issue_price_from_ledger": {
         const s = security(subject);
         return `${named(subject)}'s issue price${typeof s?.original_issue_price === "string" ? `, ${price(new D(s.original_issue_price))},` : ""} comes from its ledger: every certificate there was issued at it.`;

@@ -156,9 +156,9 @@ const fifteenth = (x: Decimal): Decimal => (x.precision(true) >= 15 ? new D(10).
  * ratio as O4 checks OCF's, at 15 significant digits: the class passes if issue price ÷ conversion price can equal the
  * ratio within each's allowance (`conversion_ratio_mismatch` otherwise), with a `conversion_ratio_rounded` line where
  * it isn't exact. Participation by `Participating (Y/N)` and `Participation Cap`, a cap read as including the
- * preference (E7), as O4 reads OCF's.
+ * preference (E7), as O4 reads OCF's; where the workbook lacks either column, it isn't read and is left to fill (10f).
  */
-export function readRound(ctx: Tab, header: Header, round: Round, book: Book, draft: Draft): string | undefined {
+export function readRound(ctx: Tab, header: Header, round: Round, book: Book, draft: Draft, participationRead = true): string | undefined {
   const cls = round.cls;
   const at = (h: string) => (header.at(h) === undefined ? undefined : ctx.cell(round.row, header.at(h)!));
   const date = dateAt(at("Initial Closing Date"), book.dateSystem, cls.name, "its initial closing date");
@@ -167,8 +167,9 @@ export function readRound(ctx: Tab, header: Header, round: Round, book: Book, dr
   if (cp?.isZero()) malformed("bad_number", cls.name, "its adjusted conversion price is 0; a conversion price must be more than zero");
   const ratio = numberAt(at("Conversion Ratio"), cls.name, "its conversion ratio");
   const multiple = numberAt(at("Liquidation Multiple"), cls.name, "its liquidation multiple");
-  const yn = at("Participating (Y/N)");
-  const capCell = at("Participation Cap");
+  // Without both participation columns, neither is read: as if each were blank (OX14; 10f).
+  const yn = participationRead ? at("Participating (Y/N)") : undefined;
+  const capCell = participationRead ? at("Participation Cap") : undefined;
   const cap = isNA(capCell) ? undefined : numberAt(capCell, cls.name, "its participation cap");
 
   if (oip && cp && ratio && !cp.isZero()) {
