@@ -38,3 +38,19 @@ Started in 10c. The release step finishes it.
    - **JavaScript sees:** `toCents` gives the cent above where it gave the cent below, for an amount that's exactly a half cent and came out a hair under. Nothing else it gives changes. The pro-rata refusal's message can say a cent more, the whole entitlement.
    - **What to change:** nothing.
    - **Changed answers:** none in the locked cases. Of the 9,322 amounts the exit cases give, none rounds differently, and every case matches the reference as before. The amounts themselves are unchanged: only how they're shown.
+
+## Reads more since 0.7.0
+
+1. **`readOcx` reads a workbook whose Financing History lacks a participation column** (10f, 10g).
+   - **What was wrong:**
+     - **In the 0.4/0.5 layout,** 0.7.0 required both `Participating (Y/N)` and `Participation Cap` in Context's Financing History, and refused a workbook without either: `missing_header`, "Context: Participating (Y/N)". The one Carta export tried so far, in the 0.4/0.5 layout, had no `Participating (Y/N)`. It had every header checked before that one: those the layout needs on `Summary Snapshot` and `Stakeholder Snapshot`, and Financing History's `Round` through `Liquidation Multiple`. Whether it has `Participation Cap` and Stock Plan Details' headers, which are checked after it, isn't known.
+     - **In the 0.7 layout,** where a workbook has a Financing History, neither column was required. But with `Participating (Y/N)` there and no `Participation Cap`, a "Y" was read as uncapped participating. That's a guess: the cap may only be missing.
+   - **Now:** in either layout, a Financing History without one of the two columns is read without either.
+     - **Each preferred series' participation is blank to fill,** never guessed (O1). Its other terms are read as before.
+     - **A new report note, `no_participation_column`,** names each missing column as its subject. It's listed under Stable from 1.0.
+     - **A header in its place that isn't OCX's** is still an `unrecognized_field` note.
+     - **A 0.7 workbook with no Financing History** is unchanged: everything it would give is blank, with `no_financing_history`.
+   - **TypeScript reports:** nothing. No type changed, and an import note's `code` is a string.
+   - **JavaScript sees:** `readOcx` returns an import with blanks where it threw an `ImportRefusal`. A 0.7 workbook with a Y/N column and no cap column now returns participation blank to fill, where it returned uncapped participating.
+   - **What to change:** nothing. Code that fills an import's blanks, as the page does, asks for participation as it does for any blank. Code that matches report notes may meet the new code.
+   - **Changed answers:** none. No locked case or fixture is changed by it, and every case gives the same results as 0.7.0.

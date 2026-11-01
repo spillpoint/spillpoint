@@ -146,6 +146,22 @@ export function matchRounds(ctx: Tab, table: Table, classes: ShareClass[], draft
   return rounds;
 }
 
+/**
+ * Participation's two columns in Financing History, neither required (OX7, OX14; 10f, 10g): the first real Carta
+ * export, 0.4/0.5, had no `Participating (Y/N)`. It had every header read05 checks before it: the two snapshot tabs',
+ * and Financing History's `Round` through `Liquidation Multiple`. Whether it has `Participation Cap` and Stock Plan
+ * Details', checked after, isn't known. Without either column, participation can't be read, so each preferred class's
+ * is a term to fill, never guessed (O1): with no cap column a "Y" could be capped or not.
+ */
+const PARTICIPATION = ["Participating (Y/N)", "Participation Cap"];
+
+/** The participation columns Financing History lacks, each with a `no_participation_column` line naming it. */
+export function missingParticipation(header: Header, draft: Draft): string[] {
+  const missing = PARTICIPATION.filter((h) => !header.has(h));
+  for (const h of missing) draft.notes.add("no_participation_column", h);
+  return missing;
+}
+
 /** Half a unit in a number's last written place, or zero for a whole number (O4's allowance for a derived ratio). */
 const lastPlace = (x: Decimal): Decimal => (x.isInteger() ? new D(0) : new D(10).pow(-x.decimalPlaces()).div(2));
 /** Half a unit in the 15th significant digit, when all 15 are written; else the price is exact as read. */

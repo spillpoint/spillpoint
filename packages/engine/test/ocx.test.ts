@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { D, ImportRefusal, findBreakpoints, prepare, readCapTable, readInputs, readOcx, solve } from "../src/index.ts";
-import type { Breakpoint, CapTableImport, Decisions, OcxWorkbook } from "../src/index.ts";
+import type { Breakpoint, CapTableImport, Decisions, OcxCell, OcxWorkbook } from "../src/index.ts";
 import { CASES_DIR, OCX_CASES, decisionsFrom, expectedPoints, readCaseFile } from "./support/cases.ts";
 import { applyOcxChange, readOcxFixture, readOcxWorkbook } from "./support/ocx.ts";
 
@@ -312,5 +312,67 @@ describe("a 0.4/0.5 workbook without a participation column (OX14; 10f)", () => 
       expect(r.to_fill).toEqual([]);
       expect(codes(r), columns.join(", ")).toEqual(missing);
     }
+  });
+});
+
+// 10g: 0.7's Financing History, where a workbook has one, gets 0.4/0.5's rule (10f). Without either participation column,
+// neither is read: each preferred series' participation is blank to fill, and a line names each missing column. A "Y"
+// with no cap column is never read as uncapped participating, which would be a guess (O1). No case has a 0.7
+// Financing History, so this one is built on ocx-02's 0.7 workbook, as OX7's own test above builds one (OX7).
+describe("a 0.7 workbook whose Financing History lacks a participation column (OX7; 10g)", () => {
+  const text = (address: string, value: string) => ({ address, kind: "text" as const, text: value, formula: false });
+  const number = (address: string, value: string) => ({ address, kind: "number" as const, text: value, formula: false });
+  // Series Seed: 1x at $1, 1.5x preference, participating with a 2x cap, as each column gives it.
+  const row: Record<string, (address: string) => OcxCell> = {
+    Round: (a) => text(a, "Series Seed"),
+    "Initial Closing Date": (a) => text(a, "2024-11-01"),
+    "Most Recent Closing Date": (a) => text(a, "2024-11-15"),
+    "Original Issue Price": (a) => number(a, "1"),
+    "Adjusted Conversion Price": (a) => number(a, "1"),
+    "Conversion Ratio": (a) => number(a, "1"),
+    "Liquidation Multiple": (a) => number(a, "1.5"),
+    "Participating (Y/N)": (a) => text(a, "Y"),
+    "Participation Cap": (a) => number(a, "2"),
+  };
+  const ALL = Object.keys(row);
+  /** ocx-02 with a Financing History headed by these columns, in this order; a renamed one keeps its column's value. */
+  const withFinancing = (headers: string[], renamed: Record<string, string> = {}) =>
+    readOcx(applyOcxChange(readOcxWorkbook("ocx-02-ferncliff-preferred"), [
+      { op: "set", tab: "Context", cell: text("A5", "Financing History") },
+      ...headers.flatMap((h, i) => [
+        { op: "set" as const, tab: "Context", cell: text(`${"ABCDEFGHI"[i]}6`, renamed[h] ?? h) },
+        { op: "set" as const, tab: "Context", cell: row[h]!(`${"ABCDEFGHI"[i]}7`) },
+      ]),
+    ]) as OcxWorkbook);
+  const seed = (r: CapTableImport) => (r.cap_table as { securities: Json[] }).securities.find((s) => s.id === "series_seed_preferred")!;
+  const missing = (r: CapTableImport) => r.report.notes.filter((n) => n.code === "no_participation_column").map((n) => n.subject);
+
+  it("reads participation from both columns, as 0.4/0.5 does: a Y with a 2x cap is capped at 2x", () => {
+    const r = withFinancing(ALL);
+    expect(seed(r)).toMatchObject({ preference_multiple: "1.5", participation: "participating_capped", cap_multiple: "2" });
+    expect(missing(r)).toEqual([]);
+    expect(r.to_fill).toEqual([{ field: "seniority" }]);
+  });
+
+  it.each([
+    ["without Participation Cap: the Y isn't read as uncapped", ALL.filter((h) => h !== "Participation Cap"), {}, ["Participation Cap"], []],
+    ["without Participating (Y/N)", ALL.filter((h) => h !== "Participating (Y/N)"), {}, ["Participating (Y/N)"], []],
+    ["without either", ALL.filter((h) => !h.startsWith("Participat")), {}, ["Participating (Y/N)", "Participation Cap"], []],
+    ["with Participating (Y/N) renamed", ALL, { "Participating (Y/N)": "Participating" }, ["Participating (Y/N)"], [{ code: "unrecognized_field", subject: "Context", field: "Participating" }]],
+  ])("%s: participation blank to fill, with a line naming each missing column", (_, headers, renamed, lines, more) => {
+    const r = withFinancing(headers, renamed);
+    // The other terms are read from Financing History as before; participation and its cap aren't.
+    expect(seed(r)).toMatchObject({ original_issue_price: "1", conversion_price: "1", preference_multiple: "1.5", participation: null });
+    expect(seed(r).cap_multiple ?? null).toBeNull();
+    expect(r.to_fill).toEqual([{ security: "series_seed_preferred", field: "participation" }, { field: "seniority" }]);
+    expect(missing(r)).toEqual(lines);
+    for (const line of more) expect(r.report.notes).toContainEqual(line);
+    expect(r.report.notes.map((n) => n.code)).not.toContain("participation_cap_includes_preference");
+  });
+
+  it("says nothing about the columns where there's no Financing History: everything it gives is blank (no_financing_history)", () => {
+    const r = readOcx(readOcxWorkbook("ocx-02-ferncliff-preferred") as OcxWorkbook);
+    expect(missing(r)).toEqual([]);
+    expect(r.report.notes.map((n) => n.code)).toContain("no_financing_history");
   });
 });

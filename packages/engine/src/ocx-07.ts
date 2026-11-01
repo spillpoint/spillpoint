@@ -11,7 +11,7 @@ import {
 import { OCX_ADDITIONAL, OCX_HEADERS, OCX_TITLES, OCX_VOTING } from "./ocx-headers.ts";
 import { type Draft, type ShareClass, optionClass, sum } from "./ocx-import.ts";
 import { headNotes } from "./ocx-notes.ts";
-import { convertibleRows, discountAt, matchRounds, noteFromRow, readRound, summaryClasses, totalAt, unrecognized } from "./ocx-terms.ts";
+import { convertibleRows, discountAt, matchRounds, missingParticipation, noteFromRow, readRound, summaryClasses, totalAt, unrecognized } from "./ocx-terms.ts";
 
 const SUMMARY_NEEDS = ["Share Class", "Outstanding Shares", "Security Type", "# of Securities", "Outstanding Amount", "Discount", "Valuation Cap"];
 const HOLDER_NEEDS = ["Stakeholder", "Stakeholder Group", "Total Stock (outstanding)"];
@@ -214,6 +214,9 @@ export function read07(book: Book, draft: Draft): string {
   const financing = contextTables.get("Financing History");
   if (financing?.header) requireHeaders(context, financing.header, ["Round"]);
   const rounds = financing?.header ? matchRounds(context, financing, classes, draft) : [];
+  // Where there's a Financing History, a participation column it doesn't have: a line naming it, and participation
+  // left to fill, as in 0.4/0.5 (OX7, OX14; 10g). A "Y" with no cap column is never read as uncapped.
+  const participationRead = financing?.header ? missingParticipation(financing.header, draft).length === 0 : true;
 
   // 7. The rows, tab by tab in the workbook's order.
   const classTotals = new Map<ShareClass, Decimal | undefined>();
@@ -350,7 +353,7 @@ export function read07(book: Book, draft: Draft): string {
   }
 
   function readContext(): void {
-    for (const r of rounds) roundDates.set(r.cls, readRound(context, financing!.header!, r, book, draft));
+    for (const r of rounds) roundDates.set(r.cls, readRound(context, financing!.header!, r, book, draft, participationRead));
     const count = (title: string, key: string) => {
       const t = contextTables.get(title);
       if (t?.rows.length) draft.count(key, t.rows.length);
