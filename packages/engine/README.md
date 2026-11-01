@@ -6,7 +6,7 @@ It can also build the cap table from the company's history: shares issued, the o
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
-**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Two behaviors change in 1.0, both fixes: `prepare` works on its own frozen copy of the cap table, and `toCents` can't show an amount that's exactly a half cent a cent low (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
+**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Two behaviors change in 1.0, both fixes: `prepare` works on its own frozen copy of the cap table, and `toCents` can't show an amount that's exactly a half cent a cent low. And `readOcx` reads a workbook whose Financing History lacks a participation column, which 0.7.0 refused (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
 
 > **The charter and the signed documents govern, not this tool.** spillpoint models common terms with documented defaults. Your documents may differ, and where they do, they win.
 
@@ -411,7 +411,7 @@ OCX is developed by the Open Cap Table Coalition: https://github.com/Open-Cap-Ta
 - **0.4/0.5,** the Coalition's reference workbooks: `Summary Snapshot`, `Stakeholder Snapshot` and `Context`, with each series' terms in Context's Financing History.
 - **0.7,** as one real export lays it out, from a cap table app other than Carta: `Summary View`, `Stakeholder View`, a ledger for each class and plan, and a `Warrants Ledger` and `SAFEs Ledger`. That export had no preferred stock, so 0.7's preferred is read by the same rules as its common, and no real export has shown it yet.
 
-**No Carta export has been tested yet.** Carta says it exports OCX, but no Carta workbook has been through `readOcx`, so which layout Carta writes, and whether it reads, isn't known.
+**One Carta export has been tried,** a founder's, in the 0.4/0.5 layout. 0.7.0 refused it because its Financing History had no `Participating (Y/N)` column, which 1.0 reads *(1.0)*, asking each preferred series' participation. Whether the rest of it reads isn't known yet.
 
 The engine never opens a spreadsheet. You pass each tab's cells as the .xlsx stored them, as an `OcxWorkbook`: the date system, and each tab's name and cells, each with its address, its kind, its text exactly as stored and whether it holds a formula. A number is the text the spreadsheet stored, never a JavaScript number. Opening the .xlsx is up to you; the page's reader is in the repository, [`apps/dashboard/src/xlsx.ts`](https://github.com/spillpoint/spillpoint/blob/main/apps/dashboard/src/xlsx.ts), not in the package.
 
@@ -813,7 +813,7 @@ What an import's `report.notes` say, with the format each comes from:
 - `no_conversion_group_field` *(both)*: neither format has a field for series that must convert together.
 - `no_dividend_field` *(both)*: neither format has a field for cumulative dividends.
 - `no_financing_history` *(OCX)*: a 0.7 workbook without Financing History, so a series' conversion price, multiple and participation are blank.
-- `no_participation_column` *(OCX)* *(1.0)*: a 0.4/0.5 workbook whose Financing History has no `Participating (Y/N)` or no `Participation Cap` column, the one missing as its subject, so each preferred series' participation is blank to fill.
+- `no_participation_column` *(OCX)* *(1.0)*: a workbook whose Financing History has no `Participating (Y/N)` or no `Participation Cap` column, the one missing as its subject, so each preferred series' participation is blank to fill. In either layout; a 0.7 workbook with no Financing History gets `no_financing_history` instead.
 - `no_sale_date_field` *(both)*: neither format has a field for the sale's date.
 - `no_seniority_field` *(OCX)*: OCX has no seniority, so it's blank to fill.
 - `no_strike_field` *(OCX)*: in 0.4/0.5, an option, award or warrant column with no strike, blank to fill.
