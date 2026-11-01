@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OcxWorkbook } from "spillpoint";
 
 import { App } from "../src/App.tsx";
+import { ocxReportLines } from "../src/ocxImport.ts";
 import { exitOf, lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 import type { PayoutsAtBreakpoints } from "./payouts.ts";
 import { applyOcxChange } from "../../../packages/engine/test/support/ocx.ts";
@@ -187,6 +188,60 @@ describe("Hollis Mill's questions (ocx-06)", () => {
     expect(ct.unconverted_notes[0]).toMatchObject({ interest_rate: "0.06", issue_date: "2024-01-15", conversion_base: "with_pool", repayment_multiple: "1.5" });
     expect(ct.seniority).toEqual([["series_a_preferred"], ["series_seed_preferred"]]);
   });
+});
+
+// 10f: the first real Carta export, 0.4/0.5, had no `Participating (Y/N)`. Without a participation column, the review
+// says so and asks each preferred series' participation; answered, it opens as the workbook with the column does (OX14).
+describe("Hollis Mill without a participation column (10f)", () => {
+  const cell = (address: string, text: string) => ({ address, kind: "text" as const, text, formula: false });
+  const removed = (column: string) => [6, 7, 8].map((row) => ({ op: "clear" as const, tab: "Context", address: `${column}${row}` }));
+  it.each([
+    ["without Participating (Y/N)", removed("H"), "Participating (Y/N)"],
+    ["without Participation Cap", removed("I"), "Participation Cap"],
+    ["with Participating (Y/N) renamed", [{ op: "set" as const, tab: "Context", cell: cell("H6", "Participating") }], "Participating (Y/N)"],
+  ])("%s: says so, asks each preferred series' participation, and opens with the answers", async (_, change, column) => {
+    render(<App />);
+    upload([xlsx(applyOcxChange(workbookOf("ocx-06-hollis-mill") as never, change) as unknown as OcxWorkbook, "hollis-mill.xlsx")]);
+    const panel = await review();
+    expect(within(panel).getByText(`The workbook's Financing History has no "${column}" column, so whether each preferred series participates is asked for below.`)).toBeTruthy();
+    for (const series of ["Series Seed Preferred", "Series A Preferred"]) {
+      for (const radio of within(group(`Does ${series} participate?`)).getAllByRole("radio")) expect((radio as HTMLInputElement).checked, series).toBe(false);
+    }
+    choose("Does Series Seed Preferred participate?", /^Non-participating/);
+    choose("Does Series A Preferred participate?", "Participating, with a cap");
+    type("Series A Preferred's participation cap, as a multiple of its issue price", "3");
+    for (const [what, column, strike] of [["options", "Common Stock Options", "0.1"], ["options", "Non-Plan Awards", "0.25"], ["warrants", "Warrants for Common Stock", "0.5"]]) {
+      choose(`Do all the ${what} in "${column}" have the same strike?`, "Yes, one strike");
+      type(`The strike for "${column}", a share`, strike!);
+    }
+    const note = 'The note "Convertible notes, $8,000,000 cap, 20% discount (1)"';
+    type(`${note}: simple interest (% a year)`, "6");
+    type(`${note}: when was it issued?`, "2024-01-15");
+    choose(`${note}: what does its cap divide by?`, "The company's shares, options and unissued pool");
+    type(`${note}: repayment multiple at a sale`, "1.5");
+    choose("Which series is paid first at a sale?", /^Stacked, latest round senior/);
+    type("When is the sale?", "2026-06-30");
+    click("Use this cap table");
+    await screen.findByText(/^Imported hollis-mill from hollis-mill.xlsx/);
+    click("Save");
+    const ct = exitOf(await downloads[0]!.text()).cap_table as Json & { securities: Json[] };
+    // As the workbook with both columns reads: Seed non-participating, Series A capped at 3x.
+    const want = read<{ result: { cap_table: { securities: Json[] } } }>("ocx-06-hollis-mill/expected.json").result.cap_table.securities.filter((s) => s.kind === "preferred");
+    expect(ct.securities.filter((s) => s.kind === "preferred").map((s) => [s.id, s.participation, s.cap_multiple ?? null])).toEqual(want.map((s) => [s.id, s.participation, s.cap_multiple ?? null]));
+  });
+});
+
+it("says nothing depends on a missing participation column when there's no preferred stock (10f)", () => {
+  const result = {
+    as_of: "2025-06-30",
+    cap_table: { holders: [], securities: [{ id: "common_stock", name: "Common Stock", kind: "common" }] },
+    issue_order: [],
+    to_fill: [],
+    report: { read: {}, not_needed: {}, notes: [{ code: "no_participation_column" as const, subject: "Participating (Y/N)" }] },
+  };
+  expect(ocxReportLines(result as never, { dateSystem: 1900, sheets: [] })).toEqual([
+    `The workbook's Financing History has no "Participating (Y/N)" column. It has no preferred stock, so nothing depends on it.`,
+  ]);
 });
 
 describe("a preferred series' one-click answers (06d review)", () => {

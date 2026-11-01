@@ -136,6 +136,7 @@ export const IMPORT_NOTE_CODES = [
   "no_conversion_group_field",
   "no_dividend_field",
   "no_financing_history",
+  "no_participation_column",
   "no_sale_date_field",
   "no_seniority_field",
   "no_strike_field",

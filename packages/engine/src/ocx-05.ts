@@ -12,7 +12,13 @@ import { headNotes } from "./ocx-notes.ts";
 
 const SUMMARY_NEEDS = ["Share Class", "Outstanding Shares", "Liquidation Preference", "Security Type", "# of Securities", "Outstanding Amount", "Discount", "Valuation Cap"];
 const HOLDER_NEEDS = ["Stakeholder", "Stakeholder Group", "Total Stock (outstanding)"];
-const FINANCING_NEEDS = ["Round", "Initial Closing Date", "Original Issue Price", "Adjusted Conversion Price", "Conversion Ratio", "Liquidation Multiple", "Participating (Y/N)", "Participation Cap"];
+const FINANCING_NEEDS = ["Round", "Initial Closing Date", "Original Issue Price", "Adjusted Conversion Price", "Conversion Ratio", "Liquidation Multiple"];
+/**
+ * Participation's two columns, not required (OX14; 10f): the first real Carta export had every header above and no
+ * `Participating (Y/N)`. Without either column, participation can't be read, so each preferred class's is a term to
+ * fill, never guessed (O1): with no cap column a "Y" could be capped or not.
+ */
+const PARTICIPATION = ["Participating (Y/N)", "Participation Cap"];
 const DETAILS_NEEDS = ["Plan Name", "Outstanding RSUs", "Shares Available for Grant"];
 
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -103,6 +109,10 @@ export function read05(book: Book, draft: Draft): string {
   // 6. The rounds: each round's class, then each preferred class's round.
   const rounds = matchRounds(context, financing!, classes, draft);
 
+  // A participation column the export doesn't have: a line naming it, and participation left to fill (OX14; 10f).
+  const missingParticipation = PARTICIPATION.filter((h) => !financing!.header!.has(h));
+  for (const h of missingParticipation) draft.notes.add("no_participation_column", h);
+
   // Headers the reader doesn't know, outside the holdings (OX12).
   const knownIn = (list: readonly string[]) => (h: string) => list.includes(h);
   unrecognized(summary, sumH.cells, knownIn(OCX_HEADERS["Summary Snapshot"]!), draft);
@@ -132,7 +142,7 @@ export function read05(book: Book, draft: Draft): string {
       for (const h of holderRows) holdings.set(h.id, readRow(h.row, h.name));
       if (poolRow !== undefined) for (const [column, v] of readRow(poolRow, poolLabel)) pooled.set(column, v);
     } else if (tab === context) {
-      for (const r of rounds) roundDates.set(r.cls, readRound(context, financing!.header!, r, book, draft));
+      for (const r of rounds) roundDates.set(r.cls, readRound(context, financing!.header!, r, book, draft, missingParticipation.length === 0));
       const count = (title: string, key: string) => {
         const t = tables.get(title);
         if (t?.rows.length) draft.count(key, t.rows.length);
