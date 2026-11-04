@@ -87,3 +87,31 @@ All in the plan:
 - **Ten questions for you,** each with what I'd do.
 - **Nine facts your copy can settle before 08b,** counts and kinds only. Each changes what a case says, so they matter before 08b starts.
 - **Fourteen open questions only another export can settle.** Your eight are there, with export settings (item 16), a ratio other than 1:1, ISO, several plans, another currency, and `Summary by Relationship`'s labels added.
+
+## After your review (2026-11-03)
+
+One commit on the same branch: your answers in the plan, its text changed where they differ, and rule 11's wording. No code. Still no change to `.github/workflows/` or `.claude/`.
+
+**`notes/plan-0.8.0.md`:**
+- **"Your answers (2026-11-03)",** after the questions. The questions stay as asked, and the text above them now follows the answers.
+- **Fact 2:** row 1 is "<company name> <title>", with a table of tabs and titles. Titles match in any case. "[Co]." is gone.
+- **Answer 1:** `as_of` from "As of MM/DD/YYYY" before the first "•", any other form `bad_date`, shown in words on the review. The page's `longDate` already does that. Carta's non-US date form is open question 15.
+- **Answer 6:** `unknown_tab` is gone, and an unknown tab gets OCX's `unrecognized_tab`. `unknown_summary_row` is now `unknown_summary_section`, and the plan says what counts as one. I took out the `warrants` term too, since that refusal and `unknown_holdings_header` are what catch them.
+- **Answers 3, 4, 9, 10:** 08b0 is now the engine's changes in one PR, and the steps say so.
+- **Answer 8:** both rules are written into "What the summary prints".
+- **08b and after wait,** at the top and in the steps.
+
+**`CLAUDE.md`:** rule 11 covers Carta's site and help pages, and Where things stand reads 08b0, then 1.0's gates, then `readCarta` when one of your two things happens. It says "nothing else of Carta's" where you wrote "nothing of Carta's", since a founder's report is Carta's output too.
+
+**Three things that follow from your answers, for you to check:**
+1. **The refusal has no new term.** Question 4 said it would, but the round's refusal is an `InputError`, and you asked for the two to read alike.
+2. **The release may not be 0.8.0.** If 1.0 ships first, the reader goes out in a minor release after it, 1.1.0, and release-1.0.md's entries stay in 1.0. The steps and `CLAUDE.md` say so. Your answer 3 covers 0.8.0 shipping first, and its line in Stable from 1.0 is what allows the other order.
+3. **A correction to my plan.** I wrote that a founder corrects a mistyped cap in the editor. The page doesn't open a table it refuses at Use, so they correct it in the file and open it again. `ImportReview.tsx` keeps the report up with the message (O13).
+
+**What I checked for this:**
+- **Your two tables,** on main and 0.7.0: at $200,000 caps the founder gets $9,950,000.00, and at $200,001 $100.00. Both match yours.
+- **The round's refusal,** read at `rounds.ts:759`, not run.
+- **`cases/`:** no table's open post-money SAFEs reach 100%; the largest is 22.5%. The only explicit nulls for the two fields are `conversion_price` in ocx-02's and ocx-04's expected imports, which are blanks. 08b0 checks that no answered import still writes one.
+- **"One SAFE at a 100x lower cap, 2.8 seconds"** isn't in the plan, this note or `CLAUDE.md`, so there was nothing to take out.
+
+I ran no test suite: nothing that runs has changed.
