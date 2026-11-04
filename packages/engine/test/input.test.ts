@@ -205,7 +205,7 @@ describe("malformed inputs fail with a clear error", () => {
   });
 
   // C19 (08b0): an import's blank is null, and it reaches here only if nobody answered it. Left out, each field still
-  // means what it meant.
+  // means what it meant. A note's conversion_base has the same rule: imports.test.ts holds every blank to it.
   it("refuses a null conversion price or pool, and reads each left out as the issue price and none (C19)", () => {
     expect(() => readCapTable(table((t) => (seed(t).conversion_price = null)))).toThrow("cap_table.securities[1].conversion_price: is blank: give the conversion price, or leave the field out to use the issue price");
     expect(() => readCapTable(table((t) => (t.unissued_pool = null)))).toThrow("cap_table.unissued_pool: is blank: give the unissued pool, or leave the field out if there's none");

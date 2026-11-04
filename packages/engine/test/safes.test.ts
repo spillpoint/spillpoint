@@ -5,7 +5,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, InputError, UnsupportedTermError, buildCapTables, prepare, readCapTable, solve } from "../src/index.ts";
+import { D, InputError, UnsupportedTermError, buildCapTables, findBreakpoints, paySchedule, payout, prepare, readCapTable, solve } from "../src/index.ts";
+import type { Decisions, PreparedCapTable } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import { readCaseFile } from "./support/cases.ts";
 
@@ -227,5 +228,52 @@ describe("post-money SAFEs that own the whole company or more (X19)", () => {
   it("at a priced round, refuses thirds that make exactly 100% too (R4)", () => {
     const company = { holders, events: [...events(["a", "b", "c"].map((h) => safe(h, "100000", "300000"))), seedRound] };
     expect(() => buildCapTables(company)).toThrow("inputs.events[2].convert_safes: the post-money SAFEs would own the whole company at their caps");
+  });
+
+  // A table no reader saw: buildCapTables gives one, and a caller can write one. On #139 before this, buildCapTables,
+  // prepare and solve paid the founder -$230,000,000 on a $100,000 SAFE at an $8,000 cap.
+  describe("where every payout is worked out, on a table no reader saw", () => {
+    const built = (cap: string) => buildCapTables({ holders, events: events([safe("a", "100000", cap)]) }).at(-1)!.capTable;
+    const sameWords = refusal(() => readCapTable(table([safe("a", "100000", "8000")]))).message;
+    const nobody: Decisions = { converted: new Set(), exercised: new Set() };
+    const schedule = { id: "s", description: "", payments: [{ label: "Closing", amount: new D(1000000) }] };
+
+    it("prepare refuses it, in the reader's words", () => {
+      expect(refusal(() => prepare(built("8000"))).message).toBe(sameWords);
+    });
+
+    it.each<[string, (pc: PreparedCapTable) => unknown]>([
+      ["solve", (pc) => solve(pc, new D(20000000))],
+      ["payout", (pc) => payout(pc, new D(20000000), nobody)],
+      ["findBreakpoints", (pc) => findBreakpoints(pc, [new D(0), new D(20000000)])],
+      ["paySchedule", (pc) => paySchedule(pc, schedule)],
+    ])("%s refuses a prepared table written by hand", (_, run) => {
+      expect(refusal(() => run({ capTable: built("8000"), exitDate: null })).message).toBe(sameWords);
+    });
+
+    it("sees a change to a table written by hand, on the next call", () => {
+      const capTable = built("8000000");
+      const hand: PreparedCapTable = { capTable, exitDate: null };
+      expect(solve(hand, new D(20000000)).answers).toHaveLength(1);
+      capTable.unconvertedSafes![0]!.postMoneyCap = new D(8000);
+      expect(refusal(() => solve(hand, new D(20000000))).message).toBe(sameWords);
+    });
+
+    it("refuses thirds that make exactly 100% there too", () => {
+      const thirds = buildCapTables({ holders, events: events(["a", "b", "c"].map((h) => safe(h, "100000", "300000"))) }).at(-1)!.capTable;
+      expect(refusal(() => prepare(thirds)).message).toContain("That's 100% in all");
+    });
+
+    it("works out a table under 100% as it did", () => {
+      const [answer] = solve(prepare(built("8000000")), new D(20000000)).answers;
+      expect(answer!.payout.lines.map((l) => [l.holder, l.amount.toFixed(2)])).toEqual([["founder", "19750000.00"], ["a", "250000.00"]]);
+    });
+
+    it("leaves the sale's other limits to the readers: they refuse what isn't modeled yet, and it's worked out here", () => {
+      const pre = { id: "safe_b", holder: "b", purchase_amount: "100000", pre_money_cap: "900000" };
+      const company = { holders, events: events([safe("a", "100000", "1000000"), pre]) };
+      expect(() => readInputs({ ...company, exit: { cap_table_after_event: "safes", range: ["0", "1"], exit_values: [] } })).toThrow(UnsupportedTermError);
+      expect(() => prepare(buildCapTables(company).at(-1)!.capTable)).not.toThrow();
+    });
   });
 });

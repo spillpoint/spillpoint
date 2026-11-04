@@ -164,7 +164,7 @@ Nothing is guessed, never 1x and never $1 (O1). Each goes in `to_fill`:
 - the repayment multiple. `Change in Control Percent` may be it, but whether 200 means 2x or a 200% premium isn't known. It's asked.
 - the sale's date, as now (O13). Its cap is read as pre-money (`note_cap_read_as_pre_money`), the only kind the engine models.
 
-**How the blank works:** a row sits in `unconverted_safes` with `instrument: null`. `readSafe` refuses a field it doesn't know, and `valuation_cap` too, so nothing passes `readCapTable` until it's answered. `ImportBlank` doesn't change. Answering "note" moves the row to `unconverted_notes`, under a note's id, here and in `issue_order`. From 08b0 a null pool or conversion price stops `readCapTable` too (answer 9). A note's null `conversion_base` still reads as `with_pool`, the one blank left that can pass unfilled (`notes/review-08b0.md`, open question).
+**How the blank works:** a row sits in `unconverted_safes` with `instrument: null`. `readSafe` refuses a field it doesn't know, and `valuation_cap` too, so nothing passes `readCapTable` until it's answered. `ImportBlank` doesn't change. Answering "note" moves the row to `unconverted_notes`, under a note's id, here and in `issue_order`. From 08b0 a null pool, conversion price or `conversion_base` stops `readCapTable` too (answer 9; your review of #139), so no blank here can pass unfilled, and a test holds every import to that.
 
 ### What it refuses
 
@@ -291,6 +291,7 @@ Each row sums to the sale, so nothing downstream notices. `findBreakpoints` does
 **08b0 refuses it at a sale** (answer 4):
 - **The test:** purchase amounts ÷ caps add up to 1 or more, over all open post-money SAFEs, exactly 1 included.
 - **The refusal:** an `InputError`, as the round's is, so there's no new term. It's worded as the round's is, so the two read alike. It names each SAFE and the total percentage, and says a cap may be mistyped.
+- **And where every payout is worked out** (your review of #139): `prepare`, and each call on a prepared table written by hand, in the same words. `buildCapTables` then `prepare` meets no reader, and this table has no answer. The sale's other limits stay with the readers.
 - **What it doesn't touch:** a starting table isn't a sale, so it reads as now, and the round's own refusal catches it there. No table in `cases/` reaches it: summing every post-money SAFE in each case file, converted ones and every fixture included, the highest is 45% (ocx-05-reads).
 
 **The import still reads the cap as written.** The page shows the refusal at Use with the report still up (O13). It doesn't open a table it refuses, so the founder corrects the cap in the file and opens it again. (I first wrote that the editor would do it. It can't.)
@@ -324,7 +325,7 @@ Each is one branch and one PR.
 - **08a, this plan.**
 - **08b0, done:** the engine's changes, apart from Carta, in one PR on a new branch from main, with the `cases/` edit rule lifted for it:
   - **The refusal for SAFEs over 100%** (answer 4), with tests: the first three tables above, exactly 100%, and $200,001 caps reading as now
-  - **An explicit null `unissued_pool` or `conversion_price` refused** (answer 9), an absent field meaning what it means now. Today's only explicit nulls in `cases/` are blanks in two OCX import results, ocx-02's and ocx-04's, so 08b0 checks that no import with every blank answered still writes one.
+  - **An explicit null `unissued_pool`, `conversion_price` or `conversion_base` refused** (answer 9; your review of #139), an absent field meaning what it means now, and a test on every import: a table with a blank left doesn't read, and with every blank answered it does
   - **A locked case of six post-money SAFEs at two caps, beside two series,** edge-12m, worked by the reference (answer 10)
   - **Stable from 1.0** says a list can gain names in a minor release, `ImportRefusal.format` included, and that code switching on them needs a default (answer 3)
   - **`notes/release-1.0.md`:** the refusal and the null joining "Fixed since 0.7.0", the null listed as a change (answers 3, 9)
@@ -441,6 +442,6 @@ Counts and kinds only. Each changes what a case says. They wait with 08b, and a 
 
 - **Added:** `readCarta`, the format `"carta"`, the terms and note codes.
 - **`ImportRefusal.format`** is a wider union. An exhaustive `switch` on it, or a `Record` keyed by it, fails to compile until it handles `"carta"`, as Stable from 1.0 says from 08b0. Nothing else changes.
-- **If 0.8.0 ships before 1.0,** `notes/release-1.0.md`'s entries move here in 08e, with 08b0's among them: a table that paid common a negative amount is now refused, and so is an explicit null `unissued_pool` or `conversion_price`. The READMEs and the *(1.0)* marks change to 0.8.0, and 1.0's note is left for the domain.
+- **If 0.8.0 ships before 1.0,** `notes/release-1.0.md`'s entries move here in 08e, with 08b0's among them: a table that paid common a negative amount is now refused, and so is an explicit null `unissued_pool`, `conversion_price` or `conversion_base`. The READMEs and the *(1.0)* marks change to 0.8.0, and 1.0's note is left for the domain.
 - **If 1.0 ships first,** those entries ship in it, and this note is for the minor release after it.
 - **1.0** still waits on its two gates: an outside waterfall that matches ours, and a few outside users.

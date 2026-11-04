@@ -30,6 +30,7 @@ import { D, ONE, TIE, ZERO, moreThan } from "./decimal.ts";
 import { accruedDividends } from "./dividends.ts";
 import { InputError } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
+import { refuseSafesOwningTheCompany } from "./input.ts";
 import type { CapTable, CarveOut, Note, OptionClass, PreferredSeries, Safe, WarrantClass } from "./model.ts";
 
 /** The security payouts to a carve-out's recipients are reported under (C6). */
@@ -314,6 +315,9 @@ function frozenCopy<T>(value: T): T {
 }
 
 function prepareWorking(capTable: CapTable, exitDate: string | null): Prepared {
+  // X19: every payout is worked out from here, on a table read for a sale or not: one from buildCapTables, or written
+  // by hand. The sale's other limits stay with the readers: they refuse what isn't modeled yet, and this has no answer.
+  refuseSafesOwningTheCompany(capTable.unconvertedSafes ?? [], capTable.holders, "cap_table.unconverted_safes");
   const shares = new Map<string, Decimal>(capTable.securities.map((s) => [s.id, ZERO]));
   for (const p of capTable.positions) shares.set(p.security, shares.get(p.security)!.plus(p.shares));
   const preferred = new Map<string, PreferredSeries>();

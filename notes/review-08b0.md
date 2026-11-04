@@ -88,3 +88,69 @@ At the top of the range the Liquidity Capitalization is 15,625,000. Both jumps' 
 1. **Refuse a null `conversion_base` too?** It's the same defect, one line in `readNote`, with a test and a line in the release note. It's a blank in OCF's O9 and in ocx-04, and Carta's notes would have it. I'd refuse it, as one more commit here. Left out, it would still mean `with_pool`.
 2. **A company built from rounds, on the Rounds tab:** the refusal shows as the rounds' problem, in those words, and names no one event, since it's the SAFEs together. The payouts stay on the last good rounds. Is that the right place? I've tested the message and where it's sent, not clicked it in the built page.
 3. **`buildCapTables` then `prepare`** never meets the refusal, as it never meets a sale's other limits: only `readInputs` and `readExit` check them. That's unchanged and is how the API reads, but it does mean a library user going that way still gets a negative payout. I'd leave it.
+
+## After your review (2026-11-03)
+
+One commit on the same branch, for your answers 1 and 3. Still no change to `.github/workflows/` or `.claude/`, and nothing under `cases/` beyond edge-12m as you checked it. Answer 2 needs nothing here: you'll check the Rounds tab on the live page after the merge.
+
+### 1. A null `conversion_base` is refused
+
+`readNote` refuses it, and left out it still means `with_pool`. C19, both READMEs, the release note, the plan and `CLAUDE.md` say three fields now. The page and `ocf-check` always write a value, and the OCX tests answer the note's question through Use.
+
+**The test is structural,** in `packages/engine/test/imports.test.ts`, on all 61 imports the locked cases give: each package, workbook and fixture, read by the importer itself, so fixtures whose expected results are stored as differences are covered too. It has your test and two more, since one blank can hide behind another, or behind a sale's limits:
+
+| Test | Runs | What it would catch |
+|---|---:|---|
+| Yours: `readCapTable` on the result as it stands, blanks unanswered, refuses | 37 | A table with only blanks that read as defaults |
+| Each blank alone, the rest answered, read as a starting table, refuses at that field | 111 | A blank hidden by another blank or a sale limit |
+| With every blank answered, it reads | 61 | A null no question asks about, which could never be filled in |
+
+**A new kind of blank has no stand-in answer,** so the test stops and says so.
+
+**I broke each thing on purpose to see it fail,** then put the sources back and compared their checksums:
+
+| What I broke | Tests that failed |
+|---|---:|
+| A null `conversion_base` reads again | 7 |
+| A null conversion price reads again | 2 |
+| A fourth blank: an OCX SAFE leaves its `discount` null | 54, named as "a new kind of blank" |
+| A null no question asks: OCX leaves `conversion_price` out of `to_fill` | 9 |
+
+**Every other field where null reads as a default.** No import can leave one blank. `blanks()` in both importers lists every null on a security, SAFE or note but `cap_multiple`, so if one ever did, it would be a listed blank and the test above would fail on it.
+
+| Field | Null reads as | What the imports write |
+|---|---|---|
+| Series `cap_multiple` | no cap | Null by design unless capped: only capped participation has one, and that without one is refused (O1, O4) |
+| Series `conversion_ratio` | not stated | Never written |
+| Series `anti_dilution` | `none` | Always `none` (O11) |
+| Series `anti_dilution_a` | not named | Never written |
+| Series `cumulative_dividend` | none | Never written: a report note says so |
+| A dividend's `method`, `on_conversion` | `simple`, `forfeited` | Never written |
+| Table `conversion_groups` | none | Always `[]` |
+| A group's `vote_threshold_percent`, `vote_rule` | 50, `more_than` | Never written |
+| Table `unconverted_safes`, `unconverted_notes` | none | Left out when empty |
+| Table `carve_out` | none | Never written: a report note says so |
+| A carve-out's `timing`, a tier's `to` | `before_preferences`, no upper end | Never written |
+| SAFE `post_money_cap`, `pre_money_cap` | no cap of that kind | Left out. A cap of unknown kind is `valuation_cap` with `cap_type: null`, which stops the table as unknown fields |
+| SAFE `discount`, note `discount` | 0 | Always written, "0" when none |
+| SAFE `cash_out_ranks_with` | the most junior tier | Never written |
+| Note `interest_method` | `simple` | Always `simple` |
+| Note `cap_type` | `pre_money` | `pre_money` with a cap, left out without one |
+| Note `valuation_cap` | no cap | Left out when there's none |
+
+A round event's own fields aren't listed, since no import writes them. It writes only a `start` event's table, which reads as above.
+
+### 3. X19 where every payout is worked out
+
+`prepareWorking` is the one place: `prepare` calls it, and so does `working()` on each call for a prepared table written by hand, which is how `solve`, `payout`, `findBreakpoints` and `paySchedule` start. So one check covers both, in the reader's own words, as an `InputError`. The other limits stay with the readers, and a test says so: a pre-money SAFE beside a post-money one is refused by `readInputs`, and `prepare` works it out as before.
+
+**Check it:** your path, a $100,000 SAFE at an $8,000 cap through `buildCapTables`, `prepare` and `solve`. On the v0.7.0 sources the founder gets −$230,000,000.00. Now:
+
+> cap_table.unconverted_safes: the post-money SAFEs would own the whole company at their caps: Investor A's SAFE, $100,000 at a cap of $8,000 (1,250%). That's 1,250% in all, so a cap may be mistyped
+
+**The tests,** in `packages/engine/test/safes.test.ts`: `prepare`, then each of the four on a table written by hand, then a hand-written table changed between calls, thirds, and a table under 100% as before. Every page use of `prepare` comes after `readExit`, so nothing new stops there.
+
+**X19 and the release note** say so, and so does the README's `InputError` line.
+
+**CI:** `pnpm install && pnpm typecheck && pnpm build && pnpm test && pnpm test:reference` passes here: the engine's 3,463 tests, the fund's 2,115, the dashboard's 692, the fund page's 827, the reference's 73, and all 125 cases against the reference.
+

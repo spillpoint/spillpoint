@@ -6,7 +6,7 @@ It can also build the cap table from the company's history: shares issued, the o
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
-**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Four behaviors change in 1.0, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused at a sale, and an explicit null `unissued_pool` or `conversion_price` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
+**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Four behaviors change in 1.0, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused, and an explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
 
 > **The charter and the signed documents govern, not this tool.** spillpoint models common terms with documented defaults. Your documents may differ, and where they do, they win.
 
@@ -392,7 +392,7 @@ fund on seed: $4000000.00
 - `as_of`: the package's date.
 - `cap_table`: the cap table in the input format below, with `null` wherever OCF doesn't settle a term. OCF has no participation flag, no anti-dilution, no cumulative dividends and no conversion groups, so those are left blank or noted.
 - `issue_order` *(0.5.0)*: its preferred series, SAFEs and notes, earliest issued first, ready to pass as a `start` event's `issue_order` when you build a round on the import. A series is dated by its first issuance, and a SAFE or note by its own, or by the one it came from by a transfer. One dated the same day as a series counts as issued after it.
-- `to_fill`: each blank, for you to fill in before `readCapTable`.
+- `to_fill`: each blank, for you to fill in before `readCapTable`, which refuses a table with one left *(1.0)*.
 - `report`: what was read, by object type; what was read and set aside, because it doesn't change payouts (`not_needed`), such as vesting, valuations and legends; and a `notes` line, by code, for each choice the import made.
 
 **Anything it won't read is refused** with an `ImportRefusal` *(0.6.0; 0.7.0: before, `readOcf` threw an `OcfRefusal`, a subclass, which is gone)*, carrying:
@@ -615,8 +615,8 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
   - `seniority`: the preference tiers, most senior first
   - optional `conversion_groups`
   - `positions`: shares held, per holder and security
-  - optional `unissued_pool`: left out, there's none. An explicit `null` is refused, as a preferred series' `conversion_price` is, where leaving it out means the issue price *(1.0)*
-  - optional `unconverted_safes` *(0.2.0)*: SAFEs still outstanding, each with an `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, `discount`, and optionally `cash_out_ranks_with`. At a sale, post-money SAFEs whose purchase amounts ÷ caps add up to 1 or more are refused: they'd own the whole company, so a cap may be mistyped *(1.0)*
+  - optional `unissued_pool`: left out, there's none. An explicit `null` is refused, as it is for a preferred series' `conversion_price`, where leaving it out means the issue price, and a note's `conversion_base`, where it means `with_pool` *(1.0)*
+  - optional `unconverted_safes` *(0.2.0)*: SAFEs still outstanding, each with an `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, `discount`, and optionally `cash_out_ranks_with`. Post-money SAFEs whose purchase amounts ÷ caps add up to 1 or more are refused at a sale and by `prepare`: they'd own the whole company, so a cap may be mistyped *(1.0)*
   - optional `unconverted_notes` *(0.2.0)*: notes still outstanding, with the fields of the `notes` event below; the exit then needs an `exit_date`
   - optional `carve_out` *(0.2.0)*: `timing` (`before_preferences` or `alongside_preferences`), `tiers` (`from`, `to`, `percent`) and `allocation` (`holder`, `percent`)
 - `range`: the exit values to analyse
@@ -674,7 +674,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 **Names:** what reads an input (`readExit`, `readInputs`, `readCapTable`, `buildCapTables`) returns the engine's own objects, in camelCase. `readOcf` and `readOcx` return case-file JSON, in the input format's snake_case, since what they give is input: to save, to fill in and read with `readCapTable`, or to pass on as a `start` event's fields.
 
 **Errors:**
-- `InputError`: the input is malformed.
+- `InputError`: the input is malformed. `prepare` throws it too, for post-money SAFEs that own the whole company or more, and so do `solve`, `payout`, `findBreakpoints` and `paySchedule` on a prepared table written by hand *(1.0)*.
 - `UnsupportedTermError`: the input uses a term that isn't modeled. It carries the `term`, one of those listed under [Stable from 1.0](#stable-from-10), and the `path` to it in the input, and its message says what isn't modeled. *(0.6.0: the `milestone` field and the `Milestone` type are gone, as 0.2.0's deprecation note said they would be by 1.0, and the message no longer says when a term might be supported.)*
 - `NoAnswerError`: the engine stopped rather than guess, for example if no set of decisions is stable. *(0.5.0)* Also where more than one is stable and they pay holders differently, as two non-participating series at the same price can be beside post-money SAFEs: its message names them, says either could convert and the documents don't say which, and that spillpoint doesn't pick one. Both `solve` and `findBreakpoints` stop there; the search follows which answers are stable between the exit values it reads, so it can't step past a second one.
 - `ImportRefusal` *(0.6.0)*: an import won't read an export. It carries the `format`, `"ocf"` or `"ocx"`, the `kind`, `"unsupported"` or `"malformed"`, the `term`, listed under [Stable from 1.0](#stable-from-10), and the `subject`. `readOcf` and `readOcx` both throw it. *(0.7.0: `OcfRefusal`, which `readOcf` threw from 0.4.0 to 0.6.0, is gone, and so are the type names `OcfImport`, `OcfReport`, `OcfToFill` and `OcfNote`: use `ImportRefusal`, `CapTableImport`, `ImportReport`, `ImportBlank` and `ImportNote`, which 0.6.0 added beside them.)*

@@ -424,8 +424,9 @@ const percent = (share: Decimal) => `${grouped(share.times(100).toDecimalPlaces(
  * X19: post-money SAFEs that own the whole company or more have no Liquidity Capitalization. X13's everything else ÷
  * (1 − Σ purchase amount ÷ cap) divides by nothing or goes negative, and common would be paid a negative amount. R4
  * refuses the same at a priced round, and this reads as that does. A real table can't reach it, so a cap is mistyped.
+ * Read at a sale here, and checked again where every payout is worked out, for a table no reader saw (waterfall.ts).
  */
-function refuseSafesOwningTheCompany(safes: Safe[], holders: readonly Holder[], path: string): void {
+export function refuseSafesOwningTheCompany(safes: readonly Safe[], holders: readonly Holder[], path: string): void {
   if (!ownWholeCompany(safes)) return;
   const nameOf = (id: string) => holders.find((h) => h.id === id)?.name ?? id;
   const counted = safes.filter((f) => f.postMoneyCap).map((f) => ({ f, share: f.purchaseAmount.div(f.postMoneyCap!) }));
@@ -486,6 +487,8 @@ export function readNote(value: unknown, path: string): Note {
   if ((n.cap_type ?? "pre_money") !== "pre_money") {
     throw unsupportedTerm("note_post_money_cap", `${path}.cap_type`, "Notes with a post-money cap (R23)");
   }
+  // Left out, a note's cap counts the pool (X10). Null is an import's blank (O1), not that: nobody has said so (C19).
+  if (n.conversion_base === null) throw new InputError(`${path}.conversion_base`, "is blank: give what the note's cap divides by, or leave the field out to count the pool");
   const base = (n.conversion_base ?? "with_pool") as Note["conversionBase"];
   if (!CONVERSION_BASES.includes(base)) throw new InputError(`${path}.conversion_base`, `must be one of ${CONVERSION_BASES.join(", ")}`);
   const issueDate = text(n.issue_date, `${path}.issue_date`);

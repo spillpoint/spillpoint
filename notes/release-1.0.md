@@ -52,18 +52,19 @@ Started in 10c. The release step finishes it.
    - **Now:** `readCapTable`, `readExit` and `readInputs` throw an `InputError` at the sale, on a table given in full or built from rounds, worded as a priced round's refusal is: "the post-money SAFEs would own the whole company at their caps". It names each SAFE, with its amount, cap and share, gives the total, and says a cap may be mistyped. There's no new term.
      - **The test:** 1 or more over all open post-money SAFEs, whoever would convert. SAFEs with a pre-money cap or no cap aren't counted.
      - **A starting table** isn't a sale, so it reads as it did, and a round refuses them itself.
+     - **`prepare` refuses them too,** in the same words, and so do `solve`, `payout`, `findBreakpoints` and `paySchedule` on a prepared table written by hand. A table from `buildCapTables` reaches `prepare` with no reader on the way: on 0.7.0 that path paid the founder −$230,000,000.00 on a $100,000 SAFE at an $8,000 cap. The sale's other limits stay with the readers: they refuse what isn't modeled yet, and this table has no answer.
    - **The same gap at a priced round, closed:** both add the shares up exactly now. Three SAFEs at a third of the company each are exactly 100%, and in 40 digits they came to 0.999…, so on 0.7.0 a priced round converted them, and a sale paid the founder $0.00.
    - **TypeScript reports:** nothing. No type changed.
-   - **JavaScript sees:** an `InputError` where a table like those above was read.
+   - **JavaScript sees:** an `InputError` where a table like those above was read or prepared.
    - **What to change:** correct the cap.
    - **Changed answers:** none in the locked cases. The largest total in `cases/` is 45%, and every case gives the same results as 0.7.0.
-4. **An explicit null `unissued_pool` or `conversion_price` is refused** (08b0). This one can stop an input that worked on 0.7.0.
-   - **What was wrong:** null is how `readOcf` and `readOcx` mark a term to fill in. Most blanks stop `readCapTable`, but these two were read as answers: a null pool as none, and a null conversion price as the issue price. So a table with them unfilled passed, on a guess nobody made.
-   - **Now:** each is an `InputError`, "is blank", saying to give the value or leave the field out. **Left out,** each means what it did: no pool, and the issue price.
+4. **An explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused** (08b0). This one can stop an input that worked on 0.7.0.
+   - **What was wrong:** null is how `readOcf` and `readOcx` mark a term to fill in. Most blanks stop `readCapTable`, but these three were read as answers: a null pool as none, a null conversion price as the issue price, and a note's null `conversion_base` as `with_pool`. So a table with them unfilled passed, on a guess nobody made.
+   - **Now:** each is an `InputError`, "is blank", saying to give the value or leave the field out. **Left out,** each means what it did: no pool, the issue price, and `with_pool`. So `readCapTable` refuses a table with any blank left.
    - **TypeScript reports:** nothing. No type changed, and a cap table's input is JSON.
-   - **JavaScript sees:** an `InputError` from `readCapTable`, `readExit` and `readInputs`, and on a `start` event's table, where a null was read.
-   - **What to change:** code that fills an import's `to_fill` needs nothing: every null conversion price is listed there, and an import never leaves the pool null. An input written by hand with either as `null` should give the value or leave the field out.
-   - **Changed answers:** none. No input in the locked cases has either as null, and the page's one-click "Conversion price = issue price" writes the price.
+   - **JavaScript sees:** an `InputError` from `readCapTable`, `readExit` and `readInputs`, on a `start` event's table, and on a note in a `notes` event, where a null was read.
+   - **What to change:** code that fills an import's `to_fill` needs nothing: every null is listed there but a `cap_multiple`, which only capped participation has, and an import never leaves the pool null. An input written by hand with one of the three as `null` should give the value or leave the field out.
+   - **Changed answers:** none. No input in the locked cases has one as null, and the page's one-click "Conversion price = issue price" writes the price.
 
 ## Reads more since 0.7.0
 
