@@ -4,7 +4,7 @@
 
 `readCarta(workbook)` mirrors `readOcx`: the same parsed workbook in, the same `CapTableImport` out, the same `ImportRefusal` with the format `"carta"`.
 
-**Where this stands:** the plan is answered, and the text above the answers follows them where they differ. **Next is 08b0,** engine changes that have nothing to do with Carta. **08b and after wait.** The plan rests on one report from 2022, and no founder needs the import yet. They go ahead when a second, current Carta report's structure comes in, or when a founder needs to import one. Until then, 1.0's gates come first.
+**Where this stands:** the plan is answered, and the text above the answers follows them where they differ. **08b0 is done,** engine changes that have nothing to do with Carta, and next are 1.0's gates. **08b and after wait.** The plan rests on one report from 2022, and no founder needs the import yet. They go ahead when a second, current Carta report's structure comes in, or when a founder needs to import one. Until then, 1.0's gates come first.
 
 **The short version:**
 - **The report is a ledger, and it gives more than OCX 0.4/0.5:** every holder, every certificate, each grant's strike, and each open SAFE's holder, amount, cap, discount and date.
@@ -38,7 +38,7 @@
 | 2 | What's read | **Confirmed, with four details.** Holders come from the ledgers as well, since the per-holder tabs have no convertibles column (fact 3). Only a heading reading `1:1` is read as a ratio; any other leaves the conversion price blank, since no export has shown one. The multiple is read only from the one whole shape seen, and only when a class's rows agree. Which column the pool's row fills isn't known (fact 7). |
 | 3 | Skip a row with a Canceled Date | **Corrected for two ledgers** (answer 2). In the Convertible Ledger, yes, and a Converted Date alone closes a row too. In the certificate and plan ledgers, the outstanding column decides. |
 | 4 | Blanks | **Confirmed, with additions.** A note also needs a repayment multiple, which the engine requires, and a rate, whose form no export has shown. "Does interest compound?" has one answer the engine takes, so Yes stops the import at the question. The conversion price is blank where the ratio isn't read. |
-| 5 | Refusals | **Confirmed, with additions:** `RSAs not purchased` above 0, and a Summary section or per-holder column the reader doesn't know, which is where warrants get caught (answer 6). A tab it doesn't know gets a note. Unlike OX9, an RSU isn't read at a $0 strike here. |
+| 5 | Refusals | **Confirmed, with additions:** `RSAs not purchased` above 0, a Summary section or per-holder column the reader doesn't know (answer 6), and a class or plan shown as outstanding with no ledger the reader reads, which between them catch warrants. A tab it doesn't know gets a note. Unlike OX9, an RSU isn't read at a $0 strike here. |
 | 6 | Never read | **Confirmed and widened,** to every personal column (below). **Row 2 is read as far as its date and no further,** since `as_of` needs it (answer 1). |
 | 7 | Drafts | **Confirmed, and settled** (answer 7): the page asks whenever the report says "with Drafts", since equal columns can't rule out a draft convertible. |
 | 8 | Values as written | **Confirmed for the import.** The engine gets one more refusal (answer 4). |
@@ -164,7 +164,7 @@ Nothing is guessed, never 1x and never $1 (O1). Each goes in `to_fill`:
 - the repayment multiple. `Change in Control Percent` may be it, but whether 200 means 2x or a 200% premium isn't known. It's asked.
 - the sale's date, as now (O13). Its cap is read as pre-money (`note_cap_read_as_pre_money`), the only kind the engine models.
 
-**How the blank works:** a row sits in `unconverted_safes` with `instrument: null`. `readSafe` refuses a field it doesn't know, and `valuation_cap` too, so nothing passes `readCapTable` until it's answered. `ImportBlank` doesn't change. Answering "note" moves the row to `unconverted_notes`, under a note's id, here and in `issue_order`. From 08b0 a null pool or conversion price stops `readCapTable` too (answer 9), so no blank here can pass unfilled.
+**How the blank works:** a row sits in `unconverted_safes` with `instrument: null`. `readSafe` refuses a field it doesn't know, and `valuation_cap` too, so nothing passes `readCapTable` until it's answered. `ImportBlank` doesn't change. Answering "note" moves the row to `unconverted_notes`, under a note's id, here and in `issue_order`. From 08b0 a null pool or conversion price stops `readCapTable` too (answer 9). A note's null `conversion_base` still reads as `with_pool`, the one blank left that can pass unfilled (`notes/review-08b0.md`, open question).
 
 ### What it refuses
 
@@ -174,7 +174,8 @@ Each as an `ImportRefusal` with the format `"carta"`, a kind, a term and a subje
 - `carta_layout`: not this layout
 - `grant_type`: a `Type` other than ISO or NSO, RSUs among them, printed if it looks like a code
 - `rsas_not_purchased`: that Summary row above 0, since what it holds isn't known
-- `unknown_summary_section`, `unknown_holdings_header`: a Summary section or a per-holder column the reader doesn't know (answer 6). Every security shows in both, so that's where warrants, or anything else unread, get caught. Reading warrants would be a guess, since their headers are unseen, and leaving them out would change payouts.
+- `unknown_summary_section`, `unknown_holdings_header`: a Summary section or a per-holder column the reader doesn't know (answer 6). Reading warrants would be a guess, since their headers are unseen, and leaving them out would change payouts.
+- `no_ledger`: a class or plan with a per-holder column, or with a Summary row whose saved value shows anything outstanding, and no ledger the reader reads, naming it (your review of 08a's item 4). The two terms above don't catch everything: a warrant Carta lists as a class row inside a known Summary section, with a `<Class> (<CODE>)` column on the per-holder tabs and its ledger on a tab the reader only notes, would otherwise be dropped without a word. A class with no column and no ledger is nothing outstanding, as now. A formula with no saved value shows nothing, so there only the column can say. The name is the refusal's subject and never reaches the summary to share (item 10).
 - `drafts_in_report`: item 7
 - `other_consideration`: an open convertible with `Other Consideration` above 0, since whether it's part of the purchase amount would be a guess
 
@@ -267,7 +268,7 @@ No run stopped. A discount changes nothing, since at a sale it's used only with 
 
 **The same climb in your 2-core sandbox:** 26 SAFEs, all $100,000 at one $15M cap, take 1.1, 2.1 and 7.1 seconds at 1, 3 and 8 strikes. That's lower than here, since the SAFEs are identical.
 
-**What's been checked at this size:** no locked case has more than 2 open SAFEs. X13's formula is general, and a timing test runs 10, but no locked payout has more than 2. 08b0 adds a case of about six (answer 10).
+**What's been checked at this size:** until 08b0, no locked case had more than 2 open SAFEs. X13's formula is general, and a timing test runs 10, but no locked payout had more than 2. 08b0 adds edge-12m, six at two caps (answer 10).
 
 ### What a cap read as written can do
 
@@ -290,7 +291,7 @@ Each row sums to the sale, so nothing downstream notices. `findBreakpoints` does
 **08b0 refuses it at a sale** (answer 4):
 - **The test:** purchase amounts ÷ caps add up to 1 or more, over all open post-money SAFEs, exactly 1 included.
 - **The refusal:** an `InputError`, as the round's is, so there's no new term. It's worded as the round's is, so the two read alike. It names each SAFE and the total percentage, and says a cap may be mistyped.
-- **What it doesn't touch:** a starting table isn't a sale, so it reads as now, and the round's own refusal catches it there. No table in `cases/` reaches it: the largest is 22.5%.
+- **What it doesn't touch:** a starting table isn't a sale, so it reads as now, and the round's own refusal catches it there. No table in `cases/` reaches it: summing every post-money SAFE in each case file, converted ones and every fixture included, the highest is 45% (ocx-05-reads).
 
 **The import still reads the cap as written.** The page shows the refusal at Use with the report still up (O13). It doesn't open a table it refuses, so the founder corrects the cap in the file and opens it again. (I first wrote that the editor would do it. It can't.)
 
@@ -321,24 +322,24 @@ Each row sums to the sale, so nothing downstream notices. `findBreakpoints` does
 Each is one branch and one PR.
 
 - **08a, this plan.**
-- **08b0, next:** the engine's changes, apart from Carta, in one PR on a new branch from main once this merges, with the `cases/` edit rule lifted for it:
+- **08b0, done:** the engine's changes, apart from Carta, in one PR on a new branch from main, with the `cases/` edit rule lifted for it:
   - **The refusal for SAFEs over 100%** (answer 4), with tests: the first three tables above, exactly 100%, and $200,001 caps reading as now
   - **An explicit null `unissued_pool` or `conversion_price` refused** (answer 9), an absent field meaning what it means now. Today's only explicit nulls in `cases/` are blanks in two OCX import results, ocx-02's and ocx-04's, so 08b0 checks that no import with every blank answered still writes one.
-  - **A locked case of about six post-money SAFEs at two caps, beside two series,** worked by the reference (answer 10)
+  - **A locked case of six post-money SAFEs at two caps, beside two series,** edge-12m, worked by the reference (answer 10)
   - **Stable from 1.0** says a list can gain names in a minor release, `ImportRefusal.format` included, and that code switching on them needs a default (answer 3)
   - **`notes/release-1.0.md`:** the refusal and the null joining "Fixed since 0.7.0", the null listed as a change (answers 3, 9)
-  - **ASSUMPTIONS:** the rules, and the speed numbers above
+  - **ASSUMPTIONS:** X19 and C19, and the speed numbers above
 - **Then 1.0's gates.**
 
-**08b and after wait,** until a second, current Carta report's structure comes in, or a founder needs to import one. A founder can send that structure from the live page today: on a report it refuses, "Copy a summary to share" prints what `pnpm ocx-structure` prints.
+**08b and after wait,** until a second, current Carta report's structure comes in, or a founder needs to import one. The live page doesn't bring that structure in. On a report it refuses, "Copy a summary to share" gives the refusal's code, how many tabs there are, and each column's cell kinds with counts: numbers, dates, text, and formulas with or without a saved value. That's fact 1's counts. But it prints a header only when it's one of OCX's, and shows every other column by its letter, so Carta's header names, which a second report's structure needs, don't come out. Until 08d teaches it Carta's titles and headers, they have to reach you by hand.
 
 **When they go ahead,** 08b splits, as 06e did, so each fits an evening. 08c or 08d may split too.
 
 - **Before 08b:** the facts below, from whichever report brings it on.
 - **08b, the rules and the first case** (the `cases/` edit rule lifted for the step):
-  - ASSUMPTIONS' new section, CR1 onward, and C19, the Carta case folder, as C18
+  - ASSUMPTIONS' new section, CR1 onward, and C20, the Carta case folder, as C18 (08b0 took C19)
   - `cases/carta-01-<name>`: a fictional company using every tab and column the reader reads, with common, two series, a plan with two strikes, open SAFEs at two caps, converted and cancelled rows, a partly cancelled grant, and totals with no saved value
-- **08b2, refusals and blanks:** `cases/carta-02-refused` and `cases/carta-03-to-fill`, one small change to the case for each, as 06e2's
+- **08b2, refusals and blanks:** `cases/carta-02-refused` and `cases/carta-03-to-fill`, one small change to the case for each, as 06e2's, with `no_ledger` for a class row, for a column, and for a plan
 - **08b3, the reads and the locked cases:** `cases/carta-04-reads`, one change for each reading rule, and the two locked cases below
 - **08c, `readCarta`:** the reader, its tests reading every case and fixture, `CARTA_TERMS`, the helpers in `ocx-cells.ts` taking the format, the engine README's section with the line that spillpoint isn't affiliated with Carta
 - **08d, the page:** the instructions, the questions, the summary, `ocf-check`
@@ -398,6 +399,11 @@ Together they reach what this report needs: a SAFE beside preferred, several SAF
 **The counts** stay out of the repo. The sizes 10 and 26 can stay as a made-up table's.
 
 **08b and after wait.** They go ahead when a second, current Carta report's structure comes in, or a founder needs to import one. Next is 08b0, then 1.0's gates, and `readCarta` when one of those happens.
+
+**After the merge (your review of 08a's second commit, 2026-11-03):**
+- **The `warrants` term stays out,** with one hole closed: `no_ledger`, under Refusals. Every class or plan with a per-holder column, or with a Summary row whose saved value shows anything outstanding, needs a ledger the reader reads, and one without is refused, naming it.
+- **The refusal names the row** when 08d comes, so a founder can find it in the file.
+- **"A founder can send that structure from the live page" was wrong,** and the steps now say what the summary gives.
 
 ## Facts your copy can settle before 08b
 

@@ -565,6 +565,8 @@ export function locate(d: RoundsDraft, path: string, message: string): RoundsPro
     const message = text(() => exitFieldName(built.json, `exit.cap_table${table[2]}`));
     return { message, event: start.key, fields: field ? [field] : [], onTable: true, ...(blank ? { blank } : {}) };
   }
+  // X19's refusal names each SAFE, on no one event: it's the SAFEs together, so it needs no path to be found.
+  if (path === "exit.cap_table_after_event.unconverted_safes" && detail.includes("would own the whole company")) return { message: detail, event: null, fields: [] };
   const m = /^inputs\.events\[(\d+)\]\.?(.*)$/.exec(path);
   const event = m ? d.events[Number(m[1])] : undefined;
   if (!m || !event) return { message: withPath(path, text(() => null)), event: null, fields: [], ...(blank ? { blank } : {}) };

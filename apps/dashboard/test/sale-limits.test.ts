@@ -4,7 +4,11 @@
 import { InputError, UnsupportedTermError } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
-import { saleLimitText } from "../src/saleLimits.ts";
+import { buildExit, checkBuilt, draftFromExit, fieldId } from "../src/draft.ts";
+import { fromRounds } from "../src/rounds.ts";
+import { locate } from "../src/roundsDraft.ts";
+import type { RoundsDraft } from "../src/roundsDraft.ts";
+import { safesOwnCompanyText, saleLimitText } from "../src/saleLimits.ts";
 
 const refusal = (term: string) => new UnsupportedTermError(term, "exit.cap_table.unconverted_notes", "A term");
 const POST_MONEY = { post_money_cap: "10000000" };
@@ -35,5 +39,58 @@ describe("each at-a-sale refusal, in plain words", () => {
   it("has none for any other refusal", () => {
     expect(saleLimitText(refusal("note_post_money_cap"), table(0, 1))).toBeNull();
     expect(saleLimitText(new InputError("exit.exit_date", "too early"), table(0, 1))).toBeNull();
+  });
+});
+
+describe("post-money SAFEs that own the whole company (X19)", () => {
+  const holders = [{ id: "founder", name: "Founder" }, { id: "a", name: "Investor A" }];
+  const company = {
+    holders,
+    events: [
+      { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "founder", shares: "1000000" }] },
+      { id: "safes", date: "2024-01-01", type: "safes", safes: [{ id: "safe_a", holder: "a", purchase_amount: "100000", post_money_cap: "8000", discount: "0" }] },
+    ],
+    after: "safes",
+  };
+  const words = "The post-money SAFEs would own the whole company at their caps: Investor A's SAFE, $100,000 at a cap of $8,000 (1,250%). That's 1,250% in all, so a cap may be mistyped.";
+
+  it("is a sentence, without the engine's path, and no other refusal is", () => {
+    const path = "import.cap_table.unconverted_safes";
+    expect(safesOwnCompanyText(new InputError(path, words.replace(/^The/, "the").replace(/\.$/, "")))).toBe(words);
+    expect(safesOwnCompanyText(new InputError(path, "expected an array"))).toBeNull();
+    expect(safesOwnCompanyText(new InputError("import.exit_date", "the post-money SAFEs would own"))).toBeNull();
+    expect(safesOwnCompanyText(refusal("several_safes"))).toBeNull();
+  });
+
+  it("isn't one of the limits a round lifts: a round couldn't convert them either (R4)", () => {
+    expect(saleLimitText(new InputError("import.cap_table.unconverted_safes", "the post-money SAFEs would own the whole company"), table(1, 0))).toBeNull();
+  });
+
+  it("on rounds, is the rounds' problem, in those words, wherever the page shows it", () => {
+    const built = fromRounds(company, ["0", "100000000"]);
+    expect(built.ok).toBe(false);
+    if (built.ok) return;
+    expect(built.message).toBe(words);
+    const path = (built.error as InputError).path;
+    expect(path).toBe("exit.cap_table_after_event.unconverted_safes");
+    expect(locate({ holders: [], events: [] } as unknown as RoundsDraft, path, built.message)).toEqual({ message: words, event: null, fields: [] });
+  });
+
+  it("in the editor, goes on the outstanding SAFEs' card, without its path", () => {
+    const safe = (cap: string) => ({ id: "safe_a", holder: "a", purchase_amount: "100000", post_money_cap: cap, discount: "0" });
+    const exit = (cap: string) => ({
+      cap_table: {
+        holders,
+        securities: [{ id: "common", name: "Common Stock", kind: "common" }],
+        seniority: [],
+        positions: [{ holder: "founder", security: "common", shares: 1000000 }],
+        unconverted_safes: [safe(cap)],
+      },
+      range: ["0", "100000000"],
+      exit_values: [],
+    });
+    const checked = checkBuilt(buildExit(draftFromExit(exit("8000"))));
+    expect(checked).toMatchObject({ ok: false, field: fieldId.outstanding, message: words.replace(/\.$/, "") });
+    expect(checkBuilt(buildExit(draftFromExit(exit("8000000")))).ok).toBe(true);
   });
 });

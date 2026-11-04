@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OcxWorkbook } from "spillpoint";
 
 import { App } from "../src/App.tsx";
-import { ocxReportLines } from "../src/ocxImport.ts";
+import { importOcx, ocxFilled, ocxQuestions, ocxReportLines } from "../src/ocxImport.ts";
 import { exitOf, lockedMillraceExit, payoutsAtBreakpoints } from "./payouts.ts";
 import type { PayoutsAtBreakpoints } from "./payouts.ts";
 import { applyOcxChange } from "../../../packages/engine/test/support/ocx.ts";
@@ -268,6 +268,56 @@ describe("a preferred series' one-click answers (06d review)", () => {
     type("Series Seed Preferred's original issue price, a share", "0.95");
     click("Conversion price = issue price");
     expect((screen.getByLabelText("Series Seed Preferred's conversion price, a share") as HTMLInputElement).value).toBe("0.95");
+  });
+
+  // C19: the engine refuses a null conversion price, so the one-click answer has to write the price, or a good import
+  // would stop here.
+  it.each([
+    ["the workbook's issue price", () => workbookOf("ocx-02-ferncliff-preferred"), null, "1"],
+    ["the issue price you typed", () => fixtureWorkbook("ocx-04-to-fill", "preferred-prices-differ.json"), "0.95", "0.95"],
+  ])("writes %s as the conversion price, and the table opens at Use", async (_, book, typed, written) => {
+    const picked = { name: "ferncliff.xlsx", bytes: xlsxOf(book()) };
+    const imported = await importOcx(picked);
+    if (!imported.ok) throw new Error(imported.message);
+    const asked = ocxQuestions(imported.result, imported.workbook);
+    const issue = "security:series_seed_preferred:original_issue_price";
+    const conversion = asked.find((q) => q.blank.field === "conversion_price")!;
+    const answers = typed ? { [issue]: typed } : {};
+    const filled = ocxFilled(imported.result, asked, { ...answers, ...conversion.shortcuts![0]!.sets(answers) }) as { securities: Json[] };
+    expect(filled.securities.find((s) => s.id === "series_seed_preferred")!.conversion_price).toBe(written);
+
+    render(<App />);
+    upload([xlsx(book(), "ferncliff.xlsx")]);
+    await review();
+    if (typed) type("Series Seed Preferred's original issue price, a share", typed);
+    click("Conversion price = issue price");
+    click("1x, non-participating");
+    choose("Which series is paid first at a sale?", /^All pari passu/);
+    click("Use this cap table");
+    expect(await screen.findByRole("tab", { name: "Payouts" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: /^Importing / })).toBeNull();
+  });
+});
+
+describe("post-money SAFEs that own the whole company (X19)", () => {
+  // ocx-01's one open SAFE, $200,000, at a cap of $150,000 where the case has $8,000,000: 133.33% of the company.
+  const mistyped = () =>
+    applyOcxChange(workbookOf("ocx-01-alder-gate") as never, [
+      { op: "set", tab: "SAFEs Ledger", cell: { address: "E4", kind: "number", text: "150000", formula: false } },
+      { op: "set", tab: "Summary View", cell: { address: "P3", kind: "number", text: "150000", formula: false } },
+    ]) as unknown as OcxWorkbook;
+
+  it("stops at Use in plain words, naming the SAFE, with the report still up and no round offered", async () => {
+    render(<App />);
+    upload([xlsx(mistyped(), "alder.xlsx")]);
+    await review();
+    click("Use this cap table");
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "This cap table can't be used yet. The post-money SAFEs would own the whole company at their caps: Investor S's SAFE, $200,000 at a cap of $150,000 (133.33%). That's 133.33% in all, so a cap may be mistyped.",
+    );
+    expect(screen.getByRole("region", { name: /^Importing / })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Use it to add a round" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Payouts" })).toBeNull();
   });
 });
 

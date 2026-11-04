@@ -20,7 +20,7 @@ import type { Decimal } from "decimal.js";
 import { D, ONE, ZERO, halfUp, roundDown, strikeInName } from "./decimal.ts";
 import { InputError, NoAnswerError, unsupportedTerm } from "./errors.ts";
 import { dayNumber } from "./dates.ts";
-import { array, notNegative, object, onlyKnownFields, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
+import { array, notNegative, object, onlyKnownFields, ownWholeCompany, positive, readNote, readSafe, readSecurity, readStartingTable, text, wholeShares } from "./input.ts";
 import type { CapTable, ConversionGroup, Holder, Note, Position, PreferredSeries, Safe, Security } from "./model.ts";
 
 type Json = Record<string, unknown>;
@@ -756,7 +756,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
 
   // R4: the post-money SAFEs own their purchase ÷ cap of Company Capitalization.
   const owned = postSafes.reduce((sum, f) => sum.plus(f.purchaseAmount.div(f.postMoneyCap!)), ZERO);
-  if (owned.gte(ONE)) throw new InputError(`${path}.convert_safes`, "the post-money SAFEs would own the whole company at their caps");
+  if (ownWholeCompany(postSafes)) throw new InputError(`${path}.convert_safes`, "the post-money SAFEs would own the whole company at their caps");
 
   // R23: a note converts its principal plus simple interest, Actual/365, to
   // the round's date. Its pre-money cap divides by the share count just

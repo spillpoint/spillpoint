@@ -48,6 +48,7 @@ describe("the exit cases the engine runs", () => {
       "edge-12j-larkspur-safes-at-a-sale",
       "edge-12k-two-equal-safes",
       "edge-12l-warrant-below-preference-beside-a-safe",
+      "edge-12m-six-safes",
       "edge-13a-note-with-pool",
       "edge-13b-note-without-pool",
       "edge-13c-note-common-only",
@@ -201,6 +202,16 @@ describe("malformed inputs fail with a clear error", () => {
 
   it("accepts the unchanged table", () => {
     expect(readCapTable(table(() => {})).positions).toHaveLength(2);
+  });
+
+  // C19 (08b0): an import's blank is null, and it reaches here only if nobody answered it. Left out, each field still
+  // means what it meant.
+  it("refuses a null conversion price or pool, and reads each left out as the issue price and none (C19)", () => {
+    expect(() => readCapTable(table((t) => (seed(t).conversion_price = null)))).toThrow("cap_table.securities[1].conversion_price: is blank: give the conversion price, or leave the field out to use the issue price");
+    expect(() => readCapTable(table((t) => (t.unissued_pool = null)))).toThrow("cap_table.unissued_pool: is blank: give the unissued pool, or leave the field out if there's none");
+    const read = readCapTable(table((t) => delete t.unissued_pool));
+    expect(read.unissuedPool.toString()).toBe("0");
+    expect((read.securities[1] as { conversionPrice: { toString(): string } }).conversionPrice.toString()).toBe("1.5");
   });
 
   it("reads a warrant for common or a preferred series, and refuses one for anything else (C4, E12)", () => {

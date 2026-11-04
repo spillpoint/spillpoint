@@ -17,7 +17,7 @@ import { defaultTop, longDate, summary } from "./ocfImport.ts";
 import type { Question } from "./ocfImport.ts";
 import { answered, shown } from "./ocxImport.ts";
 import type { AtUse } from "./ocxSummary.ts";
-import { saleLimitText } from "./saleLimits.ts";
+import { safesOwnCompanyText, saleLimitText } from "./saleLimits.ts";
 import { ShareSummary } from "./ShareSummary.tsx";
 
 export interface ImportUse {
@@ -125,7 +125,7 @@ export function ImportReview({ source, onUse, onCancel }: Props) {
         }
       }
       if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) {
-        stopped(e, `This cap table can't be used yet. ${withoutCodes(e.message)}`);
+        stopped(e, `This cap table can't be used yet. ${safesOwnCompanyText(e) ?? withoutCodes(e.message)}`);
         return;
       }
       throw e;

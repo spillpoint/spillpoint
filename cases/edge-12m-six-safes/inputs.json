@@ -1,0 +1,179 @@
+{
+  "case": "edge-12m-six-safes",
+  "description": "Six post-money SAFEs at a sale, three at a $10M cap and three at a $20M cap, beside a senior Series A and a junior Seed, both non-participating, with common, options and an unissued pool. The most open SAFEs any case has: each cap's three convert together (E20), and there is one Liquidity Capitalization for all six (X13), so payouts jump where the second three convert and where Series A converts (X16).",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "employee_c",
+          "name": "Employee C"
+        },
+        {
+          "id": "seed_fund",
+          "name": "Seed Fund"
+        },
+        {
+          "id": "series_a_fund",
+          "name": "Series A Fund"
+        },
+        {
+          "id": "investor_p",
+          "name": "Investor P"
+        },
+        {
+          "id": "investor_q",
+          "name": "Investor Q"
+        },
+        {
+          "id": "investor_r",
+          "name": "Investor R"
+        },
+        {
+          "id": "investor_s",
+          "name": "Investor S"
+        },
+        {
+          "id": "investor_t",
+          "name": "Investor T"
+        },
+        {
+          "id": "investor_u",
+          "name": "Investor U"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "options_0.25",
+          "name": "Options ($0.25 strike)",
+          "kind": "option",
+          "strike": "0.25"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "0.5",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 6000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 3000000
+        },
+        {
+          "holder": "employee_c",
+          "security": "options_0.25",
+          "shares": 500000
+        },
+        {
+          "holder": "seed_fund",
+          "security": "seed",
+          "shares": 2000000
+        },
+        {
+          "holder": "series_a_fund",
+          "security": "series_a",
+          "shares": 1000000
+        }
+      ],
+      "unissued_pool": 1000000,
+      "unconverted_safes": [
+        {
+          "id": "safe_p",
+          "holder": "investor_p",
+          "purchase_amount": "500000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_q",
+          "holder": "investor_q",
+          "purchase_amount": "300000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_r",
+          "holder": "investor_r",
+          "purchase_amount": "200000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_s",
+          "holder": "investor_s",
+          "purchase_amount": "1000000",
+          "post_money_cap": "20000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_t",
+          "holder": "investor_t",
+          "purchase_amount": "600000",
+          "post_money_cap": "20000000",
+          "discount": "0"
+        },
+        {
+          "id": "safe_u",
+          "holder": "investor_u",
+          "purchase_amount": "400000",
+          "post_money_cap": "20000000",
+          "discount": "0"
+        }
+      ]
+    },
+    "range": [
+      "0",
+      "40000000"
+    ],
+    "exit_values": [
+      "4000000",
+      "8000000",
+      "12000000",
+      "20000000",
+      "30000000",
+      "40000000"
+    ]
+  }
+}

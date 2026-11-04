@@ -6,7 +6,7 @@ It can also build the cap table from the company's history: shares issued, the o
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
-**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Two behaviors change in 1.0, both fixes: `prepare` works on its own frozen copy of the cap table, and `toCents` can't show an amount that's exactly a half cent a cent low. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
+**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Four behaviors change in 1.0, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused at a sale, and an explicit null `unissued_pool` or `conversion_price` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
 
 > **The charter and the signed documents govern, not this tool.** spillpoint models common terms with documented defaults. Your documents may differ, and where they do, they win.
 
@@ -615,8 +615,8 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
   - `seniority`: the preference tiers, most senior first
   - optional `conversion_groups`
   - `positions`: shares held, per holder and security
-  - optional `unissued_pool`
-  - optional `unconverted_safes` *(0.2.0)*: SAFEs still outstanding, each with an `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, `discount`, and optionally `cash_out_ranks_with`
+  - optional `unissued_pool`: left out, there's none. An explicit `null` is refused, as a preferred series' `conversion_price` is, where leaving it out means the issue price *(1.0)*
+  - optional `unconverted_safes` *(0.2.0)*: SAFEs still outstanding, each with an `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, `discount`, and optionally `cash_out_ranks_with`. At a sale, post-money SAFEs whose purchase amounts ÷ caps add up to 1 or more are refused: they'd own the whole company, so a cap may be mistyped *(1.0)*
   - optional `unconverted_notes` *(0.2.0)*: notes still outstanding, with the fields of the `notes` event below; the exit then needs an `exit_date`
   - optional `carve_out` *(0.2.0)*: `timing` (`before_preferences` or `alongside_preferences`), `tiers` (`from`, `to`, `percent`) and `allocation` (`holder`, `percent`)
 - `range`: the exit values to analyse
@@ -683,7 +683,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 
 ## Stable from 1.0
 
-Code can match on these names, as the project's page and check script do: the terms the engine and the imports refuse with, the codes an import's report notes, and the reasons a breakpoint gives. From 1.0 a name is never renamed or reused for something else. A new one can be added, and one stops being raised when spillpoint comes to model what it refuses; it stays here, marked as no longer raised. A test fails if the engine can raise a name this list doesn't have. The rules behind each are in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+Code can match on these names, as the project's page and check script do: the terms the engine and the imports refuse with, the codes an import's report notes, and the reasons a breakpoint gives. From 1.0 a name is never renamed or reused for something else. A list here can gain a new name in a minor release, and so can `ImportRefusal.format`, when spillpoint comes to read a new format. So code that switches on any of them needs a default: an exhaustive `switch`, or a `Record` keyed by one, stops compiling when a name is added. A name stops being raised when spillpoint comes to model what it refuses; it stays here, marked as no longer raised. A test fails if the engine can raise a name this list doesn't have. The rules behind each are in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
 
 ### `UnsupportedTermError`'s terms
 

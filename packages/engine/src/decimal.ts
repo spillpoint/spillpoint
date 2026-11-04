@@ -104,3 +104,9 @@ export function toCents(amount: Decimal): string {
 export function strikeInName(strike: Decimal): string {
   return strike.toFixed(Math.max(2, strike.decimalPlaces()));
 }
+
+/** A number in full, its thousands marked, for a message: "1,250,000.5". */
+export function grouped(x: Decimal): string {
+  const [whole, places] = x.toFixed().split(".") as [string, string | undefined];
+  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${places ? `.${places}` : ""}`;
+}
