@@ -11,7 +11,7 @@
 import type { Decimal } from "decimal.js";
 
 import { dayNumber } from "./dates.ts";
-import { D, ONE, ZERO, parseExact } from "./decimal.ts";
+import { D, ONE, ZERO, grouped, parseExact } from "./decimal.ts";
 import { InputError, unsupportedTerm } from "./errors.ts";
 import type { UnsupportedTermError } from "./errors.ts";
 import type {
@@ -127,9 +127,10 @@ function readDividend(value: unknown, path: string): CumulativeDividend {
 function readPreferred(s: Json, id: string, name: string, path: string): PreferredSeries {
   onlyKnownFields(s, PREFERRED_FIELDS, path);
   const originalIssuePrice = positive(s.original_issue_price, `${path}.original_issue_price`);
-  // A series' conversion price starts at its original issue price; anti-dilution lowers it.
-  const conversionPrice =
-    s.conversion_price == null ? originalIssuePrice : positive(s.conversion_price, `${path}.conversion_price`);
+  // A series' conversion price starts at its original issue price; anti-dilution lowers it. Left out, that's what it
+  // is. Null is an import's blank (O1), not that: nobody has said so, and the charter may say otherwise (C19).
+  if (s.conversion_price === null) throw new InputError(`${path}.conversion_price`, "is blank: give the conversion price, or leave the field out to use the issue price");
+  const conversionPrice = s.conversion_price === undefined ? originalIssuePrice : positive(s.conversion_price, `${path}.conversion_price`);
   const conversionRatio = originalIssuePrice.div(conversionPrice);
   if (s.conversion_ratio != null) {
     const stated = positive(s.conversion_ratio, `${path}.conversion_ratio`);
@@ -244,7 +245,7 @@ export function checkSaleLimits(ct: CapTable, path: string): void {
   const holderIds = new Set(ct.holders.map((h) => h.id));
   const byId = new Map(ct.securities.map((s) => [s.id, s]));
   const safes = ct.unconvertedSafes ?? [];
-  checkSafes(safes, holderIds, byId, ct.seniority, true, `${path}.unconverted_safes`);
+  checkSafes(safes, ct.holders, byId, ct.seniority, true, `${path}.unconverted_safes`);
   checkNotes(ct.unconvertedNotes ?? [], holderIds, byId, safes, ct.carveOut != null, true, `${path}.unconverted_notes`);
 }
 
@@ -349,7 +350,7 @@ function readTable(value: unknown, path: string, atASale: boolean): CapTable {
   const safes = (ct.unconverted_safes == null ? [] : array(ct.unconverted_safes, `${path}.unconverted_safes`)).map((v, i) =>
     readSafe(v, `${path}.unconverted_safes[${i}]`),
   );
-  checkSafes(safes, holderIds, byId, seniority, atASale, `${path}.unconverted_safes`);
+  checkSafes(safes, holders, byId, seniority, atASale, `${path}.unconverted_safes`);
   const notes = (ct.unconverted_notes == null ? [] : array(ct.unconverted_notes, `${path}.unconverted_notes`)).map((v, i) =>
     readNote(v, `${path}.unconverted_notes[${i}]`),
   );
@@ -363,10 +364,16 @@ function readTable(value: unknown, path: string, atASale: boolean): CapTable {
     positions,
     ...(safes.length > 0 ? { unconvertedSafes: safes } : {}),
     ...(notes.length > 0 ? { unconvertedNotes: notes } : {}),
-    unissuedPool: ct.unissued_pool == null ? ZERO : wholeShares(ct.unissued_pool, `${path}.unissued_pool`),
+    unissuedPool: readPool(ct.unissued_pool, `${path}.unissued_pool`),
     // Optional (0.1.0 cap tables have no such field), so left out when there's no carve-out.
     ...(ct.carve_out == null ? {} : { carveOut: readCarveOut(ct.carve_out, holderIds, `${path}.carve_out`) }),
   };
+}
+
+/** The unissued pool: none if it's left out. Null is an import's blank (O1), not none (C19). */
+function readPool(value: unknown, path: string): Decimal {
+  if (value === null) throw new InputError(path, "is blank: give the unissued pool, or leave the field out if there's none");
+  return value === undefined ? ZERO : wholeShares(value, path);
 }
 
 /** A SAFE (C8, C14): a post-money or a pre-money cap, never both, or neither; a discount below 1; and at a sale, optionally, the series its Cash-Out Amount ranks with (X9). */
@@ -390,17 +397,57 @@ export function readSafe(value: unknown, path: string): Safe {
 }
 
 /**
+ * Whether post-money SAFEs own the whole company or more at their caps: each owns its purchase amount ÷ post-money cap
+ * (R4, X13), and the test is that those add up to 1 or more. Summed as whole numbers, not decimals: three SAFEs at a
+ * third of the company each are exactly 1, and in 40 digits they add up to 0.999… and would pass.
+ */
+export function ownWholeCompany(safes: readonly Safe[]): boolean {
+  const whole = (x: Decimal): [bigint, bigint] => {
+    const [digits, places = ""] = x.toFixed().split(".") as [string, string | undefined];
+    return [BigInt(digits + places), 10n ** BigInt(places.length)];
+  };
+  let [top, bottom] = [0n, 1n];
+  for (const f of safes) {
+    if (!f.postMoneyCap) continue;
+    const [amount, amountScale] = whole(f.purchaseAmount);
+    const [cap, capScale] = whole(f.postMoneyCap);
+    const [shareTop, shareBottom] = [amount * capScale, cap * amountScale];
+    [top, bottom] = [top * shareBottom + shareTop * bottom, bottom * shareBottom];
+  }
+  return top >= bottom;
+}
+
+/** A percentage to two places, for a message: "1,251.25%". */
+const percent = (share: Decimal) => `${grouped(share.times(100).toDecimalPlaces(2))}%`;
+
+/**
+ * X19: post-money SAFEs that own the whole company or more have no Liquidity Capitalization. X13's everything else ÷
+ * (1 − Σ purchase amount ÷ cap) divides by nothing or goes negative, and common would be paid a negative amount. R4
+ * refuses the same at a priced round, and this reads as that does. A real table can't reach it, so a cap is mistyped.
+ * Read at a sale here, and checked again where every payout is worked out, for a table no reader saw (waterfall.ts).
+ */
+export function refuseSafesOwningTheCompany(safes: readonly Safe[], holders: readonly Holder[], path: string): void {
+  if (!ownWholeCompany(safes)) return;
+  const nameOf = (id: string) => holders.find((h) => h.id === id)?.name ?? id;
+  const counted = safes.filter((f) => f.postMoneyCap).map((f) => ({ f, share: f.purchaseAmount.div(f.postMoneyCap!) }));
+  const each = counted.map(({ f, share }) => `${nameOf(f.holder)}'s SAFE, $${grouped(f.purchaseAmount)} at a cap of $${grouped(f.postMoneyCap!)} (${percent(share)})`);
+  const total = counted.reduce((sum, { share }) => sum.plus(share), ZERO);
+  throw new InputError(path, `the post-money SAFEs would own the whole company at their caps: ${each.join("; ")}. That's ${percent(total)} in all, so a cap may be mistyped`);
+}
+
+/**
  * SAFEs still outstanding (X9, X13, X14). Their holders must be listed, their
  * ids new, and a named ranking a preferred series in the tiers. At a sale,
- * setups no case settles yet are refused, never skipped.
+ * setups no case settles yet are refused, never skipped, and so are post-money
+ * SAFEs that own the whole company or more (X19).
  */
 function checkSafes(
-  safes: Safe[], holderIds: ReadonlySet<string>, byId: ReadonlyMap<string, Security>, seniority: string[][], atASale: boolean, path: string,
+  safes: Safe[], holders: readonly Holder[], byId: ReadonlyMap<string, Security>, seniority: string[][], atASale: boolean, path: string,
 ): void {
   const ids = new Set<string>();
   safes.forEach((f, i) => {
     const at = `${path}[${i}]`;
-    if (!holderIds.has(f.holder)) throw new InputError(`${at}.holder`, `unknown holder ${f.holder}`);
+    if (!holders.some((h) => h.id === f.holder)) throw new InputError(`${at}.holder`, `unknown holder ${f.holder}`);
     if (ids.has(f.id) || byId.has(f.id)) throw new InputError(`${at}.id`, `${f.id} is already used`);
     ids.add(f.id);
     if (f.cashOutRanksWith != null && !seniority.some((tier) => tier.includes(f.cashOutRanksWith!))) {
@@ -408,6 +455,8 @@ function checkSafes(
     }
   });
   if (!atASale) return;
+  // First: a table that can't be right says so, rather than offer a round its SAFEs couldn't convert in (R4).
+  refuseSafesOwningTheCompany(safes, holders, path);
   const preferred = [...byId.values()].filter((s): s is PreferredSeries => s.kind === "preferred");
   const preMoney = safes.find((f) => f.preMoneyCap);
   if (preMoney && preferred.length > 0) {
@@ -438,6 +487,8 @@ export function readNote(value: unknown, path: string): Note {
   if ((n.cap_type ?? "pre_money") !== "pre_money") {
     throw unsupportedTerm("note_post_money_cap", `${path}.cap_type`, "Notes with a post-money cap (R23)");
   }
+  // Left out, a note's cap counts the pool (X10). Null is an import's blank (O1), not that: nobody has said so (C19).
+  if (n.conversion_base === null) throw new InputError(`${path}.conversion_base`, "is blank: give what the note's cap divides by, or leave the field out to count the pool");
   const base = (n.conversion_base ?? "with_pool") as Note["conversionBase"];
   if (!CONVERSION_BASES.includes(base)) throw new InputError(`${path}.conversion_base`, `must be one of ${CONVERSION_BASES.join(", ")}`);
   const issueDate = text(n.issue_date, `${path}.issue_date`);

@@ -3,7 +3,7 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, ZERO, strikeInName } from "./decimal.ts";
+import { D, ZERO, grouped, strikeInName } from "./decimal.ts";
 import type { CapTableImport, ImportBlank } from "./imports.ts";
 import { Ids, idOf, written } from "./ocx-cells.ts";
 import { Notes } from "./ocf-notes.ts";
@@ -39,10 +39,7 @@ const READ = ["stakeholders", "pool_rows", "share_classes", "certificates", "pla
 const NOT_NEEDED = ["stock_plan_history", "valuations_409a", "split_adjustments", "shareholder_groups"];
 
 /** A dollar amount in a made holder's name: "$6,000,000". */
-function dollars(x: Decimal): string {
-  const [whole, fraction] = x.toFixed().split(".") as [string, string | undefined];
-  return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${fraction ? `.${fraction}` : ""}`;
-}
+const dollars = (x: Decimal): string => `$${grouped(x)}`;
 
 /** OX11: a holder made for a convertibles row, named for it: its type, then its cap and its discount where given, then its count. */
 export function madeHolderName(type: string, cap: Decimal | undefined, discount: Decimal | undefined, count: Decimal): string {

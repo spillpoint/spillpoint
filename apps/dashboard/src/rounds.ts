@@ -12,6 +12,7 @@ import type { AntiDilutionAdjustment, CapTable, CapTableAfterEvent, RoundDetails
 import { NotShownYet, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
 import { dollars, dollarsAndCents, halfUp, percent, strikeText, withoutCodes } from "./format.ts";
+import { safesOwnCompanyText } from "./saleLimits.ts";
 
 type Decimal = D;
 type Json = Record<string, unknown>;
@@ -78,7 +79,7 @@ export function fromRounds(rounds: Rounds, range: unknown, terms: ExitTerms = {}
     return { ok: true, tables, draft: draftFromExit(exit) };
   } catch (e) {
     const error = e as Error;
-    if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) return { ok: false, message: withoutCodes(error.message), error };
+    if (e instanceof InputError || e instanceof UnsupportedTermError || e instanceof NotShownYet) return { ok: false, message: safesOwnCompanyText(e) ?? withoutCodes(error.message), error };
     throw e;
   }
 }

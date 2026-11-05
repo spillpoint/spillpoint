@@ -2,7 +2,7 @@
 // engine's own message for them talks about cases and inputs; a founder needs to know what's outstanding. A round that
 // converts them lifts them, so the import review offers one, and the Payouts tab says so until one does (R31).
 
-import { UnsupportedTermError } from "spillpoint";
+import { InputError, UnsupportedTermError } from "spillpoint";
 
 type Json = Record<string, unknown>;
 
@@ -42,4 +42,15 @@ export function saleLimitText(error: unknown, capTable: Json): string | null {
     default:
       return "spillpoint can't yet work out a sale while several convertible notes are outstanding, unless each has a valuation cap.";
   }
+}
+
+/**
+ * The refusal for post-money SAFEs that own the whole company or more (X19), as a sentence; null for any other refusal.
+ * It isn't one of the limits above: a round couldn't convert them either (R4), so nothing is offered. It names each
+ * SAFE, so it reads on its own, without the path an engine message starts with.
+ */
+export function safesOwnCompanyText(error: unknown): string | null {
+  if (!(error instanceof InputError) || !error.path.endsWith(".unconverted_safes")) return null;
+  const detail = error.message.slice(error.path.length + 2);
+  return detail.startsWith("the post-money SAFEs would own") ? `The${detail.slice(3)}.` : null;
 }

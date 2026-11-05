@@ -5,7 +5,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { D, UnsupportedTermError, buildCapTables, prepare, readCapTable, solve } from "../src/index.ts";
+import { D, InputError, UnsupportedTermError, buildCapTables, findBreakpoints, paySchedule, payout, prepare, readCapTable, solve } from "../src/index.ts";
+import type { Decisions, PreparedCapTable } from "../src/index.ts";
 import { readInputs } from "../src/case.ts";
 import { readCaseFile } from "./support/cases.ts";
 
@@ -31,6 +32,7 @@ describe("the Liquidity Capitalization (X1, X13, X14)", () => {
     "edge-12e-safe-ranks-with-series-a",
     "edge-12f-two-safes",
     "edge-12g-pre-money-safe-at-a-sale",
+    "edge-12m-six-safes",
   ])("%s: the count, price and shares at the top of the range match the case's report", (name) => {
     const exit = readInputs(readCaseFile(name, "inputs.json"));
     const reported = (readCaseFile(name, "expected.json") as { exit: { unconverted_safes: ReportedSafe[] } }).exit.unconverted_safes;
@@ -139,5 +141,139 @@ describe("what is refused, never skipped", () => {
     ["both caps", table([{ ...post("x", "s"), pre_money_cap: "900000" }]), "a SAFE has a post-money cap or a pre-money cap, not both"],
   ])("refuses %s, as malformed", (_, ct, message) => {
     expect(() => readCapTable(ct)).toThrow(message);
+  });
+});
+
+// X19 (08b0): the plan's table. Before it, the first three paid common a negative amount and each row still summed to
+// the sale, so nothing downstream noticed.
+describe("post-money SAFEs that own the whole company or more (X19)", () => {
+  const holders = [{ id: "founder", name: "Founder" }, { id: "a", name: "Investor A" }, { id: "b", name: "Investor B" }, { id: "c", name: "Investor C" }];
+  const safe = (holder: string, purchase_amount: string, post_money_cap: string) => ({ id: `safe_${holder}`, holder, purchase_amount, post_money_cap, discount: "0" });
+  const table = (safes: Record<string, unknown>[]) => ({
+    holders,
+    securities: [{ id: "common", name: "Common Stock", kind: "common" }],
+    seniority: [],
+    positions: [{ holder: "founder", security: "common", shares: 1000000 }],
+    unconverted_safes: safes,
+  });
+  const refusal = (read: () => unknown): InputError => {
+    try {
+      read();
+    } catch (e) {
+      expect(e).toBeInstanceOf(InputError);
+      return e as InputError;
+    }
+    throw new Error("expected a refusal");
+  };
+
+  it.each([
+    ["$8,000 and $8,000,000", "8000", "8000000", "1,250%", "1.25%", "1,251.25%"],
+    ["$100,000 and $8,000,000", "100000", "8000000", "100%", "1.25%", "101.25%"],
+    ["$150,000 and $200,000", "150000", "200000", "66.67%", "50%", "116.67%"],
+    ["$200,000 and $200,000, exactly 100%", "200000", "200000", "50%", "50%", "100%"],
+  ])("refuses caps of %s, naming each SAFE and the total", (_, capA, capB, shareA, shareB, total) => {
+    const e = refusal(() => readCapTable(table([safe("a", "100000", capA), safe("b", "100000", capB)])));
+    expect(e.path).toBe("cap_table.unconverted_safes");
+    expect(e.message).toContain("the post-money SAFEs would own the whole company at their caps");
+    expect(e.message).toContain(`Investor A's SAFE, $100,000 at a cap of $${Number(capA).toLocaleString("en-US")} (${shareA})`);
+    expect(e.message).toContain(`Investor B's SAFE, $100,000 at a cap of $${Number(capB).toLocaleString("en-US")} (${shareB})`);
+    expect(e.message).toContain(`That's ${total} in all, so a cap may be mistyped`);
+  });
+
+  it("refuses thirds that make exactly 100%, which in decimals add up to 0.999…", () => {
+    const e = refusal(() => readCapTable(table(["a", "b", "c"].map((h) => safe(h, "100000", "300000")))));
+    expect(e.message).toContain("That's 100% in all");
+  });
+
+  it("reads caps of $200,001 as it did: just under 100%, and the founder's $100 is right", () => {
+    const read = readCapTable(table([safe("a", "100000", "200001"), safe("b", "100000", "200001")]));
+    const [answer] = solve(prepare(read, null), new D(20000000)).answers;
+    expect(answer!.payout.lines.map((l) => [l.holder, l.amount.toFixed(2)])).toEqual([["founder", "100.00"], ["a", "9999950.00"], ["b", "9999950.00"]]);
+  });
+
+  it("counts only post-money SAFEs: a discount-only SAFE has no cap to own a share at", () => {
+    // Refused for what it is, several_safes, not for owning the company.
+    const ct = table([safe("a", "100000", "1000000"), { id: "safe_b", holder: "b", purchase_amount: "5000000", discount: "0.2" }]);
+    expect(() => readCapTable(ct)).toThrow(UnsupportedTermError);
+  });
+
+  it("comes before the limits on other kinds of SAFE: a round couldn't convert these, so a round isn't the way out", () => {
+    const ct = table([safe("a", "100000", "8000"), { id: "safe_b", holder: "b", purchase_amount: "100000", pre_money_cap: "900000" }]);
+    expect(refusal(() => readCapTable(ct)).message).toContain("would own the whole company");
+  });
+
+  const events = (safes: Record<string, unknown>[]) => [
+    { id: "founding", date: null, type: "issue", security: { id: "common", name: "Common Stock", kind: "common" }, issues: [{ holder: "founder", shares: "1000000" }] },
+    { id: "safes", date: "2024-01-01", type: "safes", safes },
+  ];
+  const seedRound = {
+    id: "seed", date: "2025-01-01", type: "priced_round",
+    series: { id: "seed", name: "Seed Preferred", kind: "preferred", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
+    pre_money: "8000000", investments: [{ holder: "a", amount: "2000000" }], convert_safes: true, seniority: [["seed"]],
+  };
+
+  it("refuses them on a table built from rounds, at the sale", () => {
+    const inputs = { holders, events: events([safe("a", "100000", "8000")]), exit: { cap_table_after_event: "safes", range: ["0", "1"], exit_values: [] } };
+    const e = refusal(() => readInputs(inputs));
+    expect(e.path).toBe("exit.cap_table_after_event.unconverted_safes");
+    expect(e.message).toContain("That's 1,250% in all");
+  });
+
+  it("leaves a starting table alone: it isn't a sale, and the round refuses them itself (R4)", () => {
+    const start = { id: "start", date: "2024-01-01", type: "start", cap_table: table([safe("a", "100000", "8000")]), issue_order: ["safe_a"] };
+    expect(buildCapTables({ holders, events: [start] })).toHaveLength(1);
+    expect(() => buildCapTables({ holders, events: [start, seedRound] })).toThrow("inputs.events[1].convert_safes: the post-money SAFEs would own the whole company at their caps");
+  });
+
+  it("at a priced round, refuses thirds that make exactly 100% too (R4)", () => {
+    const company = { holders, events: [...events(["a", "b", "c"].map((h) => safe(h, "100000", "300000"))), seedRound] };
+    expect(() => buildCapTables(company)).toThrow("inputs.events[2].convert_safes: the post-money SAFEs would own the whole company at their caps");
+  });
+
+  // A table no reader saw: buildCapTables gives one, and a caller can write one. On #139 before this, buildCapTables,
+  // prepare and solve paid the founder -$230,000,000 on a $100,000 SAFE at an $8,000 cap.
+  describe("where every payout is worked out, on a table no reader saw", () => {
+    const built = (cap: string) => buildCapTables({ holders, events: events([safe("a", "100000", cap)]) }).at(-1)!.capTable;
+    const sameWords = refusal(() => readCapTable(table([safe("a", "100000", "8000")]))).message;
+    const nobody: Decisions = { converted: new Set(), exercised: new Set() };
+    const schedule = { id: "s", description: "", payments: [{ label: "Closing", amount: new D(1000000) }] };
+
+    it("prepare refuses it, in the reader's words", () => {
+      expect(refusal(() => prepare(built("8000"))).message).toBe(sameWords);
+    });
+
+    it.each<[string, (pc: PreparedCapTable) => unknown]>([
+      ["solve", (pc) => solve(pc, new D(20000000))],
+      ["payout", (pc) => payout(pc, new D(20000000), nobody)],
+      ["findBreakpoints", (pc) => findBreakpoints(pc, [new D(0), new D(20000000)])],
+      ["paySchedule", (pc) => paySchedule(pc, schedule)],
+    ])("%s refuses a prepared table written by hand", (_, run) => {
+      expect(refusal(() => run({ capTable: built("8000"), exitDate: null })).message).toBe(sameWords);
+    });
+
+    it("sees a change to a table written by hand, on the next call", () => {
+      const capTable = built("8000000");
+      const hand: PreparedCapTable = { capTable, exitDate: null };
+      expect(solve(hand, new D(20000000)).answers).toHaveLength(1);
+      capTable.unconvertedSafes![0]!.postMoneyCap = new D(8000);
+      expect(refusal(() => solve(hand, new D(20000000))).message).toBe(sameWords);
+    });
+
+    it("refuses thirds that make exactly 100% there too", () => {
+      const thirds = buildCapTables({ holders, events: events(["a", "b", "c"].map((h) => safe(h, "100000", "300000"))) }).at(-1)!.capTable;
+      expect(refusal(() => prepare(thirds)).message).toContain("That's 100% in all");
+    });
+
+    it("works out a table under 100% as it did", () => {
+      const [answer] = solve(prepare(built("8000000")), new D(20000000)).answers;
+      expect(answer!.payout.lines.map((l) => [l.holder, l.amount.toFixed(2)])).toEqual([["founder", "19750000.00"], ["a", "250000.00"]]);
+    });
+
+    it("leaves the sale's other limits to the readers: they refuse what isn't modeled yet, and it's worked out here", () => {
+      const pre = { id: "safe_b", holder: "b", purchase_amount: "100000", pre_money_cap: "900000" };
+      const company = { holders, events: events([safe("a", "100000", "1000000"), pre]) };
+      expect(() => readInputs({ ...company, exit: { cap_table_after_event: "safes", range: ["0", "1"], exit_values: [] } })).toThrow(UnsupportedTermError);
+      expect(() => prepare(buildCapTables(company).at(-1)!.capTable)).not.toThrow();
+    });
   });
 });

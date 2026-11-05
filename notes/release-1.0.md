@@ -38,6 +38,33 @@ Started in 10c. The release step finishes it.
    - **JavaScript sees:** `toCents` gives the cent above where it gave the cent below, for an amount that's exactly a half cent and came out a hair under. Nothing else it gives changes. The pro-rata refusal's message can say a cent more, the whole entitlement.
    - **What to change:** nothing.
    - **Changed answers:** none in the locked cases. Of the 9,322 amounts the exit cases give, none rounds differently, and every case matches the reference as before. The amounts themselves are unchanged: only how they're shown.
+3. **Post-money SAFEs that own the whole company or more are refused at a sale** (08b0).
+   - **What was wrong:** a post-money SAFE owns its purchase amount ÷ its cap of the company. Where those add up to 100% or more, no Liquidity Capitalization exists, and a sale paid common a negative amount, each row still adding up to the sale. A cap mistyped low enough does this. On 0.7.0, two $100,000 SAFEs and 1,000,000 common, at a $20,000,000 sale:
+
+     | Caps | Together | Founder on 0.7.0 | SAFEs on 0.7.0 | Now |
+     |---|---:|---:|---|---|
+     | $8,000 and $8,000,000 | 1,251.25% | −$230,250,000.00 | $250,000,000.00, $250,000.00 | refused |
+     | $100,000 and $8,000,000 | 101.25% | −$250,000.00 | $20,000,000.00, $250,000.00 | refused |
+     | $150,000 and $200,000 | 116.67% | −$3,333,333.33 | $13,333,333.33, $10,000,000.00 | refused |
+     | $200,000 and $200,000 | 100% | $9,950,000.00 | $9,950,000.00, $100,000.00 | refused |
+     | $200,001 and $200,001 | 99.9995% | $100.00 | $9,999,950.00, $9,999,950.00 | the same: it's right |
+
+   - **Now:** `readCapTable`, `readExit` and `readInputs` throw an `InputError` at the sale, on a table given in full or built from rounds, worded as a priced round's refusal is: "the post-money SAFEs would own the whole company at their caps". It names each SAFE, with its amount, cap and share, gives the total, and says a cap may be mistyped. There's no new term.
+     - **The test:** 1 or more over all open post-money SAFEs, whoever would convert. SAFEs with a pre-money cap or no cap aren't counted.
+     - **A starting table** isn't a sale, so it reads as it did, and a round refuses them itself.
+     - **`prepare` refuses them too,** in the same words, and so do `solve`, `payout`, `findBreakpoints` and `paySchedule` on a prepared table written by hand. A table from `buildCapTables` reaches `prepare` with no reader on the way: on 0.7.0 that path paid the founder −$230,000,000.00 on a $100,000 SAFE at an $8,000 cap. The sale's other limits stay with the readers: they refuse what isn't modeled yet, and this table has no answer.
+   - **The same gap at a priced round, closed:** both add the shares up exactly now. Three SAFEs at a third of the company each are exactly 100%, and in 40 digits they came to 0.999…, so on 0.7.0 a priced round converted them, and a sale paid the founder $0.00.
+   - **TypeScript reports:** nothing. No type changed.
+   - **JavaScript sees:** an `InputError` where a table like those above was read or prepared.
+   - **What to change:** correct the cap.
+   - **Changed answers:** none in the locked cases. The largest total in `cases/` is 45%, and every case gives the same results as 0.7.0.
+4. **An explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused** (08b0). This one can stop an input that worked on 0.7.0.
+   - **What was wrong:** null is how `readOcf` and `readOcx` mark a term to fill in. Most blanks stop `readCapTable`, but these three were read as answers: a null pool as none, a null conversion price as the issue price, and a note's null `conversion_base` as `with_pool`. So a table with them unfilled passed, on a guess nobody made.
+   - **Now:** each is an `InputError`, "is blank", saying to give the value or leave the field out. **Left out,** each means what it did: no pool, the issue price, and `with_pool`. So `readCapTable` refuses a table with any blank left.
+   - **TypeScript reports:** nothing. No type changed, and a cap table's input is JSON.
+   - **JavaScript sees:** an `InputError` from `readCapTable`, `readExit` and `readInputs`, on a `start` event's table, and on a note in a `notes` event, where a null was read.
+   - **What to change:** code that fills an import's `to_fill` needs nothing: every null is listed there but a `cap_multiple`, which only capped participation has, and an import never leaves the pool null. An input written by hand with one of the three as `null` should give the value or leave the field out.
+   - **Changed answers:** none. No input in the locked cases has one as null, and the page's one-click "Conversion price = issue price" writes the price.
 
 ## Reads more since 0.7.0
 
