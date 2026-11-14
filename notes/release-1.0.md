@@ -2,6 +2,10 @@
 
 Started in 10c. The release step finishes it.
 
+## Checked against a published waterfall
+
+spillpoint reproduces a published outside waterfall exactly: Hustle Fund's worked example in Brian Nichols, ["Waterfall modeling for startup exits: A step-by-step guide"](https://www.hustlefund.vc/post/exit-waterfall-modeling) (August 10, 2026), all 20 payouts and all five breakpoints. It's the locked case `outside-01-hustle-fund` (10i).
+
 ## Fixed since 0.7.0
 
 1. **`prepare` works on its own frozen copy of the cap table** (10c).
