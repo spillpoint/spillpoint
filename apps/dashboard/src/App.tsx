@@ -13,7 +13,7 @@ import type { CapTable } from "spillpoint";
 import build from "virtual:build";
 import examples from "virtual:examples";
 
-import { FORM_URL, SIGN_UP } from "../../site/signUp.ts";
+import { FORM_URL, HEADER, REPO_URL, SIGN_UP } from "../../site/links.ts";
 
 import { BreakpointList } from "./BreakpointList.tsx";
 import { CapTableEditor } from "./CapTableEditor.tsx";
@@ -401,6 +401,16 @@ export function App() {
         <div className="masthead__title">
           <span className="wordmark">spillpoint</span>
           <span className="masthead__tagline">Who gets what when the company is sold</span>
+          {/* Two links out beside the title (10h), each in its own tab. Plain links: no GitHub button script, badge or
+              star count, so the page still requests nothing. */}
+          <nav className="masthead__links" aria-label="Updates and code">
+            <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
+              {HEADER.updates}
+            </a>
+            <a href={REPO_URL} target="_blank" rel="noopener">
+              <span aria-hidden="true">★</span> {HEADER.star}
+            </a>
+          </nav>
         </div>
         <div className="masthead__controls">
           <label className="masthead__example">
@@ -509,7 +519,7 @@ export function App() {
         {/* Release emails (10h): a link out, in its own tab. The page sends nothing for it. */}
         <p>
           {SIGN_UP.before}{" "}
-          <a href={FORM_URL} target="_blank" rel="noopener">
+          <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
             {SIGN_UP.link}
           </a>{" "}
           {SIGN_UP.after}

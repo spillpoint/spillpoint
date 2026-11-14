@@ -264,7 +264,7 @@ describe("the fund page", () => {
   it("names spillpoint-fund's version and the commit in the footer, and links back to the main page", () => {
     render(<App />);
     const fund = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../packages/fund/package.json"), "utf8"));
-    // The footer's first line; the second is the sign-up (sign-up.test.tsx).
+    // The footer's first line; the second is the sign-up (links.test.tsx).
     expect(screen.getByRole("contentinfo").firstElementChild!.textContent).toMatch(
       new RegExp(`^spillpoint-fund ${fund.version.replaceAll(".", "\\.")} \\([0-9a-f]{7}(, modified)?\\) · Exit waterfall$`),
     );

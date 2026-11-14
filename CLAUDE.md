@@ -84,7 +84,7 @@ A second package, `packages/fund` (`spillpoint-fund`): the fund-level waterfall,
 - `packages/engine`: the npm package `spillpoint`. Pure functions, no UI, no I/O.
 - `packages/fund`: the npm package `spillpoint-fund`, with its own docs, cases and reference ("The fund workstream", above).
 - `apps/fund`: the fund page, `@spillpoint/fund`, deployed under `/fund/` ("The fund workstream", above).
-- `apps/site`: what both pages share, not a package: `signUp.ts`, with `FORM_URL`, the release-email form both footers and the root README link to (10h).
+- `apps/site`: what both pages share, not a package: `links.ts`, with `FORM_URL` (the release-email form, linked from both headers and footers and the root README) and `REPO_URL` (the header's star link) (10h).
 - `cases/`: one folder per case, each with `expected.json` and `DERIVATION.md` (a plain-English walk-through of the answer). An exit or round case has `inputs.json`; an OCF case has an OCF package or one-file fixtures instead (ASSUMPTIONS C16). Locked (hard rule 1).
 - `reference/`: a standalone Python brute-force calculator that produced the expected values. The engine never imports it. It exists so expected values don't come from the code they test, and it uses a different method from the engine: at each exit value it tries every combination of conversion and exercise decisions and keeps the stable ones.
 - `apps/dashboard`: Vite + React, deployed to GitHub Pages at `spillpoint.io` (until 10h `spillpoint.github.io/spillpoint`, which redirects there).

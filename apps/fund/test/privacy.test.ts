@@ -2,8 +2,9 @@
 //
 // A fund's data never leaves the computer (CLAUDE.md, rule 5). This builds the fund page as it would ship and checks,
 // as the main page's privacy test does: the browser is told to refuse every request the page might make, the page
-// loads only its own files, and its scripts contain no way to make a request, nor any browser storage. The one outside
-// address it names is the sign-up form's (10h), a link the visitor opens or not; the page requests nothing from it.
+// loads only its own files, and its scripts contain no way to make a request, nor any browser storage. The outside
+// addresses it names are its two links out (10h), the release-email form and the repository, which the visitor opens or
+// not; the page requests nothing from either.
 
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,7 +13,7 @@ import { join, resolve } from "node:path";
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { FORM_URL } from "../../site/signUp.ts";
+import { FORM_URL, REPO_URL } from "../../site/links.ts";
 
 const app = resolve(import.meta.dirname, "..");
 let outDir: string;
@@ -68,7 +69,7 @@ describe("the built fund page", () => {
     expect(found).toEqual([]);
   });
 
-  it("mentions no web address except the sign-up form's and documentation links in library error messages", () => {
+  it("mentions no web address except its two links out and documentation links in library error messages", () => {
     // The main page's list. Recharts (f01g) brings Redux Toolkit's and Immer's error-message links with it.
     const allowed = [
       /^http:\/\/www\.w3\.org\//,
@@ -78,10 +79,17 @@ describe("the built fund page", () => {
       // Immer's error messages point here for details.
       /^https:\/\/bit\.ly\/3cXEKWf/,
     ];
-    // The sign-up form's address, exactly as FORM_URL has it (10h), as on the main page.
-    expect(scripts.some(({ text }) => text.includes(FORM_URL))).toBe(true);
-    const addresses = scripts.flatMap(({ text }) => [...text.replaceAll(FORM_URL, "").matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => m[0]));
-    expect(addresses.filter((a) => !allowed.some((r) => r.test(a)))).toEqual([]);
+    // The two addresses the page links out to (10h), each exactly as apps/site/links.ts has it: the release-email form
+    // and the repository. Each is there, and each is read whole and matched exactly, so no other address on their hosts,
+    // a longer one on GitHub say, gets through.
+    const ADDRESS = /https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g;
+    const linksOut = [FORM_URL, REPO_URL];
+    for (const link of linksOut) {
+      expect(link.match(ADDRESS)?.[0], link).toBe(link);
+      expect(scripts.some(({ text }) => text.includes(link)), link).toBe(true);
+    }
+    const addresses = scripts.flatMap(({ text }) => [...text.matchAll(ADDRESS)].map((m) => m[0]));
+    expect(addresses.filter((a) => !linksOut.includes(a) && !allowed.some((r) => r.test(a)))).toEqual([]);
   });
 
   it("carries the fund engine and never the company engine", () => {

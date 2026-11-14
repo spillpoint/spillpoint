@@ -11,7 +11,7 @@ Branch `10h-spillpoint-io-and-sign-up`, from main at `09c1deb` (#139 merged).
 1. **I didn't change the base paths.** Both pages already build with relative paths (`./`), and that is what makes this move safe. The same build works at `spillpoint.io/` and at the old `spillpoint.github.io/spillpoint/`, so the live page is never broken, whichever comes first, the merge or the switch. With `/` as the base, the old address would serve a blank page between the merge and the switch. That's the same failure as last time (section 1), and the new tests fail if anyone tries it.
 2. **Why the last attempt went blank** (section 1). Two things together: a redirect browsers keep forever, and the page's own policy refusing its files from another address. I reproduced both in Chrome.
 3. **Most of your steps come before the merge** (section 6), and the domain must never be taken off once it's set.
-4. **The form address is the one you sent**, in `apps/site/signUp.ts` and the root README.
+4. **The form address is the one you sent**, in `apps/site/links.ts` and the root README.
 
 ## 1. Why the last attempt went blank
 
@@ -60,15 +60,15 @@ From the same reproduction, run on this branch's build, with the move done in th
 
 ## 4. The sign-up
 
-- **`apps/site/signUp.ts`:** `FORM_URL`, your Google Form, and the line, word for word. `apps/site` is a plain folder both pages import from, not a package; pnpm's workspace and the lockfile don't change.
-- **Both footers:** the line is a second line under the version. "Leave your email to hear about releases." is the link, and the rest is plain text. It opens in a new tab with `rel="noopener"`.
+- **`apps/site/links.ts`** (`signUp.ts` in the first commit): `FORM_URL`, your Google Form, and the line, word for word. `apps/site` is a plain folder both pages import from, not a package; pnpm's workspace and the lockfile don't change.
+- **Both footers:** the line is a second line under the version. "Leave your email to hear about releases." is the link, and the rest is plain text. It opens in a new tab, with `rel="noopener noreferrer"` since your review.
 - **The root README:** the same line, at the end of "Try it". A test holds its address to `FORM_URL`.
 - **Still sends nothing:**
   - The CSP is unchanged: the policy's lines aren't in the diff, and the fund page's still equals the main page's.
   - Following a link isn't a request from the page.
   - The page has no form, frame or script for the sign-up.
   - In the reproduction, nothing was requested from the form's host.
-- **What the form's host learns:** that the visit came from `https://spillpoint.io/`, the origin only, which browsers send by default. Nothing about a cap table is in any URL.
+- **What the form's host learns:** since your review, not even which site sent the visitor (`noreferrer`). Nothing about a cap table is in any URL.
 
 ## 5. Tests
 
@@ -78,8 +78,8 @@ From the same reproduction, run on this branch's build, with the move done in th
   - each page's link lands on the other
 
   I checked these fail with `/` as the main page's base: the old address fails, and so does the worker at both addresses.
-- **`apps/dashboard/test/sign-up.test.tsx`, `apps/fund/test/sign-up.test.tsx`:** the line word for word, the link's address, `target="_blank"` and `rel="noopener"`, that it's the page's only link out, and that nothing on the page takes an email. The main page's also checks the README's line.
-- **The privacy tests** (both pages' and the site's): the one change is that `FORM_URL` is allowed, exactly. It must be there, and it's set aside whole before the other addresses are read, so nothing else on its host gets through. The rest holds as before: no way to send anything, no browser storage, the policy.
+- **`apps/dashboard/test/links.test.tsx`, `apps/fund/test/links.test.tsx`** (`sign-up.test.tsx` in the first commit): the line word for word, the link's address, `target="_blank"` and its `rel`, the page's links out, and that nothing on the page takes an email. The main page's also checks the README's line. The header's links are in "After your review", below.
+- **The privacy tests** (both pages' and the site's): the one change is that the page's links out are allowed, each exactly. Each must be there, and each is matched whole, so nothing else on its host gets through. The rest holds as before: no way to send anything, no browser storage, the policy.
 - **Both `app.test.tsx` footer tests** read the footer's first line, since the second is the sign-up.
 
 CI's sequence passes locally: install, typecheck, build, the tests and the reference checks.
@@ -116,7 +116,7 @@ CI's sequence passes locally: install, typecheck, build, the tests and the refer
 
 **After the merge:**
 
-8. When the Pages run is green, check that the sign-up link on both pages opens your form in a new tab.
+8. When the Pages run is green, check on both pages that "Get updates" and the footer's sign-up open your form in a new tab, and "★ Star on GitHub" opens the repository.
 9. **Optional, in the other repo:** `spillpoint/spillpoint.github.io`'s `index.html` could send its meta refresh and canonical link straight to `https://spillpoint.io/`. That saves `spillpoint.github.io/` one hop, but it works without it.
 
 **Never, after step 4: take the domain off.** Browsers keep the redirect for good, so taking the domain off strands them, as last time. If something breaks, fix the DNS or the setting in place.
@@ -125,9 +125,13 @@ CI's sequence passes locally: install, typecheck, build, the tests and the refer
 
 ## How to check it by behavior
 
-- **The footers:** run `pnpm preview` and open http://localhost:4173/. At the foot of the page are two lines: the version with "Fund waterfall", then "Using spillpoint? Leave your email to hear about releases. Optional, and your cap table never leaves your computer." The middle sentence opens your form in a new tab. Click "Fund waterfall": the fund page's footer has the same second line, and "Exit waterfall" goes back. At phone width the line wraps, with no sideways scroll.
+- **The header and the footers:** run `pnpm preview` and open http://localhost:4173/.
+  - At the right end of the title's line are "Get updates" and "★ Star on GitHub". The first opens your form in a new tab, the second the repository.
+  - At the foot of the page are two lines: the version with "Fund waterfall", then "Using spillpoint? Leave your email to hear about releases. Optional, and your cap table never leaves your computer." The middle sentence opens your form in a new tab.
+  - Click "Fund waterfall": the fund page has the same two header links, and its footer line ends "Optional, and your fund's numbers never leave your computer." "Exit waterfall" goes back.
+  - At phone width the header links sit beside the wordmark, with the tagline under them. At 320px they move to their own line under the wordmark.
 - **Both addresses:** `pnpm --filter @spillpoint/fund exec vitest run test/site.test.ts` builds the site and checks it from spillpoint.io and from the old address.
-- **The sign-up and privacy:** `pnpm --filter @spillpoint/dashboard exec vitest run test/sign-up.test.tsx test/privacy.test.ts`, and the same in `@spillpoint/fund`.
+- **The links and privacy:** `pnpm --filter @spillpoint/dashboard exec vitest run test/links.test.tsx test/privacy.test.ts`, and the same in `@spillpoint/fund`.
 - **After the switch:** step 6, then step 8.
 
 ## Assumptions added
@@ -136,13 +140,68 @@ None in `docs/ASSUMPTIONS.md`: nothing here is modeling. The page's own choices:
 
 - **Base paths stay relative** (`./`), so one build works at both addresses.
 - **The link is the middle sentence.** The line's other two sentences are plain text around it.
-- **The line is word for word on both pages,** "your cap table" on the fund page too. See question 1.
-- **`rel` is exactly `noopener`,** so the form's host sees the referring origin (question 2).
-- **`FORM_URL` lives in `apps/site/signUp.ts`,** a folder both pages share, so the fund page imports nothing from the main page's sources.
+- **The line is word for word on both pages,** "your cap table" on the fund page too. Changed after your review (question 1).
+- **`rel` is exactly `noopener`,** so the form's host sees the referring origin. Changed after your review (question 2).
+- **`FORM_URL` lives in `apps/site/links.ts`,** a folder both pages share, so the fund page imports nothing from the main page's sources.
 - **The sign-up is the footer's second line.**
 
-## Open questions
+## Open questions (answered: see below)
 
 1. **The fund page's line says "your cap table never leaves your computer"**, your words. On the fund page, would "your fund's numbers" read better?
 2. **`rel="noopener noreferrer"`** would keep even `https://spillpoint.io/` from the form's host. Do you want it, or is the origin fine?
 3. **The root README's "Coming next"** still says 1.0 comes "at its own domain", and the domain now comes first. Reword it, or leave it until the 1.0 release step?
+
+## After your review (2026-11-14): one more commit
+
+**Your checks:** you built the site and served it both ways, at `/` with `/fund/` and at `/spillpoint/` with `/spillpoint/fund/`. All four pages rendered in headless Chromium with no console errors, no policy refusals and no request off their own address, and the site test passed. You agreed the account of the blank page and section 6's order.
+
+**CI and permissions:** no change to `.github/workflows/` or `.claude/` in this commit.
+
+### 1. Two links at the top of both pages
+
+- **Beside the title,** at the right end of its line: "Get updates", to `FORM_URL`, and "★ Star on GitHub", to `REPO_URL` (https://github.com/spillpoint/spillpoint).
+  - Both live in `apps/site/links.ts`, renamed from `signUp.ts`, since it now holds both addresses and the header's words.
+  - Each is small, in the page's navy, and opens in a new tab.
+  - The footer's sign-up sentence is as it was, apart from your answers below.
+- **Plain links only:**
+  - no GitHub button script or frame
+  - no star count, since fetching one would be a request from the page
+  - no badge image
+
+  The ★ is a character, hidden from screen readers, so the link reads "Star on GitHub". The CSP doesn't change, and the page still sends nothing.
+- **At phone width,** checked in Chrome on the built pages, both of them:
+  - At 375px the two links sit beside the wordmark, one line each, with the tagline on its own line under them.
+  - At 320px the links move together to their own line under the wordmark, right-aligned, and the tagline comes under them.
+  - At both widths, no link overlaps the wordmark or the tagline, each link is on one line, and the header never runs off the screen.
+  - The title's line is now one flex row. Each piece moves to the next line whole, so a link never breaks into the title. The controls stay on the line below, as they already were at the page's width.
+- **Something I found, not from this commit:** on the main page, the payoff chart doesn't shrink when the window narrows.
+  - Loaded at 1280px and narrowed to 375px, its card shrinks to 321px but the chart stays 960px wide. The page then scrolls sideways.
+  - In Chrome's phone emulation the chart is also drawn at the browser pane's real width (987px) when the page loads.
+  - The live site, main's build, does the same, and 10h doesn't touch the chart.
+  - The fund page's chart is fine.
+
+  It's below, as a question.
+
+### 2. Your answers
+
+1. **The fund page's line** now ends "Optional, and your fund's numbers never leave your computer." The main page and the README keep "your cap table". `SIGN_UP.fundAfter` holds the fund's words.
+2. **The form's links, header and footer,** are `rel="noopener noreferrer"`, so the form's host isn't told which site sent the visitor. The GitHub link stays `rel="noopener"`, so spillpoint.io shows in the repository's traffic. Browsers send another site only the page's origin, which holds nothing of a cap table or a fund.
+3. **The README's 1.0 line** now reads: "Coming next: **1.0,** the stability release: the same API as 0.7.0, with no breaking changes after it." The rest of the paragraph is unchanged.
+
+### 3. Tests
+
+- **`links.test.tsx`, on both pages** (renamed from `sign-up.test.tsx`):
+  - the header has exactly the two links, "Get updates" to `FORM_URL` and "★ Star on GitHub" to `REPO_URL`, in the title's block
+  - both open in a new tab, the form's with `noopener noreferrer`, GitHub's with `noopener`
+  - the header has no image, SVG, frame or script, and the ★ is a hidden character
+  - the footer's sign-up, in each page's own words, with `noopener noreferrer`
+  - the page's links out are exactly the form (header), GitHub (header) and the form (footer)
+- **The privacy tests** (both pages' and the site's) allow the two addresses, each matched whole and exactly. With two allowed addresses, setting the form's address aside as a prefix, as the first commit did, would also let through a longer address beginning with one of them, a page under the repository's say.
+  - I checked the exact match fails when `https://github.com/spillpoint/spillpoint/issues` is planted in the main page.
+  - Everything else in the privacy tests is unchanged.
+
+CI's sequence passes locally: install, typecheck, build, the tests and the reference checks.
+
+### Open question
+
+1. **The payoff chart that doesn't shrink** (above): fix it as a step of its own after 10h? It's the main page only, from before 10h.

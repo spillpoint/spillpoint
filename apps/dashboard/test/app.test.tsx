@@ -74,7 +74,7 @@ describe("the footer", () => {
   it("names the engine version and the commit the page was built from", () => {
     render(<App />);
     const engine = JSON.parse(readFileSync(resolve(import.meta.dirname, "../../../packages/engine/package.json"), "utf8"));
-    // Its first line; the second is the sign-up (sign-up.test.tsx).
+    // Its first line; the second is the sign-up (links.test.tsx).
     const footer = screen.getByRole("contentinfo").firstElementChild!.textContent!;
     // e.g. "spillpoint 0.0.1 (abc1234)"; a build from uncommitted changes adds ", modified". Then the fund page's link.
     expect(footer).toMatch(new RegExp(`^spillpoint ${engine.version.replaceAll(".", "\\.")} \\([0-9a-f]{7}(, modified)?\\) · Fund waterfall$`));

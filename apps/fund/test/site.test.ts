@@ -10,7 +10,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { FORM_URL } from "../../site/signUp.ts";
+import { FORM_URL, REPO_URL } from "../../site/links.ts";
 
 const repo = resolve(import.meta.dirname, "../../..");
 let site: string;
@@ -100,7 +100,7 @@ describe("the site, the fund page under fund/", () => {
     expect(existsSync(join(site, "fund", "..", "index.html"))).toBe(true);
   });
 
-  it("contains no way to send anything, keeps nothing in browser storage, and names no other address but the sign-up form's", () => {
+  it("contains no way to send anything, keeps nothing in browser storage, and names no other address but its two links out", () => {
     const scripts = files().filter((f) => f.endsWith(".js"));
     const forbidden = /\bfetch\b|XMLHttpRequest|WebSocket|EventSource|sendBeacon|RTCPeerConnection|importScripts|serviceWorker|localStorage|sessionStorage|indexedDB|document\.cookie/g;
     expect(scripts.flatMap((f) => [...text(f).matchAll(forbidden)].map((m) => `${f}: ${m[0]}`))).toEqual([]);
@@ -112,14 +112,20 @@ describe("the site, the fund page under fund/", () => {
       /^https:\/\/github\.com\/MikeMcl\/decimal\.js/,
       /^https:\/\/bit\.ly\/3cXEKWf/,
     ];
-    // The sign-up form's address (10h), exactly as FORM_URL has it, set aside whole: in each page's scripts, and nowhere else.
-    const withForm = files().filter((f) => text(f).includes(FORM_URL));
-    expect(withForm.every((f) => /^(fund\/)?assets\/[^/]+\.js$/.test(f)), withForm.join(", ")).toBe(true);
-    expect(withForm.map((f) => (f.startsWith("fund/") ? "the fund page" : "the main page")).sort()).toEqual(["the fund page", "the main page"]);
+    // The two links out (10h), each exactly as apps/site/links.ts has it: in each page's scripts and nowhere else, and
+    // matched whole, so no other address on their hosts gets through.
+    const ADDRESS = /https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g;
+    const linksOut = [FORM_URL, REPO_URL];
+    for (const link of linksOut) {
+      expect(link.match(ADDRESS)?.[0], link).toBe(link);
+      const withLink = files().filter((f) => text(f).includes(link));
+      expect(withLink.every((f) => /^(fund\/)?assets\/[^/]+\.js$/.test(f)), `${link}: ${withLink.join(", ")}`).toBe(true);
+      expect(withLink.map((f) => (f.startsWith("fund/") ? "the fund page" : "the main page")).sort(), link).toEqual(["the fund page", "the main page"]);
+    }
     const addresses = files()
       .filter((f) => /\.(js|html|css)$/.test(f))
-      .flatMap((f) => [...text(f).replaceAll(FORM_URL, "").matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => `${f}: ${m[0]}`));
-    expect(addresses.filter((a) => !allowed.some((r) => r.test(a.split(": ")[1]!)))).toEqual([]);
+      .flatMap((f) => [...text(f).matchAll(ADDRESS)].map((m) => `${f}: ${m[0]}`));
+    expect(addresses.filter((a) => !linksOut.includes(a.split(": ")[1]!) && !allowed.some((r) => r.test(a.split(": ")[1]!)))).toEqual([]);
   });
 });
 
