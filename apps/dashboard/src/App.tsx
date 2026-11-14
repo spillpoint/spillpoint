@@ -13,6 +13,8 @@ import type { CapTable } from "spillpoint";
 import build from "virtual:build";
 import examples from "virtual:examples";
 
+import { FORM_URL, SIGN_UP } from "../../site/signUp.ts";
+
 import { BreakpointList } from "./BreakpointList.tsx";
 import { CapTableEditor } from "./CapTableEditor.tsx";
 import type { DraftError } from "./CapTableEditor.tsx";
@@ -499,9 +501,19 @@ export function App() {
       />}
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
       <footer className="page-footer">
-        spillpoint {build.engineVersion} ({build.commit})
-        {/* The fund page, on the same site (spillpoint-fund 0.1.0): the one thing the fund work adds here. */} ·{" "}
-        <a href="./fund/">Fund waterfall</a>
+        <p>
+          spillpoint {build.engineVersion} ({build.commit})
+          {/* The fund page, on the same site (spillpoint-fund 0.1.0): the one thing the fund work adds here. */} ·{" "}
+          <a href="./fund/">Fund waterfall</a>
+        </p>
+        {/* Release emails (10h): a link out, in its own tab. The page sends nothing for it. */}
+        <p>
+          {SIGN_UP.before}{" "}
+          <a href={FORM_URL} target="_blank" rel="noopener">
+            {SIGN_UP.link}
+          </a>{" "}
+          {SIGN_UP.after}
+        </p>
       </footer>
     </div>
   );

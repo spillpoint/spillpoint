@@ -3,7 +3,9 @@
 // Cap table data never leaves the computer (CLAUDE.md, rule 5). This builds
 // the page as it ships and checks two things: the browser is told to refuse
 // every request the page might make, and the page's scripts contain no way to
-// make one, nor any browser storage.
+// make one, nor any browser storage. The one outside address it names is the
+// sign-up form's (10h), a link the visitor opens or not; the page requests
+// nothing from it.
 
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -11,6 +13,8 @@ import { join, resolve } from "node:path";
 
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { FORM_URL } from "../../site/signUp.ts";
 
 const dashboard = resolve(import.meta.dirname, "..");
 let outDir: string;
@@ -74,7 +78,7 @@ describe("the built page", () => {
     expect(found).toEqual([]);
   });
 
-  it("mentions no web address except XML namespaces and documentation links in library error messages", () => {
+  it("mentions no web address except the sign-up form's, XML namespaces and documentation links in library error messages", () => {
     const allowed = [
       /^http:\/\/www\.w3\.org\//,
       /^https:\/\/react\.dev\/errors\//,
@@ -83,7 +87,10 @@ describe("the built page", () => {
       // Immer's error messages point here for details.
       /^https:\/\/bit\.ly\/3cXEKWf/,
     ];
-    const addresses = scripts.flatMap(({ text }) => [...text.matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => m[0]));
+    // The sign-up form's address, exactly as FORM_URL has it (10h): it's there, as the footer's link, and set aside
+    // whole before the rest are read, so no other address on its host is let through.
+    expect(scripts.some(({ text }) => text.includes(FORM_URL))).toBe(true);
+    const addresses = scripts.flatMap(({ text }) => [...text.replaceAll(FORM_URL, "").matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => m[0]));
     expect(addresses.filter((a) => !allowed.some((r) => r.test(a)))).toEqual([]);
   });
 });

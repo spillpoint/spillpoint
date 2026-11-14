@@ -46,6 +46,7 @@ select { max-width: 100%; }
 select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .page-footer { margin-top: 32px; color: var(--muted); font-size: 0.75rem; text-align: center; }
+.page-footer p { margin: 0 0 6px; }
 
 /* The governance note: always visible, plain, not alarming. */
 .notice {

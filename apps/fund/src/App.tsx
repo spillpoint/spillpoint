@@ -14,6 +14,8 @@ import type { CarryStep, Clawback as ClawbackAmounts, Due, FeeStep, Fund, FundTe
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
+import { FORM_URL, SIGN_UP } from "../../site/signUp.ts";
+
 import { bendsClawback, breakpointViews, chartPoints, defaultTop, niceUp, owedPoints } from "./analysis.ts";
 import type { BreakpointView } from "./analysis.ts";
 import { Breakpoints } from "./Breakpoints.tsx";
@@ -458,7 +460,18 @@ export function App() {
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. The main page is
           one level up on the site, as this one is under /fund/ (f01n). */}
       <footer className="page-footer">
-        spillpoint-fund {build.fundVersion} ({build.commit}) · <a href="../">Exit waterfall</a>
+        <p>
+          spillpoint-fund {build.fundVersion} ({build.commit}) · <a href="../">Exit waterfall</a>
+        </p>
+        {/* Release emails (10h), the main page's line word for word: a link out, in its own tab. The page sends
+            nothing for it. */}
+        <p>
+          {SIGN_UP.before}{" "}
+          <a href={FORM_URL} target="_blank" rel="noopener">
+            {SIGN_UP.link}
+          </a>{" "}
+          {SIGN_UP.after}
+        </p>
       </footer>
     </div>
   );

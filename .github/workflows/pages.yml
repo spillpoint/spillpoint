@@ -1,7 +1,10 @@
 name: Pages
 
-# Publishes the dashboard at https://spillpoint.github.io/spillpoint/, and the
-# fund page under it at /fund/ (spillpoint-fund 0.1.0), each time main changes.
+# Publishes the dashboard at https://spillpoint.io/, and the fund page under it
+# at /fund/ (spillpoint-fund 0.1.0), each time main changes. The domain is set
+# in Settings → Pages, not here: with an Actions deploy GitHub ignores a CNAME
+# file (notes/review-10h.md). The old address, spillpoint.github.io/spillpoint/,
+# redirects there.
 # It checks first, as CI does: typecheck, build and the tests, which include
 # the privacy tests of both built pages and of the two together. Pull requests
 # don't deploy; CI checks them. Needs Settings → Pages → Source set to

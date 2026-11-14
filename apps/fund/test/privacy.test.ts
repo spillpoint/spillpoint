@@ -2,7 +2,8 @@
 //
 // A fund's data never leaves the computer (CLAUDE.md, rule 5). This builds the fund page as it would ship and checks,
 // as the main page's privacy test does: the browser is told to refuse every request the page might make, the page
-// loads only its own files, and its scripts contain no way to make a request, nor any browser storage.
+// loads only its own files, and its scripts contain no way to make a request, nor any browser storage. The one outside
+// address it names is the sign-up form's (10h), a link the visitor opens or not; the page requests nothing from it.
 
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,6 +11,8 @@ import { join, resolve } from "node:path";
 
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { FORM_URL } from "../../site/signUp.ts";
 
 const app = resolve(import.meta.dirname, "..");
 let outDir: string;
@@ -65,7 +68,7 @@ describe("the built fund page", () => {
     expect(found).toEqual([]);
   });
 
-  it("mentions no web address except documentation links in library error messages", () => {
+  it("mentions no web address except the sign-up form's and documentation links in library error messages", () => {
     // The main page's list. Recharts (f01g) brings Redux Toolkit's and Immer's error-message links with it.
     const allowed = [
       /^http:\/\/www\.w3\.org\//,
@@ -75,7 +78,9 @@ describe("the built fund page", () => {
       // Immer's error messages point here for details.
       /^https:\/\/bit\.ly\/3cXEKWf/,
     ];
-    const addresses = scripts.flatMap(({ text }) => [...text.matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => m[0]));
+    // The sign-up form's address, exactly as FORM_URL has it (10h), as on the main page.
+    expect(scripts.some(({ text }) => text.includes(FORM_URL))).toBe(true);
+    const addresses = scripts.flatMap(({ text }) => [...text.replaceAll(FORM_URL, "").matchAll(/https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g)].map((m) => m[0]));
     expect(addresses.filter((a) => !allowed.some((r) => r.test(a)))).toEqual([]);
   });
 
