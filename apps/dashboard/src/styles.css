@@ -28,7 +28,12 @@ body { margin: 0; }
 /* Masthead */
 .masthead { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
 .wordmark { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
-.masthead__tagline { color: var(--muted); margin-left: 12px; }
+.masthead__tagline { color: var(--muted); }
+/* The title's line: the wordmark, the tagline and the two links out (10h), the links at its right end. Each piece wraps
+   to the next line whole, so the links never break into the title; the controls come on the line below. */
+.masthead__title { flex: 1 1 100%; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.masthead__links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.875rem; }
+.masthead__links a { color: var(--accent); white-space: nowrap; }
 .masthead__example { color: var(--muted); }
 .masthead__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .file-button { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 14px; cursor: pointer; }
@@ -46,6 +51,7 @@ select { max-width: 100%; }
 select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .page-footer { margin-top: 32px; color: var(--muted); font-size: 0.75rem; text-align: center; }
+.page-footer p { margin: 0 0 6px; }
 
 /* The governance note: always visible, plain, not alarming. */
 .notice {
@@ -266,6 +272,9 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 @media (max-width: 640px) {
   .page { padding: 16px 12px 48px; }
   .card, .founder, .exit-value { padding: 16px 14px; }
+  /* The links beside the wordmark, the tagline on its own line under them (10h). */
+  .masthead__links { order: 1; }
+  .masthead__tagline { order: 2; flex-basis: 100%; }
   /* The example picker takes the full width rather than running off the screen. */
   .masthead__controls { width: 100%; }
   .masthead__example { display: flex; flex-direction: column; gap: 2px; flex: 1 1 100%; min-width: 0; }

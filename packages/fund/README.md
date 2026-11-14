@@ -11,7 +11,7 @@ It finds every **breakpoint**, every distribution where the split bends, and exp
 
 It runs entirely on your machine. There is no network access and no I/O; a fund's numbers never leave the process.
 
-Its page, [spillpoint.github.io/spillpoint/fund](https://spillpoint.github.io/spillpoint/fund/), runs the same engine in your browser. It's the companion of [`spillpoint`](https://www.npmjs.com/package/spillpoint), which does the same for a company's cap table at an exit.
+Its page, [spillpoint.io/fund](https://spillpoint.io/fund/), runs the same engine in your browser. It's the companion of [`spillpoint`](https://www.npmjs.com/package/spillpoint), which does the same for a company's cap table at an exit.
 
 > **The fund's documents govern, not this tool.** spillpoint-fund models common fund terms with documented defaults. Your LPA may differ, and where it does, it wins.
 

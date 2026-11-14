@@ -107,6 +107,9 @@ function contentSecurityPolicy(): Plugin {
 }
 
 export default defineConfig({
+  // Every path relative, so the same build works at spillpoint.io/ and at the old spillpoint.github.io/spillpoint/ (10h):
+  // its files load from wherever the page itself loaded, never from the other address, which the page's policy would
+  // refuse. apps/fund/test/site.test.ts checks both addresses.
   base: "./",
   plugins: [react(), examples(), buildInfo(), contentSecurityPolicy()],
   resolve: {

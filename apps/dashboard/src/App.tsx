@@ -13,6 +13,8 @@ import type { CapTable } from "spillpoint";
 import build from "virtual:build";
 import examples from "virtual:examples";
 
+import { FORM_URL, HEADER, REPO_URL, SIGN_UP } from "../../site/links.ts";
+
 import { BreakpointList } from "./BreakpointList.tsx";
 import { CapTableEditor } from "./CapTableEditor.tsx";
 import type { DraftError } from "./CapTableEditor.tsx";
@@ -399,6 +401,16 @@ export function App() {
         <div className="masthead__title">
           <span className="wordmark">spillpoint</span>
           <span className="masthead__tagline">Who gets what when the company is sold</span>
+          {/* Two links out beside the title (10h), each in its own tab. Plain links: no GitHub button script, badge or
+              star count, so the page still requests nothing. */}
+          <nav className="masthead__links" aria-label="Updates and code">
+            <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
+              {HEADER.updates}
+            </a>
+            <a href={REPO_URL} target="_blank" rel="noopener">
+              <span aria-hidden="true">★</span> {HEADER.star}
+            </a>
+          </nav>
         </div>
         <div className="masthead__controls">
           <label className="masthead__example">
@@ -499,9 +511,19 @@ export function App() {
       />}
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
       <footer className="page-footer">
-        spillpoint {build.engineVersion} ({build.commit})
-        {/* The fund page, on the same site (spillpoint-fund 0.1.0): the one thing the fund work adds here. */} ·{" "}
-        <a href="./fund/">Fund waterfall</a>
+        <p>
+          spillpoint {build.engineVersion} ({build.commit})
+          {/* The fund page, on the same site (spillpoint-fund 0.1.0): the one thing the fund work adds here. */} ·{" "}
+          <a href="./fund/">Fund waterfall</a>
+        </p>
+        {/* Release emails (10h): a link out, in its own tab. The page sends nothing for it. */}
+        <p>
+          {SIGN_UP.before}{" "}
+          <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
+            {SIGN_UP.link}
+          </a>{" "}
+          {SIGN_UP.after}
+        </p>
       </footer>
     </div>
   );

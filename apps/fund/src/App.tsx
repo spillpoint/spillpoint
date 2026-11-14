@@ -14,6 +14,8 @@ import type { CarryStep, Clawback as ClawbackAmounts, Due, FeeStep, Fund, FundTe
 import examples from "virtual:fund-examples";
 import build from "virtual:fund-build";
 
+import { FORM_URL, HEADER, REPO_URL, SIGN_UP } from "../../site/links.ts";
+
 import { bendsClawback, breakpointViews, chartPoints, defaultTop, niceUp, owedPoints } from "./analysis.ts";
 import type { BreakpointView } from "./analysis.ts";
 import { Breakpoints } from "./Breakpoints.tsx";
@@ -326,6 +328,16 @@ export function App() {
         <div className="masthead__title">
           <span className="wordmark">spillpoint</span>
           <span className="masthead__tagline">How a fund's distribution splits between LPs and GP</span>
+          {/* Two links out beside the title (10h), each in its own tab. Plain links: no GitHub button script, badge or
+              star count, so the page still requests nothing. */}
+          <nav className="masthead__links" aria-label="Updates and code">
+            <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
+              {HEADER.updates}
+            </a>
+            <a href={REPO_URL} target="_blank" rel="noopener">
+              <span aria-hidden="true">★</span> {HEADER.star}
+            </a>
+          </nav>
         </div>
         <div className="masthead__controls">
           <label className="masthead__example">
@@ -458,7 +470,18 @@ export function App() {
       {/* Which engine made these numbers: the page runs spillpoint-fund's sources as of this commit. The main page is
           one level up on the site, as this one is under /fund/ (f01n). */}
       <footer className="page-footer">
-        spillpoint-fund {build.fundVersion} ({build.commit}) · <a href="../">Exit waterfall</a>
+        <p>
+          spillpoint-fund {build.fundVersion} ({build.commit}) · <a href="../">Exit waterfall</a>
+        </p>
+        {/* Release emails (10h), the main page's line with a fund's numbers for the cap table: a link out, in its own
+            tab. The page sends nothing for it. */}
+        <p>
+          {SIGN_UP.before}{" "}
+          <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
+            {SIGN_UP.link}
+          </a>{" "}
+          {SIGN_UP.fundAfter}
+        </p>
       </footer>
     </div>
   );
