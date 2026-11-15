@@ -1,6 +1,6 @@
 # Outside case 1: derivation
 
-**Source:** Brian Nichols, ["Waterfall modeling for startup exits: A step-by-step guide"](https://www.hustlefund.vc/post/exit-waterfall-modeling), Hustle Fund, August 10, 2026. Read on 2026-11-14; the page says it was last modified on October 1, 2026. Only the article's numbers are used here: its inputs (`CASE.md`), and its payouts and breakpoints, set beside ours below. The working is our own.
+**Source:** Brian Nichols, ["Waterfall modeling for startup exits: A step-by-step guide"](https://www.hustlefund.vc/post/exit-waterfall-modeling), Hustle Fund, August 10, 2026. Read on 2026-11-14. Only the article's numbers are used here: its inputs (`CASE.md`), and its payouts and breakpoints, set beside ours below. The working is our own.
 
 `expected.json` comes from the reference calculator, as for every case. The article's figures match it exactly: all 20 payouts and all five breakpoints.
 

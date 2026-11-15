@@ -8,8 +8,8 @@ Branch `10i-outside-waterfall-case`, from main at `fb8d2d3` (#140 merged).
 
 ## What to look at first
 
-1. **The case has a new prefix, `outside-`, not `edge-28`.** It isn't an edge case isolating one behavior: it's a waterfall someone else published, and more may follow. So it gets its own section in `docs/SPEC.md`, "Outside cases (10i)". The engine's test support counts `outside-` folders as exit cases, and the pinned list of exit cases in `input.test.ts` names it. See question 1.
-2. **I read the article (on 2026-11-14) to check what the case cites.** Its inputs and all its figures are the ones you gave. The page says it was last modified on October 1, 2026, so `DERIVATION.md` gives the date it was read. The article lets each series choose for itself between its preference and converting, which is the engine's default. Only its numbers are in the repo: no text from it.
+1. **The case has a new prefix, `outside-`, not `edge-28`.** It isn't an edge case isolating one behavior: it's a waterfall someone else published, and more may follow. So it gets its own section in `docs/SPEC.md`, "Outside cases (10i)". The engine's test support counts `outside-` folders as exit cases, and the pinned list of exit cases in `input.test.ts` names it. You kept it (After your review).
+2. **I read the article (on 2026-11-14) to check what the case cites.** Its inputs and all its figures are the ones you gave. `DERIVATION.md` gives the date it was read, which pins the version (After your review). The article lets each series choose for itself between its preference and converting, which is the engine's default. Only its numbers are in the repo: no text from it.
 3. **Besides the new line, the README's 1.0 paragraph changes.** It said 1.0 "waits on an outside waterfall that matches spillpoint's, and a few outside users". It now says it waits on a few outside users, and that the other gate is the waterfall above.
 
 ## What changed
@@ -80,4 +80,14 @@ None in `docs/ASSUMPTIONS.md`: the case uses only rules already there. The case'
 
 ## Open questions
 
-1. **The `outside-` prefix and its own SPEC section:** right, or would you rather it were edge case 28?
+None left. The one there was, the prefix, is answered below.
+
+## After your review
+
+Your re-derivation matched: all 10 payout points to the cent, decisions included, and exactly the five breakpoints. After #141 merged, a PR of its own (branch `10i-read-date`):
+
+1. **The prefix stays `outside-`,** with its own section in `docs/SPEC.md`. Nothing changed for it.
+2. **`DERIVATION.md`'s source line now ends "Read on 2026-11-14."** "The page says it was last modified on October 1, 2026" is cut.
+   - The date came from the fetch tool's summary of the page, which put it down to the page's structured data. I never checked it against the page, and you couldn't find it there or in the metadata.
+   - The read date is what pins the version the case was checked against. A Last-Modified header would date the site's last publish, not the article.
+   - Nothing else in the repo gave that date.
