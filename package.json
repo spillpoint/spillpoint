@@ -16,6 +16,7 @@
     "ocx-structure": "node --no-warnings=ExperimentalWarning scripts/ocx-structure.mjs",
     "rounds": "node packages/engine/scripts/rounds.ts",
     "safes-timing": "node packages/engine/scripts/safes-timing.ts",
+    "many-safes-timing": "node packages/engine/scripts/many-safes-timing.ts",
     "check-random": "node packages/engine/scripts/check-random.ts"
   }
 }
