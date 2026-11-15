@@ -1,0 +1,97 @@
+{
+  "case": "outside-01-hustle-fund",
+  "description": "Hustle Fund's published exit waterfall example (Brian Nichols, \"Waterfall modeling for startup exits: A step-by-step guide\", August 10, 2026), with its inputs as the article states them: a senior Series A, 1x participating with its total preferred payout capped at 2x, over a junior 1x non-participating Seed, with founders' and employees' common. Its payouts and breakpoints are the article's.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founders",
+          "name": "Founders"
+        },
+        {
+          "id": "employees",
+          "name": "Employees"
+        },
+        {
+          "id": "seed_investors",
+          "name": "Seed Investors"
+        },
+        {
+          "id": "series_a_investors",
+          "name": "Series A Investors"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "seed",
+          "name": "Seed Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_a",
+          "name": "Series A Preferred",
+          "kind": "preferred",
+          "original_issue_price": "3",
+          "conversion_price": "3",
+          "preference_multiple": "1",
+          "participation": "participating_capped",
+          "cap_multiple": "2",
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_a"
+        ],
+        [
+          "seed"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founders",
+          "security": "common",
+          "shares": 5400000
+        },
+        {
+          "holder": "employees",
+          "security": "common",
+          "shares": 600000
+        },
+        {
+          "holder": "seed_investors",
+          "security": "seed",
+          "shares": 2000000
+        },
+        {
+          "holder": "series_a_investors",
+          "security": "series_a",
+          "shares": 2000000
+        }
+      ],
+      "unissued_pool": 0
+    },
+    "range": [
+      "0",
+      "120000000"
+    ],
+    "exit_values": [
+      "5000000",
+      "10000000",
+      "20000000",
+      "45000000",
+      "100000000"
+    ]
+  }
+}

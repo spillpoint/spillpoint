@@ -117,6 +117,12 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 
 Cases 14–24, 26 and 27 are round cases, so their expected outputs are cap tables; 23, 24, 26 and 27 also run an exit on their last one, as Millrace and 12g do. Cases 26 and 27 start from a cap table, not from founding (R31). The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
 
+## Outside cases (10i)
+
+Waterfalls someone else worked out and published, entered as they state them, so the engine is checked against arithmetic that isn't ours. As with every case, the reference writes `expected.json`; each `DERIVATION.md` sets the published figures beside it. Each is an exit case.
+
+1. **Hustle Fund's published example** (`outside-01-hustle-fund`): Brian Nichols, ["Waterfall modeling for startup exits: A step-by-step guide"](https://www.hustlefund.vc/post/exit-waterfall-modeling), August 10, 2026. A senior Series A, 1x participating with its total capped at 2x, over a junior 1x non-participating Seed, with founders' and employees' common. All 20 of its payouts and its five breakpoints match.
+
 ## OCF import (M6)
 
 An import reads an Open Cap Format package into a cap table, as `docs/ASSUMPTIONS.md` O1–O12 describe: the cap table as of the package's date, the terms OCF leaves open to fill in, and a report of what was read, set aside and noted. Anything that would change payouts and isn't modeled is refused by name. Every OCF-format file in `cases/` is our own, written by hand (O12).

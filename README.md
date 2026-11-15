@@ -44,7 +44,9 @@ Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open
 
 OCX is developed by the Open Cap Table Coalition: https://github.com/Open-Cap-Table-Coalition/ocx. spillpoint reads files in that format.
 
-Coming next: **1.0,** the stability release: the same API as 0.7.0, with no breaking changes after it. Four behaviors change, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused, and an explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [`notes/release-1.0.md`](notes/release-1.0.md)). It waits on an outside waterfall that matches spillpoint's, and a few outside users.
+spillpoint reproduces a published outside waterfall exactly: [Hustle Fund's worked example](https://www.hustlefund.vc/post/exit-waterfall-modeling) (Brian Nichols, August 2026) gives the same payouts at all five of its exit values, and the same five breakpoints. It's a locked case, [`outside-01-hustle-fund`](cases/outside-01-hustle-fund/DERIVATION.md).
+
+Coming next: **1.0,** the stability release: the same API as 0.7.0, with no breaking changes after it. Four behaviors change, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused, and an explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [`notes/release-1.0.md`](notes/release-1.0.md)). It waits on a few outside users; an outside waterfall that matches spillpoint's, its other gate, is the one above.
 
 ## The fund waterfall
 

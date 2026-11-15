@@ -14,7 +14,7 @@ interface CaseExit {
 }
 
 describe("the exit cases the engine runs", () => {
-  it("are edge cases 1 through 13j, 23 to 27 and Millrace: every exit case", () => {
+  it("are edge cases 1 through 13j, 23 to 27, Millrace and the outside cases: every exit case", () => {
     expect(EXIT_CASES).toEqual([
       "edge-01-common-only",
       "edge-02-non-participating",
@@ -65,6 +65,7 @@ describe("the exit cases the engine runs", () => {
       "edge-26-series-b-on-an-imported-table",
       "edge-27-safes-and-note-convert-on-an-imported-table",
       "millrace",
+      "outside-01-hustle-fund",
     ]);
   });
 
