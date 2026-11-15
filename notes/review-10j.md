@@ -1,164 +1,225 @@
-# Review: 10j, step 1 (where the breakpoint search's time goes)
+# Review: 10j (a faster breakpoint search)
 
-Branch `10j-faster-breakpoint-search`, from main at `b22caf7` (#142 merged).
+Branch `10j-faster-breakpoint-search`, from main at `b22caf7` (#142 merged). Draft PR #143: you take it out of draft after the parent session's check.
 
-**Stopped after step 1,** as the task says to when the target needs a rewrite of the search rather than a fix to its costly part. Nothing in the engine has changed. This note is step 1's numbers and my plan, for your answers. The after numbers, the identity checks and the random tables come with the rest of the step, and this note grows to cover them.
+**CI and permissions:** no change to `.github/workflows/` or `.claude/`.
 
-**CI and permissions:** no change to `.github/workflows/` or `.claude/`. **`cases/`:** untouched.
+**`cases/`:** untouched.
 
-## What's on the branch
+**Outside the engine, its tests and the docs:**
+- **`apps/dashboard/test/saved-0.6.0.test.tsx`:** one test, as you allowed (below). No page code, and no fixture.
+- **`reference/tools/random_many_safes.py`:** a new dev tool beside 05c4's `random_safes.py`, writing the random tables. The reference's calculator is untouched.
+- **The root `package.json`:** a script, `pnpm compare-engines`.
 
-One commit, measuring only:
-- **`packages/engine/test/support/many-safes.ts`:** the made-up table, built in code (below). Not a case: nothing in it is anyone's cap table.
-- **`packages/engine/test/many-safes.test.ts`:** the timing test. It runs 26 SAFEs at 1, 3, 5, 8 and 12 strikes, and 10 SAFEs at 3. Each prints a line on every run, as Larkspur's 10-SAFE test does: "26 SAFEs at two caps, 12 option strikes: …s for 17 breakpoints". Each also checks the count of breakpoints and that each has one answer. For now each has two minutes, since on main 12 strikes takes about 12 seconds here and more on CI.
-- **`pnpm many-safes-timing`:** the same rows from the command line. `--safes 10` changes the count of SAFEs, and `--each-its-own` gives every SAFE its own amount (below).
+## The result
 
-## The table
+**The target is met.** 26 post-money SAFEs, each with its own amount, beside 5 option strikes take 3.39s on CI's Node 24 job and 4.00s on Node 22. Main took 26.1s on this laptop, and about 1.65 times that on your 2-core sandbox.
 
-- **Common:** 8,000,000 shares, held by two founders.
-- **Seed:** 2,000,000 at $0.50. **Series A:** 2,500,000 at $2.00, senior. Both 1x non-participating.
-- **Options:** 100,000 shares in each class, at 1 to 12 strikes from $0.25 to $6.00. A pool of 500,000 unissued.
-- **SAFEs:** 26 post-money SAFEs, alternating $250,000 at a $20M cap and $100,000 at a $12M cap.
-- **The range:** $0 to $200M.
+**On this laptop** (M1 Pro, Node 24.21), every breakpoint and the answer at each, as the page works them out:
 
-**Against 08a's table** in `notes/plan-0.8.0.md`:
-- It has the same breakpoints at 3, 5, 8 and 12 strikes (8, 10, 13 and 17), and 7 at 1 strike, where 08a's had 6.
-- It runs about 3 times faster than 08a's times, on the same model of laptop (M1 Pro, Node 24.21).
-- 08a's script wasn't kept, and its run was under load, so I can't say which explains it. Three other pairs of amounts and caps gave times within 15% of mine.
+| Table | Strikes | Breakpoints | Main | 10j |
+|---|---:|---:|---:|---:|
+| 26 SAFEs, each its own amount | 1 | 7 | 6.68s | 0.58s |
+| | 3 | 8 | 16.41s | 1.34s |
+| | **5** | **10** | **26.10s** | **2.52s** |
+| | 8 | 13 | 36.67s | 4.43s |
+| | 12 | 18 | 48.64s | 7.85s |
+| 26 SAFEs, two amounts (the plan's table) | 1 | 7 | 1.59s | 0.62s |
+| | 3 | 8 | 2.79s | 1.17s |
+| | 5 | 10 | 4.82s | 2.12s |
+| | 8 | 13 | 7.50s | 3.93s |
+| | 12 | 17 | 11.54s | 6.86s |
+| 10 SAFEs, two amounts | 3 | 8 | 0.80s | 0.29s |
+| Larkspur with its note, 10 SAFEs | | 10 | 2.0s to 2.5s | 1.2s |
 
-**A second shape: every SAFE its own amount.**
-- SAFE i is $150,000 + $10,000 × i at the $20M cap, or $50,000 + $5,000 × i at the $12M cap.
-- A real table looks like this: SAFEs rarely share an amount.
-- It's 4 to 6 times slower (below), so it's what I've sized the plan for.
+**On CI,** as the timing tests print them: main is step 1's run (55e9aed), and 10j is c86969e's. Each pair is Node 24, then Node 22.
 
-## Before: main, on this laptop
-
-| Table | Strikes | Breakpoints | Seconds |
+| Table | Strikes | Main | 10j |
 |---|---:|---:|---:|
-| 26 SAFEs, two amounts | 1 | 7 | 1.59 |
-| | 3 | 8 | 2.79 |
-| | 5 | 10 | 4.82 |
-| | 8 | 13 | 7.50 |
-| | 12 | 17 | 11.54 |
-| 10 SAFEs, two amounts | 3 | 8 | 0.80 |
-| Larkspur with its note, 10 SAFEs | | 10 | 2.4 |
-| 26 SAFEs, each its own amount | 1 | 7 | 6.68 |
-| | 3 | 8 | 16.41 |
-| | 5 | 10 | 26.10 |
-| | 8 | 13 | 36.67 |
-| | 12 | 18 | 48.64 |
+| 26 SAFEs, each its own amount | 1 | | 0.88s, 1.04s |
+| | 3 | | 1.99s, 2.03s |
+| | **5** | | **3.39s, 4.00s** |
+| | 8 | | 5.82s, 6.77s |
+| | 12 | | 10.40s, 10.71s |
+| 26 SAFEs, two amounts | 1 | 2.21s, 1.84s | 1.21s, 1.49s |
+| | 3 | 4.05s, 3.55s | 1.87s, 1.91s |
+| | 5 | 7.06s, 6.40s | 3.33s, 3.41s |
+| | 8 | 10.58s, 9.85s | 5.88s, 6.29s |
+| | 12 | 15.90s, 14.71s | 10.12s, 11.39s |
+| 10 SAFEs, two amounts | 3 | 1.12s, 1.03s | 0.49s, 0.51s |
+| Larkspur with its note, 10 SAFEs | | 6.75s, 5.47s | 4.22s, 5.18s |
 
-**What the target means here:**
-- On main's last CI run, Larkspur's test printed 5.93s on Node 24 and 4.86s on Node 22, against 2.4s here. So CI is 2 to 2.5 times slower than this laptop.
-- Under 5 seconds on CI at 12 strikes is about 2 seconds here.
-- That's 6 times faster on the two-amount table, and about 25 times with each its own amount.
+Main's timing test had no rows with each SAFE its own amount, so CI has no before for them. The commits after c86969e change no engine code.
 
-## Where the time goes
+**Your 2-core sandbox, main** (your numbers, Node 22): two amounts, 5.21s at 3 strikes and 18.33s at 12; each its own amount, 27.06s at 3 and 83.23s at 12.
 
-**How the search works now** (05c4):
-- It walks up the range a stretch at a time. At the start of each stretch it reads the answer twice just above, for slopes, and once in the middle, as a check.
-- Each reading works out every margin. That's the answer's, and those of every set of choices one switch away: each series' switch, each SAFE's switch, and each SAFE's switch on the SAFEs' way down from "every SAFE converts" and under each series' switch. For each, its tiers, its caps and its next option class's net.
-- It stops wherever the first margin reaches zero.
+## Your answers, as applied
 
-**Counted, on a copy of main with counters** (5 to 15% slower than the times above):
+1. **Part 1, the rewrite:** done. Where payouts curve (X17), a stretch is read as before, every margin a stop. Everything in "What stays" stays: the two readings just above a stop, the check in each stretch's middle, the second-answer watch, curves, jumps and reasons.
+2. **Part 2:** not done. E16's check of classes beyond the next runs as on main, under every set of choices. Nothing else in E16 changed either.
+3. **The identity bar:** checked on every locked case and on the random tables (below).
+4. **Each its own amount is the target table:** it's in the timing test beside the two-amount rows, at 1, 3, 5, 8 and 12 strikes.
 
-| Table | Strikes | Breakpoints | Stops | Readings | Readings per breakpoint | Per reading | Payout sets | Of them, E16's check | Waterfall runs |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 26 SAFEs, two amounts | 1 | 7 | 66 | 198 | 28 | 7ms | 540 | 0 | 3,740 |
-| | 3 | 8 | 102 | 306 | 38 | 10ms | 1,664 | 864 | 8,999 |
-| | 5 | 10 | 143 | 429 | 43 | 12ms | 3,916 | 2,542 | 16,931 |
-| | 8 | 13 | 172 | 516 | 40 | 16ms | 8,655 | 6,839 | 29,940 |
-| | 12 | 17 | 206 | 618 | 36 | 22ms | 16,387 | 14,152 | 49,603 |
-| 10 SAFEs, two amounts | 3 | 8 | 100 | 300 | 38 | 3ms | 676 | 352 | 3,939 |
-| Larkspur with its note, 10 SAFEs | | 10 | 75 | 225 | 23 | 11ms | 2,458 | 1,402 | 16,583 |
-| 26 SAFEs, each its own amount | 1 | 7 | 452 | 1,356 | 194 | 5ms | 540 | 0 | 5,037 |
-| | 3 | 8 | 802 | 2,406 | 301 | 6ms | 1,714 | 864 | 12,032 |
-| | 12 | 18 | 1,732 | 5,196 | 289 | 10ms | 16,366 | 13,990 | 53,284 |
+## What changed
 
-A reading is one answer worked out with its margins. A payout set is one set of decisions whose payouts the search works out as straight lines; each needs two or three exact waterfall runs.
+**1. The search follows each gain on its own lines** (`breakpoints.ts`, `followStretch`).
+- **Where it stops:** only where the answer's own margins, a vote, or a gain that decides the answer reach zero. Those are the answer's tiers, caps and next option class, a free series', warrant's or note's gain from switching, and each SAFE's gain on its way to settling.
+- **Where it doesn't:** where a margin of a set of choices one switch away reaches zero, such as an option class coming into the money there. It reads that set again just above, by itself, two readings as a stop would make. Then it follows the gain on its new line. Nothing paid changes there.
+- **A gain that decides a set one switch away,** as one SAFE's switch decides how the SAFEs settle under a series' switch (E20), is followed the same way. Where it reaches zero, that set is read again with every switch under it.
+- **Where a reading changes sides:** a gain on another side of the tie threshold just above than just below is a change of decisions there. If it decides the answer, the search stops there, as before.
+- **Anything a reading can't follow** stops the search where it would have stopped before, and reads everything above. That covers a reading that can't be read, an error, or a payout that curves.
+- **The check in the middle** now expects the keys of each set of choices read again below the midpoint to have changed where they were read. Everything else it checks is as before.
+- **`decisions.ts`:** each snapshot's margins come as a tree of those sets of choices (`Unit`), and one set can be read again at another exit value (`unitAt`). The flat margins are the same keys, in the same order, as before.
 
-**Two findings.**
+**2. Each set of decisions keeps its last four lines, option exercises and SAFE answers** (`lines.ts`, `decisions.ts`).
+- **Why:** the search now reads a set ahead as it follows a gain, then behind, in the middle check and the second-answer watch. With one kept, each replaced the other's. At 5 strikes, each its own amount, the watch made 5,974 exact waterfall runs with one kept, and 2,000 with four.
+- **How:** a kept result is used where every comparison it turned on held when last made, as before. A kept result whose comparisons all held there last time isn't walked again.
+- **Memory:** main's peak on the target table is 1.1 GB, and 10j's is 676 MB.
 
-**1. Most stops aren't breakpoints.** At 12 strikes there are 206 stops for 17 breakpoints. With each its own amount there are 1,732 for 18. What places each stop, at 12 strikes on the two-amount table:
-- **150:** the next option class's net, in a set of choices one switch away.
-- **32:** a tier, or the payout with the next class, in such a set.
-- **23:** the answer's own payouts changing shape, or a gain from switching reaching zero.
+**Counted** on copies with counters. Main's are step 1's counts, and 5 strikes wasn't counted there:
 
-Each set one switch away is priced a little differently, so each option class comes into the money at its own exit value there. Nothing paid changes at those stops. The search stops only so that the gains it follows stay straight lines.
+| Table | Strikes | Breakpoints | Stops, main | Stops, 10j | Sets read again by themselves, 10j | Exact waterfall runs, main | 10j |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Each its own amount | 3 | 8 | 802 | 12 | 837 | 12,032 | 6,080 |
+| | 5 | 10 | | 14 | 1,151 | | 12,122 |
+| | 12 | 18 | 1,732 | 22 | 1,757 | 53,284 | 40,892 |
+| Two amounts | 12 | 17 | 206 | 21 | 1,758 | 49,603 | 41,195 |
 
-Equal SAFEs come into the money together, so two amounts give 2 such sets per switch. With each its own amount there are 26, and the stops multiply. At 3 strikes there are 802 stops, where two amounts have 102, and 786 of them are inside a set one switch away.
+A stop is three readings of every margin, a few hundred at 26 SAFEs. A set read again by itself is two readings of one set of choices.
 
-**2. At many strikes, E16's check makes most of the waterfall runs.** Once option exercise settles under a set of choices, E16 checks that no class beyond the next would gain by exercising. That's one payout per class beyond. The check runs under every set of choices, at every count of classes exercised. At 12 strikes it's 14,152 of the 16,387 payout sets, and 39% of the time.
+**What's left** at 5 strikes, each its own amount, as shares of a profile of the run (loading the engine is most of the rest):
+- **The follower's readings:** 38%.
+- **The second-answer watch:** 19%.
+- **The stops' readings and middle checks:** 24%. Just above a stop the answer is new, so its first reading settles the SAFEs on sets of choices not read before: 232 exact waterfall runs each.
+- **The answer at each breakpoint:** 5%.
+- **E16's check of classes beyond the next:** of the 12,122 exact runs, 5,092 are for it. Each time a set's next class comes into the money, every class beyond it is weighed on a set of choices not read before. It's the biggest part at 12 strikes, which is why they improved least. It isn't changed (your answer 2).
 
-**The parts you named,** each with everything it calls, so they overlap and a column adds up to more than 100%:
+## The checks
 
-| Part | 12 strikes, two amounts | 3 strikes, each its own | 12 strikes, each its own |
-|---|---:|---:|---:|
-| Options re-settling under each choice | 77% | 35% | 50% |
-| of it, E16's check of classes beyond the next | 39% | 2% | 11% |
-| The SAFEs settling, with their options | 65% | 14% | 23% |
-| Every reading's margins: each switch weighed | 30% | 73% | 67% |
-| The series' every combination, with the SAFEs and options under each | 47% | 11% | 18% |
-| The check for a second answer | 19% | 4% | 5% |
-| The answer at each breakpoint | 8% | 2% | 3% |
-| Exact waterfall runs, wherever made | 47% | 8% | 15% |
+**Every locked case.**
+- **The dump:** every exit case's results at full precision, from main and from 10j. That's 50 cases and 4,716 lines: every breakpoint, jump, curve flag and reason, and the decisions and every line at each breakpoint and listed exit value.
+- **What differs:** 402 lines. All are breakpoint exit values and the payouts at breakpoints. The largest difference is $5.5 × 10⁻¹⁹, relative 6.4 × 10⁻²⁷, so about the 27th significant digit.
+- **What doesn't:** no text, reason, decision, jump, curve flag, breakpoint count or error, and no cent. No value sits on a half cent.
 
-## Why it needs a rewrite
+**The page's saved files** (your answer 1).
+- **The change:** `saved-0.6.0.test.tsx`'s test is now "opens, and gives 0.6.0's breakpoints, their reasons and jumps exactly and their exit values to the cent and within $10⁻¹⁵, and its payouts to all 40 digits".
+- **Millrace's file:** 5 of its 10 breakpoints move, by at most $5.54 × 10⁻¹⁹.
+- **The company file:** none of its 5 moves.
+- **Unchanged:** the payouts at the recorded exit values, to all 40 digits. `results-0.6.0.json` and every fixture are as they were.
 
-- **A leaner reading can't change how many there are:** 3 per stop, at 206 or 1,732 stops. Cutting the bookkeeping and the cost of each waterfall run might make the search about twice as fast. To keep every digit identical (below), each reading would also have to stay where it is.
-- **Turning E16's check off entirely,** as an experiment only, isn't enough on its own:
-  - 12 strikes, two amounts: 11.5s → 5.0s.
-  - 3 strikes, each its own amount: 16.4s → 14.5s.
-- **So the stops have to go:** the search has to follow each gain on its own lines. That's a rewrite of the search's core, in `breakpoints.ts` and the margins in `decisions.ts`.
+**1,000 random tables, against main.**
+- **The tables:** from `random_many_safes.py tables 1000 10`, every one built afresh:
+  - 2 to 26 post-money SAFEs, each with an amount of its own, at one to four caps from $8M to $40M, some with a 20% discount. Together they own 5% to 45% of the company at their caps.
+  - 0 to 12 option classes, each at its own strike from $0.10 to $8.
+  - In 599 of them, one or two preferred series: non-participating, capped or participating, stacked or pari passu.
+  - In 311 a capped note, and in 143 a warrant.
+  - The range is $0 to $100M, with six listed exit values.
+- **The result: all 1,000 agree** under your bar:
+  - every breakpoint count, reason, jump and curve flag, and every decision and stop message, byte for byte;
+  - every number within $10⁻¹⁵ of main's.
+- **15 stop** on both engines with E8's message, word for word, where two stable answers begin.
+- **On a half cent:** 8 values come out a hair either side of a half cent from the two engines, $10⁻³⁴ to $4 × 10⁻²⁰ apart. `toCents` shows the same cent from both for 7 of them. The eighth is in table many-10-0781: breakpoint 13's exit value, about $69,987,703.125.
+  - **10j:** 69987703.12500000000000000000618273875063, shown as $69,987,703.13.
+  - **Main:** 69987703.12499999999999999996419930186248, shown as $69,987,703.12.
+  - **The other seven,** each shown the same by both: $322,359.38, $0.93, $140,228.13, $91,453.13, $20,296,765.63, $1,278,749.93 and $1,315,999.97.
+- **Times,** with six tables at a time beside the reference's run, so each is slower than alone:
+  - 3,984s in all for 10j, against 16,709s for main;
+  - a median of 1.3s a table for 10j, against 4.8s;
+  - on the tables 10j takes over half a second on, it's a median of 3.9 times faster.
+  - **One table looked slower on 10j:** many-10-0373, at 271.8s against main's 248.1s. That was the load: alone, 10j takes 10.1s on it and main 36.1s. It has 21 SAFEs at one cap, 12 strikes, two series and a warrant.
 
-## The plan
+**68 random tables with a conversion group, against main.**
+- **The tables:** every table of `random_many_safes.py tables 1000 12 --groups` with a group: two series that can convert, converting together.
+- **The result: all 68 agree** under your bar. None stops, and no value sits on a half cent. 10j took 185s in all, and main 1,080s.
 
-**Part 1, the rewrite: stop only where the answer can change.**
-- **The lines are already there.** Each set of choices one switch away has its payouts as straight lines, with the interval where they hold (`lines.ts`). Its option exercise and its SAFEs' answer are kept with where they hold too (05c4). A gain from switching is the difference of two such lines, so it's straight until either side's interval ends.
-- **Where the search stops:** it would keep each gain as a line, with that interval. It stops only where the answer's own payouts change shape or a gain reaches zero: the 23 stops of 206 above, and about 16 of 802 with each its own amount at 3 strikes.
-- **Where a side's interval ends first,** only that set of choices is read again: its options and SAFEs re-settled, a waterfall run or two. Every other margin is left alone.
-- **What stays:** the two readings just above a stop, the check in each stretch's middle, the second-answer watch, curves, jumps and reasons.
-- **No rule changes.** E15's account of how the search reuses work gets a paragraph.
+**240 random tables, against the reference.**
+- **The tables:** from `random_many_safes.py tables 240 11 --most-safes 6 --most-strikes 4 --groups`. They have the same shape as the 1,000, but only 2 to 6 SAFEs and 0 to 4 strikes, and 19 have a conversion group.
+- **Where I stopped, and why:** the reference tries every combination of the SAFEs' and the options' decisions at each exit value it reads. At 6 SAFEs and 4 strikes that's 1,024 under each choice of the series, and a table takes it up to several minutes. All 240 took 49 minutes on this laptop's 8 cores.
+- **The result: the engine agrees with the reference on all 240.**
+  - **235 in full,** as 05c4's check compares them: every breakpoint within a cent, with the same reason codes, subjects and jump flags, and every decision and holder × security line to the cent at each breakpoint and listed exit value.
+  - **5 by their listed exit values, and a cent either side of each of the engine's breakpoints:** the reference's own search couldn't finish them. In 2 it couldn't place a jump. The other 3 are its crash on a conversion group beside SAFEs (below).
+- **The engine checked** is 10j's. On the same 240 tables, `compare-engines` finds 10j and main agree under your bar on every one.
 
-**Part 2, needing your OK: E16's check of classes beyond the next, only where an answer is reported.**
-- **The answer at each exit value still gets the check,** as now, at every reading and in `solve`.
-- **A set of choices one switch away** would be valued with options as E16's sequence settles them, without the check.
-- **What that changes:** today, if classes beyond the next would gain in such a set, the search stops with "option exercise doesn't settle". With this, it stops only if that happens in the answer itself. No table that main answers gets a different answer: the check only ever stops the search.
-- **Without Part 2,** I expect 12 strikes on the two-amount table to stay over the target. Its 14,152 payout sets for the check need their waterfall runs whatever the search does.
-
-**What I expect, until it's built:**
-- **With both parts:** about 1.5 to 3 seconds here at 12 strikes on the two-amount table, so around 5 seconds on CI. With each its own amount, about 3 to 5 seconds here.
-- **Larkspur and its note at 10 SAFEs:** no slower. It has 75 stops for 10 breakpoints today.
-
-## What "byte-identical" can mean after the rewrite
-
-**Each breakpoint's exit value is worked out from two readings just above the stop before it.** So its last digits depend on where the stops fell. Of its 40 digits, about the first 27 are certain.
-
-**The experiment:** main with one change, reading 1.5e-4 above each stop rather than 1e-4.
-- **The dump:** every exit case at full precision. That's 50 cases and 4,715 lines: every breakpoint, reason, decision and line, at each breakpoint and listed exit value.
-- **What differs:** 447 lines, all of them breakpoint exit values and payouts at breakpoints. The largest difference is $5.5 × 10⁻¹⁹, relative 6 × 10⁻²⁷.
-- **What doesn't:** no reason, decision, jump or cent.
-
-**Part 1 moves the stops, so it will change those digits too.** Keeping all 40 digits rules out any change to where the search reads, which leaves about twice as fast at best.
-
-**What I'd check instead,** on the locked cases and the random tables:
-- every reason, decision and jump byte-identical;
-- every exit value and amount identical to the cent;
-- and within $10⁻¹⁵ of main's at full precision.
-
-## Questions for you
-
-1. **Part 1, the rewrite of how the search follows its margins:** go ahead?
-2. **Part 2, E16's check only where an answer is reported:** OK? It's a change to how E16's check runs, so it's yours. Without it I expect 12 strikes to stay over 5 seconds on CI.
-3. **The identity bar:** byte-identical reasons, decisions and jumps, every number identical to the cent and within $10⁻¹⁵ of main's? All 40 digits can't hold through any change to where the search reads.
-4. **The table the target is for:** the two-amount table is the plan's shape and the timing test's. Should the target hold with each its own amount too? If so, I'd add it to the timing test after the rewrite; on main it takes 49 seconds at 12 strikes.
-
-## Checks so far
-
+**Tests:**
+- **The engine:** 3,512 pass: 3,507 as before, and the timing test's 5 new rows.
+- **The page and the fund:** pass, 699 for the page, 2,115 and 838 for the fund (13 skipped, as on main). On CI the page's one failure, on c86969e, was the 40-digit test above.
+- **The reference's own tests:** `pnpm test:reference` passes.
 - **Typecheck:** clean.
-- **The new test file:** 6 tests pass.
-- **The engine's suite:** 3,507 tests pass. Nothing in the engine has changed.
 
-## Next
+## Found: the reference crashes on a conversion group beside SAFEs (its own step, after 10j)
 
-Your answers to the four questions. Then step 2, the speed; step 3, the random tables; and the docs. I'm stopping here.
+**What happens:** where a group's conversion moves a SAFE, the reference can't word its reason, and its breakpoint search stops with `RuntimeError: generator raised StopIteration`. `breakpoints.reasons` names what the SAFE follows by looking each one up among the securities, then the notes. A group's player is named by its series joined with "+", which is neither.
+
+**The smallest table that shows it,** shrunk from one random table:
+- **Common:** 5,000,000 and 1,000,000, two founders.
+- **Series 0:** 4,000,000 at $1.00, senior. **Series 1:** 500,000 at $2.00. Both 1x non-participating, and the two are one conversion group.
+- **One post-money SAFE:** $75,000 at a $10,000,000 cap.
+- **No options or pool.** The range is $0 to $100M.
+
+**The engine, there:** it finds a jump at $10,579,345.09, where the group converts and the SAFE switches with it (`series_converts`, `safe_switches`, `payouts_jump`). The reference's payouts at the listed exit values still work.
+
+**In the random check:** 3 of the 19 tables with a group, many-11-0006, many-11-0125 and many-11-0142. The table above is many-11-0006, shrunk. The check compares those tables at their listed exit values, and a cent either side of each of the engine's breakpoints, as 05c4's did where the reference's search couldn't finish.
+
+## How to check it by behavior
+
+1. **The speed:**
+   ```bash
+   pnpm many-safes-timing --each-its-own 1 3 5 8 12
+   ```
+   ```bash
+   pnpm many-safes-timing 1 3 5 8 12
+   ```
+   On CI, each test job's log has the lines "26 SAFEs at two caps, each its own amount, 5 option strikes: …s".
+2. **The tests:** `pnpm test`.
+3. **The random tables against main,** reproducible from seed 10. They're written to `local/`, which git ignores.
+   ```bash
+   python3 reference/tools/random_many_safes.py tables 1000 10 local/random-many-safes
+   ```
+   ```bash
+   mkdir -p local/main-engine && git archive main packages/engine/src | tar -x -C local/main-engine
+   ```
+   ```bash
+   ln -s "$PWD/packages/engine/node_modules" local/main-engine/packages/engine/node_modules
+   ```
+   ```bash
+   pnpm compare-engines local/main-engine/packages/engine/src local/random-many-safes
+   ```
+   The report goes to `local/random-many-safes/compare-engines.txt`, with both engines' time on each table. It took an hour on this laptop, six tables at a time, most of it main's.
+4. **The random tables against the reference,** from seed 11:
+   ```bash
+   python3 reference/tools/random_many_safes.py tables 240 11 local/random-many-safes-ref --most-safes 6 --most-strikes 4 --groups
+   ```
+   ```bash
+   python3 reference/tools/random_many_safes.py work local/random-many-safes-ref
+   ```
+   ```bash
+   pnpm check-random local/random-many-safes-ref
+   ```
+   ```bash
+   python3 reference/tools/random_many_safes.py probe local/random-many-safes-ref
+   ```
+   ```bash
+   pnpm check-random local/random-many-safes-ref
+   ```
+   The `work` step takes about 50 minutes on 8 cores, and the probe step a minute. The last run says the engine agrees with the reference on every one.
+5. **On the page:** open a cap table with many SAFEs and option grants. The curves and breakpoints come up in a few seconds where they took most of a minute.
+
+## Assumptions added
+
+**None.** No rule changed.
+- **E15** gains a paragraph on how the search follows each gain, and **E18** a sentence pointing to it.
+- **The speed entry under Later** gains 10j's before and after.
+
+## Step 1, kept: where main's time went
+
+**Most stops weren't breakpoints.**
+- **Two amounts, 12 strikes:** 206 stops for 17 breakpoints. 150 were where the next option class's net reached zero in a set of choices one switch away, and 32 a tier there. Only 23 were the answer's own.
+- **Each its own amount, 12 strikes:** 1,732 stops for 18 breakpoints.
+
+**Turning off E16's check of classes beyond the next,** as an experiment only, took two amounts at 12 strikes from 11.5s to 5.0s.
+
+The full counts are in this note's first version, at 55e9aed.
+
+## Open questions
+
+**None.** The reference's crash is its own step after 10j, as you said. Part 2 isn't needed: the target is met without it.

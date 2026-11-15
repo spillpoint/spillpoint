@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { D, findBreakpoints, prepare, readExit, solve } from "spillpoint";
+import { D, findBreakpoints, prepare, readExit, solve, toCents } from "spillpoint";
 import { describe, expect, it } from "vitest";
 
 import { App } from "../src/App.tsx";
@@ -46,11 +46,20 @@ describe.each(["millrace-saved-0.6.0.json", "company-saved-0.6.0.json"])("%s, sa
     expect(JSON.parse(text).version).toBe(6);
   });
 
-  it("opens, and gives every breakpoint and payout 0.6.0 gave, to all 40 digits", () => {
+  it("opens, and gives 0.6.0's breakpoints, their reasons and jumps exactly and their exit values to the cent and within $10⁻¹⁵, and its payouts to all 40 digits", () => {
     const exit = readExit(exitOf(text));
     const pc = prepare(exit.capTable, exit.exitDate);
-    const found = findBreakpoints(pc, exit.range).map((b) => ({ exitValue: b.exitValue.toString(), jumps: b.jumps, reasons: b.reasons.map((r) => ({ code: r.code, subject: r.subject })) }));
-    expect(found).toEqual(want.breakpoints.map((b) => ({ ...b, reasons: b.reasons.map((r) => ({ ...r, subject: r.subject.map(renamed) })) })));
+    const found = findBreakpoints(pc, exit.range);
+    expect(found.map((b) => ({ jumps: b.jumps, reasons: b.reasons.map((r) => ({ code: r.code, subject: r.subject })) }))).toEqual(
+      want.breakpoints.map((b) => ({ jumps: b.jumps, reasons: b.reasons.map((r) => ({ ...r, subject: r.subject.map(renamed) })) })),
+    );
+    // A breakpoint's exit value is worked out from readings the search takes near it, and since 10j it takes them in
+    // other places, so past about its 27th digit it can differ from 0.6.0's (Jordan, 10j).
+    found.forEach((b, i) => {
+      const was = new D(want.breakpoints[i]!.exitValue);
+      expect(toCents(b.exitValue), `breakpoint ${i}`).toBe(toCents(was));
+      expect(b.exitValue.minus(was).abs().lte("1e-15"), `breakpoint ${i}: ${b.exitValue.toString()}, 0.6.0 ${was.toString()}`).toBe(true);
+    });
     for (const [x, p] of Object.entries(want.payouts)) {
       const { payout } = solve(pc, new D(x)).answers[0]!;
       expect(totals(payout.holderTotals), `${x}: holders`).toEqual(p.holders);

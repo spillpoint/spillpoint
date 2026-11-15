@@ -85,3 +85,7 @@ spillpoint reproduces a published outside waterfall exactly: Hustle Fund's worke
    - **JavaScript sees:** `readOcx` returns an import with blanks where it threw an `ImportRefusal`. A 0.7 workbook with a Y/N column and no cap column now returns participation blank to fill, where it returned uncapped participating.
    - **What to change:** nothing. Code that fills an import's blanks, as the page does, asks for participation as it does for any blank. Code that matches report notes may meet the new code.
    - **Changed answers:** none. No locked case or fixture is changed by it, and every case gives the same results as 0.7.0.
+
+## Faster since 0.7.0
+
+1. **The breakpoint search is faster on tables with many SAFEs and option strikes,** with no answer changed (10j): 26 SAFEs of their own amounts beside 5 option strikes take about 2.5 seconds on a laptop, where they took 26. Every case gives the same breakpoints, reasons, decisions and payouts to the cent. A breakpoint's exit value can differ from 0.7.0's past about its 27th significant digit, with no cent changed.

@@ -8,7 +8,7 @@ non-participating, capped or participating, stacked or pari passu; some a
 capped note; a few a warrant. The SAFEs' caps and amounts are drawn so that
 together they own well under the whole company.
 
-    python3 reference/tools/random_many_safes.py tables [count] [seed] [directory] [--most-safes N] [--most-strikes M]
+    python3 reference/tools/random_many_safes.py tables [count] [seed] [directory] [--most-safes N] [--most-strikes M] [--groups]
     python3 reference/tools/random_many_safes.py work [directory]
     python3 reference/tools/random_many_safes.py probe [directory]
 
@@ -20,7 +20,8 @@ combination of the SAFEs' and the options' decisions at each exit value it
 reads: `work` then works each as a case, as random_safes.py does, and the
 engine's check-random script compares the engine with it. `probe` is
 random_safes.py's, for tables whose breakpoint search the reference couldn't
-finish.
+finish. With `--groups`, half the tables with two series that can convert
+make them a conversion group; every other table is the same as without it.
 
 A fixed seed makes every table reproducible. Nothing here is a real cap table,
 but it goes in local/ all the same, which git ignores: these are a check, not
@@ -47,7 +48,7 @@ STRIKES = ["0.1", "0.25", "0.5", "0.75", "1", "1.25", "1.5", "2", "2.5", "3", "4
 CAPS = [8, 10, 12, 15, 20, 25, 30, 40]
 
 
-def random_inputs(rng, safes, strikes):
+def random_inputs(rng, safes, strikes, groups=None):
     holders = [{"id": "founder_a", "name": "Founder A"}, {"id": "founder_b", "name": "Founder B"}]
     securities = [{"id": "common", "name": "Common Stock", "kind": "common"}]
     positions = [
@@ -107,6 +108,11 @@ def random_inputs(rng, safes, strikes):
         "holders": holders, "securities": securities, "seniority": seniority, "positions": positions,
         "unissued_pool": rng.choice([0, 500_000]), "unconverted_safes": unconverted,
     }
+    # With --groups, two series that can convert do it together half the time (E11, E17): not uncapped participating
+    # preferred, which never converts. Drawn apart, so every other table is the same.
+    convertible = [x for x in securities if x["kind"] == "preferred" and x["participation"] != "participating"]
+    if groups is not None and len(series) == 2 and len(convertible) == 2 and groups.random() < 0.5:
+        cap_table["conversion_groups"] = [[s for s, _ in series]]
     exit_date = None
     if rng.random() < 0.3:
         holders.append({"id": "note_holder", "name": "Investor N"})
@@ -125,10 +131,10 @@ def random_inputs(rng, safes, strikes):
     return {"case": "random", "description": "A random table with many SAFEs and option strikes at a sale (10j).", "exit": exit_}
 
 
-def tables(count, seed, directory, most_safes, most_strikes):
+def tables(count, seed, directory, most_safes, most_strikes, groups):
     for index in range(count):
         rng = random.Random(f"many:{seed}:{index}")
-        inputs = random_inputs(rng, rng.randint(2, most_safes), rng.randint(0, most_strikes))
+        inputs = random_inputs(rng, rng.randint(2, most_safes), rng.randint(0, most_strikes), random.Random(f"groups:{seed}:{index}") if groups else None)
         inputs["case"] = f"many-{seed}-{index:04d}"
         folder = Path(directory) / inputs["case"]
         folder.mkdir(parents=True, exist_ok=True)
@@ -142,11 +148,13 @@ def work(folder):
     inputs = json.loads((folder / "inputs.json").read_text())
     try:
         expected = run_case(inputs)
-    except ValueError as e:
-        (folder / "refused.txt").write_text(f"{e}\n")
+    except Exception as e:  # noqa: BLE001
+        # Its breakpoint search couldn't finish, or couldn't word a reason (a group beside SAFEs, for one): the payouts
+        # at the listed exit values, and later a cent either side of the engine's breakpoints, are compared instead.
+        (folder / "refused.txt").write_text(f"{e if isinstance(e, ValueError) else f'{type(e).__name__}: {e}'}\n")
         try:
             points = outcomes(inputs, inputs["exit"]["exit_values"])
-        except ValueError as e2:
+        except Exception as e2:  # noqa: BLE001
             return folder.name, f"refused: {e}; and its payouts: {e2}"
         (folder / "points.json").write_text(json.dumps(points, indent=2) + "\n")
         return folder.name, f"refused: {e}"
@@ -155,6 +163,8 @@ def work(folder):
 
 
 def main(argv):
+    groups = "--groups" in argv
+    argv = [a for a in argv if a != "--groups"]
     flags = {argv[i]: int(argv[i + 1]) for i in range(len(argv) - 1) if argv[i].startswith("--")}
     args = [a for i, a in enumerate(argv) if not a.startswith("--") and not (i > 0 and argv[i - 1].startswith("--"))]
     what = args[0] if args else "tables"
@@ -162,7 +172,7 @@ def main(argv):
         count = int(args[1]) if len(args) > 1 else 1000
         seed = int(args[2]) if len(args) > 2 else 10
         directory = args[3] if len(args) > 3 else str(ROOT / "local" / "random-many-safes")
-        tables(count, seed, directory, flags.get("--most-safes", 26), flags.get("--most-strikes", 12))
+        tables(count, seed, directory, flags.get("--most-safes", 26), flags.get("--most-strikes", 12), groups)
         return
     directory = Path(args[1] if len(args) > 1 else ROOT / "local" / "random-many-safes")
     if what == "work":
