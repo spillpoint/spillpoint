@@ -302,10 +302,17 @@ class LazyAmounts extends Map<string, Decimal> {
   }
 }
 
-/** One set of decisions' lines, once known. */
+/**
+ * One set of decisions' lines, once known: the last few, the last one read first. The breakpoint finder reads a set
+ * of choices ahead as it follows a gain, then behind as it checks a stretch (10j), so each set keeps the lines of more
+ * than one structure.
+ */
 interface Readings {
-  lines: PayoutLines | null;
+  lines: PayoutLines[];
 }
+
+/** How many sets of lines each set of decisions keeps. */
+const KEPT_LINES = 4;
 
 const READINGS = new WeakMap<Prepared, Map<string, Readings>>();
 
@@ -322,14 +329,20 @@ export function payoutWithLines(pc: Prepared, x: Decimal, decisions: Decisions):
   if (!byKey) READINGS.set(pc, (byKey = new Map()));
   const k = decisionsKey(decisions);
   let r = byKey.get(k);
-  if (!r) byKey.set(k, (r = { lines: null }));
-  if (r.lines && inside(r.lines.interval, x)) return { payout: r.lines.at(x), lines: r.lines };
+  if (!r) byKey.set(k, (r = { lines: [] }));
+  const known = r.lines.findIndex((l) => inside(l.interval, x));
+  if (known >= 0) {
+    const lines = r.lines[known]!;
+    if (known > 0) r.lines.unshift(...r.lines.splice(known, 1));
+    return { payout: lines.at(x), lines };
+  }
   const exact = settle(pc, x, decisions);
   // A second reading just beside this one gives its lines at once, unless this exit value is next to a change.
   for (const beside of [x.plus(BESIDE), x.minus(BESIDE)]) {
     const lines = PayoutLines.through(exact, settle(pc, beside, decisions));
     if (lines && inside(lines.interval, x)) {
-      r.lines = lines;
+      r.lines.unshift(lines);
+      if (r.lines.length > KEPT_LINES) r.lines.pop();
       return { payout: exact, lines };
     }
   }

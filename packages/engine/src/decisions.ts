@@ -41,7 +41,10 @@
 //   decisions are kept with the comparisons they turned on, each with the
 //   interval where it comes out the same way. Elsewhere only the comparisons
 //   whose interval has run out are made again, and if each comes out as
-//   before, so does the result. The answers reported are run exactly.
+//   before, so does the result. The answers reported are run exactly. Since
+//   10j each set of decisions keeps its last few results and lines, so a set
+//   read ahead and then behind, as the breakpoint finder reads them, needn't
+//   be worked out again.
 
 import type { Decimal } from "decimal.js";
 
@@ -271,15 +274,23 @@ interface Check<T> {
   holds: Holds;
 }
 
+/** A kept result's comparisons, with where they all hold as last worked out. */
+interface Kept<T> {
+  checks: Check<T>[];
+  holds: Holds;
+}
+
 /**
  * Whether every comparison a kept result turned on comes out the same way at
  * x, comparing again only those whose interval has run out; if so, where they
  * all hold. A result whose comparisons all come out the same is the same
- * result: the steps that reached it are taken the same way.
+ * result: the steps that reached it are taken the same way. Inside where they
+ * all held last time, none has run out, so that is the answer (10j).
  */
-function recheck<T>(x: Decimal, checks: Check<T>[], compare: (what: T) => { yes: boolean; holds: Holds }): Holds | false {
+function recheck<T>(x: Decimal, known: Kept<T>, compare: (what: T) => { yes: boolean; holds: Holds }): Holds | false {
+  if (known.holds && inside(known.holds, x)) return known.holds;
   let holds: Holds = EVERYWHERE;
-  for (const c of checks) {
+  for (const c of known.checks) {
     if (!c.holds || !inside(c.holds, x)) {
       const now = compare(c.what);
       if (now.yes !== c.yes) return false;
@@ -287,6 +298,7 @@ function recheck<T>(x: Decimal, checks: Check<T>[], compare: (what: T) => { yes:
     }
     holds = narrow(holds, c.holds);
   }
+  known.holds = holds;
   return holds;
 }
 
@@ -305,13 +317,43 @@ interface SafeCompare {
 }
 
 /** What each set of decisions settled to, kept across exit values for each prepared cap table, with the comparisons it turned on. */
-const OPTIONS_SETTLED = new WeakMap<Prepared, Map<string, { exercised: Set<string>; checks: Check<OptionCompare>[] }>>();
-const SAFES_SETTLED = new WeakMap<Prepared, Map<string, { path: Set<string>[]; checks: Check<SafeCompare>[] }>>();
+const OPTIONS_SETTLED = new WeakMap<Prepared, Map<string, (Kept<OptionCompare> & { exercised: Set<string> })[]>>();
+const SAFES_SETTLED = new WeakMap<Prepared, Map<string, (Kept<SafeCompare> & { path: Set<string>[] })[]>>();
 
-function kept<T>(store: WeakMap<Prepared, Map<string, T>>, pc: Prepared): Map<string, T> {
+/**
+ * How many results each set of decisions keeps, the last one used first. The breakpoint finder reads a set of
+ * choices ahead as it follows a gain, then behind as it checks a stretch (10j), so each set keeps more than one.
+ */
+const KEPT_RESULTS = 4;
+
+/** The results kept for one set of decisions, for each prepared cap table. */
+function kept<T>(store: WeakMap<Prepared, Map<string, T[]>>, pc: Prepared, k: string): T[] {
   let byKey = store.get(pc);
   if (!byKey) store.set(pc, (byKey = new Map()));
-  return byKey;
+  let list = byKey.get(k);
+  if (!list) byKey.set(k, (list = []));
+  return list;
+}
+
+/**
+ * A kept result that holds at x: one where every comparison it turned on held when last made, or else the last one
+ * used, its comparisons made again where they've run out (recheck). Null if neither comes out the same.
+ */
+function reuse<T, R extends Kept<T>>(x: Decimal, list: R[], compare: (what: T) => { yes: boolean; holds: Holds }): { result: R; holds: Holds } | null {
+  const i = list.findIndex((r) => r.holds !== null && inside(r.holds, x));
+  if (i >= 0) {
+    const result = list[i]!;
+    if (i > 0) list.unshift(...list.splice(i, 1));
+    return { result, holds: result.holds };
+  }
+  const last = list[0];
+  const holds = last ? recheck(x, last, compare) : false;
+  return holds === false ? null : { result: last!, holds };
+}
+
+function keep<R>(list: R[], result: R): void {
+  list.unshift(result);
+  if (list.length > KEPT_RESULTS) list.pop();
 }
 
 /** What decides the answer at one exit value: the answer, and how far each deciding quantity is from changing it. */
@@ -325,6 +367,53 @@ export interface Snapshot {
    * changes the keys. Between changes, every one moves in a straight line.
    */
   margins: Map<string, Decimal>;
+  /** The same margins, by the set of choices each belongs to: one tree for each answer weighed (10j). */
+  units: Unit[];
+}
+
+/**
+ * One set of choices among those an answer's margins come from, as the breakpoint finder follows it (10j). The answer
+ * itself is a "top" unit: a change in its own margins, or in a gain that decides it, changes what it pays. The rest
+ * are what its gains compare it with, and only bend those gains:
+ * - "alternative": a free series, warrant or note switched, with the SAFEs re-settled after it (E20);
+ * - "step": a set of SAFEs converting on the SAFEs' way down from "every SAFE converts" (E20);
+ * - "switch": one SAFE switched at the SAFEs' last set, or at a step.
+ * A unit's children are what its own gains compare it with. A child's gain is its amount less its parent's. A switch
+ * under a step decides the step's parent, and every other child decides its parent: where that gain reaches zero, the
+ * parent's own decisions change. Internal.
+ */
+export interface Unit {
+  spec: UnitSpec;
+  /** Its own margins: its tiers not yet paid in full, its caps, its next option class's net, and the like. */
+  own: Map<string, Decimal>;
+  /** The amounts its gains, and its parent's gains, read from it. */
+  value: Map<string, Decimal>;
+  /** For an alternative or a switch: the key of its gain from switching, and the security it's the gain of. */
+  gain: { key: string; id: string } | null;
+  /** A payout it reads curves (X17): its margins aren't straight lines. */
+  curved: boolean;
+  children: Unit[];
+}
+
+/** How to read one unit again at another exit value, by itself (unitAt). Internal. */
+export type UnitSpec =
+  | { kind: "top"; label: string }
+  | { kind: "alternative"; label: string; top: string; base: ReadonlySet<string>; sid: string }
+  | { kind: "step"; label: string; prefix: string; leaders: ReadonlySet<string>; visited: ReadonlySet<string> }
+  | { kind: "switch"; label: string; at: string; choices: ReadonlySet<string>; fid: string };
+
+/**
+ * The flat margins of a tree of units, in the order the finder has always read them: each unit's own, then its
+ * children's, then its gain.
+ */
+function flatten(units: Unit[], into = new Map<string, Decimal>()): Map<string, Decimal> {
+  const walk = (u: Unit, parent: Unit | null) => {
+    for (const [k, v] of u.own) into.set(k, v);
+    for (const c of u.children) walk(c, u);
+    if (u.gain && parent) into.set(u.gain.key, u.value.get(u.gain.id)!.minus(parent.value.get(u.gain.id)!));
+  };
+  for (const u of units) walk(u, null);
+  return into;
 }
 
 /** One comparison a stability watch keeps: player p at a set of choices, and how it came out until when. */
@@ -404,6 +493,11 @@ const UNCERTAIN_STEP = new D("1e-6");
 /** The answer at one exit value with its margins, for the breakpoint finder. Internal. */
 export function snapshotAt(pc: Prepared, exitValue: Decimal): Snapshot {
   return new AtExit(pc, exitValue, {}).snapshot();
+}
+
+/** One unit of a snapshot read again at another exit value, by itself (10j): a step without its switches when `withChildren` is false. Internal. */
+export function unitAt(pc: Prepared, exitValue: Decimal, spec: UnitSpec, withChildren = true): Unit {
+  return new AtExit(pc, exitValue, {}).readUnit(spec, withChildren);
 }
 
 class AtExit {
@@ -631,11 +725,9 @@ class AtExit {
       this.followedPaths.set(k, path);
       return weighed;
     };
-    const known = kept(SAFES_SETTLED, this.pc).get(k);
-    if (known) {
-      const holds = recheck(this.x, known.checks, compare);
-      if (holds !== false) return finish(known.path, holds);
-    }
+    const known = kept(SAFES_SETTLED, this.pc, k);
+    const reused = reuse(this.x, known, compare);
+    if (reused) return finish(reused.result.path, reused.holds);
     const checks: Check<SafeCompare>[] = [];
     // Whether a SAFE does strictly better converting than taking cash, the others as in `set` (X16).
     const converts = (set: ReadonlySet<string>, fid: string) => {
@@ -656,8 +748,9 @@ class AtExit {
       set = this.mostConversions(all, converts);
       path.push(set);
     }
-    kept(SAFES_SETTLED, this.pc).set(k, { path, checks });
-    return finish(path, checks.reduce<Holds>((h, c) => narrow(h, c.holds), EVERYWHERE));
+    const holds = checks.reduce<Holds>((h, c) => narrow(h, c.holds), EVERYWHERE);
+    keep(known, { path, checks, holds });
+    return finish(path, holds);
   }
 
   /** The SAFEs' answer by weighing every combination, where dropping from "every SAFE converts" didn't settle (E20, E15). */
@@ -718,11 +811,9 @@ class AtExit {
       this.settled.set(k, weighed);
       return weighed;
     };
-    const known = kept(OPTIONS_SETTLED, this.pc).get(k);
-    if (known) {
-      const holds = recheck(this.x, known.checks, compare);
-      if (holds !== false) return finish(known.exercised, holds);
-    }
+    const known = kept(OPTIONS_SETTLED, this.pc, k);
+    const reused = reuse(this.x, known, compare);
+    if (reused) return finish(reused.result.exercised, reused.holds);
     const checks: Check<OptionCompare>[] = [];
     const more = (what: OptionCompare) => {
       const c = compare(what);
@@ -764,25 +855,39 @@ class AtExit {
     for (const o of this.optionClasses.slice(n + 1)) {
       if (more({ a: toggled(exercised, o.id), b: exercised, id: o.id })) throw new NoAnswerError(`${this.where} option exercise doesn't settle: ${o.id} would gain by switching.`);
     }
-    kept(OPTIONS_SETTLED, this.pc).set(k, { exercised, checks });
-    return finish(exercised, checks.reduce<Holds>((h, c) => narrow(h, c.holds), EVERYWHERE));
+    const holds = checks.reduce<Holds>((h, c) => narrow(h, c.holds), EVERYWHERE);
+    keep(known, { exercised, checks, holds });
+    return finish(exercised, holds);
   }
 
   // ---------- margins, for the breakpoint finder ----------
 
   snapshot(): Snapshot {
-    const margins = new Map<string, Decimal>();
     if (!this.group) {
       const { answers, complete } = this.settleFree(new Set());
       const answer = this.single(answers, complete);
-      this.addSettled(margins, "answer", answer, new Set());
-      return { answer: this.exactWorked(answer), margins };
+      const units = [this.topUnit("answer", answer, new Set())];
+      return { answer: this.exactWorked(answer), margins: flatten(units), units };
     }
     const { converting, staying } = this.groupChoices();
-    this.addSettled(margins, "converts", converting, new Set(this.group.series));
-    this.addSettled(margins, "stays", staying, new Set());
+    const units = [this.topUnit("converts", converting, new Set(this.group.series)), this.topUnit("stays", staying, new Set())];
+    const margins = flatten(units);
     for (const [holder, m] of this.voterMargins(converting, staying)) margins.set(`vote:${holder}`, m);
-    return { answer: this.exactWorked(this.groupVotes(converting, staying) ? converting : staying), margins };
+    return { answer: this.exactWorked(this.groupVotes(converting, staying) ? converting : staying), margins, units };
+  }
+
+  /** One unit read again here, by itself (10j): a step without its switches when `withChildren` is false. */
+  readUnit(spec: UnitSpec, withChildren: boolean): Unit {
+    switch (spec.kind) {
+      case "alternative":
+        return this.alternativeUnit(spec.label, spec.top, spec.base, spec.sid);
+      case "step":
+        return this.stepUnit(spec.label, spec.prefix, spec.leaders, spec.visited, withChildren);
+      case "switch":
+        return this.switchUnit(spec.label, spec.at, spec.choices, spec.fid);
+      case "top":
+        throw new Error("an answer is read whole, in a snapshot");
+    }
   }
 
   /**
@@ -848,20 +953,35 @@ class AtExit {
     return answers[0]!;
   }
 
+  /** A unit's name for a set of decisions: its label, then who converts and who exercises. */
+  private tagOf(label: string, a: Worked): string {
+    return `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
+  }
+
   /**
    * A settled answer's own margins, and those of each single switch a free
    * series, warrant or note weighs against it, with the SAFEs re-settled after
    * it (E20). Each SAFE's gain from switching is a margin in both, since where
    * it reaches zero the SAFEs settle differently.
    */
-  private addSettled(margins: Map<string, Decimal>, label: string, answer: Worked, fixed: ReadonlySet<string>): void {
-    const tag = (a: Worked) => `${label}{${key(a.decisions.converted)}/${key(a.decisions.exercised)}}`;
-    this.addFollowed(margins, tag, tag(answer), answer);
+  private topUnit(label: string, answer: Worked, fixed: ReadonlySet<string>): Unit {
+    const top = this.tagOf(label, answer);
+    const unit = this.nodeUnit({ kind: "top", label }, label, top, answer);
+    const base = new Set([...fixed, ...this.chosen(answer)]);
     for (const sid of this.free) {
-      const alternative = this.followed(toggled(new Set([...fixed, ...this.chosen(answer)]), sid));
-      this.addFollowed(margins, tag, `${tag(answer)}>${tag(alternative)}`, alternative);
-      margins.set(`${tag(answer)}|gain:${sid}`, alternative.payout.bySecurity.get(sid)!.minus(answer.payout.bySecurity.get(sid)!));
+      unit.children.push(this.alternativeUnit(label, top, base, sid));
+      unit.value.set(sid, answer.payout.bySecurity.get(sid)!);
     }
+    return unit;
+  }
+
+  /** One free series, warrant or note switched from `base`, with the SAFEs re-settled after it (E20), and its gain from switching. */
+  private alternativeUnit(label: string, top: string, base: ReadonlySet<string>, sid: string): Unit {
+    const alternative = this.followed(toggled(base, sid));
+    const unit = this.nodeUnit({ kind: "alternative", label, top, base, sid }, label, `${top}>${this.tagOf(label, alternative)}`, alternative);
+    unit.value.set(sid, alternative.payout.bySecurity.get(sid)!);
+    unit.gain = { key: `${top}|gain:${sid}`, id: sid };
+    return unit;
   }
 
   /**
@@ -870,24 +990,49 @@ class AtExit {
    * SAFE converts" through fewer: at each set on the way, each converting
    * SAFE's gain from staying decides whether it drops, so those are margins too.
    */
-  private addFollowed(margins: Map<string, Decimal>, tag: (a: Worked) => string, prefix: string, a: Worked): void {
-    this.addStructure(margins, prefix, a);
-    if (this.safes.length === 0) return;
+  private nodeUnit(spec: UnitSpec, label: string, prefix: string, a: Worked): Unit {
+    const unit: Unit = { spec, own: new Map(), value: new Map(), gain: null, curved: false, children: [] };
+    this.addStructure(unit, prefix, a);
+    if (this.safes.length === 0) return unit;
     const leaders = this.chosen(a);
     const path = this.followedPaths.get(key(leaders)) ?? [new Set([...a.decisions.converted].filter((id) => this.pc.safes.has(id)))];
     path.forEach((visited, i) => {
-      const last = i === path.length - 1;
+      if (i < path.length - 1) {
+        unit.children.push(this.stepUnit(label, prefix, leaders, visited, true));
+        return;
+      }
       const choices = new Set([...leaders, ...visited]);
       const here = this.withOptions(choices);
-      const at = last ? prefix : `${prefix}>from{${key(visited)}}`;
-      if (!last) this.addStructure(margins, at, here);
       for (const fid of this.safes) {
-        if (!last && !visited.has(fid)) continue;
-        const switched = this.withOptions(toggled(choices, fid));
-        this.addStructure(margins, `${at}>${tag(switched)}`, switched);
-        margins.set(`${at}|gain:${fid}`, switched.payout.bySecurity.get(fid)!.minus(here.payout.bySecurity.get(fid)!));
+        unit.children.push(this.switchUnit(label, prefix, choices, fid));
+        unit.value.set(fid, here.payout.bySecurity.get(fid)!);
       }
     });
+    return unit;
+  }
+
+  /** One set of SAFEs converting on the way down from "every SAFE converts" (E20), and each converting SAFE's switch from it. */
+  private stepUnit(label: string, prefix: string, leaders: ReadonlySet<string>, visited: ReadonlySet<string>, withChildren: boolean): Unit {
+    const choices = new Set([...leaders, ...visited]);
+    const here = this.withOptions(choices);
+    const at = `${prefix}>from{${key(visited)}}`;
+    const unit: Unit = { spec: { kind: "step", label, prefix, leaders, visited }, own: new Map(), value: new Map(), gain: null, curved: false, children: [] };
+    this.addStructure(unit, at, here);
+    for (const fid of this.safes) {
+      if (!visited.has(fid)) continue;
+      if (withChildren) unit.children.push(this.switchUnit(label, at, choices, fid));
+      unit.value.set(fid, here.payout.bySecurity.get(fid)!);
+    }
+    return unit;
+  }
+
+  /** One SAFE switched from a set of choices, with the options settled after it (E16), and its gain from switching. */
+  private switchUnit(label: string, at: string, choices: ReadonlySet<string>, fid: string): Unit {
+    const switched = this.withOptions(toggled(choices, fid));
+    const unit: Unit = { spec: { kind: "switch", label, at, choices, fid }, own: new Map(), value: new Map(), gain: { key: `${at}|gain:${fid}`, id: fid }, curved: false, children: [] };
+    this.addStructure(unit, `${at}>${this.tagOf(label, switched)}`, switched);
+    unit.value.set(fid, switched.payout.bySecurity.get(fid)!);
+    return unit;
   }
 
   /**
@@ -895,9 +1040,11 @@ class AtExit {
    * edge, and the next option class's net if it were exercised. A tier's margin
    * and the carve-out's edge are straight lines even where payouts curve (X17).
    */
-  private addStructure(margins: Map<string, Decimal>, tag: string, a: Worked): void {
+  private addStructure(unit: Unit, tag: string, a: Worked): void {
+    const margins = unit.own;
     const edges = this.pc.capTable.carveOut?.tiers;
     const structural = (prefix: string, p: Settlement) => {
+      if (p.curved) unit.curved = true;
       for (const t of p.tiers) if (!t.full) margins.set(`${prefix}|tier:${t.index}`, t.paid.minus(t.claim));
       for (const [sid, room] of p.capRoom) margins.set(`${prefix}|cap:${sid}`, room);
       const edge = p.carveOut && edges ? edges[p.carveOut.band]?.to : null;
