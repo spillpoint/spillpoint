@@ -53,3 +53,57 @@ export function manySafesAndStrikes(safes: number, strikes: number, amounts: "tw
     exit_values: [],
   };
 }
+
+/**
+ * A second made-up table, Jordan's from his check of 10j: the one the search couldn't run at Node's default heap of
+ * 2,096 MB, where main could. 26 post-money SAFEs at $6M, $10.5M and $29M caps, 7 of them with a 20% discount; 12
+ * option classes from $0.05 to $8; a warrant for the Seed at $1; a 1.5x non-participating Series A senior to the Seed;
+ * over $0 to $200M. Nothing in it is anyone's cap table.
+ */
+export function threeCapsTable(): Json {
+  const options: [string, number][] = [
+    ["0.05", 140000], ["0.1", 30000], ["0.25", 30000], ["0.4", 180000], ["0.6", 130000], ["0.75", 210000],
+    ["1.2", 90000], ["1.5", 20000], ["2", 70000], ["2.5", 60000], ["6", 180000], ["8", 50000],
+  ];
+  // Each SAFE's purchase amount, post-money cap and discount.
+  const safes: [number, string, string][] = [
+    [70000, "10500000", "0"], [420000, "29000000", "0"], [310000, "6000000", "0"], [320000, "6000000", "0.2"],
+    [400000, "29000000", "0.2"], [65000, "10500000", "0"], [470000, "29000000", "0"], [320000, "29000000", "0.2"],
+    [550000, "10500000", "0"], [30000, "29000000", "0.2"], [495000, "6000000", "0"], [110000, "29000000", "0"],
+    [430000, "6000000", "0"], [420000, "6000000", "0"], [245000, "10500000", "0"], [600000, "29000000", "0"],
+    [420000, "10500000", "0.2"], [305000, "10500000", "0.2"], [570000, "10500000", "0"], [315000, "29000000", "0"],
+    [360000, "29000000", "0"], [30000, "6000000", "0"], [45000, "6000000", "0"], [440000, "29000000", "0"],
+    [365000, "29000000", "0.2"], [390000, "6000000", "0"],
+  ];
+  const holders: Json[] = [
+    { id: "f1", name: "Founder 1" },
+    { id: "f2", name: "Founder 2" },
+    { id: "inv_s", name: "Investor S" },
+    { id: "inv_a", name: "Investor A" },
+    ...options.map((_, i) => ({ id: `e${i}`, name: `Employee ${i}` })),
+    ...safes.map((_, i) => ({ id: `si${i}`, name: `SAFE Investor ${i}` })),
+    { id: "inv_w", name: "Lender W" },
+  ];
+  const securities: Json[] = [
+    { id: "common", name: "Common Stock", kind: "common" },
+    { id: "seed", name: "Seed Preferred", kind: "preferred", original_issue_price: "0.5", conversion_price: "0.5", preference_multiple: "1", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
+    { id: "series_a", name: "Series A Preferred", kind: "preferred", original_issue_price: "1.5", preference_multiple: "1.5", participation: "non_participating", cap_multiple: null, anti_dilution: "none" },
+    ...options.map(([strike]) => ({ id: `options_${strike}`, name: `Options ($${strike} strike)`, kind: "option", strike })),
+    { id: "warrants_seed", name: "Warrants for Seed Preferred", kind: "warrant", strike: "1", underlying: "seed" },
+  ];
+  const positions: Json[] = [
+    { holder: "f1", security: "common", shares: 3600000 },
+    { holder: "f2", security: "common", shares: 3200000 },
+    { holder: "inv_s", security: "seed", shares: 800000 },
+    { holder: "inv_a", security: "series_a", shares: 1250000 },
+    ...options.map(([strike, shares], i) => ({ holder: `e${i}`, security: `options_${strike}`, shares })),
+    { holder: "inv_w", security: "warrants_seed", shares: 120000 },
+  ];
+  const unconverted = safes.map(([amount, cap, discount], i) => ({ id: `safe_${i}`, holder: `si${i}`, purchase_amount: String(amount), post_money_cap: cap, discount }));
+  return {
+    cap_table: { holders, securities, seniority: [["series_a"], ["seed"]], positions, unissued_pool: 150000, unconverted_safes: unconverted },
+    exit_date: "2025-12-31",
+    range: ["0", "200000000"],
+    exit_values: [],
+  };
+}

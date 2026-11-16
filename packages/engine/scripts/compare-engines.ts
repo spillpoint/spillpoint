@@ -10,11 +10,14 @@
 //   pnpm compare-engines local/main-engine/packages/engine/src local/random-many-safes
 //
 // Tables run in parallel, five at a time unless --workers says otherwise. The report goes to compare-engines.txt in
-// the directory, with each engine's time on each table.
+// the directory, with each engine's time and memory on each table. Memory is read from a heap collected just before:
+// the most heap in use while it worked, garbage not yet collected included, and what it still held for the table once
+// collected again after.
 
 import { fork } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { GCProfiler } from "node:v8";
 
 import type { Decimal } from "decimal.js";
 
@@ -26,14 +29,34 @@ interface Results {
   text: string[];
   numbers: Decimal[];
   seconds: number;
+  /** In MB: the most heap it held at once, and what it still held for the table after. */
+  peakHeap: number;
+  heldAfter: number;
 }
+
+/** The workers run with --expose-gc, so each engine's memory is read from a collected heap. */
+const collect = () => (globalThis as { gc?: () => void }).gc?.();
+const MB = 2 ** 20;
+/** The table being worked on, held while the heap is collected after, so what the engine keeps for it counts. */
+let holding: unknown = null;
 
 const TOLERANCE = "1e-15";
 
 function run(engine: Engine, inputs: { exit: Json }): Results {
   const text: string[] = [];
   const numbers: Decimal[] = [];
+  collect();
+  const base = process.memoryUsage().heapUsed;
+  const profiler = new GCProfiler();
+  profiler.start();
   const start = performance.now();
+  const memory = () => {
+    let peak = process.memoryUsage().heapUsed;
+    for (const gc of profiler.stop()?.statistics ?? []) peak = Math.max(peak, (gc.beforeGC.heapStatistics as unknown as { usedHeapSize: number }).usedHeapSize);
+    collect();
+    holding = null;
+    return { peakHeap: Math.max(0, Math.round((peak - base) / MB)), heldAfter: Math.max(0, Math.round((process.memoryUsage().heapUsed - base) / MB)) };
+  };
   const stopped = (where: string, e: unknown) => text.push(`${where} stops: ${(e as Error).constructor.name}: ${(e as Error).message}`);
   const { grid_step: _, ...spec } = inputs.exit;
   let exit: ReturnType<Engine["readExit"]>;
@@ -43,8 +66,9 @@ function run(engine: Engine, inputs: { exit: Json }): Results {
     pc = engine.prepare(exit.capTable, exit.exitDate);
   } catch (e) {
     stopped("reading", e);
-    return { text, numbers, seconds: 0 };
+    return { text, numbers, seconds: 0, ...memory() };
   }
+  holding = pc;
   const answersAt = (x: Decimal, where: string) => {
     try {
       for (const a of engine.solve(pc, x).answers) {
@@ -71,7 +95,8 @@ function run(engine: Engine, inputs: { exit: Json }): Results {
     stopped("the search", e);
   }
   for (const x of exit.exitValues) answersAt(x, `at ${x.toString()}`);
-  return { text, numbers, seconds: (performance.now() - start) / 1000 };
+  const seconds = (performance.now() - start) / 1000;
+  return { text, numbers, seconds, ...memory() };
 }
 
 /** Where two engines' results differ, as 10j's bar reads them; and the values on a half cent, listed apart. */
@@ -117,15 +142,32 @@ if (part !== undefined) {
     const inputs = JSON.parse(readFileSync(join(directory, name, "inputs.json"), "utf8")) as { exit: Json };
     const a = run(mine, inputs);
     const b = run(theirs, inputs);
-    process.send!({ name, ...compare(a, b), seconds: [a.seconds, b.seconds], results: a.text.length, breakpoints: a.text.find((t) => t.endsWith(" breakpoints")) ?? a.text[0] });
+    process.send!({
+      name,
+      ...compare(a, b),
+      seconds: [a.seconds, b.seconds],
+      peakHeap: [a.peakHeap, b.peakHeap],
+      heldAfter: [a.heldAfter, b.heldAfter],
+      results: a.text.length,
+      breakpoints: a.text.find((t) => t.endsWith(" breakpoints")) ?? a.text[0],
+    });
   }
   process.exit(0);
 } else {
-  const reports: { name: string; problems: string[]; halfCents: string[]; seconds: [number, number]; results: number; breakpoints: string }[] = [];
+  const reports: {
+    name: string;
+    problems: string[];
+    halfCents: string[];
+    seconds: [number, number];
+    peakHeap: [number, number];
+    heldAfter: [number, number];
+    results: number;
+    breakpoints: string;
+  }[] = [];
   await Promise.all(
     Array.from({ length: workers }, (_, i) =>
       new Promise<void>((done, fail) => {
-        const child = fork(import.meta.filename, [otherSrc, directory, "--part", `${i}/${workers}`], { stdio: ["ignore", "inherit", "inherit", "ipc"] });
+        const child = fork(import.meta.filename, [otherSrc, directory, "--part", `${i}/${workers}`], { stdio: ["ignore", "inherit", "inherit", "ipc"], execArgv: [...process.execArgv, "--expose-gc"] });
         child.on("message", (m) => {
           const r = m as (typeof reports)[number];
           reports.push(r);
@@ -139,19 +181,26 @@ if (part !== undefined) {
   const failing = reports.filter((r) => r.problems.length > 0);
   const stops = reports.filter((r) => !r.breakpoints.endsWith(" breakpoints"));
   const total = (k: 0 | 1) => reports.reduce((s, r) => s + r.seconds[k], 0);
+  const most = (pick: (r: (typeof reports)[number]) => number) => Math.max(0, ...reports.map(pick));
+  const more = reports.filter((r) => r.peakHeap[0] > r.peakHeap[1]);
   const lines = [
     `${reports.length} tables. Agree: ${reports.length - failing.length}. Differ: ${failing.length}.`,
     `Stopped by both, with the same message: ${stops.length - stops.filter((r) => r.problems.length > 0).length}.`,
     `Values on a half cent: ${reports.reduce((s, r) => s + r.halfCents.length, 0)}.`,
     `Seconds in all: this engine ${total(0).toFixed(1)}, the other ${total(1).toFixed(1)}.`,
+    `Peak heap at most: this engine ${most((r) => r.peakHeap[0])} MB, the other ${most((r) => r.peakHeap[1])} MB. Held after at most: this engine ${most((r) => r.heldAfter[0])} MB, the other ${most((r) => r.heldAfter[1])} MB.`,
+    `Tables where this engine's peak heap was more than the other's: ${more.length}${more.length ? ` (${more.map((r) => `${r.name} ${r.peakHeap[0]} MB against ${r.peakHeap[1]}`).join("; ")})` : ""}.`,
     "",
     ...failing.flatMap((r) => [`${r.name}:`, ...r.problems.slice(0, 10).map((p) => `  ${p}`)]),
     ...reports.filter((r) => r.halfCents.length > 0).flatMap((r) => [`${r.name}, on a half cent:`, ...r.halfCents.map((p) => `  ${p}`)]),
     "",
-    "table | results | this engine's search | seconds, this engine | seconds, the other",
-    ...reports.map((r) => `${r.name} | ${r.results} | ${r.breakpoints} | ${r.seconds[0].toFixed(2)} | ${r.seconds[1].toFixed(2)}`),
+    "table | results | this engine's search | seconds, this engine | seconds, the other | peak heap MB, this engine | the other | held after MB, this engine | the other",
+    ...reports.map(
+      (r) =>
+        `${r.name} | ${r.results} | ${r.breakpoints} | ${r.seconds[0].toFixed(2)} | ${r.seconds[1].toFixed(2)} | ${r.peakHeap[0]} | ${r.peakHeap[1]} | ${r.heldAfter[0]} | ${r.heldAfter[1]}`,
+    ),
   ];
   writeFileSync(join(directory, "compare-engines.txt"), `${lines.join("\n")}\n`);
-  console.log(lines.slice(0, 4).join("\n"));
+  console.log(lines.slice(0, 6).join("\n"));
   process.exitCode = failing.length === 0 ? 0 : 1;
 }

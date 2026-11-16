@@ -44,14 +44,17 @@
 //   before, so does the result. The answers reported are run exactly. Since
 //   10j each set of decisions keeps its last few results and lines, so a set
 //   read ahead and then behind, as the breakpoint finder reads them, needn't
-//   be worked out again.
+//   be worked out again; and lets them go once the finder has passed them,
+//   two stretches on, or solve two exit values on (moveOn). The answer at
+//   each breakpoint is kept, worked out as the finder passes it, for solve
+//   there after.
 
 import type { Decimal } from "decimal.js";
 
 import { D, TIE, ZERO, moreThan, sameAmount, toCents } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
 import { money } from "./reasons.ts";
-import { EVERYWHERE, inside, meet, pastZero, payoutWithLines, signHolds } from "./lines.ts";
+import { EVERYWHERE, inside, meet, nextStep, passed, pastZero, payoutWithLines, signHolds, stepOf } from "./lines.ts";
 import type { Interval, Line, PayoutLines } from "./lines.ts";
 import type { ConversionGroup, OptionClass } from "./model.ts";
 import { publicPayout, settle, working } from "./waterfall.ts";
@@ -93,12 +96,50 @@ const SHARE_TIE = new D("1e-30");
 
 /** Who converts, who exercises, and what each holder gets at one exit value. */
 export function solve(pc: PreparedCapTable, exitValue: Decimal): Solution {
-  return solveWorking(working(pc), exitValue);
+  const w = working(pc);
+  // Each exit value asked for is a step of reading the table: what neither it nor the one before reads is let go (10j).
+  moveOn(w);
+  return solveWorking(w, exitValue);
 }
 
 /** solve on a table's working quantities: for a caller in the engine that works them out once for many exit values. Internal. */
 export function solveWorking(pc: Prepared, exitValue: Decimal): Solution {
+  const known = ANSWERS_AT.get(pc)?.get(exitValue.toString());
+  if (known) return { exitValue, answers: known.map((d) => exactAnswer(pc, exitValue, d)) };
   return new AtExit(pc, exitValue, {}).solve();
+}
+
+/**
+ * The decisions of each answer at every breakpoint, worked out as the breakpoint finder passes it (10j). The page asks
+ * for the answer at each breakpoint once the search is done, and by then the finder has let go the lines the solver
+ * would weigh it on (moveOn): weighing it again would run the waterfall for every set of decisions it compares. Worked
+ * out while they're kept, the answer there costs one run of the waterfall, for its payout. The same decisions either
+ * way: lines only spare runs of the waterfall.
+ */
+const ANSWERS_AT = new WeakMap<Prepared, Map<string, Decisions[]>>();
+
+/** Work out and keep the answer's decisions at a breakpoint, for solve there later. Internal. */
+export function keepAnswerAt(pc: Prepared, exitValue: Decimal): void {
+  let decisions: Decisions[];
+  try {
+    decisions = new AtExit(pc, exitValue, {}).decide().map((a) => a.decisions);
+  } catch {
+    // Where it can't be worked out, nothing is kept: solve there works it out, and says why, as before.
+    return;
+  }
+  let byValue = ANSWERS_AT.get(pc);
+  if (!byValue) ANSWERS_AT.set(pc, (byValue = new Map()));
+  byValue.set(exitValue.toString(), decisions.map((d) => ({ converted: new Set(d.converted), exercised: new Set(d.exercised) })));
+}
+
+/**
+ * An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. Its decisions are
+ * its own copies: the solver keeps the sets it settled on across exit values, and a caller changing an answer must
+ * not change the next one (10c).
+ */
+function exactAnswer(pc: Prepared, x: Decimal, d: Decisions): Answer {
+  const decisions = { converted: new Set(d.converted), exercised: new Set(d.exercised) };
+  return { decisions, payout: publicPayout(settle(pc, x, decisions)) };
 }
 
 /** solve, checking every combination even where the two ends agree: the tests' check that both routes agree. Internal. */
@@ -316,9 +357,42 @@ interface SafeCompare {
   fid: string;
 }
 
+/** One set of decisions' kept results, and the step they were last read on (moveOn). */
+interface KeptResults<T> {
+  list: T[];
+  read: number;
+}
+
+/**
+ * One prepared cap table's kept results of one kind: each set of decisions with results kept, the least recently read
+ * first. A result is a few comparisons, a small part of what a set's lines take, so they're let go as lines are, by
+ * the step (moveOn), but not counted against main's (keepLines).
+ */
+interface ResultsKept<T> {
+  byKey: Map<string, KeptResults<T>>;
+}
+
 /** What each set of decisions settled to, kept across exit values for each prepared cap table, with the comparisons it turned on. */
-const OPTIONS_SETTLED = new WeakMap<Prepared, Map<string, (Kept<OptionCompare> & { exercised: Set<string> })[]>>();
-const SAFES_SETTLED = new WeakMap<Prepared, Map<string, (Kept<SafeCompare> & { path: Set<string>[] })[]>>();
+const OPTIONS_SETTLED = new WeakMap<Prepared, ResultsKept<Kept<OptionCompare> & { exercised: Set<string> }>>();
+const SAFES_SETTLED = new WeakMap<Prepared, ResultsKept<Kept<SafeCompare> & { path: Set<string>[] }>>();
+
+/**
+ * The next step of reading a prepared cap table (10j): the breakpoint finder begins its next stretch up, or a caller
+ * asks solve for another exit value. What a set of decisions settled to, and its lines, are let go once neither of the
+ * last two steps has read them (nextStep): the finder has passed them. Internal.
+ */
+export function moveOn(pc: Prepared, from: Decimal | null = null): void {
+  const step = nextStep(pc, from);
+  for (const store of [OPTIONS_SETTLED, SAFES_SETTLED] as WeakMap<Prepared, ResultsKept<unknown>>[]) {
+    const results = store.get(pc);
+    if (!results) continue;
+    // The least recently read come first: past the first that isn't passed, none is.
+    for (const [k, e] of results.byKey) {
+      if (!passed(e.read, step)) break;
+      results.byKey.delete(k);
+    }
+  }
+}
 
 /**
  * How many results each set of decisions keeps, the last one used first. The breakpoint finder reads a set of
@@ -326,13 +400,25 @@ const SAFES_SETTLED = new WeakMap<Prepared, Map<string, (Kept<SafeCompare> & { p
  */
 const KEPT_RESULTS = 4;
 
-/** The results kept for one set of decisions, for each prepared cap table. */
-function kept<T>(store: WeakMap<Prepared, Map<string, T[]>>, pc: Prepared, k: string): T[] {
-  let byKey = store.get(pc);
-  if (!byKey) store.set(pc, (byKey = new Map()));
-  let list = byKey.get(k);
-  if (!list) byKey.set(k, (list = []));
-  return list;
+/** One set of decisions' kept results, and the store they count in. */
+interface KeptHere<T> {
+  results: ResultsKept<T>;
+  key: string;
+  entry: KeptResults<T>;
+}
+
+/** The results kept for one set of decisions, for each prepared cap table, read on this step. */
+function kept<T>(store: WeakMap<Prepared, ResultsKept<T>>, pc: Prepared, k: string): KeptHere<T> {
+  let results = store.get(pc);
+  if (!results) store.set(pc, (results = { byKey: new Map() }));
+  let entry = results.byKey.get(k);
+  if (entry) {
+    // Read now: the last in the order the least recently read are let go in.
+    results.byKey.delete(k);
+    results.byKey.set(k, entry);
+    entry.read = stepOf(pc);
+  } else entry = { list: [], read: stepOf(pc) };
+  return { results, key: k, entry };
 }
 
 /**
@@ -351,9 +437,11 @@ function reuse<T, R extends Kept<T>>(x: Decimal, list: R[], compare: (what: T) =
   return holds === false ? null : { result: last!, holds };
 }
 
-function keep<R>(list: R[], result: R): void {
-  list.unshift(result);
-  if (list.length > KEPT_RESULTS) list.pop();
+/** Keep a set of decisions' new result, the last used first. */
+function keep<R>({ results, key, entry }: KeptHere<R>, result: R): void {
+  if (!results.byKey.has(key)) results.byKey.set(key, entry);
+  entry.list.unshift(result);
+  if (entry.list.length > KEPT_RESULTS) entry.list.pop();
 }
 
 /** What decides the answer at one exit value: the answer, and how far each deciding quantity is from changing it. */
@@ -541,22 +629,14 @@ class AtExit {
   }
 
   solve(): Solution {
-    if (!this.group) {
-      const { answers } = this.settleFree(new Set());
-      return { exitValue: this.x, answers: answers.map((a) => this.exact(a)) };
-    }
-    const { converting, staying } = this.groupChoices();
-    return { exitValue: this.x, answers: [this.exact(this.groupVotes(converting, staying) ? converting : staying)] };
+    return { exitValue: this.x, answers: this.decide().map((a) => exactAnswer(this.pc, this.x, a.decisions)) };
   }
 
-  /**
-   * An answer with its payout run exactly: what the solver reports, whatever lines it weighed it on. Its decisions are
-   * its own copies: the solver keeps the sets it settled on across exit values, and a caller changing an answer must
-   * not change the next one (10c).
-   */
-  private exact(a: Worked): Answer {
-    const decisions = { converted: new Set(a.decisions.converted), exercised: new Set(a.decisions.exercised) };
-    return { decisions, payout: publicPayout(settle(this.pc, this.x, decisions)) };
+  /** The stable answers, as weighed: on lines where they hold, so their payouts are run exactly to report (solve). */
+  decide(): Weighed[] {
+    if (!this.group) return this.settleFree(new Set()).answers;
+    const { converting, staying } = this.groupChoices();
+    return [this.groupVotes(converting, staying) ? converting : staying];
   }
 
   /** The same, as the breakpoint finder works with it: the settlement, with its workings. */
@@ -726,7 +806,7 @@ class AtExit {
       return weighed;
     };
     const known = kept(SAFES_SETTLED, this.pc, k);
-    const reused = reuse(this.x, known, compare);
+    const reused = reuse(this.x, known.entry.list, compare);
     if (reused) return finish(reused.result.path, reused.holds);
     const checks: Check<SafeCompare>[] = [];
     // Whether a SAFE does strictly better converting than taking cash, the others as in `set` (X16).
@@ -812,7 +892,7 @@ class AtExit {
       return weighed;
     };
     const known = kept(OPTIONS_SETTLED, this.pc, k);
-    const reused = reuse(this.x, known, compare);
+    const reused = reuse(this.x, known.entry.list, compare);
     if (reused) return finish(reused.result.exercised, reused.holds);
     const checks: Check<OptionCompare>[] = [];
     const more = (what: OptionCompare) => {

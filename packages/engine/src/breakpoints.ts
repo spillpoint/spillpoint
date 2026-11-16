@@ -33,7 +33,7 @@ import type { Decimal } from "decimal.js";
 
 import { D, TIE, toCents } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
-import { StabilityWatch, snapshotAt, unitAt } from "./decisions.ts";
+import { StabilityWatch, keepAnswerAt, moveOn, snapshotAt, unitAt } from "./decisions.ts";
 import type { Snapshot, Unit } from "./decisions.ts";
 import { describeChange } from "./reasons.ts";
 import type { Reason } from "./reasons.ts";
@@ -500,6 +500,9 @@ export function findBreakpoints(table: PreparedCapTable, range: readonly [Decima
   const [lo, hi] = range;
   const found: Breakpoint[] = [];
   const watch = new StabilityWatch(pc);
+  // Each stretch is a step, from the readings just above where it begins (10j): what neither it nor the one before
+  // reads is let go, and every line that ends where it begins or below.
+  moveOn(pc, lo);
   let stretch = stretchAbove(pc, lo);
   for (let i = 0; i < MAX_STEPS; i++) {
     // A straight stretch is followed set of choices by set of choices (10j); a curved one is read as before (X17).
@@ -523,6 +526,7 @@ export function findBreakpoints(table: PreparedCapTable, range: readonly [Decima
     }
     const x = onCurve ?? straight;
     if (x === null) return found;
+    moveOn(pc, x);
     const after = stretchAbove(pc, x);
     // A straight side extends its two readings; a curved one is read at x itself (X17).
     const below = stretch.curved ? exactlyAt(pc, stretch.at.answer.decisions, x, -1) : payoutsAlong(stretch, x);
@@ -539,6 +543,8 @@ export function findBreakpoints(table: PreparedCapTable, range: readonly [Decima
         curveAbove: after.curved,
         reasons: describeChange(pc, x, stretch.at, after.at, jumps),
       });
+      // The answer here, while the lines it's weighed on are kept: the page asks for it next (10j).
+      keepAnswerAt(pc, x);
     }
     stretch = after;
   }
