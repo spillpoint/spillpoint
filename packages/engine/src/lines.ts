@@ -302,12 +302,102 @@ class LazyAmounts extends Map<string, Decimal> {
   }
 }
 
-/** One set of decisions' lines, once known. */
+/**
+ * One set of decisions' lines, once known: the last few, the last one read first. The breakpoint finder reads a set
+ * of choices ahead as it follows a gain, then behind as it checks a stretch (10j), so each set keeps the lines of more
+ * than one structure.
+ */
 interface Readings {
-  lines: PayoutLines | null;
+  lines: PayoutLines[];
+  /** The step they were last read on (nextStep). */
+  read: number;
 }
 
-const READINGS = new WeakMap<Prepared, Map<string, Readings>>();
+/** How many sets of lines each set of decisions keeps. */
+const KEPT_LINES = 4;
+
+/** Each prepared cap table's lines, and the step its reading has reached. */
+interface Kept {
+  step: number;
+  /** Where the breakpoint finder's stretch begins, if this step is one: no line ending at or below it is read again. */
+  from: Decimal | null;
+  /** Each set of decisions with lines kept, the least recently read first. */
+  byKey: Map<string, Readings>;
+  /** How many lines are kept now. Never more than the sets of decisions that have had lines (keepLines). */
+  lines: number;
+  lined: Set<string>;
+}
+
+const READINGS = new WeakMap<Prepared, Kept>();
+
+function keptFor(pc: Prepared): Kept {
+  let k = READINGS.get(pc);
+  if (!k) READINGS.set(pc, (k = { step: 0, from: null, byKey: new Map(), lines: 0, lined: new Set() }));
+  return k;
+}
+
+/** The step a prepared cap table's reading has reached: what anything kept for it is stamped with when read. */
+export function stepOf(pc: Prepared): number {
+  return keptFor(pc).step;
+}
+
+/** How many steps back what was kept can last have been read and still be kept: the step just ended, and the one before it. */
+const KEPT_STEPS = 2;
+
+/** Whether what was last read on step `read` is passed, now that the reading is on step `step`. */
+export function passed(read: number, step: number): boolean {
+  return read < step - KEPT_STEPS;
+}
+
+/**
+ * The next step of reading a prepared cap table (10j): the breakpoint finder begins its next stretch up, or a caller
+ * asks solve for another exit value. The finder reads upward, a stretch at a time, so a set of decisions read on
+ * neither of the last two steps is one it has passed: its lines are let go, and worked out again if it's read
+ * again. A table with many SAFEs and option strikes reads tens of thousands of sets, and each set's lines hold two of
+ * the waterfall's runs: kept for as long as the table, they were nearly all the memory the search took. Where the step
+ * is the finder's next stretch, `from` is where it begins, and lines that end at or below it go too: the finder reads
+ * above it from now on.
+ */
+export function nextStep(pc: Prepared, from: Decimal | null = null): number {
+  const k = keptFor(pc);
+  k.step += 1;
+  k.from = from;
+  // The least recently read come first: past the first that isn't passed, none is.
+  for (const [key, r] of k.byKey) {
+    if (!passed(r.read, k.step)) break;
+    k.lines -= r.lines.length;
+    k.byKey.delete(key);
+  }
+  if (from) {
+    for (const [key, r] of k.byKey) {
+      const still = r.lines.filter((l) => l.interval.hi === null || l.interval.hi.gt(from));
+      k.lines -= r.lines.length - still.length;
+      if (still.length === 0) k.byKey.delete(key);
+      else r.lines = still;
+    }
+  }
+  return k.step;
+}
+
+/**
+ * Keep a set of decisions' new lines, the last read first (10j). Never more lines in all than there are sets of
+ * decisions that have had them: main kept one for each, for as long as the table, and nothing kept may take more
+ * memory than that. Where a set's second structure would make more, its new lines take the place of its last.
+ */
+function keepLines(k: Kept, key: string, r: Readings, lines: PayoutLines): void {
+  k.lined.add(key);
+  if (!k.byKey.has(key)) k.byKey.set(key, r);
+  if (r.lines.length > 0 && k.lines >= k.lined.size) {
+    r.lines.pop();
+    k.lines -= 1;
+  }
+  r.lines.unshift(lines);
+  k.lines += 1;
+  if (r.lines.length > KEPT_LINES) {
+    r.lines.pop();
+    k.lines -= 1;
+  }
+}
 
 function decisionsKey(d: Decisions): string {
   return `${[...d.converted].sort().join("\u0000")}/${[...d.exercised].sort().join("\u0000")}`;
@@ -318,18 +408,27 @@ function decisionsKey(d: Decisions): string {
  * known, which hold on their interval.
  */
 export function payoutWithLines(pc: Prepared, x: Decimal, decisions: Decisions): { payout: Settlement; lines: PayoutLines | null } {
-  let byKey = READINGS.get(pc);
-  if (!byKey) READINGS.set(pc, (byKey = new Map()));
+  const kept = keptFor(pc);
   const k = decisionsKey(decisions);
-  let r = byKey.get(k);
-  if (!r) byKey.set(k, (r = { lines: null }));
-  if (r.lines && inside(r.lines.interval, x)) return { payout: r.lines.at(x), lines: r.lines };
+  let r = kept.byKey.get(k);
+  if (r) {
+    // Read now: the last in the order the least recently read are let go in.
+    kept.byKey.delete(k);
+    kept.byKey.set(k, r);
+    r.read = kept.step;
+  } else r = { lines: [], read: kept.step };
+  const known = r.lines.findIndex((l) => inside(l.interval, x));
+  if (known >= 0) {
+    const lines = r.lines[known]!;
+    if (known > 0) r.lines.unshift(...r.lines.splice(known, 1));
+    return { payout: lines.at(x), lines };
+  }
   const exact = settle(pc, x, decisions);
   // A second reading just beside this one gives its lines at once, unless this exit value is next to a change.
   for (const beside of [x.plus(BESIDE), x.minus(BESIDE)]) {
     const lines = PayoutLines.through(exact, settle(pc, beside, decisions));
     if (lines && inside(lines.interval, x)) {
-      r.lines = lines;
+      keepLines(kept, k, r, lines);
       return { payout: exact, lines };
     }
   }

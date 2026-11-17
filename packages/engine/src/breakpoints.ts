@@ -12,6 +12,12 @@
 // breakpoint. Each stretch is checked at its midpoint, so a change the
 // margins failed to predict stops the finder instead of going unnoticed.
 //
+// Most margins belong to a set of choices one switch away, and only bend the
+// gain from that switch. Since 10j the finder doesn't stop where one of those
+// reaches zero: it reads that set of choices again just above, by itself, and
+// follows the gain on its new line (followStretch). It stops only where the
+// answer's own margins, or a gain that decides it, reach zero.
+//
 // Where payouts curve (X17: a carve-out alongside the preferences sharing a
 // tier that isn't paid in full), a breakpoint is where the formula changes:
 // the carve-out's tier ends, or the tier it shares is paid in full. Those two
@@ -25,10 +31,10 @@
 
 import type { Decimal } from "decimal.js";
 
-import { D, toCents } from "./decimal.ts";
+import { D, TIE, toCents } from "./decimal.ts";
 import { NoAnswerError } from "./errors.ts";
-import { StabilityWatch, snapshotAt } from "./decisions.ts";
-import type { Snapshot } from "./decisions.ts";
+import { StabilityWatch, keepAnswerAt, moveOn, snapshotAt, unitAt } from "./decisions.ts";
+import type { Snapshot, Unit } from "./decisions.ts";
 import { describeChange } from "./reasons.ts";
 import type { Reason } from "./reasons.ts";
 import { settle, working } from "./waterfall.ts";
@@ -76,11 +82,15 @@ const MAX_BISECTIONS = 60;
 /** The step for reading a slope at a breakpoint on a curved side. */
 const SLOPE_STEP = new D("1e-9");
 
-function sameState(s: Snapshot, t: Snapshot): boolean {
+function sameDecisions(s: Snapshot, t: Snapshot): boolean {
   const d1 = s.answer.decisions;
   const d2 = t.answer.decisions;
   const sameSet = (x: ReadonlySet<string>, y: ReadonlySet<string>) => x.size === y.size && [...x].every((v) => y.has(v));
-  if (!sameSet(d1.converted, d2.converted) || !sameSet(d1.exercised, d2.exercised)) return false;
+  return sameSet(d1.converted, d2.converted) && sameSet(d1.exercised, d2.exercised);
+}
+
+function sameState(s: Snapshot, t: Snapshot): boolean {
+  if (!sameDecisions(s, t)) return false;
   if (s.margins.size !== t.margins.size) return false;
   for (const k of s.margins.keys()) if (!t.margins.has(k)) return false;
   return true;
@@ -120,6 +130,214 @@ function nextChange(s: Stretch, hi: Decimal): Decimal | null {
     if (zero.gt(s.b) && zero.lt(hi) && (next === null || zero.lt(next))) next = zero;
   }
   return next;
+}
+
+// ---------- following each gain on its own lines (10j) ----------
+//
+// Most of a stretch's margins don't decide the answer: they are the tiers, caps
+// and next option class of a set of choices one switch away, and only bend the
+// gain from that switch. Where one reaches zero, nothing paid changes, so the
+// finder doesn't stop there. It reads that set of choices again just above,
+// by itself, and follows the gain on its new line. It stops only where the
+// answer's own margins reach zero, or a gain that decides it does: where what
+// it pays can change. A set of choices whose gain decides another's, as a
+// SAFE's switch decides how the SAFEs settle under a series' switch (E20), is
+// followed the same way: where that gain reaches zero, the set it decides is
+// read again with its switches. Every reading is the same as a stop would make
+// there, two just above, so a gain's zero is placed as exactly as it was.
+
+/** A margin or amount as a straight line, through two readings. */
+interface TwoReadings {
+  x1: Decimal;
+  v1: Decimal;
+  x2: Decimal;
+  v2: Decimal;
+}
+
+function valueOn(l: TwoReadings, x: Decimal): Decimal {
+  if (x.eq(l.x1)) return l.v1;
+  if (x.eq(l.x2)) return l.v2;
+  return l.v1.plus(l.v2.minus(l.v1).div(l.x2.minus(l.x1)).times(x.minus(l.x1)));
+}
+
+/** Where a line reaches zero beyond `after` and before `hi`, or null. */
+function zeroOf(l: TwoReadings, after: Decimal, hi: Decimal): Decimal | null {
+  const m = l.v2.minus(l.v1).div(l.x2.minus(l.x1));
+  if (m.isZero()) return null;
+  const zero = l.x1.minus(l.v1.div(m));
+  return zero.gt(after) && zero.lt(hi) ? zero : null;
+}
+
+function first(x: Decimal | null, y: Decimal | null): Decimal | null {
+  return x === null ? y : y === null || x.lte(y) ? x : y;
+}
+
+/** One unit as the finder follows it: its margins and amounts as lines, from two readings. */
+interface Followed {
+  unit: Unit;
+  own: Map<string, TwoReadings>;
+  value: Map<string, TwoReadings>;
+  parent: Followed | null;
+  children: Followed[];
+  /** Where its own margins first reach zero, for a unit other than an answer. */
+  ownZero: Decimal | null;
+  /** Its gain from switching, its amount less its parent's, as a line; and where it reaches zero. */
+  gain: TwoReadings | null;
+  gainZero: Decimal | null;
+}
+
+/** Keys that leave and join the margins where a unit is read again: the check in the middle expects them (checkStretch). */
+interface KeyChange {
+  at: Decimal;
+  removed: string[];
+  added: string[];
+}
+
+/** Two readings of one unit, as lines; null if they don't share every key, or if a payout curves (X17). */
+function pair(u1: Unit, u2: Unit, x1: Decimal, x2: Decimal, parent: Followed | null): Followed | null {
+  if (u1.curved || u2.curved || u1.own.size !== u2.own.size || u1.children.length !== u2.children.length || u1.gain?.key !== u2.gain?.key) return null;
+  const lines = (m1: Map<string, Decimal>, m2: Map<string, Decimal>) => {
+    const out = new Map<string, TwoReadings>();
+    for (const [k, v1] of m1) {
+      const v2 = m2.get(k);
+      if (v2 === undefined) return null;
+      out.set(k, { x1, v1, x2, v2 });
+    }
+    return out;
+  };
+  const own = lines(u1.own, u2.own);
+  const value = lines(u1.value, u2.value);
+  if (!own || !value) return null;
+  const f: Followed = { unit: u1, own, value, parent, children: [], ownZero: null, gain: null, gainZero: null };
+  for (const [i, c] of u1.children.entries()) {
+    const fc = pair(c, u2.children[i]!, x1, x2, f);
+    if (!fc) return null;
+    f.children.push(fc);
+  }
+  return f;
+}
+
+/** The unit whose decisions a gain decides: a step's switch decides the step's parent, every other unit its own parent. */
+function decides(f: Followed): Followed {
+  return f.parent!.unit.spec.kind === "step" ? f.parent!.parent! : f.parent!;
+}
+
+/** A gain as a line: its amount less its parent's, read at the later side's two exit values, as a stop there would read both. */
+function gainLine(f: Followed): TwoReadings {
+  const id = f.unit.gain!.id;
+  const mine = f.value.get(id)!;
+  const theirs = f.parent!.value.get(id)!;
+  const later = mine.x1.gte(theirs.x1) ? mine : theirs;
+  const at = (x: Decimal) => valueOn(mine, x).minus(valueOn(theirs, x));
+  return { x1: later.x1, v1: at(later.x1), x2: later.x2, v2: at(later.x2) };
+}
+
+function ownKeys(f: Followed): string[] {
+  return [...f.own.keys(), ...(f.unit.gain ? [f.unit.gain.key] : [])];
+}
+
+function subtree(f: Followed): Followed[] {
+  return [f, ...f.children.flatMap(subtree)];
+}
+
+/** A gain's side of TIE: decisions turn where it crosses one (E14), so a reading on another side is a change. */
+function side(v: Decimal): number {
+  return v.gt(TIE) ? 1 : v.lt(TIE.neg()) ? -1 : 0;
+}
+
+/**
+ * Where the next stop is above a straight stretch: the first exit value where the answer's own margins, a vote, or a
+ * gain that decides the answer reaches zero, following each gain through the sets of choices it compares; null if
+ * none does before hi. With the keys that change on the way. Null itself where a payout curves (X17): there the
+ * stretch is read as before, every margin a stop.
+ */
+function followStretch(pc: Prepared, s: Stretch, hi: Decimal): { next: Decimal | null; changes: KeyChange[] } | null {
+  const tops: Followed[] = [];
+  for (const [i, u] of s.at.units.entries()) {
+    const f = pair(u, s.then.units[i]!, s.a, s.b, null);
+    if (!f) return null;
+    tops.push(f);
+  }
+  // The answers' own margins and the votes are straight along the whole stretch.
+  let stop: Decimal | null = null;
+  for (const t of tops) for (const l of t.own.values()) stop = first(stop, zeroOf(l, s.b, hi));
+  for (const [k, va] of s.at.margins) if (k.startsWith("vote:")) stop = first(stop, zeroOf({ x1: s.a, v1: va, x2: s.b, v2: s.then.margins.get(k)! }, s.b, hi));
+
+  let all = tops.flatMap(subtree);
+  const refresh = (f: Followed) => {
+    if (f.unit.spec.kind !== "top") {
+      f.ownZero = null;
+      for (const l of f.own.values()) f.ownZero = first(f.ownZero, zeroOf(l, l.x2, hi));
+    }
+    if (f.unit.gain && f.parent) {
+      f.gain = gainLine(f);
+      f.gainZero = zeroOf(f.gain, f.gain.x2, hi);
+    }
+  };
+  all.forEach(refresh);
+  const changes: KeyChange[] = [];
+
+  /** Reads unit u again just above z, with its switches unless it's a step; false if it can't be followed from there. */
+  const reread = (u: Followed, z: Decimal): boolean => {
+    const whole = u.unit.spec.kind !== "step";
+    let f: Followed | null = null;
+    try {
+      for (const step of STEPS) {
+        const y1 = z.plus(step);
+        const y2 = y1.plus(step);
+        f = pair(unitAt(pc, y1, u.unit.spec, whole), unitAt(pc, y2, u.unit.spec, whole), y1, y2, u.parent);
+        if (f) break;
+      }
+    } catch (e) {
+      // Whatever stops a reading here stops the finder as a stop here would: it reads everything above z.
+      if (e instanceof NoAnswerError) return false;
+      throw e;
+    }
+    if (!f) return false;
+    const parent = u.parent!;
+    const before = whole ? subtree(u) : [u];
+    if (!whole) {
+      f.children = u.children;
+      for (const c of f.children) c.parent = f;
+    }
+    parent.children[parent.children.indexOf(u)] = f;
+    const gone = new Set(before);
+    const fresh = whole ? subtree(f) : [f];
+    all = all.filter((g) => !gone.has(g)).concat(fresh);
+    changes.push({ at: z, removed: before.flatMap(ownKeys), added: fresh.flatMap(ownKeys) });
+    // The gains whose line this changes: its own, and, for a step, each of its switches'.
+    const affected = whole ? [f] : [f, ...f.children];
+    const old = new Map(affected.map((g) => [g, g === f ? u.gain : g.gain]));
+    fresh.forEach(refresh);
+    if (!whole) f.children.forEach(refresh);
+    for (const g of affected) {
+      const was = old.get(g);
+      if (!g.gain || !was) continue;
+      // A gain on another side of TIE just above z than just below: the decisions it decides change at z.
+      const at = side(valueOn(was, z));
+      if (at === side(g.gain.v1) && at === side(g.gain.v2)) continue;
+      const d = decides(g);
+      if (d.unit.spec.kind === "top") stop = first(stop, z);
+      else if (!reread(d, z)) stop = first(stop, z);
+    }
+    return true;
+  };
+
+  for (let n = 0; n < MAX_STEPS; n++) {
+    let next = stop;
+    let event: { at: Decimal; unit: Followed } | null = null;
+    for (const f of all) {
+      if (f.ownZero && (event === null || f.ownZero.lt(event.at))) event = { at: f.ownZero, unit: f };
+      if (f.gainZero) {
+        const d = decides(f);
+        if (d.unit.spec.kind === "top") next = first(next, f.gainZero);
+        else if (event === null || f.gainZero.lt(event.at)) event = { at: f.gainZero, unit: d };
+      }
+    }
+    if (event === null || (next !== null && !event.at.lt(next))) return { next, changes };
+    if (!reread(event.unit, event.at)) return { next: event.at, changes };
+  }
+  throw new NoAnswerError(`The breakpoint finder took more than ${MAX_STEPS} steps; it stops rather than loop.`);
 }
 
 /** The payouts at x, extended along this stretch. */
@@ -240,14 +458,25 @@ function middle(s: Stretch, end: Decimal): Decimal {
   return s.b.plus(end).div(2);
 }
 
-/** Within a straight stretch, nothing should change: the answer and its payouts at the midpoint must match the straight line. */
-function checkStretch(pc: Prepared, s: Stretch, end: Decimal): void {
+/**
+ * Within a straight stretch, nothing should change: the answer and its payouts at the midpoint must match the straight
+ * line, and its margins must be those the finder expects there, the stretch's own, with the keys of each set of
+ * choices read again below the midpoint changed as they were where it was read (10j).
+ */
+function checkStretch(pc: Prepared, s: Stretch, end: Decimal, changes: KeyChange[]): void {
   const mid = middle(s, end);
   if (!mid.gt(s.b)) return;
   const reading = snapshotAt(pc, mid);
   const expected = payoutsAlong(s, mid).values;
   const off = reading.answer.payout.lines.findIndex((l, i) => l.amount.minus(expected[i]!).abs().gt(JUMP_TIE));
-  if (!sameState(s.at, reading) || off >= 0) {
+  const keys = new Set(s.at.margins.keys());
+  for (const c of changes) {
+    if (!c.at.lt(mid)) break;
+    for (const k of c.removed) keys.delete(k);
+    for (const k of c.added) keys.add(k);
+  }
+  const sameKeys = keys.size === reading.margins.size && [...reading.margins.keys()].every((k) => keys.has(k));
+  if (!sameDecisions(s.at, reading) || !sameKeys || off >= 0) {
     throw new NoAnswerError(
       `Between $${toCents(s.start)} and $${toCents(end)} something changed that the breakpoint finder didn't predict; it stops rather than miss a breakpoint.`,
     );
@@ -271,15 +500,20 @@ export function findBreakpoints(table: PreparedCapTable, range: readonly [Decima
   const [lo, hi] = range;
   const found: Breakpoint[] = [];
   const watch = new StabilityWatch(pc);
+  // Each stretch is a step, from the readings just above where it begins (10j): what neither it nor the one before
+  // reads is let go, and every line that ends where it begins or below.
+  moveOn(pc, lo);
   let stretch = stretchAbove(pc, lo);
   for (let i = 0; i < MAX_STEPS; i++) {
-    const straight = nextChange(stretch, hi);
+    // A straight stretch is followed set of choices by set of choices (10j); a curved one is read as before (X17).
+    const followed = stretch.curved ? null : followStretch(pc, stretch, hi);
+    const straight = followed ? followed.next : nextChange(stretch, hi);
     // On a curve one decision may change before the next straight margin does (03f).
     const onCurve = stretch.curved ? checkCurve(pc, stretch, straight ?? hi) : null;
     if (!stretch.curved) {
       const end = straight ?? hi;
       try {
-        checkStretch(pc, stretch, end);
+        checkStretch(pc, stretch, end, followed?.changes ?? []);
       } catch (e) {
         // Its reading in the middle can be the first to see a second answer: there, not where it begins. The walk
         // follows the stretch from its start, so it runs to the middle first, and where it stops, its stop is given
@@ -292,6 +526,7 @@ export function findBreakpoints(table: PreparedCapTable, range: readonly [Decima
     }
     const x = onCurve ?? straight;
     if (x === null) return found;
+    moveOn(pc, x);
     const after = stretchAbove(pc, x);
     // A straight side extends its two readings; a curved one is read at x itself (X17).
     const below = stretch.curved ? exactlyAt(pc, stretch.at.answer.decisions, x, -1) : payoutsAlong(stretch, x);
@@ -308,6 +543,8 @@ export function findBreakpoints(table: PreparedCapTable, range: readonly [Decima
         curveAbove: after.curved,
         reasons: describeChange(pc, x, stretch.at, after.at, jumps),
       });
+      // The answer here, while the lines it's weighed on are kept: the page asks for it next (10j).
+      keepAnswerAt(pc, x);
     }
     stretch = after;
   }
