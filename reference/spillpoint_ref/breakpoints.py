@@ -74,16 +74,34 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
     rule 2: the most conversions). The jump is where the last of them becomes
     indifferent with the others already converting, so each changed SAFE is
     flipped from the outcome above the jump as well as from the one below.
+
+    Where no voter is indifferent in the bracket, the group's vote changes
+    because one of the outcomes it votes on jumps there by itself (10k).
     """
     (bits_l, _), = sides[0]
     (bits_r, _), = sides[1]
     lo, hi = bracket
+    xs = _switch_points(wf, bits_l, bits_r, pts_left, pts_right, bracket)
+    if not xs:
+        xs = _inside_group_choice(wf, bits_l, bits_r, pts_left, pts_right, bracket)
+    if len(xs) != 1:
+        raise ValueError(f"cannot place the jump near {decimal(lo, 2)}: {sorted(xs)}")
+    return xs.pop()
+
+
+def _switch_points(wf, bits_l, bits_r, pts_left, pts_right, bracket):
+    """The points in the bracket where the decision-maker whose choice changes from bits_l to bits_r is indifferent."""
+    lo, hi = bracket
     xs = set()
     changed = [i for i, (u, v) in enumerate(zip(bits_l, bits_r)) if u != v]
+    # E16: an option class doesn't decide; it settles on the common price under each choice of the others. Where a
+    # SAFE's conversion moves the price across a strike, the class changes with the SAFE but the jump is the SAFE's
+    # (10k): the class is re-settled under each of the SAFE's choices, below.
+    deciding = [i for i in changed if wf.players[i] not in wf.options]
     # E20: the SAFEs' greater-of comes last, so where a series, warrant or note switches, the SAFEs that switch with it
     # follow it, and the jump is where that decision-maker is indifferent, with the SAFEs re-settled under each choice.
-    leading = [i for i in changed if wf.players[i] not in wf.safe_ids]
-    for i in leading or changed:
+    leading = [i for i in deciding if wf.players[i] not in wf.safe_ids]
+    for i in leading or deciding or changed:
         v = bits_r[i]
         player = wf.players[i]
         instrument = next((y for y in wf.safes + wf.notes if y["id"] == player), None)
@@ -117,9 +135,31 @@ def _indifference(wf, sides, pts_left, pts_right, bracket):
                         x = (c_flip - c_keep) / (m_keep - m_flip)
                         if lo - 1 <= x <= hi + 1:
                             xs.add(x)
-    if len(xs) != 1:
-        raise ValueError(f"cannot place the jump near {decimal(lo, 2)}: {sorted(xs)}")
-    return xs.pop()
+    return xs
+
+
+def _inside_group_choice(wf, bits_l, bits_r, pts_left, pts_right, bracket):
+    """Where the group's vote changes because one of the outcomes it votes on jumps by itself (E17, E20; 10k).
+
+    The group votes on its two settled outcomes, converting and staying. Usually its vote changes where the pivotal
+    voter's two outcomes cross. But one of them can jump across the other: under the group's conversion, SAFEs can
+    start converting there (E20), and take enough of the company that converting no longer pays the voter. The two
+    outcomes then never cross, and the vote changes where that outcome jumps. That is where the SAFEs, warrants or
+    notes that change inside it are indifferent, with the group's choice held, placed as any of their jumps is. It is
+    tried only where no voter is indifferent in the bracket.
+    """
+    xs = set()
+    group = [i for i, p in enumerate(wf.players) if p in wf.vote]
+    if not group or bits_l[group[0]] == bits_r[group[0]]:
+        return xs
+    for converts in (False, True):
+        inside = [{wf.group_choice(e, converts) for e in pts} for pts in (pts_left, pts_right)]
+        if any(len(side) != 1 for side in inside):
+            continue
+        (left,), (right,) = inside
+        if left != right:
+            xs |= _switch_points(wf, left, right, pts_left, pts_right, bracket)
+    return xs
 
 
 def curved(wf, sig):
@@ -304,6 +344,23 @@ def _join(names):
     if len(names) <= 1:
         return "".join(names)
     return ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def _followed_names(wf, leaders):
+    """What SAFEs that switch with a series or a note follow (E20), by name.
+
+    A series is named by its own name, and a note by its holder's. A conversion group that must convert together (E11,
+    E17) is named by its series, each by its own name (SPEC, Breakpoints; 10k): it is one decision-maker, but its
+    player here is its series joined with "+", which is neither a security nor a note.
+    """
+    ct = wf.ct
+    names = []
+    for p in leaders:
+        if p in wf.members:
+            names += [_name(ct, s) for s in wf.members[p]]
+        else:
+            names.append(f"{ct.holders[next(n['holder'] for n in wf.notes if n['id'] == p)]}'s note")
+    return names
 
 
 def reasons(wf, x, sa, sb, jumps=False):
@@ -527,10 +584,10 @@ def reasons(wf, x, sa, sb, jumps=False):
             price_b = wf.run(x, wf.settled(x, bits_b))[1]
             if db[fid] and f in safes_following:
                 # E20: it follows the series, warrant or note that switched here, which changed its count.
-                who = _join(_name(ct, p) if p in ct.securities else f"{ct.holders[next(n['holder'] for n in wf.notes if n['id'] == p)]}'s note" for p in leaders_changed)
+                followed = _followed_names(wf, leaders_changed)
                 text = (
-                    f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount, following {who}: its "
-                    f"Liquidity Capitalization now counts {'it' if len(leaders_changed) == 1 else 'them'}, so its {count(n)} conversion shares "
+                    f"{holder}'s SAFE switches from its Cash-Out Amount to its Conversion Amount, following {_join(followed)}: its "
+                    f"Liquidity Capitalization now counts {'it' if len(followed) == 1 else 'them'}, so its {count(n)} conversion shares "
                     f"({usd(f['purchase_amount'])} ÷ the Liquidity Price of {usd_price(lp, 6)}) are worth {usd_price(price_b, 6)} each just "
                     f"above this exit value, {usd(n * price_b)} in all, more than its {usd(f['purchase_amount'])} purchase amount."
                 )

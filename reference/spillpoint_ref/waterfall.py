@@ -587,6 +587,10 @@ class Waterfall:
         at = _AtExit(self, exit_value)
         return {v: at.res(at.group_choice(v))[0] for v in (False, True)}
 
+    def group_choice(self, exit_value, converts):
+        """For the conversion group: the decisions if it converts, or if it stays, with everyone else settled around it (E17)."""
+        return _AtExit(self, exit_value).group_choice(converts)
+
     def settled(self, exit_value, bits):
         """These decisions with option exercise settled for them (E16)."""
         return _AtExit(self, exit_value).settle(bits)

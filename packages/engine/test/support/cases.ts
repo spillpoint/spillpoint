@@ -37,11 +37,13 @@ export const FROM_A_STARTING_TABLE: string[] = ALL_CASES.filter((name) => {
  * ledger leaves, since its case (04c), and cases 26 and 27, sales after a round on a starting cap table (R31), since
  * 05b2. Cases 12j, 13i and 13j, the SAFEs' greater-of last (E20) and SAFEs beside a note (X18), since 05c2, and 12k and
  * 12l, the SAFEs' most conversions (E20) and warrant shares keeping a preference (X1), since 05c4. The outside cases,
- * waterfalls others have published, since 10i: outside-01, Hustle Fund's worked example. None is left out.
+ * waterfalls others have published, since 10i: outside-01, Hustle Fund's worked example. Case 28, a group's
+ * conversion moving a SAFE (E17, E20), since 10k. None is left out.
  */
 export const EXIT_CASES: string[] = ALL_CASES.filter(
   (name) =>
-    /^edge-(0[1-9]|1[0-3])/.test(name) || name.startsWith("outside-") || ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "millrace"].includes(name) ||
+    /^edge-(0[1-9]|1[0-3])/.test(name) || name.startsWith("outside-") ||
+    ["edge-23-dividends-from-a-round", "edge-24-carve-out-on-the-sale", "edge-25-ocf-ledger", "edge-28-group-converts-a-safe", "millrace"].includes(name) ||
     FROM_A_STARTING_TABLE.includes(name),
 );
 
