@@ -32,6 +32,8 @@ A breakpoint is any exit value where any holder's payout formula changes, which 
 - a carve-out tier starts or ends
 - an unconverted SAFE or note switches between payout methods
 
+A group of series that must convert together is named in a reason by its series, listed ("Series A and Series B"), and a reason about its conversion concerns every series in it. Where SAFEs switch because the group converted, each SAFE's reason concerns that SAFE alone and names the group's series as what it follows.
+
 ## Rounds (M4)
 
 - **Priced round.** Price = post-money valuation ÷ post-money fully diluted shares. Post-money fully diluted shares include:
