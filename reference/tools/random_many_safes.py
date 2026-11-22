@@ -23,6 +23,15 @@ random_safes.py's, for tables whose breakpoint search the reference couldn't
 finish. With `--groups`, half the tables with two series that can convert
 make them a conversion group; every other table is the same as without it.
 
+`probe` also works again, at $100,000, each table whose breakpoints disagreed
+with the engine's at its own $500,000 grid: check-random asks for it with
+retry.json, and the answer goes in the table's fine/ folder, which
+check-random's second run compares in full instead (10k). The reference's grid
+can miss a stretch narrower than it, with the same answer at the grid points
+either side, as it missed many-11-0125's $83,403. Such a stretch shows up as a
+disagreement, never as a silent pass, and check-random reports a table that
+agrees at the finer grid as agreeing only there.
+
 A fixed seed makes every table reproducible. Nothing here is a real cap table,
 but it goes in local/ all the same, which git ignores: these are a check, not
 cases.
@@ -162,6 +171,26 @@ def work(folder):
     return folder.name, f"{len(expected['exit']['breakpoints'])} breakpoints"
 
 
+def retry(folder):
+    """The whole table again at the grid check-random asks for, $100,000, in its fine/ folder (10k)."""
+    folder = Path(folder)
+    grid = json.loads((folder / "retry.json").read_text())["grid_step"]
+    inputs = json.loads((folder / "inputs.json").read_text())
+    inputs["exit"]["grid_step"] = grid
+    fine = folder / "fine"
+    fine.mkdir(exist_ok=True)
+    (fine / "inputs.json").write_text(json.dumps(inputs, indent=2) + "\n")
+    _, result = work(fine)
+    return folder.name, f"at a ${int(grid):,} grid: {result}"
+
+
+def follow_up(folder):
+    """What check-random asked of one table: a cent either side of the engine's breakpoints, or the table again."""
+    if (Path(folder) / "probes.json").exists():
+        return probe(folder)
+    return retry(folder)
+
+
 def main(argv):
     groups = "--groups" in argv
     argv = [a for a in argv if a != "--groups"]
@@ -179,8 +208,10 @@ def main(argv):
         folders = [str(f) for f in sorted(directory.iterdir()) if (f / "inputs.json").exists() and not (f / "expected.json").exists() and not (f / "refused.txt").exists()]
         job = work
     else:
-        folders = [str(f) for f in sorted(directory.iterdir()) if (f / "probes.json").exists()]
-        job = probe
+        answered = lambda f: (f / "fine" / "expected.json").exists() or (f / "fine" / "refused.txt").exists()  # noqa: E731
+        asked = lambda f: (f / "probes.json").exists() or ((f / "retry.json").exists() and not answered(f))  # noqa: E731
+        folders = [str(f) for f in sorted(directory.iterdir()) if asked(f)]
+        job = follow_up
     with Pool() as pool:
         for name, result in pool.imap_unordered(job, folders):
             print(name, result, flush=True)

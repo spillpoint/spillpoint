@@ -116,6 +116,7 @@ Each edge case isolates one behavior before Millrace combines them. Where a case
 25. A cap table read from an OCF ledger (OCF case 12), at a sale: a senior Series A, participating with a 2.5x cap, over a non-participating Seed whose conversion price fell in a down round, with options at two strikes.
 26. A round on a starting cap table (0.5.0, 05b1): case 25's table, the one Quillfern's ledger imports to, then a Series B with a new lead investor, Fund U's pro-rata and a pool top-up, followed by a sale.
 27. A round on a starting cap table that converts its SAFEs and note (0.5.0, 05b1): Larkspur's import (OCF case 01), its two blanks filled, then a Series B that converts its two post-money SAFEs and its note and tops up the pool, followed by a sale.
+28. A conversion group beside a post-money SAFE (10k): where the group converts, the SAFE switches to its Conversion Amount with it (E17, E20), and payouts jump.
 
 Cases 14–24, 26 and 27 are round cases, so their expected outputs are cap tables; 23, 24, 26 and 27 also run an exit on their last one, as Millrace and 12g do. Cases 26 and 27 start from a cap table, not from founding (R31). The rest are exit cases. Each exit case lists its exit values in `inputs.json` and expects a payout per holder at each value, plus the full breakpoint list.
 

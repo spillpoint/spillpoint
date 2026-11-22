@@ -1,26 +1,51 @@
 # Review: 10k (the reference's gaps at jumps)
 
-Branch `10k-reference-group-reasons-and-jumps`, from main at `e855aa2`.
+Branch `10k-reference-group-reasons-and-jumps`, from main at `e855aa2`. PR #144. Two commits: the fixes (39a65ec), then your answers (below).
 
-**CI and permissions:** no change to `.github/workflows/` or `.claude/`.
+**CI and permissions:** no change to `.github/workflows/` or `.claude/`. Your local `.claude/settings.json`, with `Edit(cases/**)` taken out to lift the lock, is left uncommitted.
 
-**`cases/`:** untouched. `python3 reference/generate.py --check` passes on every case, 85 of them, with no `expected.json` touched.
+**`cases/`:** one new case, `edge-28-group-converts-a-safe` (your answer 3), so the PR needs the cases label. No other case is touched. `python3 reference/generate.py --check` passes on all 86, with no other `expected.json` changed.
 
-**The engine and the page:** no change.
+**The engine and the page:** no code change. The engine's tests list the new case, and its check script retries a table at a finer grid (below).
 
-**What changed:**
+**What changed, first commit:**
 - **`reference/spillpoint_ref/breakpoints.py`:** three fixes, one for each gap below.
 - **`reference/spillpoint_ref/waterfall.py`:** one helper, `group_choice`, the decisions if the group converts or stays, which the third fix reads.
 - **`reference/tests/test_jump_followers.py`:** six tests, on three small tables.
 - **`reference/README.md`:** its paragraph on breakpoints covers the three fixes, and says what its grid can miss.
 - **`docs/SPEC.md`:** one paragraph, on how a reason names a group (gap 1).
 
+**Second commit, your answers:**
+- **`reference/tools/random_many_safes.py`** and **`packages/engine/scripts/check-random.ts`:** the retry at $100,000 (answer 1).
+- **`docs/ASSUMPTIONS.md`:** E13 names the third way (answer 2).
+- **`cases/edge-28-group-converts-a-safe/`:** `inputs.json`, `expected.json` from the reference, and `DERIVATION.md` (answer 3).
+- **`docs/SPEC.md`:** case 28 in the edge cases.
+- **`packages/engine/test/support/cases.ts`** and **`packages/engine/test/input.test.ts`:** case 28 among the exit cases the engine runs.
+- **`reference/README.md`:** a line for `random_many_safes.py`. **`CLAUDE.md`:** case 28 on main's unreleased line.
+
 ## The result
 
 - **All 240 small random tables agree with the engine in full,** compared as 05c4's check compares them. In 10j it was 235.
   - **239 at the tool's $500,000 grid.**
-  - **many-11-0125 at a $100,000 grid.** At $500,000 the reference's grid misses a stretch $83,403 wide (gap 3).
+  - **many-11-0125 only at a $100,000 grid,** and `check-random` now says so. At $500,000 the reference's grid misses a stretch $83,403 wide (gap 3).
 - **The three group tables and the two jump tables** are among them, each compared in full.
+
+## Your answers, as applied
+
+1. **The grid: the method stays.** Where a table's breakpoints disagree with the engine's at a grid coarser than $100,000, it's worked again at $100,000 and compared in full there:
+   - **`check-random`** writes `retry.json` in the table's folder, asking for $100,000. Only breakpoints trigger it: a breakpoint count, an exit value more than a cent off, a jump flag or a reason. A payout that disagrees with the breakpoints agreeing is reported as before.
+   - **`random_many_safes.py probe`** works each table that asks into its own `fine/` folder, as `work` works a table: `fine/inputs.json` at $100,000, then `fine/expected.json`, or `fine/refused.txt` if the reference stops.
+   - **`check-random`, run again,** compares the table in full against `fine/expected.json` instead, and reports it as agreeing only at the finer grid: "1 of those compared in full agree only at the $100,000 grid, where the reference worked them again: many-11-0125: at its own $500,000 grid, 8 breakpoints, the reference 6; at the $100,000 grid, it agrees in full".
+   - **If it still disagrees there,** each difference is a problem, marked "(at the $100,000 grid)", and the check fails. I checked that on a copy of 0125 given its $500,000 answer as its fine one.
+   - **The commands are the same as 10j's:** `work`, `check-random`, `probe`, `check-random`.
+2. **E13 names the third way:** one of the two outcomes the group votes on jumps across the other by itself, with no voter indifferent. The example is the round-number table from `test_jump_followers.py`: the group converts above $26,722,222.22, stops just above $27M where SAFE A starts converting under its conversion, and converts again at $27,272,727.27. No behavior changes.
+3. **Case 28, `edge-28-group-converts-a-safe`:** your $75,000 SAFE table, as you checked it, over $0 to $20M, at $3,000,000, $5,075,000, $10,579,345.08, $10,579,345.09 and $15,000,000.
+   - **Its breakpoints:** $4,000,000, Series 0's preference; $5,075,000, Series 1's and the SAFE's Cash-Out Amount; and the jump at 4,200,000,000/397. The jump's reasons are `series_converts` (both series), `safe_switches` (the SAFE) and `payouts_jump`.
+   - **At $10,579,345.08,** just below the jump: Founder A $4,586,954.23, Founder B $917,390.85, Series 0 $4,000,000, Series 1 $1,000,000, the SAFE $75,000.
+   - **At $10,579,345.09,** just above: $5,000,000, $1,000,000, $4,000,000, $500,000 and $79,345.09.
+   - **At $15,000,000:** the common price is $1.417857, and the SAFE has 0.75%, $112,500. Investor 1's $708,928.57 is below its preference, but Investor 0 carries the vote.
+   - **`DERIVATION.md`** has your working: the SAFE's 0.75% of 10,500,000 plus its own shares, Investor 0 indifferent at a $1.00 price, the two breakpoints below the jump, and a table of the jump.
+   - **The engine** passes it as a locked case: its breakpoints, reasons and every payout.
 
 ## The gaps
 
@@ -104,13 +129,16 @@ The reference now names a group that way (`_followed_names`): each of its series
 
 ## The checks
 
-**Reference tests:** 79 pass: 73 as before and the 6 new ones. On main's reference, 4 of the new ones fail: one on each gap, and one on the new helper. `pnpm test:reference` passes, the fund's included.
+**Reference tests:** 79 pass: 73 as before and the 6 new ones. On main's reference, 4 of the new ones fail: one on each gap, and one on the new helper. `pnpm test:reference` passes on the second commit, the fund's included: every one of the 86 cases is "ok", edge-28 among them.
+
+**The engine, the page and the fund,** on the second commit, on this laptop: `pnpm typecheck` is clean, and `pnpm test` passes. That's 3,545 for the engine, among them the 18 that read case 28 by name; 699 for the page; and 2,115 and 838 for the fund, with 13 skipped as on main.
 
 **The five tables in full:** worked fresh, with the reference's search, then `pnpm check-random`. 0002, 0011, 0006 and 0142 agree in full at $500,000. 0125 agrees in full at $100,000, as above.
 
 **The 240 small tables**, regenerated from seed 11 into a fresh folder, every `inputs.json` the same as 10j's:
 - **The reference worked all 240 as cases,** none refused, in 22m53s on 8 cores. Its answers hold 1,462 breakpoints (335 of them jumps) and 2,902 payout points; 19 tables have a group.
 - **`pnpm check-random`:** 240 compared in full; 239 agree, and many-11-0125 differs only by its missed stretch. Its other breakpoints are the engine's, and the engine has its two extra ones. At $100,000 it agrees in full.
+- **With the retry** (second commit): the first run compares 239 and asks for 0125 again; `probe` works it at $100,000 in 86s; the second run says 240 compared in full, 0125 agreeing only at the $100,000 grid.
 - **When the fixes ran:** fixes 1 and 2 were in from the start. Fix 3 went in while the run was going, but it only runs where the reference used to stop, and no table stopped.
 
 ## How to check it by behavior
@@ -133,28 +161,25 @@ The reference now names a group that way (`_followed_names`): each of its series
    ```bash
    pnpm check-random local/random-many-safes-ref-10k
    ```
-   It lists many-11-0125's differences and nothing else.
-4. **many-11-0125 at a $100,000 grid,** about 3 minutes:
+   It says 239 tables compared in full and 1 waiting, and writes many-11-0125's `retry.json`.
    ```bash
-   mkdir -p local/10k-fine/many-11-0125 && python3 -c "import json; d=json.load(open('local/random-many-safes-ref-10k/many-11-0125/inputs.json')); d['exit']['grid_step']='100000'; json.dump(d, open('local/10k-fine/many-11-0125/inputs.json','w'), indent=2)"
+   python3 reference/tools/random_many_safes.py probe local/random-many-safes-ref-10k
    ```
+   About 90 seconds, for 0125 at $100,000.
    ```bash
-   python3 reference/tools/random_many_safes.py work local/10k-fine
+   pnpm check-random local/random-many-safes-ref-10k
    ```
+   It says 240 tables compared in full, many-11-0125 agreeing only at the $100,000 grid, and "The engine agrees with the reference on every one."
+4. **Case 28:** read `cases/edge-28-group-converts-a-safe/DERIVATION.md` against `expected.json`. Then:
    ```bash
-   pnpm check-random local/10k-fine
+   pnpm breakpoints edge-28-group-converts-a-safe
    ```
-   It says "1 tables compared in full" and "The engine agrees with the reference on every one."
+   It prints the engine's three breakpoints with their reasons, and "All match expected.json (to the cent, with the same jumps)." The jump's reasons follow the SPEC paragraph: "following Series 0 Preferred and Series 1 Preferred".
 
 ## Assumptions added
 
-**None.** The three fixes follow E16, E17 and E20 as they stand, and the engine already did each. SPEC gains the paragraph on naming a group (gap 1).
+**E13 gains a third way** a group's jump is located (your answer 2): where the outcome the group votes on jumps by itself. It writes down what the engine already does, with no behavior change. The three fixes follow E16, E17 and E20 as they stand. SPEC gains the paragraph on naming a group (gap 1) and case 28.
 
 ## Open questions
 
-1. **The reference's grid.** A stretch narrower than the grid, with the same answer at the grid points either side, is invisible to it. Its check after can't see one either, since readings with the same answer lie on one line. The locked cases are safe from this in practice: the engine follows its margins exactly, so a stretch both missed would fail a case test. A new case is where it could hide. Two ways to close it, for a step of its own:
-   - **`random_many_safes.py` writes a finer grid,** $100,000 or $50,000. That's simple, but slower: 0125 alone takes 91s at $100,000 against 32s at $500,000, so the 240 would take about an hour, not 23 minutes. And it only narrows what can be missed.
-   - **The reference also bisects where the group's two settled outcomes change,** not only where the answer does. Those outcomes are what the vote is weighed on, and it works them out at every reading already. Bisecting there finds this stretch at any grid. It moves the reference a little toward the engine's method of following what decides the answer.
-
-   Or leave it as the README now says. Which would you like?
-2. **E13's wording.** It places a group's jump "where its two outcomes cross, or where they separate after being equal over a range". Gap 3 is a third way, where the outcome it votes on jumps across the other. E17 and E20 settle it, and the engine and the reference now agree there. Should E13 name it too?
+None. Your answers settled the two from the first commit: the grid's method stays, with the retry at $100,000, and E13 names the third way.

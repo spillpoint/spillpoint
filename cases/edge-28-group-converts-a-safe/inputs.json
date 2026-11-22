@@ -1,0 +1,116 @@
+{
+  "case": "edge-28-group-converts-a-safe",
+  "description": "Two non-participating series that must convert together, beside a post-money SAFE: where the group converts, the SAFE switches to its Conversion Amount with it (E17, E20), and payouts jump.",
+  "exit": {
+    "cap_table": {
+      "holders": [
+        {
+          "id": "founder_a",
+          "name": "Founder A"
+        },
+        {
+          "id": "founder_b",
+          "name": "Founder B"
+        },
+        {
+          "id": "investor_0",
+          "name": "Investor 0"
+        },
+        {
+          "id": "investor_1",
+          "name": "Investor 1"
+        },
+        {
+          "id": "safe_holder_1",
+          "name": "SAFE Investor 1"
+        }
+      ],
+      "securities": [
+        {
+          "id": "common",
+          "name": "Common Stock",
+          "kind": "common"
+        },
+        {
+          "id": "series_0",
+          "name": "Series 0 Preferred",
+          "kind": "preferred",
+          "original_issue_price": "1",
+          "conversion_price": "1",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        },
+        {
+          "id": "series_1",
+          "name": "Series 1 Preferred",
+          "kind": "preferred",
+          "original_issue_price": "2",
+          "conversion_price": "2",
+          "preference_multiple": "1",
+          "participation": "non_participating",
+          "cap_multiple": null,
+          "anti_dilution": "none"
+        }
+      ],
+      "seniority": [
+        [
+          "series_0"
+        ],
+        [
+          "series_1"
+        ]
+      ],
+      "positions": [
+        {
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 5000000
+        },
+        {
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 1000000
+        },
+        {
+          "holder": "investor_0",
+          "security": "series_0",
+          "shares": 4000000
+        },
+        {
+          "holder": "investor_1",
+          "security": "series_1",
+          "shares": 500000
+        }
+      ],
+      "unissued_pool": 0,
+      "unconverted_safes": [
+        {
+          "id": "safe_1",
+          "holder": "safe_holder_1",
+          "purchase_amount": "75000",
+          "post_money_cap": "10000000",
+          "discount": "0"
+        }
+      ],
+      "conversion_groups": [
+        [
+          "series_0",
+          "series_1"
+        ]
+      ]
+    },
+    "range": [
+      "0",
+      "20000000"
+    ],
+    "exit_values": [
+      "3000000",
+      "5075000",
+      "10579345.08",
+      "10579345.09",
+      "15000000"
+    ]
+  }
+}
