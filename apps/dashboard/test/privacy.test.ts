@@ -5,8 +5,8 @@
 // every request the page might make, and the page's scripts contain no way to
 // make one, nor any browser storage. The outside addresses it names are its
 // links out, which the visitor opens or not: the release-email form and the
-// repository (10h), and the repository's new-issue page, shown where an import
-// is refused (10l). The page requests nothing from any of them.
+// repository (10h), and a new issue from the template for an export that won't
+// open, shown where an import is refused (10l). The page requests nothing from any of them.
 
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -89,8 +89,8 @@ describe("the built page", () => {
       /^https:\/\/bit\.ly\/3cXEKWf/,
     ];
     // The three addresses the page links out to, each exactly as apps/site/links.ts has it: the release-email form and
-    // the repository (10h), and the repository's new-issue page (10l). Each is there, and each is read whole and matched
-    // exactly, so no other address on their hosts, a longer one on GitHub say, gets through.
+    // the repository (10h), and a new issue from the export template (10l). Each is there, and each is read whole and
+    // matched exactly, so no other address on their hosts, a longer one on GitHub say, gets through.
     const ADDRESS = /https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g;
     const linksOut = [FORM_URL, REPO_URL, ISSUE_URL];
     for (const link of linksOut) {

@@ -3,7 +3,8 @@
 // "Copy" copies exactly that text to this computer's clipboard. Nothing is sent anywhere.
 //
 // Where an import is refused (10l), a line beside it says the summary is safe to post and links to a new issue on
-// GitHub: a plain link out, in a new tab. The founder pastes the summary in; nothing goes in the link's address.
+// GitHub, from the template for an export that won't open: a plain link out, in a new tab. The founder pastes the
+// summary in; the link's address names the template and nothing else.
 
 import { useState } from "react";
 

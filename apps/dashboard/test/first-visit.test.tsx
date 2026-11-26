@@ -1,9 +1,10 @@
 // A first visit that works without anyone explaining it (10l). Opening an export is a start of its own, at the top,
 // beside "Start from" with "or" between them, not a step after choosing a blank table. A line with it says what it
 // opens and that the file never leaves the browser. Where an import is refused, a line says the summary to share is
-// safe to post, with a plain link to a new issue on GitHub. The words are checked here word for word.
+// safe to post, with a plain link to a new issue from the template for an export that won't open. The words are checked
+// here word for word, and so is what the template says.
 
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
@@ -20,7 +21,10 @@ import { xlsxOf } from "./workbooks.ts";
 const LINE = "Opens Carta's OCX report (an Excel file) or an OCF export. The file is read in this browser and never uploaded.";
 const HELP = "“Copy a summary to share” holds no names, amounts or dates, so it's safe to post. To ask for help with this file, copy it and paste it into a new issue on GitHub.";
 
-const cases = resolve(import.meta.dirname, "../../../cases");
+const repo = resolve(import.meta.dirname, "../../..");
+const cases = resolve(repo, "cases");
+/** The issue template the page's link opens (Jordan's answer 3). */
+const TEMPLATE = "export-wont-open.yml";
 const read = <T,>(path: string): T => JSON.parse(readFileSync(resolve(cases, path), "utf8")) as T;
 const workbookOf = (name: string) => read<OcxWorkbook>(`${name}/workbook.json`);
 const fixtureWorkbook = (dir: string, name: string) => {
@@ -59,9 +63,9 @@ describe("opening an export, as a way to start", () => {
     expect(within(start).getByText("or").tagName).toBe("SPAN");
     // It's the page's main action, drawn as one.
     expect(button.className).toContain("file-button--primary");
-    // Save and Open, the page's own file, are apart from it.
+    // Save and "Open a saved file", the page's own file, are apart from it (Jordan's answer 2).
     const files = header.querySelector(".masthead__files")!;
-    expect([...files.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Save", "Open"]);
+    expect([...files.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Save", "Open a saved file"]);
     expect(start.contains(files)).toBe(false);
   });
 
@@ -77,6 +81,17 @@ describe("opening an export, as a way to start", () => {
     expect(opened).toEqual([exportPicker()]);
     // Nothing's been changed yet, so nothing is asked.
     expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it("isn't “Open a saved file”, which opens only a file saved here", () => {
+    render(<App />);
+    const opened: HTMLInputElement[] = [];
+    vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(function (this: HTMLInputElement) {
+      opened.push(this);
+    });
+    click("Open a saved file");
+    expect(opened.map((input) => [input.getAttribute("aria-label"), input.accept])).toEqual([["Open a saved cap table", ".json,application/json"]]);
+    expect(screen.queryByRole("button", { name: "Open" })).toBeNull();
   });
 
   it("reads an export chosen from the page as it first opens", async () => {
@@ -168,15 +183,45 @@ describe("a refused import", () => {
     expect(screen.queryByRole("link", { name: SHARE_HELP.link })).toBeNull();
   });
 
-  it("links to the repository's new-issue page and nothing more: no title, body or summary in its address", async () => {
-    expect(ISSUE_URL).toBe(`${REPO_URL}/issues/new`);
+  it("links to a new issue from the template for an export that won't open, and names nothing else in its address", async () => {
+    expect(ISSUE_URL).toBe(`${REPO_URL}/issues/new?template=${TEMPLATE}`);
     const url = new URL(ISSUE_URL);
-    expect([url.protocol, url.search, url.hash]).toEqual(["https:", "", ""]);
+    expect([url.protocol, url.hash, [...url.searchParams.keys()]]).toEqual(["https:", "", ["template"]]);
+    // The template it names is in the repository, where GitHub looks for it.
+    expect(existsSync(resolve(repo, ".github/ISSUE_TEMPLATE", url.searchParams.get("template")!))).toBe(true);
     // With the help shown, the page's links out are the three it always has and this one.
     render(<App />);
     upload([xlsx(fixtureWorkbook("ocx-03-refused", "currency.json"), "alder-gate.xlsx")]);
     await screen.findByRole("alert");
     const out = [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")!).filter((href) => /^[a-z]+:/i.test(href));
     expect(out).toEqual([FORM_URL, REPO_URL, ISSUE_URL, FORM_URL]);
+  });
+});
+
+describe("the issue template for an export that won't open", () => {
+  const text = readFileSync(resolve(repo, ".github/ISSUE_TEMPLATE", TEMPLATE), "utf8");
+  /** Each of the form's fields, by its type, id and whether it's required. */
+  const fields = text
+    .split("\n  - type: ")
+    .slice(1)
+    .map((block) => ({ type: block.split("\n")[0], id: /\n {4}id: (\S+)/.exec(block)?.[1], required: /\n {6}required: true/.test(block) }));
+
+  it("says plainly, first, that the issue is public, and not to attach the export or paste anything from it", () => {
+    expect(fields[0]!.type).toBe("markdown");
+    expect(text).toContain(
+      "**This issue is public: anyone can read it.** Don't attach your export, and don't paste anything from it: no names, amounts, dates, tab names or file names.",
+    );
+    // And where the summary comes from, by the button's own words.
+    expect(text).toContain("click **Copy a summary to share**, read it, then click **Copy**");
+  });
+
+  it("asks for the pasted summary and which tool made the file, both required, and nothing else", () => {
+    expect(fields).toEqual([
+      { type: "markdown", id: undefined, required: false },
+      { type: "textarea", id: "summary", required: true },
+      { type: "input", id: "tool", required: true },
+    ]);
+    expect(text).toContain("label: The page's summary");
+    expect(text).toContain("label: Which tool made the file?");
   });
 });

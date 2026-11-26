@@ -179,13 +179,13 @@ describe("unsaved changes", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     const picker = vi.spyOn(HTMLInputElement.prototype, "click");
     render(<App />);
-    click("Open");
+    click("Open a saved file");
     expect(confirm).not.toHaveBeenCalled();
     expect(picker).toHaveBeenCalledTimes(1);
     openTab("Cap table");
     type(screen.getByLabelText("Name of this cap table"), "Changed");
-    click("Open");
-    expect(confirm).toHaveBeenCalledWith("Open a file? Your unsaved changes to this cap table will be lost.");
+    click("Open a saved file");
+    expect(confirm).toHaveBeenCalledWith("Open a saved file? Your unsaved changes to this cap table will be lost.");
     expect(picker).toHaveBeenCalledTimes(1);
   });
 

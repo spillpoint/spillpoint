@@ -312,7 +312,7 @@ export function App() {
   };
   const picker = useRef<HTMLInputElement>(null);
   const open = () => {
-    if (okToLose("Open a file")) picker.current?.click();
+    if (okToLose("Open a saved file")) picker.current?.click();
   };
   const opened = async (file: File) => {
     const result = readFile(await file.text());
@@ -457,13 +457,14 @@ export function App() {
               </select>
             </label>
           </div>
-          {/* The page's own file: Save keeps the cap table as a spillpoint file, and Open opens one saved here. */}
+          {/* The page's own file: Save keeps the cap table as a spillpoint file, and "Open a saved file" opens one saved here,
+              named so it isn't taken for the way to open an export (10l, Jordan's answer 2). */}
           <div className="masthead__files">
             <button type="button" className="file-button" onClick={save}>
               Save
             </button>
             <button type="button" className="file-button" onClick={open}>
-              Open
+              Open a saved file
             </button>
             <input
               ref={picker}

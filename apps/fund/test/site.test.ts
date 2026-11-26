@@ -114,7 +114,8 @@ describe("the site, the fund page under fund/", () => {
     ];
     // The links out, each exactly as apps/site/links.ts has it: in the pages' scripts and nowhere else, and matched
     // whole, so no other address on their hosts gets through. The form and the repository are on both pages (10h); the
-    // new-issue page is on the main page only, where an import is refused (10l), since the fund page imports nothing.
+    // new issue from the export template is on the main page only, where an import is refused (10l), since the fund page
+    // imports nothing.
     const ADDRESS = /https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g;
     const onPages: [string, string[]][] = [
       [FORM_URL, ["the fund page", "the main page"]],
@@ -124,7 +125,7 @@ describe("the site, the fund page under fund/", () => {
     const linksOut = onPages.map(([link]) => link);
     for (const [link, pages] of onPages) {
       expect(link.match(ADDRESS)?.[0], link).toBe(link);
-      // Read whole: the repository's address is also the start of the new-issue page's.
+      // Read whole: the repository's address is also the start of the new issue's.
       const withLink = files().filter((f) => [...text(f).matchAll(ADDRESS)].some((m) => m[0] === link));
       expect(withLink.every((f) => /^(fund\/)?assets\/[^/]+\.js$/.test(f)), `${link}: ${withLink.join(", ")}`).toBe(true);
       expect(withLink.map((f) => (f.startsWith("fund/") ? "the fund page" : "the main page")).sort(), link).toEqual(pages);
