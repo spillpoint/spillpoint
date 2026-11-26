@@ -1,5 +1,6 @@
 // The site's links out (10h), on both pages: two small ones in the header, "Get updates" and "★ Star on GitHub", and the
-// sign-up sentence in the footer, which the root README has too. Each is a plain link that opens in its own tab only if
+// sign-up sentence in the footer, which the root README has too. Since 10l the main page has one more, to a new issue
+// from a template, shown only where an import is refused. Each is a plain link that opens in its own tab only if
 // the visitor clicks it. The pages make no request for any of them: no form, frame or script of the form's, no GitHub
 // button script, badge image or star count (fetching a count would be a request from the page), and their
 // Content-Security-Policy is unchanged. Nothing from a cap table or a fund is in any link.
@@ -19,6 +20,15 @@ export const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeox1r7zWW1dLC
  * another site only the page's origin, https://spillpoint.io/, which holds nothing of a cap table or a fund.
  */
 export const REPO_URL = "https://github.com/spillpoint/spillpoint";
+
+/**
+ * A new issue from the template for an export that won't open (10l; .github/ISSUE_TEMPLATE/export-wont-open.yml), on
+ * the main page only, where an import is refused: somewhere to post the summary to share and ask for help. A plain link
+ * like the star link, rel="noopener" and in a new tab. Its address names the template and nothing else: no title, body
+ * or summary, and nothing from the file. The founder pastes the summary in, so the page sends nothing. Written out
+ * whole, not built from REPO_URL, so the privacy tests can find it in the built scripts as it is here.
+ */
+export const ISSUE_URL = "https://github.com/spillpoint/spillpoint/issues/new?template=export-wont-open.yml";
 
 /** The header's two links' words. The ★ before `star` is a character, not an image, and screen readers skip it. */
 export const HEADER = {

@@ -1,0 +1,28 @@
+# An export that won't open on the page (10l). The page links here, by this file's name, from a refused import. An
+# issue is public, so this asks only for the page's summary to share, which holds counts and codes (ASSUMPTIONS O15),
+# and for which tool made the file, and says plainly not to attach the export or paste anything from it.
+name: An export that won't open
+description: The page refused a cap table export. Paste the page's summary, never the export.
+title: "An export that won't open"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This issue is public: anyone can read it.** Don't attach your export, and don't paste anything from it: no names, amounts, dates, tab names or file names.
+
+        Paste only the page's summary. Where the import was refused, click **Copy a summary to share**, read it, then click **Copy**. It holds counts and codes, nothing from your cap table.
+  - type: textarea
+    id: summary
+    attributes:
+      label: The page's summary
+      description: Paste it as the page copied it, and nothing else.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: tool
+    attributes:
+      label: Which tool made the file?
+      description: The cap table software, and the report or export you chose in it. Not the file's name, which can name the company.
+    validations:
+      required: true

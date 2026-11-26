@@ -10,7 +10,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { FORM_URL, REPO_URL } from "../../site/links.ts";
+import { FORM_URL, ISSUE_URL, REPO_URL } from "../../site/links.ts";
 
 const repo = resolve(import.meta.dirname, "../../..");
 let site: string;
@@ -100,7 +100,7 @@ describe("the site, the fund page under fund/", () => {
     expect(existsSync(join(site, "fund", "..", "index.html"))).toBe(true);
   });
 
-  it("contains no way to send anything, keeps nothing in browser storage, and names no other address but its two links out", () => {
+  it("contains no way to send anything, keeps nothing in browser storage, and names no other address but its links out", () => {
     const scripts = files().filter((f) => f.endsWith(".js"));
     const forbidden = /\bfetch\b|XMLHttpRequest|WebSocket|EventSource|sendBeacon|RTCPeerConnection|importScripts|serviceWorker|localStorage|sessionStorage|indexedDB|document\.cookie/g;
     expect(scripts.flatMap((f) => [...text(f).matchAll(forbidden)].map((m) => `${f}: ${m[0]}`))).toEqual([]);
@@ -112,15 +112,23 @@ describe("the site, the fund page under fund/", () => {
       /^https:\/\/github\.com\/MikeMcl\/decimal\.js/,
       /^https:\/\/bit\.ly\/3cXEKWf/,
     ];
-    // The two links out (10h), each exactly as apps/site/links.ts has it: in each page's scripts and nowhere else, and
-    // matched whole, so no other address on their hosts gets through.
+    // The links out, each exactly as apps/site/links.ts has it: in the pages' scripts and nowhere else, and matched
+    // whole, so no other address on their hosts gets through. The form and the repository are on both pages (10h); the
+    // new issue from the export template is on the main page only, where an import is refused (10l), since the fund page
+    // imports nothing.
     const ADDRESS = /https?:\/\/[A-Za-z0-9./_%#?=&+-]+/g;
-    const linksOut = [FORM_URL, REPO_URL];
-    for (const link of linksOut) {
+    const onPages: [string, string[]][] = [
+      [FORM_URL, ["the fund page", "the main page"]],
+      [REPO_URL, ["the fund page", "the main page"]],
+      [ISSUE_URL, ["the main page"]],
+    ];
+    const linksOut = onPages.map(([link]) => link);
+    for (const [link, pages] of onPages) {
       expect(link.match(ADDRESS)?.[0], link).toBe(link);
-      const withLink = files().filter((f) => text(f).includes(link));
+      // Read whole: the repository's address is also the start of the new issue's.
+      const withLink = files().filter((f) => [...text(f).matchAll(ADDRESS)].some((m) => m[0] === link));
       expect(withLink.every((f) => /^(fund\/)?assets\/[^/]+\.js$/.test(f)), `${link}: ${withLink.join(", ")}`).toBe(true);
-      expect(withLink.map((f) => (f.startsWith("fund/") ? "the fund page" : "the main page")).sort(), link).toEqual(["the fund page", "the main page"]);
+      expect(withLink.map((f) => (f.startsWith("fund/") ? "the fund page" : "the main page")).sort(), link).toEqual(pages);
     }
     const addresses = files()
       .filter((f) => /\.(js|html|css)$/.test(f))

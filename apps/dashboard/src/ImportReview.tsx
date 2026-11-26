@@ -321,7 +321,8 @@ export function ImportReview({ source, onUse, onCancel }: Props) {
         </button>
       </div>
       <div className="import__share">
-        <ShareSummary lines={source.share(atUse)} />
+        {/* Refused at Use: the summary to share says how, and the line beside it where to ask for help (10l). */}
+        <ShareSummary lines={source.share(atUse)} refused={atUse !== undefined} />
       </div>
     </section>
   );

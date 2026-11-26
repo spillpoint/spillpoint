@@ -35,7 +35,19 @@ body { margin: 0; }
 .masthead__links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.875rem; }
 .masthead__links a { color: var(--accent); white-space: nowrap; }
 .masthead__example { color: var(--muted); }
-.masthead__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* Under the title: the ways to start, and at the right the page's own file, Save and Open (10l). */
+.masthead__controls { flex: 1 1 100%; min-width: 0; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+/* The ways to start (10l): an export first, with its line beside it, then "or" and "Start from", an example or a blank
+   table. Each is a way in of its own; neither is a step before the other. */
+.start {
+  flex: 1 1 32rem; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "export export" "or example"; align-items: center; gap: 10px;
+}
+.start__export { grid-area: export; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+.start__line { flex: 1 1 18rem; max-width: 40rem; margin: 0; color: var(--muted); font-size: 0.8125rem; line-height: 1.4; text-wrap: balance; }
+.start__or { grid-area: or; color: var(--muted); font-style: italic; }
+.start .masthead__example { grid-area: example; min-width: 0; }
+.masthead__files { display: flex; flex-wrap: wrap; gap: 8px; }
 .file-button { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 14px; cursor: pointer; }
 .file-status { margin: 0 0 16px; padding: 8px 12px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
 .file-status--problem { border-left: 4px solid var(--error); }
@@ -275,8 +287,13 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
   /* The links beside the wordmark, the tagline on its own line under them (10h). */
   .masthead__links { order: 1; }
   .masthead__tagline { order: 2; flex-basis: 100%; }
-  /* The example picker takes the full width rather than running off the screen. */
-  .masthead__controls { width: 100%; }
+  /* The two ways to start, one under the other at full width (10l): the export's button and its line, "or" between
+     two rules, then the example picker, which takes the full width rather than running off the screen. */
+  .start { flex-basis: 100%; grid-template-columns: minmax(0, 1fr); grid-template-areas: "export" "or" "example"; gap: 8px; }
+  .start__export { flex-direction: column; align-items: stretch; }
+  .start__line { flex: none; max-width: none; text-wrap: pretty; }
+  .start__or { display: flex; align-items: center; gap: 12px; }
+  .start__or::before, .start__or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
   .masthead__example { display: flex; flex-direction: column; gap: 2px; flex: 1 1 100%; min-width: 0; }
   .masthead__example select { width: 100%; }
   .payouts .share { display: none; }
@@ -339,3 +356,8 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .import__share { margin-top: 16px; }
 .share { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
 .share__text { max-height: 18rem; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.85rem; background: var(--panel, transparent); margin: 6px 0; }
+/* Beside the summary on a refused import (10l): that it's safe to post, and a link to a new issue. */
+.share__help { margin: 0 0 8px; text-wrap: pretty; }
+/* Under the masthead, the refused import's summary keeps its distance from the governance note below it. */
+.page > .import__share { margin-bottom: 16px; }
+.share__help a { color: var(--accent); white-space: nowrap; }
