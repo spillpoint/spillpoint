@@ -147,7 +147,7 @@ const openCase = (name) => {
 const importFiles = (paths) => {
   const files = paths.map((p) => ({ name: p.split("/").pop(), base64: readFileSync(resolve(import.meta.dirname, "../../..", p)).toString("base64") }));
   return `new Promise((done) => {
-    const input = document.querySelector("input[aria-label^='Open an OCF export']");
+    const input = document.querySelector("input[aria-label^='Open a cap table export']");
     const files = new DataTransfer();
     for (const f of ${JSON.stringify(files)}) files.items.add(new File([Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0))], f.name));
     input.files = files.files;
@@ -158,6 +158,8 @@ const importFiles = (paths) => {
 };
 const packageOf = (name) => readdirSync(resolve(import.meta.dirname, "../../../cases", name, "package")).map((f) => `cases/${name}/package/${f}`);
 
+/** Larkspur's OCF package with a class whose conversion ratio disagrees with its prices: refused as it's read (04f, 10l). */
+const REFUSED = importFiles([...packageOf("ocf-01-larkspur"), "cases/ocf-03-refused/fixtures/conversion-ratio-loose.ocf.json"]);
 /** Quillfern's export, imported and used (04f). */
 const QUILLFERN = [importFiles(["apps/dashboard/test/fixtures/quillfern-macos.zip"]), click("Use this cap table")];
 /**
@@ -463,6 +465,17 @@ const SHOTS = {
   // 05c2: Larkspur at a sale, its SAFEs beside its note (X18), and the jump where the Seed converts and the SAFEs follow (E20).
   "05c2-larkspur": { width: 1100, height: 900, steps: LARKSPUR, clip: [".file-status", ".founder"], quality: 50 },
   "05c2-jump": { width: 1100, height: 1400, steps: LARKSPUR, clip: ["ol.breakpoints > li:nth-child(6)", "ol.breakpoints > li:nth-child(7)"], quality: 50 },
+  // 10l: a first visit. Opening an export is a way to start of its own, with its line, at 1280, 375 and 320 wide; and a
+  // refused import says the summary is safe to post, with a link to a new issue.
+  "10l-top": { width: 1280, height: 800, steps: [], clip: [".masthead", "aside.notice"] },
+  "10l-phone-top": { width: 375, height: 812, mobile: true, steps: [], clip: [".masthead", "aside.notice"] },
+  "10l-small-top": { width: 320, height: 640, mobile: true, steps: [], clip: [".masthead", "aside.notice"] },
+  "10l-refused": { width: 1280, height: 800, steps: [REFUSED], clip: [".masthead", ".file-status", ".import__share"] },
+  "10l-phone-refused": { width: 375, height: 812, mobile: true, steps: [REFUSED], clip: [".file-status", ".import__share"] },
+  "10l-small-refused": { width: 320, height: 640, mobile: true, steps: [REFUSED], clip: [".file-status", ".import__share"] },
+  "10l-refused-open": { width: 1280, height: 800, steps: [REFUSED, click("Copy a summary to share")], clip: [".file-status", ".import__share"], quality: 50 },
+  "10l-phone-refused-open": { width: 375, height: 812, mobile: true, steps: [REFUSED, click("Copy a summary to share")], clip: [".import__share"], quality: 50 },
+  "10l-small-refused-open": { width: 320, height: 640, mobile: true, steps: [REFUSED, click("Copy a summary to share")], clip: [".import__share"], quality: 50 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -517,6 +530,8 @@ async function shoot(send, name, shot) {
     await settled();
   }
   const height = await evaluate("Math.ceil(document.documentElement.scrollHeight)");
+  // How far the page runs past the screen's right edge, if it does (10l): a phone width should have no sideways scroll.
+  const sideways = await evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth");
   // The page's own coordinates of everything the shot keeps, with a little room around it.
   const clip = shot.clip
     ? await evaluate(`(() => {
@@ -529,7 +544,8 @@ async function shoot(send, name, shot) {
   const { data } = await send("Page.captureScreenshot", { format: "webp", quality: shot.quality ?? 75, captureBeyondViewport: true, clip });
   const file = join(OUT, `${name}.webp`);
   writeFileSync(file, Buffer.from(data, "base64"));
-  console.log(`${file} (${Math.round(clip.width)}×${Math.round(clip.height)}, ${Math.round(Buffer.from(data, "base64").length / 1024)} KB)`);
+  const scroll = sideways > 0 ? `scrolls ${sideways}px sideways at ${shot.width} wide` : `no sideways scroll at ${shot.width} wide`;
+  console.log(`${file} (${Math.round(clip.width)}×${Math.round(clip.height)}, ${Math.round(Buffer.from(data, "base64").length / 1024)} KB; ${scroll})`);
 }
 
 const names = process.argv.slice(2);

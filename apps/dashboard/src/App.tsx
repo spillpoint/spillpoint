@@ -3,7 +3,8 @@
 // and the breakpoints, on one tab; the cap table editor on the
 // second; and the rounds that built the cap table, if it was built from them,
 // on the third (M4i). It starts from an example, a blank table or a saved
-// file (M3 plan, answers 2 and 4), and saves to a file; nothing is kept
+// file (M3 plan, answers 2 and 4), or from a cap table export (M6, 06g), its
+// own way in at the top since 10l; it saves to a file, and nothing is kept
 // anywhere else.
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +31,7 @@ import { changeAt, nodeAt, seriesNodes } from "./curves.ts";
 import { buildExit, carryExitTerms, checkBuilt, fieldId, scratchDraft } from "./draft.ts";
 import type { Built, Checked, Draft } from "./draft.ts";
 import { fileName, fileText, readFile } from "./file.ts";
+import { EXPORT_LINE } from "./firstVisit.ts";
 import { ImportReview } from "./ImportReview.tsx";
 import type { ImportUse } from "./ImportReview.tsx";
 import { ocfSource, ocxSource } from "./importSources.ts";
@@ -413,57 +415,70 @@ export function App() {
           </nav>
         </div>
         <div className="masthead__controls">
-          <label className="masthead__example">
-            Start from{" "}
-            <select value={session.start.id} onChange={(e) => choose(e.target.value)}>
-              {examples.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.label}
-                  {e.fictional ? " (fictional)" : ""}
-                </option>
-              ))}
-              <option value={SCRATCH}>A blank cap table</option>
-              <option value={SCRATCH_ROUNDS}>A blank company, built from its rounds</option>
-              {session.start.id === FILE && <option value={FILE}>{session.start.name} (from a file)</option>}
-              {session.start.id === IMPORTED && <option value={IMPORTED}>{session.start.name} (imported)</option>}
-            </select>
-          </label>
-          <button type="button" className="file-button" onClick={save}>
-            Save
-          </button>
-          <button type="button" className="file-button" onClick={open}>
-            Open
-          </button>
-          <input
-            ref={picker}
-            type="file"
-            accept=".json,application/json"
-            className="visually-hidden"
-            tabIndex={-1}
-            aria-label="Open a saved cap table"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void opened(file);
-            }}
-          />
-          <button type="button" className="file-button" onClick={openImport}>
-            Open a cap table export
-          </button>
-          <input
-            ref={importPicker}
-            type="file"
-            multiple
-            accept=".xlsx,.zip,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/json"
-            className="visually-hidden"
-            tabIndex={-1}
-            aria-label="Open a cap table export: an OCX workbook (.xlsx), or an OCF export (a .zip, or the package's .ocf.json files)"
-            onChange={(e) => {
-              const chosen = [...(e.target.files ?? [])];
-              e.target.value = "";
-              if (chosen.length > 0) void imported(chosen);
-            }}
-          />
+          {/* Two ways to start, side by side as equals (10l): your own cap table, from an export, or one of the page's own,
+              an example or a blank one. "or" stands between them, so neither reads as a step before the other. */}
+          <div className="start" role="group" aria-label="Start">
+            <div className="start__export">
+              <button type="button" className="file-button file-button--primary" onClick={openImport} aria-describedby="start-export-line">
+                Open a cap table export
+              </button>
+              <input
+                ref={importPicker}
+                type="file"
+                multiple
+                accept=".xlsx,.zip,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/json"
+                className="visually-hidden"
+                tabIndex={-1}
+                aria-label="Open a cap table export: an OCX workbook (.xlsx), or an OCF export (a .zip, or the package's .ocf.json files)"
+                onChange={(e) => {
+                  const chosen = [...(e.target.files ?? [])];
+                  e.target.value = "";
+                  if (chosen.length > 0) void imported(chosen);
+                }}
+              />
+              <p id="start-export-line" className="start__line">
+                {EXPORT_LINE}
+              </p>
+            </div>
+            <span className="start__or">or</span>
+            <label className="masthead__example">
+              Start from{" "}
+              <select value={session.start.id} onChange={(e) => choose(e.target.value)}>
+                {examples.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.label}
+                    {e.fictional ? " (fictional)" : ""}
+                  </option>
+                ))}
+                <option value={SCRATCH}>A blank cap table</option>
+                <option value={SCRATCH_ROUNDS}>A blank company, built from its rounds</option>
+                {session.start.id === FILE && <option value={FILE}>{session.start.name} (from a file)</option>}
+                {session.start.id === IMPORTED && <option value={IMPORTED}>{session.start.name} (imported)</option>}
+              </select>
+            </label>
+          </div>
+          {/* The page's own file: Save keeps the cap table as a spillpoint file, and Open opens one saved here. */}
+          <div className="masthead__files">
+            <button type="button" className="file-button" onClick={save}>
+              Save
+            </button>
+            <button type="button" className="file-button" onClick={open}>
+              Open
+            </button>
+            <input
+              ref={picker}
+              type="file"
+              accept=".json,application/json"
+              className="visually-hidden"
+              tabIndex={-1}
+              aria-label="Open a saved cap table"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void opened(file);
+              }}
+            />
+          </div>
         </div>
       </header>
       {fileStatus && (
@@ -473,7 +488,7 @@ export function App() {
       )}
       {fileStatus?.share && (
         <div className="import__share">
-          <ShareSummary lines={fileStatus.share} />
+          <ShareSummary lines={fileStatus.share} refused />
         </div>
       )}
       <GovernanceNote />

@@ -89,3 +89,7 @@ spillpoint reproduces a published outside waterfall exactly: Hustle Fund's worke
 ## Faster since 0.7.0
 
 1. **The breakpoint search is faster on tables with many SAFEs and option strikes,** with no answer changed (10j): 26 SAFEs of their own amounts beside 5 option strikes take about 3 seconds on a laptop, where they took 26. It takes less memory too: the search lets go what it has passed, and never keeps more of its payout lines than 0.7.0 did. A made-up table of 26 SAFEs at three caps beside 12 option strikes needed about 1.7 GB, near Node's default heap of 2,096 MB, and now about 0.8 GB. Every case gives the same breakpoints, reasons, decisions and payouts to the cent. A breakpoint's exit value can differ from 0.7.0's past about its 27th significant digit, with no cent changed.
+
+## On the page
+
+- **A first visit explains itself** (10l). "Open a cap table export" is a way to start of its own, the first thing under the title, with "or" between it and "Start from", so no one picks a blank table first. A line beside it says what it opens, Carta's OCX report (an Excel file) or an OCF export, and that the file is read in the browser and never uploaded. Where an import is refused, a line says "Copy a summary to share" holds no names, amounts or dates and is safe to post, and links to a new issue on GitHub. The page still sends nothing: the link's address is the new-issue page alone, and the founder pastes the summary in.
