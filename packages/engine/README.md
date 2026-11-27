@@ -6,7 +6,7 @@ It can also build the cap table from the company's history: shares issued, the o
 
 It runs entirely on your machine. There is no network access and no I/O; your cap table never leaves the process.
 
-**The API is settled** *(0.7.0)*. 0.7.0 was the last release that could break code written for an earlier one, and 1.0 has the same API. Four behaviors change in 1.0, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused, and an explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
+**1.0 is the stability release** *(1.0)*. It has 0.7.0's API, settled in its naming review, and from 1.0 nothing breaks code written for it before a 2.0 (see [Versions](#versions-10)). Four behaviors change in 1.0, all fixes: `prepare` works on its own frozen copy of the cap table, `toCents` can't show an amount that's exactly a half cent a cent low, post-money SAFEs that own the whole company or more are refused, and an explicit null `unissued_pool`, `conversion_price` or `conversion_base` is refused. And where a workbook's Financing History lacks a participation column, `readOcx` asks for each series' participation, where 0.7.0 refused the workbook or guessed. And the breakpoint search is faster on tables with many SAFEs and option strikes, with no answer changed (see [the 1.0 release notes](https://github.com/spillpoint/spillpoint/blob/main/notes/release-1.0.md)). The names code can match on are listed, each with what it means, under [Stable from 1.0](#stable-from-10).
 
 > **The charter and the signed documents govern, not this tool.** spillpoint models common terms with documented defaults. Your documents may differ, and where they do, they win.
 
@@ -17,6 +17,15 @@ npm install spillpoint
 ```
 
 It needs Node 22 or later.
+
+### Versions *(1.0)*
+
+From 1.0, spillpoint follows semantic versioning:
+- **A patch release** only fixes.
+- **A minor release** can also add: a function, a field, or a name on one of the lists under [Stable from 1.0](#stable-from-10). Code written for 1.0 keeps working.
+- **Anything that would break code written for 1.0** waits for 2.0.
+
+Every release's notes say whether any answer changed, and why.
 
 ## A worked example: an exit
 
@@ -683,7 +692,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 
 ## Stable from 1.0
 
-Code can match on these names, as the project's page and check script do: the terms the engine and the imports refuse with, the codes an import's report notes, and the reasons a breakpoint gives. From 1.0 a name is never renamed or reused for something else. A list here can gain a new name in a minor release, and so can `ImportRefusal.format`, when spillpoint comes to read a new format. So code that switches on any of them needs a default: an exhaustive `switch`, or a `Record` keyed by one, stops compiling when a name is added. A name stops being raised when spillpoint comes to model what it refuses; it stays here, marked as no longer raised. A test fails if the engine can raise a name this list doesn't have. The rules behind each are in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
+Code can match on these names, as the project's page and check script do: the terms the engine and the imports refuse with, the codes an import's report notes, and the reasons a breakpoint gives. From 1.0 a name is never renamed or reused for something else: that would wait for 2.0 (see [Versions](#versions-10)). A list here can gain a new name in a minor release, and so can `ImportRefusal.format`, when spillpoint comes to read a new format. So code that switches on any of them needs a default: an exhaustive `switch`, or a `Record` keyed by one, stops compiling when a name is added. A name stops being raised when spillpoint comes to model what it refuses; it stays here, marked as no longer raised. A test fails if the engine can raise a name this list doesn't have. The rules behind each are in [`docs/ASSUMPTIONS.md`](https://github.com/spillpoint/spillpoint/blob/main/docs/ASSUMPTIONS.md).
 
 ### `UnsupportedTermError`'s terms
 
