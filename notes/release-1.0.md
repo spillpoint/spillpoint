@@ -1,10 +1,29 @@
-# spillpoint 1.0
+# spillpoint 1.0: the stability release
 
-Started in 10c. The release step finishes it.
+1.0 has 0.7.0's API, which 0.7.0's naming review settled (`notes/plan-0.7.0.md`). From 1.0, nothing breaks code written for it before a 2.0: a minor release can add, and a patch release only fixes (the engine README's "Versions"). Since 0.7.0:
+- **Four behaviors change, all fixes** (below).
+- **One import reads more.**
+- **The breakpoint search is faster,** with no answer changed.
 
-## Checked against a published waterfall
+The version in `packages/engine/package.json` is 1.0.0; it is published from there.
 
-spillpoint reproduces a published outside waterfall exactly: Hustle Fund's worked example in Brian Nichols, ["Waterfall modeling for startup exits: A step-by-step guide"](https://www.hustlefund.vc/post/exit-waterfall-modeling) (August 10, 2026), all 20 payouts and all five breakpoints. It's the locked case `outside-01-hustle-fund` (10i).
+Open Cap Format (OCF) is developed by the Open Cap Table Coalition: https://open-cap-table-coalition.github.io/Open-Cap-Format-OCF/. spillpoint reads files in that format.
+
+OCX is developed by the Open Cap Table Coalition: https://github.com/Open-Cap-Table-Coalition/ocx. spillpoint reads files in that format.
+
+## Its two gates
+
+1. **An outside waterfall that matches ours: met** (10i). spillpoint reproduces a published outside waterfall exactly: Hustle Fund's worked example in Brian Nichols, ["Waterfall modeling for startup exits: A step-by-step guide"](https://www.hustlefund.vc/post/exit-waterfall-modeling) (August 10, 2026), all 20 payouts and all five breakpoints. It's the locked case `outside-01-hustle-fund`.
+2. **A few outside users: open.** 1.0 is ready on main from 10m. It goes on npm, from 10m's merge commit, once a few outside users have tried it. Until then npm has 0.7.0, while the page at spillpoint.io already runs this code, and its footer says 1.0.0.
+
+## Changed answers
+
+**None in the locked cases.** Every exit and round case, OCF case and OCX case gives the same payouts, breakpoints, reasons and tables as 0.7.0, to the cent, the three added since 0.7.0 among them (How it's tested). Each item below says what it changes:
+- **`prepare`'s frozen copy:** nothing, for code that doesn't change a table after preparing it.
+- **`toCents`:** shows a cent more on an amount that's exactly a half cent and came out a hair under it. No amount in the cases does.
+- **The two refusals:** an `InputError` where 0.7.0 paid common a negative amount, or read a blank as an answer.
+- **`readOcx`:** blanks to fill where it refused or guessed.
+- **The faster search:** a breakpoint can differ past about its 27th significant digit, with no cent changed.
 
 ## Fixed since 0.7.0
 
@@ -90,6 +109,55 @@ spillpoint reproduces a published outside waterfall exactly: Hustle Fund's worke
 
 1. **The breakpoint search is faster on tables with many SAFEs and option strikes,** with no answer changed (10j): 26 SAFEs of their own amounts beside 5 option strikes take about 3 seconds on a laptop, where they took 26. It takes less memory too: the search lets go what it has passed, and never keeps more of its payout lines than 0.7.0 did. A made-up table of 26 SAFEs at three caps beside 12 option strikes needed about 1.7 GB, near Node's default heap of 2,096 MB, and now about 0.8 GB. Every case gives the same breakpoints, reasons, decisions and payouts to the cent. A breakpoint's exit value can differ from 0.7.0's past about its 27th significant digit, with no cent changed.
 
+## The API, against npm 0.7.0
+
+Checked on the packed build (10m) against npm's 0.7.0 tarball. Its shasum, `93d801e0e9357c706768ed7c20794a71bf4b4a44`, is the one 0.7.0's release step recorded, and a build from the `v0.7.0` tag gives the same.
+- **The exports are 0.7.0's:** 18 at runtime, and the same type names. `dist/index.js`, `dist/index.d.ts` and `dist/model.d.ts` are 0.7.0's, byte for byte.
+- **One type changes:** `PreparedCapTable`'s `capTable` and `exitDate` are `readonly` (fix 1, above).
+- **One name is added to a list:** the report-note code `no_participation_column` (10f, 10g). Stable from 1.0's report-note codes are 34. Its other four lists are as in 0.7.0: 11 terms, 50 OCF terms, 34 OCX terms and 13 reason codes.
+- **Nothing is removed.**
+- **The README adds "Versions":** from 1.0, spillpoint follows semantic versioning.
+- **Everything else that differs in `dist/` is internal.** It's in modules the package's one entry point doesn't re-export, and `exports` lists only that one, so no code can import it.
+
 ## On the page
 
+- **Payouts as they'd be paid** (10a, P1). Every payment the page shows to the cent is the engine's exact amount rounded down to the cent, as a paying agent pays. A holder's and a class's totals are the sums of those. The cents left over have a row of their own, "Left over from rounding down".
+- **The logo** (10b), in the header and as the tab's icon.
+- **Half-up for reading** (10d, P2). Every amount, percentage and price the page rounds half-up rounds as `toCents` now does.
+- **Short amounts never read "$1000K"** (10e). $999,999.99 reads "$1M".
+- **At spillpoint.io** (10h). spillpoint.github.io/spillpoint redirects there.
+  - **An opt-in link** in the header and footer leaves an email for news of releases, on a form of its own.
+  - **The page sends nothing itself:** the link opens the form, and nothing from the page goes with it.
+- **The fund waterfall** is at spillpoint.io/fund/, with its own package on npm, `spillpoint-fund`, and its own releases. The footer links to it.
+- **The footer** says spillpoint 1.0.0, from 10m's merge.
+- **Saved files** are version 7, as in 0.7.0.
 - **A first visit explains itself** (10l). "Open a cap table export" is a way to start of its own, the first thing under the title, with "or" between it and "Start from", so no one picks a blank table first. A line beside it says what it opens, Carta's OCX report (an Excel file) or an OCF export, and that the file is read in the browser and never uploaded. "Open", which opens only a file saved from the page, is now "Open a saved file". Where an import is refused, a line says "Copy a summary to share" holds no names, amounts or dates and is safe to post, and links to a new GitHub issue from a template for an export that won't open. The template asks for the summary and which tool made the file, and says not to attach the export or paste anything from it, since an issue is public. The page still sends nothing: the link's address names the template and nothing else, and the founder pastes the summary in.
+
+## How it's tested
+
+- **Every locked case:** the 86 exit and round cases, the 13 OCF and the 12 OCX. The three added since 0.7.0 are:
+  - `outside-01-hustle-fund` (10i)
+  - edge-12m, six post-money SAFEs at two caps (08b0)
+  - edge-28, a group's conversion moving a SAFE (10k)
+- **The reference** matches all 86. 10k closed three gaps in its breakpoints at jumps, with six unit tests of their own. No case file has changed since 0.7.0: `cases/` has only gained the three new cases' 10 files.
+- **Each change's own tests,** as its review note sets out:
+  - 10c's frozen copies
+  - 10d's half cents
+  - 08b0's tables and nulls
+  - 10f and 10g's columns
+  - 10j's timing and memory rows, before and after
+- **The packed build, beside 0.7.0's** (10m), each on a build of its own outside the repo:
+  - **Every case with an exit,** 51 of them, pays the same at all 500 of their exit values, holder by holder, to the cent, and finds the same 178 breakpoints with the same reasons, on both. That includes the three new cases: 0.7.0 gives them too.
+  - **Each of the 18 whole OCF packages and OCX workbooks** reads to its case's result on both.
+  - **Each change above shows on 1.0, and not on 0.7.0,** in the figures these notes give:
+    - edge-02 changed after `prepare`, at $5M: Founder A gets $15,000,000.00 on 0.7.0 and $1,500,000.00 on 1.0, and assigning to the prepared table throws a `TypeError`
+    - the four half cents
+    - the five SAFE tables
+    - the two nulls
+    - Hollis Mill without its `Participating (Y/N)` column
+  - **The README's five examples,** from the packed README, each print exactly their Output block.
+  - **Code written for 1.0 typechecks under `nodenext`.** The same file against 0.7.0's declarations has one error, where it marks the readonly assignment as an error that 0.7.0 doesn't raise.
+
+## Still refused
+
+Unchanged from 0.7.0: the engine's list (its README's "What it refuses") and the OCF and OCX deferrals. 08b0's two refusals, above, are `InputError`s, for tables that have no right answer.
