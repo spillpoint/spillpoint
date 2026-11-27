@@ -6,7 +6,7 @@ Branch `11a-plan-2-0`, from main at `c7e0af6` (#145 merged, no PR open). A plan 
 
 ## What changed
 
-- **`notes/plan-2.0.md`,** new: the plan, in your seven parts. The ledger and how each event maps onto what the engine builds from rounds today; guided setup and its checks; the views; the file, its versions and the OCF export; what stays out and where each would attach; 13 steps; three questions.
+- **`notes/plan-2.0.md`,** new: the plan, in your seven parts. The ledger and how each event maps onto what the engine builds from rounds today; guided setup and its checks; the views; the file, its versions and the OCF export; what stays out and where each would attach; 13 steps; three questions. The second commit adds your answers and the new order, 14 steps (below).
 - **This note.**
 - **Not `CLAUDE.md`.** "Where things stand" and the repo layout get their lines in 11b, once you've answered.
 
@@ -16,7 +16,7 @@ Branch `11a-plan-2-0`, from main at `c7e0af6` (#145 merged, no PR open). A plan 
 2. **Warnings, not refusals,** for anything that still leaves a cap table (section 2, "The checks"): 13 of them, with codes and rough words, and a wording rule a test holds: never "must", "invalid", "illegal" or "you should". **`buildCapTables` is unchanged,** so a grant beyond the pool is still refused there. Only the new `buildLedger` records it with a warning.
 3. **Quillfern is the first case** (section 1, last part). `ocf-12-ledger`'s 34 hand-written OCF transactions become about 20 ledger events, `ledger-01-quillfern`, whose last table must be edge case 25's locked table. It also gives the ledger two warnings to expect, and later the OCF export's round trip.
 4. **The plan's pool follows O6** (section 1, "The plan's pool"): reserved, less grants outstanding, less shares delivered, less cancellations that don't go back. It's how the import already reads a pool, and it lets a grant beyond the pool be recorded with the pool at 0.
-5. **Question 1, before anything else.** The engine's additions are all new names, so they're a minor release after 1.0. But 1.0 has to be cut before 11d merges, or it carries names that never had a naming review. The page isn't held up either way, since it builds from main.
+5. **Question 1, before anything else** (step names as first lettered). The engine's additions are all new names, so they're a minor release after 1.0. But 1.0 has to be cut before 11d merges, or it carries names that never had a naming review. The page isn't held up either way, since it builds from main.
 
 ## How to check it by behavior
 
@@ -37,15 +37,42 @@ I ran no test suite: nothing that runs has changed.
 
 ## Assumptions added
 
-None in `docs/ASSUMPTIONS.md`. The plan proposes L1 to L21 for a new "The ledger" section, written in 11b with its first case, and C21 for the ledger case folder, since 0.8.0's plan holds C20 for Carta's. The defaults I picked are in the plan's L table; the ones you might not expect:
-- **A grant's expiry takes it out of the table on its date** (L19), as an import reads it (O6), so the table as of a date can differ from the table after its last event.
+None in `docs/ASSUMPTIONS.md`. The plan proposes R32 and R33, under "Rounds and cap tables", written in 11b and 11c. It proposes L1 to L20 for a new "The ledger" section, written in 11d with its first case, and C21 for the ledger case folder, since 0.8.0's plan holds C20 for Carta's. (The first commit had L1 to L21. Its L15 is now R32, and the second commit's section below says why.) The defaults I picked are in the plan's L table; the ones you might not expect:
+- **A grant's expiry takes it out of the table on its date** (L18), as an import reads it (O6), so the table as of a date can differ from the table after its last event.
 - **One answer for what goes back to the pool,** asked when the plan is entered, never preset: it covers cancellations, expiries, forfeitures and repurchases of stock from the plan (L4).
 - **`within_rounding`** (L14): a recorded count that some price within half of the stated price's last written place would give is reported as the price's rounding, not as a mistake.
 - **Out of this part:** transfers of options, pay-to-play in a recorded round, splits with anything outstanding on the class, several plans, RSUs.
 
 ## Open questions
 
-The plan's three, in its section 7:
+The plan's three, in its section 7, as first asked:
 1. **Which release, and 1.0 first:** (a) 1.0's release step on main before 11d, published from its tag when the second gate is met, the ledger as 1.1.0; (b) 2.0.0 to mark the stage; (c) 1.0 waits and carries the ledger. I'd take (a).
 2. **Vesting out of this part?** I'd leave it out: nothing here needs a vested count, and it has rules of its own.
 3. **The papers each event comes from,** with "I have it" and a note, in the file and never the papers? I'd include it, in 11f.
+
+All three are answered: below.
+
+## The second commit: your answers and the new order
+
+**Your answers,** in the plan's new "Your answers (2026-11-27)":
+1. **(a).**
+2. **Vesting stays out.**
+3. **Yes to the papers,** in our own general words with "usually", under the line that this isn't legal advice. That's now a paragraph in section 2, and `documents` in section 4 is no longer conditional.
+
+The recorded round stays as planned: the counts come from the founder's papers, and the engine checks them.
+
+**The new order** (section 6), with the SAFE view first:
+- **11b, a priced round at a stated price** (R32). Tested by rebuilding every locked round case's priced rounds at the price each solves to, and getting the same tables exactly. I added one more test: at four other prices per case, it gives the same counts as today's round given the pre-money it implies. The SAFE view runs at prices no case solves to, and this ties them to the solve the cases check.
+- **11c, the SAFEs tab,** on rounds, a cap table entered directly, and an import. "Add it to the ledger" moved to 11l, with the as-of date.
+- **11d to 11o, the ledger,** in the planned order: its cases (11d to 11g), the engine (11h, 11i), the page (11j to 11l), the export (11m, 11n) and the release (11o).
+
+**Which steps lift the cases lock:** 11d, 11e, 11f and 11g, the ledger's cases. 11b and 11c add no case.
+
+**Does the reference need to learn it in 11b?** No, not for 11b's check. The locked tables are the reference's own, so matching them at the solved price is already an independent check. The reference learns the stated-price round in 11f, where the recorded round's check needs values at prices no case solves to: six-place prices, and `within_rounding`.
+
+**Three things to look at:**
+1. **1.0's release step now lands before 11b,** not just before the ledger's engine step. 11b is the first step that adds to the engine's API, and answer 1's reason, that 1.0 is 0.7.0's API, reaches it too. So the next step is 1.0's release step, a step of its own (10m, say), and then 11b. If you'd rather 11b go first and 1.0 carry its one addition, only section 6's "Before 11b" paragraph changes.
+2. **L15 is now R32.** It's a round's rule, and it lands before the ledger, so it sits with the round rules. The L items after it move up one: warnings are L15, a grant's expiry L18, and holder kinds L20.
+3. **R33, the price where the cap takes over, is given only where it's exact and simple.** That's where the cap price is the same at any round price: every note, a post-money SAFE with nothing beside it converting at a discount or without a cap, and a pre-money SAFE in a round that doesn't top up the pool. Elsewhere, a pre-money SAFE in a round that tops up the pool for one, the cap price moves with the round's price. There the tab says which one sets the price at the price chosen, and gives no crossover. The general case goes on the Later list, so 11c needs no new case. 11c tests the crossover on edge-15's SAFE from the case's own numbers: its post-money cap ÷ its Company Capitalization in `expected.json` ÷ (1 − its discount).
+
+**Also in 11c's tests:** Larkspur's import, with a trial at case 27's Series B price, must give case 27's locked table, so the import's path is checked against a locked round.
