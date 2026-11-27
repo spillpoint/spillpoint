@@ -508,7 +508,7 @@ seed_fund on seed_preferred: $4000000.00
 
 ## What it covers
 
-Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)*, *(0.7.0)* or *(1.0)* are new in that version.
+Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)*, *(0.7.0)*, *(1.0)* or *(1.1.0)* are new in that version.
 
 **The exit waterfall** on an existing cap table:
 - **Seniority tiers.** Series in the same tier are paid pari passu, and a shortfall is shared by preference amount.
@@ -560,6 +560,7 @@ Items marked *(0.2.0)*, *(0.3.0)*, *(0.4.0)*, *(0.5.0)*, *(0.6.0)*, *(0.7.0)* or
 - **Warrants issued** *(0.2.0)*: counted like options everywhere a count includes issued options. That covers a round's price and pool top-up, a SAFE's Company Capitalization, a note's base, the pro-rata base and broad-based anti-dilution. They aren't drawn from the pool, and issuing them never triggers anti-dilution.
 - **Priced rounds:**
   - **The price** is solved exactly, with the pool topped up to its target in the pre-money. Only the shares actually issued are rounded down.
+  - **Or the price is given** *(1.1.0)*, as a purchase agreement states it, in place of the pre-money. The round is then worked out at that price by the same rules, with nothing to solve, and gives the pre-money valuation the price implies: the price × the post-money fully diluted shares the round is priced on, less the new money. At the price a round solves to, it builds the same table.
   - **One issuance per holder** in a round, however many investment lines it has.
 - **SAFEs:**
   - **Post-money (YC):** its cap divides by a Company Capitalization that counts the pool before the round and the SAFEs themselves. It also counts the notes and other SAFEs converting beside it, at their exact conversion shares, solved together with the round's price *(0.3.0)*.
@@ -646,7 +647,7 @@ Each round reports what it worked out: the price, each SAFE's and note's convers
 | `issue_warrants` *(0.2.0)* | `warrants`: `holder`, `shares`, `strike` and `underlying`, `"common"` or a preferred series already issued |
 | `safes` | `safes`: `id`, `holder`, `purchase_amount`, `post_money_cap` or `pre_money_cap`, and `discount` |
 | `notes` | `notes`: `id`, `holder`, `principal`, `interest_rate`, `issue_date`, `valuation_cap`, `conversion_base`, `discount` and `repayment_multiple` |
-| `priced_round` | `series` (which may have a `cumulative_dividend` with no `accrual_start`, *0.2.0*), `pre_money`, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles, `anti_dilution_exempts_conversions` among them *(0.3.0)* |
+| `priced_round` | `series` (which may have a `cumulative_dividend` with no `accrual_start`, *0.2.0*), `pre_money` or, in its place, `price_per_share` *(1.1.0)*, `investments` (`holder`, `amount`, and `pro_rata`), `pool_target_unissued_percent_post` and `seniority`. The seniority may leave out the series the round's SAFEs and notes convert into; they then rank alongside its new series. Optional: `convert_safes`, `convert_notes`, `pay_to_play`, and the pro-rata and anti-dilution toggles, `anti_dilution_exempts_conversions` among them *(0.3.0)* |
 
 `readInputs` takes `holders`, `events` and an `exit` with `cap_table_after_event` naming the event whose cap table the exit runs on. The project's [`cases`](https://github.com/spillpoint/spillpoint/tree/main/cases) folder has a worked input for each term, with its expected results.
 
@@ -667,7 +668,7 @@ All money and share math uses [decimal.js](https://github.com/MikeMcl/decimal.js
 | Function | What it does |
 |---|---|
 | `readExit(json)`, `readCapTable(json)` | Read and check an input. |
-| `buildCapTables(company)` | Build the cap table after each event, with what the event worked out. The SAFEs and notes still outstanding are on its `capTable` *(0.7.0: no longer also beside it)*. |
+| `buildCapTables(company)` | Build the cap table after each event, with what the event worked out. The SAFEs and notes still outstanding are on its `capTable` *(0.7.0: no longer also beside it)*. A priced round's details give its `preMoney` *(1.1.0)*: its own, or the one its `price_per_share` implies. |
 | `readInputs(json)` | Read `holders`, `events` and an `exit` on the cap table after one of the events. SAFEs and notes still outstanding there are paid *(0.2.0)*. |
 | `readOcf(files)` *(0.4.0)* | Read an Open Cap Format package: the cap table as of its date, the terms to fill in, and a report. |
 | `readOcx(workbook)` *(0.6.0)* | Read an OCX workbook, given as its tabs' cells: the cap table as of its as-of date, the terms to fill in, and a report. |

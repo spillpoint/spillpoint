@@ -149,8 +149,13 @@ export interface PayToPlay {
 
 /** What a priced round worked out. */
 export interface RoundDetails {
-  /** Exact in arithmetic; held to 40 significant digits (E14). */
+  /** Exact in arithmetic; held to 40 significant digits (E14). At a stated price (R32), the price given. */
   price: Decimal;
+  /**
+   * The pre-money valuation: the round's own, or at a stated price the one the price implies (R32, 1.1.0), the price ×
+   * the post-money fully diluted shares the round is priced on, less the new money.
+   */
+  preMoney: Decimal;
   postMoneyValuation: Decimal;
   preRoundFullyDiluted: Decimal;
   /** The post-money fully diluted shares the price is set on, with new shares and the pool as fractions (R3). */
@@ -298,7 +303,7 @@ const EVENT_FIELDS: Record<string, readonly string[]> = {
   grant_options: ["grants"],
   issue_warrants: ["warrants"],
   priced_round: [
-    "series", "pre_money", "investments", "pool_target_unissued_percent_post", "seniority", "convert_safes", "convert_notes",
+    "series", "pre_money", "price_per_share", "investments", "pool_target_unissued_percent_post", "seniority", "convert_safes", "convert_notes",
     "pay_to_play", "anti_dilution_shares_in_post", "anti_dilution_include_unissued_pool_in_a", "anti_dilution_cp2_rounding",
     "pro_rata_base_includes_unissued_pool", "anti_dilution_exempts_conversions",
   ],
@@ -746,9 +751,16 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   if (company.security(seriesId)) throw new InputError(`${path}.series.id`, `${seriesId} already exists`);
   if (series.kind !== "preferred") throw new InputError(`${path}.series.kind`, "a priced round sells a preferred series");
 
-  const pre = positive(ev.pre_money, `${path}.pre_money`);
+  // R32 (1.1.0): a round gives its pre-money, or its price per share in place of it. From the pre-money the
+  // post-money valuation is known first and the price is solved; at a stated price there's nothing to solve, and the
+  // post-money valuation it implies is worked out with the round.
+  if (ev.price_per_share != null && ev.pre_money != null) {
+    throw new InputError(`${path}.price_per_share`, "give the round's pre-money or its price per share, not both (R32)");
+  }
+  const stated = ev.price_per_share == null ? null : positive(ev.price_per_share, `${path}.price_per_share`);
+  const pre = stated ? null : positive(ev.pre_money, `${path}.pre_money`);
   const money = investments.reduce((sum, inv) => sum.plus(inv.amount), ZERO);
-  const post = pre.plus(money);
+  let post = pre ? pre.plus(money) : ZERO;
   const target = ev.pool_target_unissued_percent_post == null ? ZERO : fraction(ev.pool_target_unissued_percent_post, `${path}.pool_target_unissued_percent_post`, true);
   const outstanding = company.outstandingAsConverted();
   const pool0 = company.unissuedPool;
@@ -776,12 +788,24 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
 
   type Choice = "cap" | "discount";
   /** A share count that may grow with the post-money fully diluted shares x: fixed + growing × x. */
-  type Line = { fixed: Decimal; growing: Decimal };
+  type Line = { fixed: Decimal; growing: Decimal; priced?: boolean };
   const at = (l: Line, x: Decimal) => l.fixed.plus(l.growing.times(x));
+  /**
+   * A share count the round's price sets, k ÷ (price × factor), as a line in x: the new money's shares, a SAFE's or
+   * note's at its discount, a full ratchet's. Solved from the pre-money, the price is post ÷ x, so the count is
+   * k × x ÷ (post × factor) and grows with x. At a stated price (R32) it's fixed, and marked as set by the price.
+   */
+  const byPrice = (k: Decimal, factor?: Decimal): Line =>
+    stated
+      ? { fixed: factor ? k.div(stated.times(factor)) : k.div(stated), growing: ZERO, priced: true }
+      : { fixed: ZERO, growing: factor ? k.div(post.times(factor)) : k.div(post) };
+  /** The same count, at the round's solution: k × x ÷ (post × factor), or at a stated price k ÷ (price × factor). */
+  const atPrice = (k: Decimal, x: Decimal, factor?: Decimal): Decimal =>
+    stated ? (factor ? k.div(stated.times(factor)) : k.div(stated)) : factor ? k.times(x).div(post.times(factor)) : k.times(x).div(post);
   /** A SAFE's shares under its choice, other than a post-money SAFE at its cap (that needs Company Capitalization). */
   const safeShares = (f: Safe, choice: Choice, topUp: boolean): Line =>
     choice === "discount"
-      ? { fixed: ZERO, growing: f.purchaseAmount.div(post.times(ONE.minus(f.discount))) }
+      ? byPrice(f.purchaseAmount, ONE.minus(f.discount))
       : // R24: a pre-money SAFE's Company Capitalization counts the pool including this round's increase.
         { fixed: f.purchaseAmount.times(outstanding.plus(topUp ? ZERO : pool0)).div(f.preMoneyCap!), growing: topUp ? f.purchaseAmount.times(target).div(f.preMoneyCap!) : ZERO };
   /**
@@ -798,17 +822,23 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     if (postSafes.length === 0) return null;
     let fixed = outstanding.plus(pool0);
     let growing = ZERO;
+    let priced = false;
     safes.forEach((f, i) => {
       if (f.postMoneyCap) return;
       const l = safeShares(f, choices[i]!, topUp);
       fixed = fixed.plus(l.fixed);
       growing = growing.plus(l.growing);
+      priced ||= l.priced === true;
     });
     noteTerms.forEach((t, i) => {
-      if (noteChoices[i] === "discount") growing = growing.plus(t.amount.div(post.times(ONE.minus(t.note.discount))));
-      else fixed = fixed.plus(t.amount.div(t.capPrice!));
+      if (noteChoices[i] === "discount") {
+        const l = byPrice(t.amount, ONE.minus(t.note.discount));
+        fixed = fixed.plus(l.fixed);
+        growing = growing.plus(l.growing);
+        priced ||= l.priced === true;
+      } else fixed = fixed.plus(t.amount.div(t.capPrice!));
     });
-    return { fixed: fixed.div(ONE.minus(owned)), growing: growing.div(ONE.minus(owned)) };
+    return { fixed: fixed.div(ONE.minus(owned)), growing: growing.div(ONE.minus(owned)), ...(priced ? { priced } : {}) };
   };
   /** A SAFE's cap price at x, given the pool after the round and Company Capitalization (R4, R24); null without a cap. */
   const capPrice = (f: Safe, pool: Decimal, companyCap: Decimal | null): Decimal | null =>
@@ -864,11 +894,15 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
       ...safes.map((f, i) =>
         // A post-money SAFE at its cap takes purchase ÷ cap of Company Capitalization.
         choices[i] === "cap" && f.postMoneyCap
-          ? { fixed: cc!.fixed.times(f.purchaseAmount).div(f.postMoneyCap), growing: cc!.growing.times(f.purchaseAmount).div(f.postMoneyCap) }
+          ? {
+              fixed: cc!.fixed.times(f.purchaseAmount).div(f.postMoneyCap),
+              growing: cc!.growing.times(f.purchaseAmount).div(f.postMoneyCap),
+              ...(cc!.priced ? { priced: true } : {}),
+            }
           : safeShares(f, choices[i]!, topUp),
       ),
       ...noteTerms.map((t, i) =>
-        noteChoices[i] === "discount" ? { fixed: ZERO, growing: t.amount.div(post.times(ONE.minus(t.note.discount))) } : { fixed: t.amount.div(t.capPrice!), growing: ZERO },
+        noteChoices[i] === "discount" ? byPrice(t.amount, ONE.minus(t.note.discount)) : { fixed: t.amount.div(t.capPrice!), growing: ZERO },
       ),
     ];
   };
@@ -885,18 +919,23 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
    */
   const adjustmentLine = (k: number, pieces: Pieces, lines: Line[]): Line => {
     const { series: s, rule, cp1, asConverted, a } = protectedSeries[k]!;
-    if (rule === "full_ratchet") return { fixed: asConverted.negated(), growing: asConverted.times(cp1).div(post) };
+    if (rule === "full_ratchet") {
+      const ratchet = byPrice(asConverted.times(cp1));
+      return { fixed: asConverted.negated().plus(ratchet.fixed), growing: ratchet.growing };
+    }
     let paid = pieces[0] ? money : ZERO;
-    let c: Line = { fixed: ZERO, growing: pieces[0] ? money.div(post) : ZERO };
+    let c: Line = pieces[0] ? byPrice(money) : { fixed: ZERO, growing: ZERO };
     let extraA: Line = { fixed: ZERO, growing: ZERO };
     lines.forEach((l, i) => {
-      if (inA[k]![i]) extraA = { fixed: extraA.fixed.plus(l.fixed), growing: extraA.growing.plus(l.growing) };
+      if (inA[k]![i]) extraA = { fixed: extraA.fixed.plus(l.fixed), growing: extraA.growing.plus(l.growing), priced: extraA.priced === true || l.priced === true };
       else if (pieces[1 + i]) {
         paid = paid.plus(conversionAmounts[i]!);
         c = { fixed: c.fixed.plus(l.fixed), growing: c.growing.plus(l.growing) };
       }
     });
-    if (!extraA.growing.isZero()) {
+    // At a stated price (R32) such a conversion's shares are fixed, but no case settles the round there either, so it's
+    // refused the same: by the rules as they stand.
+    if (!extraA.growing.isZero() || extraA.priced) {
       throw unsupportedTerm(
         "discounted_conversion_in_anti_dilution_a", `${path}.convert_safes`,
         `A SAFE or note converting at its discount and counted in ${s.id}'s A (exempt from anti-dilution, or issued before ${s.id}), ` +
@@ -910,8 +949,9 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
 
   /** The post-money fully diluted shares for these choices: x = (fixed shares) ÷ (1 − the parts that grow with x). */
   const solve = (topUp: boolean, choices: Choice[], noteChoices: Choice[], pieces: Pieces[]): Decimal => {
-    let fixed = outstanding.plus(topUp ? ZERO : pool0);
-    let growing = money.div(post).plus(topUp ? target : ZERO);
+    const newMoney = byPrice(money);
+    let fixed = outstanding.plus(topUp ? ZERO : pool0).plus(newMoney.fixed);
+    let growing = newMoney.growing.plus(topUp ? target : ZERO);
     const lines = conversionLines(topUp, choices, noteChoices);
     for (const l of lines) {
       fixed = fixed.plus(l.fixed);
@@ -945,7 +985,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     }
     const nextTopUp = target.times(solve(false, choices, noteChoices, pieces)).gt(pool0); // R16
     const x = solve(nextTopUp, choices, noteChoices, pieces);
-    const price = post.div(x);
+    const price = stated ?? post.div(x);
     const pool = nextTopUp ? target.times(x) : pool0;
     const cc = companyCapLine(nextTopUp, choices, noteChoices);
     const next = safes.map((f): Choice => {
@@ -973,7 +1013,10 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   }
   const triggered = pieces.map(adjusts);
   const solved = solve(topUp, choices, noteChoices, pieces);
-  const price = post.div(solved);
+  const price = stated ?? post.div(solved);
+  // R32: at a stated price, the post-money valuation it implies is the price × the post-money fully diluted shares the
+  // round is priced on, with the new shares and the pool as fractions (R3), as the price is solved from it otherwise.
+  if (stated) post = stated.times(solved);
   const poolAfter = topUp ? target.times(solved) : pool0;
   // R24 (21d): Company Capitalization at the solved count, from the others' exact shares.
   const ccLine = companyCapLine(topUp, choices, noteChoices);
@@ -1020,7 +1063,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     // Shares from the exact terms rather than the rounded price, then rounded down (R3, E19).
     const shares = roundDownShares(
       !capped
-        ? f.purchaseAmount.times(solved).div(post.times(ONE.minus(f.discount)))
+        ? atPrice(f.purchaseAmount, solved, ONE.minus(f.discount))
         : f.postMoneyCap
           ? f.purchaseAmount.times(companyCap!).div(f.postMoneyCap)
           : f.purchaseAmount.times(outstanding.plus(poolAfter)).div(f.preMoneyCap!),
@@ -1065,7 +1108,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
     const conversionPrice = capped ? t.capPrice! : price.times(ONE.minus(t.note.discount));
     // Shares from the exact terms rather than the rounded price, then rounded down (R3, E19).
     const shares = roundDownShares(
-      capped ? t.amount.times(t.baseShares).div(t.note.valuationCap!) : t.amount.times(solved).div(post.times(ONE.minus(t.note.discount))),
+      capped ? t.amount.times(t.baseShares).div(t.note.valuationCap!) : atPrice(t.amount, solved, ONE.minus(t.note.discount)),
     );
     let into = noteSeries.find((x) => nearlyEqual(x.price, conversionPrice));
     if (!into) {
@@ -1138,7 +1181,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   // One issuance per holder: its lines added up, rounded down once (R3).
   const byHolder = new Map<string, Decimal>();
   for (const inv of investments) byHolder.set(inv.holder, (byHolder.get(inv.holder) ?? ZERO).plus(inv.amount));
-  const newShares = [...byHolder].map(([holder, amount]) => ({ holder, shares: roundDownShares(amount.times(solved).div(post)) }));
+  const newShares = [...byHolder].map(([holder, amount]) => ({ holder, shares: roundDownShares(atPrice(amount, solved)) }));
 
   // Anti-dilution, as the charter computes it after closing, from the shares
   // actually issued and what was paid for them (R8): the new money's cash for
@@ -1194,6 +1237,7 @@ function pricedRoundEvent(company: Company, ev: Json, path: string): EventDetail
   return {
     kind: "priced_round",
     price,
+    preMoney: pre ?? post.minus(money),
     postMoneyValuation: post,
     preRoundFullyDiluted: outstanding.plus(pool0),
     postMoneyFullyDilutedSolved: solved,
