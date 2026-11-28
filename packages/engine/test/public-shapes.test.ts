@@ -187,7 +187,7 @@ const PLAIN_DETAILS = fieldsOf<Exclude<EventDetails, { kind: "issue_percent" | "
 const ISSUE_PERCENT = fieldsOf<Extract<EventDetails, { kind: "issue_percent" }>>()(["kind", "sharesIssued", "basisShares"]);
 const CREATE_POOL = fieldsOf<Extract<EventDetails, { kind: "create_pool" }>>()(["kind", "poolCreated", "basisShares"]);
 const PRICED_ROUND = fieldsOf<Extract<EventDetails, { kind: "priced_round" }>>()([
-  "kind", "price", "postMoneyValuation", "preRoundFullyDiluted", "postMoneyFullyDilutedSolved", "companyCapitalization", "safeConversions",
+  "kind", "price", "preMoney", "postMoneyValuation", "preRoundFullyDiluted", "postMoneyFullyDilutedSolved", "companyCapitalization", "safeConversions",
   "noteConversions", "proRata", "antiDilution", "payToPlay", "newShares", "poolTopUp", "postMoneyFullyDilutedActual",
 ]);
 const SAFE_CONVERSION = fieldsOf<SafeConversion>()(["safe", "holder", "method", "companyCapitalization", "conversionPrice", "shares", "series"]);

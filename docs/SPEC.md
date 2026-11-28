@@ -44,6 +44,7 @@ A group of series that must convert together is named in a reason by its series,
   - by default, any anti-dilution adjustment shares the round triggers
 
   The price depends on the share count and the share count depends on the price, so solve the circularity.
+- **A round at a stated price** (1.1.0, `ASSUMPTIONS.md` R32). A round may give its price per share in place of its pre-money, as a stock purchase agreement states it. Then there's no circularity: every count follows from the price by the rules below, and the round gives the pre-money valuation the price implies, the price × its post-money fully diluted shares less the new money. At the price a round solves to, it builds the same cap table.
 - **Pool top-up.** The target is stated as the unissued pool's percentage of post-money fully diluted shares. The increase sits in the pre-money, so it dilutes only existing holders.
 - **Post-money SAFE (YC).**
   - It converts at the lower of the cap price and the discount price. Cap price = post-money valuation cap ÷ Company Capitalization.
