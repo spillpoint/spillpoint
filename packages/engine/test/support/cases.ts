@@ -12,7 +12,7 @@ import type { CapTableResolver, Decisions } from "../../src/index.ts";
 export const CASES_DIR = resolve(import.meta.dirname, "../../../../cases");
 
 export const ALL_CASES: string[] = readdirSync(CASES_DIR, { withFileTypes: true })
-  .filter((d) => d.isDirectory())
+  .filter((d) => d.isDirectory() && !d.name.startsWith("ledger-")) // C21: ledger cases, read from 11h.
   .map((d) => d.name)
   .sort();
 /** OCF cases (M6, C16): an OCF package and its import, with no inputs.json. The engine reads them from 04d. */
