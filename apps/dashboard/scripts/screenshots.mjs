@@ -214,6 +214,19 @@ const LARKSPUR_SERIES_B = [
   pick("#ev-r2-seniority", 0, "senior"),
   click("Done"),
 ];
+/**
+ * The SAFEs tab on Larkspur's import (11c): case 27's Series B as a trial, at $2.70 a share as a term sheet would round
+ * it, Investor Z's $8,000,000 as the round's, the pool to 10%, senior.
+ */
+const SAFES_TRIAL = [
+  ...LARKSPUR,
+  click("SAFEs"),
+  fill("#trial-price", 0, "2.70"),
+  fill("#trial-amount", 0, "8,000,000"),
+  fill("#trial-pool", 0, "10"),
+  fill("#trial-date", 0, "2025-12-01"),
+  pick("#trial-rank", 0, "senior"),
+];
 /** A down round on Quillfern's import: $5M pre-money, below its series' $1.00, which have no anti-dilution (05b3b). */
 const QUILLFERN_DOWN = [
   click("Cap table"),
@@ -476,6 +489,11 @@ const SHOTS = {
   "10l-refused-open": { width: 1280, height: 800, steps: [REFUSED, click("Copy a summary to share")], clip: [".file-status", ".import__share"], quality: 50 },
   "10l-phone-refused-open": { width: 375, height: 812, mobile: true, steps: [REFUSED, click("Copy a summary to share")], clip: [".import__share"], quality: 50 },
   "10l-small-refused-open": { width: 320, height: 640, mobile: true, steps: [REFUSED, click("Copy a summary to share")], clip: [".import__share"], quality: 50 },
+  "11c-safes": { width: 1280, height: 900, steps: SAFES_TRIAL, clip: [".safes"], quality: 50 },
+  "11c-phone-safes": { width: 375, height: 812, mobile: true, steps: SAFES_TRIAL, clip: [".safes"], quality: 50 },
+  "11c-small-safes": { width: 320, height: 640, mobile: true, steps: SAFES_TRIAL, clip: [".safes"], quality: 50 },
+  "11c-trial-payouts": { width: 1280, height: 900, steps: [...SAFES_TRIAL, click("See the payouts after this round")], clip: [".tabs", ".notice--trial", ".founder"] },
+  "11c-phone-trial-payouts": { width: 375, height: 812, mobile: true, steps: [...SAFES_TRIAL, click("See the payouts after this round")], clip: [".notice--trial", ".founder"] },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
