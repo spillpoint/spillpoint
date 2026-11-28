@@ -24,6 +24,8 @@ const type = (el: HTMLElement, value: string) => fireEvent.change(el, { target: 
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name }));
 const panel = () => document.getElementById("panel-rounds")!;
 const card = (title: RegExp) => within(panel()).getByRole("heading", { level: 3, name: title }).closest("li")!;
+/** A line's own words, without the lines under it that explain it. */
+const ownText = (li: Element) => [...li.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join("");
 const group = (title: RegExp, name: RegExp) => within(card(title)).getByRole("group", { name });
 const holders = () => within(within(panel()).getByRole("heading", { name: "Holders" }).closest("section")!);
 const choose = (select: HTMLElement, label: string) => fireEvent.change(select, { target: { value: within(select).getByRole("option", { name: label }).getAttribute("value") } });
@@ -97,7 +99,7 @@ it("builds the README's rounds example by hand, from a blank company, and gets t
 
   // The README's numbers, on the Series A card.
   expect(within(panel()).queryAllByRole("alert")).toEqual([]);
-  const said = [...round.querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
+  const said = [...round.querySelectorAll(".rounds__lines li")].map(ownText);
   expect(said[0]).toBe("$5,000,000 at a $20,000,000 pre-money valuation, $25,000,000 post-money: $1.730769 a share.");
   // Exactly 90 cents, $10M ÷ (10,000,000 ÷ 0.9), though 40 digits leave it a hair under: to the cent (10d). The README
   // prints it to six places, as its own code formats it.
@@ -217,8 +219,12 @@ it("builds a founder, a note and a round from a blank company, with payouts afte
   expect(within(panel()).queryAllByRole("alert")).toEqual([]);
 
   // A year at 6% is $30,000; $530,000 at the cap price, $8M ÷ 10,000,000 shares = $0.80, is 662,500 shares.
-  const said = [...round.querySelectorAll(".rounds__lines li")].map((li) => li.textContent);
+  const said = [...round.querySelectorAll(".rounds__lines li")].map(ownText);
   expect(said).toContain("Nadia's note converts $530,000.00 ($500,000.00 and $30,000.00 interest) at its cap price, $0.80 a share, into 662,500 shares of Series A Preferred (from notes).");
+  // Under it, what its terms give at the round's price (11c2): the interest to the round's date among them, and where
+  // its cap takes over, its $0.80 cap price ÷ (1 − 20%), exact for a note, whose base is the shares just before the round.
+  expect(said).toContain("Its $30,000.00 of interest is 6% a year, simple, from Jan 1, 2025 to the round's date, Jan 1, 2026, each day counting as 1/365 of a year.");
+  expect(said).toContain("At $1.00 a share or more, its cap sets its price; below that, its discount does.");
   // The payouts moved to the round by themselves, and the note isn't outstanding at the sale any more.
   expect(after()).toBe("series_a");
   expect(within(round).getByText("The payouts use the cap table after this event.")).toBeTruthy();

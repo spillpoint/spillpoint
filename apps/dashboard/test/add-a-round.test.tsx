@@ -197,14 +197,21 @@ async function importLarkspur(extra: { file: string; safeCap: "Pre-money" | "Pos
   click("Use this cap table");
 }
 
-/** Case 27's Series B, typed into the round "Add a round" opens: Investor Z's $8M, the pool to 10%, senior. */
-function typeCase27SeriesB() {
+/**
+ * Case 27's Series B, typed into the round "Add a round" opens: Investor Z's $8M, the pool to 10%, senior. By its
+ * $50,000,000 pre-money, or by its exact price per share, as a stock purchase agreement states one (R32; 11c2).
+ */
+const CASE_27_PRICE = String(caseJson("edge-27-safes-and-note-convert-on-an-imported-table/expected.json").cap_tables.at(-1).details.price_per_share);
+function typeCase27SeriesB(by: "pre_money" | "price" = "pre_money") {
   const holders = within(panel()).getByRole("region", { name: "Holders" });
   click("Add a holder");
   type(within(holders).getAllByLabelText("Holder name").at(-1)!, "Investor Z");
   const round = card(/^2\. Series B Preferred, a priced round$/);
   type(within(round).getByLabelText("Date"), "2025-12-01");
-  type(within(round).getByLabelText("Pre-money valuation ($)"), "50000000");
+  if (by === "price") {
+    choose(within(round).getByLabelText("The round is given by"), "Its price per share");
+    type(within(round).getByLabelText("Price per share ($)"), CASE_27_PRICE);
+  } else type(within(round).getByLabelText("Pre-money valuation ($)"), "50000000");
   type(within(round).getByLabelText("Option pool after the round (% of the company)"), "10");
   choose(within(round).getByLabelText("Investor"), "Investor Z");
   type(within(round).getByLabelText("Amount ($)"), "8000000");
@@ -258,6 +265,35 @@ describe("Larkspur imported, its SAFEs and note converted in a Series B (case 27
 
       fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([saved], "larkspur.json", { type: "application/json" })] } });
       await screen.findByText("Opened larkspur.json.");
+      expect(paidByName(await save())).toEqual(case27());
+    },
+    ROUND_TRIP_TIMEOUT,
+  );
+});
+
+describe("Larkspur imported, case 27's Series B added by its price per share (11c2)", () => {
+  it(
+    "pays as case 27 does, to the cent at every breakpoint, saved with its price and opened again",
+    async () => {
+      await importLarkspur();
+      await screen.findByText(/^Imported Larkspur Instruments, Inc\. from 8 files\./);
+      openTab("Rounds");
+      click("Add a round");
+      typeCase27SeriesB("price");
+      await vi.waitFor(() => expect(within(panel()).queryAllByRole("alert")).toEqual([]), { timeout: ANALYSIS_TIMEOUT });
+      const saved = await save();
+      const round = JSON.parse(saved).events[1];
+      // Saved as given: its price per share, exactly, and no pre-money.
+      expect(round.price_per_share).toBe(CASE_27_PRICE);
+      expect(round).not.toHaveProperty("pre_money");
+      expect(paidByName(saved)).toEqual(case27());
+
+      fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([saved], "larkspur.json", { type: "application/json" })] } });
+      await screen.findByText("Opened larkspur.json.");
+      openTab("Rounds");
+      const reopened = card(/^2\. Series B Preferred/);
+      fireEvent.click(within(reopened).getByRole("button", { name: /^Edit / }));
+      expect((within(reopened).getByLabelText("The round is given by") as HTMLSelectElement).value).toBe("price");
       expect(paidByName(await save())).toEqual(case27());
     },
     ROUND_TRIP_TIMEOUT,

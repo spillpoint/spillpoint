@@ -27,13 +27,4 @@ Started in 11b. The release step, 11o, finishes it.
 
 ## On the page
 
-- **The SAFEs tab** (11c, ASSUMPTIONS R33 and P3).
-  - **Where it works:** on the cap table the payouts use, whichever way the page built it: from rounds, entered directly, or imported.
-  - **The trial round:** the founder gives the next priced round, by its price per share or its pre-money valuation, with the amount raised and the pool's target.
-  - **For each SAFE and note,** the tab says:
-    - its cap price and its discount price, and which applies
-    - its shares, and its share of the company after the round
-    - the series it converts into, and that series' preference on them
-    - where it's exact, the price at which its cap takes over
-  - **"See the payouts after this round"** shows the Payouts tab on the table after it, never saved.
-  - **The tabs** fit at 320 wide, four of them.
+- **One way to model the next round, on the Rounds tab** (11c, 11c2; ASSUMPTIONS R33 and P3). "Add a round" takes the round by its price per share or its pre-money valuation, and each round's summary explains every SAFE and note it converts. Its line, its shares at which price into which series, shows; under it, in a section closed until opened: its cap price and discount price and which applies, a note's interest to the round's date, its shares and its share after the round, its series and that series' preference, and, where it's exact, the price where its cap takes over. On a cap table entered directly or imported, the Rounds tab says a round added there shows what its SAFEs and notes convert into and that removing it takes it back, and the Payouts tab points there. 11c's SAFEs tab, never released, was folded into it in 11c2.

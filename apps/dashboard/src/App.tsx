@@ -1,9 +1,10 @@
 // The dashboard: the founder view, the exit value, the payoff curves, who
 // gets what, what each payment pays when the price is paid over time (M5l),
 // and the breakpoints, on one tab; the cap table editor on the
-// second; the rounds that built the cap table, if it was built from them,
-// on the third (M4i); and what its SAFEs and notes convert into at a trial
-// round on the fourth (11c). It starts from an example, a blank table or a saved
+// second; and the rounds that built the cap table, if it was built from them,
+// on the third (M4i), where a round modeled on a cap table entered directly or
+// imported says what its SAFEs and notes convert into (11c2). It starts from
+// an example, a blank table or a saved
 // file (M3 plan, answers 2 and 4), or from a cap table export (M6, 06g), its
 // own way in at the top since 10l; it saves to a file, and nothing is kept
 // anywhere else.
@@ -26,8 +27,7 @@ import { PayoffChart } from "./PayoffChart.tsx";
 import { PaymentsView } from "./PaymentsView.tsx";
 import { PayoutTable } from "./PayoutTable.tsx";
 import { RoundsView } from "./RoundsView.tsx";
-import { SafesView } from "./SafesView.tsx";
-import type { TrialPayouts } from "./SafesView.tsx";
+import { outstandingWords } from "./conversions.ts";
 import { useAnalysis } from "./analysis.ts";
 import { defaultHolder } from "./capTable.ts";
 import { changeAt, nodeAt, seriesNodes } from "./curves.ts";
@@ -292,6 +292,22 @@ export function App() {
     changeRounds(made.next);
     return made.key;
   };
+  /**
+   * Removing the last event after the cap table a company starts from (11c2): the cap table goes back to that one, as
+   * entered directly or imported, with no rounds, as it was before "Add a round" (R31), edits to it on the Cap table tab
+   * kept. The sale's terms and the range stay as typed, an import's date and issue order with them, and you stay the
+   * same holder. The holders added for the rounds go with them.
+   */
+  const backToTable = () => {
+    setSession((s) => {
+      if (!s.rounds?.start) return s;
+      const draft = { ...carryExitTerms(s.draft, s.rounds.start), range: s.draft.range };
+      const id = s.youKey !== null ? buildExit(s.draft).holderIds.get(s.youKey) : undefined;
+      const youKey = id ? ([...buildExit(draft).holderIds].find(([, v]) => v === id)?.[0] ?? null) : s.youKey;
+      return { ...s, rounds: null, roundsGood: null, roundsProblem: null, draft, youKey };
+    });
+    edit();
+  };
 
   const choose = (id: string) => {
     if (okToLose("Start over")) begin(startFrom(id), null);
@@ -520,14 +536,14 @@ export function App() {
         chosenExitValue={session.exitValue}
         onExitValue={(exitValue) => setSession((s) => ({ ...s, exitValue }))}
         rounds={rounds}
-        roundsGood={rounds ? session.roundsGood : null}
-        origin={session.origin}
         onRounds={changeRounds}
         roundsProblem={session.roundsProblem}
         tables={tables}
         events={events}
         onEditDirectly={editDirectly}
         onAddRound={addRound}
+        onBackToTable={backToTable}
+        imported={session.origin !== null}
         opening={session.opening}
       />}
       {/* Which engine made these numbers: the page runs the engine as of this commit, which can be ahead of the published version. */}
@@ -590,7 +606,7 @@ interface Good {
   checked: Extract<Checked, { ok: true }>;
 }
 
-type Tab = "payouts" | "editor" | "rounds" | "safes";
+type Tab = "payouts" | "editor" | "rounds";
 
 interface WorkspaceProps {
   start: Start;
@@ -609,10 +625,6 @@ interface WorkspaceProps {
   onExitValue: (x: D) => void;
   /** The rounds that build the cap table, as typed, and what each event did as last built; null when it was entered directly. */
   rounds: RoundsDraft | null;
-  /** The rounds as the engine last built them, for the SAFEs tab's trial round; null for a cap table entered directly. */
-  roundsGood: Rounds | null;
-  /** An import's date and issue order, while the cap table is still the one it gave (O14). */
-  origin: Origin | null;
   onRounds: (next: RoundsDraft) => void;
   roundsProblem: RoundsProblem | null;
   tables: ReturnType<typeof buildCapTables> | null;
@@ -620,13 +632,17 @@ interface WorkspaceProps {
   onEditDirectly: () => void;
   /** Starts the company's rounds on this cap table, with a new round; its key, or null if it can't. */
   onAddRound: () => string | null;
+  /** Takes the cap table back to the one its rounds start from, with no rounds: the last round after it removed. */
+  onBackToTable: () => void;
+  /** Whether a cap table with no rounds came from an import (it has an import's date and issue order). */
+  imported: boolean;
   /** An event to open on the Rounds tab as the workspace starts, by key. */
   opening: string | null;
 }
 
 function Workspace(props: WorkspaceProps) {
   const { start, draft, name, built, checked, edited, unsaved, onDraft, onName, youKey, onYouKey, chosenExitValue, onExitValue: setExitValue } = props;
-  const { rounds, roundsGood, origin, onRounds, roundsProblem, tables, events, onEditDirectly, onAddRound, opening } = props;
+  const { rounds, onRounds, roundsProblem, tables, events, onEditDirectly, onAddRound, onBackToTable, imported, opening } = props;
   const lastGood = useRef<Good | null>(null);
   if (checked.ok && lastGood.current?.built !== built) lastGood.current = { built, checked };
   // Null until the engine first accepts a cap table to pay out: an import used to add a round whose SAFEs and notes no
@@ -634,29 +650,11 @@ function Workspace(props: WorkspaceProps) {
   const good = lastGood.current;
   const draftError: DraftError | null = checked.ok ? null : { field: checked.field, message: checked.message };
 
-  // "See the payouts after this round" on the SAFEs tab (11c): the Payouts tab on the table after the trial round, until
-  // you go back, change the trial, or change the cap table. It's never saved: Save keeps the cap table as it is.
-  const [trial, setTrial] = useState<{ label: string; good: Good | null; problem: string | null } | null>(null);
-  const [trialYou, setTrialYou] = useState<string | null>(null);
-  useEffect(() => setTrial(null), [built, tables]);
-  const shown = trial ? trial.good : good;
-
-  const exit = shown?.checked.exit ?? null;
-  const pc = shown?.checked.pc ?? null;
+  const exit = good?.checked.exit ?? null;
+  const pc = good?.checked.pc ?? null;
   const keyOf = (id: string) => [...(good?.built.holderIds ?? [])].find(([, v]) => v === id)?.[0] ?? "";
-  const ownYou = good ? youIn(good.built, good.checked.exit.capTable, youKey) : "";
-  // On the trial's table you're the same holder where it has you, as it always does; whoever you choose there is for it alone.
-  const you = !trial ? ownYou : exit ? (trialYou ?? (exit.capTable.holders.some((h) => h.id === ownYou) ? ownYou : defaultHolder(exit.capTable))) : "";
+  const you = good && exit ? youIn(good.built, exit.capTable, youKey) : "";
   const yourName = exit?.capTable.holders.find((h) => h.id === you)?.name ?? "";
-  const chooseYou = (id: string) => (trial ? setTrialYou(id) : onYouKey(keyOf(id)));
-  const seePayouts = (t: TrialPayouts) => {
-    // The sale's terms are the sale's, whatever the table: its date, its carve-out and its payment schedules (M5 plan, item 13).
-    const b = buildExit(carryExitTerms(draft, t.draft));
-    const c = checkBuilt(b);
-    setTrial({ label: t.label, good: c.ok ? { built: b, checked: c } : null, problem: c.ok ? null : c.message });
-    setTrialYou(null);
-    setTab("payouts");
-  };
 
   const [lo, hi] = exit?.range ?? [null, null];
   const exitValue = useMemo(() => (lo && hi ? insideRange(chosenExitValue, [lo, hi]) : chosenExitValue), [lo, hi, chosenExitValue]);
@@ -669,7 +667,7 @@ function Workspace(props: WorkspaceProps) {
     }
   }, [pc, exitValue]);
 
-  const analysis = useAnalysis(shown?.built.json ?? null);
+  const analysis = useAnalysis(good?.built.json ?? null);
   const ready = analysis.status === "ready" ? analysis : null;
   // How your payout bends or jumps at each breakpoint, if it does: the curves mark those breakpoints,
   // and the list says how. On a curved side the rate is the one right at the breakpoint (X17).
@@ -741,6 +739,14 @@ function Workspace(props: WorkspaceProps) {
     focusAfterSwitch.current = field ?? null;
     setTab("editor");
   };
+  // A cap table entered directly or imported, with SAFEs or notes outstanding (11c2): what they are, for the Payouts
+  // tab's line and the Rounds tab's, which say a round added there shows what they convert into.
+  const convertibles = !rounds && good ? outstandingWords(good.checked.exit.capTable) : null;
+  // The Payouts tab's line goes to the Rounds tab, at its "Add a round".
+  const toAddRound = () => {
+    setTab("rounds");
+    setTimeout(() => document.getElementById("rounds-add-round")?.focus(), 0);
+  };
   // R31: the cap table a company starts from, edited on the Cap table tab; the rounds after it are built again on each change.
   const startEvent = rounds?.events[0]?.json.type === "start" ? rounds.events[0] : undefined;
   const after = rounds?.events.find((e) => String(e.json.id) === rounds.after);
@@ -755,19 +761,8 @@ function Workspace(props: WorkspaceProps) {
         }
       : null;
 
-  // The Cap table tab's line is the cap table's own, even while the Payouts tab shows a trial round's.
-  const own = useMemo(() => {
-    if (!trial) return solved;
-    if (!good) return { ok: false as const, message: "" };
-    try {
-      return { ok: true as const, answer: solve(good.checked.pc, exitValue).answers[0]! };
-    } catch (e) {
-      return { ok: false as const, message: withoutCodes((e as Error).message) };
-    }
-  }, [trial, solved, good, exitValue]);
-  const ownName = good?.checked.exit.capTable.holders.find((h) => h.id === ownYou)?.name ?? "";
-  const summary = own.ok
-    ? `At ${shortDollars(exitValue)}, ${ownName} gets ${shortDollars(paid(own.answer.payout.lines).holderTotals.get(ownYou) ?? new D(0))}.`
+  const summary = solved.ok
+    ? `At ${shortDollars(exitValue)}, ${yourName} gets ${shortDollars(paid(solved.answer.payout.lines).holderTotals.get(you) ?? new D(0))}.`
     : "";
 
   return (
@@ -781,18 +776,9 @@ function Workspace(props: WorkspaceProps) {
       <Tabs tab={tab} onTab={setTab} />
 
       <div role="tabpanel" id="panel-payouts" aria-labelledby="tab-payouts" hidden={tab !== "payouts"}>
-        {trial && (
-          <div className="notice notice--trial" role="status">
-            <strong>These are the payouts after the trial round on the SAFEs tab:</strong> {trial.label}. It isn't saved, or added to your rounds.{" "}
-            <button type="button" className="link-button" onClick={() => setTrial(null)}>
-              Back to your cap table's payouts
-            </button>
-            {trial.problem && <p className="field-error">The payouts after it can't be worked out: {trial.problem}</p>}
-          </div>
-        )}
-        {shown && exit && pc ? (
+        {good && exit && pc ? (
           <>
-          {!trial && roundsProblem && (
+          {roundsProblem && (
             <div className="notice notice--problem" role="status">
               <strong>Your last change to the rounds has a problem, so these payouts are from before it.</strong> {roundsProblem.message}{" "}
               <button type="button" className="link-button" onClick={fixRounds}>
@@ -800,7 +786,7 @@ function Workspace(props: WorkspaceProps) {
               </button>
             </div>
           )}
-          {!trial && draftError && (
+          {draftError && (
             <div className="notice notice--problem" role="status">
               <strong>Your last change to the cap table has a problem, so these payouts are from before it.</strong> {draftError.message}{" "}
               <button type="button" className="link-button" onClick={fixIt}>
@@ -808,8 +794,19 @@ function Workspace(props: WorkspaceProps) {
               </button>
             </div>
           )}
+          {/* 11c2: on a cap table entered directly or imported, the SAFEs and notes outstanding, and where to see what they convert into. */}
+          {convertibles && (
+            <p className="notice notice--pointer">
+              {convertibles.what} {convertibles.many ? "are" : "is"} outstanding on this cap table. To see what {convertibles.many ? "they" : "it"} would
+              convert into at the next round, add one on the{" "}
+              <button type="button" className="link-button" onClick={toAddRound}>
+                Rounds tab
+              </button>
+              .
+            </p>
+          )}
           {solved.ok ? (
-            <FounderView pc={pc} range={exit.range} answer={solved.answer} exitValue={exitValue} you={you} onChooseYou={chooseYou} breakpoints={analysis} />
+            <FounderView pc={pc} range={exit.range} answer={solved.answer} exitValue={exitValue} you={you} onChooseYou={(id) => onYouKey(keyOf(id))} breakpoints={analysis} />
           ) : (
             <p className="card card--quiet">
               The engine couldn't settle on an answer at {shortDollars(exitValue)}: {solved.message}
@@ -836,7 +833,7 @@ function Workspace(props: WorkspaceProps) {
           {exit.paymentSchedules && <PaymentsView pc={pc} schedules={exit.paymentSchedules} you={you} />}
           {ready && <BreakpointList breakpoints={ready.breakpoints} changes={changes} yourName={yourName} exitValue={exitValue} onExitValue={setExitValue} />}
           </>
-        ) : trial ? null : (
+        ) : (
           <NoPayoutsYet problem={(!checked.ok && saleLimitText(checked.error, built.json.cap_table)) || (draftError?.message ?? "")} rounds={roundsProblem} onFixRounds={fixRounds} />
         )}
       </div>
@@ -867,11 +864,9 @@ function Workspace(props: WorkspaceProps) {
           onExitTerms={toExitTerms}
           onCapTable={toCapTable}
           onAddRound={rounds ? null : addRound}
+          onBackToTable={onBackToTable}
+          direct={rounds ? null : { imported, outstanding: convertibles?.its ?? null, many: convertibles?.many ?? false }}
         />
-      </div>
-
-      <div role="tabpanel" id="panel-safes" aria-labelledby="tab-safes" hidden={tab !== "safes"}>
-        <SafesView draft={draft} origin={origin} rounds={roundsGood} onSeePayouts={seePayouts} onTrialChange={() => setTrial(null)} />
       </div>
     </main>
   );
@@ -881,7 +876,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "payouts", label: "Payouts" },
   { id: "editor", label: "Cap table" },
   { id: "rounds", label: "Rounds" },
-  { id: "safes", label: "SAFEs" },
 ];
 
 /** The tabs, with the keys screen-reader users expect: arrows to move between them, Home and End for the first and last. */

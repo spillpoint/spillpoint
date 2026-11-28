@@ -15,6 +15,10 @@
 // A company whose rounds start from a cap table (R31, 0.5.0) has that table as
 // its first event, which stays first; its cap table is edited on the Cap table
 // tab. A cap table entered directly can start a company's rounds from here.
+// Since 11c2 this is the one way to model the next round: a round's summary
+// says what each SAFE and note it converts gets, and why (conversions.ts),
+// and removing the last round after a starting table takes the cap table back
+// to that one, with no rounds.
 
 import { useState } from "react";
 import { D } from "spillpoint";
@@ -47,23 +51,40 @@ interface Props {
   onCapTable: (field?: string) => void;
   /** Starts the company's rounds on a cap table entered directly; null when there are rounds. */
   onAddRound: (() => void) | null;
+  /** Takes the cap table back to the one its rounds start from, with no rounds, when the last event after it goes. */
+  onBackToTable: () => void;
+  /**
+   * A cap table entered directly or imported, with no rounds: whether it was imported, and the SAFEs and notes
+   * outstanding on it in words ("its two SAFEs and its convertible note"), if any. Null when there are rounds.
+   */
+  direct: { imported: boolean; outstanding: string | null; many: boolean } | null;
 }
+
+/** "Add a round" on a cap table with no rounds, which the Payouts tab's line about its SAFEs and notes goes to. */
+const ADD_ROUND = "rounds-add-round";
 
 const count = (n: D) => halfUp(n, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const ZERO = new D(0);
 const ADD_TYPE = "rounds-add-type";
 
-export function RoundsView({ events, you, rounds, onRounds, problem, tables, editing, onEditing, onExitTerms, onCapTable, onAddRound }: Props) {
+export function RoundsView({ events, you, rounds, onRounds, problem, tables, editing, onEditing, onExitTerms, onCapTable, onAddRound, onBackToTable, direct }: Props) {
   const [adding, setAdding] = useState<EventType>("priced_round");
   if (!events || !rounds) {
+    // 11c2: a round added here is how a founder sees what the SAFEs and notes convert into, and removing it undoes it.
+    const outstanding = direct?.outstanding ?? null;
     return (
       <section className="card" aria-labelledby="rounds-heading">
         <h2 id="rounds-heading">Rounds</h2>
-        <p>This cap table was entered directly, not built from the company's rounds, so there are no rounds to show.</p>
+        <p>This cap table was {direct?.imported ? "imported" : "entered directly"}, not built from the company's rounds, so there are no rounds to show.</p>
         {onAddRound && (
           <>
-            <p>To model the company's next round on it, add one: this cap table becomes the one its rounds start from.</p>
-            <button type="button" className="add" onClick={onAddRound}>
+            <p>
+              {outstanding
+                ? `To see what ${outstanding} ${direct?.many ? "convert" : "converts"} into, add the next round. Its summary here gives ${direct?.many ? "each one's" : "its"} cap price and discount price, which applies, and the shares and series it gets.`
+                : "To model the company's next round on it, add one."}{" "}
+              This cap table becomes the one the round starts from. Remove the round, and you're back to this cap table, with no rounds.
+            </p>
+            <button type="button" className="add" id={ADD_ROUND} onClick={onAddRound}>
               Add a round
             </button>
           </>
@@ -130,9 +151,16 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
     return <>Not built yet: the engine builds it once the problem in {link(`event ${n}, ${draftTitle(rounds.events[n - 1]!.json)}`)}, is fixed.</>;
   };
   const remove = (event: EventDraft, n: number) => {
-    if (!window.confirm(`Remove event ${n}, ${draftTitle(event.json)}? What it did goes, and the events after it are built again without it.`)) return;
-    onRounds(removeEvent(rounds, event.key));
-    setTimeout(() => document.getElementById(ADD_TYPE)?.focus(), 0);
+    const next = removeEvent(rounds, event.key);
+    // 11c2: the last event after a starting table takes the cap table back to that one, with no rounds (R31).
+    const back = next.start !== null && next.events.length === 1;
+    const what = back
+      ? "What it did goes, and you're back to the cap table the round started from, with no rounds."
+      : "What it did goes, and the events after it are built again without it.";
+    if (!window.confirm(`Remove event ${n}, ${draftTitle(event.json)}? ${what}`)) return;
+    if (back) onBackToTable();
+    else onRounds(next);
+    setTimeout(() => document.getElementById(back ? ADD_ROUND : ADD_TYPE)?.focus(), 0);
   };
 
   return (
@@ -294,6 +322,17 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
   );
 }
 
+/** The sentences under a line that explain it. */
+function Details({ lines }: { lines: string[] }) {
+  return (
+    <ul className="rounds__details">
+      {lines.map((detail, k) => (
+        <li key={k}>{detail}</li>
+      ))}
+    </ul>
+  );
+}
+
 /** The SAFEs and notes an event creates that will still be outstanding at the sale, one line each. */
 function AtSale({ lines }: { lines: string[] }) {
   return lines.map((line) => (
@@ -318,11 +357,15 @@ function Built({ view: e, previous, you, atSale }: { view: EventView; previous: 
           ) : (
             <li key={j}>
               {line.text}
-              <ul className="rounds__details">
-                {line.details.map((detail, k) => (
-                  <li key={k}>{detail}</li>
-                ))}
-              </ul>
+              {/* A SAFE's or note's working sits in a section closed until opened (11c2); an adjustment's pieces show. */}
+              {line.fold ? (
+                <details className="rounds__working">
+                  <summary>{line.fold}</summary>
+                  <Details lines={line.details} />
+                </details>
+              ) : (
+                <Details lines={line.details} />
+              )}
             </li>
           ),
         )}

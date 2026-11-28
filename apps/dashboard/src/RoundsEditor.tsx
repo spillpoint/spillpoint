@@ -313,6 +313,11 @@ function NoteRows({ f, json, draft }: { f: Fields; json: Json; draft: RoundsDraf
   ));
 }
 
+const GIVEN_BY = [
+  { value: "pre_money", label: "Its pre-money valuation" },
+  { value: "price", label: "Its price per share" },
+];
+
 const PARTICIPATION: { value: Participation; label: string }[] = [
   { value: "non_participating", label: "Non-participating: its preference or converting, whichever pays more" },
   { value: "participating", label: "Participating: its preference, then a share as common too" },
@@ -377,11 +382,21 @@ function RoundFields({ f, before, conversions, draft, event }: EventFormProps & 
   const proRataApplies = ((json.investments as Json[] | undefined) ?? []).some((inv) => inv.pro_rata === true);
   const showProRataPool = proRataApplies || json.pro_rata_base_includes_unissued_pool === true;
   const notHere = (label: string, applies: boolean) => (applies ? label : `${label} (doesn't apply to this round)`);
+  // R32: a round is given by its pre-money valuation, as a term sheet states it, or by its price per share, as a stock
+  // purchase agreement does. Switching starts the other blank: one isn't the other in different units.
+  const byPrice = "price_per_share" in json;
+  const givenBy = (v: string) => {
+    const { pre_money: _pre, price_per_share: _price, ...rest } = json;
+    f.update(v === "price" ? { ...rest, price_per_share: "" } : { ...rest, pre_money: "" });
+  };
   return (
     <>
       <h4>The round</h4>
       <div className="series__grid">
-        {f.text("pre_money", "Pre-money valuation ($)", { numeric: true, money: true })}
+        {f.select("priced_by", "The round is given by", GIVEN_BY, { value: byPrice ? "price" : "pre_money", onChange: givenBy })}
+        {byPrice
+          ? f.text("price_per_share", "Price per share ($)", { numeric: true, hint: "As the stock purchase agreement or term sheet states it." })
+          : f.text("pre_money", "Pre-money valuation ($)", { numeric: true, money: true })}
         {f.text("pool_target_unissued_percent_post", "Option pool after the round (% of the company)", { numeric: true, hint: "The pool is topped up to this, before the new money. Blank for no top-up." })}
       </div>
       {f.rows("investments", "Investor", { holder: firstHolder(draft), amount: "" }, (i) => (

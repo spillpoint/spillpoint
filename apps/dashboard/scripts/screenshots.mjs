@@ -14,6 +14,9 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+// 10j's made-up table of many SAFEs, a TypeScript file Node reads as it is (11c2's round converting 26 SAFEs).
+import { manySafesAndStrikes } from "../../../packages/engine/test/support/many-safes.ts";
+
 const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const URL_ = process.env.URL ?? "http://localhost:4173/";
 // OUT=/some/dir writes shots elsewhere, for a look that isn't for a review note.
@@ -215,18 +218,50 @@ const LARKSPUR_SERIES_B = [
   click("Done"),
 ];
 /**
- * The SAFEs tab on Larkspur's import (11c): case 27's Series B as a trial, at $2.70 a share as a term sheet would round
- * it, Investor Z's $8,000,000 as the round's, the pool to 10%, senior.
+ * One way to model the next round (11c2): "Add a round" on Larkspur's import, from the Rounds tab, and case 27's Series B
+ * typed in by its price per share, at $2.70 as a term sheet would round it: Investor Z (r3), its $8,000,000, the pool to
+ * 10%, senior. The round's form stays open; `LARKSPUR_BY_PRICE_DONE` closes it, leaving its summary.
  */
-const SAFES_TRIAL = [
-  ...LARKSPUR,
-  click("SAFEs"),
-  fill("#trial-price", 0, "2.70"),
-  fill("#trial-amount", 0, "8,000,000"),
-  fill("#trial-pool", 0, "10"),
-  fill("#trial-date", 0, "2025-12-01"),
-  pick("#trial-rank", 0, "senior"),
+const LARKSPUR_BY_PRICE = [
+  click("Rounds"),
+  click("Add a round"),
+  `document.querySelector("section[aria-labelledby=rounds-holders-heading] button.add").click()`,
+  fill("#rounds-holder-r3", 0, "Investor Z"),
+  fill("#ev-r2-date", 0, "2025-12-01"),
+  pick("#ev-r2-priced_by", 0, "price"),
+  fill("#ev-r2-price_per_share", 0, "2.70"),
+  fill("#ev-r2-pool_target_unissued_percent_post", 0, "10"),
+  pickText("#ev-r2-investments-0-holder", 0, "Investor Z"),
+  fill("#ev-r2-investments-0-amount", 0, "8000000"),
+  pick("#ev-r2-seniority", 0, "senior"),
 ];
+const LARKSPUR_BY_PRICE_DONE = [...LARKSPUR_BY_PRICE, click("Done")];
+/** Opens a cap table as a saved file, and waits until it has opened. */
+const openTable = (name, exit) => {
+  const file = { format: "spillpoint", version: 7, name, cap_table: exit.cap_table, range: exit.range };
+  return `new Promise((done) => {
+    const input = document.querySelector("input[aria-label='Open a saved cap table']");
+    const files = new DataTransfer();
+    files.items.add(new File([${JSON.stringify(JSON.stringify(file))}], "table.json", { type: "application/json" }));
+    input.files = files.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    const wait = () => (document.body.innerText.includes("Opened table.json.") ? done() : setTimeout(wait, 50));
+    wait();
+  })`;
+};
+/** 10j's 26 post-money SAFEs at two caps, made up, with "Add a round" at a $30M pre-money and $10M from Founder A (11c2). */
+const TWENTY_SIX_SAFES = [
+  openTable("26 SAFEs", manySafesAndStrikes(26, 1, "each its own")),
+  click("Rounds"),
+  click("Add a round"),
+  fill("#ev-r2-pre_money", 0, "30M"),
+  fill("#ev-r2-investments-0-amount", 0, "10M"),
+  click("Done"),
+];
+/** Opens the n-th SAFE's or note's working in the round's summary. */
+const openWorking = (n) => `document.querySelectorAll("${ROUND(2)} details.rounds__working")[${n}].open = true`;
+/** The round's form, from its date to its price per share and pool target. */
+const ROUND_FORM = [`${ROUND(2)} .rounds__heading`, "#round-form-r2 .event-form > :nth-child(-n+3)"];
 /** A down round on Quillfern's import: $5M pre-money, below its series' $1.00, which have no anti-dilution (05b3b). */
 const QUILLFERN_DOWN = [
   click("Cap table"),
@@ -489,11 +524,24 @@ const SHOTS = {
   "10l-refused-open": { width: 1280, height: 800, steps: [REFUSED, click("Copy a summary to share")], clip: [".file-status", ".import__share"], quality: 50 },
   "10l-phone-refused-open": { width: 375, height: 812, mobile: true, steps: [REFUSED, click("Copy a summary to share")], clip: [".import__share"], quality: 50 },
   "10l-small-refused-open": { width: 320, height: 640, mobile: true, steps: [REFUSED, click("Copy a summary to share")], clip: [".import__share"], quality: 50 },
-  "11c-safes": { width: 1280, height: 900, steps: SAFES_TRIAL, clip: [".safes"], quality: 50 },
-  "11c-phone-safes": { width: 375, height: 812, mobile: true, steps: SAFES_TRIAL, clip: [".safes"], quality: 50 },
-  "11c-small-safes": { width: 320, height: 640, mobile: true, steps: SAFES_TRIAL, clip: [".safes"], quality: 50 },
-  "11c-trial-payouts": { width: 1280, height: 900, steps: [...SAFES_TRIAL, click("See the payouts after this round")], clip: [".tabs", ".notice--trial", ".founder"] },
-  "11c-phone-trial-payouts": { width: 375, height: 812, mobile: true, steps: [...SAFES_TRIAL, click("See the payouts after this round")], clip: [".notice--trial", ".founder"] },
+  // 11c2: one way to model the next round. The round's summary under each SAFE and the note, its form given by its
+  // price per share, the Rounds tab on an import with no rounds yet, and the Payouts tab's line pointing there.
+  "11c2-round": { width: 1280, height: 900, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE_DONE], clip: [ROUND(2)], quality: 50 },
+  "11c2-phone-round": { width: 375, height: 812, mobile: true, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE_DONE], clip: [ROUND(2)], quality: 50 },
+  "11c2-small-round": { width: 320, height: 640, mobile: true, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE_DONE], clip: [ROUND(2)], quality: 50 },
+  // Jordan's answer 2: each conversion's working closed until opened. The note's opened, and a round converting 26 SAFEs.
+  "11c2-round-open": { width: 1280, height: 900, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE_DONE, openWorking(2)], clip: [ROUND(2)], quality: 50 },
+  "11c2-small-round-open": { width: 320, height: 640, mobile: true, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE_DONE, openWorking(2)], clip: [ROUND(2)], quality: 50 },
+  "11c2-26-safes": { width: 1280, height: 900, steps: TWENTY_SIX_SAFES, clip: [ROUND(2)], quality: 50 },
+  "11c2-phone-26-safes": { width: 375, height: 812, mobile: true, steps: TWENTY_SIX_SAFES, clip: [ROUND(2)], quality: 50 },
+  "11c2-form": { width: 1280, height: 900, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE], clip: ROUND_FORM },
+  "11c2-small-form": { width: 320, height: 640, mobile: true, steps: [...LARKSPUR, ...LARKSPUR_BY_PRICE], clip: ROUND_FORM },
+  "11c2-rounds-tab": { width: 1280, height: 800, steps: [...LARKSPUR, click("Rounds")], clip: [".tabs", "#panel-rounds > .card"] },
+  "11c2-phone-rounds-tab": { width: 375, height: 812, mobile: true, steps: [...LARKSPUR, click("Rounds")], clip: [".tabs", "#panel-rounds > .card"] },
+  "11c2-small-rounds-tab": { width: 320, height: 640, mobile: true, steps: [...LARKSPUR, click("Rounds")], clip: [".tabs", "#panel-rounds > .card"] },
+  "11c2-pointer": { width: 1280, height: 800, steps: LARKSPUR, clip: [".tabs", ".notice--pointer", ".founder__headline"] },
+  "11c2-phone-pointer": { width: 375, height: 812, mobile: true, steps: LARKSPUR, clip: [".tabs", ".notice--pointer", ".founder__headline"] },
+  "11c2-small-pointer": { width: 320, height: 640, mobile: true, steps: LARKSPUR, clip: [".tabs", ".notice--pointer", ".founder__headline"] },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

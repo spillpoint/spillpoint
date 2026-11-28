@@ -74,6 +74,15 @@ describe("the Rounds tab", () => {
   });
 
   it("says what each round worked out: the SAFEs at the Seed, the pro-rata at the Series A, the adjustment at the Series B", () => {
+    // Each SAFE's $5,000,000 post-money cap ÷ the Seed's company capitalization, 12,989,373.63 shares: $0.384930.
+    const safe = (shares: string, after: string, preference: string) => [
+      "Its cap price is $0.384930: its $5,000,000 cap ÷ the company capitalization just before the round, 12,989,373.63 shares. As the YC post-money SAFE counts it, that includes the SAFEs themselves and the pool before this round's increase, and leaves out the new money.",
+      "It has no discount, so its discount price is the round's own, $0.463515.",
+      "It converts at the lower of the two, the cap price on a tie.",
+      `Its ${shares} shares, rounded down to whole shares, are ${after} of the company after the round, fully diluted.`,
+      `Seed Preferred (from SAFEs) has the round's terms, with its own $0.384930 as its issue price, so its preference on these shares is ${preference}, 1.5x what they converted at.`,
+      "At $0.384930 a share or more, its cap sets its price; below that, it converts at the round's own price.",
+    ];
     render(<App />);
     openTab("Rounds");
     expect(lines(event(/Seed Preferred/))).toEqual([
@@ -81,7 +90,11 @@ describe("the Rounds tab", () => {
       "Harbor Lane Ventures Fund I invests $2,500,000 for 5,393,570 shares of Seed Preferred.",
       "The pool is topped up by 3,191,337 shares, to 18% of the company after the round. The top-up comes before the new money, so it dilutes only the holders before the round. Investors call this the option pool shuffle.",
       "Priya Shah's SAFE converts at its cap price, $0.384930 a share, into 779,362 shares of Seed Preferred (from SAFEs).",
+      // Under each SAFE, what its terms give at the Seed's price (11c2; R33): its two prices and which applies, its share
+      // after the round, its series' preference, and where its cap takes over, which is exact with only post-money SAFEs.
+      ...safe("779,362", "3.61%", "$449,999.76"),
       "Marcus Lee's SAFE converts at its cap price, $0.384930 a share, into 389,681 shares of Seed Preferred (from SAFEs).",
+      ...safe("389,681", "1.81%", "$224,999.88"),
     ]);
     expect(lines(event(/Series A Preferred/))).toContain(
       "Harbor Lane Ventures Fund I may buy up to $3,444,369.64 as pro-rata: its 28.7% of the company before the round (not counting the unissued pool), times the $12,000,000.00 raised. It takes $3,000,000.00 of it.",
