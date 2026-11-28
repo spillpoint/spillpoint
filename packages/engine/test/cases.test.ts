@@ -58,6 +58,7 @@ interface Inputs {
 
 const caseDirs = readdirSync(CASES, { withFileTypes: true })
   .filter((d) => d.isDirectory() && !d.name.startsWith("ocf-") && !d.name.startsWith("ocx-"))
+  .filter((d) => !d.name.startsWith("ledger-")) // C21: a ledger (L1), which the engine builds from 11h.
   .map((d) => d.name);
 // OCF cases (M6, C16) hold an OCF package of our own and a result worked by hand; checked below.
 const ocfDirs = readdirSync(CASES, { withFileTypes: true })

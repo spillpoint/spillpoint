@@ -26,6 +26,7 @@ def main(argv):
     check = "--check" in argv
     names = [a for a in argv if not a.startswith("--")]
     dirs = [CASES / n for n in names] if names else sorted(p for p in CASES.iterdir() if (p / "inputs.json").exists())
+    dirs = [d for d in dirs if not d.name.startswith("ledger-")]  # C21: ledger cases are worked by hand; the reference doesn't read ledgers yet.
     failed = []
     for d in dirs:
         inputs = json.loads((d / "inputs.json").read_text())

@@ -1,0 +1,205 @@
+{
+  "case": "ledger-01-quillfern",
+  "description": "Quillfern Labs' five years recorded as a ledger (L1): OCF case 12's transactions as 18 dated events, with the company and its plan, a split, grants exercised, cancelled back into the pool and repriced, a SAFE converting in a Seed recorded as issued, a down-round Series A recorded at its stated price, a repurchase and two transfers. Its last cap table is edge case 25's.",
+  "company": {
+    "legal_name": "Quillfern Labs, Inc.",
+    "state": "Delaware",
+    "incorporated": "2021-01-15",
+    "par_value": "0.00001",
+    "authorized": [
+      { "class": "common", "shares": 30000000 }
+    ]
+  },
+  "holders": [
+    { "id": "founder_a", "name": "Founder A", "kind": "person" },
+    { "id": "founder_b", "name": "Founder B", "kind": "person" },
+    { "id": "employee_c", "name": "Employee C", "kind": "person" },
+    { "id": "employee_d", "name": "Employee D", "kind": "person" },
+    { "id": "employee_e", "name": "Employee E", "kind": "person" },
+    { "id": "employee_f", "name": "Employee F", "kind": "person" },
+    { "id": "angel_s", "name": "Angel S", "kind": "person" },
+    { "id": "seed_fund_t", "name": "Seed Fund T", "kind": "organization" },
+    { "id": "fund_u", "name": "Fund U", "kind": "organization" },
+    { "id": "trust_v", "name": "Trust V", "kind": "organization" }
+  ],
+  "plan": { "id": "plan", "name": "2021 Stock Plan", "returns_to_pool": true },
+  "events": [
+    {
+      "id": "founders",
+      "date": "2021-01-15",
+      "type": "issue",
+      "security": { "id": "common", "name": "Common Stock", "kind": "common" },
+      "issues": [
+        { "lot": "cs-a1", "holder": "founder_a", "shares": 3000000 },
+        { "lot": "cs-b1", "holder": "founder_b", "shares": 2000000 }
+      ]
+    },
+    {
+      "id": "employee_c_stock",
+      "date": "2021-03-01",
+      "type": "issue",
+      "security": { "id": "common", "name": "Common Stock", "kind": "common" },
+      "issues": [
+        { "lot": "cs-c1", "holder": "employee_c", "shares": 400000 }
+      ]
+    },
+    {
+      "id": "split",
+      "date": "2021-09-01",
+      "type": "split",
+      "security": "common",
+      "ratio": "2"
+    },
+    {
+      "id": "plan_adopted",
+      "date": "2021-10-01",
+      "type": "plan_increase",
+      "shares_reserved": 1000000
+    },
+    {
+      "id": "first_grants",
+      "date": "2021-10-01",
+      "type": "grant_options",
+      "grants": [
+        { "lot": "opt-c1", "holder": "employee_c", "shares": 100000, "strike": "0.1", "expires": "2031-10-01" },
+        { "lot": "opt-d1", "holder": "employee_d", "shares": 200000, "strike": "0.1", "expires": "2031-10-01" },
+        { "lot": "opt-e1", "holder": "employee_e", "shares": 150000, "strike": "0.1", "expires": "2031-10-01" }
+      ]
+    },
+    {
+      "id": "safe_s",
+      "date": "2022-02-01",
+      "type": "safes",
+      "safes": [
+        { "id": "safe-s1", "holder": "angel_s", "purchase_amount": "250000", "post_money_cap": null, "discount": "0.2" }
+      ]
+    },
+    {
+      "id": "seed",
+      "date": "2022-08-01",
+      "type": "recorded_round",
+      "series": {
+        "id": "seed",
+        "name": "Seed Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "non_participating",
+        "cap_multiple": null,
+        "anti_dilution": "none",
+        "authorized_shares": 4000000
+      },
+      "price_per_share": "1.2",
+      "purchases": [
+        { "lot": "ps-t1", "holder": "seed_fund_t", "amount": "3000000", "shares": 2500000 }
+      ],
+      "conversions": [
+        { "safe": "safe-s1", "lot": "ps-s1", "shares": 260416, "series": "seed" }
+      ],
+      "seniority": [["seed"]],
+      "plan_shares_reserved": 2000000
+    },
+    {
+      "id": "grant_d2",
+      "date": "2022-11-15",
+      "type": "grant_options",
+      "grants": [
+        { "lot": "opt-d2", "holder": "employee_d", "shares": 300000, "strike": "0.4", "expires": "2032-11-15" }
+      ]
+    },
+    {
+      "id": "cancel_e1",
+      "date": "2023-03-01",
+      "type": "cancel",
+      "lot": "opt-e1",
+      "shares": 100000
+    },
+    {
+      "id": "exercise_e1",
+      "date": "2023-04-15",
+      "type": "exercise",
+      "lot": "opt-e1",
+      "shares": 50000,
+      "new_lot": "cs-e1"
+    },
+    {
+      "id": "reprice_d2",
+      "date": "2023-06-01",
+      "type": "reprice",
+      "lot": "opt-d2",
+      "strike": "0.25"
+    },
+    {
+      "id": "transfer_a_v",
+      "date": "2023-09-01",
+      "type": "transfer",
+      "lot": "cs-a1",
+      "shares": 500000,
+      "to": "trust_v",
+      "new_lot": "cs-v1"
+    },
+    {
+      "id": "repurchase_c1",
+      "date": "2023-12-01",
+      "type": "repurchase",
+      "lot": "cs-c1",
+      "shares": 200000
+    },
+    {
+      "id": "exercise_c1",
+      "date": "2024-02-01",
+      "type": "exercise",
+      "lot": "opt-c1",
+      "shares": 100000,
+      "new_lot": "cs-c2"
+    },
+    {
+      "id": "series_a",
+      "date": "2024-05-01",
+      "type": "recorded_round",
+      "series": {
+        "id": "series_a",
+        "name": "Series A Preferred",
+        "kind": "preferred",
+        "preference_multiple": "1",
+        "participation": "participating_capped",
+        "cap_multiple": "2.5",
+        "anti_dilution": "none",
+        "authorized_shares": 5000000
+      },
+      "price_per_share": "1",
+      "purchases": [
+        { "lot": "pa-u1", "holder": "fund_u", "amount": "3000000", "shares": 3000000 },
+        { "lot": "pa-t1", "holder": "seed_fund_t", "amount": "500000", "shares": 500000 }
+      ],
+      "conversions": [],
+      "seniority": [["series_a"], ["seed"]],
+      "plan_shares_reserved": 3000000,
+      "conversion_prices": { "seed": "1" }
+    },
+    {
+      "id": "grants_c3_f1",
+      "date": "2024-08-01",
+      "type": "grant_options",
+      "grants": [
+        { "lot": "opt-c3", "holder": "employee_c", "shares": 400000, "strike": "0.25", "expires": "2034-08-01" },
+        { "lot": "opt-f1", "holder": "employee_f", "shares": 120000, "strike": "0.25", "expires": "2034-08-01" }
+      ]
+    },
+    {
+      "id": "cancel_f1",
+      "date": "2025-01-31",
+      "type": "cancel",
+      "lot": "opt-f1",
+      "shares": 120000
+    },
+    {
+      "id": "transfer_t_u",
+      "date": "2025-03-01",
+      "type": "transfer",
+      "lot": "ps-t1",
+      "shares": 300000,
+      "to": "fund_u",
+      "new_lot": "ps-u1"
+    }
+  ]
+}

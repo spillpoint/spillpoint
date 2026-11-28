@@ -25,6 +25,7 @@ const roundsOf = (name: string): Rounds => {
 const ROUND_CASES = readdirSync(casesDir, { withFileTypes: true })
   // OCF cases (C16) hold a package, and OCX cases (C18) a workbook, not inputs.json.
   .filter((d) => d.isDirectory() && !d.name.startsWith("ocf-") && !d.name.startsWith("ocx-"))
+  .filter((d) => !d.name.startsWith("ledger-")) // C21: a ledger isn't a company the page builds from rounds yet (11j).
   .map((d) => d.name)
   .filter((name) => JSON.parse(readFileSync(resolve(casesDir, name, "inputs.json"), "utf8")).events);
 

@@ -1,0 +1,2241 @@
+{
+  "case": "ledger-01-quillfern",
+  "worked_by": "hand (DERIVATION.md)",
+  "locked_case": "edge-25-ocf-ledger",
+  "cap_tables": [
+    {
+      "after_event": "founders",
+      "date": "2021-01-15",
+      "movements": [
+        {
+          "lot": "cs-a1",
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 3000000,
+          "after": 3000000
+        },
+        {
+          "lot": "cs-b1",
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000,
+          "after": 2000000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 3000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 2000000
+          }
+        ],
+        "unissued_pool": 0
+      }
+    },
+    {
+      "after_event": "employee_c_stock",
+      "date": "2021-03-01",
+      "movements": [
+        {
+          "lot": "cs-c1",
+          "holder": "employee_c",
+          "security": "common",
+          "shares": 400000,
+          "after": 400000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 3000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 2000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 400000
+          }
+        ],
+        "unissued_pool": 0
+      }
+    },
+    {
+      "after_event": "split",
+      "date": "2021-09-01",
+      "movements": [
+        {
+          "lot": "cs-a1",
+          "holder": "founder_a",
+          "security": "common",
+          "shares": 3000000,
+          "after": 6000000
+        },
+        {
+          "lot": "cs-b1",
+          "holder": "founder_b",
+          "security": "common",
+          "shares": 2000000,
+          "after": 4000000
+        },
+        {
+          "lot": "cs-c1",
+          "holder": "employee_c",
+          "security": "common",
+          "shares": 400000,
+          "after": 800000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          }
+        ],
+        "unissued_pool": 0
+      }
+    },
+    {
+      "after_event": "plan_adopted",
+      "date": "2021-10-01",
+      "movements": [],
+      "pool_change": 1000000,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          }
+        ],
+        "unissued_pool": 1000000
+      }
+    },
+    {
+      "after_event": "first_grants",
+      "date": "2021-10-01",
+      "movements": [
+        {
+          "lot": "opt-c1",
+          "holder": "employee_c",
+          "security": "options_0.1",
+          "shares": 100000,
+          "after": 100000
+        },
+        {
+          "lot": "opt-d1",
+          "holder": "employee_d",
+          "security": "options_0.1",
+          "shares": 200000,
+          "after": 200000
+        },
+        {
+          "lot": "opt-e1",
+          "holder": "employee_e",
+          "security": "options_0.1",
+          "shares": 150000,
+          "after": 150000
+        }
+      ],
+      "pool_change": -450000,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_e",
+            "security": "options_0.1",
+            "shares": 150000
+          }
+        ],
+        "unissued_pool": 550000
+      }
+    },
+    {
+      "after_event": "safe_s",
+      "date": "2022-02-01",
+      "movements": [
+        {
+          "safe": "safe-s1",
+          "holder": "angel_s",
+          "amount": "250000",
+          "after": "250000"
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          }
+        ],
+        "seniority": [],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_e",
+            "security": "options_0.1",
+            "shares": 150000
+          }
+        ],
+        "unissued_pool": 550000,
+        "unconverted_safes": [
+          {
+            "id": "safe-s1",
+            "holder": "angel_s",
+            "purchase_amount": "250000",
+            "post_money_cap": null,
+            "discount": "0.2"
+          }
+        ]
+      }
+    },
+    {
+      "after_event": "seed",
+      "date": "2022-08-01",
+      "movements": [
+        {
+          "lot": "ps-t1",
+          "holder": "seed_fund_t",
+          "security": "seed",
+          "shares": 2500000,
+          "after": 2500000
+        },
+        {
+          "safe": "safe-s1",
+          "holder": "angel_s",
+          "amount": "-250000",
+          "after": "0"
+        },
+        {
+          "lot": "ps-s1",
+          "holder": "angel_s",
+          "security": "seed",
+          "shares": 260416,
+          "after": 260416
+        }
+      ],
+      "pool_change": 1000000,
+      "warnings": [
+        {
+          "code": "conversion_preference_above_price",
+          "event": "seed",
+          "subject": "ps-s1",
+          "text": "Angel S's 260,416 Seed Preferred, from its SAFE, were issued at $0.96 a share but carry Seed Preferred's $1.20 preference. A SAFE's shares often go into a series of their own, with a preference at the price they converted at. If these did, record that series in the round."
+        }
+      ],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_e",
+            "security": "options_0.1",
+            "shares": 150000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          }
+        ],
+        "unissued_pool": 1550000
+      }
+    },
+    {
+      "after_event": "grant_d2",
+      "date": "2022-11-15",
+      "movements": [
+        {
+          "lot": "opt-d2",
+          "holder": "employee_d",
+          "security": "options_0.4",
+          "shares": 300000,
+          "after": 300000
+        }
+      ],
+      "pool_change": -300000,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.4",
+            "name": "Options ($0.40 strike)",
+            "kind": "option",
+            "strike": "0.4"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.4",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "options_0.1",
+            "shares": 150000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          }
+        ],
+        "unissued_pool": 1250000
+      }
+    },
+    {
+      "after_event": "cancel_e1",
+      "date": "2023-03-01",
+      "movements": [
+        {
+          "lot": "opt-e1",
+          "holder": "employee_e",
+          "security": "options_0.1",
+          "shares": -100000,
+          "after": 50000
+        }
+      ],
+      "pool_change": 100000,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.4",
+            "name": "Options ($0.40 strike)",
+            "kind": "option",
+            "strike": "0.4"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.4",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "options_0.1",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          }
+        ],
+        "unissued_pool": 1350000
+      }
+    },
+    {
+      "after_event": "exercise_e1",
+      "date": "2023-04-15",
+      "movements": [
+        {
+          "lot": "opt-e1",
+          "holder": "employee_e",
+          "security": "options_0.1",
+          "shares": -50000,
+          "after": 0
+        },
+        {
+          "lot": "cs-e1",
+          "holder": "employee_e",
+          "security": "common",
+          "shares": 50000,
+          "after": 50000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.4",
+            "name": "Options ($0.40 strike)",
+            "kind": "option",
+            "strike": "0.4"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.4",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          }
+        ],
+        "unissued_pool": 1350000
+      }
+    },
+    {
+      "after_event": "reprice_d2",
+      "date": "2023-06-01",
+      "movements": [
+        {
+          "lot": "opt-d2",
+          "holder": "employee_d",
+          "security": "options_0.4",
+          "shares": -300000,
+          "after": 0
+        },
+        {
+          "lot": "opt-d2",
+          "holder": "employee_d",
+          "security": "options_0.25",
+          "shares": 300000,
+          "after": 300000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 6000000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          }
+        ],
+        "unissued_pool": 1350000
+      }
+    },
+    {
+      "after_event": "transfer_a_v",
+      "date": "2023-09-01",
+      "movements": [
+        {
+          "lot": "cs-a1",
+          "holder": "founder_a",
+          "security": "common",
+          "shares": -500000,
+          "after": 5500000
+        },
+        {
+          "lot": "cs-v1",
+          "holder": "trust_v",
+          "security": "common",
+          "shares": 500000,
+          "after": 500000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 800000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1350000
+      }
+    },
+    {
+      "after_event": "repurchase_c1",
+      "date": "2023-12-01",
+      "movements": [
+        {
+          "lot": "cs-c1",
+          "holder": "employee_c",
+          "security": "common",
+          "shares": -200000,
+          "after": 600000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 600000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.1",
+            "shares": 100000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1350000
+      }
+    },
+    {
+      "after_event": "exercise_c1",
+      "date": "2024-02-01",
+      "movements": [
+        {
+          "lot": "opt-c1",
+          "holder": "employee_c",
+          "security": "options_0.1",
+          "shares": -100000,
+          "after": 0
+        },
+        {
+          "lot": "cs-c2",
+          "holder": "employee_c",
+          "security": "common",
+          "shares": 100000,
+          "after": 100000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1.2",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 700000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1350000
+      }
+    },
+    {
+      "after_event": "series_a",
+      "date": "2024-05-01",
+      "movements": [
+        {
+          "lot": "pa-u1",
+          "holder": "fund_u",
+          "security": "series_a",
+          "shares": 3000000,
+          "after": 3000000
+        },
+        {
+          "lot": "pa-t1",
+          "holder": "seed_fund_t",
+          "security": "series_a",
+          "shares": 500000,
+          "after": 500000
+        }
+      ],
+      "pool_change": 1000000,
+      "warnings": [
+        {
+          "code": "conversion_price_without_anti_dilution",
+          "event": "series_a",
+          "subject": "seed",
+          "text": "Seed Preferred's conversion price is recorded as falling from $1.20 to $1.00 in this round, but Seed Preferred has no anti-dilution recorded. A conversion price usually changes in a round only under the series' anti-dilution. If its charter gives it some, record it."
+        }
+      ],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "fund_u",
+            "name": "Fund U"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "2.5",
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 700000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "series_a",
+            "shares": 500000
+          },
+          {
+            "holder": "fund_u",
+            "security": "series_a",
+            "shares": 3000000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 2350000
+      }
+    },
+    {
+      "after_event": "grants_c3_f1",
+      "date": "2024-08-01",
+      "movements": [
+        {
+          "lot": "opt-c3",
+          "holder": "employee_c",
+          "security": "options_0.25",
+          "shares": 400000,
+          "after": 400000
+        },
+        {
+          "lot": "opt-f1",
+          "holder": "employee_f",
+          "security": "options_0.25",
+          "shares": 120000,
+          "after": 120000
+        }
+      ],
+      "pool_change": -520000,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "employee_f",
+            "name": "Employee F"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "fund_u",
+            "name": "Fund U"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "2.5",
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 700000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.25",
+            "shares": 400000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "employee_f",
+            "security": "options_0.25",
+            "shares": 120000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "series_a",
+            "shares": 500000
+          },
+          {
+            "holder": "fund_u",
+            "security": "series_a",
+            "shares": 3000000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1830000
+      }
+    },
+    {
+      "after_event": "cancel_f1",
+      "date": "2025-01-31",
+      "movements": [
+        {
+          "lot": "opt-f1",
+          "holder": "employee_f",
+          "security": "options_0.25",
+          "shares": -120000,
+          "after": 0
+        }
+      ],
+      "pool_change": 120000,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "fund_u",
+            "name": "Fund U"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "2.5",
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 700000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.25",
+            "shares": 400000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2500000
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "series_a",
+            "shares": 500000
+          },
+          {
+            "holder": "fund_u",
+            "security": "series_a",
+            "shares": 3000000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1950000
+      }
+    },
+    {
+      "after_event": "transfer_t_u",
+      "date": "2025-03-01",
+      "movements": [
+        {
+          "lot": "ps-t1",
+          "holder": "seed_fund_t",
+          "security": "seed",
+          "shares": -300000,
+          "after": 2200000
+        },
+        {
+          "lot": "ps-u1",
+          "holder": "fund_u",
+          "security": "seed",
+          "shares": 300000,
+          "after": 300000
+        }
+      ],
+      "pool_change": 0,
+      "warnings": [],
+      "cap_table": {
+        "holders": [
+          {
+            "id": "founder_a",
+            "name": "Founder A"
+          },
+          {
+            "id": "founder_b",
+            "name": "Founder B"
+          },
+          {
+            "id": "employee_c",
+            "name": "Employee C"
+          },
+          {
+            "id": "employee_d",
+            "name": "Employee D"
+          },
+          {
+            "id": "employee_e",
+            "name": "Employee E"
+          },
+          {
+            "id": "angel_s",
+            "name": "Angel S"
+          },
+          {
+            "id": "seed_fund_t",
+            "name": "Seed Fund T"
+          },
+          {
+            "id": "fund_u",
+            "name": "Fund U"
+          },
+          {
+            "id": "trust_v",
+            "name": "Trust V"
+          }
+        ],
+        "securities": [
+          {
+            "id": "common",
+            "name": "Common Stock",
+            "kind": "common"
+          },
+          {
+            "id": "seed",
+            "name": "Seed Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1.2",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "non_participating",
+            "cap_multiple": null,
+            "anti_dilution": "none"
+          },
+          {
+            "id": "series_a",
+            "name": "Series A Preferred",
+            "kind": "preferred",
+            "original_issue_price": "1",
+            "conversion_price": "1",
+            "preference_multiple": "1",
+            "participation": "participating_capped",
+            "cap_multiple": "2.5",
+            "anti_dilution": "none"
+          },
+          {
+            "id": "options_0.1",
+            "name": "Options ($0.10 strike)",
+            "kind": "option",
+            "strike": "0.1"
+          },
+          {
+            "id": "options_0.25",
+            "name": "Options ($0.25 strike)",
+            "kind": "option",
+            "strike": "0.25"
+          }
+        ],
+        "seniority": [
+          [
+            "series_a"
+          ],
+          [
+            "seed"
+          ]
+        ],
+        "positions": [
+          {
+            "holder": "founder_a",
+            "security": "common",
+            "shares": 5500000
+          },
+          {
+            "holder": "founder_b",
+            "security": "common",
+            "shares": 4000000
+          },
+          {
+            "holder": "employee_c",
+            "security": "common",
+            "shares": 700000
+          },
+          {
+            "holder": "employee_c",
+            "security": "options_0.25",
+            "shares": 400000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.1",
+            "shares": 200000
+          },
+          {
+            "holder": "employee_d",
+            "security": "options_0.25",
+            "shares": 300000
+          },
+          {
+            "holder": "employee_e",
+            "security": "common",
+            "shares": 50000
+          },
+          {
+            "holder": "angel_s",
+            "security": "seed",
+            "shares": 260416
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "seed",
+            "shares": 2200000
+          },
+          {
+            "holder": "seed_fund_t",
+            "security": "series_a",
+            "shares": 500000
+          },
+          {
+            "holder": "fund_u",
+            "security": "seed",
+            "shares": 300000
+          },
+          {
+            "holder": "fund_u",
+            "security": "series_a",
+            "shares": 3000000
+          },
+          {
+            "holder": "trust_v",
+            "security": "common",
+            "shares": 500000
+          }
+        ],
+        "unissued_pool": 1950000
+      }
+    }
+  ]
+}
