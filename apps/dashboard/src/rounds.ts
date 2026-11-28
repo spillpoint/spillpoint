@@ -11,7 +11,8 @@ import type { AntiDilutionAdjustment, CapTable, CapTableAfterEvent, RoundDetails
 
 import { NotShownYet, checkShown, draftFromExit } from "./draft.ts";
 import type { Draft } from "./draft.ts";
-import { dollars, dollarsAndCents, halfUp, percent, strikeText, withoutCodes } from "./format.ts";
+import { conversionLines, conversionRows } from "./conversions.ts";
+import { dateText, dollars, dollarsAndCents, halfUp, percent, sharePrice, strikeText, withoutCodes } from "./format.ts";
 import { safesOwnCompanyText } from "./saleLimits.ts";
 
 type Decimal = D;
@@ -202,20 +203,12 @@ export interface EventView {
 }
 
 const ZERO = new D(0);
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "2022-06-30" → "Jun 30, 2022", as US founders write dates (M4i review). */
-export function dateText(date: string | null): string | null {
-  const m = date ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(date) : null;
-  return m ? `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}` : date;
-}
+export { dateText };
 
 const count = (n: Decimal) => halfUp(n, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-/**
- * A per-share price as a founder reads it: to the cent when that's exact ("$4.00"), otherwise to six places, as the
- * editor shows them ("$0.384930") (0.5.0 plan, 05e; Jordan, after #69).
- */
-export const sharePrice = (p: Decimal) => (halfUp(p, 20).decimalPlaces() <= 2 ? `$${halfUp(p, 2).toFixed(2)}` : `$${halfUp(p, 6).toFixed(6)}`);
+/** A per-share price as a founder reads it: to the cent when that's exact, otherwise to six places. */
 const price = sharePrice;
 /** A percentage as written in the input: "6%", "12.5%". */
 const pct = (fraction: Decimal) => `${halfUp(fraction.times(100), 4).toFixed()}%`;
@@ -349,7 +342,7 @@ function describe(ev: Json, t: CapTableAfterEvent, holder: Name, security: Name,
     case "priced_round":
       return {
         title: `${security((ev.series as Json).id)}, a priced round`,
-        lines: [...roundLines(ev, d, holder, security, starting), ...dividendLines(ev, t), ...startingLines(ev, d, t, before, starting)],
+        lines: [...roundLines(ev, d, t, before, holder, security, starting), ...dividendLines(ev, t), ...startingLines(ev, d, t, before, starting)],
       };
   }
 }
@@ -371,15 +364,19 @@ function dividendLines(ev: Json, t: CapTableAfterEvent): string[] {
   });
 }
 
-function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name, starting: Starting | null): Line[] {
+function roundLines(
+  ev: Json, d: RoundDetails, t: CapTableAfterEvent, before: CapTableAfterEvent | null, holder: Name, security: Name, starting: Starting | null,
+): Line[] {
   const seriesName = security((ev.series as Json).id);
   const investments = (ev.investments as Json[]).map((inv) => ({ holder: String(inv.holder), amount: new D(String(inv.amount)) }));
   const byHolder = new Map<string, Decimal>();
   for (const inv of investments) byHolder.set(inv.holder, (byHolder.get(inv.holder) ?? ZERO).plus(inv.amount));
   const raised = investments.reduce((sum, inv) => sum.plus(inv.amount), ZERO);
   const lines: Line[] = [
-    // Its pre-money from the details: the round's own, or the one a stated price implies (R32).
-    `${dollars(raised)} at a ${dollars(d.preMoney)} pre-money valuation, ${dollars(d.postMoneyValuation)} post-money: ${price(d.price)} a share.`,
+    // R32: a round given its price per share says the pre-money the price implies; one given its pre-money, its price.
+    ev.price_per_share != null
+      ? `${dollars(raised)} at ${price(d.price)} a share. The price implies a ${dollars(d.preMoney)} pre-money valuation, ${dollars(d.postMoneyValuation)} post-money, on the fully diluted shares the round is priced on.`
+      : `${dollars(raised)} at a ${dollars(d.preMoney)} pre-money valuation, ${dollars(d.postMoneyValuation)} post-money: ${price(d.price)} a share.`,
     ...d.newShares.map((n) => `${holder(n.holder)} invests ${dollars(byHolder.get(n.holder) ?? ZERO)} for ${count(n.shares)} shares of ${seriesName}.`),
   ];
   const target = ev.pool_target_unissued_percent_post == null ? ZERO : new D(String(ev.pool_target_unissued_percent_post)).div(100);
@@ -388,13 +385,23 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name, sta
   }
   else if (target.gt(0)) lines.push(`The pool already meets its ${pct(target)} target, so it isn't topped up.`);
 
+  // Each SAFE and note it converts, and under it what its terms give at the round's price (11c2; R33): its two prices
+  // and which applies, a note's interest, its share after the round, its series' preference, and where its cap takes over.
+  const rows = before ? conversionRows(before.capTable, target, d, t.capTable) : [];
+  const explained = (id: string, text: string): Line => {
+    const r = rows.find((x) => x.id === id);
+    return r ? { text, details: conversionLines(r, d.price, t.date, security(r.series)) } : text;
+  };
   for (const c of d.safeConversions) {
-    lines.push(`${holder(c.holder)}'s SAFE converts at its ${c.method} price, ${price(c.conversionPrice)} a share, into ${count(c.shares)} shares of ${security(c.series)}.`);
+    lines.push(explained(c.safe, `${holder(c.holder)}'s SAFE converts at its ${c.method} price, ${price(c.conversionPrice)} a share, into ${count(c.shares)} shares of ${security(c.series)}.`));
   }
   for (const c of d.noteConversions) {
     lines.push(
-      `${holder(c.holder)}'s note converts ${dollarsAndCents(c.amountConverting)} (${dollarsAndCents(c.principal)} and ${dollarsAndCents(c.interest)} interest) ` +
-        `at its ${c.method} price, ${price(c.conversionPrice)} a share, into ${count(c.shares)} shares of ${security(c.series)}.`,
+      explained(
+        c.note,
+        `${holder(c.holder)}'s note converts ${dollarsAndCents(c.amountConverting)} (${dollarsAndCents(c.principal)} and ${dollarsAndCents(c.interest)} interest) ` +
+          `at its ${c.method} price, ${price(c.conversionPrice)} a share, into ${count(c.shares)} shares of ${security(c.series)}.`,
+      ),
     );
   }
   for (const p of d.proRata) {

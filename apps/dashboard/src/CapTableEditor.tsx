@@ -106,7 +106,7 @@ export function CapTableEditor({ draft, onDraft, name, onName, error, summary, r
           <h2 id="next-round-heading">The next round</h2>
           <p className="card__intro">
             Model a round on this cap table: its price, its investors, the pool top-up and the SAFEs and notes it converts. This cap table becomes the one the
-            company's rounds start from, and the round opens on the Rounds tab.
+            company's rounds start from, and the round opens on the Rounds tab. Remove the round, and you're back to this cap table.
           </p>
           <button type="button" className="add" onClick={onAddRound}>
             Add a round

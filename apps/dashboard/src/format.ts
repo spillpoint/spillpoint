@@ -81,6 +81,22 @@ export function strikeText(strike: Decimal | string | number): string {
   return `$${d.toFixed(Math.max(2, d.decimalPlaces()))}`;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2022-06-30" → "Jun 30, 2022", as US founders write dates (M4i review). */
+export function dateText(date: string | null): string | null {
+  const m = date ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(date) : null;
+  return m ? `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}` : date;
+}
+
+/**
+ * A per-share price as a founder reads it: to the cent when that's exact ("$4.00"), otherwise to six places, as the
+ * editor shows them ("$0.384930") (0.5.0 plan, 05e; Jordan, after #69).
+ */
+export function sharePrice(p: Decimal): string {
+  return halfUp(p, 20).decimalPlaces() <= 2 ? `$${halfUp(p, 2).toFixed(2)}` : `$${halfUp(p, 6).toFixed(6)}`;
+}
+
 /** "9.8%": a fraction as a percentage to one place. */
 export function percent(fraction: Decimal): string {
   return `${halfUp(fraction.times(100), 1).toFixed(1)}%`;

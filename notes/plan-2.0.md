@@ -4,14 +4,16 @@ Today the page answers one question: given a cap table, or the rounds that built
 
 **Where this stands:** answered (2026-11-27, at the end), with one change of order: **the SAFE view comes first.** Next is 1.0's release step, then 11b, the engine's round at a stated price (section 6).
 
+**Changed in 11c2 (2026-11-28): one way to model a round.** Two ways was confusing, so the SAFEs tab's parts moved into the Rounds tab and the tab went: "Add a round" takes a round by its price per share or its pre-money, and each round's summary explains every SAFE and note it converts. Rounds are recorded where they're modeled, so 11l's "Add it to the ledger" goes too. Sections 1, 3 and 6 and the release notes below say it that way now; the answers at the end are as given.
+
 **The short version:**
 - **The ledger is the rounds the page already builds, grown up.** The engine builds a company from dated events today: shares issued, a pool, grants, warrants, SAFEs, notes, priced rounds. A ledger adds what happens between rounds (exercises, cancellations, repricings, repurchases, transfers, a split, a SAFE or note that ends unconverted) and makes every event dated. Each event leaves a cap table, as now. Payouts, breakpoints and every locked case are unchanged.
 - **A round is recorded as issued, and checked against its terms.** Today's priced round is worked out from its terms. A founder's ledger has to match the papers: the price the stock purchase agreement states and the shares each investor and each SAFE actually got. So a recorded round takes those, and the engine works the same round out at the stated price and says where the two differ. That check is the "correctly" in "record each round correctly", and the same machinery is the SAFE view.
 - **Problems that still leave a cap table are warnings, not refusals.** A grant beyond the pool, a SAFE with no cap or discount, a round its SAFEs don't convert in: each is recorded and flagged, in words that say what was entered and what usually holds, never legal advice. What leaves no cap table (exercising more options than were granted) is refused, as now.
 - **The first case is one we already have.** Quillfern Labs' five years of OCF transactions (`ocf-12-ledger`) recorded as a ledger must give edge case 25's locked table. That ties the ledger, the OCF import and the reference's payouts together, and the OCF export's round trip later.
-- **The views:** the cap table as of any date, each holder's history, and a SAFE's conversion at a chosen price, beside the payouts. **The SAFE view comes first,** on the tables the page builds today, since it doesn't need the ledger.
+- **The views:** the cap table as of any date, each holder's history, and a SAFE's conversion at a chosen price, beside the payouts. **The SAFE view comes first,** on the tables the page builds today, since it doesn't need the ledger. Since 11c2 it's a round's summary on the Rounds tab.
 - **The file** goes to version 8, opens every earlier version as it does now, and exports to OCF.
-- **14 steps,** 11b to 11o. First the round at a stated price (11b) and the SAFEs tab (11c), then the ledger. Four are the ledger's cases and lift the lock: 11d to 11g.
+- **15 steps,** 11b to 11o, with 11c2. First the round at a stated price (11b) and the SAFEs tab (11c), which 11c2 folded into the Rounds tab, then the ledger. Four are the ledger's cases and lift the lock: 11d to 11g.
 
 ## Where this comes from
 
@@ -47,7 +49,7 @@ It's a superset of today's events, so every company built from rounds is already
 | **Warrants** | the warrant | `issue_warrants` (R29) | ids, so they can be exercised and cancelled |
 | **SAFEs** | the SAFE | `safes` (R4, R24, X1) | an MFN flag; an amendment, as when an MFN holder takes later terms; `end_convertible` for one repaid or cancelled |
 | **Convertible notes** | note purchase agreement | `notes` (R23, X3) | a maturity date, as information; repaid or cancelled with `end_convertible` |
-| **A priced round, worked out** | term sheet | `priced_round` (R3 to R28) | kept: a plan for a round, and a trial in the SAFE view. In a ledger, a warning that it isn't recorded as issued |
+| **A priced round, worked out** | term sheet | `priced_round` (R3 to R28) | kept: a plan for a round, modeled on the Rounds tab, the Ledger tab with a ledger. In a ledger, a warning that it isn't recorded as issued |
 | **A priced round, as issued** | stock purchase agreement, restated charter, closing cap table | none | `recorded_round`, with its check (below) |
 | **A later closing** | joinder to the purchase agreement | none | `later_closing`: more of a round's series at its price |
 | **Conversions at a round** | the closing | inside `priced_round` | as issued, inside `recorded_round` |
@@ -111,9 +113,9 @@ Today the pool is one number, and a grant beyond it is refused (`rounds.ts`, `gr
 
 **Each difference is a warning, `recorded_differs`,** with its size: "Investor S's SAFE got 260,000 shares. At $0.96, the lower of its cap price and its discount price, its $250,000 gives 260,416." A count that the stated price's own rounding explains, one that comes out right at some price within half of the price's last written place, says so, `within_rounding`: a purchase agreement that states $1.0821 can issue a share or two more than $1.0821 exactly gives.
 
-**Why a stated price helps:** with the price given, there's no circularity to solve. The new shares, the SAFEs' shares and the pool follow from it. The same function is the SAFE view's trial round (section 3), so it comes first, in 11b (R32). The round worked out from its pre-money stays as it is.
+**Why a stated price helps:** with the price given, there's no circularity to solve. The new shares, the SAFEs' shares and the pool follow from it. The same function prices a round given its price on the Rounds tab (section 3), so it comes first, in 11b (R32). The round worked out from its pre-money stays as it is.
 
-**Not in a recorded round in this part:** pay-to-play's conversions (R17 to R22). The worked-out round keeps it, for a trial.
+**Not in a recorded round in this part:** pay-to-play's conversions (R17 to R22). The worked-out round keeps it, for a round being modeled.
 
 ### What the engine would need
 
@@ -123,7 +125,7 @@ All of it adds to the API. Nothing in 1.0's changes.
 2. **The new events** above, sharing `buildCapTables`' handlers for the old ones.
 3. **Lots and the plan's reserve** inside the company the events build. The cap table it gives out is unchanged.
 4. **A priced round at a stated price** (R32, first, in 11b), and the check built on it (11i).
-5. **The price where a SAFE's or note's cap takes over** (R33, 11c), for the SAFE view.
+5. **The price where a SAFE's or note's cap takes over** (R33, 11c), for a round's summary (11c2).
 6. **`ledgerAsOf`:** the table as of a date, expired grants out (L18), and the warnings that depend on the date.
 7. **Warnings** as a result type of their own, a code, the event, the subject and plain words, with stable codes, as import notes have (O10).
 8. **`writeOcf`:** the ledger as of a date, as OCF files (section 4).
@@ -211,7 +213,7 @@ An OCF or OCX import opens as it does now, a starting table (R31), as of its dat
 
 ## 3. The views
 
-**Beside the payouts:** from 11c, before the ledger, every company has a SAFEs tab beside today's three. With a ledger, a company has five tabs: **Ledger** (today's Rounds), **Cap table**, **Holders**, **SAFEs** and **Payouts**. A cap table entered directly keeps today's tabs, with "Record what happens from here" where "Add a round" is. The exact layout is the page steps'.
+**Beside the payouts:** today's three tabs. 11c added a SAFEs tab beside them, and 11c2 took it out again: a round is modeled where rounds are, on the Rounds tab. With a ledger, a company has four tabs: **Ledger** (today's Rounds), **Cap table**, **Holders** and **Payouts**. A cap table entered directly keeps today's tabs, with "Record what happens from here" where "Add a round" is. The exact layout is the page steps'.
 
 ### The cap table as of any date
 
@@ -233,17 +235,16 @@ An OCF or OCX import opens as it does now, a starting table (R31), as of its dat
 
 **It comes first** (your answers). It's what founders asked for most, and it doesn't need the ledger.
 - **Where it works:** from 11c, on every table the page builds today: a company built from rounds, a cap table entered directly, and an import.
-- **Where the trial starts:** from the table the payouts use, as "Add a round" does (R31), so an import keeps its date and issue order (O14).
-- **Once the ledger comes:** it works on the table as of the date shown.
+- **Where it is, since 11c2:** on the Rounds tab, the one way to model a round. On a cap table entered directly or imported, "Add a round" starts the company's rounds from it, as R31 does, so an import keeps its date and issue order (O14). The Rounds tab says that adding a round shows what its SAFEs and notes convert into, and that removing the round takes it back. Where SAFEs or notes are outstanding, the Payouts tab has one line pointing there.
+- **Once the ledger comes:** a round modeled on the Ledger tab is a worked-out round, flagged `worked_out_round` until the closing papers come in. It's recorded where it's modeled, so there's nothing to add to the ledger afterwards.
 
-On the SAFEs tab, every SAFE and note outstanding on that table, together, since post-money SAFEs count each other (R4):
-- **The founder gives the next round:** its price per share, or its pre-money valuation; the amount raised; the pool target after it, if any; and the new series' terms, as "Add a round" fills them.
-- **For each SAFE and note,** the engine works out (R32): its cap price, its discount price, which one applies, its shares, its percentage after the round, the series it goes into, and that series' preference.
+In each priced round's summary, every SAFE and note it converts, since post-money SAFEs count each other (R4):
+- **The founder gives the round:** its price per share, or its pre-money valuation; the amount raised; the pool target after it, if any; and the new series' terms, as "Add a round" fills them.
+- **For each SAFE and note,** the engine works out (R32): its cap price, its discount price, which one applies, its shares, its percentage after the round, the series it goes into, and that series' preference. A note's interest to the round's date too.
 - **The price where the cap takes over** (R33): the exact price per share above which the cap, not the discount, sets its price. A chart of each holder's percentage after the round against the round's price, drawn from exact points, marks it.
   - **Where it's given:** a SAFE or note whose cap price is the same at any round price. That's every note, every post-money SAFE with nothing beside it converting at a discount or without a cap, and a pre-money SAFE in a round that doesn't top up the pool.
-  - **Where it's left out:** where the cap price moves with the round's price, as a pre-money SAFE's does in a round that tops up the pool. There the tab says which one sets the price at the price chosen. The general case is on the Later list.
-- **"See the payouts after this round"** runs Payouts on the trial table, without saving it.
-- **"Add it to the ledger"** comes with the ledger, in 11l. It adds the trial as a worked-out round, a plan for the round, flagged `worked_out_round` until the closing papers come in.
+  - **Where it's left out:** where the cap price moves with the round's price, as a pre-money SAFE's does in a round that tops up the pool. There the summary says which one sets the price at the round's. The general case is on the Later list.
+- **The payouts** follow the round, as they follow any round on the Rounds tab.
 
 It says what the SAFE's text gives at that price by spillpoint's reading (R4, R23, R24), naming the rule, and nothing more.
 
@@ -318,12 +319,16 @@ Each is one branch and one PR, a review note, then a stop. **The SAFE view comes
   - **At other prices,** half, nine tenths, eleven tenths and twice each case's, the stated-price round agrees with today's round given the pre-money the stated-price round implies: the same counts, and prices within E14's one part in 10^30. The SAFE view runs at prices no case solves to, and this ties them to the solve the locked cases check.
   - **The reference doesn't need to learn it here.** The locked tables are already its own, so matching them is an independent check. It learns the stated-price round in 11f, where the recorded round's check needs values at prices no case solves to.
   - **`api.test.ts`** pins the new way in.
-- **11c, the SAFEs tab,** on the tables the page builds today: a company built from rounds, a cap table entered directly, an import. It has the trial round, by its price or its pre-money, each SAFE's and note's conversion, the price where the cap takes over (R33), and "See the payouts after this round". "Add it to the ledger" waits for 11l. Tests:
+- **11c, the SAFEs tab,** on the tables the page builds today: a company built from rounds, a cap table entered directly, an import. It has the trial round, by its price or its pre-money, each SAFE's and note's conversion, the price where the cap takes over (R33), and "See the payouts after this round". Tests:
   - **edge-15's round at its own price** gives its locked table.
   - **Larkspur's import,** its blanks filled as case 27's, with a trial at case 27's Series B price, gives case 27's locked table: the import's path.
   - **The price where the cap takes over** on edge-15's SAFE equals its post-money cap (`inputs.json`) ÷ its Company Capitalization (`expected.json`) ÷ (1 − its discount), worked from the case, not the engine.
   - **The payouts after a trial** match `buildCapTables` and `solve` on the same events.
   - **The privacy test** covers the trial: its numbers go nowhere, and in no URL.
+- **11c2, one way to model a round:** the SAFEs tab's parts move into the Rounds tab, and the tab, its trial and its banner go. "Add a round" takes a round by its price per share or its pre-money. Each round's summary explains every SAFE and note it converts, as the SAFEs tab did. On a cap table entered directly or imported, the Rounds tab says that adding a round shows what its SAFEs and notes convert into and that removing it takes it back, and the Payouts tab has a line pointing there. Tests, carried over to the Rounds path:
+  - **Larkspur's import with case 27's Series B added as a round,** by its price per share, gives case 27's locked table, and pays as case 27 does at every breakpoint, saved and opened again.
+  - **edge-15's crossover,** from the case's own numbers, and its round's summary saying it.
+  - **The 67-round check** of the price that applies.
 
 ### The ledger, in the order planned
 
@@ -360,12 +365,11 @@ Each is one branch and one PR, a review note, then a stop. **The SAFE view comes
   - the papers each event comes from (answer 3)
   - the privacy test covers the new fields: nothing leaves the page, nothing goes in a URL
 - **11k, guided setup:** "Start from your company's papers", its eight steps and their checks. An acceptance test enters Quillfern's papers step by step and gets `ledger-01`'s tables and warnings.
-- **11l, the cap table as of a date, each holder's history, and "Add it to the ledger":** the first two with their CSVs. The SAFEs tab follows the date shown, and adds its trial as a worked-out round. Tests:
+- **11l, the cap table as of a date and each holder's history,** with their CSVs. "Add it to the ledger" was dropped in 11c2: a round is recorded where it's modeled, on the Ledger tab. Tests:
   - Quillfern on each date its derivation lists
   - Founder A's history through the split and the transfer
   - Employee C's history through the repurchase and both exercises
   - Payouts following the date
-  - a trial added to Quillfern's ledger as of a date lands after that date's events, as `worked_out_round`
 - **11m, `writeOcf`:** the export, and its round trip on Quillfern, Millrace recorded and every `ledger-` case. Millrace's prices come back to OCF's 10 places, as `ocf-11` reads them. No new locked case: the round trip runs against ones already locked.
 - **11n, "Export to OCF" on the page:** a .zip writer of stored entries, read back by the page's own reader (`zip.ts`) in its test. You validate a few exports against OCF's schemas in `local/`.
 - **11o, the release:** 1.1.0 (answer 1), `notes/release-1.1.0.md`, both READMEs, and the packed build checked. You publish and tag. Nothing here needs the SAFE view's engine part on npm sooner. If you want it there, a release step can follow 11c.
@@ -442,6 +446,6 @@ The step names in these questions are the plan's first lettering, before your an
   Each name joins Stable from 1.0's lists.
 - **Unchanged:** `buildCapTables`, which still refuses a grant beyond the pool, and every answer every locked case gives.
 - **The page:**
-  - first, the SAFEs tab: a SAFE's conversion at a chosen price
+  - first, a round by its price per share, and each round's summary saying what each SAFE and note converts into and why
   - then a cap table a founder keeps: the Ledger tab, guided setup, the cap table as of a date, each holder's history, and export to OCF
   - saved files are version 8, and every earlier version opens

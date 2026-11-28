@@ -16,6 +16,7 @@ export function blankMessage(name: string | null): string {
 const FIELD: Record<string, string> = {
   date: "date",
   pre_money: "pre-money valuation",
+  price_per_share: "price per share",
   pool_target_unissued_percent_post: "option pool target",
   percent: "percentage",
   purchase_amount: "amount",

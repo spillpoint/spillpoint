@@ -161,7 +161,8 @@ function normalise(path: string, value: unknown): unknown {
   if (/(^|\.)(shares)$/.test(field)) return shareText(value);
   if (/(^|\.)(percent|pool_target_unissued_percent_post)$/.test(field)) return percentText(value);
   if (/(^|\.)(preference_multiple|cap_multiple|repayment_multiple)$/.test(field)) return multipleText(value);
-  if (/(^|\.)(pre_money|amount|purchase_amount|post_money_cap|pre_money_cap|principal|valuation_cap|offered_amount|strike)$/.test(field)) return moneyText(value);
+  // A price per share (R32) as amounts are typed: "$2.70" is 2.7, and a fraction such as "3/2" stays exact (C1).
+  if (/(^|\.)(pre_money|price_per_share|amount|purchase_amount|post_money_cap|pre_money_cap|principal|valuation_cap|offered_amount|strike)$/.test(field)) return moneyText(value);
   return value.trim();
 }
 
@@ -570,6 +571,12 @@ export function locate(d: RoundsDraft, path: string, message: string): RoundsPro
   const m = /^inputs\.events\[(\d+)\]\.?(.*)$/.exec(path);
   const event = m ? d.events[Number(m[1])] : undefined;
   if (!m || !event) return { message: withPath(path, text(() => null)), event: null, fields: [], ...(blank ? { blank } : {}) };
+  // R32: a round given by its price per share, left blank, reaches the engine as a round with neither, which it names
+  // by its pre-money. The founder chose the price, so it's the price that's blank.
+  if (m[2] === "pre_money" && event.json.type === "priced_round" && "price_per_share" in event.json) {
+    const field = "price_per_share";
+    return { message: blankMessage(eventFieldName(d.holders, event.json, field)), event: event.key, fields: [eventFieldId(event.key, field)], blank: true };
+  }
   const fields: string[] = [];
   for (let p = m[2]!; p; p = p.replace(/(\.[^.[\]]+|\[\d+\])$/, "")) {
     fields.push(eventFieldId(event.key, p));

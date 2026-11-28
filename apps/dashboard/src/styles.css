@@ -188,7 +188,7 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 .tag { font-size: 0.75rem; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--accent-soft); color: var(--accent); }
 .tag--quiet { background: transparent; border: 1px solid var(--line); color: var(--muted); }
 
-/* Tabs: the payouts, the cap table editor, the rounds, and the SAFEs (11c) */
+/* Tabs: the payouts, or the cap table editor */
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 8px 0 0; }
 .tabs [role="tab"] {
   font: inherit; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-bottom: 3px solid transparent;
@@ -199,6 +199,8 @@ select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px s
 [role="tabpanel"] > :first-child { margin-top: 0; }
 
 .notice--problem { border-left-color: var(--warn); margin-bottom: 16px; }
+/* The Payouts tab's line about SAFEs and notes outstanding, pointing to the Rounds tab (11c2): quieter than a problem. */
+.notice--pointer { margin-bottom: 16px; }
 .link-button { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
@@ -303,9 +305,6 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
   .rounds__class-under { display: block; color: var(--muted); font-size: 0.8125rem; font-weight: 400; margin-top: 2px; }
 }
 @media (max-width: 360px) {
-  /* Four tabs since the SAFEs tab (11c): closer together, so they fit at 320 wide. */
-  .tabs { gap: 0; }
-  .tabs [role="tab"] { padding: 8px 8px; }
   .payouts__shares > span { white-space: normal; }
   .payouts tr.is-you .payouts__shares { color: var(--text); }
   .founder__headline { font-size: 1.75rem; }
@@ -364,16 +363,3 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 /* Under the masthead, the refused import's summary keeps its distance from the governance note below it. */
 .page > .import__share { margin-bottom: 16px; }
 .share__help a { color: var(--accent); white-space: nowrap; }
-
-/* The SAFEs tab (11c): the trial round's terms, then each SAFE and note, a rule above each. */
-.safes__round { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px 4px; margin: 12px 0; min-width: 0; }
-.safes__round legend { font-weight: 600; padding: 0 4px; }
-.safes__by { display: flex; flex-wrap: wrap; gap: 0 20px; margin: 4px 0 12px; }
-.safes__item { margin-top: 20px; padding-top: 4px; border-top: 1px solid var(--line); }
-.safes__item h3 { margin-top: 12px; }
-.safes__terms { color: var(--muted); margin: 2px 0 0; }
-.safes__results > .file-button { margin-top: 4px; }
-.safes__results h3:first-child { margin-top: 16px; }
-/* The Payouts tab while it shows a trial round's table: plain to see, and the way back beside it. */
-.notice--trial { border-left-color: var(--warn); margin-bottom: 16px; }
-.notice--trial .field-error { margin: 8px 0 0; }
