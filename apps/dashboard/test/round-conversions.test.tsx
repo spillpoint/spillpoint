@@ -10,6 +10,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/App.tsx";
+import { manySafesAndStrikes } from "../../../packages/engine/test/support/many-safes.ts";
 
 const cases = resolve(import.meta.dirname, "../../../cases");
 const caseJson = (name: string, file: string) => JSON.parse(readFileSync(resolve(cases, name, file), "utf8"));
@@ -123,6 +124,18 @@ describe("an import: Larkspur, its two SAFEs and its note", () => {
     // Its base, the shares just before the round, is the same at any price: its cap takes over at its cap price ÷ (1 − its discount).
     expect(note.at(-1)).toMatch(/^At \$\d+\.\d+ a share or more, its cap sets its price; below that, (its discount does|it converts at the round's own price)\.$/);
     expect(round.textContent).not.toMatch(/\b(good|bad|better|worse|should|recommend|deal|fair|favou?rable|advice)\b/i);
+
+    // Each conversion's line shows; its working is in a section closed until opened (Jordan's answer 2, 11c2).
+    const sections = [...round.querySelectorAll<HTMLDetailsElement>("details.rounds__working")];
+    expect(sections.map((d) => [d.querySelector("summary")!.textContent, d.open])).toEqual([
+      ["How it converts", false],
+      ["How it converts", false],
+      ["How it converts", false],
+    ]);
+    // The anti-dilution note stays a line of its own, not folded.
+    expect(said.at(-1)).toMatch(/^Seed Preferred has no anti-dilution/);
+    fireEvent.click(sections[2]!.querySelector("summary")!);
+    expect(sections.map((d) => d.open)).toEqual([false, false, true]);
   });
 
   it("goes back to the imported cap table when the round is removed, with no rounds, and adds the same round again", async () => {
@@ -195,6 +208,33 @@ describe("a cap table entered directly: edge-12b's", () => {
     await vi.waitFor(() => expect(within(round).getAllByText("Series A Preferred's pre-money valuation can't be blank.").length).toBeGreaterThan(0));
     // The amount typed stays.
     expect((within(round).getByLabelText("Amount ($)") as HTMLInputElement).value).toBe("5000000");
+  });
+});
+
+describe("a round converting 26 SAFEs", () => {
+  it("shows one line for each SAFE, its working closed until opened", async () => {
+    // 10j's made-up table of 26 post-money SAFEs at two caps, with one option strike, so its payouts work out in about a
+    // second here, where they run on the test's own thread. Jordan's three-cap table is checked in conversions.test.ts.
+    render(<App />);
+    const table = manySafesAndStrikes(26, 1, "each its own");
+    const file = JSON.stringify({ format: "spillpoint", version: 7, name: "26 SAFEs", cap_table: table.cap_table, range: table.range });
+    fireEvent.change(screen.getByLabelText("Open a saved cap table"), { target: { files: [new File([file], "26-safes.json", { type: "application/json" })] } });
+    await screen.findByText("Opened 26-safes.json.");
+    expect(within(payouts()).getByText(/^26 SAFEs are outstanding on this cap table\./)).toBeTruthy();
+    openTab("Rounds");
+    click("Add a round");
+    const round = card(/^2\./);
+    type(within(round).getByLabelText("Pre-money valuation ($)"), "30M");
+    type(within(round).getByLabelText("Amount ($)"), "10M");
+    await vi.waitFor(() => expect(within(rounds()).queryAllByRole("alert")).toEqual([]));
+    fireEvent.click(within(round).getByRole("button", { name: /^Done / }));
+
+    const lines = [...card(/^2\./).querySelectorAll(".rounds__lines > li")];
+    const safes = lines.filter((li) => /^SAFE Investor \d+'s SAFE converts at its cap price, \$[\d.]+ a share, into [\d,]+ shares of Series B Preferred \(from SAFEs\)( \d)?\.$/.test(ownText(li)));
+    expect(safes).toHaveLength(26);
+    // Each its own line, its working there but closed: the round reads as its lines.
+    expect(safes.map((li) => li.querySelector<HTMLDetailsElement>(":scope > details.rounds__working")?.open)).toEqual(Array(26).fill(false));
+    expect(card(/^2\./).querySelectorAll("details[open]")).toHaveLength(0);
   });
 });
 

@@ -184,8 +184,12 @@ export interface TableRow {
   fullyDiluted: Decimal;
 }
 
-/** A sentence about what an event did, with any sentences that explain it, shown under it. */
-export type Line = string | { text: string; details: string[] };
+/**
+ * A sentence about what an event did, with any sentences that explain it, shown under it. With `fold`, they're the
+ * working behind it, in a section of that name closed until opened (11c2, Jordan's answer 2): a round converting 26
+ * SAFEs shows 26 lines, each opening on its own.
+ */
+export type Line = string | { text: string; details: string[]; fold?: string };
 
 export interface EventView {
   id: string;
@@ -385,12 +389,13 @@ function roundLines(
   }
   else if (target.gt(0)) lines.push(`The pool already meets its ${pct(target)} target, so it isn't topped up.`);
 
-  // Each SAFE and note it converts, and under it what its terms give at the round's price (11c2; R33): its two prices
-  // and which applies, a note's interest, its share after the round, its series' preference, and where its cap takes over.
+  // Each SAFE and note it converts: its shares, at which price, into which series, and under it, closed until opened,
+  // what its terms give at the round's price (11c2; R33): its two prices and which applies, a note's interest, its share
+  // after the round, its series' preference, and where its cap takes over.
   const rows = before ? conversionRows(before.capTable, target, d, t.capTable) : [];
   const explained = (id: string, text: string): Line => {
     const r = rows.find((x) => x.id === id);
-    return r ? { text, details: conversionLines(r, d.price, t.date, security(r.series)) } : text;
+    return r ? { text, details: conversionLines(r, d.price, t.date, security(r.series)), fold: "How it converts" } : text;
   };
   for (const c of d.safeConversions) {
     lines.push(explained(c.safe, `${holder(c.holder)}'s SAFE converts at its ${c.method} price, ${price(c.conversionPrice)} a share, into ${count(c.shares)} shares of ${security(c.series)}.`));

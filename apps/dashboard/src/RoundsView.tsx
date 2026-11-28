@@ -322,6 +322,17 @@ export function RoundsView({ events, you, rounds, onRounds, problem, tables, edi
   );
 }
 
+/** The sentences under a line that explain it. */
+function Details({ lines }: { lines: string[] }) {
+  return (
+    <ul className="rounds__details">
+      {lines.map((detail, k) => (
+        <li key={k}>{detail}</li>
+      ))}
+    </ul>
+  );
+}
+
 /** The SAFEs and notes an event creates that will still be outstanding at the sale, one line each. */
 function AtSale({ lines }: { lines: string[] }) {
   return lines.map((line) => (
@@ -346,11 +357,15 @@ function Built({ view: e, previous, you, atSale }: { view: EventView; previous: 
           ) : (
             <li key={j}>
               {line.text}
-              <ul className="rounds__details">
-                {line.details.map((detail, k) => (
-                  <li key={k}>{detail}</li>
-                ))}
-              </ul>
+              {/* A SAFE's or note's working sits in a section closed until opened (11c2); an adjustment's pieces show. */}
+              {line.fold ? (
+                <details className="rounds__working">
+                  <summary>{line.fold}</summary>
+                  <Details lines={line.details} />
+                </details>
+              ) : (
+                <Details lines={line.details} />
+              )}
             </li>
           ),
         )}

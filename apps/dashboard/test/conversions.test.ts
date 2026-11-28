@@ -20,6 +20,7 @@ import type { Line, Rounds } from "../src/rounds.ts";
 import { addEvent, buildRounds, draftFromRounds, setEvent, startingRounds } from "../src/roundsDraft.ts";
 import type { RoundsDraft } from "../src/roundsDraft.ts";
 import { seniorityFor } from "../src/RoundsEditor.tsx";
+import { threeCapsTable } from "../../../packages/engine/test/support/many-safes.ts";
 
 type Json = Record<string, unknown>;
 const cases = resolve(import.meta.dirname, "../../../cases");
@@ -221,5 +222,28 @@ describe("Larkspur's import with case 27's Series B added as a round, by its pri
   it("names what's outstanding on the import, for the lines that point to the Rounds tab", () => {
     const start = built(buildRounds(startingRounds(draftFromExit({ cap_table: filled, range: ["0", "1"] }), null))).at(-1)!.capTable;
     expect(outstandingWords(start)).toEqual({ what: "Two SAFEs and a convertible note", its: "its two SAFEs and its convertible note", many: true });
+  });
+});
+
+describe("a round converting Jordan's 26 SAFEs from 10j", () => {
+  it("gives each SAFE one line, with its working folded under it", () => {
+    // 26 post-money SAFEs at $6M, $10.5M and $29M caps, 7 with a 20% discount, beside 12 option strikes and a warrant:
+    // made up in packages/engine's tests, no one's table. "Add a round" on it, at a $30M pre-money with $10M of new money.
+    const table = threeCapsTable();
+    const first = startingRounds(draftFromExit({ cap_table: table.cap_table, range: table.range }), null);
+    const start = built(buildRounds(first)).at(-1)!.capTable;
+    const added = addEvent(first, "priced_round", start);
+    const round = added.events.at(-1)!;
+    const typed = setEvent(added, round.key, { ...round.json, pre_money: "30M", investments: [{ holder: first.holders[0]!.key, amount: "10M" }] });
+    const rounds = buildRounds(typed);
+    const tables = built(rounds);
+    const lines = eventViews(rounds, tables).at(-1)!.lines;
+    const safes = lines.filter((l): l is Exclude<Line, string> => typeof l !== "string" && /^SAFE Investor \d+'s SAFE converts /.test(l.text));
+    expect(safes).toHaveLength(26);
+    // Each folded as "How it converts", and with only post-money SAFEs converting, each with the price where its cap takes over (R33).
+    expect(new Set(safes.map((l) => l.fold))).toEqual(new Set(["How it converts"]));
+    expect(safes.every((l) => /^At \$[\d.]+ a share or more, its cap sets its price; below that, (its discount does|it converts at the round's own price)\.$/.test(l.details.at(-1)!))).toBe(true);
+    // The 7 with a discount say their discount price; the 19 without say the round's own.
+    expect(safes.filter((l) => l.details.some((d) => /^Its discount price is \$[\d.]+: the round's \$[\d.]+ less its 20% discount\.$/.test(d)))).toHaveLength(7);
   });
 });

@@ -276,6 +276,9 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--er
 .rounds__lines { margin: 8px 0 0; padding-left: 1.25rem; }
 .rounds__lines li + li { margin-top: 4px; }
 .rounds__details { margin: 4px 0 0; padding-left: 1.25rem; list-style: circle; }
+/* A SAFE's or note's working, closed until opened (11c2): one quiet line under it, so a round with 26 SAFEs stays readable. */
+.rounds__working { margin: 2px 0 6px; }
+.rounds__working > summary { cursor: pointer; color: var(--accent); font-size: 0.875rem; width: fit-content; }
 .rounds__table { margin-top: 12px; }
 .rounds__table summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .rounds__table .payouts { margin-top: 8px; }

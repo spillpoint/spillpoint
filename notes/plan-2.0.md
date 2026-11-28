@@ -4,7 +4,7 @@ Today the page answers one question: given a cap table, or the rounds that built
 
 **Where this stands:** answered (2026-11-27, at the end), with one change of order: **the SAFE view comes first.** Next is 1.0's release step, then 11b, the engine's round at a stated price (section 6).
 
-**Changed in 11c2 (2026-11-28): one way to model a round.** Two ways was confusing, so the SAFEs tab's parts moved into the Rounds tab and the tab went: "Add a round" takes a round by its price per share or its pre-money, and each round's summary explains every SAFE and note it converts. Rounds are recorded where they're modeled, so 11l's "Add it to the ledger" goes too. Sections 1, 3 and 6 and the release notes below say it that way now; the answers at the end are as given.
+**Changed in 11c2 (2026-11-28): one way to model a round.** Two ways was confusing, so the SAFEs tab's parts moved into the Rounds tab and the tab went: "Add a round" takes a round by its price per share or its pre-money, and each round's summary explains every SAFE and note it converts. Rounds are recorded where they're modeled, so 11l's "Add it to the ledger" goes too. Sections 1, 3 and 6 and the release notes below say it that way now; the answers at the end are as given. In the 11c2 review the chart of each holder's percentage against the round's price came off this plan, onto the Later list in `docs/ASSUMPTIONS.md`.
 
 **The short version:**
 - **The ledger is the rounds the page already builds, grown up.** The engine builds a company from dated events today: shares issued, a pool, grants, warrants, SAFEs, notes, priced rounds. A ledger adds what happens between rounds (exercises, cancellations, repricings, repurchases, transfers, a split, a SAFE or note that ends unconverted) and makes every event dated. Each event leaves a cap table, as now. Payouts, breakpoints and every locked case are unchanged.
@@ -240,8 +240,8 @@ An OCF or OCX import opens as it does now, a starting table (R31), as of its dat
 
 In each priced round's summary, every SAFE and note it converts, since post-money SAFEs count each other (R4):
 - **The founder gives the round:** its price per share, or its pre-money valuation; the amount raised; the pool target after it, if any; and the new series' terms, as "Add a round" fills them.
-- **For each SAFE and note,** the engine works out (R32): its cap price, its discount price, which one applies, its shares, its percentage after the round, the series it goes into, and that series' preference. A note's interest to the round's date too.
-- **The price where the cap takes over** (R33): the exact price per share above which the cap, not the discount, sets its price. A chart of each holder's percentage after the round against the round's price, drawn from exact points, marks it.
+- **For each SAFE and note,** the engine works out (R32): its cap price, its discount price, which one applies, its shares, its percentage after the round, the series it goes into, and that series' preference. A note's interest to the round's date too. Its line (its shares, at which price, into which series) shows; the rest is in a section closed until opened.
+- **The price where the cap takes over** (R33): the exact price per share above which the cap, not the discount, sets its price.
   - **Where it's given:** a SAFE or note whose cap price is the same at any round price. That's every note, every post-money SAFE with nothing beside it converting at a discount or without a cap, and a pre-money SAFE in a round that doesn't top up the pool.
   - **Where it's left out:** where the cap price moves with the round's price, as a pre-money SAFE's does in a round that tops up the pool. There the summary says which one sets the price at the round's. The general case is on the Later list.
 - **The payouts** follow the round, as they follow any round on the Rounds tab.
