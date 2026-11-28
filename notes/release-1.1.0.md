@@ -24,3 +24,16 @@ Started in 11b. The release step, 11o, finishes it.
 ## Stable from 1.0
 
 **No list changes.** Its lists hold the terms, codes and reasons code matches on, and 1.1.0 so far adds none: nothing new is refused. The new names are the input field `price_per_share` and the field `preMoney`, each marked *(1.1.0)* in the README.
+
+## On the page
+
+- **The SAFEs tab** (11c, ASSUMPTIONS R33 and P3).
+  - **Where it works:** on the cap table the payouts use, whichever way the page built it: from rounds, entered directly, or imported.
+  - **The trial round:** the founder gives the next priced round, by its price per share or its pre-money valuation, with the amount raised and the pool's target.
+  - **For each SAFE and note,** the tab says:
+    - its cap price and its discount price, and which applies
+    - its shares, and its share of the company after the round
+    - the series it converts into, and that series' preference on them
+    - where it's exact, the price at which its cap takes over
+  - **"See the payouts after this round"** shows the Payouts tab on the table after it, never saved.
+  - **The tabs** fit at 320 wide, four of them.

@@ -530,15 +530,18 @@ describe("the tabs", () => {
     render(<App />);
     const tab = (name: string) => screen.getByRole("tab", { name });
     const selected = () => screen.getAllByRole("tab").find((t) => t.getAttribute("aria-selected") === "true")!.textContent;
+    // Four tabs since 11c, the SAFEs tab last.
     fireEvent.keyDown(tab("Payouts"), { key: "End" });
+    expect(selected()).toBe("SAFEs");
+    fireEvent.keyDown(tab("SAFEs"), { key: "ArrowLeft" });
     expect(selected()).toBe("Rounds");
     fireEvent.keyDown(tab("Rounds"), { key: "ArrowLeft" });
     expect(selected()).toBe("Cap table");
     fireEvent.keyDown(tab("Cap table"), { key: "ArrowLeft" });
     expect(selected()).toBe("Payouts");
     fireEvent.keyDown(tab("Payouts"), { key: "ArrowLeft" });
-    expect(selected()).toBe("Rounds");
-    fireEvent.keyDown(tab("Rounds"), { key: "Home" });
+    expect(selected()).toBe("SAFEs");
+    fireEvent.keyDown(tab("SAFEs"), { key: "Home" });
     expect(selected()).toBe("Payouts");
     expect(document.activeElement).toBe(tab("Payouts"));
   });

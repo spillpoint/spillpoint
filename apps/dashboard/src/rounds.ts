@@ -215,7 +215,8 @@ const count = (n: Decimal) => halfUp(n, 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\
  * A per-share price as a founder reads it: to the cent when that's exact ("$4.00"), otherwise to six places, as the
  * editor shows them ("$0.384930") (0.5.0 plan, 05e; Jordan, after #69).
  */
-const price = (p: Decimal) => (halfUp(p, 20).decimalPlaces() <= 2 ? `$${halfUp(p, 2).toFixed(2)}` : `$${halfUp(p, 6).toFixed(6)}`);
+export const sharePrice = (p: Decimal) => (halfUp(p, 20).decimalPlaces() <= 2 ? `$${halfUp(p, 2).toFixed(2)}` : `$${halfUp(p, 6).toFixed(6)}`);
+const price = sharePrice;
 /** A percentage as written in the input: "6%", "12.5%". */
 const pct = (fraction: Decimal) => `${halfUp(fraction.times(100), 4).toFixed()}%`;
 const money = (v: unknown) => dollars(new D(String(v)));
@@ -377,7 +378,8 @@ function roundLines(ev: Json, d: RoundDetails, holder: Name, security: Name, sta
   for (const inv of investments) byHolder.set(inv.holder, (byHolder.get(inv.holder) ?? ZERO).plus(inv.amount));
   const raised = investments.reduce((sum, inv) => sum.plus(inv.amount), ZERO);
   const lines: Line[] = [
-    `${dollars(raised)} at a ${money(ev.pre_money)} pre-money valuation, ${dollars(d.postMoneyValuation)} post-money: ${price(d.price)} a share.`,
+    // Its pre-money from the details: the round's own, or the one a stated price implies (R32).
+    `${dollars(raised)} at a ${dollars(d.preMoney)} pre-money valuation, ${dollars(d.postMoneyValuation)} post-money: ${price(d.price)} a share.`,
     ...d.newShares.map((n) => `${holder(n.holder)} invests ${dollars(byHolder.get(n.holder) ?? ZERO)} for ${count(n.shares)} shares of ${seriesName}.`),
   ];
   const target = ev.pool_target_unissued_percent_post == null ? ZERO : new D(String(ev.pool_target_unissued_percent_post)).div(100);
